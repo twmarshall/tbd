@@ -18,14 +18,14 @@ package tbd.test
 import org.scalatest._
 
 import tbd.Changeable
-import tbd.Destination
+import tbd.Dest
 import tbd.Mutator
 import tbd.TBD
 import tbd.ListNode
 import tbd.mod.Mod
 
 class ArrayMapTest extends TBD {
-  def run(dest: Destination): Changeable[Any] = {
+  def run(dest: Dest): Changeable[Any] = {
     val array = input.getArray()
     val mappedArray = map(array, (_: String) + " mapped")
     write(dest, mappedArray)
@@ -33,9 +33,9 @@ class ArrayMapTest extends TBD {
 }
 
 class ListMapTest extends TBD {
-  def run(dest: Destination): Changeable[Any] = {
+  def run(dest: Dest): Changeable[Any] = {
     val list = input.getList()
-    val mappedList = map(list, (_: String) + " mapped")
+    val mappedList = parMap(list, (_: String) + " mapped")
     write(dest, mappedList)
   }
 }

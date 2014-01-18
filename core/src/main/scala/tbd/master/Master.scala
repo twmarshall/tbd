@@ -15,25 +15,36 @@
  */
 package tbd.master
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorLogging, Props}
 import scala.concurrent.Promise
 
-import tbd.Destination
-import tbd.Output
-import tbd.TBD
+import tbd.{Changeable, Dest, TBD}
+import tbd.ddg.SimpleDDG
 import tbd.manager.Manager
 import tbd.messages._
-import tbd.mod.Mod
+import tbd.mod.{Mod, ModStore}
+import tbd.worker.{InitialWorker, Task}
 
-class Master(tbd: TBD, manager: Manager, resultPromise: Promise[Output])
+class Master(manager: Manager)
     extends Actor with ActorLogging {
   log.info("Master launced.")
-  val firstInitialWorker =
-    manager.launchInitialWorker(() => tbd.run(new Destination))
+  val ddgRef = context.actorOf(Props(classOf[SimpleDDG]), "ddgActor")
+  var i = 0
+
+  def runTask[T](tbd: TBD): Promise[Any] = {
+    i += 1
+    val resultPromise = Promise[Any]()
+    val workerActor = context.actorOf(Props(classOf[InitialWorker[T]], resultPromise, i),
+				    "workerActor" + i)
+    tbd.initialize(manager, ddgRef)
+    workerActor ! RunTaskMessage(new Task(() => tbd.run(new Dest)))
+    resultPromise
+  }
 
   def receive = {
-    case FinishedMessage(result) =>
-      resultPromise.success(new Output(result.read()))
+    case RunMessage(tbd: TBD) => {
+      sender ! runTask(tbd).future
+    }
     case _ => log.warning("Master actor received unkown message!")
   }
 }

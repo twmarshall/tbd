@@ -16,21 +16,20 @@
 package tbd.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef}
+import scala.concurrent.Promise
 
 import tbd.Changeable
 import tbd.messages._
 
-class InitialWorker(func: () => (Changeable[Any]), master: ActorRef)
+class InitialWorker[T](result: Promise[Any], id: Int)
   extends Actor with ActorLogging {
-
-  run()
-
-  def run() {
-    val output = func()
-    master ! FinishedMessage(output.mod)
-  }
+  log.info("Worker " + id + " launched")
 
   def receive = {
-    case _ => log.warning("InitialWorker received unknown message.")
+    case RunTaskMessage(task: Task) => {
+      val output = task.func()
+      result.success(output.mod)
+    }
+    case _ => log.warning("InitialWorker " + id + " received unknown message.")
   }
 }

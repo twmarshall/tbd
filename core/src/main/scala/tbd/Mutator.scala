@@ -15,29 +15,33 @@
  */
 package tbd
 
+import akka.pattern.ask
 import akka.util.Timeout
-
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 import tbd.input.MutatorInput
 import tbd.manager.LocalManager
+import tbd.messages.RunMessage
 import tbd.mod.Mod
 
-class Mutator[T <: TBD : ClassManifest] {
+class Mutator[T <: TBD: ClassManifest] {
   val manager = new LocalManager()
   manager.launchInput()
   manager.launchModStore()
   val input = new MutatorInput(manager)
 
   def run(): Output = {
-    manager.launchDDG()
-    val tbd = classManifest[T].erasure.newInstance.asInstanceOf[TBD]
-    tbd.initialize(manager)
-    val resultFuture = manager.launch(tbd)
+    val masterRef = manager.launch()
 
     implicit val timeout = Timeout(5 seconds)
-    Await.result(resultFuture, timeout.duration)
+    val constructor = classManifest[T].erasure.getConstructor()
+    val tbd = constructor.newInstance().asInstanceOf[TBD]
+    val future = masterRef ? RunMessage(tbd)
+    val resultFuture =
+      Await.result(future, timeout.duration).asInstanceOf[Future[Mod[Any]]]
+
+    new Output(Await.result(resultFuture, timeout.duration))
   }
 
   def shutdown() {

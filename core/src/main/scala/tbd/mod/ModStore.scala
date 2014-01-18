@@ -37,9 +37,9 @@ class ModStore extends Actor with ActorLogging {
     case ReadModMessage(modId: ModId) => {
       val ret = read(modId)
       if (ret == null) {
-	sender ! NullValueMessage
+	      sender ! NullValueMessage
       } else {
-	sender ! ret
+	      sender ! ret
       }
     }
     case WriteModMessage(value: Any) => sender ! write(value)

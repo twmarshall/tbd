@@ -17,11 +17,12 @@ package tbd
 
 import tbd.mod.Mod
 
-class Output(aValue: Any) {
-  val value = if (aValue.isInstanceOf[Array[Mod[String]]]) {
-    aValue.asInstanceOf[Array[Mod[String]]].map(_.read())
+class Output(aValue: Mod[Any]) {
+  // TODO(thomas): get rid of this special case.
+  val value = if (aValue.read().isInstanceOf[Array[Mod[Any]]]) {
+    aValue.asInstanceOf[Mod[Array[Mod[Any]]]].read().map(_.read())
   } else {
-    aValue
+    aValue.read()
   }
 
   def get() = value

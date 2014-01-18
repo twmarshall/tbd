@@ -15,18 +15,17 @@
  */
 package tbd.messages
 
+import tbd.{Changeable, TBD}
 import tbd.ddg.ReadId
 import tbd.mod.Mod
 import tbd.mod.ModId
+import tbd.worker.Task
 
 // DDG
 case class AddReadMessage(modId: ModId, readId: ReadId)
 case class AddWriteMessage(readId: ReadId, modId: ModId)
 case class AddCallMessage(outerCall: ReadId, innerCall: ReadId)
 case class ToStringMessage
-
-// Worker
-case class FinishedMessage(result: Mod[Any])
 
 // Input
 case class GetMessage(key: Int)
@@ -40,3 +39,7 @@ case class ReadModMessage(modId: ModId)
 case class WriteModMessage(value: Any)
 case class WriteNullModMessage
 case class NullValueMessage
+
+// Master
+case class RunMessage(tbd: TBD)
+case class RunTaskMessage(func: Task)

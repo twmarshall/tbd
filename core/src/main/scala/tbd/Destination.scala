@@ -15,5 +15,5 @@
  */
 package tbd
 
-class Destination {
+class Dest {
 }

@@ -32,22 +32,22 @@ import tbd.TBD
 import tbd.ddg.SimpleDDG
 import tbd.input.Input
 import tbd.master.Master
+import tbd.messages.RunTaskMessage
 import tbd.mod.Mod
 import tbd.mod.ModStore
-import tbd.worker.InitialWorker
+import tbd.worker.{InitialWorker, Task}
 
 class LocalManager extends Manager {
   TBD.id += 1
   val system = ActorSystem("masterSystem" + TBD.id,
                            ConfigFactory.load.getConfig("client"))
   val log = Logging(system, "LocalManager")
-  val result = Promise[Output]()
   var masterActor: ActorRef = null
 
-  def launch(tbd: TBD): Future[Output] = {
-    masterActor = system.actorOf(Props(classOf[Master], tbd, this, result), "masterActor")
+  def launch(): ActorRef = {
+    masterActor = system.actorOf(Props(classOf[Master], this), "masterActor")
 
-    result.future
+    masterActor
   }
 
   def launchInput() {
@@ -75,19 +75,25 @@ class LocalManager extends Manager {
   }
 
   def launchDDG() {
-    system.actorOf(Props(classOf[SimpleDDG]), "ddgActor")
+
   }
 
   def connectToDDG(): ActorRef = {
-    val ddgSelection = system.actorSelection("/user/ddgActor")
+    val ddgSelection = system.actorSelection("/user/masterActor/ddgActor")
 
     implicit val timeout = Timeout(5 seconds)
     val future = ddgSelection.resolveOne
     Await.result(future, timeout.duration).asInstanceOf[ActorRef]
   }
 
-  def launchInitialWorker(func: () => (Changeable[Any])): ActorRef = {
-    system.actorOf(Props(classOf[InitialWorker], func, masterActor), "workerActor")
+  var i = 0
+  def launchInitialWorker[T](func: () => (Changeable[T])): Promise[T] = {
+    i += 1
+    val result = Promise[T]()
+    val ref = system.actorOf(Props(classOf[InitialWorker[T]], result, i),
+		   "workerActor" + i)
+    ref ! RunTaskMessage(new Task(func.asInstanceOf[() => (Changeable[Any])]))
+    result
   }
 
   def getSystem = system

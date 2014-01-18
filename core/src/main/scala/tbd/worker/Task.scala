@@ -13,32 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.manager
-
-import akka.actor.{ActorRef, ActorSystem}
-import scala.concurrent.Promise
+package tbd.worker
 
 import tbd.Changeable
-import tbd.mod.Mod
 
-trait Manager {
-  def launch(): ActorRef
-
-  def launchInput()
-
-  def connectToInput(): ActorRef
-
-  def launchModStore()
-
-  def connectToModStore(): ActorRef
-
-  def launchDDG()
-
-  def connectToDDG(): ActorRef 
-
-  def launchInitialWorker[T](func: () => (Changeable[T])): Promise[T]
-
-  def getSystem: ActorSystem
-
-  def shutdown()
+class Task(aFunc: () => (Changeable[Any])) {
+  val func = aFunc
 }
