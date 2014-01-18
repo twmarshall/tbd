@@ -15,15 +15,14 @@
  */
 package tbd.input
 
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{Actor, ActorRef, ActorLogging}
 import scala.collection.mutable.Map
 
 import tbd.ListNode
-import tbd.manager.Manager
 import tbd.messages._
 import tbd.mod.Mod
 
-class Input(manager: Manager) extends Actor with ActorLogging {
+class Input(modStoreRef: ActorRef) extends Actor with ActorLogging {
   val data = Map[Int, String]()
 
   def get(key: Int): String =
@@ -38,7 +37,7 @@ class Input(manager: Manager) extends Actor with ActorLogging {
 
     var i = 0
     for (elem <- data) {
-      arr(i) = new Mod[String](elem._2, manager)
+      arr(i) = new Mod[String](elem._2, modStoreRef)
       i += 1
     }
 
@@ -46,18 +45,18 @@ class Input(manager: Manager) extends Actor with ActorLogging {
   }
 
   def asList(): Mod[ListNode[String]] = {
-    var head = new Mod[ListNode[String]](null, manager)
+    var head = new Mod[ListNode[String]](null, modStoreRef)
 
     for (elem <- data) {
-      val value = new Mod(elem._2, manager)
-      head = new Mod(new ListNode(value, head), manager)
+      val value = new Mod(elem._2, modStoreRef)
+      head = new Mod(new ListNode(value, head), modStoreRef)
     }
 
     head
   }
 
   def receive = {
-    case GetMessage(key: Int) => new Mod(get(key), manager)
+    case GetMessage(key: Int) => new Mod(get(key), modStoreRef)
     case PutMessage(key: Int, value: String) => put(key, value)
     case GetSizeMessage => sender ! data.size
     case GetArrayMessage => sender ! asArray()

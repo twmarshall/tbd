@@ -21,23 +21,17 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 import tbd.input.MutatorInput
-import tbd.manager.LocalManager
-import tbd.messages.RunMessage
+import tbd.master.Main
+import tbd.messages.{RunMessage, ShutdownMessage}
 import tbd.mod.Mod
 
-class Mutator[T <: TBD: ClassManifest] {
-  val manager = new LocalManager()
-  manager.launchInput()
-  manager.launchModStore()
-  val input = new MutatorInput(manager)
+class Mutator {
+  val main = new Main()
+  val input = new MutatorInput(main.inputRef)
 
-  def run(): Output = {
-    val masterRef = manager.launch()
-
+  def run(adjust: Adjustable): Output = {
     implicit val timeout = Timeout(5 seconds)
-    val constructor = classManifest[T].erasure.getConstructor()
-    val tbd = constructor.newInstance().asInstanceOf[TBD]
-    val future = masterRef ? RunMessage(tbd)
+    val future = main.masterRef ? RunMessage(adjust)
     val resultFuture =
       Await.result(future, timeout.duration).asInstanceOf[Future[Mod[Any]]]
 
@@ -45,6 +39,6 @@ class Mutator[T <: TBD: ClassManifest] {
   }
 
   def shutdown() {
-    manager.shutdown()
+    main.masterRef ! ShutdownMessage
   }
 }

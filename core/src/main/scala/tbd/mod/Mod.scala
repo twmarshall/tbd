@@ -15,17 +15,15 @@
  */
 package tbd.mod
 
+import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import tbd.manager.Manager
 import tbd.messages._
 
-class Mod[T](newValue: T, manager: Manager) {
-  val modStoreRef = manager.connectToModStore()
-
+class Mod[T](newValue: T, modStoreRef: ActorRef) {
   implicit val timeout = Timeout(5 seconds)
 
   val writeFuture = if (newValue == null) {

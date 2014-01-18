@@ -15,7 +15,7 @@
  */
 package tbd.messages
 
-import tbd.{Changeable, TBD}
+import tbd.{Adjustable, Changeable, TBD}
 import tbd.ddg.ReadId
 import tbd.mod.Mod
 import tbd.mod.ModId
@@ -41,5 +41,6 @@ case class WriteNullModMessage
 case class NullValueMessage
 
 // Master
-case class RunMessage(tbd: TBD)
+case class RunMessage(adjust: Adjustable)
 case class RunTaskMessage(func: Task)
+case class ShutdownMessage

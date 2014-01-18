@@ -16,14 +16,13 @@
 package tbd
 
 import akka.pattern.ask
-import akka.actor.{ActorRef, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.event.{Logging, LoggingAdapter}
 import akka.util.Timeout
 import scala.concurrent.{Await, Promise}
 import scala.concurrent.duration._
 
 import tbd.ddg.{DDG, ReadId}
-import tbd.manager.Manager
 import tbd.input.Reader
 import tbd.messages._
 import tbd.mod.Mod
@@ -33,22 +32,11 @@ object TBD {
   var id = 0
 }
 
-trait TBD {
-  var input: Reader = null
-  private var ddgRef: ActorRef  = null
-  private var manager: Manager = null
-  private var log: LoggingAdapter = null
-
+class TBD(ddgRef: ActorRef, inputRef: ActorRef, modStoreRef: ActorRef, system: ActorSystem) {
   private var currentReader = new ReadId()
+  val input = new Reader(inputRef)
 
-  def initialize(aManager: Manager, aDDGRef: ActorRef) {
-    manager = aManager
-    ddgRef = aDDGRef
-    log = Logging(manager.getSystem, "TBD")
-    input = new Reader(manager)
-  }
-
-  def run(dest: Dest): Changeable[Any]
+  val log = Logging(system, "TBD")
 
   def read[T](mod: Mod[T], reader: (T) => (Changeable[T])): Changeable[T] = {
     log.debug("Executing read on  mod " + mod.id)
@@ -76,7 +64,7 @@ trait TBD {
   }
 
   def write[T](dest: Dest, value: T): Changeable[T] = {
-    val mod = new Mod(value, manager)
+    val mod = new Mod(value, modStoreRef)
     log.debug("Writing " + value + " to " + mod.id)
     new Changeable(mod)
   }
@@ -85,20 +73,21 @@ trait TBD {
     initializer(new Dest()).mod
   }
 
-  var i = 0
+  var id = 0
   def par[T, U](one: Dest => (Changeable[T]),
 		two: Dest => (Changeable[U])): Tuple2[Mod[T], Mod[U]] = {
-    i += 1
-    val promiseTwo = Promise[T]()
-    val ref = manager.getSystem.actorOf(Props(classOf[InitialWorker[T]], promiseTwo, i),
-		                                    "workerActor" + i)
-    ref ! RunTaskMessage(new Task((() => two(new Dest)).asInstanceOf[() => (Changeable[Any])]))
+    implicit val timeout = Timeout(5 seconds)
+
+    val task =  new Task(((tbd: TBD) => two(new Dest))
+      .asInstanceOf[(TBD) => (Changeable[Any])])
+    val workerRef = system.actorOf(Props(classOf[InitialWorker[U]], id, ddgRef, inputRef, modStoreRef), "worker"+id)
+    id += 1
+
+    val twoFuture = workerRef ? RunTaskMessage(task)
 
     val oneMod = one(new Dest()).mod
 
-    implicit val timeout = Timeout(5 seconds)
-    val twoMod = Await.result(promiseTwo.future, timeout.duration)
-      .asInstanceOf[Mod[U]]
+    val twoMod = Await.result(twoFuture, timeout.duration).asInstanceOf[Mod[U]]
     new Tuple2(oneMod, twoMod)
   }
 

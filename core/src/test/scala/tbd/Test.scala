@@ -17,44 +17,39 @@ package tbd.test
 
 import org.scalatest._
 
-import tbd.Changeable
-import tbd.Dest
-import tbd.Mutator
-import tbd.TBD
-import tbd.ListNode
-import tbd.mod.Mod
+import tbd.{Adjustable, Changeable, Dest, Mutator, ListNode, TBD}
 
-class ArrayMapTest extends TBD {
-  def run(dest: Dest): Changeable[Any] = {
-    val array = input.getArray()
-    val mappedArray = map(array, (_: String) + " mapped")
-    write(dest, mappedArray)
+class ArrayMapTest extends Adjustable {
+  def run(dest: Dest, tbd: TBD): Changeable[Any] = {
+    val array = tbd.input.getArray()
+    val mappedArray = tbd.map(array, (_: String) + " mapped")
+    tbd.write(dest, mappedArray)
   }
 }
 
-class ListMapTest extends TBD {
-  def run(dest: Dest): Changeable[Any] = {
-    val list = input.getList()
-    val mappedList = parMap(list, (_: String) + " mapped")
-    write(dest, mappedList)
+class ListMapTest extends Adjustable {
+  def run(dest: Dest, tbd: TBD): Changeable[Any] = {
+    val list = tbd.input.getList()
+    val mappedList = tbd.parMap(list, (_: String) + " mapped")
+    tbd.write(dest, mappedList)
   }
 }
 
 class TestSpec extends FlatSpec with Matchers {
   "ArrayMapTest" should "return a correctly mapped array" in {
-    val test = new Mutator[ArrayMapTest]()
+    val test = new Mutator()
     test.input.put(1, "one")
     test.input.put(2, "two")
-    val output = test.run()
+    val output = test.run(new ArrayMapTest())
     output.get() should be (Array("two mapped", "one mapped"))
     test.shutdown()
   }
 
   "ListMapTest" should "return a correctly mapped list" in {
-    val test = new Mutator[ListMapTest]()
+    val test = new Mutator()
     test.input.put(1, "one")
     test.input.put(2, "two")
-    val output = test.run()
+    val output = test.run(new ListMapTest())
     output.get().toString should be ("(one mapped, two mapped)")
     test.shutdown()
   }

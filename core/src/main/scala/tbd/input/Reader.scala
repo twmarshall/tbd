@@ -15,38 +15,37 @@
  */
 package tbd.input
 
+import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import tbd.TBD
 import tbd.ListNode
-import tbd.manager.Manager
-import tbd.messages._
+import tbd.messages.{GetArrayMessage, GetListMessage, GetMessage}
 import tbd.mod.Mod
 
-class Reader(manager: Manager) {
-  val inputActor = manager.connectToInput()
+class Reader(inputRef: ActorRef) {
+  println(inputRef.path)
 
   def get(key: Int): Mod[String] = {
     implicit val timeout = Timeout(5 seconds)
-    val sizeFuture = inputActor ? GetMessage(key)
-    Await.result(sizeFuture, timeout.duration)
+    val modFuture = inputRef ? GetMessage(key)
+    Await.result(modFuture, timeout.duration)
       .asInstanceOf[Mod[String]]
   }
 
   def getArray(): Array[Mod[String]] = {
     implicit val timeout = Timeout(5 seconds)
-    val sizeFuture = inputActor ? GetArrayMessage
-    Await.result(sizeFuture, timeout.duration)
+    val arrayFuture = inputRef ? GetArrayMessage
+    Await.result(arrayFuture, timeout.duration)
       .asInstanceOf[Array[Mod[String]]]
   }
 
   def getList(): Mod[ListNode[String]] = {
     implicit val timeout = Timeout(5 seconds)
-    val sizeFuture = inputActor ? GetListMessage
-    Await.result(sizeFuture, timeout.duration)
+    val listFuture = inputRef ? GetListMessage
+    Await.result(listFuture, timeout.duration)
       .asInstanceOf[Mod[ListNode[String]]]
   }
 }

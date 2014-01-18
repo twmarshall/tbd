@@ -13,10 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.worker
+package tbd.master
 
-import tbd.{Changeable, TBD}
+import akka.actor.{ActorSystem, Props}
+import com.typesafe.config.ConfigFactory
 
-class Task(aFunc: TBD => Changeable[Any]) {
-  val func = aFunc
+import tbd.input.Input
+import tbd.mod.ModStore
+
+object Main {
+  var id = 0
+
+  def main(args: Array[String]) {
+    new Main()
+  }
+}
+
+class Main {
+  val system = ActorSystem("masterSystem" + Main.id,
+                           ConfigFactory.load.getConfig("client"))
+  Main.id += 1
+
+  val modStoreRef = system.actorOf(Props(classOf[ModStore]), "modStore")
+  val inputRef = system.actorOf(Props(classOf[Input], modStoreRef), "input")
+  val masterRef = system.actorOf(Props(classOf[Master]), "master")
 }

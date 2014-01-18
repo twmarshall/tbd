@@ -15,18 +15,17 @@
  */
 package tbd.input
 
+import akka.actor.ActorRef
+
 import tbd.TBD
-import tbd.manager.Manager
 import tbd.messages._
 
-class MutatorInput(manager: Manager) {
-  val inputActor = manager.connectToInput()
-
+class MutatorInput(inputRef: ActorRef) {
   def get(key: Int): String = {
     "asdf"
   }
 
   def put(key: Int, value: String) {
-    inputActor ! PutMessage(key, value)
+    inputRef ! PutMessage(key, value)
   }
 }
