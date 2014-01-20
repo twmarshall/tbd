@@ -28,11 +28,11 @@ import tbd.mod.Mod
 class Reader(inputRef: ActorRef) {
   println(inputRef.path)
 
-  def get(key: Int): Mod[String] = {
+  def get[T](key: Int): Mod[T] = {
     implicit val timeout = Timeout(5 seconds)
     val modFuture = inputRef ? GetMessage(key)
     Await.result(modFuture, timeout.duration)
-      .asInstanceOf[Mod[String]]
+      .asInstanceOf[Mod[T]]
   }
 
   def getArray(): Array[Mod[String]] = {

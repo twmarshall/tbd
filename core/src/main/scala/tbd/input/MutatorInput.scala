@@ -21,11 +21,15 @@ import tbd.TBD
 import tbd.messages._
 
 class MutatorInput(inputRef: ActorRef) {
-  def get(key: Int): String = {
+  def get(key: Int): Any = {
     "asdf"
   }
 
-  def put(key: Int, value: String) {
+  def put(key: Int, value: Any) {
     inputRef ! PutMessage(key, value)
+  }
+
+  def putMatrix(key: Int, value: Array[Array[Int]]) {
+    inputRef ! PutMatrixMessage(key, value)
   }
 }

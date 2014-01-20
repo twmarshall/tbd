@@ -29,7 +29,8 @@ case class ToStringMessage
 
 // Input
 case class GetMessage(key: Int)
-case class PutMessage(key: Int, value: String)
+case class PutMessage(key: Int, value: Any)
+case class PutMatrixMessage(key: Int, value: Array[Array[Int]])
 case class GetSizeMessage
 case class GetArrayMessage
 case class GetListMessage

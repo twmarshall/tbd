@@ -20,32 +20,40 @@ import scala.collection.mutable.Map
 
 import tbd.ListNode
 import tbd.messages._
-import tbd.mod.Mod
+import tbd.mod.{Matrix, Mod}
 
 class Input(modStoreRef: ActorRef) extends Actor with ActorLogging {
-  val data = Map[Int, String]()
+  val data = Map[Int, Any]()
 
-  def get(key: Int): String =
-    data(key)
+  def get(key: Int): Mod[Any] =
+    new Mod(data(key), modStoreRef)
 
-  def put(key: Int, value: String) {
+  def put(key: Int, value: Any) {
     data(key) = value
   }
 
-  def asArray(): Array[Mod[String]] = {
-    val arr = new Array[Mod[String]](data.size)
+  def putArray(key: Int, value: Array[Any]) {
+    val modArray = value.map(elem => new Mod(elem, modStoreRef))
+  }
+
+  def putMatrix(key: Int, value: Array[Array[Int]]) {
+    data(key) = new Matrix(value, modStoreRef)
+  }
+
+  def asArray(): Array[Mod[Any]] = {
+    val arr = new Array[Mod[Any]](data.size)
 
     var i = 0
     for (elem <- data) {
-      arr(i) = new Mod[String](elem._2, modStoreRef)
+      arr(i) = new Mod[Any](elem._2, modStoreRef)
       i += 1
     }
 
     arr
   }
 
-  def asList(): Mod[ListNode[String]] = {
-    var head = new Mod[ListNode[String]](null, modStoreRef)
+  def asList(): Mod[ListNode[Any]] = {
+    var head = new Mod[ListNode[Any]](null, modStoreRef)
 
     for (elem <- data) {
       val value = new Mod(elem._2, modStoreRef)
@@ -56,8 +64,9 @@ class Input(modStoreRef: ActorRef) extends Actor with ActorLogging {
   }
 
   def receive = {
-    case GetMessage(key: Int) => new Mod(get(key), modStoreRef)
-    case PutMessage(key: Int, value: String) => put(key, value)
+    case GetMessage(key: Int) => sender ! get(key)
+    case PutMessage(key: Int, value: Any) => put(key, value)
+    case PutMatrixMessage(key: Int, value: Array[Array[Int]]) => putMatrix(key, value)
     case GetSizeMessage => sender ! data.size
     case GetArrayMessage => sender ! asArray()
     case GetListMessage => sender ! asList()

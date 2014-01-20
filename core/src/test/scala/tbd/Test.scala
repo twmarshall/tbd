@@ -18,6 +18,7 @@ package tbd.test
 import org.scalatest._
 
 import tbd.{Adjustable, Changeable, Dest, Mutator, ListNode, TBD}
+import tbd.mod.Matrix
 
 class ArrayMapTest extends Adjustable {
   def run(dest: Dest, tbd: TBD): Changeable[Any] = {
@@ -32,6 +33,19 @@ class ListMapTest extends Adjustable {
     val list = tbd.input.getList()
     val mappedList = tbd.parMap(list, (_: String) + " mapped")
     tbd.write(dest, mappedList)
+  }
+}
+
+class MatrixMultTest extends Adjustable {
+  def run(dest: Dest, tbd: TBD): Changeable[Any] = {
+    println("??")
+    val one = tbd.input.get[Matrix](1)
+    println(one)
+    val two = tbd.input.get[Matrix](2)
+    println(two)
+
+    tbd.read(one, (mat1: Matrix) => tbd.read(two, (mat2: Matrix) => tbd.write(dest, mat1.mult(tbd, mat2)))).asInstanceOf[Changeable[Any]]
+    //tbd.write(dest, one)
   }
 }
 
@@ -51,6 +65,15 @@ class TestSpec extends FlatSpec with Matchers {
     test.input.put(2, "two")
     val output = test.run(new ListMapTest())
     output.get().toString should be ("(one mapped, two mapped)")
+    test.shutdown()
+  }
+
+  "MatrixMult" should "do stuff" in {
+    val test = new Mutator()
+    test.input.putMatrix(1, Array(Array(1, 3)))
+    test.input.putMatrix(2, Array(Array(5), Array(6)))
+    val output = test.run(new MatrixMultTest())
+    println(output.get())
     test.shutdown()
   }
 }
