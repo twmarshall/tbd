@@ -28,7 +28,7 @@ class Matrix(aMat: Array[Array[Mod[Int]]], modStoreRef: ActorRef) {
 
   def mult(tbd: TBD, that: Matrix): Matrix = {
     val arr = new Array[Array[Mod[Int]]](mat.size)
-    println(mat.size - 1)
+
     for (i <- 0 to mat.size - 1) {
       arr(i) = new Array[Mod[Int]](that.mat(0).size)
       for (j <- 0 to that.mat(0).size - 1) {

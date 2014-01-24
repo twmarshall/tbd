@@ -26,7 +26,6 @@ import tbd.messages.{GetArrayMessage, GetListMessage, GetMessage}
 import tbd.mod.Mod
 
 class Reader(inputRef: ActorRef) {
-  println(inputRef.path)
 
   def get[T](key: Int): Mod[T] = {
     implicit val timeout = Timeout(5 seconds)
