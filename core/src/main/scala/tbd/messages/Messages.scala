@@ -43,5 +43,6 @@ case class NullValueMessage
 
 // Master
 case class RunMessage(adjust: Adjustable)
+case class PropagateMessage
 case class RunTaskMessage(func: Task)
 case class ShutdownMessage

@@ -43,6 +43,8 @@ class Master extends Actor with ActorLogging {
   val inputFuture = inputSelection.resolveOne
   val inputRef = Await.result(inputFuture, timeout.duration).asInstanceOf[ActorRef]
 
+  var adjustable: Adjustable = null
+
   var i = 0
 
   def runTask[T](adjust: Adjustable): Future[Any] = {
@@ -54,7 +56,11 @@ class Master extends Actor with ActorLogging {
 
   def receive = {
     case RunMessage(adjust: Adjustable) => {
+      adjustable = adjust
       sender ! runTask(adjust)
+    }
+    case PropagateMessage => {
+      sender ! runTask(adjustable)
     }
     case ShutdownMessage => {
       context.system.shutdown()

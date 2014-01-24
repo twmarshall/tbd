@@ -22,7 +22,7 @@ import scala.concurrent.duration._
 
 import tbd.input.MutatorInput
 import tbd.master.Main
-import tbd.messages.{RunMessage, ShutdownMessage}
+import tbd.messages.{PropagateMessage, RunMessage, ShutdownMessage}
 import tbd.mod.Mod
 
 class Mutator {
@@ -32,6 +32,15 @@ class Mutator {
   def run(adjust: Adjustable): Output = {
     implicit val timeout = Timeout(5 seconds)
     val future = main.masterRef ? RunMessage(adjust)
+    val resultFuture =
+      Await.result(future, timeout.duration).asInstanceOf[Future[Mod[Any]]]
+
+    new Output(Await.result(resultFuture, timeout.duration))
+  }
+
+  def propagate(): Output = {
+    implicit val timeout = Timeout(5 seconds)
+    val future = main.masterRef ? PropagateMessage
     val resultFuture =
       Await.result(future, timeout.duration).asInstanceOf[Future[Mod[Any]]]
 

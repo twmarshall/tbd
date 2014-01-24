@@ -38,14 +38,10 @@ class ListMapTest extends Adjustable {
 
 class MatrixMultTest extends Adjustable {
   def run(dest: Dest, tbd: TBD): Changeable[Any] = {
-    println("??")
     val one = tbd.input.get[Matrix](1)
-    println(one)
     val two = tbd.input.get[Matrix](2)
-    println(two)
 
     tbd.read(one, (mat1: Matrix) => tbd.read(two, (mat2: Matrix) => tbd.write(dest, mat1.mult(tbd, mat2)))).asInstanceOf[Changeable[Any]]
-    //tbd.write(dest, one)
   }
 }
 
@@ -56,6 +52,11 @@ class TestSpec extends FlatSpec with Matchers {
     test.input.put(2, "two")
     val output = test.run(new ArrayMapTest())
     output.get() should be (Array("two mapped", "one mapped"))
+
+    test.input.put(3, "three")
+    val propOutput = test.propagate()
+    propOutput.get() should be (Array("two mapped", "one mapped", "three mapped"))
+
     test.shutdown()
   }
 
@@ -73,7 +74,6 @@ class TestSpec extends FlatSpec with Matchers {
     test.input.putMatrix(1, Array(Array(1, 3)))
     test.input.putMatrix(2, Array(Array(5), Array(6)))
     val output = test.run(new MatrixMultTest())
-    println(output.get())
     test.shutdown()
   }
 }
