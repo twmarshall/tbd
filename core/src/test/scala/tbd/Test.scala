@@ -45,6 +45,28 @@ class MatrixMultTest extends Adjustable {
   }
 }
 
+class MemoTest extends Adjustable {
+  def run(dest: Dest, tbd: TBD): Changeable[Any] = {
+    val one = tbd.input.get[Int](1)
+    val two = tbd.input.get[Int](2)
+    val memo = tbd.memo[Int, Int]()
+
+    tbd.read(one, (valueOne: Int) => {
+      if (valueOne == 1) {
+	memo(List(two))(() => {
+	  println("memoized func")
+	  tbd.read(two, valueTwo => tbd.write(dest, valueTwo + 1))
+	})
+      } else {
+	memo(List(two)) (() => {
+	  println("memoized func 2")
+	  tbd.read(two, valueTwo => tbd.write(dest, valueTwo + 2))
+	})
+      }
+    }).asInstanceOf[Changeable[Any]]
+  }
+}
+
 class TestSpec extends FlatSpec with Matchers {
   "ArrayMapTest" should "return a correctly mapped array" in {
     val test = new Mutator()
@@ -74,6 +96,18 @@ class TestSpec extends FlatSpec with Matchers {
     test.input.putMatrix(1, Array(Array(1, 3)))
     test.input.putMatrix(2, Array(Array(5), Array(6)))
     val output = test.run(new MatrixMultTest())
+    test.shutdown()
+  }
+
+  "MemoTest" should "do stuff" in {
+    val test = new Mutator()
+    test.input.put(1, 1)
+    test.input.put(2, 10)
+    val output = test.run(new MemoTest())
+    println(output.get())
+    println(test.propagate().get())
+    test.input.put(1, 2)
+    println(test.propagate().get())
     test.shutdown()
   }
 }

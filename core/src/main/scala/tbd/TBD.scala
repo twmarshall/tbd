@@ -25,7 +25,7 @@ import scala.concurrent.duration._
 import tbd.ddg.{DDG, ReadId}
 import tbd.input.Reader
 import tbd.messages._
-import tbd.mod.Mod
+import tbd.mod.{Mod, ModId}
 import tbd.worker.{InitialWorker, Task}
 
 object TBD {
@@ -89,6 +89,14 @@ class TBD(ddgRef: ActorRef, inputRef: ActorRef, modStoreRef: ActorRef, system: A
 
     val twoMod = Await.result(twoFuture, timeout.duration).asInstanceOf[Mod[U]]
     new Tuple2(oneMod, twoMod)
+  }
+
+  def memo[T, U](): (List[Mod[T]]) => (() => Changeable[U]) => Changeable[U] = {
+    (args: List[Mod[T]]) => {
+      (func: () => Changeable[U]) => {
+	func()
+      }
+    }
   }
 
   def map[T](arr: Array[Mod[T]], func: (T) => (T)): Array[Mod[T]] = {
