@@ -23,28 +23,33 @@ import tbd.messages._
 import tbd.mod.{Matrix, Mod}
 
 class Input(modStoreRef: ActorRef) extends Actor with ActorLogging {
-  val data = Map[Int, Any]()
+  val tables = Map[String, Map[Int, Any]]()
 
-  def get(key: Int): Mod[Any] =
-    new Mod(data(key), modStoreRef)
-
-  def put(key: Int, value: Any) {
-    data(key) = value
+  def createTable(table: String) {
+    println("create table" + table)
+    tables(table) = Map[Int, Any]()
   }
 
-  def putArray(key: Int, value: Array[Any]) {
+  def get(table: String, key: Int): Mod[Any] =
+    new Mod(tables(table)(key), modStoreRef)
+
+  def put(table: String, key: Int, value: Any) {
+    tables(table)(key) = value
+  }
+
+  /*def putArray(key: Int, value: Array[Any]) {
     val modArray = value.map(elem => new Mod(elem, modStoreRef))
+  }*/
+
+  def putMatrix(table: String, key: Int, value: Array[Array[Int]]) {
+    tables(table)(key) = new Matrix(value, modStoreRef)
   }
 
-  def putMatrix(key: Int, value: Array[Array[Int]]) {
-    data(key) = new Matrix(value, modStoreRef)
-  }
-
-  def asArray(): Array[Mod[Any]] = {
-    val arr = new Array[Mod[Any]](data.size)
+  def asArray(table: String): Array[Mod[Any]] = {
+    val arr = new Array[Mod[Any]](tables(table).size)
 
     var i = 0
-    for (elem <- data) {
+    for (elem <- tables(table)) {
       arr(i) = new Mod[Any](elem._2, modStoreRef)
       i += 1
     }
@@ -52,10 +57,10 @@ class Input(modStoreRef: ActorRef) extends Actor with ActorLogging {
     arr
   }
 
-  def asList(): Mod[ListNode[Any]] = {
+  def asList(table: String): Mod[ListNode[Any]] = {
     var head = new Mod[ListNode[Any]](null, modStoreRef)
 
-    for (elem <- data) {
+    for (elem <- tables(table)) {
       val value = new Mod(elem._2, modStoreRef)
       head = new Mod(new ListNode(value, head), modStoreRef)
     }
@@ -64,12 +69,17 @@ class Input(modStoreRef: ActorRef) extends Actor with ActorLogging {
   }
 
   def receive = {
-    case GetMessage(key: Int) => sender ! get(key)
-    case PutMessage(key: Int, value: Any) => put(key, value)
-    case PutMatrixMessage(key: Int, value: Array[Array[Int]]) => putMatrix(key, value)
-    case GetSizeMessage => sender ! data.size
-    case GetArrayMessage => sender ! asArray()
-    case GetListMessage => sender ! asList()
+    case CreateTableMessage(table: String) =>
+      createTable(table)
+    case GetMessage(table: String, key: Int) =>
+      sender ! get(table, key)
+    case PutMessage(table: String, key: Int, value: Any) =>
+      put(table, key, value)
+    case PutMatrixMessage(table: String, key: Int, value: Array[Array[Int]]) =>
+      putMatrix(table, key, value)
+    //case GetSizeMessage => sender ! data.size
+    case GetArrayMessage(table: String) => sender ! asArray(table)
+    case GetListMessage(table: String) => sender ! asList(table)
     case _ => log.warning("Input actor received unkown message from " + sender)
   }
 }

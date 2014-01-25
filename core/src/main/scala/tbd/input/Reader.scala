@@ -29,21 +29,21 @@ class Reader(inputRef: ActorRef) {
 
   def get[T](key: Int): Mod[T] = {
     implicit val timeout = Timeout(5 seconds)
-    val modFuture = inputRef ? GetMessage(key)
+    val modFuture = inputRef ? GetMessage("input", key)
     Await.result(modFuture, timeout.duration)
       .asInstanceOf[Mod[T]]
   }
 
   def getArray(): Array[Mod[String]] = {
     implicit val timeout = Timeout(5 seconds)
-    val arrayFuture = inputRef ? GetArrayMessage
+    val arrayFuture = inputRef ? GetArrayMessage("input")
     Await.result(arrayFuture, timeout.duration)
       .asInstanceOf[Array[Mod[String]]]
   }
 
   def getList(): Mod[ListNode[String]] = {
     implicit val timeout = Timeout(5 seconds)
-    val listFuture = inputRef ? GetListMessage
+    val listFuture = inputRef ? GetListMessage("input")
     Await.result(listFuture, timeout.duration)
       .asInstanceOf[Mod[ListNode[String]]]
   }

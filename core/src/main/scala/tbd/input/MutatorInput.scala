@@ -26,10 +26,10 @@ class MutatorInput(inputRef: ActorRef) {
   }
 
   def put(key: Int, value: Any) {
-    inputRef ! PutMessage(key, value)
+    inputRef ! PutMessage("input", key, value)
   }
 
   def putMatrix(key: Int, value: Array[Array[Int]]) {
-    inputRef ! PutMatrixMessage(key, value)
+    inputRef ! PutMatrixMessage("input", key, value)
   }
 }

@@ -53,15 +53,15 @@ class MemoTest extends Adjustable {
 
     tbd.read(one, (valueOne: Int) => {
       if (valueOne == 1) {
-	memo(List(two))(() => {
-	  println("memoized func")
-	  tbd.read(two, valueTwo => tbd.write(dest, valueTwo + 1))
-	})
+	      memo(List(two))(() => {
+	        println("memoized func")
+	        tbd.read(two, valueTwo => tbd.write(dest, valueTwo + 1))
+	      })
       } else {
-	memo(List(two)) (() => {
-	  println("memoized func 2")
-	  tbd.read(two, valueTwo => tbd.write(dest, valueTwo + 2))
-	})
+	      memo(List(two)) (() => {
+	        println("memoized func 2")
+	        tbd.read(two, valueTwo => tbd.write(dest, valueTwo + 2))
+	      })
       }
     }).asInstanceOf[Changeable[Any]]
   }

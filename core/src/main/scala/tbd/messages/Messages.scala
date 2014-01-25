@@ -28,12 +28,13 @@ case class AddCallMessage(outerCall: ReadId, innerCall: ReadId)
 case class ToStringMessage
 
 // Input
-case class GetMessage(key: Int)
-case class PutMessage(key: Int, value: Any)
-case class PutMatrixMessage(key: Int, value: Array[Array[Int]])
-case class GetSizeMessage
-case class GetArrayMessage
-case class GetListMessage
+case class CreateTableMessage(table: String)
+case class GetMessage(table: String, key: Int)
+case class PutMessage(table: String, key: Int, value: Any)
+case class PutMatrixMessage(table: String, key: Int, value: Array[Array[Int]])
+//case class GetSizeMessage
+case class GetArrayMessage(table: String)
+case class GetListMessage(table: String)
 
 // ModStore
 case class ReadModMessage(modId: ModId)

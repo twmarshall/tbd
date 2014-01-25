@@ -34,6 +34,7 @@ class Master extends Actor with ActorLogging {
 
   val modStoreRef = context.actorOf(Props(classOf[ModStore]), "modStore")
   val inputRef = context.actorOf(Props(classOf[Input], modStoreRef), "input")
+  inputRef ! CreateTableMessage("input")
 
   var adjustable: Adjustable = null
 
