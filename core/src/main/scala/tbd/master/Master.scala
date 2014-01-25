@@ -22,8 +22,8 @@ import scala.concurrent.duration._
 import scala.concurrent.Future
 
 import tbd.{Adjustable, Dest, TBD}
+import tbd.datastore.Datastore
 import tbd.ddg.SimpleDDG
-import tbd.input.Input
 import tbd.messages._
 import tbd.mod.ModStore
 import tbd.worker.{InitialWorker, Task}
@@ -33,7 +33,7 @@ class Master extends Actor with ActorLogging {
   val ddgRef = context.actorOf(Props(classOf[SimpleDDG]), "ddgActor")
 
   val modStoreRef = context.actorOf(Props(classOf[ModStore]), "modStore")
-  val inputRef = context.actorOf(Props(classOf[Input], modStoreRef), "input")
+  val inputRef = context.actorOf(Props(classOf[Datastore], modStoreRef), "input")
   inputRef ! CreateTableMessage("input")
 
   var adjustable: Adjustable = null

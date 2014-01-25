@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.input
+package tbd.datastore
 
 import akka.actor.{Actor, ActorRef, ActorLogging}
 import scala.collection.mutable.Map
@@ -22,7 +22,7 @@ import tbd.ListNode
 import tbd.messages._
 import tbd.mod.{Matrix, Mod}
 
-class Input(modStoreRef: ActorRef) extends Actor with ActorLogging {
+class Datastore(modStoreRef: ActorRef) extends Actor with ActorLogging {
   val tables = Map[String, Map[Int, Any]]()
 
   def createTable(table: String) {
