@@ -15,33 +15,25 @@
  */
 package tbd.master
 
-import akka.actor.{Actor, ActorRef, ActorLogging, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
-import tbd.{Adjustable, Changeable, Dest, TBD}
+import tbd.{Adjustable, Dest, TBD}
 import tbd.ddg.SimpleDDG
 import tbd.input.Input
 import tbd.messages._
-import tbd.mod.{Mod, ModStore}
+import tbd.mod.ModStore
 import tbd.worker.{InitialWorker, Task}
 
 class Master extends Actor with ActorLogging {
   log.info("Master launced.")
   val ddgRef = context.actorOf(Props(classOf[SimpleDDG]), "ddgActor")
 
-  val modStoreSelection = context.actorSelection("/user/modStore")
-  implicit val timeout = Timeout(5 seconds)
-  val modStoreFuture = modStoreSelection.resolveOne
-  val modStoreRef = Await.result(modStoreFuture, timeout.duration).asInstanceOf[ActorRef]
-
-  val inputSelection = context.actorSelection("/user/input")
-  val inputFuture = inputSelection.resolveOne
-  val inputRef = Await.result(inputFuture, timeout.duration).asInstanceOf[ActorRef]
+  val modStoreRef = context.actorOf(Props(classOf[ModStore]), "modStore")
+  val inputRef = context.actorOf(Props(classOf[Input], modStoreRef), "input")
 
   var adjustable: Adjustable = null
 
@@ -51,6 +43,7 @@ class Master extends Actor with ActorLogging {
     i += 1
     val workerRef = context.actorOf(Props(classOf[InitialWorker[T]], i, ddgRef, inputRef, modStoreRef),
 				    "workerActor" + i)
+    implicit val timeout = Timeout(5 seconds)
     workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(new Dest, tbd)))
   }
 

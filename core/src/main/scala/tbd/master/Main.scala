@@ -15,11 +15,14 @@
  */
 package tbd.master
 
-import akka.actor.{ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 import tbd.input.Input
-import tbd.mod.ModStore
+//import tbd.mod.ModStore
 
 object Main {
   var id = 0
@@ -34,7 +37,14 @@ class Main {
                            ConfigFactory.load.getConfig("client"))
   Main.id += 1
 
-  val modStoreRef = system.actorOf(Props(classOf[ModStore]), "modStore")
-  val inputRef = system.actorOf(Props(classOf[Input], modStoreRef), "input")
   val masterRef = system.actorOf(Props(classOf[Master]), "master")
+
+  //val modStoreSelection = system.actorSelection("/user/master/modStore")
+  implicit val timeout = Timeout(5 seconds)
+  //val modStoreFuture = modStoreSelection.resolveOne
+  //val modStoreRef = Await.result(modStoreFuture, timeout.duration).asInstanceOf[ActorRef]
+
+  val inputSelection = system.actorSelection("/user/master/input")
+  val inputFuture = inputSelection.resolveOne
+  val inputRef = Await.result(inputFuture, timeout.duration).asInstanceOf[ActorRef]
 }
