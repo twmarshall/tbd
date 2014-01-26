@@ -34,7 +34,7 @@ class Main {
                            ConfigFactory.load.getConfig("client"))
   Main.id += 1
 
-  val masterRef = system.actorOf(Props(classOf[Master]), "master")
+  val masterRef = system.actorOf(Master.props(), "master")
 
   implicit val timeout = Timeout(5 seconds)
   val datastoreSelection = system.actorSelection("/user/master/datastore")

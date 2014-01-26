@@ -15,7 +15,7 @@
  */
 package tbd.ddg
 
-import akka.actor.ActorLogging
+import akka.actor.{ActorLogging, Props}
 import scala.collection.mutable.Map
 
 import tbd.mod.ModId
@@ -23,6 +23,10 @@ import tbd.mod.ModId
 abstract class Node
 case class ReadNode(readId: ReadId, dataIn: List[ModId], dataOut: List[ModId], controlIn: List[ReadId], controlOut: List[ReadId])
 case class ModNode(modId: ModId)
+
+object SimpleDDG {
+  def props(): Props = Props(classOf[SimpleDDG])
+}
 
 class SimpleDDG extends DDG with ActorLogging {
   val reads = Map[ReadId, ReadNode]()

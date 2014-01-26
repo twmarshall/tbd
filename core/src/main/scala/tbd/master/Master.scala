@@ -27,11 +27,15 @@ import tbd.ddg.SimpleDDG
 import tbd.messages._
 import tbd.worker.{InitialWorker, Task}
 
+object Master {
+  def props(): Props = Props(classOf[Master])
+}
+
 class Master extends Actor with ActorLogging {
   log.info("Master launced.")
-  val ddgRef = context.actorOf(Props(classOf[SimpleDDG]), "ddgActor")
+  val ddgRef = context.actorOf(SimpleDDG.props(), "ddgActor")
 
-  val datastoreRef = context.actorOf(Props(classOf[Datastore]), "datastore")
+  val datastoreRef = context.actorOf(Datastore.props(), "datastore")
   datastoreRef ! CreateTableMessage("input")
 
   var adjustable: Adjustable = null
@@ -40,8 +44,8 @@ class Master extends Actor with ActorLogging {
 
   def runTask[T](adjust: Adjustable): Future[Any] = {
     i += 1
-    val workerRef = context.actorOf(Props(classOf[InitialWorker[T]], i, ddgRef, datastoreRef),
-				    "workerActor" + i)
+    val workerProps = InitialWorker.props[T](i, ddgRef, datastoreRef)
+    val workerRef = context.actorOf(workerProps, "workerActor" + i)
     implicit val timeout = Timeout(5 seconds)
     workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(new Dest, tbd)))
   }

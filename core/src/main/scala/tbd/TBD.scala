@@ -82,7 +82,8 @@ class TBD(ddgRef: ActorRef, datastoreRef: ActorRef, system: ActorSystem) {
 
     val task =  new Task(((tbd: TBD) => two(new Dest))
       .asInstanceOf[(TBD) => (Changeable[Any])])
-    val workerRef = system.actorOf(Props(classOf[InitialWorker[U]], id, ddgRef, datastoreRef), "worker"+id)
+    val workerProps = InitialWorker.props[U](id, ddgRef, datastoreRef)
+    val workerRef = system.actorOf(workerProps, "worker"+id)
     id += 1
 
     val twoFuture = workerRef ? RunTaskMessage(task)

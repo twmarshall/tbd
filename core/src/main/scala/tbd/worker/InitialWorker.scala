@@ -15,11 +15,16 @@
  */
 package tbd.worker
 
-import akka.actor.{Actor, ActorLogging, ActorRef}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import scala.concurrent.Promise
 
 import tbd.{Changeable, TBD}
 import tbd.messages._
+
+object InitialWorker {
+  def props[T](id: Int, ddgRef: ActorRef, datastoreRef: ActorRef): Props =
+    Props(classOf[InitialWorker[T]], id, ddgRef, datastoreRef)
+}
 
 class InitialWorker[T](id: Int, ddgRef: ActorRef, datastoreRef: ActorRef)
   extends Actor with ActorLogging {

@@ -15,12 +15,16 @@
  */
 package tbd.datastore
 
-import akka.actor.{Actor, ActorRef, ActorLogging}
+import akka.actor.{Actor, ActorRef, ActorLogging, Props}
 import scala.collection.mutable.Map
 
 import tbd.ListNode
 import tbd.messages._
 import tbd.mod.{Matrix, Mod}
+
+object Datastore {
+  def props(): Props = Props(classOf[Datastore])
+}
 
 class Datastore extends Actor with ActorLogging {
   val tables = Map[String, Map[Int, Any]]()
