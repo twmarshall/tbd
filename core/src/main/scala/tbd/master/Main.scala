@@ -21,9 +21,6 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import tbd.input.Input
-//import tbd.mod.ModStore
-
 object Main {
   var id = 0
 
@@ -39,11 +36,7 @@ class Main {
 
   val masterRef = system.actorOf(Props(classOf[Master]), "master")
 
-  //val modStoreSelection = system.actorSelection("/user/master/modStore")
   implicit val timeout = Timeout(5 seconds)
-  //val modStoreFuture = modStoreSelection.resolveOne
-  //val modStoreRef = Await.result(modStoreFuture, timeout.duration).asInstanceOf[ActorRef]
-
   val inputSelection = system.actorSelection("/user/master/input")
   val inputFuture = inputSelection.resolveOne
   val inputRef = Await.result(inputFuture, timeout.duration).asInstanceOf[ActorRef]

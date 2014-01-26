@@ -25,14 +25,14 @@ import scala.concurrent.duration._
 import tbd.ddg.{DDG, ReadId}
 import tbd.input.Reader
 import tbd.messages._
-import tbd.mod.{Mod, ModId}
+import tbd.mod.Mod
 import tbd.worker.{InitialWorker, Task}
 
 object TBD {
   var id = 0
 }
 
-class TBD(ddgRef: ActorRef, inputRef: ActorRef, modStoreRef: ActorRef, system: ActorSystem) {
+class TBD(ddgRef: ActorRef, inputRef: ActorRef, system: ActorSystem) {
   private var currentReader = new ReadId()
   val input = new Reader(inputRef)
 
@@ -64,7 +64,9 @@ class TBD(ddgRef: ActorRef, inputRef: ActorRef, modStoreRef: ActorRef, system: A
   }
 
   def write[T](dest: Dest, value: T): Changeable[T] = {
-    val mod = new Mod(value, modStoreRef)
+    implicit val timeout = Timeout(5 seconds)
+    val modFuture = inputRef ? CreateModMessage(value)
+    val mod = Await.result(modFuture, timeout.duration).asInstanceOf[Mod[T]]
     log.debug("Writing " + value + " to " + mod.id)
     new Changeable(mod)
   }
@@ -80,7 +82,7 @@ class TBD(ddgRef: ActorRef, inputRef: ActorRef, modStoreRef: ActorRef, system: A
 
     val task =  new Task(((tbd: TBD) => two(new Dest))
       .asInstanceOf[(TBD) => (Changeable[Any])])
-    val workerRef = system.actorOf(Props(classOf[InitialWorker[U]], id, ddgRef, inputRef, modStoreRef), "worker"+id)
+    val workerRef = system.actorOf(Props(classOf[InitialWorker[U]], id, ddgRef, inputRef), "worker"+id)
     id += 1
 
     val twoFuture = workerRef ? RunTaskMessage(task)
@@ -94,7 +96,7 @@ class TBD(ddgRef: ActorRef, inputRef: ActorRef, modStoreRef: ActorRef, system: A
   def memo[T, U](): (List[Mod[T]]) => (() => Changeable[U]) => Changeable[U] = {
     (args: List[Mod[T]]) => {
       (func: () => Changeable[U]) => {
-	func()
+	      func()
       }
     }
   }

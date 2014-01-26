@@ -22,27 +22,41 @@ import tbd.ListNode
 import tbd.messages._
 import tbd.mod.{Matrix, Mod}
 
-class Datastore(modStoreRef: ActorRef) extends Actor with ActorLogging {
+class Datastore extends Actor with ActorLogging {
   val tables = Map[String, Map[Int, Any]]()
+  tables("mods") = Map[Int, Any]()
 
   def createTable(table: String) {
-    println("create table" + table)
     tables(table) = Map[Int, Any]()
   }
 
-  def get(table: String, key: Int): Mod[Any] =
-    new Mod(tables(table)(key), modStoreRef)
+  def get(table: String, key: Int): Any = {
+    val ret = tables(table)(key)
+    if (ret == null) {
+      NullMessage
+    } else {
+      ret
+    }
+  }
 
   def put(table: String, key: Int, value: Any) {
     tables(table)(key) = value
   }
 
-  /*def putArray(key: Int, value: Array[Any]) {
-    val modArray = value.map(elem => new Mod(elem, modStoreRef))
-  }*/
+  def putMod(table: String, key: Int, value: Any): Mod[Any] = {
+    val mod = createMod(value)
+    tables(table)(key) = mod
+    mod
+  }
 
-  def putMatrix(table: String, key: Int, value: Array[Array[Int]]) {
-    tables(table)(key) = new Matrix(value, modStoreRef)
+  def putMatrix(table: String, key: Int, value: Array[Array[Int]]): Matrix = {
+    val mat = new Matrix(value.map(row => {
+      row.map(cell => {
+        createMod(cell)
+      })
+    }), self)
+    tables(table)(key) = mat
+    mat
   }
 
   def asArray(table: String): Array[Mod[Any]] = {
@@ -50,7 +64,7 @@ class Datastore(modStoreRef: ActorRef) extends Actor with ActorLogging {
 
     var i = 0
     for (elem <- tables(table)) {
-      arr(i) = new Mod[Any](elem._2, modStoreRef)
+      arr(i) = elem._2.asInstanceOf[Mod[Any]]
       i += 1
     }
 
@@ -58,14 +72,22 @@ class Datastore(modStoreRef: ActorRef) extends Actor with ActorLogging {
   }
 
   def asList(table: String): Mod[ListNode[Any]] = {
-    var head = new Mod[ListNode[Any]](null, modStoreRef)
+    var tail = new Mod[ListNode[Any]](self)
+    tables("mods")(tail.id.value) = null
 
     for (elem <- tables(table)) {
-      val value = new Mod(elem._2, modStoreRef)
-      head = new Mod(new ListNode(value, head), modStoreRef)
+      val head = new Mod[ListNode[Any]](self)
+      tables("mods")(head.id.value) = new ListNode(elem._2.asInstanceOf[Mod[Any]], tail)
+      tail = head
     }
 
-    head
+    tail
+  }
+
+  private def createMod[T](value: T): Mod[T] = {
+    val mod = new Mod[T](self)
+    tables("mods")(mod.id.value) = value
+    mod
   }
 
   def receive = {
@@ -75,11 +97,19 @@ class Datastore(modStoreRef: ActorRef) extends Actor with ActorLogging {
       sender ! get(table, key)
     case PutMessage(table: String, key: Int, value: Any) =>
       put(table, key, value)
+    case PutModMessage(table: String, key: Int, value: Any) =>
+      sender ! putMod(table, key, value)
+    case CreateModMessage(value: Any) =>
+      sender ! createMod(value)
+    case CreateModMessage(null) =>
+      sender ! createMod(null)
     case PutMatrixMessage(table: String, key: Int, value: Array[Array[Int]]) =>
-      putMatrix(table, key, value)
-    //case GetSizeMessage => sender ! data.size
-    case GetArrayMessage(table: String) => sender ! asArray(table)
-    case GetListMessage(table: String) => sender ! asList(table)
-    case _ => log.warning("Input actor received unkown message from " + sender)
+      sender ! putMatrix(table, key, value)
+    case GetArrayMessage(table: String) =>
+      sender ! asArray(table)
+    case GetListMessage(table: String) =>
+      sender ! asList(table)
+    case x => log.warning("Datastore actor received unhandled message " +
+                          x + " from " + sender)
   }
 }

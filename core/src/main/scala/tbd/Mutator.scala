@@ -29,22 +29,22 @@ class Mutator {
   val main = new Main()
   val input = new MutatorInput(main.inputRef)
 
-  def run(adjust: Adjustable): Output = {
+  def run[T](adjust: Adjustable): Mod[T] = {
     implicit val timeout = Timeout(5 seconds)
     val future = main.masterRef ? RunMessage(adjust)
     val resultFuture =
       Await.result(future, timeout.duration).asInstanceOf[Future[Mod[Any]]]
 
-    new Output(Await.result(resultFuture, timeout.duration))
+    Await.result(resultFuture, timeout.duration).asInstanceOf[Mod[T]]
   }
 
-  def propagate(): Output = {
+  def propagate[T](): Mod[T] = {
     implicit val timeout = Timeout(5 seconds)
     val future = main.masterRef ? PropagateMessage
     val resultFuture =
       Await.result(future, timeout.duration).asInstanceOf[Future[Mod[Any]]]
 
-    new Output(Await.result(resultFuture, timeout.duration))
+    Await.result(resultFuture, timeout.duration).asInstanceOf[Mod[T]]
   }
 
   def shutdown() {

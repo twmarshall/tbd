@@ -21,13 +21,13 @@ import scala.concurrent.Promise
 import tbd.{Changeable, TBD}
 import tbd.messages._
 
-class InitialWorker[T](id: Int, ddgRef: ActorRef, inputRef: ActorRef, modStoreRef: ActorRef)
+class InitialWorker[T](id: Int, ddgRef: ActorRef, inputRef: ActorRef)
   extends Actor with ActorLogging {
   log.info("Worker " + id + " launched")
 
   def receive = {
     case RunTaskMessage(task: Task) => {
-      val tbd = new TBD(ddgRef, inputRef, modStoreRef, context.system)
+      val tbd = new TBD(ddgRef, inputRef, context.system)
       val output = task.func(tbd)
       sender ! output.mod
     }

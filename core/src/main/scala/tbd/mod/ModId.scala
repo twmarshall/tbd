@@ -25,7 +25,7 @@ object ModId {
 }
 
 class ModId {
-  val id = ModId.newId
+  val value = ModId.newId
 
-  override def toString = id.toString
+  override def toString = value.toString
 }

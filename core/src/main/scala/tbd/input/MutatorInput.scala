@@ -16,17 +16,29 @@
 package tbd.input
 
 import akka.actor.ActorRef
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
-import tbd.TBD
-import tbd.messages._
+import tbd.messages.{PutMessage, PutMatrixMessage, PutModMessage}
+import tbd.mod.Mod
 
 class MutatorInput(inputRef: ActorRef) {
+  implicit val timeout = Timeout(5 seconds)
+
   def get(key: Int): Any = {
     "asdf"
   }
 
   def put(key: Int, value: Any) {
     inputRef ! PutMessage("input", key, value)
+  }
+
+  def putMod(key: Int, value: Any): Mod[Any] = {
+    val retFuture =
+      inputRef ? PutModMessage("input", key, value)
+    Await.result(retFuture, timeout.duration).asInstanceOf[Mod[Any]]
   }
 
   def putMatrix(key: Int, value: Array[Array[Int]]) {

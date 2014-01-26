@@ -21,31 +21,25 @@ import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import tbd.messages._
+import tbd.messages.{GetMessage, NullMessage}
 
-class Mod[T](newValue: T, modStoreRef: ActorRef) {
-  implicit val timeout = Timeout(5 seconds)
-
-  val writeFuture = if (newValue == null) {
-    modStoreRef ? WriteNullModMessage
-  } else {
-    modStoreRef ? WriteModMessage(newValue)
-  }
-
-  val id = Await.result(writeFuture, timeout.duration)
-    .asInstanceOf[ModId]
+class Mod[T](inputRef: ActorRef) {
+  val id = new ModId()
 
   def read(): T = {
     implicit val timeout = Timeout(5 seconds)
-    val readFuture = modStoreRef ? ReadModMessage(id)
+    val readFuture = inputRef ? GetMessage("mods", id.value)
     val ret = Await.result(readFuture, timeout.duration)
 
     ret match {
-      case NullValueMessage => null.asInstanceOf[T]
+      case NullMessage => null.asInstanceOf[T]
       case _ => ret.asInstanceOf[T]
     }
   }
 
-  override def toString: String =
-    read().toString
+  /*override def equals(obj: Any) = {
+    this.read().equals(obj)
+  }*/
+
+  override def toString = read().toString
 }

@@ -18,11 +18,12 @@ package tbd.test
 import org.scalatest._
 
 import tbd.{Adjustable, Changeable, Dest, Mutator, ListNode, TBD}
-import tbd.mod.Matrix
+import tbd.mod.{Matrix, Mod}
 
 class ArrayMapTest extends Adjustable {
   def run(dest: Dest, tbd: TBD): Changeable[Any] = {
-    val array = tbd.input.getArray()
+    val array = tbd.input.getArray[Mod[String]]()
+    println(array.getClass)
     val mappedArray = tbd.map(array, (_: String) + " mapped")
     tbd.write(dest, mappedArray)
   }
@@ -41,14 +42,14 @@ class MatrixMultTest extends Adjustable {
     val one = tbd.input.get[Matrix](1)
     val two = tbd.input.get[Matrix](2)
 
-    tbd.read(one, (mat1: Matrix) => tbd.read(two, (mat2: Matrix) => tbd.write(dest, mat1.mult(tbd, mat2)))).asInstanceOf[Changeable[Any]]
+    tbd.write(dest, one.mult(tbd, two)).asInstanceOf[Changeable[Any]]
   }
 }
 
 class MemoTest extends Adjustable {
   def run(dest: Dest, tbd: TBD): Changeable[Any] = {
-    val one = tbd.input.get[Int](1)
-    val two = tbd.input.get[Int](2)
+    val one = tbd.input.get[Mod[Int]](1)
+    val two = tbd.input.get[Mod[Int]](2)
     val memo = tbd.memo[Int, Int]()
 
     tbd.read(one, (valueOne: Int) => {
@@ -70,24 +71,24 @@ class MemoTest extends Adjustable {
 class TestSpec extends FlatSpec with Matchers {
   "ArrayMapTest" should "return a correctly mapped array" in {
     val test = new Mutator()
-    test.input.put(1, "one")
-    test.input.put(2, "two")
-    val output = test.run(new ArrayMapTest())
-    output.get() should be (Array("two mapped", "one mapped"))
+    test.input.putMod(1, "one")
+    test.input.putMod(2, "two")
+    val output = test.run[Array[Mod[String]]](new ArrayMapTest())
+    output.read().deep.mkString(", ") should be ("two mapped, one mapped")
 
-    test.input.put(3, "three")
-    val propOutput = test.propagate()
-    propOutput.get() should be (Array("two mapped", "one mapped", "three mapped"))
+    test.input.putMod(3, "three")
+    val propOutput = test.propagate[Array[Mod[String]]]()
+    propOutput.read().deep.mkString(", ") should be ("two mapped, one mapped, three mapped")
 
     test.shutdown()
   }
 
   "ListMapTest" should "return a correctly mapped list" in {
     val test = new Mutator()
-    test.input.put(1, "one")
-    test.input.put(2, "two")
+    test.input.putMod(1, "one")
+    test.input.putMod(2, "two")
     val output = test.run(new ListMapTest())
-    output.get().toString should be ("(one mapped, two mapped)")
+    output.read().toString should be ("(one mapped, two mapped)")
     test.shutdown()
   }
 
@@ -101,13 +102,11 @@ class TestSpec extends FlatSpec with Matchers {
 
   "MemoTest" should "do stuff" in {
     val test = new Mutator()
-    test.input.put(1, 1)
-    test.input.put(2, 10)
+    test.input.putMod(1, 1)
+    test.input.putMod(2, 10)
     val output = test.run(new MemoTest())
-    println(output.get())
-    println(test.propagate().get())
-    test.input.put(1, 2)
-    println(test.propagate().get())
+    println(output.read())
+    println(test.propagate().read())
     test.shutdown()
   }
 }
