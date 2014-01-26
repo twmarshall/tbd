@@ -19,7 +19,7 @@ import akka.actor.ActorRef
 
 import tbd.{Changeable, Dest, TBD}
 
-class Matrix(aMat: Array[Array[Mod[Int]]], inputRef: ActorRef) {
+class Matrix(aMat: Array[Array[Mod[Int]]], datastoreRef: ActorRef) {
   val mat = aMat
 
   def mult(tbd: TBD, that: Matrix): Matrix = {
@@ -47,7 +47,7 @@ class Matrix(aMat: Array[Array[Mod[Int]]], inputRef: ActorRef) {
         arr(i)(j) = tbd.mod(dest => recur(0, dest))
       }
     }
-    new Matrix(arr, inputRef)
+    new Matrix(arr, datastoreRef)
   }
 
   override def toString: String = {

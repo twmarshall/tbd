@@ -37,7 +37,8 @@ class Main {
   val masterRef = system.actorOf(Props(classOf[Master]), "master")
 
   implicit val timeout = Timeout(5 seconds)
-  val inputSelection = system.actorSelection("/user/master/input")
-  val inputFuture = inputSelection.resolveOne
-  val inputRef = Await.result(inputFuture, timeout.duration).asInstanceOf[ActorRef]
+  val datastoreSelection = system.actorSelection("/user/master/datastore")
+  val datastoreFuture = datastoreSelection.resolveOne
+  val datastoreRef = Await.result(datastoreFuture, timeout.duration)
+    .asInstanceOf[ActorRef]
 }

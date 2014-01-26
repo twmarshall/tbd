@@ -23,12 +23,12 @@ import scala.concurrent.duration._
 
 import tbd.messages.{GetMessage, NullMessage}
 
-class Mod[T](inputRef: ActorRef) {
+class Mod[T](datastoreRef: ActorRef) {
   val id = new ModId()
 
   def read(): T = {
     implicit val timeout = Timeout(5 seconds)
-    val readFuture = inputRef ? GetMessage("mods", id.value)
+    val readFuture = datastoreRef ? GetMessage("mods", id.value)
     val ret = Await.result(readFuture, timeout.duration)
 
     ret match {

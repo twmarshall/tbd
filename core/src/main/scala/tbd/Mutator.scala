@@ -27,7 +27,7 @@ import tbd.mod.Mod
 
 class Mutator {
   val main = new Main()
-  val input = new MutatorInput(main.inputRef)
+  val input = new MutatorInput(main.datastoreRef)
 
   def run[T](adjust: Adjustable): Mod[T] = {
     implicit val timeout = Timeout(5 seconds)

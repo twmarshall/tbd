@@ -32,9 +32,9 @@ object TBD {
   var id = 0
 }
 
-class TBD(ddgRef: ActorRef, inputRef: ActorRef, system: ActorSystem) {
+class TBD(ddgRef: ActorRef, datastoreRef: ActorRef, system: ActorSystem) {
   private var currentReader = new ReadId()
-  val input = new Reader(inputRef)
+  val input = new Reader(datastoreRef)
 
   val log = Logging(system, "TBD")
 
@@ -65,7 +65,7 @@ class TBD(ddgRef: ActorRef, inputRef: ActorRef, system: ActorSystem) {
 
   def write[T](dest: Dest, value: T): Changeable[T] = {
     implicit val timeout = Timeout(5 seconds)
-    val modFuture = inputRef ? CreateModMessage(value)
+    val modFuture = datastoreRef ? CreateModMessage(value)
     val mod = Await.result(modFuture, timeout.duration).asInstanceOf[Mod[T]]
     log.debug("Writing " + value + " to " + mod.id)
     new Changeable(mod)
@@ -82,7 +82,7 @@ class TBD(ddgRef: ActorRef, inputRef: ActorRef, system: ActorSystem) {
 
     val task =  new Task(((tbd: TBD) => two(new Dest))
       .asInstanceOf[(TBD) => (Changeable[Any])])
-    val workerRef = system.actorOf(Props(classOf[InitialWorker[U]], id, ddgRef, inputRef), "worker"+id)
+    val workerRef = system.actorOf(Props(classOf[InitialWorker[U]], id, ddgRef, datastoreRef), "worker"+id)
     id += 1
 
     val twoFuture = workerRef ? RunTaskMessage(task)

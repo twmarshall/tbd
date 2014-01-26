@@ -25,25 +25,25 @@ import tbd.ListNode
 import tbd.messages.{GetArrayMessage, GetListMessage, GetMessage}
 import tbd.mod.Mod
 
-class Reader(inputRef: ActorRef) {
+class Reader(datastoreRef: ActorRef) {
 
   def get[T](key: Int): T = {
     implicit val timeout = Timeout(5 seconds)
-    val modFuture = inputRef ? GetMessage("input", key)
+    val modFuture = datastoreRef ? GetMessage("input", key)
     Await.result(modFuture, timeout.duration)
       .asInstanceOf[T]
   }
 
   def getArray[T](): Array[T] = {
     implicit val timeout = Timeout(5 seconds)
-    val arrayFuture = inputRef ? GetArrayMessage("input")
+    val arrayFuture = datastoreRef ? GetArrayMessage("input")
     Await.result(arrayFuture, timeout.duration)
       .asInstanceOf[Array[T]]
   }
 
   def getList(): Mod[ListNode[String]] = {
     implicit val timeout = Timeout(5 seconds)
-    val listFuture = inputRef ? GetListMessage("input")
+    val listFuture = datastoreRef ? GetListMessage("input")
     Await.result(listFuture, timeout.duration)
       .asInstanceOf[Mod[ListNode[String]]]
   }

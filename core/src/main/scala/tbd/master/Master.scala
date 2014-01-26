@@ -31,8 +31,8 @@ class Master extends Actor with ActorLogging {
   log.info("Master launced.")
   val ddgRef = context.actorOf(Props(classOf[SimpleDDG]), "ddgActor")
 
-  val inputRef = context.actorOf(Props(classOf[Datastore]), "input")
-  inputRef ! CreateTableMessage("input")
+  val datastoreRef = context.actorOf(Props(classOf[Datastore]), "datastore")
+  datastoreRef ! CreateTableMessage("input")
 
   var adjustable: Adjustable = null
 
@@ -40,7 +40,7 @@ class Master extends Actor with ActorLogging {
 
   def runTask[T](adjust: Adjustable): Future[Any] = {
     i += 1
-    val workerRef = context.actorOf(Props(classOf[InitialWorker[T]], i, ddgRef, inputRef),
+    val workerRef = context.actorOf(Props(classOf[InitialWorker[T]], i, ddgRef, datastoreRef),
 				    "workerActor" + i)
     implicit val timeout = Timeout(5 seconds)
     workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(new Dest, tbd)))
