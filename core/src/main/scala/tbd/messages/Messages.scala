@@ -37,6 +37,7 @@ case class UpdateModMessage(key: Int, value: Any)
 case class PutMatrixMessage(table: String, key: Int, value: Array[Array[Int]])
 case class GetArrayMessage(table: String)
 case class GetListMessage(table: String)
+case class GetUpdatedMessage
 case class NullMessage
 
 // Master

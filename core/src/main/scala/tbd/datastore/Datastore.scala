@@ -16,7 +16,7 @@
 package tbd.datastore
 
 import akka.actor.{Actor, ActorRef, ActorLogging, Props}
-import scala.collection.mutable.{Map, Set}
+import scala.collection.mutable.Map
 
 import tbd.ListNode
 import tbd.messages._
@@ -30,7 +30,7 @@ class Datastore extends Actor with ActorLogging {
   val tables = Map[String, Map[Int, Any]]()
   tables("mods") = Map[Int, Any]()
 
-  val updated = Set[Int]()
+  var updated = Set[Int]()
 
   def createTable(table: String) {
     tables(table) = Map[Int, Any]()
@@ -95,6 +95,9 @@ class Datastore extends Actor with ActorLogging {
     tail
   }
 
+  def getUpdated(): Set[Int] =
+    updated
+
   private def createMod[T](value: T): Mod[T] = {
     val mod = new Mod[T](self)
     tables("mods")(mod.id.value) = value
@@ -122,6 +125,8 @@ class Datastore extends Actor with ActorLogging {
       sender ! asArray(table)
     case GetListMessage(table: String) =>
       sender ! asList(table)
+    case GetUpdatedMessage =>
+      sender ! getUpdated()
     case x => log.warning("Datastore actor received unhandled message " +
                           x + " from " + sender)
   }
