@@ -21,7 +21,7 @@ import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import tbd.messages.{GetMessage, NullMessage}
+import tbd.messages._
 
 class Mod[T](datastoreRef: ActorRef) {
   val id = new ModId()
@@ -37,9 +37,9 @@ class Mod[T](datastoreRef: ActorRef) {
     }
   }
 
-  /*override def equals(obj: Any) = {
-    this.read().equals(obj)
-  }*/
+  def update(newValue: T) {
+    datastoreRef ! UpdateModMessage(id.value, newValue)
+  }
 
   override def toString = read().toString
 }

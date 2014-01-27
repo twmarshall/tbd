@@ -33,8 +33,8 @@ case class GetMessage(table: String, key: Int)
 case class PutMessage(table: String, key: Int, value: Any)
 case class PutModMessage(table: String, key: Int, value: Any)
 case class CreateModMessage(value: Any)
+case class UpdateModMessage(key: Int, value: Any)
 case class PutMatrixMessage(table: String, key: Int, value: Array[Array[Int]])
-//case class GetSizeMessage
 case class GetArrayMessage(table: String)
 case class GetListMessage(table: String)
 case class NullMessage

@@ -71,14 +71,15 @@ class MemoTest extends Adjustable {
 class TestSpec extends FlatSpec with Matchers {
   "ArrayMapTest" should "return a correctly mapped array" in {
     val test = new Mutator()
-    test.input.putMod(1, "one")
+    val oneMod = test.input.putMod(1, "one")
     test.input.putMod(2, "two")
     val output = test.run[Array[Mod[String]]](new ArrayMapTest())
     output.read().deep.mkString(", ") should be ("two mapped, one mapped")
 
-    test.input.putMod(3, "three")
+    oneMod.update("three")
+    test.input.putMod(4, "four")
     val propOutput = test.propagate[Array[Mod[String]]]()
-    propOutput.read().deep.mkString(", ") should be ("two mapped, one mapped, three mapped")
+    propOutput.read().deep.mkString(", ") should be ("two mapped, four mapped, three mapped")
 
     test.shutdown()
   }

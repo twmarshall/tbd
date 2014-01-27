@@ -16,7 +16,7 @@
 package tbd.datastore
 
 import akka.actor.{Actor, ActorRef, ActorLogging, Props}
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Map, Set}
 
 import tbd.ListNode
 import tbd.messages._
@@ -29,6 +29,8 @@ object Datastore {
 class Datastore extends Actor with ActorLogging {
   val tables = Map[String, Map[Int, Any]]()
   tables("mods") = Map[Int, Any]()
+
+  val updated = Set[Int]()
 
   def createTable(table: String) {
     tables(table) = Map[Int, Any]()
@@ -51,6 +53,11 @@ class Datastore extends Actor with ActorLogging {
     val mod = createMod(value)
     tables(table)(key) = mod
     mod
+  }
+
+  def updateMod(key: Int, value: Any) {
+    tables("mods")(key) = value
+    updated += key
   }
 
   def putMatrix(table: String, key: Int, value: Array[Array[Int]]): Matrix = {
@@ -107,6 +114,8 @@ class Datastore extends Actor with ActorLogging {
       sender ! createMod(value)
     case CreateModMessage(null) =>
       sender ! createMod(null)
+    case UpdateModMessage(key: Int, value: Any) =>
+      updateMod(key, value)
     case PutMatrixMessage(table: String, key: Int, value: Array[Array[Int]]) =>
       sender ! putMatrix(table, key, value)
     case GetArrayMessage(table: String) =>
