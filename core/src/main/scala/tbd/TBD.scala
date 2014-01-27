@@ -26,7 +26,7 @@ import tbd.ddg.{DDG, ReadId}
 import tbd.input.Reader
 import tbd.messages._
 import tbd.mod.Mod
-import tbd.worker.{InitialWorker, Task}
+import tbd.worker.{Worker, Task}
 
 object TBD {
   var id = 0
@@ -82,7 +82,7 @@ class TBD(ddgRef: ActorRef, datastoreRef: ActorRef, system: ActorSystem) {
 
     val task =  new Task(((tbd: TBD) => two(new Dest))
       .asInstanceOf[(TBD) => (Changeable[Any])])
-    val workerProps = InitialWorker.props[U](id, ddgRef, datastoreRef)
+    val workerProps = Worker.props[U](id, ddgRef, datastoreRef)
     val workerRef = system.actorOf(workerProps, "worker"+id)
     id += 1
 

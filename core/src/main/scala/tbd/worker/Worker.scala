@@ -16,17 +16,16 @@
 package tbd.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import scala.concurrent.Promise
 
-import tbd.{Changeable, TBD}
-import tbd.messages._
+import tbd.TBD
+import tbd.messages.RunTaskMessage
 
-object InitialWorker {
+object Worker {
   def props[T](id: Int, ddgRef: ActorRef, datastoreRef: ActorRef): Props =
-    Props(classOf[InitialWorker[T]], id, ddgRef, datastoreRef)
+    Props(classOf[Worker[T]], id, ddgRef, datastoreRef)
 }
 
-class InitialWorker[T](id: Int, ddgRef: ActorRef, datastoreRef: ActorRef)
+class Worker[T](id: Int, ddgRef: ActorRef, datastoreRef: ActorRef)
   extends Actor with ActorLogging {
   log.info("Worker " + id + " launched")
 
@@ -36,6 +35,6 @@ class InitialWorker[T](id: Int, ddgRef: ActorRef, datastoreRef: ActorRef)
       val output = task.func(tbd)
       sender ! output.mod
     }
-    case _ => log.warning("InitialWorker " + id + " received unknown message.")
+    case _ => log.warning("Worker " + id + " received unknown message.")
   }
 }
