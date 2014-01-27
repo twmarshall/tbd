@@ -23,7 +23,6 @@ import tbd.mod.{Matrix, Mod}
 class ArrayMapTest extends Adjustable {
   def run(dest: Dest, tbd: TBD): Changeable[Any] = {
     val array = tbd.input.getArray[Mod[String]]()
-    println(array.getClass)
     val mappedArray = tbd.map(array, (_: String) + " mapped")
     tbd.write(dest, mappedArray)
   }
@@ -47,23 +46,34 @@ class MatrixMultTest extends Adjustable {
 }
 
 class MemoTest extends Adjustable {
+  // Note: real client applications should NOT have mutable state like this.
+  // We are just using it to ensure that the memoized function doesn't get
+  // reexecuted as appropriate.
+  var memoized = false
+
   def run(dest: Dest, tbd: TBD): Changeable[Any] = {
     val one = tbd.input.get[Mod[Int]](1)
     val two = tbd.input.get[Mod[Int]](2)
     val memo = tbd.memo[Int, Int]()
 
-    tbd.read(one, (valueOne: Int) => {
-      if (valueOne == 1) {
-	      memo(List(two))(() => {
-	        println("memoized func")
-	        tbd.read(two, valueTwo => tbd.write(dest, valueTwo + 1))
-	      })
-      } else {
-	      memo(List(two)) (() => {
-	        println("memoized func 2")
-	        tbd.read(two, valueTwo => tbd.write(dest, valueTwo + 2))
-	      })
-      }
+    val memoMod = tbd.mod(dest => {
+      memo(List(two))(() => {
+	tbd.read(two, valueTwo => {
+	  if (memoized && valueTwo == 10) {
+	    // We write a random value so that the return will be incorrect
+	    // if the memoized function is rerun when the value of two hasn't
+	    // changed.
+	    tbd.write(dest, 0)
+	  } else {
+	    memoized = true
+	    tbd.write(dest, valueTwo + 1)
+	  }
+	})
+      })
+    })
+
+    tbd.read(memoMod, (value1: Int) => {
+      tbd.read(one, (value2: Int) => tbd.write(dest, value1 + value2))
     }).asInstanceOf[Changeable[Any]]
   }
 }
@@ -104,10 +114,16 @@ class TestSpec extends FlatSpec with Matchers {
   "MemoTest" should "do stuff" in {
     val test = new Mutator()
     test.input.putMod(1, 1)
-    test.input.putMod(2, 10)
-    val output = test.run(new MemoTest())
-    println(output.read())
-    println(test.propagate().read())
+    val twoMod = test.input.putMod(2, 10)
+    val output = test.run[Int](new MemoTest())
+    output.read() should be (12)
+
+    // Rerun without changes to ensure correct memoization.
+    test.propagate[Int]().read() should be (12)
+
+    // Change the mod used by the memoized function and rerun.
+    twoMod.update(12)
+    test.propagate[Int]().read() should be (14)
     test.shutdown()
   }
 }

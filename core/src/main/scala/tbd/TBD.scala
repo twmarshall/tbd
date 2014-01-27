@@ -25,7 +25,7 @@ import scala.concurrent.duration._
 import tbd.ddg.{DDG, ReadId}
 import tbd.input.Reader
 import tbd.messages._
-import tbd.mod.Mod
+import tbd.mod.{Mod, ModId}
 import tbd.worker.{Worker, Task}
 
 object TBD {
@@ -80,16 +80,16 @@ class TBD(
     initializer(new Dest()).mod
   }
 
-  var id = 0
+  var workerId = 0
   def par[T, U](one: Dest => (Changeable[T]),
 		two: Dest => (Changeable[U])): Tuple2[Mod[T], Mod[U]] = {
     implicit val timeout = Timeout(5 seconds)
 
     val task =  new Task(((tbd: TBD) => two(new Dest))
       .asInstanceOf[(TBD) => (Changeable[Any])])
-    val workerProps = Worker.props[U](id, ddgRef, datastoreRef)
-    val workerRef = system.actorOf(workerProps, "worker"+id)
-    id += 1
+    val workerProps = Worker.props[U](workerId, ddgRef, datastoreRef)
+    val workerRef = system.actorOf(workerProps, "worker" + workerId)
+    workerId += 1
 
     val twoFuture = workerRef ? RunTaskMessage(task)
 
@@ -99,12 +99,50 @@ class TBD(
     new Tuple2(oneMod, twoMod)
   }
 
+  var memoId = 0
   def memo[T, U](): (List[Mod[T]]) => (() => Changeable[U]) => Changeable[U] = {
+    implicit val timeout = Timeout(5 seconds)
+    val thisMemoId = memoId
+    memoId += 1
     (args: List[Mod[T]]) => {
       (func: () => Changeable[U]) => {
-	func()
+	if (initialRun) {
+	  runMemo(args, func, thisMemoId)
+	} else {
+	  val updatedFuture = datastoreRef ? GetUpdatedMessage
+	  val updatedMods = Await.result(updatedFuture, timeout.duration)
+	    .asInstanceOf[Set[ModId]]
+
+	  var updated = false
+	  for (arg <- args) {
+	    if (updatedMods.contains(arg.id)) {
+	      updated = true
+	    }
+	  }
+
+	  if (updated) {
+	    log.debug("Did not find memoized value for call to " + thisMemoId)
+	    runMemo(args, func, thisMemoId)
+	  } else {
+	    val memoFuture = datastoreRef ?
+	      GetMessage("memo", thisMemoId :: args)
+	    val memo = Await.result(memoFuture, timeout.duration)
+	      .asInstanceOf[Changeable[U]]
+	    log.debug("Found memoized value for call to " + thisMemoId)
+	    memo
+	  }
+	}
       }
     }
+  }
+
+  private def runMemo[T, U](
+      args: List[Mod[T]],
+      func: () => Changeable[U],
+      thisMemoId: Int): Changeable[U] = {
+    val changeable = func()
+    datastoreRef ! PutMessage("memo", thisMemoId :: args, changeable)
+    changeable
   }
 
   def map[T](arr: Array[Mod[T]], func: (T) => (T)): Array[Mod[T]] = {

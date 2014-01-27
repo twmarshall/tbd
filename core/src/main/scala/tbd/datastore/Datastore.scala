@@ -29,6 +29,7 @@ object Datastore {
 class Datastore extends Actor with ActorLogging {
   private val tables = Map[String, Map[Any, Any]]()
   tables("mods") = Map[Any, Any]()
+  tables("memo") = Map[Any, Any]()
 
   private var updated = Set[ModId]()
 
