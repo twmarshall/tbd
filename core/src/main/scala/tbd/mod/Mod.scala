@@ -38,7 +38,7 @@ class Mod[T](datastoreRef: ActorRef) {
   }
 
   def update(newValue: T) {
-    datastoreRef ! UpdateModMessage(id.value, newValue)
+    datastoreRef ! UpdateModMessage(id, newValue)
   }
 
   override def toString = read().toString

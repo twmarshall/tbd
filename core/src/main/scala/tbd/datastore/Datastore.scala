@@ -20,23 +20,23 @@ import scala.collection.mutable.Map
 
 import tbd.ListNode
 import tbd.messages._
-import tbd.mod.{Matrix, Mod}
+import tbd.mod.{Matrix, Mod, ModId}
 
 object Datastore {
   def props(): Props = Props(classOf[Datastore])
 }
 
 class Datastore extends Actor with ActorLogging {
-  private val tables = Map[String, Map[Int, Any]]()
-  tables("mods") = Map[Int, Any]()
+  private val tables = Map[String, Map[Any, Any]]()
+  tables("mods") = Map[Any, Any]()
 
-  private var updated = Set[Int]()
+  private var updated = Set[ModId]()
 
   private def createTable(table: String) {
-    tables(table) = Map[Int, Any]()
+    tables(table) = Map[Any, Any]()
   }
 
-  private def get(table: String, key: Int): Any = {
+  private def get(table: String, key: Any): Any = {
     val ret = tables(table)(key)
     if (ret == null) {
       NullMessage
@@ -45,11 +45,11 @@ class Datastore extends Actor with ActorLogging {
     }
   }
 
-  private def put(table: String, key: Int, value: Any) {
+  private def put(table: String, key: Any, value: Any) {
     tables(table)(key) = value
   }
 
-  private def putMod(table: String, key: Int, value: Any): Mod[Any] = {
+  private def putMod(table: String, key: Any, value: Any): Mod[Any] = {
     val mod = createMod(value)
     tables(table)(key) = mod
     mod
@@ -61,12 +61,12 @@ class Datastore extends Actor with ActorLogging {
     mod
   }
 
-  private def updateMod(key: Int, value: Any) {
-    tables("mods")(key) = value
-    updated += key
+  private def updateMod(modId: ModId, value: Any) {
+    tables("mods")(modId.value) = value
+    updated += modId
   }
 
-  private def putMatrix(table: String, key: Int, value: Array[Array[Int]]): Matrix = {
+  private def putMatrix(table: String, key: Any, value: Array[Array[Int]]): Matrix = {
     val mat = new Matrix(value.map(row => {
       row.map(cell => {
         createMod(cell)
@@ -101,25 +101,25 @@ class Datastore extends Actor with ActorLogging {
     tail
   }
 
-  private def getUpdated(): Set[Int] =
+  private def getUpdated(): Set[ModId] =
     updated
 
   def receive = {
     case CreateTableMessage(table: String) =>
       createTable(table)
-    case GetMessage(table: String, key: Int) =>
+    case GetMessage(table: String, key: Any) =>
       sender ! get(table, key)
-    case PutMessage(table: String, key: Int, value: Any) =>
+    case PutMessage(table: String, key: Any, value: Any) =>
       put(table, key, value)
-    case PutModMessage(table: String, key: Int, value: Any) =>
+    case PutModMessage(table: String, key: Any, value: Any) =>
       sender ! putMod(table, key, value)
     case CreateModMessage(value: Any) =>
       sender ! createMod(value)
     case CreateModMessage(null) =>
       sender ! createMod(null)
-    case UpdateModMessage(key: Int, value: Any) =>
-      updateMod(key, value)
-    case PutMatrixMessage(table: String, key: Int, value: Array[Array[Int]]) =>
+    case UpdateModMessage(modId: ModId, value: Any) =>
+      updateMod(modId, value)
+    case PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]]) =>
       sender ! putMatrix(table, key, value)
     case GetArrayMessage(table: String) =>
       sender ! asArray(table)
