@@ -35,6 +35,7 @@ class Worker[T](id: Int, ddgRef: ActorRef, datastoreRef: ActorRef)
       val output = task.func(tbd)
       sender ! output.mod
     }
-    case _ => log.warning("Worker " + id + " received unknown message.")
+    case x => log.warning("Worker" + id + " actor received unhandled message " +
+			  x + " from " + sender)
   }
 }

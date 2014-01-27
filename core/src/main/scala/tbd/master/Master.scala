@@ -62,6 +62,7 @@ class Master extends Actor with ActorLogging {
       context.system.shutdown()
       context.system.awaitTermination()
     }
-    case _ => log.warning("Master actor received unkown message!")
+    case x => log.warning("Master actor received unhandled message " +
+			  x + " from " + sender)
   }
 }
