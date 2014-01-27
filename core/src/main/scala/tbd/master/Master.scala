@@ -33,16 +33,16 @@ object Master {
 
 class Master extends Actor with ActorLogging {
   log.info("Master launced.")
-  val ddgRef = context.actorOf(SimpleDDG.props(), "ddgActor")
+  private val ddgRef = context.actorOf(SimpleDDG.props(), "ddgActor")
 
-  val datastoreRef = context.actorOf(Datastore.props(), "datastore")
+  private val datastoreRef = context.actorOf(Datastore.props(), "datastore")
   datastoreRef ! CreateTableMessage("input")
 
-  var adjustable: Adjustable = null
+  private var adjustable: Adjustable = null
 
-  var i = 0
+  private var i = 0
 
-  def runTask[T](adjust: Adjustable): Future[Any] = {
+  private def runTask[T](adjust: Adjustable): Future[Any] = {
     i += 1
     val workerProps = Worker.props[T](i, ddgRef, datastoreRef)
     val workerRef = context.actorOf(workerProps, "workerActor" + i)

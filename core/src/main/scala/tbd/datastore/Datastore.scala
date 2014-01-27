@@ -27,16 +27,16 @@ object Datastore {
 }
 
 class Datastore extends Actor with ActorLogging {
-  val tables = Map[String, Map[Int, Any]]()
+  private val tables = Map[String, Map[Int, Any]]()
   tables("mods") = Map[Int, Any]()
 
-  var updated = Set[Int]()
+  private var updated = Set[Int]()
 
-  def createTable(table: String) {
+  private def createTable(table: String) {
     tables(table) = Map[Int, Any]()
   }
 
-  def get(table: String, key: Int): Any = {
+  private def get(table: String, key: Int): Any = {
     val ret = tables(table)(key)
     if (ret == null) {
       NullMessage
@@ -45,22 +45,28 @@ class Datastore extends Actor with ActorLogging {
     }
   }
 
-  def put(table: String, key: Int, value: Any) {
+  private def put(table: String, key: Int, value: Any) {
     tables(table)(key) = value
   }
 
-  def putMod(table: String, key: Int, value: Any): Mod[Any] = {
+  private def putMod(table: String, key: Int, value: Any): Mod[Any] = {
     val mod = createMod(value)
     tables(table)(key) = mod
     mod
   }
 
-  def updateMod(key: Int, value: Any) {
+  private def createMod[T](value: T): Mod[T] = {
+    val mod = new Mod[T](self)
+    tables("mods")(mod.id.value) = value
+    mod
+  }
+
+  private def updateMod(key: Int, value: Any) {
     tables("mods")(key) = value
     updated += key
   }
 
-  def putMatrix(table: String, key: Int, value: Array[Array[Int]]): Matrix = {
+  private def putMatrix(table: String, key: Int, value: Array[Array[Int]]): Matrix = {
     val mat = new Matrix(value.map(row => {
       row.map(cell => {
         createMod(cell)
@@ -70,7 +76,7 @@ class Datastore extends Actor with ActorLogging {
     mat
   }
 
-  def asArray(table: String): Array[Mod[Any]] = {
+  private def asArray(table: String): Array[Mod[Any]] = {
     val arr = new Array[Mod[Any]](tables(table).size)
 
     var i = 0
@@ -82,7 +88,7 @@ class Datastore extends Actor with ActorLogging {
     arr
   }
 
-  def asList(table: String): Mod[ListNode[Any]] = {
+  private def asList(table: String): Mod[ListNode[Any]] = {
     var tail = new Mod[ListNode[Any]](self)
     tables("mods")(tail.id.value) = null
 
@@ -95,14 +101,8 @@ class Datastore extends Actor with ActorLogging {
     tail
   }
 
-  def getUpdated(): Set[Int] =
+  private def getUpdated(): Set[Int] =
     updated
-
-  private def createMod[T](value: T): Mod[T] = {
-    val mod = new Mod[T](self)
-    tables("mods")(mod.id.value) = value
-    mod
-  }
 
   def receive = {
     case CreateTableMessage(table: String) =>
