@@ -1,4 +1,4 @@
-/**
+ /**
  * Copyright (C) 2013 Carnegie Mellon University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,7 +18,7 @@ package tbd.worker
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 
 import tbd.TBD
-import tbd.messages.RunTaskMessage
+import tbd.messages._
 
 object Worker {
   def props[T](id: Int, ddgRef: ActorRef, datastoreRef: ActorRef): Props =
@@ -28,10 +28,18 @@ object Worker {
 class Worker[T](id: Int, ddgRef: ActorRef, datastoreRef: ActorRef)
   extends Actor with ActorLogging {
   log.info("Worker " + id + " launched")
+  private var task: Task = null
 
   def receive = {
-    case RunTaskMessage(task: Task) => {
-      val tbd = new TBD(ddgRef, datastoreRef, context.system)
+    case RunTaskMessage(aTask: Task) => {
+      task = aTask
+      val tbd = new TBD(ddgRef, datastoreRef, context.system, true)
+      val output = task.func(tbd)
+      sender ! output.mod
+    }
+    case PropagateMessage => {
+      log.debug("Worker" + id + " actor asked to perform change propagation.")
+      val tbd = new TBD(ddgRef, datastoreRef, context.system, false)
       val output = task.func(tbd)
       sender ! output.mod
     }

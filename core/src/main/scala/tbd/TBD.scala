@@ -32,7 +32,12 @@ object TBD {
   var id = 0
 }
 
-class TBD(ddgRef: ActorRef, datastoreRef: ActorRef, system: ActorSystem) {
+class TBD(
+    ddgRef: ActorRef,
+    datastoreRef: ActorRef,
+    system: ActorSystem,
+    initialRun: Boolean) {
+
   private var currentReader = new ReadId()
   val input = new Reader(datastoreRef)
 
@@ -97,7 +102,7 @@ class TBD(ddgRef: ActorRef, datastoreRef: ActorRef, system: ActorSystem) {
   def memo[T, U](): (List[Mod[T]]) => (() => Changeable[U]) => Changeable[U] = {
     (args: List[Mod[T]]) => {
       (func: () => Changeable[U]) => {
-	      func()
+	func()
       }
     }
   }

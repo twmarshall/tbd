@@ -15,7 +15,7 @@
  */
 package tbd.master
 
-import akka.actor.{Actor, ActorLogging, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
@@ -38,25 +38,30 @@ class Master extends Actor with ActorLogging {
   private val datastoreRef = context.actorOf(Datastore.props(), "datastore")
   datastoreRef ! CreateTableMessage("input")
 
-  private var adjustable: Adjustable = null
+  private var workerRef: ActorRef = null
 
   private var i = 0
 
   private def runTask[T](adjust: Adjustable): Future[Any] = {
     i += 1
     val workerProps = Worker.props[T](i, ddgRef, datastoreRef)
-    val workerRef = context.actorOf(workerProps, "workerActor" + i)
+    workerRef = context.actorOf(workerProps, "workerActor" + i)
     implicit val timeout = Timeout(5 seconds)
     workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(new Dest, tbd)))
   }
 
+  private def propagate(): Future[Any] = {
+    log.info("Master actor initiating change propagation.")
+    implicit val timeout = Timeout(5 seconds)
+    workerRef ? PropagateMessage
+  }
+
   def receive = {
     case RunMessage(adjust: Adjustable) => {
-      adjustable = adjust
       sender ! runTask(adjust)
     }
     case PropagateMessage => {
-      sender ! runTask(adjustable)
+      sender ! propagate()
     }
     case ShutdownMessage => {
       context.system.shutdown()
