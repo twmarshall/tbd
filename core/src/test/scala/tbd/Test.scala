@@ -49,7 +49,7 @@ class MemoTest extends Adjustable {
   // Note: real client applications should NOT have mutable state like this.
   // We are just using it to ensure that the memoized function doesn't get
   // reexecuted as appropriate.
-  var memoized = false
+  var count = 0
 
   def run(dest: Dest, tbd: TBD): Changeable[Any] = {
     val one = tbd.input.get[Mod[Int]](1)
@@ -59,15 +59,8 @@ class MemoTest extends Adjustable {
     val memoMod = tbd.mod(dest => {
       memo(List(two))(() => {
 	tbd.read(two, valueTwo => {
-	  if (memoized && valueTwo == 10) {
-	    // We write a random value so that the return will be incorrect
-	    // if the memoized function is rerun when the value of two hasn't
-	    // changed.
-	    tbd.write(dest, 0)
-	  } else {
-	    memoized = true
-	    tbd.write(dest, valueTwo + 1)
-	  }
+	  count += 1
+	  tbd.write(dest, valueTwo + 1)
 	})
       })
     })
@@ -80,50 +73,55 @@ class MemoTest extends Adjustable {
 
 class TestSpec extends FlatSpec with Matchers {
   "ArrayMapTest" should "return a correctly mapped array" in {
-    val test = new Mutator()
-    val oneMod = test.input.putMod(1, "one")
-    test.input.putMod(2, "two")
-    val output = test.run[Array[Mod[String]]](new ArrayMapTest())
+    val mutator = new Mutator()
+    val oneMod = mutator.input.putMod(1, "one")
+    mutator.input.putMod(2, "two")
+    val output = mutator.run[Array[Mod[String]]](new ArrayMapTest())
     output.read().deep.mkString(", ") should be ("two mapped, one mapped")
 
     oneMod.update("three")
-    test.input.putMod(4, "four")
-    val propOutput = test.propagate[Array[Mod[String]]]()
+    mutator.input.putMod(4, "four")
+    val propOutput = mutator.propagate[Array[Mod[String]]]()
     propOutput.read().deep.mkString(", ") should be ("two mapped, four mapped, three mapped")
 
-    test.shutdown()
+    mutator.shutdown()
   }
 
   "ListMapTest" should "return a correctly mapped list" in {
-    val test = new Mutator()
-    test.input.putMod(1, "one")
-    test.input.putMod(2, "two")
-    val output = test.run(new ListMapTest())
+    val mutator = new Mutator()
+    mutator.input.putMod(1, "one")
+    mutator.input.putMod(2, "two")
+    val output = mutator.run(new ListMapTest())
     output.read().toString should be ("(one mapped, two mapped)")
-    test.shutdown()
+    mutator.shutdown()
   }
 
   "MatrixMult" should "do stuff" in {
-    val test = new Mutator()
-    test.input.putMatrix(1, Array(Array(1, 3)))
-    test.input.putMatrix(2, Array(Array(5), Array(6)))
-    val output = test.run(new MatrixMultTest())
-    test.shutdown()
+    val mutator = new Mutator()
+    mutator.input.putMatrix(1, Array(Array(1, 3)))
+    mutator.input.putMatrix(2, Array(Array(5), Array(6)))
+    val output = mutator.run(new MatrixMultTest())
+    mutator.shutdown()
   }
 
   "MemoTest" should "do stuff" in {
-    val test = new Mutator()
-    test.input.putMod(1, 1)
-    val twoMod = test.input.putMod(2, 10)
-    val output = test.run[Int](new MemoTest())
+    val mutator = new Mutator()
+    mutator.input.putMod(1, 1)
+    val twoMod = mutator.input.putMod(2, 10)
+    val test = new MemoTest()
+    val output = mutator.run[Int](test)
     output.read() should be (12)
+    test.count should be (1)
 
     // Rerun without changes to ensure correct memoization.
-    test.propagate[Int]().read() should be (12)
+    mutator.propagate[Int]().read() should be (12)
+    test.count should be (1)
 
     // Change the mod used by the memoized function and rerun.
     twoMod.update(12)
-    test.propagate[Int]().read() should be (14)
-    test.shutdown()
+    mutator.propagate[Int]().read() should be (14)
+    test.count should be (2)
+
+    mutator.shutdown()
   }
 }
