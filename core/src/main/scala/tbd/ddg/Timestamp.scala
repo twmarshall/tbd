@@ -15,12 +15,9 @@
  */
 package tbd.ddg
 
-class Timestamp(aTime: Int) {
+class Timestamp(aTime: Int, aNext: Timestamp) {
   var time = aTime
-
-  def increment() {
-    time += 1
-  }
+  var next = aNext
 
   def <(that: Timestamp): Boolean = {
     time < that.time

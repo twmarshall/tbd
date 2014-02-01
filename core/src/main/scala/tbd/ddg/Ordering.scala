@@ -15,62 +15,64 @@
  */
 package tbd.ddg
 
-class OrderingNode(aTimestamp: Timestamp, aNext: OrderingNode) {
-  val timestamp = aTimestamp
-  var next = aNext
-}
-
 class Ordering {
-  var timestamps: OrderingNode = null
+  var start: Timestamp = null
 
   def after(t: Timestamp): Timestamp = {
-    var node = timestamps
-    var newTimestamp: Timestamp = null
     if (t == null) {
-      // Insert at head.
-      newTimestamp = new Timestamp(0)
-      timestamps = new OrderingNode(newTimestamp, timestamps)
+      increment(start)
+      val newTimestamp = new Timestamp(0, start)
+      start = newTimestamp
+
+      newTimestamp
     } else {
-      newTimestamp = new Timestamp(t.time + 1)
+      val newTimestamp = new Timestamp(t.time + 1, t.next)
+      t.next = newTimestamp
+      increment(newTimestamp.next)
 
-      while (node.timestamp != t) {
-	node = node.next
-      }
-
-      node.next = new OrderingNode(newTimestamp, node.next)
-      node = node.next.next
+      newTimestamp
     }
+  }
 
-    // Increment all of the timestamps after the inserted one.
-    while (node != null) {
-      node.timestamp.increment()
-      node = node.next
+  private def increment(t: Timestamp) {
+    var stamp = t
+    while (stamp != null) {
+      stamp.time += 1
+      stamp = stamp.next
     }
-
-    newTimestamp
   }
 
   def remove(t: Timestamp) {
-    var node = timestamps
-    var previous: OrderingNode = null
-    while (node.timestamp != t) {
+    var node = start
+    var previous: Timestamp  = null
+    while (node != t) {
       previous = node
       node = node.next
     }
 
     if (previous == null) {
-      // Removing head.
-      timestamps = timestamps.next
+      start = node.next
     } else {
       previous.next = node.next
+    }
+
+    decrement(node)
+  }
+
+  private def decrement(t: Timestamp) {
+    var stamp = t
+    while (stamp != null) {
+      stamp.time -= 1
+      stamp = stamp.next
     }
   }
 
   override def toString = {
-    var node = timestamps
+    var node = start
     var ret = ""
+
     while (node != null) {
-      ret += node.timestamp + ", "
+      ret += node + ", "
       node = node.next
     }
     ret
