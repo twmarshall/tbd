@@ -16,34 +16,67 @@
 package tbd.ddg
 
 class Ordering {
-  var start: Timestamp = null
+  val maxSize = Int.MaxValue / 2
+  var base: Timestamp = new Timestamp(0, null)
+  base.next = base
 
   def after(t: Timestamp): Timestamp = {
-    if (t == null) {
-      increment(start)
-      val newTimestamp = new Timestamp(0, start)
-      start = newTimestamp
+    val previous =
+      if (t == null) {
+        base
+      } else {
+        t
+      }
+    val v0 = previous.time
 
-      newTimestamp
-    } else {
-      val newTimestamp = new Timestamp(t.time + 1, t.next)
-      t.next = newTimestamp
-      increment(newTimestamp.next)
-
-      newTimestamp
+    var j = 1
+    var vj = previous.next
+    var wj =
+      if (vj == base) {
+        maxSize
+      } else {
+        (vj.time - v0) % maxSize
+      }
+    while (wj <= j * j) {
+      vj = vj.next
+      j += 1
+      wj =
+        if (vj == base) {
+          maxSize
+        } else {
+          (vj.time - v0) % maxSize
+        }
     }
+
+    var sx = previous.next
+    for (i <- 1 to j - 1) {
+      sx.time = (wj * (i / j) + v0) % maxSize
+      sx = sx.next
+    }
+
+    val nextTime =
+      if (previous.next == base) {
+        maxSize
+      } else {
+        previous.next.time
+      }
+
+    val newTimestamp = new Timestamp((v0 + nextTime) / 2, previous.next)
+    previous.next = newTimestamp
+
+    newTimestamp
   }
 
   private def increment(t: Timestamp) {
     var stamp = t
-    while (stamp != null) {
+    while (stamp != base) {
       stamp.time += 1
       stamp = stamp.next
     }
   }
 
   def remove(t: Timestamp) {
-    var node = start
+    var node = base
     var previous: Timestamp  = null
     while (node != t) {
       previous = node
@@ -51,7 +84,7 @@ class Ordering {
     }
 
     if (previous == null) {
-      start = node.next
+      base = node.next
     } else {
       previous.next = node.next
     }
@@ -61,17 +94,17 @@ class Ordering {
 
   private def decrement(t: Timestamp) {
     var stamp = t
-    while (stamp != null) {
+    while (stamp != base) {
       stamp.time -= 1
       stamp = stamp.next
     }
   }
 
   override def toString = {
-    var node = start
+    var node = base.next
     var ret = ""
 
-    while (node != null) {
+    while (node != base) {
       ret += node + ", "
       node = node.next
     }

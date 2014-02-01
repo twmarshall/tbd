@@ -40,7 +40,6 @@ class OrderingTests extends FlatSpec with Matchers {
     checkOrdering(List(t1, t2))
   }
 
-
   it should "insert between timestamps correctly" in {
     val ordering = new Ordering()
 
