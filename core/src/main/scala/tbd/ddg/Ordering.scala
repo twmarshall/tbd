@@ -16,65 +16,97 @@
 package tbd.ddg
 
 class Ordering {
-  var start: Timestamp = null
+  val maxSize = Int.MaxValue / 2
+  var base = new Sublist(0, null)
+  base.next = new Sublist(1, base)
+  base.previous = base.next
 
   def after(t: Timestamp): Timestamp = {
-    if (t == null) {
-      increment(start)
-      val newTimestamp = new Timestamp(0, start)
-      start = newTimestamp
+    val previousSublist =
+      if (t == null) {
+        base.next
+      } else {
+        t.sublist
+      }
 
-      newTimestamp
-    } else {
-      val newTimestamp = new Timestamp(t.time + 1, t.next)
-      t.next = newTimestamp
-      increment(newTimestamp.next)
-
-      newTimestamp
+    val newTimestamp = previousSublist.after(t)
+    if (previousSublist.size > 63) {
+      val newSublist = sublistAfter(previousSublist)
+      assert(previousSublist.id != newSublist.id)
+      previousSublist.split(newSublist)
     }
+
+    newTimestamp
   }
 
-  private def increment(t: Timestamp) {
-    var stamp = t
-    while (stamp != null) {
-      stamp.time += 1
-      stamp = stamp.next
+  private def sublistAfter(s: Sublist): Sublist = {
+    var node = s.next
+    while (node != base) {
+      node.id += 1
+      node = node.next
     }
+    val newSublist = new Sublist(s.id + 1, s.next)
+    s.next = newSublist
+    newSublist
+    /*val previous =
+      if (s == null) {
+        base
+      } else {
+        s
+      }
+    val v0 = previous.id
+
+    var j = 1
+    var vj = previous.next
+    var wj =
+      if (vj == base) {
+        maxSize
+      } else {
+        (vj.id - v0) % maxSize
+      }
+    while (wj <= j * j) {
+      vj = vj.next
+      j += 1
+      wj =
+        if (vj == base) {
+          maxSize
+        } else {
+          (vj.id - v0) % maxSize
+        }
+    }
+
+    var sx = previous.next
+    for (i <- 1 to j - 1) {
+      sx.id = (wj * (i / j) + v0) % maxSize
+      sx = sx.next
+    }
+
+    val nextId =
+      if (previous.next == base) {
+        maxSize
+      } else {
+        previous.next.id
+      }
+
+    val newSublist = new Sublist((v0 + nextId) / 2, previous.next)
+    previous.next = newSublist
+
+    newSublist*/
   }
 
   def remove(t: Timestamp) {
-    var node = start
-    var previous: Timestamp  = null
-    while (node != t) {
-      previous = node
-      node = node.next
-    }
-
-    if (previous == null) {
-      start = node.next
-    } else {
-      previous.next = node.next
-    }
-
-    decrement(node)
-  }
-
-  private def decrement(t: Timestamp) {
-    var stamp = t
-    while (stamp != null) {
-      stamp.time -= 1
-      stamp = stamp.next
-    }
+    t.sublist.remove(t)
   }
 
   override def toString = {
-    var node = start
-    var ret = ""
+    var node = base.next
+    var ret = base.toString
 
-    while (node != null) {
-      ret += node + ", "
+    while (node != base) {
+      ret += ", " + node
       node = node.next
     }
     ret
   }
 }
+

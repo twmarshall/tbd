@@ -15,17 +15,27 @@
  */
 package tbd.ddg
 
-class Timestamp(aTime: Int, aNext: Timestamp) {
+class Timestamp(aSublist: Sublist, aTime: Double, aNext: Timestamp) {
+  var sublist = aSublist
   var time = aTime
   var next = aNext
+  var previous: Timestamp = null
 
   def <(that: Timestamp): Boolean = {
-    time < that.time
+    if (sublist == that.sublist) {
+      time < that.time
+    } else {
+      sublist.id < that.sublist.id
+    }
   }
 
   def >(that: Timestamp): Boolean = {
-    time > that.time
+    if (sublist == that.sublist) {
+      time > that.time
+    } else {
+      sublist.id > that.sublist.id
+    }
   }
 
-  override def toString = time.toString
+  override def toString = "(" + sublist.id + " " + time.toString + ")"
 }
