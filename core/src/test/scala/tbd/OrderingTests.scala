@@ -17,120 +17,128 @@ package tbd.test
 
 import org.scalatest._
 
-import tbd.ddg.{Ordering, Timestamp}
+import tbd.ddg.{Ordering, Sublist, Timestamp}
 
 class OrderingTests extends FlatSpec with Matchers {
   def checkOrdering(timestamps: List[Timestamp]) {
     var previous: Timestamp = null
     for (timestamp <- timestamps) {
       if (previous != null) {
-	assert(previous < timestamp)
-	assert(timestamp > previous)
+	      assert(previous < timestamp)
+	      assert(timestamp > previous)
       }
       previous = timestamp
     }
   }
 
+  def fill(ordering: Ordering, num: Int):
+      Tuple3[Timestamp, Timestamp, Timestamp] = {
+    var i = 1
+    val middle = ordering.after(null)
+    while (i < num / 2) {
+      ordering.after(null)
+      i += 1
+    }
+
+    val start = ordering.after(null)
+    val end = ordering.after(middle)
+    i += 2
+
+    while (i < num) {
+      ordering.after(middle)
+      i += 1
+    }
+
+    (start, middle, end)
+  }
+
+  val fillNums = 4 to 200
   "Ordering" should "return correctly ordered timestamps from after()" in {
-    val ordering = new Ordering()
+    for (i <- fillNums) {
+      val ordering = new Ordering()
+      val tuple = fill(ordering, i)
 
-    val t1 = ordering.after(null)
-    val t2 = ordering.after(t1)
-
-    checkOrdering(List(t1, t2))
+      checkOrdering(List(tuple._1, tuple._2, tuple._3))
+    }
   }
 
   it should "insert between timestamps correctly" in {
-    val ordering = new Ordering()
+    for (i <- fillNums) {
+      val ordering = new Ordering()
+      val tuple = fill(ordering, i)
 
-    val t1 = ordering.after(null)
-    val t2 = ordering.after(t1)
-    val t3 = ordering.after(t1)
+      val t1 = ordering.after(tuple._1)
+      val t2 = ordering.after(tuple._2)
 
-    checkOrdering(List(t1, t3, t2))
+      checkOrdering(List(tuple._1, t1, tuple._2, t2, tuple._3))
+    }
   }
 
   it should "insert at the end correctly" in {
-    val ordering = new Ordering()
+    for (i <- fillNums) {
+      val ordering = new Ordering()
+      val tuple = fill(ordering, i)
 
-    val t1 = ordering.after(null)
-    val t2 = ordering.after(t1)
-    val t3 = ordering.after(t1)
-    val t4 = ordering.after(t2)
+      val t1 = ordering.after(tuple._3)
 
-    checkOrdering(List(t1, t3, t2, t4))
+      checkOrdering(List(tuple._1, tuple._2, tuple._3, t1))
+    }
   }
 
   it should "insert at the beginning correctly" in {
-    val ordering = new Ordering()
+    for (i <- fillNums) {
+      val ordering = new Ordering()
+      val tuple = fill(ordering, i)
 
-    val t1 = ordering.after(null)
-    val t2 = ordering.after(t1)
-    val t3 = ordering.after(t1)
-    val t4 = ordering.after(t2)
-    val t5 = ordering.after(null)
+      val t1 = ordering.after(null)
 
-    checkOrdering(List(t5, t1, t3, t2, t4))
+      checkOrdering(List(t1, tuple._1, tuple._2, tuple._3))
+    }
   }
 
   it should "insert correctly after removing the head" in {
-    val ordering = new Ordering()
+    for (i <- fillNums) {
+      val ordering = new Ordering()
+      val tuple = fill(ordering, i)
 
-    val t1 = ordering.after(null)
-    val t2 = ordering.after(t1)
-    val t3 = ordering.after(t1)
-    val t4 = ordering.after(t2)
-    val t5 = ordering.after(null)
-    ordering.remove(t5)
-    val t6 = ordering.after(t3)
-    val t7 = ordering.after(t4)
-    val t8 = ordering.after(null)
+      ordering.remove(tuple._1)
+      val t1 = ordering.after(tuple._2)
+      val t2 = ordering.after(tuple._3)
+      val t3 = ordering.after(null)
 
-    checkOrdering(List(t8, t1, t3, t6, t2, t4, t7))
+      checkOrdering(List(t3, tuple._2, t1, tuple._3, t2))
+    }
   }
 
   it should "insert correctly after removing the tail" in {
-    val ordering = new Ordering()
+    for (i <- fillNums) {
+      val ordering = new Ordering()
+      val tuple = fill(ordering, i)
 
-    val t1 = ordering.after(null)
-    val t2 = ordering.after(t1)
-    val t3 = ordering.after(t1)
-    val t4 = ordering.after(t2)
-    val t5 = ordering.after(null)
-    ordering.remove(t5)
-    val t6 = ordering.after(t3)
-    val t7 = ordering.after(t4)
-    val t8 = ordering.after(null)
-    ordering.remove(t7)
-    val t9 = ordering.after(null)
-    val t10 = ordering.after(t4)
-    val t11 = ordering.after(t3)
+      val t1 = ordering.after(tuple._3)
+      ordering.remove(t1)
+      val t2 = ordering.after(tuple._1)
+      val t3 = ordering.after(tuple._2)
+      val t4 = ordering.after(tuple._3)
+      val t5 = ordering.after(null)
 
-    checkOrdering(List(t9, t8, t1, t3, t11, t6, t2, t4, t10))
+      checkOrdering(List(t5, tuple._1, t2, tuple._2, t3, tuple._3, t4))
+    }
   }
 
   it should "insert correctly after removing from the middle" in {
-    val ordering = new Ordering()
+    for (i <- fillNums) {
+      val ordering = new Ordering()
+      val tuple = fill(ordering, i)
 
-    val t1 = ordering.after(null)
-    val t2 = ordering.after(t1)
-    val t3 = ordering.after(t1)
-    val t4 = ordering.after(t2)
-    val t5 = ordering.after(null)
-    ordering.remove(t5)
-    val t6 = ordering.after(t3)
-    val t7 = ordering.after(t4)
-    val t8 = ordering.after(null)
-    ordering.remove(t7)
-    val t9 = ordering.after(null)
-    val t10 = ordering.after(t4)
-    val t11 = ordering.after(t3)
-    ordering.remove(t11)
-    val t12 = ordering.after(t3)
-    val t13 = ordering.after(t6)
-    val t14 = ordering.after(null)
-    val t15 = ordering.after(t10)
+      val t1 = ordering.after(tuple._2)
+      ordering.remove(tuple._2)
+      val t2 = ordering.after(null)
+      val t3 = ordering.after(tuple._1)
+      val t4 = ordering.after(t1)
+      val t5 = ordering.after(tuple._3)
 
-    checkOrdering(List(t14, t9, t8, t1, t3, t12, t6, t13, t2, t4, t10, t15))
+      checkOrdering(List(t2, tuple._1, t3, t1, t4, tuple._3, t5))
+    }
   }
 }
