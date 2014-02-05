@@ -16,15 +16,13 @@
 package tbd.messages
 
 import tbd.{Adjustable, Changeable, TBD}
-import tbd.ddg.ReadId
-import tbd.mod.Mod
-import tbd.mod.ModId
+import tbd.ddg.Node
+import tbd.mod.{Mod, ModId}
 import tbd.worker.Task
 
 // DDG
-case class AddReadMessage(modId: ModId, readId: ReadId)
-case class AddWriteMessage(readId: ReadId, modId: ModId)
-case class AddCallMessage(outerCall: ReadId, innerCall: ReadId)
+case class AddReadMessage(modId: ModId, parent: Node)
+case class AddWriteMessage(modId: ModId, parent: Node)
 case class ToStringMessage
 
 // Input

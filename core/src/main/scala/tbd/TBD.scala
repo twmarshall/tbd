@@ -22,7 +22,7 @@ import akka.util.Timeout
 import scala.concurrent.{Await, Promise}
 import scala.concurrent.duration._
 
-import tbd.ddg.{DDG, ReadId}
+import tbd.ddg.{DDG, Node}
 import tbd.input.Reader
 import tbd.messages._
 import tbd.mod.{Mod, ModId}
@@ -33,12 +33,12 @@ object TBD {
 }
 
 class TBD(
-    ddgRef: ActorRef,
+    ddg: DDG,
     datastoreRef: ActorRef,
     system: ActorSystem,
     initialRun: Boolean) {
 
-  private var currentReader = new ReadId()
+  private var currentReader: Node = null
   val input = new Reader(datastoreRef)
 
   val log = Logging(system, "TBD")
@@ -46,24 +46,18 @@ class TBD(
   def read[T](mod: Mod[T], reader: (T) => (Changeable[T])): Changeable[T] = {
     log.debug("Executing read on  mod " + mod.id)
 
-    val readId = new ReadId()
-    ddgRef ! AddReadMessage(mod.id, readId)
+    implicit val timeout = Timeout(5 seconds)
 
-    if (currentReader.id != 0)
-      ddgRef ! AddCallMessage(currentReader, readId)
+    val readNode = ddg.addRead(mod.id, currentReader)
 
     val outerReader = currentReader
-    currentReader = readId
+    currentReader = readNode
     val changeable = reader(mod.read())
     currentReader = outerReader
 
-    ddgRef ! AddWriteMessage(readId, changeable.mod.id)
+    ddg.addWrite(changeable.mod.id, readNode)
 
-    implicit val timeout = Timeout(5 seconds)
-    val toStringFuture = ddgRef ? ToStringMessage
-    val result = Await.result(toStringFuture, timeout.duration).asInstanceOf[String]
-
-    log.debug("Contents of DDG after read:\n" + result)
+    log.debug("Contents of DDG after read:\n" + ddg)
 
     changeable
   }
@@ -87,7 +81,7 @@ class TBD(
 
     val task =  new Task(((tbd: TBD) => two(new Dest))
       .asInstanceOf[(TBD) => (Changeable[Any])])
-    val workerProps = Worker.props[U](workerId, ddgRef, datastoreRef)
+    val workerProps = Worker.props[U](workerId, datastoreRef)
     val workerRef = system.actorOf(workerProps, "worker" + workerId)
     workerId += 1
 

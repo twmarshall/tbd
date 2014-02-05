@@ -23,7 +23,6 @@ import scala.concurrent.Future
 
 import tbd.{Adjustable, Dest, TBD}
 import tbd.datastore.Datastore
-import tbd.ddg.DDG
 import tbd.messages._
 import tbd.worker.{Worker, Task}
 
@@ -33,8 +32,6 @@ object Master {
 
 class Master extends Actor with ActorLogging {
   log.info("Master launced.")
-  private val ddgRef = context.actorOf(DDG.props(), "ddgActor")
-
   private val datastoreRef = context.actorOf(Datastore.props(), "datastore")
   datastoreRef ! CreateTableMessage("input")
 
@@ -44,7 +41,7 @@ class Master extends Actor with ActorLogging {
 
   private def runTask[T](adjust: Adjustable): Future[Any] = {
     i += 1
-    val workerProps = Worker.props[T](i, ddgRef, datastoreRef)
+    val workerProps = Worker.props[T](i, datastoreRef)
     workerRef = context.actorOf(workerProps, "workerActor" + i)
     implicit val timeout = Timeout(5 seconds)
     workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(new Dest, tbd)))
