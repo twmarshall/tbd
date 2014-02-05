@@ -26,9 +26,15 @@ import tbd.messages._
 class Mod[T](datastoreRef: ActorRef) {
   val id = new ModId()
 
-  def read(): T = {
+  def read(workerRef: ActorRef = null): T = {
     implicit val timeout = Timeout(5 seconds)
-    val readFuture = datastoreRef ? GetMessage("mods", id.value)
+
+    val readFuture =
+      if (workerRef == null) {
+	datastoreRef ? GetMessage("mods", id.value)
+      } else {
+	datastoreRef ? ReadModMessage(id, workerRef)
+      }
     val ret = Await.result(readFuture, timeout.duration)
 
     ret match {

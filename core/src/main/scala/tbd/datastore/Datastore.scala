@@ -31,6 +31,8 @@ class Datastore extends Actor with ActorLogging {
   tables("mods") = Map[Any, Any]()
   tables("memo") = Map[Any, Any]()
 
+  private val dependencies = Map[ModId, scala.collection.mutable.Set[ActorRef]]()
+
   private var updated = Set[ModId]()
 
   private def createTable(table: String) {
@@ -59,12 +61,17 @@ class Datastore extends Actor with ActorLogging {
   private def createMod[T](value: T): Mod[T] = {
     val mod = new Mod[T](self)
     tables("mods")(mod.id.value) = value
+    dependencies(mod.id) = scala.collection.mutable.Set[ActorRef]()
     mod
   }
 
   private def updateMod(modId: ModId, value: Any) {
     tables("mods")(modId.value) = value
     updated += modId
+
+    for (worker <- dependencies(modId)) {
+      worker ! ModUpdatedMessage(modId)
+    }
   }
 
   private def putMatrix(table: String, key: Any, value: Array[Array[Int]]): Matrix = {
@@ -90,12 +97,10 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private def asList(table: String): Mod[ListNode[Any]] = {
-    var tail = new Mod[ListNode[Any]](self)
-    tables("mods")(tail.id.value) = null
+    var tail = createMod[ListNode[Any]](null)
 
     for (elem <- tables(table)) {
-      val head = new Mod[ListNode[Any]](self)
-      tables("mods")(head.id.value) = new ListNode(elem._2.asInstanceOf[Mod[Any]], tail)
+      val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))
       tail = head
     }
 
@@ -104,6 +109,16 @@ class Datastore extends Actor with ActorLogging {
 
   private def getUpdated(): Set[ModId] =
     updated
+
+  private def readMod(modId: ModId, workerRef: ActorRef): Any = {
+    dependencies(modId) += workerRef
+    val ret = tables("mods")(modId.value)
+    if (ret == null) {
+      NullMessage
+    } else {
+      ret
+    }
+  }
 
   def receive = {
     case CreateTableMessage(table: String) =>
@@ -128,6 +143,8 @@ class Datastore extends Actor with ActorLogging {
       sender ! asList(table)
     case GetUpdatedMessage =>
       sender ! getUpdated()
+    case ReadModMessage(modId: ModId, workerRef: ActorRef) =>
+      sender ! readMod(modId, workerRef: ActorRef)
     case x => log.warning("Datastore actor received unhandled message " +
                           x + " from " + sender)
   }

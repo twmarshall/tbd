@@ -15,14 +15,23 @@
  */
 package tbd.ddg
 
+import scala.collection.mutable.{Map, Set}
+
 import tbd.mod.ModId
 
 class DDG {
   var root = new RootNode
+  val reads = Map[ModId, Set[ReadNode]]()
 
   def addRead(modId: ModId, parent: Node): Node = {
     println(parent)
     val readNode = new ReadNode(modId, parent)
+
+    if (reads.contains(modId)) {
+      reads(modId) += readNode
+    } else {
+      reads(modId) = Set(readNode)
+    }
 
     if (parent != null) {
       parent.addChild(readNode)
@@ -39,6 +48,12 @@ class DDG {
     parent.addChild(writeNode)
 
     writeNode
+  }
+
+  def modUpdated(modId: ModId) {
+    for (readNode <- reads(modId)) {
+      readNode.updated = true
+    }
   }
 
   override def toString = {

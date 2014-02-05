@@ -20,6 +20,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import tbd.TBD
 import tbd.ddg.DDG
 import tbd.messages._
+import tbd.mod.ModId
 
 object Worker {
   def props[T](id: Int, datastoreRef: ActorRef): Props =
@@ -35,16 +36,22 @@ class Worker[T](id: Int, datastoreRef: ActorRef)
   def receive = {
     case RunTaskMessage(aTask: Task) => {
       task = aTask
-      val tbd = new TBD(ddg, datastoreRef, context.system, true)
+      val tbd = new TBD(ddg, datastoreRef, self, context.system, true)
       val output = task.func(tbd)
       sender ! output.mod
     }
+
     case PropagateMessage => {
       log.debug("Worker" + id + " actor asked to perform change propagation.")
-      val tbd = new TBD(ddg, datastoreRef, context.system, false)
+      val tbd = new TBD(ddg, datastoreRef, self, context.system, false)
       val output = task.func(tbd)
       sender ! output.mod
     }
+
+    case ModUpdatedMessage(modId: ModId) => {
+      ddg.modUpdated(modId)
+    }
+
     case x => log.warning("Worker" + id + " actor received unhandled message " +
 			  x + " from " + sender)
   }

@@ -23,10 +23,13 @@ class ListNode[T](aValue: Mod[T], aNext: Mod[ListNode[T]]) {
 
   override def toString: String = {
     def toString(lst: ListNode[T]):String = {
-      val next = if (lst.next.read() != null)
-	", " + toString(lst.next.read())
-      else
-	")"
+      val nextRead = lst.next.read()
+      val next =
+	if (nextRead != null)
+	  ", " + toString(nextRead)
+	else
+	  ")"
+
       lst.value.read() + next
     }
 

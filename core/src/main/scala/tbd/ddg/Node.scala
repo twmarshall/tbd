@@ -45,7 +45,9 @@ abstract class Node(aModId: ModId, aParent: Node) {
 }
 
 class ReadNode(aModId: ModId, aParent: Node) extends Node(aModId, aParent) {
-  def name() = "ReadNode"
+  var updated = false
+
+  def name() = "ReadNode (" + updated + ")"
 }
 
 class WriteNode(aModId: ModId, aParent: Node) extends Node(aModId, aParent) {

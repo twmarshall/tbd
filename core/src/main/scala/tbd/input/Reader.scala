@@ -26,7 +26,6 @@ import tbd.messages.{GetArrayMessage, GetListMessage, GetMessage}
 import tbd.mod.Mod
 
 class Reader(datastoreRef: ActorRef) {
-
   def get[T](key: Int): T = {
     implicit val timeout = Timeout(5 seconds)
     val modFuture = datastoreRef ? GetMessage("input", key)

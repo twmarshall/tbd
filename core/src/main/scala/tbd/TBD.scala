@@ -35,6 +35,7 @@ object TBD {
 class TBD(
     ddg: DDG,
     datastoreRef: ActorRef,
+    workerRef: ActorRef,
     system: ActorSystem,
     initialRun: Boolean) {
 
@@ -52,7 +53,7 @@ class TBD(
 
     val outerReader = currentReader
     currentReader = readNode
-    val changeable = reader(mod.read())
+    val changeable = reader(mod.read(workerRef))
     currentReader = outerReader
 
     ddg.addWrite(changeable.mod.id, readNode)

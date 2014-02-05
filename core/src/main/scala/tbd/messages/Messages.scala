@@ -15,6 +15,8 @@
  */
 package tbd.messages
 
+import akka.actor.ActorRef
+
 import tbd.{Adjustable, Changeable, TBD}
 import tbd.ddg.Node
 import tbd.mod.{Mod, ModId}
@@ -25,7 +27,7 @@ case class AddReadMessage(modId: ModId, parent: Node)
 case class AddWriteMessage(modId: ModId, parent: Node)
 case class ToStringMessage
 
-// Input
+// Datastore
 case class CreateTableMessage(table: String)
 case class GetMessage(table: String, key: Any)
 case class PutMessage(table: String, key: Any, value: Any)
@@ -36,6 +38,7 @@ case class PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]])
 case class GetArrayMessage(table: String)
 case class GetListMessage(table: String)
 case class GetUpdatedMessage
+case class ReadModMessage(modId: ModId, workerRef: ActorRef)
 case class NullMessage
 
 // Master
@@ -43,3 +46,6 @@ case class RunMessage(adjust: Adjustable)
 case class PropagateMessage
 case class RunTaskMessage(func: Task)
 case class ShutdownMessage
+
+// Worker
+case class ModUpdatedMessage(modId: ModId)

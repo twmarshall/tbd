@@ -27,10 +27,6 @@ import tbd.mod.Mod
 class MutatorInput(datastoreRef: ActorRef) {
   implicit val timeout = Timeout(5 seconds)
 
-  def get(key: Int): Any = {
-    "asdf"
-  }
-
   def put(key: Int, value: Any) {
     datastoreRef ! PutMessage("input", key, value)
   }
