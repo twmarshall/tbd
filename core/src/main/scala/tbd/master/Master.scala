@@ -23,7 +23,7 @@ import scala.concurrent.Future
 
 import tbd.{Adjustable, Dest, TBD}
 import tbd.datastore.Datastore
-import tbd.ddg.SimpleDDG
+import tbd.ddg.DDG
 import tbd.messages._
 import tbd.worker.{Worker, Task}
 
@@ -33,7 +33,7 @@ object Master {
 
 class Master extends Actor with ActorLogging {
   log.info("Master launced.")
-  private val ddgRef = context.actorOf(SimpleDDG.props(), "ddgActor")
+  private val ddgRef = context.actorOf(DDG.props(), "ddgActor")
 
   private val datastoreRef = context.actorOf(Datastore.props(), "datastore")
   datastoreRef ! CreateTableMessage("input")

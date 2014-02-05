@@ -15,18 +15,75 @@
  */
 package tbd.ddg
 
-import akka.actor.Actor
-import akka.actor.ActorLogging
+import akka.actor.{Actor, ActorLogging, Props}
+import scala.collection.mutable.Map
 
 import tbd.messages._
 import tbd.mod.ModId
 
-trait DDG extends Actor with ActorLogging {
-  def addRead(modId: ModId, readId: ReadId)
+abstract class Node
+case class ReadNode(readId: ReadId, dataIn: List[ModId], dataOut: List[ModId], controlIn: List[ReadId], controlOut: List[ReadId])
+case class ModNode(modId: ModId)
 
-  def addWrite(readId: ReadId, modId: ModId)
+object DDG {
+  def props(): Props = Props(classOf[DDG])
+}
 
-  def addCall(outerCall: ReadId, innerCall: ReadId)
+class DDG extends Actor with ActorLogging {
+  val reads = Map[ReadId, ReadNode]()
+
+  def addRead(modId: ModId, readId: ReadId) {
+    log.debug("Adding read dependency from Mod(" + modId + ") to Read(" + readId + ")")
+    val readNode = new ReadNode(readId, List(modId), List(), List(), List())
+
+    reads += (readId -> readNode)
+  }
+
+  def addWrite(readId: ReadId, modId: ModId) {
+    log.debug("Adding write dependency from Read(" + readId + ") to Mod(" + modId + ")")
+    val newNode =
+      if (reads.contains(readId)) {
+	val oldReadNode = reads(readId)
+	reads -= readId
+	new ReadNode(readId, oldReadNode.dataIn, modId :: oldReadNode.dataOut,
+		     oldReadNode.controlIn, oldReadNode.controlOut)
+      } else {
+	new ReadNode(readId, List(), List(modId), List(), List())
+      }
+
+    reads += (readId -> newNode)
+  }
+
+  def addCall(outerCall: ReadId, innerCall: ReadId) {
+    log.debug("Adding control dependency from Read(" + outerCall + ") to Read(" + innerCall + ")")
+
+    val newOuterNode =
+      if (reads.contains(outerCall)) {
+	val oldReadNode = reads(outerCall)
+	reads -= outerCall
+	new ReadNode(outerCall, oldReadNode.dataIn, oldReadNode.dataOut,
+		     oldReadNode.controlIn, innerCall :: oldReadNode.controlOut)
+      } else {
+	new ReadNode(outerCall, List(), List(), List(), List(innerCall))
+      }
+
+    val newInnerNode =
+      if (reads.contains(innerCall)) {
+	val oldReadNode = reads(innerCall)
+	reads -= innerCall
+	new ReadNode(innerCall, oldReadNode.dataIn, oldReadNode.dataOut,
+		     outerCall :: oldReadNode.controlIn, oldReadNode.controlOut)
+      } else {
+	new ReadNode(innerCall, List(), List(), List(outerCall), List())
+      }
+
+    reads += (outerCall -> newOuterNode)
+    reads += (innerCall -> newInnerNode)
+  }
+
+  override def toString = {
+    reads.map((readId) => readId.toString).reduceLeft(_ + "\n" + _)
+  }
 
   def receive = {
     case AddReadMessage(modId: ModId, readId: ReadId) =>
