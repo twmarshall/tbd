@@ -19,10 +19,12 @@ import scala.collection.mutable.Set
 
 import tbd.mod.ModId
 
-abstract class Node(aModId: ModId, aParent: Node) {
-  val children = Set[Node]()
+abstract class Node(aModId: ModId, aParent: Node, aTimestamp: Timestamp) {
   val modId: ModId = aModId
   val parent = aParent
+  var timestamp: Timestamp = aTimestamp
+
+  val children = Set[Node]()
 
   def addChild(child: Node) {
     children += child
@@ -40,20 +42,22 @@ abstract class Node(aModId: ModId, aParent: Node) {
 	"\n" + children.map(_.toString(prefix + "-")).reduceLeft(_ + "\n" + _)
       }
 
-    prefix + name() + "(" + modId + ")" + childrenString
+    prefix + name() + "(" + modId + ") time = " + timestamp + " " + childrenString
   }
 }
 
-class ReadNode(aModId: ModId, aParent: Node) extends Node(aModId, aParent) {
+class ReadNode(aModId: ModId, aParent: Node, aTimestamp: Timestamp)
+    extends Node(aModId, aParent, aTimestamp) {
   var updated = false
 
   def name() = "ReadNode (" + updated + ")"
 }
 
-class WriteNode(aModId: ModId, aParent: Node) extends Node(aModId, aParent) {
+class WriteNode(aModId: ModId, aParent: Node, aTimestamp: Timestamp)
+    extends Node(aModId, aParent, aTimestamp) {
   def name() = "WriteNode"
 }
 
-class RootNode extends Node(null, null) {
+class RootNode extends Node(null, null, null) {
   def name() = "RootNode"
 }
