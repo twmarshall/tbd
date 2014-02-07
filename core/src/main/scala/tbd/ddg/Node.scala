@@ -17,6 +17,7 @@ package tbd.ddg
 
 import scala.collection.mutable.Set
 
+import tbd.Changeable
 import tbd.mod.ModId
 
 abstract class Node(aModId: ModId, aParent: Node, aTimestamp: Timestamp) {
@@ -30,25 +31,30 @@ abstract class Node(aModId: ModId, aParent: Node, aTimestamp: Timestamp) {
     children += child
   }
 
+  def removeChild(child: Node) {
+    children -= child
+  }
+
   def name(): String
 
   def toString(prefix: String): String = {
     val childrenString =
       if (children.isEmpty) {
-	""
+	      ""
       } else if (children.size == 1) {
-	"\n" + children.head.toString(prefix + "-")
+	      "\n" + children.head.toString(prefix + "-")
       } else {
-	"\n" + children.map(_.toString(prefix + "-")).reduceLeft(_ + "\n" + _)
+	      "\n" + children.map(_.toString(prefix + "-")).reduceLeft(_ + "\n" + _)
       }
 
     prefix + name() + "(" + modId + ") time = " + timestamp + " " + childrenString
   }
 }
 
-class ReadNode(aModId: ModId, aParent: Node, aTimestamp: Timestamp)
+class ReadNode[T](aModId: ModId, aParent: Node, aTimestamp: Timestamp, aReader: T => Changeable[T])
     extends Node(aModId, aParent, aTimestamp) {
   var updated = false
+  val reader = aReader
 
   def name() = "ReadNode (" + updated + ")"
 }

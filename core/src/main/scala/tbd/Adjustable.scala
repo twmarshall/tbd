@@ -16,5 +16,5 @@
 package tbd
 
 trait Adjustable {
-  def run(dest: Dest, tbd: TBD): Changeable[Any]
+  def run(dest: Dest[Any], tbd: TBD): Changeable[Any]
 }

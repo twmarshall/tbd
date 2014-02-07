@@ -16,7 +16,11 @@
 package tbd.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.pattern.ask
+import akka.util.Timeout
 import scala.collection.mutable.Set
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 import tbd.TBD
 import tbd.ddg.DDG
@@ -34,6 +38,8 @@ class Worker[T](id: Int, datastoreRef: ActorRef)
   private var task: Task = null
   private val ddg = new DDG()
 
+  implicit val timeout = Timeout(5 seconds)
+
   def receive = {
     case RunTaskMessage(aTask: Task) => {
       task = aTask
@@ -43,13 +49,20 @@ class Worker[T](id: Int, datastoreRef: ActorRef)
     }
 
     case PropagateMessage(updated: Set[ModId]) => {
-      log.debug("Worker" + id + " actor asked to perform change propagation.")
+      log.debug("Worker" + id + " actor asked to perform change propagation. " + updated.size)
 
       ddg.modsUpdated(updated)
 
-      val tbd = new TBD(ddg, datastoreRef, self, context.system, false)
-      val output = task.func(tbd)
-      sender ! output.mod
+      while (!ddg.updated.isEmpty) {
+        val readNode = ddg.updated.dequeue
+        log.debug("Updating " + readNode.toString(""))
+        ddg.removeSubtree(readNode)
+        val future = datastoreRef ? GetMessage("mods", readNode.modId.value)
+        val newValue = Await.result(future, timeout.duration)
+        readNode.reader(newValue)
+      }
+
+      sender ! "done"
     }
 
     case x => log.warning("Worker" + id + " actor received unhandled message " +

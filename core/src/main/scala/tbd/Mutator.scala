@@ -37,12 +37,12 @@ class Mutator {
     Await.result(resultFuture, timeout.duration).asInstanceOf[Mod[T]]
   }
 
-  def propagate[T](): Mod[T] = {
+  def propagate[T]() {
     val future = main.masterRef ? PropagateMessage
-    val resultFuture =
-      Await.result(future, timeout.duration).asInstanceOf[Future[Mod[Any]]]
+    val result =
+      Await.result(future, timeout.duration)
 
-    Await.result(resultFuture, timeout.duration).asInstanceOf[Mod[T]]
+    //Await.result(resultFuture, timeout.duration).asInstanceOf[Mod[T]]
   }
 
   def put(key: Any, value: Any) {

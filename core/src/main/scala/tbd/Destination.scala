@@ -15,5 +15,17 @@
  */
 package tbd
 
-class Dest {
+import akka.pattern.ask
+import akka.actor.ActorRef
+import akka.util.Timeout
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import tbd.messages.CreateModMessage
+import tbd.mod.Mod
+
+class Dest[T](datastoreRef: ActorRef) {
+  implicit val timeout = Timeout(5 seconds)
+  val modFuture = datastoreRef ? CreateModMessage(null)
+  val mod = Await.result(modFuture, timeout.duration).asInstanceOf[Mod[T]]
 }

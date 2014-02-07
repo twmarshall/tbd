@@ -43,12 +43,12 @@ class TBD(
 
   val log = Logging(system, "TBD")
 
+  implicit val timeout = Timeout(5 seconds)
+
   def read[T](mod: Mod[T], reader: (T) => (Changeable[T])): Changeable[T] = {
     log.debug("Executing read on  mod " + mod.id)
 
-    implicit val timeout = Timeout(5 seconds)
-
-    val readNode = ddg.addRead(mod.id, currentReader)
+    val readNode = ddg.addRead(mod.id, currentReader, reader)
 
     val outerReader = currentReader
     currentReader = readNode
@@ -62,24 +62,21 @@ class TBD(
     changeable
   }
 
-  def write[T](dest: Dest, value: T): Changeable[T] = {
-    implicit val timeout = Timeout(5 seconds)
-    val modFuture = datastoreRef ? CreateModMessage(value)
-    val mod = Await.result(modFuture, timeout.duration).asInstanceOf[Mod[T]]
-    log.debug("Writing " + value + " to " + mod.id)
-    new Changeable(mod)
+  def write[T](dest: Dest[T], value: T): Changeable[T] = {
+    log.debug("Writing " + value + " to " + dest.mod.id)
+    val future = datastoreRef ? UpdateModMessage(dest.mod.id, value)
+    Await.result(future, timeout.duration)
+    new Changeable(dest.mod)
   }
 
-  def mod[T](initializer: Dest => Changeable[T]): Mod[T] = {
-    initializer(new Dest()).mod
+  def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
+    initializer(new Dest(datastoreRef)).mod
   }
 
   var workerId = 0
-  def par[T, U](one: Dest => (Changeable[T]),
-		two: Dest => (Changeable[U])): Tuple2[Mod[T], Mod[U]] = {
-    implicit val timeout = Timeout(5 seconds)
-
-    val task =  new Task(((tbd: TBD) => two(new Dest))
+  def par[T, U](one: Dest[T] => (Changeable[T]),
+		two: Dest[U] => (Changeable[U])): Tuple2[Mod[T], Mod[U]] = {
+    val task =  new Task(((tbd: TBD) => two(new Dest[U](datastoreRef)))
       .asInstanceOf[(TBD) => (Changeable[Any])])
     val workerProps = Worker.props[U](workerId, datastoreRef)
     val workerRef = system.actorOf(workerProps, "worker" + workerId)
@@ -87,13 +84,13 @@ class TBD(
 
     val twoFuture = workerRef ? RunTaskMessage(task)
 
-    val oneMod = one(new Dest()).mod
+    val oneMod = one(new Dest[T](datastoreRef)).mod
 
     val twoMod = Await.result(twoFuture, timeout.duration).asInstanceOf[Mod[U]]
     new Tuple2(oneMod, twoMod)
   }
 
-  var memoId = 0
+  /*var memoId = 0
   def memo[T, U](): (List[Mod[T]]) => (() => Changeable[U]) => Changeable[U] = {
     implicit val timeout = Timeout(5 seconds)
     val thisMemoId = memoId
@@ -137,19 +134,19 @@ class TBD(
     val changeable = func()
     datastoreRef ! PutMessage("memo", thisMemoId :: args, changeable)
     changeable
-  }
+  }*/
 
   def map[T](arr: Array[Mod[T]], func: (T) => (T)): Array[Mod[T]] = {
     arr.map((elem) =>
-      mod((dest: Dest) => read(elem, (value: T) => write(dest, func(value)))))
+      mod((dest: Dest[T]) => read(elem, (value: T) => write(dest, func(value)))))
   }
 
   def map[T](node: Mod[ListNode[T]], func: (T) => (T)): Mod[ListNode[T]] = {
-    def innerMap(dest: Dest, lst: ListNode[T]): Changeable[ListNode[T]] = {
+    def innerMap(dest: Dest[ListNode[T]], lst: ListNode[T]): Changeable[ListNode[T]] = {
       if (lst != null) {
-        val newValue = mod((dest) =>
+        val newValue = mod((dest: Dest[T]) =>
           read(lst.value, (value: T) => write(dest, func(value))))
-        val newNext = mod((dest) =>
+        val newNext = mod((dest: Dest[ListNode[T]]) =>
           read(lst.next, (next: ListNode[T]) => innerMap(dest, next)))
         write(dest, new ListNode[T](newValue, newNext))
       } else {
@@ -160,12 +157,12 @@ class TBD(
   }
 
   def parMap[T](node: Mod[ListNode[T]], func: (T) => (T)): Mod[ListNode[T]] = {
-    def innerMap(dest: Dest, lst: ListNode[T]): Changeable[ListNode[T]] = {
+    def innerMap(dest: Dest[ListNode[T]], lst: ListNode[T]): Changeable[ListNode[T]] = {
       if (lst != null) {
 	      val modTuple =
-          par(valueDest => {
+          par((valueDest: Dest[T]) => {
 	          read(lst.value, (value: T) => write(valueDest, func(value)))
-	        }, nextDest => {
+	        }, (nextDest: Dest[ListNode[T]]) => {
 	          read(lst.next, (next: ListNode[T]) => innerMap(nextDest, next))
 	        })
         write(dest, new ListNode[T](modTuple._1, modTuple._2))

@@ -39,6 +39,7 @@ class Datastore extends Actor with ActorLogging {
 
   private def get(table: String, key: Any): Any = {
     val ret = tables(table)(key)
+    //log.debug("Getting (" + table + ", " + key + ") = " + ret)
     if (ret == null) {
       NullMessage
     } else {
@@ -47,11 +48,13 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private def put(table: String, key: Any, value: Any) {
+    //log.debug("Putting (" + table + ", " + key + ") = " + value)
     val mod = createMod(value)
     tables(table)(key) = mod
   }
 
   private def update(table: String, key: Any, value: Any): ModId = {
+    //log.debug("Updating (" + table + ", " + key + ") = " + value)
     val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
     updateMod(modId, value)
     modId
@@ -59,13 +62,16 @@ class Datastore extends Actor with ActorLogging {
 
   private def createMod[T](value: T): Mod[T] = {
     val mod = new Mod[T](self)
+    //log.debug("Created mod(" + mod.id + ") = " + value)
     tables("mods")(mod.id.value) = value
     mod
   }
 
-  private def updateMod(modId: ModId, value: Any) {
+  private def updateMod(modId: ModId, value: Any): Boolean = {
+    //log.debug("Updating mod(" + modId + ") to " + value)
     tables("mods")(modId.value) = value
     updated += modId
+    true
   }
 
   private def putMatrix(table: String, key: Any, value: Array[Array[Int]]): Matrix = {
@@ -91,13 +97,15 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private def asList(table: String): Mod[ListNode[Any]] = {
+    //log.debug("Getting " + table + " as a list.")
     var tail = createMod[ListNode[Any]](null)
-
+    println("??")
     for (elem <- tables(table)) {
+      println("ASD")
       val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))
       tail = head
     }
-
+    println("!!")
     tail
   }
 
@@ -118,7 +126,9 @@ class Datastore extends Actor with ActorLogging {
     case CreateModMessage(null) =>
       sender ! createMod(null)
     case UpdateModMessage(modId: ModId, value: Any) =>
-      updateMod(modId, value)
+      sender ! updateMod(modId, value)
+    case UpdateModMessage(modId: ModId, null) =>
+      sender ! updateMod(modId, null)
     case PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]]) =>
       sender ! putMatrix(table, key, value)
     case GetArrayMessage(table: String) =>

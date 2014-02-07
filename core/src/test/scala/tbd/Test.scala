@@ -21,7 +21,7 @@ import tbd.{Adjustable, Changeable, Dest, Mutator, ListNode, TBD}
 import tbd.mod.{Matrix, Mod}
 
 class ArrayMapTest extends Adjustable {
-  def run(dest: Dest, tbd: TBD): Changeable[Any] = {
+  def run(dest: Dest[Any], tbd: TBD): Changeable[Any] = {
     val array = tbd.input.getArray[Mod[String]]()
     val mappedArray = tbd.map(array, (_: String) + " mapped")
     tbd.write(dest, mappedArray)
@@ -29,7 +29,7 @@ class ArrayMapTest extends Adjustable {
 }
 
 class ListMapTest extends Adjustable {
-  def run(dest: Dest, tbd: TBD): Changeable[Any] = {
+  def run(dest: Dest[Any], tbd: TBD): Changeable[Any] = {
     val list = tbd.input.getList()
     val mappedList = tbd.parMap(list, (_: String) + " mapped")
     tbd.write(dest, mappedList)
@@ -37,7 +37,7 @@ class ListMapTest extends Adjustable {
 }
 
 class MatrixMultTest extends Adjustable {
-  def run(dest: Dest, tbd: TBD): Changeable[Any] = {
+  def run(dest: Dest[Any], tbd: TBD): Changeable[Any] = {
     val one = tbd.input.get[Matrix](1)
     val two = tbd.input.get[Matrix](2)
 
@@ -45,7 +45,7 @@ class MatrixMultTest extends Adjustable {
   }
 }
 
-class MemoTest extends Adjustable {
+/*class MemoTest extends Adjustable {
   // Note: real client applications should NOT have mutable state like this.
   // We are just using it to ensure that the memoized function doesn't get
   // reexecuted as appropriate.
@@ -69,7 +69,7 @@ class MemoTest extends Adjustable {
       tbd.read(one, (value2: Int) => tbd.write(dest, value1 + value2))
     }).asInstanceOf[Changeable[Any]]
   }
-}
+}*/
 
 class TestSpec extends FlatSpec with Matchers {
   "ArrayMapTest" should "return a correctly mapped array" in {
@@ -80,23 +80,28 @@ class TestSpec extends FlatSpec with Matchers {
     output.read().deep.mkString(", ") should be ("two mapped, one mapped")
 
     mutator.update(1, "three")
-    mutator.put(4, "four")
-    val propOutput = mutator.propagate[Array[Mod[String]]]()
-    propOutput.read().deep.mkString(", ") should be ("two mapped, four mapped, three mapped")
+    mutator.propagate[Array[Mod[String]]]()
+    val arr = output.read().asInstanceOf[Array[Mod[String]]]
+    output.read().deep.mkString(", ") should be ("two mapped, three mapped")
 
     mutator.shutdown()
   }
 
-  /*"ListMapTest" should "return a correctly mapped list" in {
+  "ListMapTest" should "return a correctly mapped list" in {
     val mutator = new Mutator()
     mutator.put(1, "one")
     mutator.put(2, "two")
     val output = mutator.run(new ListMapTest())
     output.read().toString should be ("(one mapped, two mapped)")
+
+    mutator.update(1, "three")
+    mutator.propagate()
+    output.read().toString should be ("(three mapped, two mapped)")
+
     mutator.shutdown()
   }
 
-  "MatrixMult" should "do stuff" in {
+  /*"MatrixMult" should "do stuff" in {
     val mutator = new Mutator()
     mutator.putMatrix(1, Array(Array(1, 3)))
     mutator.putMatrix(2, Array(Array(5), Array(6)))

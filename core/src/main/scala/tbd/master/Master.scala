@@ -49,12 +49,13 @@ class Master extends Actor with ActorLogging {
     i += 1
     val workerProps = Worker.props[T](i, datastoreRef)
     workerRef = context.actorOf(workerProps, "workerActor" + i)
-    workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(new Dest, tbd)))
+    workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(new Dest(datastoreRef), tbd)))
   }
 
-  private def propagate(): Future[Any] = {
+  private def propagate(): String = {
     log.info("Master actor initiating change propagation.")
-    workerRef ? PropagateMessage(updated)
+    val future = workerRef ? PropagateMessage(updated)
+    Await.result(future, timeout.duration).asInstanceOf[String]
   }
 
   def receive = {

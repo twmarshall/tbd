@@ -28,13 +28,13 @@ class Matrix(aMat: Array[Array[Mod[Int]]], datastoreRef: ActorRef) {
     for (i <- 0 to mat.size - 1) {
       arr(i) = new Array[Mod[Int]](that.mat(0).size)
       for (j <- 0 to that.mat(0).size - 1) {
-        def recur(k: Int, dest: Dest): Changeable[Int] = {
+        def recur(k: Int, dest: Dest[Int]): Changeable[Int] = {
           if (k >= mat(0).size)
             tbd.write(dest, 0)
           else
             tbd.read(mat(i)(k),
                      (value1: Int) => {
-                       val next = tbd.mod(dest => recur(k+1, dest))
+                       val next = tbd.mod((dest: Dest[Int]) => recur(k+1, dest))
                        tbd.read(that.mat(k)(j),
                                 (value2: Int) => {
                                   tbd.read(next,
@@ -44,7 +44,7 @@ class Matrix(aMat: Array[Array[Mod[Int]]], datastoreRef: ActorRef) {
                                 })
                      })
         }
-        arr(i)(j) = tbd.mod(dest => recur(0, dest))
+        arr(i)(j) = tbd.mod((dest: Dest[Int]) => recur(0, dest))
       }
     }
     new Matrix(arr, datastoreRef)

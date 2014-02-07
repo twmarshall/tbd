@@ -17,18 +17,23 @@ package tbd.ddg
 
 import scala.collection.mutable.{Map, PriorityQueue, Set}
 
+import tbd.Changeable
 import tbd.mod.ModId
 
 class DDG {
   var root = new RootNode
-  val reads = Map[ModId, Set[ReadNode]]()
+  val reads = Map[ModId, Set[ReadNode[Any]]]()
 
-  implicit val order = scala.math.Ordering[Double].on[ReadNode](_.timestamp.time)
-  var updated = PriorityQueue[ReadNode]()
+  implicit val order = scala.math.Ordering[Double]
+    .on[ReadNode[Any]](_.timestamp.time)
+  var updated = PriorityQueue[ReadNode[Any]]()
 
   val ordering = new Ordering()
 
-  def addRead(modId: ModId, aParent: Node): Node = {
+  def addRead[T](
+      modId: ModId,
+      aParent: Node,
+      reader: T => Changeable[T]): Node = {
     val parent =
       if (aParent == null) {
 	      root
@@ -43,13 +48,13 @@ class DDG {
 	      ordering.after(parent.children.last.timestamp)
       }
 
-    val readNode = new ReadNode(modId, parent, timestamp)
+    val readNode = new ReadNode(modId, parent, timestamp, reader)
     parent.addChild(readNode)
 
     if (reads.contains(modId)) {
-      reads(modId) += readNode
+      //reads(modId) += readNode
     } else {
-      reads(modId) = Set(readNode)
+      //reads(modId) = Set(readNode)
     }
 
     readNode
@@ -64,12 +69,23 @@ class DDG {
   }
 
   def modsUpdated(modIds: Set[ModId]) {
-    for (modId <- modIds) {
-      for (readNode <- reads(modId)) {
+    def innerUpdated(node: Node) {
+      if (node.modId != null &&
+          modIds.contains(node.modId) &&
+          node.isInstanceOf[ReadNode[Any]]) {
+        val readNode = node.asInstanceOf[ReadNode[Any]]
         readNode.updated = true
         updated += readNode
       }
+      for (child <- node.children) {
+        innerUpdated(child)
+      }
     }
+    innerUpdated(root)
+  }
+
+  def removeSubtree(node: Node) {
+    node.parent.removeChild(node)
   }
 
   override def toString = {
