@@ -49,13 +49,12 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private def put(table: String, key: Any, value: Any) {
-    tables(table)(key) = value
-  }
-
-  private def putMod(table: String, key: Any, value: Any): Mod[Any] = {
-    val mod = createMod(value)
-    tables(table)(key) = mod
-    mod
+    if (tables(table).contains(key)) {
+      updateMod(tables(table)(key).asInstanceOf[Mod[Any]].id, value)
+    } else {
+      val mod = createMod(value)
+      tables(table)(key) = mod
+    }
   }
 
   private def createMod[T](value: T): Mod[T] = {
@@ -127,8 +126,6 @@ class Datastore extends Actor with ActorLogging {
       sender ! get(table, key)
     case PutMessage(table: String, key: Any, value: Any) =>
       put(table, key, value)
-    case PutModMessage(table: String, key: Any, value: Any) =>
-      sender ! putMod(table, key, value)
     case CreateModMessage(value: Any) =>
       sender ! createMod(value)
     case CreateModMessage(null) =>

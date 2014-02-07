@@ -49,12 +49,6 @@ class Mutator {
     main.masterRef ! PutMessage("input", key, value)
   }
 
-  def putMod(key: Int, value: Any): Mod[Any] = {
-    val retFuture =
-      main.masterRef ? PutModMessage("input", key, value)
-    Await.result(retFuture, timeout.duration).asInstanceOf[Mod[Any]]
-  }
-
   def putMatrix(key: Int, value: Array[Array[Int]]) {
     main.masterRef ! PutMatrixMessage("input", key, value)
   }

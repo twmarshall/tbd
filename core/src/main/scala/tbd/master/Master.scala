@@ -63,10 +63,6 @@ class Master extends Actor with ActorLogging {
     case PutMessage(table: String, key: Any, value: Any) => {
       datastoreRef ! PutMessage(table, key, value)
     }
-    case PutModMessage(table: String, key: Any, value: Any) => {
-      val future = datastoreRef ? PutModMessage(table, key, value)
-      sender ! Await.result(future, timeout.duration)
-    }
     case PutMatrixMessage(
         table: String,
         key: Any,
