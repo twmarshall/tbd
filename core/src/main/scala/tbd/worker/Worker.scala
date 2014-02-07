@@ -16,6 +16,7 @@
 package tbd.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import scala.collection.mutable.Set
 
 import tbd.TBD
 import tbd.ddg.DDG
@@ -41,8 +42,11 @@ class Worker[T](id: Int, datastoreRef: ActorRef)
       sender ! output.mod
     }
 
-    case PropagateMessage => {
+    case PropagateMessage(updated: Set[ModId]) => {
       log.debug("Worker" + id + " actor asked to perform change propagation.")
+
+      ddg.modsUpdated(updated)
+
       val tbd = new TBD(ddg, datastoreRef, self, context.system, false)
       val output = task.func(tbd)
       sender ! output.mod

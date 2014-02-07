@@ -43,6 +43,6 @@ case class NullMessage
 
 // Master
 case class RunMessage(adjust: Adjustable)
-case class PropagateMessage
+case class PropagateMessage(updated: scala.collection.mutable.Set[ModId])
 case class RunTaskMessage(func: Task)
 case class ShutdownMessage

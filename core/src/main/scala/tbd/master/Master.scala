@@ -18,12 +18,14 @@ package tbd.master
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
+import scala.collection.mutable.Set
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
 import tbd.{Adjustable, Dest, TBD}
 import tbd.datastore.Datastore
 import tbd.messages._
+import tbd.mod.ModId
 import tbd.worker.{Worker, Task}
 
 object Master {
@@ -41,6 +43,8 @@ class Master extends Actor with ActorLogging {
 
   implicit val timeout = Timeout(5 seconds)
 
+  private val updated = Set[ModId]()
+
   private def runTask[T](adjust: Adjustable): Future[Any] = {
     i += 1
     val workerProps = Worker.props[T](i, datastoreRef)
@@ -50,7 +54,7 @@ class Master extends Actor with ActorLogging {
 
   private def propagate(): Future[Any] = {
     log.info("Master actor initiating change propagation.")
-    workerRef ? PropagateMessage
+    workerRef ? PropagateMessage(updated)
   }
 
   def receive = {
@@ -64,7 +68,9 @@ class Master extends Actor with ActorLogging {
       datastoreRef ! PutMessage(table, key, value)
     }
     case UpdateMessage(table: String, key: Any, value: Any) => {
-      datastoreRef ! UpdateMessage(table, key, value)
+      val modIdFuture = datastoreRef ? UpdateMessage(table, key, value)
+      val modId = Await.result(modIdFuture, timeout.duration).asInstanceOf[ModId]
+      updated += modId
     }
     case PutMatrixMessage(
         table: String,

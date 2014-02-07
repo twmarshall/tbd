@@ -87,7 +87,7 @@ class TestSpec extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 
-  "ListMapTest" should "return a correctly mapped list" in {
+  /*"ListMapTest" should "return a correctly mapped list" in {
     val mutator = new Mutator()
     mutator.put(1, "one")
     mutator.put(2, "two")
@@ -102,7 +102,7 @@ class TestSpec extends FlatSpec with Matchers {
     mutator.putMatrix(2, Array(Array(5), Array(6)))
     val output = mutator.run(new MatrixMultTest())
     mutator.shutdown()
-  }
+  }*/
 
   /*"MemoTest" should "do stuff" in {
     val mutator = new Mutator()

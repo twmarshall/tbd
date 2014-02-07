@@ -15,7 +15,7 @@
  */
 package tbd.ddg
 
-import scala.collection.mutable.{Map, PriorityQueue}
+import scala.collection.mutable.{Map, PriorityQueue, Set}
 
 import tbd.mod.ModId
 
@@ -31,16 +31,16 @@ class DDG {
   def addRead(modId: ModId, aParent: Node): Node = {
     val parent =
       if (aParent == null) {
-	root
+	      root
       } else {
-	aParent
+	      aParent
       }
 
     val timestamp =
       if (parent.children.size == 0) {
-	ordering.after(parent.timestamp)
+	      ordering.after(parent.timestamp)
       } else {
-	ordering.after(parent.children.last.timestamp)
+	      ordering.after(parent.children.last.timestamp)
       }
 
     val readNode = new ReadNode(modId, parent, timestamp)
@@ -63,10 +63,12 @@ class DDG {
     writeNode
   }
 
-  def modUpdated(modId: ModId) {
-    for (readNode <- reads(modId)) {
-      readNode.updated = true
-      updated += readNode
+  def modsUpdated(modIds: Set[ModId]) {
+    for (modId <- modIds) {
+      for (readNode <- reads(modId)) {
+        readNode.updated = true
+        updated += readNode
+      }
     }
   }
 
