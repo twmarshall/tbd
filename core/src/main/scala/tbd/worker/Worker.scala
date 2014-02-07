@@ -48,10 +48,6 @@ class Worker[T](id: Int, datastoreRef: ActorRef)
       sender ! output.mod
     }
 
-    case ModUpdatedMessage(modId: ModId) => {
-      ddg.modUpdated(modId)
-    }
-
     case x => log.warning("Worker" + id + " actor received unhandled message " +
 			  x + " from " + sender)
   }

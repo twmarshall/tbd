@@ -29,12 +29,7 @@ class Mod[T](datastoreRef: ActorRef) {
   def read(workerRef: ActorRef = null): T = {
     implicit val timeout = Timeout(5 seconds)
 
-    val readFuture =
-      if (workerRef == null) {
-	      datastoreRef ? GetMessage("mods", id.value)
-      } else {
-	      datastoreRef ? ReadModMessage(id, workerRef)
-      }
+    val readFuture = datastoreRef ? GetMessage("mods", id.value)
     val ret = Await.result(readFuture, timeout.duration)
 
     ret match {
