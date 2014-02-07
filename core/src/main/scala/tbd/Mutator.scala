@@ -45,8 +45,12 @@ class Mutator {
     Await.result(resultFuture, timeout.duration).asInstanceOf[Mod[T]]
   }
 
-  def put(key: Int, value: Any) {
+  def put(key: Any, value: Any) {
     main.masterRef ! PutMessage("input", key, value)
+  }
+
+  def update(key: Any, value: Any) {
+    main.masterRef ! UpdateMessage("input", key, value)
   }
 
   def putMatrix(key: Int, value: Array[Array[Int]]) {

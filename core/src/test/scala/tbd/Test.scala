@@ -79,7 +79,7 @@ class TestSpec extends FlatSpec with Matchers {
     val output = mutator.run[Array[Mod[String]]](new ArrayMapTest())
     output.read().deep.mkString(", ") should be ("two mapped, one mapped")
 
-    mutator.put(1, "three")
+    mutator.update(1, "three")
     mutator.put(4, "four")
     val propOutput = mutator.propagate[Array[Mod[String]]]()
     propOutput.read().deep.mkString(", ") should be ("two mapped, four mapped, three mapped")

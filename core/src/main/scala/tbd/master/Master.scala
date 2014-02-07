@@ -63,6 +63,9 @@ class Master extends Actor with ActorLogging {
     case PutMessage(table: String, key: Any, value: Any) => {
       datastoreRef ! PutMessage(table, key, value)
     }
+    case UpdateMessage(table: String, key: Any, value: Any) => {
+      datastoreRef ! UpdateMessage(table, key, value)
+    }
     case PutMatrixMessage(
         table: String,
         key: Any,

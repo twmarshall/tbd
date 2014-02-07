@@ -31,6 +31,8 @@ case class ToStringMessage
 case class CreateTableMessage(table: String)
 case class GetMessage(table: String, key: Any)
 case class PutMessage(table: String, key: Any, value: Any)
+case class UpdateMessage(table: String, key: Any, value: Any)
+
 case class CreateModMessage(value: Any)
 case class UpdateModMessage(modId: ModId, value: Any)
 case class PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]])
