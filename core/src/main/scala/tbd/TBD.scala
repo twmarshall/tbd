@@ -23,7 +23,6 @@ import scala.concurrent.{Await, Promise}
 import scala.concurrent.duration._
 
 import tbd.ddg.{DDG, Node}
-import tbd.input.Reader
 import tbd.messages._
 import tbd.mod.{Mod, ModId}
 import tbd.worker.{Worker, Task}
