@@ -19,7 +19,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.duration._
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 import tbd.{Adjustable, Dest, TBD}
 import tbd.datastore.Datastore
@@ -39,17 +39,17 @@ class Master extends Actor with ActorLogging {
 
   private var i = 0
 
+  implicit val timeout = Timeout(5 seconds)
+
   private def runTask[T](adjust: Adjustable): Future[Any] = {
     i += 1
     val workerProps = Worker.props[T](i, datastoreRef)
     workerRef = context.actorOf(workerProps, "workerActor" + i)
-    implicit val timeout = Timeout(5 seconds)
     workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(new Dest, tbd)))
   }
 
   private def propagate(): Future[Any] = {
     log.info("Master actor initiating change propagation.")
-    implicit val timeout = Timeout(5 seconds)
     workerRef ? PropagateMessage
   }
 
@@ -59,6 +59,20 @@ class Master extends Actor with ActorLogging {
     }
     case PropagateMessage => {
       sender ! propagate()
+    }
+    case PutMessage(table: String, key: Any, value: Any) => {
+      datastoreRef ! PutMessage(table, key, value)
+    }
+    case PutModMessage(table: String, key: Any, value: Any) => {
+      val future = datastoreRef ? PutModMessage(table, key, value)
+      sender ! Await.result(future, timeout.duration)
+    }
+    case PutMatrixMessage(
+        table: String,
+        key: Any,
+        value: Array[Array[Int]]) => {
+      val future = datastoreRef ? PutMatrixMessage(table, key, value)
+      sender ! Await.result(future, timeout.duration)
     }
     case ShutdownMessage => {
       context.system.shutdown()

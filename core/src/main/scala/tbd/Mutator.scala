@@ -20,17 +20,16 @@ import akka.util.Timeout
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
-import tbd.input.MutatorInput
 import tbd.master.Main
-import tbd.messages.{PropagateMessage, RunMessage, ShutdownMessage}
+import tbd.messages._
 import tbd.mod.Mod
 
 class Mutator {
   val main = new Main()
-  val input = new MutatorInput(main.datastoreRef)
+
+  implicit val timeout = Timeout(5 seconds)
 
   def run[T](adjust: Adjustable): Mod[T] = {
-    implicit val timeout = Timeout(5 seconds)
     val future = main.masterRef ? RunMessage(adjust)
     val resultFuture =
       Await.result(future, timeout.duration).asInstanceOf[Future[Mod[Any]]]
@@ -39,12 +38,25 @@ class Mutator {
   }
 
   def propagate[T](): Mod[T] = {
-    implicit val timeout = Timeout(5 seconds)
     val future = main.masterRef ? PropagateMessage
     val resultFuture =
       Await.result(future, timeout.duration).asInstanceOf[Future[Mod[Any]]]
 
     Await.result(resultFuture, timeout.duration).asInstanceOf[Mod[T]]
+  }
+
+  def put(key: Int, value: Any) {
+    main.masterRef ! PutMessage("input", key, value)
+  }
+
+  def putMod(key: Int, value: Any): Mod[Any] = {
+    val retFuture =
+      main.masterRef ? PutModMessage("input", key, value)
+    Await.result(retFuture, timeout.duration).asInstanceOf[Mod[Any]]
+  }
+
+  def putMatrix(key: Int, value: Array[Array[Int]]) {
+    main.masterRef ! PutMatrixMessage("input", key, value)
   }
 
   def shutdown() {

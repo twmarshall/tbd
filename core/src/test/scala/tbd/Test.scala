@@ -74,13 +74,13 @@ class MemoTest extends Adjustable {
 class TestSpec extends FlatSpec with Matchers {
   "ArrayMapTest" should "return a correctly mapped array" in {
     val mutator = new Mutator()
-    val oneMod = mutator.input.putMod(1, "one")
-    mutator.input.putMod(2, "two")
+    val oneMod = mutator.putMod(1, "one")
+    mutator.putMod(2, "two")
     val output = mutator.run[Array[Mod[String]]](new ArrayMapTest())
     output.read().deep.mkString(", ") should be ("two mapped, one mapped")
 
     oneMod.update("three")
-    mutator.input.putMod(4, "four")
+    mutator.putMod(4, "four")
     val propOutput = mutator.propagate[Array[Mod[String]]]()
     propOutput.read().deep.mkString(", ") should be ("two mapped, four mapped, three mapped")
 
@@ -89,8 +89,8 @@ class TestSpec extends FlatSpec with Matchers {
 
   "ListMapTest" should "return a correctly mapped list" in {
     val mutator = new Mutator()
-    mutator.input.putMod(1, "one")
-    mutator.input.putMod(2, "two")
+    mutator.putMod(1, "one")
+    mutator.putMod(2, "two")
     val output = mutator.run(new ListMapTest())
     output.read().toString should be ("(one mapped, two mapped)")
     mutator.shutdown()
@@ -98,16 +98,16 @@ class TestSpec extends FlatSpec with Matchers {
 
   "MatrixMult" should "do stuff" in {
     val mutator = new Mutator()
-    mutator.input.putMatrix(1, Array(Array(1, 3)))
-    mutator.input.putMatrix(2, Array(Array(5), Array(6)))
+    mutator.putMatrix(1, Array(Array(1, 3)))
+    mutator.putMatrix(2, Array(Array(5), Array(6)))
     val output = mutator.run(new MatrixMultTest())
     mutator.shutdown()
   }
 
   "MemoTest" should "do stuff" in {
     val mutator = new Mutator()
-    mutator.input.putMod(1, 1)
-    val twoMod = mutator.input.putMod(2, 10)
+    mutator.putMod(1, 1)
+    val twoMod = mutator.putMod(2, 10)
     val test = new MemoTest()
     val output = mutator.run[Int](test)
     output.read() should be (12)
