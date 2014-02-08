@@ -41,10 +41,6 @@ class Datastore extends Actor with ActorLogging {
 
   implicit val timeout = Timeout(5 seconds)
 
-  private def createTable(table: String) {
-    tables(table) = Map[Any, Any]()
-  }
-
   private def get(table: String, key: Any): Any = {
     val ret = tables(table)(key)
 
@@ -53,17 +49,6 @@ class Datastore extends Actor with ActorLogging {
     } else {
       ret
     }
-  }
-
-  private def put(table: String, key: Any, value: Any) {
-    val mod = createMod(value)
-    tables(table)(key) = mod
-  }
-
-  private def update(table: String, key: Any, value: Any): ModId = {
-    val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
-    updateMod(modId, value)
-    modId
   }
 
   private def createMod[T](value: T): Mod[T] = {
@@ -85,75 +70,87 @@ class Datastore extends Actor with ActorLogging {
     true
   }
 
-  private def readMod(modId: ModId, workerRef: ActorRef): Any = {
-    dependencies(modId) += workerRef
-    get("mods", modId.value)
-  }
-
-  private def putMatrix(table: String, key: Any, value: Array[Array[Int]]): Matrix = {
-    val mat = new Matrix(value.map(row => {
-      row.map(cell => {
-        createMod(cell)
-      })
-    }), self)
-    tables(table)(key) = mat
-    mat
-  }
-
-  private def asArray(table: String): Array[Mod[Any]] = {
-    val arr = new Array[Mod[Any]](tables(table).size)
-
-    var i = 0
-    for (elem <- tables(table)) {
-      arr(i) = elem._2.asInstanceOf[Mod[Any]]
-      i += 1
-    }
-
-    arr
-  }
-
-  private def asList(table: String): Mod[ListNode[Any]] = {
-    var tail = createMod[ListNode[Any]](null)
-
-    for (elem <- tables(table)) {
-      val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))
-      tail = head
-    }
-
-    tail
-  }
-
-  private def getUpdated(): Set[ModId] =
-    updated
-
   def receive = {
-    case CreateTableMessage(table: String) =>
-      createTable(table)
-    case GetMessage(table: String, key: Any) =>
+    case CreateTableMessage(table: String) => {
+      tables(table) = Map[Any, Any]()
+    }
+
+    case GetMessage(table: String, key: Any) => {
       sender ! get(table, key)
-    case PutMessage(table: String, key: Any, value: Any) =>
-      put(table, key, value)
-    case UpdateMessage(table: String, key: Any, value: Any) =>
-      sender ! update(table, key, value)
-    case CreateModMessage(value: Any) =>
+    }
+
+    case PutMessage(table: String, key: Any, value: Any) => {
+      val mod = createMod(value)
+      tables(table)(key) = mod
+    }
+
+    case UpdateMessage(table: String, key: Any, value: Any) => {
+      val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
+      updateMod(modId, value)
+      sender ! modId
+    }
+
+    case CreateModMessage(value: Any) => {
       sender ! createMod(value)
-    case CreateModMessage(null) =>
+    }
+
+    case CreateModMessage(null) => {
       sender ! createMod(null)
-    case UpdateModMessage(modId: ModId, value: Any) =>
+    }
+
+    case UpdateModMessage(modId: ModId, value: Any) => {
       sender ! updateMod(modId, value)
-    case UpdateModMessage(modId: ModId, null) =>
+    }
+
+    case UpdateModMessage(modId: ModId, null) => {
       sender ! updateMod(modId, null)
-    case ReadModMessage(modId: ModId, workerRef: ActorRef) =>
-      sender ! readMod(modId, workerRef)
-    case PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]]) =>
-      sender ! putMatrix(table, key, value)
-    case GetArrayMessage(table: String) =>
-      sender ! asArray(table)
-    case GetListMessage(table: String) =>
-      sender ! asList(table)
-    case GetUpdatedMessage =>
-      sender ! getUpdated()
-    case x => log.warning("Datastore actor received unhandled message " +
-                          x + " from " + sender)
+    }
+
+    case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
+      dependencies(modId) += workerRef
+      sender ! get("mods", modId.value)
+    }
+
+    case PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]]) => {
+      val mat = new Matrix(value.map(row => {
+        row.map(cell => {
+          createMod(cell)
+        })
+      }), self)
+      tables(table)(key) = mat
+      sender ! mat
+    }
+
+    case GetArrayMessage(table: String) => {
+      val arr = new Array[Mod[Any]](tables(table).size)
+
+      var i = 0
+      for (elem <- tables(table)) {
+        arr(i) = elem._2.asInstanceOf[Mod[Any]]
+        i += 1
+      }
+
+      sender ! arr
+    }
+
+    case GetListMessage(table: String) => {
+      var tail = createMod[ListNode[Any]](null)
+
+      for (elem <- tables(table)) {
+        val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))
+        tail = head
+      }
+
+      sender ! tail
+    }
+
+    case GetUpdatedMessage => {
+      sender ! updated
+    }
+
+    case x => {
+      log.warning("Datastore actor received unhandled message " +
+                  x + " from " + sender)
+    }
   }
 }
