@@ -76,16 +76,21 @@ class TBD(
   var workerId = 0
   def par[T, U](one: Dest[T] => (Changeable[T]),
 		two: Dest[U] => (Changeable[U])): Tuple2[Mod[T], Mod[U]] = {
-    val task =  new Task(((tbd: TBD) => two(new Dest[U](datastoreRef)))
+    val task1 =  new Task(((tbd: TBD) => one(new Dest[T](datastoreRef)))
       .asInstanceOf[(TBD) => (Changeable[Any])])
-    val workerProps = Worker.props[U](workerId, datastoreRef)
-    val workerRef = system.actorOf(workerProps, "worker" + workerId)
+    val workerProps1 = Worker.props[U](workerId, datastoreRef)
+    val workerRef1 = system.actorOf(workerProps1, "worker" + workerId)
     workerId += 1
+    val oneFuture = workerRef1 ? RunTaskMessage(task1)
 
-    val twoFuture = workerRef ? RunTaskMessage(task)
+    val task2 =  new Task(((tbd: TBD) => two(new Dest[U](datastoreRef)))
+      .asInstanceOf[(TBD) => (Changeable[Any])])
+    val workerProps2 = Worker.props[U](workerId, datastoreRef)
+    val workerRef2 = system.actorOf(workerProps2, "worker" + workerId)
+    workerId += 1
+    val twoFuture = workerRef2 ? RunTaskMessage(task2)
 
-    val oneMod = one(new Dest[T](datastoreRef)).mod
-
+    val oneMod = Await.result(oneFuture, timeout.duration).asInstanceOf[Mod[T]]
     val twoMod = Await.result(twoFuture, timeout.duration).asInstanceOf[Mod[U]]
     new Tuple2(oneMod, twoMod)
   }
