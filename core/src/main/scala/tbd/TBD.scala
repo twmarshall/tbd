@@ -32,6 +32,7 @@ object TBD {
 }
 
 class TBD(
+    id: String,
     ddg: DDG,
     datastoreRef: ActorRef,
     workerRef: ActorRef,
@@ -49,6 +50,7 @@ class TBD(
     log.debug("Executing read on  mod " + mod.id)
 
     val readNode = ddg.addRead(mod.id, currentReader, reader)
+    log.debug("Contents of DDG after adding read:\n" + ddg)
 
     val outerReader = currentReader
     currentReader = readNode
@@ -56,8 +58,6 @@ class TBD(
     currentReader = outerReader
 
     ddg.addWrite(changeable.mod.id, readNode)
-
-    log.debug("Contents of DDG after read:\n" + ddg)
 
     changeable
   }
@@ -74,18 +74,24 @@ class TBD(
   }
 
   var workerId = 0
-  def par[T, U](one: () => T, two: () => U): Tuple2[T, U] = {
-    val task1 =  new Task(((tbd: TBD) => one()))
-    val workerProps1 = Worker.props[U](workerId, datastoreRef)
-    val workerRef1 = system.actorOf(workerProps1, "worker" + workerId)
+  def par[T, U](one: TBD => T, two: TBD => U): Tuple2[T, U] = {
+    log.debug("Executing par.")
+    val task1 =  new Task(((tbd: TBD) => one(tbd)))
+    val workerProps1 =
+      Worker.props[U](id + "-" + workerId, datastoreRef, workerRef)
+    val workerRef1 = system.actorOf(workerProps1, id + "-" + workerId)
     workerId += 1
     val oneFuture = workerRef1 ? RunTaskMessage(task1)
 
-    val task2 =  new Task(((tbd: TBD) => two()))
-    val workerProps2 = Worker.props[U](workerId, datastoreRef)
-    val workerRef2 = system.actorOf(workerProps2, "worker" + workerId)
+    val task2 =  new Task(((tbd: TBD) => two(tbd)))
+    val workerProps2 =
+      Worker.props[U](id + "-" + workerId, datastoreRef, workerRef)
+    val workerRef2 = system.actorOf(workerProps2, id + "-" +workerId)
     workerId += 1
     val twoFuture = workerRef2 ? RunTaskMessage(task2)
+
+    ddg.addPar(workerRef1, workerRef2, currentReader)
+    log.debug("DDG after adding par node:\n" + ddg)
 
     val oneRet = Await.result(oneFuture, timeout.duration).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, timeout.duration).asInstanceOf[U]
@@ -159,23 +165,28 @@ class TBD(
   }
 
   def parMap[T](node: Mod[ListNode[T]], func: (T) => (T)): Mod[ListNode[T]] = {
-    def innerMap(dest: Dest[ListNode[T]], lst: ListNode[T]): Changeable[ListNode[T]] = {
+    def innerMap(tbd: TBD, dest: Dest[ListNode[T]], lst: ListNode[T]):
+        Changeable[ListNode[T]] = {
       if (lst != null) {
 	      val modTuple =
-          par(() => {
-	          mod((valueDest: Dest[T]) => {
-              read(lst.value, (value: T) => write(valueDest, func(value)))
+          tbd.par((tbd: TBD) => {
+	          tbd.mod((valueDest: Dest[T]) => {
+              tbd.read(lst.value, (value: T) => {
+                tbd.write(valueDest, func(value))
+              })
             })
-	        }, () => {
-            mod((nextDest: Dest[ListNode[T]]) => {
-	            read(lst.next, (next: ListNode[T]) => innerMap(nextDest, next))
+	        }, (tbd: TBD) => {
+            tbd.mod((nextDest: Dest[ListNode[T]]) => {
+	            tbd.read(lst.next, (next: ListNode[T]) => {
+                innerMap(tbd, nextDest, next)
+              })
             })
 	        })
-        write(dest, new ListNode[T](modTuple._1, modTuple._2))
+        tbd.write(dest, new ListNode[T](modTuple._1, modTuple._2))
       } else {
-        write(dest, null)
+        tbd.write(dest, null)
       }
     }
-    mod((dest) => read(node, (lst: ListNode[T]) => innerMap(dest, lst)))
+    mod((dest) => read(node, (lst: ListNode[T]) => innerMap(this, dest, lst)))
   }
 }

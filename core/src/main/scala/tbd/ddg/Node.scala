@@ -15,6 +15,7 @@
  */
 package tbd.ddg
 
+import akka.actor.ActorRef
 import scala.collection.mutable.Set
 
 import tbd.Changeable
@@ -62,6 +63,20 @@ class ReadNode[T](aModId: ModId, aParent: Node, aTimestamp: Timestamp, aReader: 
 class WriteNode(aModId: ModId, aParent: Node, aTimestamp: Timestamp)
     extends Node(aModId, aParent, aTimestamp) {
   def name() = "WriteNode"
+}
+
+class ParNode(
+    aWorkerRef1: ActorRef,
+    aWorkerRef2: ActorRef,
+    aParent: Node,
+    aTimestamp: Timestamp) extends Node(null, aParent, aTimestamp) {
+  val workerRef1 = aWorkerRef1
+  val workerRef2 = aWorkerRef2
+
+  var pebble1 = false
+  var pebble2 = false
+
+  def name() = "ParNode (" + pebble1 + ", " + pebble2 + ")"
 }
 
 class RootNode extends Node(null, null, null) {

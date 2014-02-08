@@ -23,53 +23,86 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import tbd.TBD
-import tbd.ddg.DDG
+import tbd.ddg.{DDG, ParNode, ReadNode}
 import tbd.messages._
 import tbd.mod.ModId
 
 object Worker {
-  def props[T](id: Int, datastoreRef: ActorRef): Props =
-    Props(classOf[Worker[T]], id, datastoreRef)
+  def props[T](id: String, datastoreRef: ActorRef, parent: ActorRef): Props =
+    Props(classOf[Worker[T]], id, datastoreRef, parent)
 }
 
-class Worker[T](id: Int, datastoreRef: ActorRef)
+class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
   extends Actor with ActorLogging {
   log.info("Worker " + id + " launched")
   private var task: Task = null
-  private val ddg = new DDG()
+  private val ddg = new DDG(log)
 
   implicit val timeout = Timeout(5 seconds)
 
   def receive = {
     case ModUpdatedMessage(modId) => {
-      log.debug("Worker" + id + " informed that mod(" + modId + ") has been updated.")
+      log.debug(id + " informed that mod(" + modId + ") has been updated.")
       ddg.modUpdated(modId)
+
+      if (parent != null) {
+        log.debug(id + " sending PebbleMessage to " + parent)
+        val future = parent ? PebbleMessage(self)
+        Await.result(future, timeout.duration)
+      }
+
       sender ! "okay"
     }
+
     case RunTaskMessage(aTask: Task) => {
       task = aTask
-      val tbd = new TBD(ddg, datastoreRef, self, context.system, true)
+      val tbd = new TBD(id, ddg, datastoreRef, self, context.system, true)
       val output = task.func(tbd)
       sender ! output
     }
 
+    case PebbleMessage(workerRef: ActorRef) => {
+      log.debug(id + " received PebbleMessage.")
+      val newPebble = ddg.parUpdated(workerRef)
+
+      if (newPebble && parent != null) {
+        val future = parent ? PebbleMessage(self)
+        Await.result(future, timeout.duration)
+      }
+
+      sender ! "okay"
+    }
+
     case PropagateMessage => {
-      log.debug("Worker" + id + " actor asked to perform change propagation.")
+      log.debug(id + " actor asked to perform change propagation." + ddg.updated.size)
       log.debug("Contents of the DDG:\n" + ddg)
 
       while (!ddg.updated.isEmpty) {
-        val readNode = ddg.updated.dequeue
-        log.debug("Updating " + readNode.toString(""))
-        ddg.removeSubtree(readNode)
-        val future = datastoreRef ? GetMessage("mods", readNode.modId.value)
-        val newValue = Await.result(future, timeout.duration)
-        readNode.reader(newValue)
+        val node = ddg.updated.dequeue
+        log.debug("Updating " + node.toString(""))
+
+        if (node.isInstanceOf[ReadNode[Any]]) {
+          val readNode = node.asInstanceOf[ReadNode[Any]]
+          ddg.removeSubtree(readNode)
+          val future = datastoreRef ? GetMessage("mods", readNode.modId.value)
+          val newValue = Await.result(future, timeout.duration)
+          readNode.reader(newValue)
+        } else {
+          val parNode = node.asInstanceOf[ParNode]
+          if (parNode.pebble1) {
+            parNode.workerRef1 ? PropagateMessage
+          }
+          if (parNode.pebble2) {
+            parNode.workerRef2 ? PropagateMessage
+          }
+        }
       }
 
       sender ! "done"
     }
 
-    case x => log.warning("Worker" + id + " actor received unhandled message " +
-			  x + " from " + sender)
+    case x => {
+      log.warning(id + " received unhandled message " + x + " from " + sender)
+    }
   }
 }

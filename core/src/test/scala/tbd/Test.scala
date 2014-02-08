@@ -102,6 +102,10 @@ class TestSpec extends FlatSpec with Matchers {
     mutator.propagate()
     output.read().toString should be ("(three mapped, two mapped, four mapped)")
 
+    mutator.update(2, "five")
+    mutator.propagate()
+    output.read().toString should be ("(three mapped, five mapped, four mapped)")
+
     mutator.shutdown()
   }
 

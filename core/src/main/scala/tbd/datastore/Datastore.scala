@@ -63,15 +63,22 @@ class Datastore extends Actor with ActorLogging {
     mod
   }
 
-  private def updateMod(modId: ModId, value: Any): Boolean = {
+  private def updateMod(modId: ModId, value: Any, sender: ActorRef): Boolean = {
+    //log.debug("Updating mod(" + modId+ ") = " + value)
     tables("mods")(modId.value) = value
 
     for (workerRef <- dependencies(modId)) {
-      val future = workerRef ? ModUpdatedMessage(modId)
-      Await.result(future, timeout.duration)
+      if (workerRef != sender) {
+        log.debug("Informing " + workerRef + " that mod(" +
+                  modId + ") has been updated.")
+        val future = workerRef ? ModUpdatedMessage(modId)
+        Await.result(future, timeout.duration)
+      }
     }
 
     updated += modId
+
+    log.debug("Done updating")
     true
   }
 
@@ -92,7 +99,7 @@ class Datastore extends Actor with ActorLogging {
         val newTails = Set[Mod[ListNode[Any]]]()
         for (tail <- lists(table)) {
           val newTail = createMod[ListNode[Any]](null)
-          updateMod(tail.id, new ListNode(mod, newTail))
+          updateMod(tail.id, new ListNode(mod, newTail), sender)
           newTails += newTail
         }
         lists(table) = newTails
@@ -103,7 +110,7 @@ class Datastore extends Actor with ActorLogging {
 
     case UpdateMessage(table: String, key: Any, value: Any) => {
       val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
-      updateMod(modId, value)
+      updateMod(modId, value, sender)
       sender ! modId
     }
 
@@ -116,11 +123,11 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case UpdateModMessage(modId: ModId, value: Any) => {
-      sender ! updateMod(modId, value)
+      sender ! updateMod(modId, value, sender)
     }
 
     case UpdateModMessage(modId: ModId, null) => {
-      sender ! updateMod(modId, null)
+      sender ! updateMod(modId, null, sender)
     }
 
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {

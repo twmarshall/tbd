@@ -15,18 +15,32 @@
  */
 package tbd.ddg
 
+import akka.actor.ActorRef
+import akka.event.LoggingAdapter
 import scala.collection.mutable.{Map, PriorityQueue, Set}
 
 import tbd.Changeable
 import tbd.mod.ModId
 
-class DDG {
+object DDG {
+  var lastId = 0
+
+  def getId(): Int = {
+    lastId += 1
+    lastId
+  }
+}
+
+class DDG(log: LoggingAdapter) {
+  val id = DDG.getId()
+
   var root = new RootNode
   val reads = Map[ModId, Set[ReadNode[Any]]]()
+  val pars = Map[ActorRef, ParNode]()
 
   implicit val order = scala.math.Ordering[Double]
-    .on[ReadNode[Any]](_.timestamp.time)
-  var updated = PriorityQueue[ReadNode[Any]]()
+    .on[Node](_.timestamp.time)
+  var updated = PriorityQueue[Node]()
 
   val ordering = new Ordering()
 
@@ -68,10 +82,47 @@ class DDG {
     writeNode
   }
 
+  def addPar(workerRef1: ActorRef, workerRef2: ActorRef, aParent: Node) {
+    val parent =
+      if (aParent == null) {
+	      root
+      } else {
+	      aParent
+      }
+
+    val timestamp =
+      if (parent.children.size == 0) {
+	      ordering.after(parent.timestamp)
+      } else {
+	      ordering.after(parent.children.last.timestamp)
+      }
+
+    val parNode = new ParNode(workerRef1, workerRef2, parent, timestamp)
+    parent.addChild(parNode)
+
+    pars(workerRef1) = parNode
+    pars(workerRef2) = parNode
+  }
+
   def modUpdated(modId: ModId) {
     for (readNode <- reads(modId)) {
       readNode.updated = true
       updated += readNode
+    }
+  }
+
+  // Pebbles a par node. Returns true iff the pebble did not already exist.
+  def parUpdated(workerRef: ActorRef): Boolean = {
+    val parNode = pars(workerRef)
+    updated += parNode
+    if (parNode.workerRef1 == workerRef) {
+      val ret = !parNode.pebble1
+      parNode.pebble1 = true
+      ret
+    } else {
+      val ret = !parNode.pebble2
+      parNode.pebble2 = true
+      ret
     }
   }
 
@@ -80,6 +131,6 @@ class DDG {
   }
 
   override def toString = {
-    root.toString("")
+    "DDG" + id + " = " + root.toString("")
   }
 }

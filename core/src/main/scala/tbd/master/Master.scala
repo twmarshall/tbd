@@ -45,8 +45,8 @@ class Master extends Actor with ActorLogging {
 
   private def runTask[T](adjust: Adjustable): Future[Any] = {
     i += 1
-    val workerProps = Worker.props[T](i, datastoreRef)
-    workerRef = context.actorOf(workerProps, "workerActor" + i)
+    val workerProps = Worker.props[T]("worker" + i, datastoreRef, null)
+    workerRef = context.actorOf(workerProps, "worker" + i)
     workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(new Dest(datastoreRef), tbd)))
   }
 
@@ -71,8 +71,8 @@ class Master extends Actor with ActorLogging {
     }
 
     case UpdateMessage(table: String, key: Any, value: Any) => {
-      val modIdFuture = datastoreRef ? UpdateMessage(table, key, value)
-      val modId = Await.result(modIdFuture, timeout.duration).asInstanceOf[ModId]
+      val future = datastoreRef ? UpdateMessage(table, key, value)
+      val modId = Await.result(future, timeout.duration).asInstanceOf[ModId]
     }
 
     case PutMatrixMessage(
