@@ -52,9 +52,9 @@ class DDG {
     parent.addChild(readNode)
 
     if (reads.contains(modId)) {
-      //reads(modId) += readNode
+      reads(modId) += readNode.asInstanceOf[ReadNode[Any]]
     } else {
-      //reads(modId) = Set(readNode)
+      reads(modId) = Set(readNode.asInstanceOf[ReadNode[Any]])
     }
 
     readNode
@@ -68,20 +68,11 @@ class DDG {
     writeNode
   }
 
-  def modsUpdated(modIds: Set[ModId]) {
-    def innerUpdated(node: Node) {
-      if (node.modId != null &&
-          modIds.contains(node.modId) &&
-          node.isInstanceOf[ReadNode[Any]]) {
-        val readNode = node.asInstanceOf[ReadNode[Any]]
-        readNode.updated = true
-        updated += readNode
-      }
-      for (child <- node.children) {
-        innerUpdated(child)
-      }
+  def modUpdated(modId: ModId) {
+    for (readNode <- reads(modId)) {
+      readNode.updated = true
+      updated += readNode
     }
-    innerUpdated(root)
   }
 
   def removeSubtree(node: Node) {

@@ -41,6 +41,10 @@ class Worker[T](id: Int, datastoreRef: ActorRef)
   implicit val timeout = Timeout(5 seconds)
 
   def receive = {
+    case ModUpdatedMessage(modId) => {
+      ddg.modUpdated(modId)
+      sender ! "okay"
+    }
     case RunTaskMessage(aTask: Task) => {
       task = aTask
       val tbd = new TBD(ddg, datastoreRef, self, context.system, true)
@@ -48,10 +52,9 @@ class Worker[T](id: Int, datastoreRef: ActorRef)
       sender ! output.mod
     }
 
-    case PropagateMessage(updated: Set[ModId]) => {
-      log.debug("Worker" + id + " actor asked to perform change propagation. " + updated.size)
-
-      ddg.modsUpdated(updated)
+    case PropagateMessage => {
+      log.debug("Worker" + id + " actor asked to perform change propagation.")
+      log.debug("Contents of the DDG:\n" + ddg)
 
       while (!ddg.updated.isEmpty) {
         val readNode = ddg.updated.dequeue

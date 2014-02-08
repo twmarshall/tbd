@@ -16,7 +16,11 @@
 package tbd.datastore
 
 import akka.actor.{Actor, ActorRef, ActorLogging, Props}
+import akka.pattern.ask
+import akka.util.Timeout
 import scala.collection.mutable.Map
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 import tbd.ListNode
 import tbd.messages._
@@ -31,7 +35,11 @@ class Datastore extends Actor with ActorLogging {
   tables("mods") = Map[Any, Any]()
   tables("memo") = Map[Any, Any]()
 
+  private val dependencies = Map[ModId, Set[ActorRef]]()
+
   private var updated = Set[ModId]()
+
+  implicit val timeout = Timeout(5 seconds)
 
   private def createTable(table: String) {
     tables(table) = Map[Any, Any]()
@@ -39,7 +47,7 @@ class Datastore extends Actor with ActorLogging {
 
   private def get(table: String, key: Any): Any = {
     val ret = tables(table)(key)
-    //log.debug("Getting (" + table + ", " + key + ") = " + ret)
+
     if (ret == null) {
       NullMessage
     } else {
@@ -48,13 +56,11 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private def put(table: String, key: Any, value: Any) {
-    //log.debug("Putting (" + table + ", " + key + ") = " + value)
     val mod = createMod(value)
     tables(table)(key) = mod
   }
 
   private def update(table: String, key: Any, value: Any): ModId = {
-    //log.debug("Updating (" + table + ", " + key + ") = " + value)
     val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
     updateMod(modId, value)
     modId
@@ -62,16 +68,26 @@ class Datastore extends Actor with ActorLogging {
 
   private def createMod[T](value: T): Mod[T] = {
     val mod = new Mod[T](self)
-    //log.debug("Created mod(" + mod.id + ") = " + value)
     tables("mods")(mod.id.value) = value
+    dependencies(mod.id) = Set[ActorRef]()
     mod
   }
 
   private def updateMod(modId: ModId, value: Any): Boolean = {
-    //log.debug("Updating mod(" + modId + ") to " + value)
     tables("mods")(modId.value) = value
+
+    for (workerRef <- dependencies(modId)) {
+      val future = workerRef ? ModUpdatedMessage(modId)
+      Await.result(future, timeout.duration)
+    }
+
     updated += modId
     true
+  }
+
+  private def readMod(modId: ModId, workerRef: ActorRef): Any = {
+    dependencies(modId) += workerRef
+    get("mods", modId.value)
   }
 
   private def putMatrix(table: String, key: Any, value: Array[Array[Int]]): Matrix = {
@@ -97,15 +113,13 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private def asList(table: String): Mod[ListNode[Any]] = {
-    //log.debug("Getting " + table + " as a list.")
     var tail = createMod[ListNode[Any]](null)
-    println("??")
+
     for (elem <- tables(table)) {
-      println("ASD")
       val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))
       tail = head
     }
-    println("!!")
+
     tail
   }
 
@@ -129,6 +143,8 @@ class Datastore extends Actor with ActorLogging {
       sender ! updateMod(modId, value)
     case UpdateModMessage(modId: ModId, null) =>
       sender ! updateMod(modId, null)
+    case ReadModMessage(modId: ModId, workerRef: ActorRef) =>
+      sender ! readMod(modId, workerRef)
     case PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]]) =>
       sender ! putMatrix(table, key, value)
     case GetArrayMessage(table: String) =>

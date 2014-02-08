@@ -35,6 +35,8 @@ case class UpdateMessage(table: String, key: Any, value: Any)
 
 case class CreateModMessage(value: Any)
 case class UpdateModMessage(modId: ModId, value: Any)
+case class ReadModMessage(modId: ModId, workerRef: ActorRef)
+
 case class PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]])
 case class GetArrayMessage(table: String)
 case class GetListMessage(table: String)
@@ -43,6 +45,9 @@ case class NullMessage
 
 // Master
 case class RunMessage(adjust: Adjustable)
-case class PropagateMessage(updated: scala.collection.mutable.Set[ModId])
-case class RunTaskMessage(func: Task)
 case class ShutdownMessage
+
+// Worker
+case class ModUpdatedMessage(modId: ModId)
+case class PropagateMessage
+case class RunTaskMessage(func: Task)
