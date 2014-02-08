@@ -60,16 +60,21 @@ class Master extends Actor with ActorLogging {
     case RunMessage(adjust: Adjustable) => {
       sender ! runTask(adjust)
     }
+
     case PropagateMessage => {
       sender ! propagate()
     }
+
     case PutMessage(table: String, key: Any, value: Any) => {
-      datastoreRef ! PutMessage(table, key, value)
+      val future = datastoreRef ? PutMessage(table, key, value)
+      Await.result(future, timeout.duration)
     }
+
     case UpdateMessage(table: String, key: Any, value: Any) => {
       val modIdFuture = datastoreRef ? UpdateMessage(table, key, value)
       val modId = Await.result(modIdFuture, timeout.duration).asInstanceOf[ModId]
     }
+
     case PutMatrixMessage(
         table: String,
         key: Any,
@@ -77,10 +82,12 @@ class Master extends Actor with ActorLogging {
       val future = datastoreRef ? PutMatrixMessage(table, key, value)
       sender ! Await.result(future, timeout.duration)
     }
+
     case ShutdownMessage => {
       context.system.shutdown()
       context.system.awaitTermination()
     }
+
     case x => log.warning("Master actor received unhandled message " +
 			  x + " from " + sender)
   }

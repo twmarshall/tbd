@@ -18,7 +18,7 @@ package tbd.datastore
 import akka.actor.{Actor, ActorRef, ActorLogging, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Map, Set}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -36,6 +36,11 @@ class Datastore extends Actor with ActorLogging {
   tables("memo") = Map[Any, Any]()
 
   private val dependencies = Map[ModId, Set[ActorRef]]()
+
+  // Maps the name of an input table to a set containing mods representing the
+  // tails of any linked lists that were returned containing this entire table,
+  // so that we can tolerate unsertions into tables.
+  private val lists = Map[String, Set[Mod[ListNode[Any]]]]()
 
   private var updated = Set[ModId]()
 
@@ -82,6 +87,18 @@ class Datastore extends Actor with ActorLogging {
     case PutMessage(table: String, key: Any, value: Any) => {
       val mod = createMod(value)
       tables(table)(key) = mod
+
+      if (lists.contains(table)) {
+        val newTails = Set[Mod[ListNode[Any]]]()
+        for (tail <- lists(table)) {
+          val newTail = createMod[ListNode[Any]](null)
+          updateMod(tail.id, new ListNode(mod, newTail))
+          newTails += newTail
+        }
+        lists(table) = newTails
+      }
+
+      sender ! mod.id
     }
 
     case UpdateMessage(table: String, key: Any, value: Any) => {
@@ -121,6 +138,8 @@ class Datastore extends Actor with ActorLogging {
       sender ! mat
     }
 
+    // Return all of the entries from the specified table as an array, allowing
+      // for updates to existing elements to be propagated.
     case GetArrayMessage(table: String) => {
       val arr = new Array[Mod[Any]](tables(table).size)
 
@@ -133,8 +152,17 @@ class Datastore extends Actor with ActorLogging {
       sender ! arr
     }
 
+    // Return all of the entries from the specified table as a linked list,
+    // allowing for both updates to existing elements and insertions to be
+    // propagated.
     case GetListMessage(table: String) => {
       var tail = createMod[ListNode[Any]](null)
+
+      if (lists.contains(table)) {
+        lists(table) += tail
+      } else {
+        lists(table) = Set(tail)
+      }
 
       for (elem <- tables(table)) {
         val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))

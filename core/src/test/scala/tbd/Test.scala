@@ -98,6 +98,10 @@ class TestSpec extends FlatSpec with Matchers {
     mutator.propagate()
     output.read().toString should be ("(three mapped, two mapped)")
 
+    mutator.put(3, "four")
+    mutator.propagate()
+    output.read().toString should be ("(three mapped, two mapped, four mapped)")
+
     mutator.shutdown()
   }
 

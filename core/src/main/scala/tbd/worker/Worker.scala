@@ -42,6 +42,7 @@ class Worker[T](id: Int, datastoreRef: ActorRef)
 
   def receive = {
     case ModUpdatedMessage(modId) => {
+      log.debug("Worker" + id + " informed that mod(" + modId + ") has been updated.")
       ddg.modUpdated(modId)
       sender ! "okay"
     }
