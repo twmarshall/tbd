@@ -50,7 +50,7 @@ class Worker[T](id: Int, datastoreRef: ActorRef)
       task = aTask
       val tbd = new TBD(ddg, datastoreRef, self, context.system, true)
       val output = task.func(tbd)
-      sender ! output.mod
+      sender ! output
     }
 
     case PropagateMessage => {
