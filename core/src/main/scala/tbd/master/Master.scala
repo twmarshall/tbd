@@ -51,7 +51,7 @@ class Master extends Actor with ActorLogging {
   }
 
   private def propagate(): String = {
-    log.info("Master actor initiating change propagation.")
+    log.info("\n\n\n\n\n\nMaster actor initiating change propagation.")
     val future = workerRef ? PropagateMessage
     Await.result(future, timeout.duration).asInstanceOf[String]
   }
@@ -68,11 +68,13 @@ class Master extends Actor with ActorLogging {
     case PutMessage(table: String, key: Any, value: Any) => {
       val future = datastoreRef ? PutMessage(table, key, value)
       Await.result(future, timeout.duration)
+      sender ! "okay"
     }
 
     case UpdateMessage(table: String, key: Any, value: Any) => {
       val future = datastoreRef ? UpdateMessage(table, key, value)
       val modId = Await.result(future, timeout.duration).asInstanceOf[ModId]
+      sender ! "okay"
     }
 
     case PutMatrixMessage(

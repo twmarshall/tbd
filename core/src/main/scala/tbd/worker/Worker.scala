@@ -62,10 +62,11 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case PebbleMessage(workerRef: ActorRef) => {
-      log.debug(id + " received PebbleMessage.")
       val newPebble = ddg.parUpdated(workerRef)
+      log.debug(id + " received PebbleMessage. newPebble = " + newPebble + "\n" + ddg)
 
       if (newPebble && parent != null) {
+        log.debug(id + " sending PebbleMessage to " + parent)
         val future = parent ? PebbleMessage(self)
         Await.result(future, timeout.duration)
       }
@@ -89,12 +90,23 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
           readNode.reader(newValue)
         } else {
           val parNode = node.asInstanceOf[ParNode]
-          if (parNode.pebble1) {
-            parNode.workerRef1 ? PropagateMessage
+          if (parNode.pebble1 && parNode.pebble2) {
+            val future1 = parNode.workerRef1 ? PropagateMessage
+            val future2 = parNode.workerRef2 ? PropagateMessage
+            Await.result(future1, timeout.duration)
+            Await.result(future2, timeout.duration)
+          } else if (parNode.pebble1) {
+            val future1 = parNode.workerRef1 ? PropagateMessage
+            Await.result(future1, timeout.duration)
+          } else if (parNode.pebble2) {
+            val future2 = parNode.workerRef2 ? PropagateMessage
+            Await.result(future2, timeout.duration)
+          } else {
+            log.warning("parNode in updated queue that is not pebbled.")
           }
-          if (parNode.pebble2) {
-            parNode.workerRef2 ? PropagateMessage
-          }
+
+          parNode.pebble1 = false
+          parNode.pebble2 = false
         }
       }
 

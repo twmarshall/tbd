@@ -42,7 +42,7 @@ class TBD(
   private var currentReader: Node = null
   val input = new Reader(datastoreRef)
 
-  val log = Logging(system, "TBD")
+  val log = Logging(system, "TBD" + id)
 
   implicit val timeout = Timeout(5 seconds)
 

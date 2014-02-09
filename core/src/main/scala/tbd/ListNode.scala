@@ -25,10 +25,10 @@ class ListNode[T](aValue: Mod[T], aNext: Mod[ListNode[T]]) {
     def toString(lst: ListNode[T]):String = {
       val nextRead = lst.next.read()
       val next =
-	if (nextRead != null)
-	  ", " + toString(nextRead)
-	else
-	  ")"
+	      if (nextRead != null)
+	        ", " + toString(nextRead)
+	      else
+	        ")"
 
       lst.value.read() + next
     }

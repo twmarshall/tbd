@@ -44,11 +44,13 @@ class Mutator {
   }
 
   def put(key: Any, value: Any) {
-    main.masterRef ! PutMessage("input", key, value)
+    val future = main.masterRef ? PutMessage("input", key, value)
+    Await.result(future, timeout.duration)
   }
 
   def update(key: Any, value: Any) {
-    main.masterRef ! UpdateMessage("input", key, value)
+    val future = main.masterRef ? UpdateMessage("input", key, value)
+    Await.result(future, timeout.duration)
   }
 
   def putMatrix(key: Int, value: Array[Array[Int]]) {

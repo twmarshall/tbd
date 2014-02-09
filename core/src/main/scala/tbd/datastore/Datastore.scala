@@ -64,7 +64,7 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private def updateMod(modId: ModId, value: Any, sender: ActorRef): Boolean = {
-    //log.debug("Updating mod(" + modId+ ") = " + value)
+    log.debug("Updating mod(" + modId+ ")")
     tables("mods")(modId.value) = value
 
     for (workerRef <- dependencies(modId)) {
@@ -78,7 +78,6 @@ class Datastore extends Actor with ActorLogging {
 
     updated += modId
 
-    log.debug("Done updating")
     true
   }
 
@@ -92,12 +91,14 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case PutMessage(table: String, key: Any, value: Any) => {
+      log.debug("PutMessage")
       val mod = createMod(value)
       tables(table)(key) = mod
 
       if (lists.contains(table)) {
         val newTails = Set[Mod[ListNode[Any]]]()
         for (tail <- lists(table)) {
+          log.debug("Appending to list for " + table)
           val newTail = createMod[ListNode[Any]](null)
           updateMod(tail.id, new ListNode(mod, newTail), sender)
           newTails += newTail
@@ -109,6 +110,7 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case UpdateMessage(table: String, key: Any, value: Any) => {
+      log.debug("UpdateMessage(" + table + ", " + key + ", " + value +")")
       val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
       updateMod(modId, value, sender)
       sender ! modId
