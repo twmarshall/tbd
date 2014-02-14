@@ -69,7 +69,14 @@ class DDG(log: LoggingAdapter) {
     readNode
   }
 
-  def addWrite(modId: ModId, parent: Node): Node = {
+  def addWrite(modId: ModId, aParent: Node): Node = {
+    val parent =
+      if (aParent == null) {
+	      root
+      } else {
+	      aParent
+      }
+
     val timestamp = nextTimestamp(parent)
     val writeNode = new WriteNode(modId, parent, timestamp)
 
@@ -126,7 +133,7 @@ class DDG(log: LoggingAdapter) {
   }
 
   def removeSubtree(node: Node) {
-    node.parent.removeChild(node)
+    node.children.clear()
   }
 
   override def toString = {

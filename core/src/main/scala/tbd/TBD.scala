@@ -39,7 +39,7 @@ class TBD(
     system: ActorSystem,
     initialRun: Boolean) {
 
-  private var currentReader: Node = null
+  var currentParent: Node = null
   val input = new Reader(datastoreRef)
 
   val log = Logging(system, "TBD" + id)
@@ -49,24 +49,27 @@ class TBD(
   def read[T](mod: Mod[T], reader: (T) => (Changeable[T])): Changeable[T] = {
     log.debug("Executing read on  mod " + mod.id)
 
-    val readNode = ddg.addRead(mod.id, currentReader, reader)
+    val readNode = ddg.addRead(mod.id, currentParent, reader)
     //log.debug("Contents of DDG after adding read:\n" + ddg)
 
-    val outerReader = currentReader
-    currentReader = readNode
+    val outerReader = currentParent
+    currentParent = readNode
     val changeable = reader(mod.read(workerRef))
-    currentReader = outerReader
-
-    ddg.addWrite(changeable.mod.id, readNode)
+    currentParent = outerReader
 
     changeable
   }
 
   def write[T](dest: Dest[T], value: T): Changeable[T] = {
     log.debug("Writing " + value + " to " + dest.mod.id)
+
     val future = datastoreRef ? UpdateModMessage(dest.mod.id, value)
     Await.result(future, timeout.duration)
-    new Changeable(dest.mod)
+
+    val changeable = new Changeable(dest.mod)
+    ddg.addWrite(changeable.mod.id, currentParent)
+
+    changeable
   }
 
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
@@ -90,7 +93,7 @@ class TBD(
     workerId += 1
     val twoFuture = workerRef2 ? RunTaskMessage(task2)
 
-    ddg.addPar(workerRef1, workerRef2, currentReader)
+    ddg.addPar(workerRef1, workerRef2, currentParent)
     //log.debug("DDG after adding par node:\n" + ddg)
 
     val oneRet = Await.result(oneFuture, timeout.duration).asInstanceOf[T]

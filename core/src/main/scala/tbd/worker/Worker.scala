@@ -37,6 +37,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
   log.info("Worker " + id + " launched")
   private var task: Task = null
   private val ddg = new DDG(log)
+  private val tbd = new TBD(id, ddg, datastoreRef, self, context.system, true)
 
   implicit val timeout = Timeout(5 seconds)
 
@@ -56,7 +57,6 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
 
     case RunTaskMessage(aTask: Task) => {
       task = aTask
-      val tbd = new TBD(id, ddg, datastoreRef, self, context.system, true)
       val output = task.func(tbd)
 
       if (parent == null) {
@@ -91,6 +91,8 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
           ddg.removeSubtree(readNode)
           val future = datastoreRef ? GetMessage("mods", readNode.modId.value)
           val newValue = Await.result(future, timeout.duration)
+
+          tbd.currentParent = readNode
           readNode.reader(newValue)
         } else {
           val parNode = node.asInstanceOf[ParNode]
