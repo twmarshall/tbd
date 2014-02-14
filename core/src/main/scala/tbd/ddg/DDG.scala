@@ -34,7 +34,7 @@ object DDG {
 class DDG(log: LoggingAdapter) {
   val id = DDG.getId()
 
-  var root = new RootNode
+  var root = new RootNode(id)
   val reads = Map[ModId, Set[ReadNode[Any]]]()
   val pars = Map[ActorRef, ParNode]()
 
@@ -55,15 +55,10 @@ class DDG(log: LoggingAdapter) {
 	      aParent
       }
 
-    val timestamp =
-      if (parent.children.size == 0) {
-	      ordering.after(parent.timestamp)
-      } else {
-	      ordering.after(parent.children.last.timestamp)
-      }
-
+    val timestamp = nextTimestamp(parent)
     val readNode = new ReadNode(modId, parent, timestamp, reader)
     parent.addChild(readNode)
+    
 
     if (reads.contains(modId)) {
       reads(modId) += readNode.asInstanceOf[ReadNode[Any]]
@@ -75,7 +70,8 @@ class DDG(log: LoggingAdapter) {
   }
 
   def addWrite(modId: ModId, parent: Node): Node = {
-    val writeNode = new WriteNode(modId, parent, null)
+    val timestamp = nextTimestamp(parent)
+    val writeNode = new WriteNode(modId, parent, timestamp)
 
     parent.addChild(writeNode)
 
@@ -90,18 +86,21 @@ class DDG(log: LoggingAdapter) {
 	      aParent
       }
 
-    val timestamp =
-      if (parent.children.size == 0) {
-	      ordering.after(parent.timestamp)
-      } else {
-	      ordering.after(parent.children.last.timestamp)
-      }
+    val timestamp = nextTimestamp(parent)
 
     val parNode = new ParNode(workerRef1, workerRef2, parent, timestamp)
     parent.addChild(parNode)
 
     pars(workerRef1) = parNode
     pars(workerRef2) = parNode
+  }
+
+  private def nextTimestamp(parent: Node): Timestamp = {
+    if (parent.children.size == 0) {
+	    ordering.after(parent.timestamp)
+    } else {
+	    ordering.after(parent.children.last.timestamp)
+    }
   }
 
   def modUpdated(modId: ModId) {
@@ -131,6 +130,10 @@ class DDG(log: LoggingAdapter) {
   }
 
   override def toString = {
-    "DDG" + id + " = " + root.toString("")
+    root.toString("")
+  }
+
+  def toString(prefix: String): String = {
+    root.toString(prefix)
   }
 }

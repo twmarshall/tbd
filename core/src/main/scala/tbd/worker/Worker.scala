@@ -58,12 +58,18 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
       task = aTask
       val tbd = new TBD(id, ddg, datastoreRef, self, context.system, true)
       val output = task.func(tbd)
+
+      if (parent == null) {
+        // This is the first actor, so we're done with the initial run.
+        log.debug("Contents of the DDG after initial run:\n" + ddg)
+      }
+
       sender ! output
     }
 
     case PebbleMessage(workerRef: ActorRef) => {
       val newPebble = ddg.parUpdated(workerRef)
-      log.debug(id + " received PebbleMessage. newPebble = " + newPebble + "\n" + ddg)
+      log.debug(id + " received PebbleMessage. newPebble = " + newPebble)
 
       if (newPebble && parent != null) {
         log.debug(id + " sending PebbleMessage to " + parent)
@@ -76,11 +82,9 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
 
     case PropagateMessage => {
       log.debug(id + " actor asked to perform change propagation." + ddg.updated.size)
-      log.debug("Contents of the DDG:\n" + ddg)
 
       while (!ddg.updated.isEmpty) {
         val node = ddg.updated.dequeue
-        log.debug("Updating " + node.toString(""))
 
         if (node.isInstanceOf[ReadNode[Any]]) {
           val readNode = node.asInstanceOf[ReadNode[Any]]
@@ -110,7 +114,16 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
         }
       }
 
+      if (parent == null) {
+        // This is the first actor, so we're done with change propagation.
+        log.debug("Contents of the DDG after change propagation:\n" + ddg)
+      }
+
       sender ! "done"
+    }
+
+    case DDGToStringMessage(prefix: String) => {
+      sender ! ddg.toString(prefix)
     }
 
     case x => {

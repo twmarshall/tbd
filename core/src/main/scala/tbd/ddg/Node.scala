@@ -16,13 +16,17 @@
 package tbd.ddg
 
 import akka.actor.ActorRef
-import scala.collection.mutable.Set
+import akka.pattern.ask
+import akka.util.Timeout
+import scala.collection.mutable.{PriorityQueue, Set}
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 import tbd.Changeable
+import tbd.messages._
 import tbd.mod.ModId
 
-abstract class Node(aModId: ModId, aParent: Node, aTimestamp: Timestamp) {
-  val modId: ModId = aModId
+abstract class Node(aParent: Node, aTimestamp: Timestamp) {
   val parent = aParent
   var timestamp: Timestamp = aTimestamp
 
@@ -36,49 +40,76 @@ abstract class Node(aModId: ModId, aParent: Node, aTimestamp: Timestamp) {
     children -= child
   }
 
-  def name(): String
-
-  def toString(prefix: String): String = {
-    val childrenString =
-      if (children.isEmpty) {
-	      ""
-      } else if (children.size == 1) {
-	      "\n" + children.head.toString(prefix + "-")
-      } else {
-	      "\n" + children.map(_.toString(prefix + "-")).reduceLeft(_ + "\n" + _)
+   def toString(prefix: String): String = {
+    if (children.isEmpty) {
+	    ""
+    } else if (children.size == 1) {
+	    "\n" + children.head.toString(prefix + "-")
+    } else {
+      implicit val order = scala.math.Ordering[Double]
+        .on[Node](_.timestamp.time).reverse
+      var updated = PriorityQueue[Node]()
+      for (child <- children) {
+        updated += child
       }
 
-    prefix + name() + "(" + modId + ") time = " + timestamp + " " + childrenString
+      var ret = ""
+      for (child <- updated) {
+        ret += "\n" + child.toString(prefix + "-")
+      }
+      ret
+    }
   }
 }
 
 class ReadNode[T](aModId: ModId, aParent: Node, aTimestamp: Timestamp, aReader: T => Changeable[T])
-    extends Node(aModId, aParent, aTimestamp) {
+    extends Node(aParent, aTimestamp) {
+  val modId: ModId = aModId
   var updated = false
   val reader = aReader
 
-  def name() = "ReadNode (" + updated + ")"
+  override def toString(prefix: String) = {
+    prefix + "ReadNode mod=(" + modId +") time=" + timestamp + " updated=(" +
+      updated + ")" + super.toString(prefix)
+  }
 }
 
 class WriteNode(aModId: ModId, aParent: Node, aTimestamp: Timestamp)
-    extends Node(aModId, aParent, aTimestamp) {
-  def name() = "WriteNode"
+    extends Node(aParent, aTimestamp) {
+  val modId: ModId = aModId
+
+  override def toString(prefix: String) = {
+    prefix + "WriteNode mod=(" + modId + ") time=" + timestamp +
+      super.toString(prefix)
+  }
 }
 
 class ParNode(
     aWorkerRef1: ActorRef,
     aWorkerRef2: ActorRef,
     aParent: Node,
-    aTimestamp: Timestamp) extends Node(null, aParent, aTimestamp) {
+    aTimestamp: Timestamp) extends Node(aParent, aTimestamp) {
   val workerRef1 = aWorkerRef1
   val workerRef2 = aWorkerRef2
 
   var pebble1 = false
   var pebble2 = false
 
-  def name() = "ParNode (" + pebble1 + ", " + pebble2 + ")"
+  override def toString(prefix: String) = {
+    implicit val timeout = Timeout(5 seconds)
+    val future1 = workerRef1 ? DDGToStringMessage(prefix + "|")
+    val future2 = workerRef2 ? DDGToStringMessage(prefix + "|")
+
+    val output1 = Await.result(future1, timeout.duration).asInstanceOf[String]
+    val output2 = Await.result(future2, timeout.duration).asInstanceOf[String]
+
+    prefix + "ParNode time=" + timestamp + " pebbles=(" + pebble1 + ", " +
+      pebble2 + ")\n" + output1 + "\n" + output2 + super.toString(prefix)
+  }
 }
 
-class RootNode extends Node(null, null, null) {
-  def name() = "RootNode"
+class RootNode(id: Int) extends Node(null, null) {
+  override def toString(prefix: String) = {
+    prefix + "RootNode id=(" + id + ")" + super.toString(prefix)
+  }
 }

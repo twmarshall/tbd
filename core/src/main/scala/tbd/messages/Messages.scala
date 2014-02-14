@@ -52,3 +52,4 @@ case class ModUpdatedMessage(modId: ModId)
 case class PebbleMessage(workerRef: ActorRef)
 case class PropagateMessage
 case class RunTaskMessage(func: Task)
+case class DDGToStringMessage(prefix: String)

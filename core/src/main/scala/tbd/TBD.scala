@@ -50,7 +50,7 @@ class TBD(
     log.debug("Executing read on  mod " + mod.id)
 
     val readNode = ddg.addRead(mod.id, currentReader, reader)
-    log.debug("Contents of DDG after adding read:\n" + ddg)
+    //log.debug("Contents of DDG after adding read:\n" + ddg)
 
     val outerReader = currentReader
     currentReader = readNode
@@ -91,7 +91,7 @@ class TBD(
     val twoFuture = workerRef2 ? RunTaskMessage(task2)
 
     ddg.addPar(workerRef1, workerRef2, currentReader)
-    log.debug("DDG after adding par node:\n" + ddg)
+    //log.debug("DDG after adding par node:\n" + ddg)
 
     val oneRet = Await.result(oneFuture, timeout.duration).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, timeout.duration).asInstanceOf[U]
