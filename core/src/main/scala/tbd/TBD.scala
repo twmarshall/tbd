@@ -46,7 +46,7 @@ class TBD(
 
   implicit val timeout = Timeout(5 seconds)
 
-  def read[T](mod: Mod[T], reader: (T) => (Changeable[T])): Changeable[T] = {
+  def read[T, U](mod: Mod[T], reader: (T) => (Changeable[U])): Changeable[U] = {
     log.debug("Executing read on  mod " + mod.id)
 
     val readNode = ddg.addRead(mod.id, currentParent, reader)
@@ -152,21 +152,6 @@ class TBD(
       mod((dest: Dest[T]) => read(elem, (value: T) => write(dest, func(value)))))
   }
 
-  def map[T](node: Mod[ListNode[T]], func: (T) => (T)): Mod[ListNode[T]] = {
-    def innerMap(dest: Dest[ListNode[T]], lst: ListNode[T]): Changeable[ListNode[T]] = {
-      if (lst != null) {
-        val newValue = mod((dest: Dest[T]) =>
-          read(lst.value, (value: T) => write(dest, func(value))))
-        val newNext = mod((dest: Dest[ListNode[T]]) =>
-          read(lst.next, (next: ListNode[T]) => innerMap(dest, next)))
-        write(dest, new ListNode[T](newValue, newNext))
-      } else {
-        write(dest, null)
-      }
-    }
-    mod((dest) => read(node, (lst: ListNode[T]) => innerMap(dest, lst)))
-  }
-
   def parMap[T](node: Mod[ListNode[T]], func: (T) => (T)): Mod[ListNode[T]] = {
     def innerMap(tbd: TBD, dest: Dest[ListNode[T]], lst: ListNode[T]):
         Changeable[ListNode[T]] = {
@@ -191,5 +176,73 @@ class TBD(
       }
     }
     mod((dest) => read(node, (lst: ListNode[T]) => innerMap(this, dest, lst)))
+  }
+
+  def map[T](node: Mod[ListNode[T]], func: (T) => (T)): Mod[ListNode[T]] = {
+    def innerMap(dest: Dest[ListNode[T]], lst: ListNode[T]): Changeable[ListNode[T]] = {
+      if (lst != null) {
+        val newValue = mod((dest: Dest[T]) =>
+          read(lst.value, (value: T) => write(dest, func(value))))
+        val newNext = mod((dest: Dest[ListNode[T]]) =>
+          read(lst.next, (next: ListNode[T]) => innerMap(dest, next)))
+        write(dest, new ListNode[T](newValue, newNext))
+      } else {
+        write(dest, null)
+      }
+    }
+    mod((dest) => read(node, (lst: ListNode[T]) => innerMap(dest, lst)))
+  }
+
+
+  private def reduceHelper[T](
+      dest: Dest[ListNode[T]],
+      lst: ListNode[T],
+      func: (T, T) => (T)): Changeable[ListNode[T]] = {
+    if (lst == null) {
+      write(dest, null)
+    } else {
+      read(lst.next, (next: ListNode[T]) => {
+        if (next == null) {
+          val newValue = mod((dest: Dest[T]) => {
+            read(lst.value, (value: T) => write(dest, value))            
+          })
+          val newNext = mod((dest: Dest[ListNode[T]]) => write(dest, null))
+          write(dest, new ListNode(newValue, newNext))
+        } else {
+          val newValue = mod((dest: Dest[T]) => {
+            read(lst.value, (value1: T) => {
+              read(next.value, (value2: T) => {
+                write(dest, func(value1, value2))
+              })
+            })
+          })
+
+          val newNext = mod((dest: Dest[ListNode[T]]) => {
+            read(next.next, (lst: ListNode[T]) => {
+              reduceHelper(dest, lst, func)
+            })
+          })
+          write(dest, new ListNode(newValue, newNext))
+        }
+      })
+    }
+  }
+
+  def reduce[T](node: Mod[ListNode[T]], func: (T, T) => (T)): Mod[T] = {
+    def innerReduce(dest: Dest[T], lst: ListNode[T]): Changeable[T] = {
+      if (lst != null) {
+        read(lst.next, (next: ListNode[T]) => {
+          if (next != null) {
+            val newList = mod((dest: Dest[ListNode[T]]) => reduceHelper(dest, lst, func))
+            read(newList, (lst: ListNode[T]) => innerReduce(dest, lst))
+          } else {
+            read(lst.value, (value: T) => write(dest, value))
+          }
+        })
+      } else {
+        write(dest, null.asInstanceOf[T])
+      }
+    }
+    mod((dest) => read(node, (lst: ListNode[T]) => innerReduce(dest, lst)))
   }
 }

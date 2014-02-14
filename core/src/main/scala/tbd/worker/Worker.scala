@@ -86,8 +86,8 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
       while (!ddg.updated.isEmpty) {
         val node = ddg.updated.dequeue
 
-        if (node.isInstanceOf[ReadNode[Any]]) {
-          val readNode = node.asInstanceOf[ReadNode[Any]]
+        if (node.isInstanceOf[ReadNode[Any, Any]]) {
+          val readNode = node.asInstanceOf[ReadNode[Any, Any]]
           ddg.removeSubtree(readNode)
           val future = datastoreRef ? GetMessage("mods", readNode.modId.value)
           val newValue = Await.result(future, timeout.duration)

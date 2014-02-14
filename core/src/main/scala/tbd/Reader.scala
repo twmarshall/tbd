@@ -39,10 +39,10 @@ class Reader(datastoreRef: ActorRef) {
       .asInstanceOf[Array[T]]
   }
 
-  def getList(): Mod[ListNode[String]] = {
+  def getList[T](): Mod[ListNode[T]] = {
     implicit val timeout = Timeout(5 seconds)
     val listFuture = datastoreRef ? GetListMessage("input")
     Await.result(listFuture, timeout.duration)
-      .asInstanceOf[Mod[ListNode[String]]]
+      .asInstanceOf[Mod[ListNode[T]]]
   }
 }

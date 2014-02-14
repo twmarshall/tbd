@@ -35,7 +35,7 @@ class DDG(log: LoggingAdapter) {
   val id = DDG.getId()
 
   var root = new RootNode(id)
-  val reads = Map[ModId, Set[ReadNode[Any]]]()
+  val reads = Map[ModId, Set[ReadNode[Any, Any]]]()
   val pars = Map[ActorRef, ParNode]()
 
   implicit val order = scala.math.Ordering[Double]
@@ -44,10 +44,10 @@ class DDG(log: LoggingAdapter) {
 
   val ordering = new Ordering()
 
-  def addRead[T](
+  def addRead[T, U](
       modId: ModId,
       aParent: Node,
-      reader: T => Changeable[T]): Node = {
+      reader: T => Changeable[U]): Node = {
     val parent =
       if (aParent == null) {
 	      root
@@ -61,9 +61,9 @@ class DDG(log: LoggingAdapter) {
     
 
     if (reads.contains(modId)) {
-      reads(modId) += readNode.asInstanceOf[ReadNode[Any]]
+      reads(modId) += readNode.asInstanceOf[ReadNode[Any, Any]]
     } else {
-      reads(modId) = Set(readNode.asInstanceOf[ReadNode[Any]])
+      reads(modId) = Set(readNode.asInstanceOf[ReadNode[Any, Any]])
     }
 
     readNode

@@ -62,7 +62,7 @@ abstract class Node(aParent: Node, aTimestamp: Timestamp) {
   }
 }
 
-class ReadNode[T](aModId: ModId, aParent: Node, aTimestamp: Timestamp, aReader: T => Changeable[T])
+class ReadNode[T, U](aModId: ModId, aParent: Node, aTimestamp: Timestamp, aReader: T => Changeable[U])
     extends Node(aParent, aTimestamp) {
   val modId: ModId = aModId
   var updated = false

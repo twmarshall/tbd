@@ -30,9 +30,18 @@ class ArrayMapTest extends Adjustable {
 
 class ListMapTest extends Adjustable {
   def run(dest: Dest[Any], tbd: TBD): Changeable[Any] = {
-    val list = tbd.input.getList()
+    val list = tbd.input.getList[String]()
     val mappedList = tbd.parMap(list, (_: String) + " mapped")
     tbd.write(dest, mappedList)
+  }
+}
+
+class ListReduceTest extends Adjustable {
+  def run(dest: Dest[Any], tbd: TBD): Changeable[Any] = {
+    val list = tbd.input.getList[Int]()
+    val mappedList = tbd.map(list, (_: Int) + 1)
+    val reduced = tbd.reduce(mappedList, (_: Int) + (_: Int))
+    tbd.write(dest, reduced)
   }
 }
 
@@ -111,6 +120,14 @@ class TestSpec extends FlatSpec with Matchers {
     output.read().toString should be ("(three mapped, five mapped, four mapped, six mapped)")
 
     mutator.shutdown()
+  }
+
+  "ListReduceTest" should "return the reduced value" in {
+    val mutator = new Mutator()
+    mutator.put("one", 1)
+    mutator.put("two", 2)
+    val output = mutator.run(new ListReduceTest())
+    output.read().toString should be ("5")
   }
 
   /*"MatrixMult" should "do stuff" in {
