@@ -63,7 +63,10 @@ class TBD(
   def write[T](dest: Dest[T], value: T): Changeable[T] = {
     log.debug("Writing " + value + " to " + dest.mod.id)
 
-    val future = datastoreRef ? UpdateModMessage(dest.mod.id, value)
+    val future = datastoreRef ? UpdateModMessage(dest.mod.id, value, workerRef)
+    if (ddg.reads.contains(dest.mod.id)) {
+      ddg.modUpdated(dest.mod.id)
+    }
     Await.result(future, timeout.duration)
 
     val changeable = new Changeable(dest.mod)
@@ -219,6 +222,7 @@ class TBD(
 
           val newNext = mod((dest: Dest[ListNode[T]]) => {
             read(next.next, (lst: ListNode[T]) => {
+              println("??????" + lst)
               reduceHelper(dest, lst, func)
             })
           })

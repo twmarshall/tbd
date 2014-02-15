@@ -64,7 +64,7 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private def updateMod(modId: ModId, value: Any, sender: ActorRef): Boolean = {
-    log.debug("Updating mod(" + modId+ ")")
+    log.debug("Updating mod(" + modId+ ") from " + sender)
     tables("mods")(modId.value) = value
 
     for (workerRef <- dependencies(modId)) {
@@ -124,12 +124,12 @@ class Datastore extends Actor with ActorLogging {
       sender ! createMod(null)
     }
 
-    case UpdateModMessage(modId: ModId, value: Any) => {
-      sender ! updateMod(modId, value, sender)
+    case UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef) => {
+      sender ! updateMod(modId, value, workerRef)
     }
 
-    case UpdateModMessage(modId: ModId, null) => {
-      sender ! updateMod(modId, null, sender)
+    case UpdateModMessage(modId: ModId, null, workerRef: ActorRef) => {
+      sender ! updateMod(modId, null, workerRef)
     }
 
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {

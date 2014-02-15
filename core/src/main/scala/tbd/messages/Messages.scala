@@ -34,7 +34,7 @@ case class PutMessage(table: String, key: Any, value: Any)
 case class UpdateMessage(table: String, key: Any, value: Any)
 
 case class CreateModMessage(value: Any)
-case class UpdateModMessage(modId: ModId, value: Any)
+case class UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef)
 case class ReadModMessage(modId: ModId, workerRef: ActorRef)
 
 case class PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]])

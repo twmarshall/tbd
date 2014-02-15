@@ -128,6 +128,26 @@ class TestSpec extends FlatSpec with Matchers {
     mutator.put("two", 2)
     val output = mutator.run(new ListReduceTest())
     output.read().toString should be ("5")
+
+    mutator.put("three", 3)
+    mutator.propagate()
+    output.read().toString should be ("9")
+
+    mutator.update("one", 4)
+    mutator.propagate()
+    output.read().toString should be ("12")
+
+    mutator.update("three", 2)
+    mutator.propagate()
+    output.read().toString should be ("11")
+
+    mutator.put("four", -1)
+    mutator.propagate()
+    output.read().toString should be ("11")
+
+    mutator.update("four", 10)
+    mutator.propagate()
+    output.read().toString should be ("22")
   }
 
   /*"MatrixMult" should "do stuff" in {
