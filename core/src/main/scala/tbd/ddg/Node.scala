@@ -24,7 +24,7 @@ import scala.concurrent.duration._
 
 import tbd.Changeable
 import tbd.messages._
-import tbd.mod.ModId
+import tbd.mod.Mod
 
 abstract class Node(aParent: Node, aTimestamp: Timestamp) {
   val parent = aParent
@@ -62,25 +62,25 @@ abstract class Node(aParent: Node, aTimestamp: Timestamp) {
   }
 }
 
-class ReadNode[T, U](aModId: ModId, aParent: Node, aTimestamp: Timestamp, aReader: T => Changeable[U])
+class ReadNode[T, U](aMod: Mod[Any], aParent: Node, aTimestamp: Timestamp, aReader: T => Changeable[U])
     extends Node(aParent, aTimestamp) {
-  val modId: ModId = aModId
+  val mod: Mod[Any] = aMod
   var updated = false
   val reader = aReader
 
   override def toString(prefix: String) = {
-    prefix + "ReadNode mod=(" + modId +") time=" + timestamp + " updated=(" +
-      updated + ")" + super.toString(prefix)
+    prefix + "ReadNode modId=(" + mod.id + ") value=" + mod +" time=" +
+      timestamp + " updated=(" + updated + ")" + super.toString(prefix)
   }
 }
 
-class WriteNode(aModId: ModId, aParent: Node, aTimestamp: Timestamp)
+class WriteNode(aMod: Mod[Any], aParent: Node, aTimestamp: Timestamp)
     extends Node(aParent, aTimestamp) {
-  val modId: ModId = aModId
+  val mod: Mod[Any] = aMod
 
   override def toString(prefix: String) = {
-    prefix + "WriteNode mod=(" + modId + ") time=" + timestamp +
-      super.toString(prefix)
+    prefix + "WriteNode modId=(" + mod.id + ") value=" + mod + " time=" +
+      timestamp + super.toString(prefix)
   }
 }
 

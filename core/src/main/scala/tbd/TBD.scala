@@ -49,7 +49,7 @@ class TBD(
   def read[T, U](mod: Mod[T], reader: (T) => (Changeable[U])): Changeable[U] = {
     log.debug("Executing read on  mod " + mod.id)
 
-    val readNode = ddg.addRead(mod.id, currentParent, reader)
+    val readNode = ddg.addRead(mod.asInstanceOf[Mod[Any]], currentParent, reader)
     //log.debug("Contents of DDG after adding read:\n" + ddg)
 
     val outerReader = currentParent
@@ -67,7 +67,7 @@ class TBD(
     Await.result(future, timeout.duration)
 
     val changeable = new Changeable(dest.mod)
-    ddg.addWrite(changeable.mod.id, currentParent)
+    ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]], currentParent)
 
     changeable
   }

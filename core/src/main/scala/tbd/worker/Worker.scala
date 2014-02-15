@@ -89,7 +89,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
         if (node.isInstanceOf[ReadNode[Any, Any]]) {
           val readNode = node.asInstanceOf[ReadNode[Any, Any]]
           ddg.removeSubtree(readNode)
-          val future = datastoreRef ? GetMessage("mods", readNode.modId.value)
+          val future = datastoreRef ? GetMessage("mods", readNode.mod.id.value)
           val newValue = Await.result(future, timeout.duration)
 
           tbd.currentParent = readNode

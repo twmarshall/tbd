@@ -20,7 +20,7 @@ import akka.event.LoggingAdapter
 import scala.collection.mutable.{Map, PriorityQueue, Set}
 
 import tbd.Changeable
-import tbd.mod.ModId
+import tbd.mod.{Mod, ModId}
 
 object DDG {
   var lastId = 0
@@ -45,7 +45,7 @@ class DDG(log: LoggingAdapter) {
   val ordering = new Ordering()
 
   def addRead[T, U](
-      modId: ModId,
+      mod: Mod[Any],
       aParent: Node,
       reader: T => Changeable[U]): Node = {
     val parent =
@@ -56,20 +56,20 @@ class DDG(log: LoggingAdapter) {
       }
 
     val timestamp = nextTimestamp(parent)
-    val readNode = new ReadNode(modId, parent, timestamp, reader)
+    val readNode = new ReadNode(mod, parent, timestamp, reader)
     parent.addChild(readNode)
     
 
-    if (reads.contains(modId)) {
-      reads(modId) += readNode.asInstanceOf[ReadNode[Any, Any]]
+    if (reads.contains(mod.id)) {
+      reads(mod.id) += readNode.asInstanceOf[ReadNode[Any, Any]]
     } else {
-      reads(modId) = Set(readNode.asInstanceOf[ReadNode[Any, Any]])
+      reads(mod.id) = Set(readNode.asInstanceOf[ReadNode[Any, Any]])
     }
 
     readNode
   }
 
-  def addWrite(modId: ModId, aParent: Node): Node = {
+  def addWrite(mod: Mod[Any], aParent: Node): Node = {
     val parent =
       if (aParent == null) {
 	      root
@@ -78,7 +78,7 @@ class DDG(log: LoggingAdapter) {
       }
 
     val timestamp = nextTimestamp(parent)
-    val writeNode = new WriteNode(modId, parent, timestamp)
+    val writeNode = new WriteNode(mod, parent, timestamp)
 
     parent.addChild(writeNode)
 
