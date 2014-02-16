@@ -41,87 +41,126 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
 
   implicit val timeout = Timeout(5 seconds)
 
+  // During change propagation, represents the number of child workers this
+  // worker is waiting to receive FinishedPropagatingMessages from before it
+  // can continue.
+  var awaiting = 0
+
+  var propagating = false
+
+  def propagate(): Boolean = {
+    while (!ddg.updated.isEmpty) {
+      val node = ddg.updated.dequeue
+
+      if (node.isInstanceOf[ReadNode[Any, Any]]) {
+        val readNode = node.asInstanceOf[ReadNode[Any, Any]]
+        ddg.removeSubtree(readNode)
+        val future = datastoreRef ? GetMessage("mods", readNode.mod.id.value)
+        val newValue = Await.result(future, timeout.duration)
+
+        tbd.currentParent = readNode
+        readNode.reader(newValue)
+      } else {
+        val parNode = node.asInstanceOf[ParNode]
+        log.debug("Updating ParNode.")
+        if (parNode.pebble1 && parNode.pebble2) {
+          val future1 = parNode.workerRef1 ! PropagateMessage
+          val future2 = parNode.workerRef2 ! PropagateMessage
+
+          parNode.pebble1 = false
+          parNode.pebble2 = false
+
+          awaiting = 2
+          return false
+        } else if (parNode.pebble1) {
+          val future1 = parNode.workerRef1 ! PropagateMessage
+
+          parNode.pebble1 = false
+
+          awaiting = 1
+          return false
+        } else if (parNode.pebble2) {
+          val future2 = parNode.workerRef2 ! PropagateMessage
+
+          parNode.pebble2 = false
+
+          awaiting = 1
+          return false
+        } else {
+          log.warning("parNode in updated queue that is not pebbled.")
+        }
+
+      }
+    }
+
+    return true
+  }
+
   def receive = {
     case ModUpdatedMessage(modId) => {
-      log.debug(id + " informed that mod(" + modId + ") has been updated.")
+      log.debug("Informed that mod(" + modId + ") has been updated.")
       ddg.modUpdated(modId)
 
-      if (parent != null) {
-        log.debug(id + " sending PebbleMessage to " + parent)
-        val future = parent ? PebbleMessage(self)
-        Await.result(future, timeout.duration)
-      }
-
-      sender ! "okay"
+      log.debug("Sending PebbleMessage to " + parent)
+      parent ! PebbleMessage(self, modId)
     }
 
     case RunTaskMessage(aTask: Task) => {
       task = aTask
       val output = task.func(tbd)
 
-      if (parent == null) {
-        // This is the first actor, so we're done with the initial run.
-        log.debug("Contents of the DDG after initial run:\n" + ddg)
-      }
-
       sender ! output
     }
 
-    case PebbleMessage(workerRef: ActorRef) => {
+    case PebbleMessage(workerRef: ActorRef, modId: ModId) => {
       val newPebble = ddg.parUpdated(workerRef)
-      log.debug(id + " received PebbleMessage. newPebble = " + newPebble)
+      log.debug("Received PebbleMessage.")
 
-      if (newPebble && parent != null) {
-        log.debug(id + " sending PebbleMessage to " + parent)
-        val future = parent ? PebbleMessage(self)
-        Await.result(future, timeout.duration)
+      if (newPebble) {
+        log.debug("Sending PebbleMessage to " + parent)
+        val future = parent ! PebbleMessage(self, modId)
+      } else {
+        log.debug("Sending PebblingFinishedMessage to datastore.")
+        datastoreRef ! PebblingFinishedMessage(modId)
       }
+    }
 
-      sender ! "okay"
+    case PebblingFinishedMessage(modId: ModId) => {
+      assert(tbd.awaiting > 0)
+      tbd.awaiting -= 1
+      log.debug("Received PebblingFinishedMessage. Still waiting on " + tbd.awaiting)
+
+      if (propagating & tbd.awaiting == 0 && awaiting == 0) {
+        log.debug("Sending FinishedPropagatingMessage.")
+        parent ! FinishedPropagatingMessage
+      }
     }
 
     case PropagateMessage => {
-      log.debug(id + " actor asked to perform change propagation." + ddg.updated.size)
+      log.debug("Asked to perform change propagation.")
 
-      while (!ddg.updated.isEmpty) {
-        val node = ddg.updated.dequeue
+      propagating = true
+      val done = propagate()
 
-        if (node.isInstanceOf[ReadNode[Any, Any]]) {
-          val readNode = node.asInstanceOf[ReadNode[Any, Any]]
-          ddg.removeSubtree(readNode)
-          val future = datastoreRef ? GetMessage("mods", readNode.mod.id.value)
-          val newValue = Await.result(future, timeout.duration)
+      if (done && tbd.awaiting == 0) {
+        log.debug("Sending FinishedPropagatingMessage to " + parent)
+        parent ! FinishedPropagatingMessage
+      }
+    }
 
-          tbd.currentParent = readNode
-          readNode.reader(newValue)
-        } else {
-          val parNode = node.asInstanceOf[ParNode]
-          if (parNode.pebble1 && parNode.pebble2) {
-            val future1 = parNode.workerRef1 ? PropagateMessage
-            val future2 = parNode.workerRef2 ? PropagateMessage
-            Await.result(future1, timeout.duration)
-            Await.result(future2, timeout.duration)
-          } else if (parNode.pebble1) {
-            val future1 = parNode.workerRef1 ? PropagateMessage
-            Await.result(future1, timeout.duration)
-          } else if (parNode.pebble2) {
-            val future2 = parNode.workerRef2 ? PropagateMessage
-            Await.result(future2, timeout.duration)
-          } else {
-            log.warning("parNode in updated queue that is not pebbled.")
-          }
+    case FinishedPropagatingMessage => {
+      assert(awaiting > 0)
+      awaiting -= 1
+      log.debug("Received FinishedPropagatingMessage. Still waiting on " + awaiting)
 
-          parNode.pebble1 = false
-          parNode.pebble2 = false
+      if (awaiting == 0) {
+        val done = propagate()
+
+        if (propagating && done && tbd.awaiting == 0) {
+          log.debug("Sending FinishedPropagatingMessage to " + parent)
+          parent ! FinishedPropagatingMessage
         }
       }
-
-      if (parent == null) {
-        // This is the first actor, so we're done with change propagation.
-        log.debug("Contents of the DDG after change propagation:\n" + ddg)
-      }
-
-      sender ! "done"
     }
 
     case DDGToStringMessage(prefix: String) => {

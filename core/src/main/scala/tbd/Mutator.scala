@@ -16,6 +16,7 @@
 package tbd
 
 import akka.pattern.ask
+import akka.event.Logging
 import akka.util.Timeout
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
@@ -29,6 +30,8 @@ class Mutator {
 
   implicit val timeout = Timeout(5 seconds)
 
+  val log = Logging(main.system, "Mutator")
+
   def run[T](adjust: Adjustable): Mod[T] = {
     val future = main.masterRef ? RunMessage(adjust)
     val resultFuture =
@@ -39,18 +42,21 @@ class Mutator {
 
   def propagate[T]() {
     val future = main.masterRef ? PropagateMessage
-    val result =
-      Await.result(future, timeout.duration)
+    val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
+    Await.result(future2, timeout.duration)
+    log.debug("done waiting")
   }
 
   def put(key: Any, value: Any) {
     val future = main.masterRef ? PutMessage("input", key, value)
-    Await.result(future, timeout.duration)
+    val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
+    Await.result(future2, timeout.duration)
   }
 
   def update(key: Any, value: Any) {
     val future = main.masterRef ? UpdateMessage("input", key, value)
-    Await.result(future, timeout.duration)
+    val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
+    Await.result(future2, timeout.duration)
   }
 
   def putMatrix(key: Int, value: Array[Array[Int]]) {

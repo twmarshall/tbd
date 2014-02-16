@@ -20,7 +20,7 @@ import akka.pattern.ask
 import akka.util.Timeout
 import scala.collection.mutable.Set
 import scala.concurrent.duration._
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, Future, Promise}
 
 import tbd.{Adjustable, Dest, TBD}
 import tbd.datastore.Datastore
@@ -43,38 +43,49 @@ class Master extends Actor with ActorLogging {
 
   implicit val timeout = Timeout(5 seconds)
 
+  var result = Promise[String]
+  var resultWaiter: ActorRef = null
+  var updateResult = Promise[String]
+
   private def runTask[T](adjust: Adjustable): Future[Any] = {
     i += 1
-    val workerProps = Worker.props[T]("worker" + i, datastoreRef, null)
+    val workerProps = Worker.props[T]("worker" + i, datastoreRef, self)
     workerRef = context.actorOf(workerProps, "worker" + i)
     workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(new Dest(datastoreRef), tbd)))
   }
 
-  private def propagate(): String = {
-    log.info("\n\n\n\n\n\nMaster actor initiating change propagation.")
-    val future = workerRef ? PropagateMessage
-    Await.result(future, timeout.duration).asInstanceOf[String]
-  }
-
   def receive = {
     case RunMessage(adjust: Adjustable) => {
+      result = Promise[String]
       sender ! runTask(adjust)
     }
 
     case PropagateMessage => {
-      sender ! propagate()
+      log.info("\n\n\n\n\n\nMaster actor initiating change propagation.")
+
+      result = Promise[String]
+      //Await.result(result.future, timeout.duration)
+      sender ! result.future
+      //resultWaiter = sender
+
+      workerRef ! PropagateMessage
+    }
+
+    case FinishedPropagatingMessage => {
+      log.debug("Master received FinishedPropagatingMessage.")
+      result.success("okay")
     }
 
     case PutMessage(table: String, key: Any, value: Any) => {
-      val future = datastoreRef ? PutMessage(table, key, value)
-      Await.result(future, timeout.duration)
-      sender ! "okay"
+      val future = datastoreRef ! PutMessage(table, key, value)
+      updateResult = Promise[String]
+      sender ! updateResult.future
     }
 
     case UpdateMessage(table: String, key: Any, value: Any) => {
-      val future = datastoreRef ? UpdateMessage(table, key, value)
-      val modId = Await.result(future, timeout.duration).asInstanceOf[ModId]
-      sender ! "okay"
+      val future = datastoreRef ! UpdateMessage(table, key, value)
+      updateResult = Promise[String]
+      sender ! updateResult.future
     }
 
     case PutMatrixMessage(
@@ -83,6 +94,16 @@ class Master extends Actor with ActorLogging {
         value: Array[Array[Int]]) => {
       val future = datastoreRef ? PutMatrixMessage(table, key, value)
       sender ! Await.result(future, timeout.duration)
+    }
+
+    case PebbleMessage(workerRef: ActorRef, modId: ModId) => {
+      log.debug("Master received PebbleMessage.")
+      datastoreRef ! PebblingFinishedMessage(modId)
+    }
+
+    case PebblingFinishedMessage(modId: ModId) => {
+      log.debug("Master received PebblingFinishedMessage.")
+      updateResult.success("okay")
     }
 
     case ShutdownMessage => {

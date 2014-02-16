@@ -39,8 +39,8 @@ class ListMapTest extends Adjustable {
 class ListReduceTest extends Adjustable {
   def run(dest: Dest[Any], tbd: TBD): Changeable[Any] = {
     val list = tbd.input.getList[Int]()
-    val mappedList = tbd.map(list, (_: Int) + 1)
-    val reduced = tbd.reduce(mappedList, (_: Int) + (_: Int))
+    val mappedList = tbd.parMap(list, (_: Int) + 1)
+    val reduced = tbd.parReduce(mappedList, (_: Int) + (_: Int))
     tbd.write(dest, reduced)
   }
 }
@@ -148,6 +148,8 @@ class TestSpec extends FlatSpec with Matchers {
     mutator.update("four", 10)
     mutator.propagate()
     output.read().toString should be ("22")
+
+    mutator.shutdown()
   }
 
   /*"MatrixMult" should "do stuff" in {

@@ -40,7 +40,6 @@ case class ReadModMessage(modId: ModId, workerRef: ActorRef)
 case class PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]])
 case class GetArrayMessage(table: String)
 case class GetListMessage(table: String)
-case class GetUpdatedMessage
 case class NullMessage
 
 // Master
@@ -49,7 +48,9 @@ case class ShutdownMessage
 
 // Worker
 case class ModUpdatedMessage(modId: ModId)
-case class PebbleMessage(workerRef: ActorRef)
+case class PebbleMessage(workerRef: ActorRef, modId: ModId)
+case class PebblingFinishedMessage(modId: ModId)
 case class PropagateMessage
 case class RunTaskMessage(func: Task)
+case class FinishedPropagatingMessage
 case class DDGToStringMessage(prefix: String)

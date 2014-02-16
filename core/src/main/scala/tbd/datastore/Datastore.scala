@@ -30,19 +30,28 @@ object Datastore {
   def props(): Props = Props(classOf[Datastore])
 }
 
+class AwaitRecord(aCount: Int, aRef: ActorRef) {
+  var count = aCount
+  val ref = aRef
+}
+
 class Datastore extends Actor with ActorLogging {
   private val tables = Map[String, Map[Any, Any]]()
   tables("mods") = Map[Any, Any]()
   tables("memo") = Map[Any, Any]()
 
+  // Maps modIds to the workers that have read the corresponding mod.
   private val dependencies = Map[ModId, Set[ActorRef]]()
+
+  // When a mod is updated and we inform the workers that depend on it, awaiting
+  // is used to track how many PebblingFinishedMessages we've received, so that
+  // we can respond to the updating worker once all dependent workers respond.
+  private val awaiting = Map[ModId, AwaitRecord]()
 
   // Maps the name of an input table to a set containing mods representing the
   // tails of any linked lists that were returned containing this entire table,
-  // so that we can tolerate unsertions into tables.
+  // so that we can tolerate insertions into tables.
   private val lists = Map[String, Set[Mod[ListNode[Any]]]]()
-
-  private var updated = Set[ModId]()
 
   implicit val timeout = Timeout(5 seconds)
 
@@ -63,22 +72,26 @@ class Datastore extends Actor with ActorLogging {
     mod
   }
 
-  private def updateMod(modId: ModId, value: Any, sender: ActorRef): Boolean = {
+  private def updateMod(modId: ModId, value: Any, sender: ActorRef) {
     log.debug("Updating mod(" + modId+ ") from " + sender)
     tables("mods")(modId.value) = value
 
+    var count = 0
     for (workerRef <- dependencies(modId)) {
       if (workerRef != sender) {
-        log.debug("Informing " + workerRef + " that mod(" +
-                  modId + ") has been updated.")
-        val future = workerRef ? ModUpdatedMessage(modId)
-        Await.result(future, timeout.duration)
+        log.debug("Informing " + workerRef + " that mod(" + modId +
+                  ") has been updated.")
+        workerRef ! ModUpdatedMessage(modId)
+        count += 1
       }
     }
 
-    updated += modId
-
-    true
+    if (count > 0) {
+      awaiting += (modId -> new AwaitRecord(count, sender))
+    } else {
+      log.debug("Sending PebblingFinishedMessage(" + modId + ") to " + sender)
+      sender ! PebblingFinishedMessage(modId)
+    }
   }
 
   def receive = {
@@ -91,7 +104,6 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case PutMessage(table: String, key: Any, value: Any) => {
-      log.debug("PutMessage")
       val mod = createMod(value)
       tables(table)(key) = mod
 
@@ -104,13 +116,12 @@ class Datastore extends Actor with ActorLogging {
           newTails += newTail
         }
         lists(table) = newTails
+      } else {
+        sender ! PebblingFinishedMessage(mod.id)
       }
-
-      sender ! mod.id
     }
 
     case UpdateMessage(table: String, key: Any, value: Any) => {
-      log.debug("UpdateMessage(" + table + ", " + key + ", " + value +")")
       val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
       updateMod(modId, value, sender)
       sender ! modId
@@ -125,11 +136,21 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef) => {
-      sender ! updateMod(modId, value, workerRef)
+      updateMod(modId, value, workerRef)
     }
 
     case UpdateModMessage(modId: ModId, null, workerRef: ActorRef) => {
-      sender ! updateMod(modId, null, workerRef)
+      updateMod(modId, null, workerRef)
+    }
+
+    case PebblingFinishedMessage(modId: ModId) => {
+      log.debug("Datastore received PebblingFinishedMessage.")
+      awaiting(modId).count -= 1
+      if (awaiting(modId).count == 0) {
+        log.debug("Sending PebblingFinishedMessage to " + awaiting(modId).ref)
+        awaiting(modId).ref ! PebblingFinishedMessage(modId)
+        awaiting.remove(modId)
+      }
     }
 
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
@@ -148,7 +169,7 @@ class Datastore extends Actor with ActorLogging {
     }
 
     // Return all of the entries from the specified table as an array, allowing
-      // for updates to existing elements to be propagated.
+    // for updates to existing elements to be propagated.
     case GetArrayMessage(table: String) => {
       val arr = new Array[Mod[Any]](tables(table).size)
 
@@ -179,10 +200,6 @@ class Datastore extends Actor with ActorLogging {
       }
 
       sender ! tail
-    }
-
-    case GetUpdatedMessage => {
-      sender ! updated
     }
 
     case x => {

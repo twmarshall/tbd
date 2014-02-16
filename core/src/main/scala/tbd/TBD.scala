@@ -46,7 +46,11 @@ class TBD(
 
   implicit val timeout = Timeout(5 seconds)
 
-  def read[T, U](mod: Mod[T], reader: (T) => (Changeable[U])): Changeable[U] = {
+  // Represents the number of PebblingFinishedMessages this worker is waiting
+  // on before it can finish.
+  var awaiting = 0
+
+  def read[T, U](mod: Mod[T], reader: T => (Changeable[U])): Changeable[U] = {
     log.debug("Executing read on  mod " + mod.id)
 
     val readNode = ddg.addRead(mod.asInstanceOf[Mod[Any]], currentParent, reader)
@@ -63,11 +67,11 @@ class TBD(
   def write[T](dest: Dest[T], value: T): Changeable[T] = {
     log.debug("Writing " + value + " to " + dest.mod.id)
 
-    val future = datastoreRef ? UpdateModMessage(dest.mod.id, value, workerRef)
+    val future = datastoreRef ! UpdateModMessage(dest.mod.id, value, workerRef)
     if (ddg.reads.contains(dest.mod.id)) {
       ddg.modUpdated(dest.mod.id)
     }
-    Await.result(future, timeout.duration)
+    awaiting += 1
 
     val changeable = new Changeable(dest.mod)
     ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]], currentParent)
@@ -222,7 +226,6 @@ class TBD(
 
           val newNext = mod((dest: Dest[ListNode[T]]) => {
             read(next.next, (lst: ListNode[T]) => {
-              println("??????" + lst)
               reduceHelper(dest, lst, func)
             })
           })
@@ -248,5 +251,58 @@ class TBD(
       }
     }
     mod((dest) => read(node, (lst: ListNode[T]) => innerReduce(dest, lst)))
+  }
+
+  private def parReduceHelper[T](
+      tbd: TBD,
+      dest: Dest[ListNode[T]],
+      lst: ListNode[T],
+      func: (T, T) => (T)): Changeable[ListNode[T]] = {
+    if (lst == null) {
+      tbd.write(dest, null)
+    } else {
+      tbd.read(lst.next, (next: ListNode[T]) => {
+        if (next == null) {
+          val newValue = tbd.mod((dest: Dest[T]) => {
+            tbd.read(lst.value, (value: T) => tbd.write(dest, value))            
+          })
+          val newNext = tbd.mod((dest: Dest[ListNode[T]]) => tbd.write(dest, null))
+          tbd.write(dest, new ListNode(newValue, newNext))
+        } else {
+          val newValue = tbd.mod((dest: Dest[T]) => {
+            tbd.read(lst.value, (value1: T) => {
+              tbd.read(next.value, (value2: T) => {
+                tbd.write(dest, func(value1, value2))
+              })
+            })
+          })
+
+          val newNext = tbd.mod((dest: Dest[ListNode[T]]) => {
+            tbd.read(next.next, (lst: ListNode[T]) => {
+              parReduceHelper(tbd, dest, lst, func)
+            })
+          })
+          tbd.write(dest, new ListNode(newValue, newNext))
+        }
+      })
+    }
+  }
+
+  def parReduce[T](node: Mod[ListNode[T]], func: (T, T) => (T)): Mod[T] = {
+    def innerReduce(tbd: TBD, dest: Dest[T], lst: ListNode[T]): Changeable[T] = {
+      if (lst != null) {
+        tbd.read(lst.next, (next: ListNode[T]) => {
+          if (next != null) {
+            val newList = tbd.mod((dest: Dest[ListNode[T]]) => parReduceHelper(tbd, dest, lst, func))
+            tbd.read(newList, (lst: ListNode[T]) => innerReduce(tbd, dest, lst))
+          } else {
+            tbd.read(lst.value, (value: T) => tbd.write(dest, value))
+          }
+        })
+      } else {
+        tbd.write(dest, null.asInstanceOf[T])
+      }
+    }
+    mod((dest) => read(node, (lst: ListNode[T]) => innerReduce(this, dest, lst)))
   }
 }
