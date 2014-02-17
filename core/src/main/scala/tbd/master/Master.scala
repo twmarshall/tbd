@@ -73,6 +73,8 @@ class Master extends Actor with ActorLogging {
 
     case FinishedPropagatingMessage => {
       log.debug("Master received FinishedPropagatingMessage.")
+      val future = workerRef ? DDGToStringMessage("")
+      log.debug(Await.result(future, timeout.duration).asInstanceOf[String])
       result.success("okay")
     }
 
@@ -97,7 +99,8 @@ class Master extends Actor with ActorLogging {
     }
 
     case PebbleMessage(workerRef: ActorRef, modId: ModId) => {
-      log.debug("Master received PebbleMessage.")
+      log.debug("Master received PebbleMessage. Sending " +
+                "PebblingFinishedMessage(" + modId + ").")
       datastoreRef ! PebblingFinishedMessage(modId)
     }
 

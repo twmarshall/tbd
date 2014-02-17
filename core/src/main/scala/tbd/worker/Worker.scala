@@ -54,11 +54,13 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
 
       if (node.isInstanceOf[ReadNode[Any, Any]]) {
         val readNode = node.asInstanceOf[ReadNode[Any, Any]]
+        log.debug("Propagating read of mod(" + readNode.mod.id + ") at time=" + readNode.timestamp)
         ddg.removeSubtree(readNode)
         val future = datastoreRef ? GetMessage("mods", readNode.mod.id.value)
         val newValue = Await.result(future, timeout.duration)
 
         tbd.currentParent = readNode
+        readNode.updated = false
         readNode.reader(newValue)
       } else {
         val parNode = node.asInstanceOf[ParNode]
@@ -120,7 +122,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
         log.debug("Sending PebbleMessage to " + parent)
         val future = parent ! PebbleMessage(self, modId)
       } else {
-        log.debug("Sending PebblingFinishedMessage to datastore.")
+        log.debug("Sending PebblingFinishedMessage(" + modId + ") to datastore.")
         datastoreRef ! PebblingFinishedMessage(modId)
       }
     }
@@ -137,7 +139,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case PropagateMessage => {
-      log.debug("Asked to perform change propagation.")
+      log.debug("Asked to perform change propagation. updated:\n" + ddg.updated + "\nDDG:\n" + ddg)
 
       propagating = true
       val done = propagate()

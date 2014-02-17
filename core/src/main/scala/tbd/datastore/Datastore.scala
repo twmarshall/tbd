@@ -144,8 +144,9 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case PebblingFinishedMessage(modId: ModId) => {
-      log.debug("Datastore received PebblingFinishedMessage.")
+      log.debug("Datastore received PebblingFinishedMessage(" + modId + ").")
       awaiting(modId).count -= 1
+      log.debug("??")
       if (awaiting(modId).count == 0) {
         log.debug("Sending PebblingFinishedMessage to " + awaiting(modId).ref)
         awaiting(modId).ref ! PebblingFinishedMessage(modId)

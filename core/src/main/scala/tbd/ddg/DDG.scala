@@ -111,9 +111,13 @@ class DDG(log: LoggingAdapter) {
   }
 
   def modUpdated(modId: ModId) {
-    for (readNode <- reads(modId)) {
-      readNode.updated = true
-      updated += readNode
+    if (reads.contains(modId)) {
+      for (readNode <- reads(modId)) {
+        if (!readNode.updated) {
+          updated += readNode
+        }
+        readNode.updated = true
+      }
     }
   }
 
@@ -133,6 +137,15 @@ class DDG(log: LoggingAdapter) {
   }
 
   def removeSubtree(node: Node) {
+    for (child <- node.children) {
+      if (child.isInstanceOf[ReadNode[Any, Any]]) {
+        reads -= child.asInstanceOf[ReadNode[Any, Any]].mod.id
+      }
+
+      updated = updated.filter((node2: Node) => child == node2)
+      removeSubtree(child)
+    }
+
     node.children.clear()
   }
 
