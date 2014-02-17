@@ -51,7 +51,7 @@ class Master extends Actor with ActorLogging {
     i += 1
     val workerProps = Worker.props[T]("worker" + i, datastoreRef, self)
     workerRef = context.actorOf(workerProps, "worker" + i)
-    workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(new Dest(datastoreRef), tbd)))
+    workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(tbd)))
   }
 
   def receive = {

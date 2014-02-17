@@ -21,36 +21,33 @@ import tbd.{Adjustable, Changeable, Dest, Mutator, ListNode, TBD}
 import tbd.mod.{Matrix, Mod}
 
 class ArrayMapTest extends Adjustable {
-  def run(dest: Dest[Any], tbd: TBD): Changeable[Any] = {
+  def run(tbd: TBD): Array[Mod[String]] = {
     val array = tbd.input.getArray[Mod[String]]()
-    val mappedArray = tbd.map(array, (_: String) + " mapped")
-    tbd.write(dest, mappedArray)
+    tbd.map(array, (_: String) + " mapped")
   }
 }
 
 class ListMapTest extends Adjustable {
-  def run(dest: Dest[Any], tbd: TBD): Changeable[Any] = {
+  def run(tbd: TBD): Mod[ListNode[String]] = {
     val list = tbd.input.getList[String]()
-    val mappedList = tbd.parMap(list, (_: String) + " mapped")
-    tbd.write(dest, mappedList)
+    tbd.parMap(list, (_: String) + " mapped")
   }
 }
 
 class ListReduceTest extends Adjustable {
-  def run(dest: Dest[Any], tbd: TBD): Changeable[Any] = {
+  def run(tbd: TBD): Mod[Int] = {
     val list = tbd.input.getList[Int]()
     val mappedList = tbd.parMap(list, (_: Int) + 1)
-    val reduced = tbd.parReduce(mappedList, (_: Int) + (_: Int))
-    tbd.write(dest, reduced)
+    tbd.parReduce(mappedList, (_: Int) + (_: Int))
   }
 }
 
 class MatrixMultTest extends Adjustable {
-  def run(dest: Dest[Any], tbd: TBD): Changeable[Any] = {
+  def run(tbd: TBD): Matrix = {
     val one = tbd.input.get[Matrix](1)
     val two = tbd.input.get[Matrix](2)
 
-    tbd.write(dest, one.mult(tbd, two)).asInstanceOf[Changeable[Any]]
+    one.mult(tbd, two)
   }
 }
 
@@ -86,12 +83,11 @@ class TestSpec extends FlatSpec with Matchers {
     mutator.put(1, "one")
     mutator.put(2, "two")
     val output = mutator.run[Array[Mod[String]]](new ArrayMapTest())
-    output.read().deep.mkString(", ") should be ("two mapped, one mapped")
+    output.deep.mkString(", ") should be ("two mapped, one mapped")
 
     mutator.update(1, "three")
     mutator.propagate[Array[Mod[String]]]()
-    val arr = output.read().asInstanceOf[Array[Mod[String]]]
-    output.read().deep.mkString(", ") should be ("two mapped, three mapped")
+    output.deep.mkString(", ") should be ("two mapped, three mapped")
 
     mutator.shutdown()
   }
@@ -100,7 +96,7 @@ class TestSpec extends FlatSpec with Matchers {
     val mutator = new Mutator()
     mutator.put(1, "one")
     mutator.put(2, "two")
-    val output = mutator.run(new ListMapTest())
+    val output = mutator.run[Mod[ListNode[String]]](new ListMapTest())
     output.read().toString should be ("(one mapped, two mapped)")
 
     mutator.update(1, "three")
@@ -126,7 +122,7 @@ class TestSpec extends FlatSpec with Matchers {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
-    val output = mutator.run(new ListReduceTest())
+    val output = mutator.run[Mod[Int]](new ListReduceTest())
     output.read().toString should be ("5")
 
     mutator.put("three", 3)

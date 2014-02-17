@@ -32,12 +32,12 @@ class Mutator {
 
   val log = Logging(main.system, "Mutator")
 
-  def run[T](adjust: Adjustable): Mod[T] = {
+  def run[T](adjust: Adjustable): T = {
     val future = main.masterRef ? RunMessage(adjust)
     val resultFuture =
-      Await.result(future, timeout.duration).asInstanceOf[Future[Mod[Any]]]
+      Await.result(future, timeout.duration).asInstanceOf[Future[Any]]
 
-    Await.result(resultFuture, timeout.duration).asInstanceOf[Changeable[T]].mod
+    Await.result(resultFuture, timeout.duration).asInstanceOf[T]
   }
 
   def propagate[T]() {
