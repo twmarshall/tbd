@@ -53,6 +53,17 @@ class Mutator {
     Await.result(future2, timeout.duration)
   }
 
+  def load(file: String) {
+    val xml = scala.xml.XML.loadFile(file)
+    (xml \ "elem").map(elem => {
+      (elem \ "key").map(key => {
+        (elem \ "value").map(value => {
+          put(key.text, value.text)
+        })
+      })
+    })
+  }
+
   def update(key: Any, value: Any) {
     val future = main.masterRef ? UpdateMessage("input", key, value)
     val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
