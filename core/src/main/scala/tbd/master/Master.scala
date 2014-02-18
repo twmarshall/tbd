@@ -61,12 +61,10 @@ class Master extends Actor with ActorLogging {
     }
 
     case PropagateMessage => {
-      log.info("\n\n\n\n\n\nMaster actor initiating change propagation.")
+      log.info("Master actor initiating change propagation.")
 
       result = Promise[String]
-      //Await.result(result.future, timeout.duration)
       sender ! result.future
-      //resultWaiter = sender
 
       workerRef ! PropagateMessage
     }
