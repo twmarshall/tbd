@@ -108,8 +108,8 @@ class Master extends Actor with ActorLogging {
     }
 
     case ShutdownMessage => {
+      log.info("Master shutting down.")
       context.system.shutdown()
-      context.system.awaitTermination()
     }
 
     case x => log.warning("Master actor received unhandled message " +

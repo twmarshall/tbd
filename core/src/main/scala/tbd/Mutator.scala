@@ -30,7 +30,7 @@ class Mutator {
 
   implicit val timeout = Timeout(5 seconds)
 
-  val log = Logging(main.system, "Mutator")
+  //val log = Logging(main.system, "Mutator")
 
   def run[T](adjust: Adjustable): T = {
     val future = main.masterRef ? RunMessage(adjust)
@@ -44,7 +44,7 @@ class Mutator {
     val future = main.masterRef ? PropagateMessage
     val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
     Await.result(future2, timeout.duration)
-    log.debug("done waiting")
+    //log.debug("done waiting")
   }
 
   def put(key: Any, value: Any) {
