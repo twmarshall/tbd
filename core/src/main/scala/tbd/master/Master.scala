@@ -43,7 +43,7 @@ class Master extends Actor with ActorLogging {
 
   implicit val timeout = Timeout(5 seconds)
 
-  var result = Promise[String]
+  var result = Promise[Any]
   var resultWaiter: ActorRef = null
   var updateResult = Promise[String]
 
@@ -56,14 +56,14 @@ class Master extends Actor with ActorLogging {
 
   def receive = {
     case RunMessage(adjust: Adjustable) => {
-      result = Promise[String]
+      result = Promise[Any]
       sender ! runTask(adjust)
     }
 
     case PropagateMessage => {
       log.info("Master actor initiating change propagation.")
 
-      result = Promise[String]
+      result = Promise[Any]
       sender ! result.future
 
       workerRef ! PropagateMessage
@@ -72,7 +72,7 @@ class Master extends Actor with ActorLogging {
     case FinishedPropagatingMessage => {
       log.debug("Master received FinishedPropagatingMessage.")
       val future = workerRef ? DDGToStringMessage("")
-      log.debug(Await.result(future, timeout.duration).asInstanceOf[String])
+      //log.debug(Await.result(future, timeout.duration).asInstanceOf[String])
       result.success("okay")
     }
 
@@ -112,7 +112,9 @@ class Master extends Actor with ActorLogging {
       context.system.shutdown()
     }
 
-    case x => log.warning("Master actor received unhandled message " +
-			  x + " from " + sender)
+    case x => {
+      log.warning("Master actor received unhandled message " +
+			            x + " from " + sender)
+    }
   }
 }

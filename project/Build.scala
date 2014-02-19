@@ -133,7 +133,7 @@ object IncrementalBuild extends Build {
       libraryDependencies ++= commonDeps,
       mkrun <<= (baseDirectory, fullClasspath in Runtime, mainClass in Runtime) map { (base, cp, main) =>
         val template = """#!/bin/sh
-        java -classpath "%s":/Users/thomas/incremental/core/target/classes/ \
+        java -Xmx2g -Xss4m -classpath "%s":/Users/thomas/incremental/core/target/classes/ \
          -Djava.util.logging.config.class=com.microsoft.reef.util.logging.Config \
          -Dcom.microsoft.reef.runtime.local.folder=/Users/thomas/incremental/examples/target \
         %s

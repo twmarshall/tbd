@@ -16,7 +16,6 @@
 package tbd
 
 import akka.pattern.ask
-import akka.event.Logging
 import akka.util.Timeout
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
@@ -28,9 +27,7 @@ import tbd.mod.Mod
 class Mutator {
   val main = new Main()
 
-  implicit val timeout = Timeout(5 seconds)
-
-  //val log = Logging(main.system, "Mutator")
+  implicit val timeout = Timeout(30 seconds)
 
   def run[T](adjust: Adjustable): T = {
     val future = main.masterRef ? RunMessage(adjust)
@@ -44,7 +41,6 @@ class Mutator {
     val future = main.masterRef ? PropagateMessage
     val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
     Await.result(future2, timeout.duration)
-    //log.debug("done waiting")
   }
 
   def put(key: Any, value: Any) {
@@ -53,12 +49,17 @@ class Mutator {
     Await.result(future2, timeout.duration)
   }
 
-  def load(file: String) {
+  def load(file: String, max: Int = -1) {
     val xml = scala.xml.XML.loadFile(file)
+    var count = 0
+
     (xml \ "elem").map(elem => {
       (elem \ "key").map(key => {
         (elem \ "value").map(value => {
-          put(key.text, value.text)
+          if (max > count || max == -1) {
+            put(key.text, value.text)
+            count += 1
+          }
         })
       })
     })
