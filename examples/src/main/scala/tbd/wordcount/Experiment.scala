@@ -32,14 +32,14 @@ object Experiment {
     mutator.load("wiki.xml", pages)
     val before = System.currentTimeMillis()
     val output = mutator.run[Mod[Map[String, Int]]](new WCAdjust())
-    println("Initial run for nonparallel on " + pages + " pages = " +
-            (System.currentTimeMillis() - before) + "ms")
+    println("\n\nInitial run for nonparallel on " + pages + " pages = " +
+            (System.currentTimeMillis() - before) + "ms\n\n")
 
     mutator.put("qwer", "qwer qwer")
     val before2 = System.currentTimeMillis()
     mutator.propagate()
-    println("Propagatation for inserting " + (1.0 / pages * 100) + "% pages = " +
-            (System.currentTimeMillis() - before2) + "ms")
+    println("\n\nPropagatation for inserting " + (1.0 / pages * 100) + "% pages = " +
+            (System.currentTimeMillis() - before2) + "ms\n\n")
 
     mutator.shutdown()
   }

@@ -54,7 +54,6 @@ class TBD(
     log.debug("Executing read on  mod " + mod.id)
 
     val readNode = ddg.addRead(mod.asInstanceOf[Mod[Any]], currentParent, reader)
-    //log.debug("Contents of DDG after adding read:\n" + ddg)
 
     val outerReader = currentParent
     currentParent = readNode
@@ -65,7 +64,7 @@ class TBD(
   }
 
   def write[T](dest: Dest[T], value: T): Changeable[T] = {
-    log.debug("Writing " + value + " to " + dest.mod.id)
+    log.debug("Writing  to " + dest.mod.id)
 
     val future = datastoreRef ! UpdateModMessage(dest.mod.id, value, workerRef)
     if (ddg.reads.contains(dest.mod.id)) {
@@ -101,7 +100,6 @@ class TBD(
     val twoFuture = workerRef2 ? RunTaskMessage(task2)
 
     ddg.addPar(workerRef1, workerRef2, currentParent)
-    //log.debug("DDG after adding par node:\n" + ddg)
 
     val oneRet = Await.result(oneFuture, timeout.duration).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, timeout.duration).asInstanceOf[U]

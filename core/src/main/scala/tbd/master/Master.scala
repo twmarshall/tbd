@@ -71,8 +71,12 @@ class Master extends Actor with ActorLogging {
 
     case FinishedPropagatingMessage => {
       log.debug("Master received FinishedPropagatingMessage.")
-      val future = workerRef ? DDGToStringMessage("")
-      //log.debug(Await.result(future, timeout.duration).asInstanceOf[String])
+
+      // Note: the {} syntax ensures that we will not actually do the wasted
+      // work of generating the DDG output if debugging isn't turned on.
+      log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
+					timeout.duration).asInstanceOf[String])
+
       result.success("okay")
     }
 

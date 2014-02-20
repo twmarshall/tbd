@@ -69,8 +69,8 @@ class ReadNode[T, U](aMod: Mod[Any], aParent: Node, aTimestamp: Timestamp, aRead
   val reader = aReader
 
   override def toString(prefix: String) = {
-    prefix + "ReadNode modId=(" + mod.id + ") value=" + mod +" time=" +
-      timestamp + " updated=(" + updated + ")" + super.toString(prefix)
+    prefix + "ReadNode modId=(" + mod.id + ") " + " time=" + timestamp +
+      " updated=(" + updated + ")" + super.toString(prefix)
   }
 }
 
@@ -79,8 +79,8 @@ class WriteNode(aMod: Mod[Any], aParent: Node, aTimestamp: Timestamp)
   val mod: Mod[Any] = aMod
 
   override def toString(prefix: String) = {
-    prefix + "WriteNode modId=(" + mod.id + ") value=" + mod + " time=" +
-      timestamp + super.toString(prefix)
+    prefix + "WriteNode modId=(" + mod.id + ") " +
+      " time=" + timestamp + super.toString(prefix)
   }
 }
 

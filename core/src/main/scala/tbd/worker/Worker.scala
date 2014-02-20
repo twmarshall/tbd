@@ -139,7 +139,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case PropagateMessage => {
-      log.debug("Asked to perform change propagation. updated:\n" + ddg.updated + "\nDDG:\n" + ddg)
+      log.debug("Asked to perform change propagation. updated:\n" + ddg.updated + "\nDDG: {}", ddg)
 
       propagating = true
       val done = propagate()
