@@ -41,7 +41,7 @@ class Master extends Actor with ActorLogging {
 
   private var i = 0
 
-  implicit val timeout = Timeout(5 seconds)
+  implicit val timeout = Timeout(3000 seconds)
 
   var result = Promise[Any]
   var resultWaiter: ActorRef = null
@@ -72,10 +72,8 @@ class Master extends Actor with ActorLogging {
     case FinishedPropagatingMessage => {
       log.debug("Master received FinishedPropagatingMessage.")
 
-      // Note: the {} syntax ensures that we will not actually do the wasted
-      // work of generating the DDG output if debugging isn't turned on.
-      log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-					timeout.duration).asInstanceOf[String])
+      //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
+	//				timeout.duration).asInstanceOf[String])
 
       result.success("okay")
     }

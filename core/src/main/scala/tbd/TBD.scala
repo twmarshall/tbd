@@ -44,7 +44,7 @@ class TBD(
 
   val log = Logging(system, "TBD" + id)
 
-  implicit val timeout = Timeout(5 seconds)
+  implicit val timeout = Timeout(300 seconds)
 
   // Represents the number of PebblingFinishedMessages this worker is waiting
   // on before it can finish.

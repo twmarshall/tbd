@@ -15,13 +15,30 @@
  */
 package tbd.examples.wordcount
 
-import tbd.Mutator
+import tbd.{Adjustable, Mutator}
 import tbd.mod.Mod
 
 object Experiment {
-  def main(args: Array[String]) {
+  def run(adjust: Adjustable, pages: Int) {
     val mutator = new Mutator()
 
+    mutator.load("wiki.xml", pages)
+
+    val before = System.currentTimeMillis()
+    val output = mutator.run[Mod[Map[String, Int]]](adjust)
+    println("Initial run for nonparallel on " + pages + " pages = " +
+            (System.currentTimeMillis() - before) + "ms")
+
+    mutator.put("qwer", "qwer qwer")
+    val before2 = System.currentTimeMillis()
+    mutator.propagate()
+    println("Propagatation for inserting " + (1.0 / pages * 100) + "% pages = " +
+            (System.currentTimeMillis() - before2) + "ms")
+
+    mutator.shutdown()
+  }
+
+  def main(args: Array[String]) {
     val pages =
       if (args.size == 1) {
         args(0).toInt
@@ -29,18 +46,8 @@ object Experiment {
         10
       }
 
-    mutator.load("wiki.xml", pages)
-    val before = System.currentTimeMillis()
-    val output = mutator.run[Mod[Map[String, Int]]](new WCAdjust())
-    println("\n\nInitial run for nonparallel on " + pages + " pages = " +
-            (System.currentTimeMillis() - before) + "ms\n\n")
+    run(new WCAdjust(), pages)
 
-    mutator.put("qwer", "qwer qwer")
-    val before2 = System.currentTimeMillis()
-    mutator.propagate()
-    println("\n\nPropagatation for inserting " + (1.0 / pages * 100) + "% pages = " +
-            (System.currentTimeMillis() - before2) + "ms\n\n")
-
-    mutator.shutdown()
+    run(new WCParAdjust(), pages)
   }
 }

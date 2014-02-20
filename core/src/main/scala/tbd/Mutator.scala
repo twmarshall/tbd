@@ -27,7 +27,7 @@ import tbd.mod.Mod
 class Mutator {
   val main = new Main()
 
-  implicit val timeout = Timeout(30 seconds)
+  implicit val timeout = Timeout(3000 seconds)
 
   def run[T](adjust: Adjustable): T = {
     val future = main.masterRef ? RunMessage(adjust)
