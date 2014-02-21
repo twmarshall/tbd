@@ -33,25 +33,6 @@ object Experiment {
     val r = new scala.util.Random()
 
     for (count <- counts) {
-      val mutator = new Mutator()
-
-      val xml = scala.xml.XML.loadFile("wiki.xml")
-      var i = 0
-
-      val pages = scala.collection.mutable.Map[String, String]()
-      (xml \ "elem").map(elem => {
-        (elem \ "key").map(key => {
-          (elem \ "value").map(value => {
-            if (i < count) {
-              mutator.put(key.text, value.text)
-              i += 1
-            } else {
-              pages += (key.text -> value.text)
-            }
-          })
-        })
-      })
-
       var run = 0
       val results = scala.collection.mutable.Map[String, Double]()
       results("initial") = 0
@@ -60,6 +41,25 @@ object Experiment {
       }
 
       while (run < runs) {
+	val mutator = new Mutator()
+
+	val xml = scala.xml.XML.loadFile("wiki.xml")
+	var i = 0
+
+	val pages = scala.collection.mutable.Map[String, String]()
+	(xml \ "elem").map(elem => {
+	  (elem \ "key").map(key => {
+	    (elem \ "value").map(value => {
+              if (i < count) {
+		mutator.put(key.text, value.text)
+		i += 1
+              } else {
+		pages += (key.text -> value.text)
+              }
+            })
+          })
+	})
+
 	val before = System.currentTimeMillis()
 	val output = mutator.run[Mod[Map[String, Int]]](adjust)
 	results("initial") += System.currentTimeMillis() - before
@@ -77,6 +77,7 @@ object Experiment {
 	}
 
 	run += 1
+	mutator.shutdown()
       }
 
       print(description + "\t" + count + "\t")
@@ -86,8 +87,6 @@ object Experiment {
 	print("\t" + round(results(percent + "") / runs))
       }
       print("\n")
-
-      mutator.shutdown()
     }
   }
 
