@@ -39,9 +39,9 @@ class DDG(log: LoggingAdapter, id: String) {
       reader: T => Changeable[U]): Node = {
     val parent =
       if (aParent == null) {
-	      root
+	root
       } else {
-	      aParent
+	aParent
       }
 
     val timestamp = nextTimestamp(parent)
@@ -61,9 +61,9 @@ class DDG(log: LoggingAdapter, id: String) {
   def addWrite(mod: Mod[Any], aParent: Node): Node = {
     val parent =
       if (aParent == null) {
-	      root
+	root
       } else {
-	      aParent
+	aParent
       }
 
     val timestamp = nextTimestamp(parent)
@@ -77,9 +77,9 @@ class DDG(log: LoggingAdapter, id: String) {
   def addPar(workerRef1: ActorRef, workerRef2: ActorRef, aParent: Node) {
     val parent =
       if (aParent == null) {
-	      root
+	root
       } else {
-	      aParent
+	aParent
       }
 
     val timestamp = nextTimestamp(parent)
@@ -93,9 +93,9 @@ class DDG(log: LoggingAdapter, id: String) {
 
   private def nextTimestamp(parent: Node): Timestamp = {
     if (parent.children.size == 0) {
-	    ordering.after(parent.timestamp)
+      ordering.after(parent.timestamp)
     } else {
-	    ordering.after(parent.children.last.timestamp)
+      ordering.after(parent.children.last.timestamp)
     }
   }
 

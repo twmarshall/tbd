@@ -256,37 +256,38 @@ class TBD(
       tbd: TBD,
       dest: Dest[ListNode[T]],
       lst: ListNode[T],
-      func: (T, T) => T): Changeable[ListNode[T]] = {
-    if (lst == null) {
-      tbd.write(dest, null)
-    } else {
-      tbd.read(lst.next, (next: ListNode[T]) => {
-        if (next == null) {
-          val newValue = tbd.mod((dest: Dest[T]) => {
-            tbd.read(lst.value, (value: T) => tbd.write(dest, value))            
-          })
-          val newNext = tbd.mod((dest: Dest[ListNode[T]]) => tbd.write(dest, null))
-          tbd.write(dest, new ListNode(newValue, newNext))
-        } else {
-          val modTuple = tbd.par((tbd:TBD) => {
-            tbd.mod((dest: Dest[T]) => {
-              tbd.read(lst.value, (value1: T) => {
-                tbd.read(next.value, (value2: T) => {
-                  tbd.write(dest, func(value1, value2))
-                })
-              })
-            })
-          }, (tbd:TBD) => {
-            tbd.mod((dest: Dest[ListNode[T]]) => {
-              tbd.read(next.next, (lst: ListNode[T]) => {
-                parReduceHelper(tbd, dest, lst, func)
-              })
-            })
-          })
-
-          tbd.write(dest, new ListNode(modTuple._1, modTuple._2))
-        }
+      func: (T, T) => T,
+      next: ListNode[T]): Changeable[ListNode[T]] = {
+    if (next == null) {
+      val newValue = tbd.mod((dest: Dest[T]) => {
+        tbd.read(lst.value, (value: T) => tbd.write(dest, value))            
       })
+      val newNext = tbd.mod((dest: Dest[ListNode[T]]) => tbd.write(dest, null))
+      tbd.write(dest, new ListNode(newValue, newNext))
+    } else {
+      val modTuple = tbd.par((tbd:TBD) => {
+        tbd.mod((dest: Dest[T]) => {
+          tbd.read(lst.value, (value1: T) => {
+            tbd.read(next.value, (value2: T) => {
+              tbd.write(dest, func(value1, value2))
+            })
+          })
+        })
+      }, (tbd:TBD) => {
+        tbd.mod((dest: Dest[ListNode[T]]) => {
+          tbd.read(next.next, (lst: ListNode[T]) => {
+	    if (lst == null) {
+	      tbd.write(dest, null)
+	    } else {
+	      tbd.read(lst.next, (next: ListNode[T]) => {
+		parReduceHelper(tbd, dest, lst, func, next)
+	      })
+	    }
+          })
+        })
+      })
+
+      tbd.write(dest, new ListNode(modTuple._1, modTuple._2))
     }
   }
 
@@ -296,7 +297,9 @@ class TBD(
       if (lst != null) {
         tbd.read(lst.next, (next: ListNode[T]) => {
           if (next != null) {
-            val newList = tbd.mod((dest: Dest[ListNode[T]]) => parReduceHelper(tbd, dest, lst, func))
+            val newList = tbd.mod((dest: Dest[ListNode[T]]) => {
+	      parReduceHelper(tbd, dest, lst, func, next)
+	    })
             tbd.read(newList, (lst: ListNode[T]) => innerReduce(tbd, dest, lst))
           } else {
             tbd.read(lst.value, (value: T) => tbd.write(dest, value))
