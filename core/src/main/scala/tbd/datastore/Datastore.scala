@@ -76,6 +76,11 @@ class Datastore extends Actor with ActorLogging {
     log.debug("Updating mod(" + modId+ ") from " + sender)
     tables("mods")(modId.value) = value
 
+    // Each mod can only be updated once per run, so we should always wait for
+    // the pebbling for a given mod to be achieved before that mod can be
+    // updated again.
+    assert(!awaiting.contains(modId))
+
     var count = 0
     for (workerRef <- dependencies(modId)) {
       if (workerRef != sender) {
