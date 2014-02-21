@@ -70,7 +70,7 @@ class ReadNode[T, U](aMod: Mod[Any], aParent: Node, aTimestamp: Timestamp, aRead
 
   override def toString(prefix: String) = {
     prefix + "ReadNode modId=(" + mod.id + ") " + " time=" + timestamp +
-      " updated=(" + updated + ")" + super.toString(prefix)
+      " value=" + mod + " updated=(" + updated + ")" + super.toString(prefix)
   }
 }
 
@@ -80,7 +80,7 @@ class WriteNode(aMod: Mod[Any], aParent: Node, aTimestamp: Timestamp)
 
   override def toString(prefix: String) = {
     prefix + "WriteNode modId=(" + mod.id + ") " +
-      " time=" + timestamp + super.toString(prefix)
+      "value=" + mod + " time=" + timestamp + super.toString(prefix)
   }
 }
 
@@ -108,7 +108,7 @@ class ParNode(
   }
 }
 
-class RootNode(id: Int) extends Node(null, null) {
+class RootNode(id: String) extends Node(null, null) {
   override def toString(prefix: String) = {
     prefix + "RootNode id=(" + id + ")" + super.toString(prefix)
   }

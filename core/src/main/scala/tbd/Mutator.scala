@@ -49,20 +49,8 @@ class Mutator {
     Await.result(future2, timeout.duration)
   }
 
-  def load(file: String, max: Int = -1) {
-    val xml = scala.xml.XML.loadFile(file)
-    var count = 0
+  def load(file: String, start: Int = 0, max: Int = -1) {
 
-    (xml \ "elem").map(elem => {
-      (elem \ "key").map(key => {
-        (elem \ "value").map(value => {
-          if (max > count || max == -1) {
-            put(key.text, value.text)
-            count += 1
-          }
-        })
-      })
-    })
   }
 
   def update(key: Any, value: Any) {

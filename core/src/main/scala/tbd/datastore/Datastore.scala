@@ -124,7 +124,6 @@ class Datastore extends Actor with ActorLogging {
     case UpdateMessage(table: String, key: Any, value: Any) => {
       val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
       updateMod(modId, value, sender)
-      sender ! modId
     }
 
     case CreateModMessage(value: Any) => {

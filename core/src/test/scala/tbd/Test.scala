@@ -142,8 +142,10 @@ class TestSpec extends FlatSpec with Matchers {
     output.read().toString should be ("11")
 
     mutator.update("four", 10)
+    mutator.update("three", 5)
     mutator.propagate()
-    output.read().toString should be ("22")
+    // (4 + 1) + (2 + 1) + (5 + 1) + (10 + 1)
+    output.read().toString should be ("25")
 
     mutator.shutdown()
   }

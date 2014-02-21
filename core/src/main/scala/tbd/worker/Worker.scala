@@ -36,7 +36,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
   extends Actor with ActorLogging {
   log.info("Worker " + id + " launched")
   private var task: Task = null
-  private val ddg = new DDG(log)
+  private val ddg = new DDG(log, id)
   private val tbd = new TBD(id, ddg, datastoreRef, self, context.system, true)
 
   implicit val timeout = Timeout(5 seconds)
@@ -54,8 +54,9 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
 
       if (node.isInstanceOf[ReadNode[Any, Any]]) {
         val readNode = node.asInstanceOf[ReadNode[Any, Any]]
-        log.debug("Propagating read of mod(" + readNode.mod.id + ") at time=" + readNode.timestamp)
+        log.debug("Propagating read of mod(" + readNode.mod.id + ")")
         ddg.removeSubtree(readNode)
+
         val future = datastoreRef ? GetMessage("mods", readNode.mod.id.value)
         val newValue = Await.result(future, timeout.duration)
 
@@ -115,8 +116,8 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case PebbleMessage(workerRef: ActorRef, modId: ModId) => {
+      log.debug("Received PebbleMessage for " + modId)
       val newPebble = ddg.parUpdated(workerRef)
-      log.debug("Received PebbleMessage.")
 
       if (newPebble) {
         log.debug("Sending PebbleMessage to " + parent)
@@ -130,7 +131,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     case PebblingFinishedMessage(modId: ModId) => {
       assert(tbd.awaiting > 0)
       tbd.awaiting -= 1
-      log.debug("Received PebblingFinishedMessage. Still waiting on " + tbd.awaiting)
+      log.debug("Received PebblingFinishedMessage. Still waiting on " + tbd.awaiting + " with updated=" + ddg.updated.size)
 
       if (propagating & tbd.awaiting == 0 && awaiting == 0) {
         log.debug("Sending FinishedPropagatingMessage.")
@@ -139,7 +140,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case PropagateMessage => {
-      //log.debug("Asked to perform change propagation. updated:\n" + ddg.updated + "\nDDG: {}", ddg)
+      log.debug("Asked to perform change propagation. updated: " + ddg.updated.size)
 
       propagating = true
       val done = propagate()

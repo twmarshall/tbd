@@ -22,18 +22,7 @@ import scala.collection.mutable.{Map, PriorityQueue, Set}
 import tbd.Changeable
 import tbd.mod.{Mod, ModId}
 
-object DDG {
-  var lastId = 0
-
-  def getId(): Int = {
-    lastId += 1
-    lastId
-  }
-}
-
-class DDG(log: LoggingAdapter) {
-  val id = DDG.getId()
-
+class DDG(log: LoggingAdapter, id: String) {
   var root = new RootNode(id)
   val reads = Map[ModId, Set[ReadNode[Any, Any]]]()
   val pars = Map[ActorRef, ParNode]()
@@ -124,7 +113,10 @@ class DDG(log: LoggingAdapter) {
   // Pebbles a par node. Returns true iff the pebble did not already exist.
   def parUpdated(workerRef: ActorRef): Boolean = {
     val parNode = pars(workerRef)
-    updated += parNode
+    if (!parNode.pebble1 && !parNode.pebble2) {
+      updated += parNode
+    }
+
     if (parNode.workerRef1 == workerRef) {
       val ret = !parNode.pebble1
       parNode.pebble1 = true
@@ -142,7 +134,7 @@ class DDG(log: LoggingAdapter) {
         reads -= child.asInstanceOf[ReadNode[Any, Any]].mod.id
       }
 
-      updated = updated.filter((node2: Node) => child == node2)
+      updated = updated.filter((node2: Node) => child != node2)
       removeSubtree(child)
     }
 
