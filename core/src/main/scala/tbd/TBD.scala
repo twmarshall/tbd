@@ -73,7 +73,7 @@ class TBD(
     awaiting += 1
 
     val changeable = new Changeable(dest.mod)
-    ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]], currentParent)
+    //ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]], currentParent)
 
     changeable
   }
