@@ -136,7 +136,7 @@ object IncrementalBuild extends Build {
         java -Xmx2g -Xss4m -classpath "%s":/Users/thomas/incremental/core/target/classes/ \
          -Djava.util.logging.config.class=com.microsoft.reef.util.logging.Config \
          -Dcom.microsoft.reef.runtime.local.folder=/Users/thomas/incremental/examples/target \
-        %s $1
+        %s $@
         """
         val mainStr = main getOrElse error("No main class specified")
         val contents = template.format(cp.files.absString, mainStr)

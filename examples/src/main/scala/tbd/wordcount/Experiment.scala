@@ -19,9 +19,17 @@ import tbd.{Adjustable, Mutator}
 import tbd.mod.Mod
 
 object Experiment {
-  def run(adjust: Adjustable, pages: Int, description: String) {
-    val counts = Array(10, 50, 100)
-    val percents = Array(0.1, 0.2, 0.3)
+  type Options = Map[Symbol, Any]
+
+  def round(value: Double): Double = {
+    BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+  }
+
+  def run(adjust: Adjustable, options: Options, description: String) {
+    val counts = options('counts).asInstanceOf[Array[Int]]
+    val percents = options('percents).asInstanceOf[Array[Double]]
+    val runs = options('repeat).asInstanceOf[Int]
+
     val r = new scala.util.Random()
 
     for (count <- counts) {
@@ -44,38 +52,76 @@ object Experiment {
         })
       })
 
-      val before = System.currentTimeMillis()
-      val output = mutator.run[Mod[Map[String, Int]]](adjust)
-      println("Initial run for " + description + " on " + count + " pages = " +
-              (System.currentTimeMillis() - before) + "ms")
+      var run = 0
+      val results = scala.collection.mutable.Map[String, Double]()
+      results("initial") = 0
+      for (percent <- percents) {
+	results(percent + "") = 0
+      }
+
+      while (run < runs) {
+	val before = System.currentTimeMillis()
+	val output = mutator.run[Mod[Map[String, Int]]](adjust)
+	results("initial") += System.currentTimeMillis() - before
+
+	for (percent <- percents) {
+          var i =  0
+          while (i < percent * count) {
+            mutator.update(r.nextInt(count).toString, pages.head._2)
+            pages -= pages.head._1
+            i += 1
+          }
+          val before2 = System.currentTimeMillis()
+          mutator.propagate()
+	  results(percent + "") += System.currentTimeMillis() - before2
+	}
+
+	run += 1
+      }
+
+      print(description + "\t" + count + "\t")
+      print(round(results("initial") / runs))
 
       for (percent <- percents) {
-        var i =  0
-        while (i < percent * count) {
-          mutator.update(r.nextInt(count).toString, pages.head._2)
-          pages -= pages.head._1
-          i += 1
-        }
-        val before2 = System.currentTimeMillis()
-        mutator.propagate()
-        println("Propagatation for updating " + percent + "% pages = " +
-                (System.currentTimeMillis() - before2) + "ms")          
+	print("\t" + round(results(percent + "") / runs))
       }
+      print("\n")
 
       mutator.shutdown()
     }
   }
 
+  val usage = """
+    Usage: run.sh [--repeat num] [--counts int,int,...] [--percents float,float,...]
+  """
+
   def main(args: Array[String]) {
-    val pages =
-      if (args.size == 1) {
-        args(0).toInt
-      } else {
-        10
+    def nextOption(map : Options, list: List[String]): Options = {
+      list match {
+        case Nil => map
+        case "--repeat" :: value :: tail =>
+          nextOption(map ++ Map('repeat -> value.toInt), tail)
+	case "--counts" :: value :: tail =>
+	  nextOption(map ++ Map('counts -> value.split(",").map(_.toInt)), tail)
+	case "--percents" :: value :: tail =>
+	  nextOption(map ++ Map('percents -> value.split(",").map(_.toDouble)), tail)
+        case option :: tail => println("Unknown option " + option + "\n" + usage)
+                               exit(1)
       }
+    }
+    val options = nextOption(Map('repeat -> 3,
+				 'counts -> Array(100, 200, 300, 400),
+				 'percents -> Array(.01, .05, .1)),
+			     args.toList)
 
-    run(new WCAdjust(), pages, "nonparallel")
+    print("desc\tpages\tinitial")
+    for (percent <- options('percents).asInstanceOf[Array[Double]]) {
+      print("\t" + (percent * 100) + "%")
+    }
+    print("\n")
 
-    run(new WCParAdjust(), pages, "parallel")
+    run(new WCAdjust(), options, "non")
+
+    run(new WCParAdjust(), options, "par")
   }
 }
