@@ -19,23 +19,51 @@ import tbd.{Adjustable, Mutator}
 import tbd.mod.Mod
 
 object Experiment {
-  def run(adjust: Adjustable, pages: Int) {
-    val mutator = new Mutator()
+  def run(adjust: Adjustable, pages: Int, description: String) {
+    val counts = Array(10, 50, 100)
+    val percents = Array(0.1, 0.2, 0.3)
+    val r = new scala.util.Random()
 
-    mutator.load("wiki.xml", pages)
+    for (count <- counts) {
+      val mutator = new Mutator()
 
-    val before = System.currentTimeMillis()
-    val output = mutator.run[Mod[Map[String, Int]]](adjust)
-    println("Initial run for nonparallel on " + pages + " pages = " +
-            (System.currentTimeMillis() - before) + "ms")
+      val xml = scala.xml.XML.loadFile("wiki.xml")
+      var i = 0
 
-    mutator.put("qwer", "qwer qwer")
-    val before2 = System.currentTimeMillis()
-    mutator.propagate()
-    println("Propagatation for inserting " + (1.0 / pages * 100) + "% pages = " +
-            (System.currentTimeMillis() - before2) + "ms")
+      val pages = scala.collection.mutable.Map[String, String]()
+      (xml \ "elem").map(elem => {
+        (elem \ "key").map(key => {
+          (elem \ "value").map(value => {
+            if (i < count) {
+              mutator.put(key.text, value.text)
+              i += 1
+            } else {
+              pages += (key.text -> value.text)
+            }
+          })
+        })
+      })
 
-    mutator.shutdown()
+      val before = System.currentTimeMillis()
+      val output = mutator.run[Mod[Map[String, Int]]](adjust)
+      println("Initial run for " + description + " on " + count + " pages = " +
+              (System.currentTimeMillis() - before) + "ms")
+
+      for (percent <- percents) {
+        var i =  0
+        while (i < percent * count) {
+          mutator.update(r.nextInt(count).toString, pages.head._2)
+          pages -= pages.head._1
+          i += 1
+        }
+        val before2 = System.currentTimeMillis()
+        mutator.propagate()
+        println("Propagatation for updating " + percent + "% pages = " +
+                (System.currentTimeMillis() - before2) + "ms")          
+      }
+
+      mutator.shutdown()
+    }
   }
 
   def main(args: Array[String]) {
@@ -46,8 +74,8 @@ object Experiment {
         10
       }
 
-    run(new WCAdjust(), pages)
+    run(new WCAdjust(), pages, "nonparallel")
 
-    run(new WCParAdjust(), pages)
+    run(new WCParAdjust(), pages, "parallel")
   }
 }
