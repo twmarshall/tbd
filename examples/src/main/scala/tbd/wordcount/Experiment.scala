@@ -20,6 +20,7 @@ import tbd.mod.Mod
 
 object Experiment {
   type Options = Map[Symbol, Any]
+  val runtime = Runtime.getRuntime()
 
   def round(value: Double): Double = {
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
@@ -36,35 +37,39 @@ object Experiment {
       var run = 0
       val results = scala.collection.mutable.Map[String, Double]()
       results("initial") = 0
+      results("initialMem") = 0
       for (percent <- percents) {
-	results(percent + "") = 0
+	      results(percent + "") = 0
+        results(percent + "Mem") = 0
       }
 
       while (run < runs) {
-	val mutator = new Mutator()
+	      val mutator = new Mutator()
 
-	val xml = scala.xml.XML.loadFile("wiki.xml")
-	var i = 0
+	      val xml = scala.xml.XML.loadFile("wiki.xml")
+	      var i = 0
 
-	val pages = scala.collection.mutable.Map[String, String]()
-	(xml \ "elem").map(elem => {
-	  (elem \ "key").map(key => {
-	    (elem \ "value").map(value => {
+	      val pages = scala.collection.mutable.Map[String, String]()
+	      (xml \ "elem").map(elem => {
+	        (elem \ "key").map(key => {
+	          (elem \ "value").map(value => {
               if (i < count) {
-		mutator.put(key.text, value.text)
-		i += 1
+		            mutator.put(key.text, value.text)
+		            i += 1
               } else {
-		pages += (key.text -> value.text)
+		            pages += (key.text -> value.text)
               }
             })
           })
-	})
+	      })
 
-	val before = System.currentTimeMillis()
-	val output = mutator.run[Mod[Map[String, Int]]](adjust)
-	results("initial") += System.currentTimeMillis() - before
+	      val before = System.currentTimeMillis()
+        val memBefore = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024)
+	      val output = mutator.run[Mod[Map[String, Int]]](adjust)
+	      results("initial") += System.currentTimeMillis() - before
+        results("initialMem") += (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore
 
-	for (percent <- percents) {
+	      for (percent <- percents) {
           var i =  0
           while (i < percent * count) {
             mutator.update(r.nextInt(count).toString, pages.head._2)
@@ -73,18 +78,21 @@ object Experiment {
           }
           val before2 = System.currentTimeMillis()
           mutator.propagate()
-	  results(percent + "") += System.currentTimeMillis() - before2
-	}
+	        results(percent + "") += System.currentTimeMillis() - before2
+          results(percent + "Mem") += (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore
+	      }
 
-	run += 1
-	mutator.shutdown()
+	      run += 1
+	      mutator.shutdown()
       }
 
       print(description + "\t" + count + "\t")
       print(round(results("initial") / runs))
+      print("\t" + round(results("initialMem") / runs))
 
       for (percent <- percents) {
-	print("\t" + round(results(percent + "") / runs))
+	      print("\t" + round(results(percent + "") / runs))
+        print("\t" + round(results(percent + "Mem") / runs))
       }
       print("\n")
     }
@@ -100,27 +108,31 @@ object Experiment {
         case Nil => map
         case "--repeat" :: value :: tail =>
           nextOption(map ++ Map('repeat -> value.toInt), tail)
-	case "--counts" :: value :: tail =>
-	  nextOption(map ++ Map('counts -> value.split(",").map(_.toInt)), tail)
-	case "--percents" :: value :: tail =>
-	  nextOption(map ++ Map('percents -> value.split(",").map(_.toDouble)), tail)
+	      case "--counts" :: value :: tail =>
+	        nextOption(map ++ Map('counts -> value.split(",").map(_.toInt)), tail)
+	      case "--percents" :: value :: tail =>
+	        nextOption(map ++ Map('percents -> value.split(",").map(_.toDouble)), tail)
         case option :: tail => println("Unknown option " + option + "\n" + usage)
                                exit(1)
       }
     }
     val options = nextOption(Map('repeat -> 3,
-				 'counts -> Array(100, 200, 300, 400),
-				 'percents -> Array(.01, .05, .1)),
-			     args.toList)
+				                         'counts -> Array(100, 200, 300, 400),
+				                         'percents -> Array(.01, .05, .1)),
+                             args.toList)
 
-    print("desc\tpages\tinitial")
+    print("desc\tpages\tinitial\tmem")
     for (percent <- options('percents).asInstanceOf[Array[Double]]) {
-      print("\t" + (percent * 100) + "%")
+      print("\t" + (percent * 100) + "%\tmem")
     }
     print("\n")
 
     run(new WCAdjust(), options, "non")
 
     run(new WCParAdjust(), options, "par")
+
+
+    println("New session, total memory = %s, max memory = %s, free memory = %s".format(
+      runtime.totalMemory / (1024 * 1024), runtime.maxMemory / (1024 * 1024), runtime.freeMemory / (1024 * 1024)))
   }
 }
