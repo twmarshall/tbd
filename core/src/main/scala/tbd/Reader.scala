@@ -21,28 +21,28 @@ import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import tbd.messages.{GetArrayMessage, GetListMessage, GetMessage}
+import tbd.datastore.Dataset
+import tbd.messages._
 import tbd.mod.Mod
 
 class Reader(datastoreRef: ActorRef) {
+  implicit val timeout = Timeout(5 seconds)
+
   def get[T](key: Int): T = {
-    implicit val timeout = Timeout(5 seconds)
     val modFuture = datastoreRef ? GetMessage("input", key)
     Await.result(modFuture, timeout.duration)
       .asInstanceOf[T]
   }
 
   def getArray[T](): Array[T] = {
-    implicit val timeout = Timeout(5 seconds)
     val arrayFuture = datastoreRef ? GetArrayMessage("input")
     Await.result(arrayFuture, timeout.duration)
       .asInstanceOf[Array[T]]
   }
 
-  def getList[T](): Mod[ListNode[T]] = {
-    implicit val timeout = Timeout(5 seconds)
-    val listFuture = datastoreRef ? GetListMessage("input")
-    Await.result(listFuture, timeout.duration)
-      .asInstanceOf[Mod[ListNode[T]]]
+  def getDataset[T](): Dataset[T] = {
+    val datasetFuture = datastoreRef ? GetDatasetMessage("input")
+    Await.result(datasetFuture, timeout.duration)
+      .asInstanceOf[Dataset[T]]
   }
 }

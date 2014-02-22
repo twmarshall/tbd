@@ -99,6 +99,23 @@ class Datastore extends Actor with ActorLogging {
     }
   }
 
+  private def getList(table: String): Mod[ListNode[Any]] = {
+    var tail = createMod[ListNode[Any]](null)
+
+    if (lists.contains(table)) {
+      lists(table) += tail
+    } else {
+      lists(table) = Set(tail)
+    }
+
+    for (elem <- tables(table)) {
+      val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))
+      tail = head
+    }
+
+    tail
+  }
+
   def receive = {
     case CreateTableMessage(table: String) => {
       tables(table) = Map[Any, Any]()
@@ -187,24 +204,8 @@ class Datastore extends Actor with ActorLogging {
       sender ! arr
     }
 
-    // Return all of the entries from the specified table as a linked list,
-    // allowing for both updates to existing elements and insertions to be
-    // propagated.
-    case GetListMessage(table: String) => {
-      var tail = createMod[ListNode[Any]](null)
-
-      if (lists.contains(table)) {
-        lists(table) += tail
-      } else {
-        lists(table) = Set(tail)
-      }
-
-      for (elem <- tables(table)) {
-        val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))
-        tail = head
-      }
-
-      sender ! tail
+    case GetDatasetMessage(table: String) => {
+      sender ! new Dataset(getList(table))
     }
 
     case x => {

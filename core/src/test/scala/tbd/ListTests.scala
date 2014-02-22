@@ -22,17 +22,17 @@ import tbd.mod.Mod
 
 class ListMapReduceTest extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {
-    val list = tbd.input.getList[Int]()
-    val mappedList = tbd.map(list, (_: Int) * 2)
-    tbd.reduce(mappedList, (_: Int) + (_: Int))
+    val dataset = tbd.input.getDataset[Int]()
+    val mappedDataset = dataset.map(tbd, (_: Int) * 2)
+    mappedDataset.reduce(tbd, (_: Int) + (_: Int))
   }
 }
 
 class ListParMapReduceTest extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {
-    val list = tbd.input.getList[Int]()
-    val mappedList = tbd.parMap(list, (_: Int) + 1)
-    tbd.parReduce(mappedList, (_: Int) + (_: Int))
+    val dataset = tbd.input.getDataset[Int]()
+    val mappedDataset = dataset.parMap(tbd, (_: Int) + 1)
+    mappedDataset.parReduce(tbd, (_: Int) + (_: Int))
   }
 }
 

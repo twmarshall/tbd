@@ -39,7 +39,7 @@ case class ReadModMessage(modId: ModId, workerRef: ActorRef)
 
 case class PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]])
 case class GetArrayMessage(table: String)
-case class GetListMessage(table: String)
+case class GetDatasetMessage(table: String)
 case class NullMessage
 
 // Master

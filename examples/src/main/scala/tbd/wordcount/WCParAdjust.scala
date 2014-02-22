@@ -20,8 +20,8 @@ import tbd.mod.Mod
 
 class WCParAdjust extends WC with Adjustable {
   def run(tbd: TBD): Mod[Map[String, Int]] = {
-    val pages = tbd.input.getList[String]()
-    val counts = tbd.parMap(pages, (s: String) => wordcount(s))
-    tbd.parReduce(counts, reduce((_: Map[String, Int]), (_: Map[String, Int])))
+    val pages = tbd.input.getDataset[String]()
+    val counts = pages.parMap(tbd, (s: String) => wordcount(s))
+    counts.parReduce(tbd, reduce((_: Map[String, Int]), (_: Map[String, Int])))
   }
 }

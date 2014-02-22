@@ -49,10 +49,6 @@ class Mutator {
     Await.result(future2, timeout.duration)
   }
 
-  def load(file: String, start: Int = 0, max: Int = -1) {
-
-  }
-
   def update(key: Any, value: Any) {
     val future = main.masterRef ? UpdateMessage("input", key, value)
     val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
