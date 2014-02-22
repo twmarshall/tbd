@@ -27,21 +27,6 @@ class ArrayMapTest extends Adjustable {
   }
 }
 
-class ListMapTest extends Adjustable {
-  def run(tbd: TBD): Mod[ListNode[String]] = {
-    val list = tbd.input.getList[String]()
-    tbd.parMap(list, (_: String) + " mapped")
-  }
-}
-
-class ListReduceTest extends Adjustable {
-  def run(tbd: TBD): Mod[Int] = {
-    val list = tbd.input.getList[Int]()
-    val mappedList = tbd.parMap(list, (_: Int) + 1)
-    tbd.parReduce(mappedList, (_: Int) + (_: Int))
-  }
-}
-
 class MatrixMultTest extends Adjustable {
   def run(tbd: TBD): Matrix = {
     val one = tbd.input.get[Matrix](1)
@@ -88,64 +73,6 @@ class TestSpec extends FlatSpec with Matchers {
     mutator.update(1, "three")
     mutator.propagate[Array[Mod[String]]]()
     output.deep.mkString(", ") should be ("two mapped, three mapped")
-
-    mutator.shutdown()
-  }
-
-  "ListMapTest" should "return a correctly mapped list" in {
-    val mutator = new Mutator()
-    mutator.put(1, "one")
-    mutator.put(2, "two")
-    val output = mutator.run[Mod[ListNode[String]]](new ListMapTest())
-    output.read().toString should be ("(one mapped, two mapped)")
-
-    mutator.update(1, "three")
-    mutator.propagate()
-    output.read().toString should be ("(three mapped, two mapped)")
-
-    mutator.put(3, "four")
-    mutator.propagate()
-    output.read().toString should be ("(three mapped, two mapped, four mapped)")
-
-    mutator.update(2, "five")
-    mutator.propagate()
-    output.read().toString should be ("(three mapped, five mapped, four mapped)")
-
-    mutator.put(4, "six")
-    mutator.propagate()
-    output.read().toString should be ("(three mapped, five mapped, four mapped, six mapped)")
-
-    mutator.shutdown()
-  }
-
-  "ListReduceTest" should "return the reduced value" in {
-    val mutator = new Mutator()
-    mutator.put("one", 1)
-    mutator.put("two", 2)
-    val output = mutator.run[Mod[Int]](new ListReduceTest())
-    output.read().toString should be ("5")
-
-    mutator.put("three", 3)
-    mutator.propagate()
-    output.read().toString should be ("9")
-
-    mutator.update("one", 4)
-    mutator.propagate()
-    output.read().toString should be ("12")
-
-    mutator.update("three", 2)
-    mutator.propagate()
-    output.read().toString should be ("11")
-
-    mutator.put("four", -1)
-    mutator.propagate()
-    output.read().toString should be ("11")
-
-    mutator.update("four", 10)
-    mutator.update("three", 5)
-    mutator.propagate()
-    // (4 + 1) + (2 + 1) + (5 + 1) + (10 + 1)
-    output.read().toString should be ("25")
 
     mutator.shutdown()
   }
