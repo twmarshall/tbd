@@ -46,6 +46,7 @@ class Master extends Actor with ActorLogging {
   var result = Promise[Any]
   var resultWaiter: ActorRef = null
   var updateResult = Promise[String]
+  var awaiting = 0
 
   private def runTask[T](adjust: Adjustable): Future[Any] = {
     i += 1
@@ -56,6 +57,7 @@ class Master extends Actor with ActorLogging {
 
   def receive = {
     case RunMessage(adjust: Adjustable) => {
+      log.debug("RunMessage")
       result = Promise[Any]
       sender ! runTask(adjust)
     }
@@ -80,35 +82,58 @@ class Master extends Actor with ActorLogging {
       result.success("okay")
     }
 
-    case PutMessage(table: String, key: Any, value: Any) => {
-      val future = datastoreRef ! PutMessage(table, key, value)
+    case PutInputMessage(table: String, key: Any, value: Any) => {
+      log.debug("PutInputMessage")
+      val future = datastoreRef ? PutMessage(table, key, value, self)
+
       updateResult = Promise[String]
       sender ! updateResult.future
+
+      assert(awaiting == 0)
+      awaiting = Await.result(future, timeout.duration).asInstanceOf[Int]
+
+      if (awaiting == 0) {
+        updateResult.success("okay")
+      }
     }
 
-    case UpdateMessage(table: String, key: Any, value: Any) => {
-      val future = datastoreRef ! UpdateMessage(table, key, value)
+    case UpdateInputMessage(table: String, key: Any, value: Any) => {
+      log.debug("UpdateInputMessage")
+      val future = datastoreRef ? UpdateMessage(table, key, value, self)
+
       updateResult = Promise[String]
       sender ! updateResult.future
+
+      assert(awaiting == 0)
+      awaiting = Await.result(future, timeout.duration).asInstanceOf[Int]
+      log.debug("UpdateMessage " + awaiting)
+
+      if (awaiting == 0) {
+        updateResult.success("okay")
+      }
     }
 
-    case PutMatrixMessage(
+    /*case PutMatrixMessage(
         table: String,
         key: Any,
         value: Array[Array[Int]]) => {
       val future = datastoreRef ? PutMatrixMessage(table, key, value)
       sender ! Await.result(future, timeout.duration)
-    }
+    }*/
 
-    case PebbleMessage(workerRef: ActorRef, modId: ModId) => {
+    case PebbleMessage(workerRef: ActorRef, modId: ModId, respondTo: ActorRef) => {
       log.debug("Master received PebbleMessage. Sending " +
                 "PebblingFinishedMessage(" + modId + ").")
-      datastoreRef ! PebblingFinishedMessage(modId)
+      respondTo ! PebblingFinishedMessage(modId)
     }
 
     case PebblingFinishedMessage(modId: ModId) => {
       log.debug("Master received PebblingFinishedMessage.")
-      updateResult.success("okay")
+      assert(awaiting > 0)
+      awaiting -= 1
+      if (awaiting == 0) {
+        updateResult.success("okay")
+      }
     }
 
     case ShutdownMessage => {

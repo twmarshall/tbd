@@ -100,12 +100,12 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
   }
 
   def receive = {
-    case ModUpdatedMessage(modId) => {
+    case ModUpdatedMessage(modId: ModId, respondTo: ActorRef) => {
       log.debug("Informed that mod(" + modId + ") has been updated.")
       ddg.modUpdated(modId)
 
       log.debug("Sending PebbleMessage to " + parent)
-      parent ! PebbleMessage(self, modId)
+      parent ! PebbleMessage(self, modId, respondTo)
     }
 
     case RunTaskMessage(aTask: Task) => {
@@ -115,16 +115,16 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
       sender ! output
     }
 
-    case PebbleMessage(workerRef: ActorRef, modId: ModId) => {
+    case PebbleMessage(workerRef: ActorRef, modId: ModId, respondTo: ActorRef) => {
       log.debug("Received PebbleMessage for " + modId)
       val newPebble = ddg.parUpdated(workerRef)
 
       if (newPebble) {
         log.debug("Sending PebbleMessage to " + parent)
-        val future = parent ! PebbleMessage(self, modId)
+        val future = parent ! PebbleMessage(self, modId, respondTo)
       } else {
         log.debug("Sending PebblingFinishedMessage(" + modId + ") to datastore.")
-        datastoreRef ! PebblingFinishedMessage(modId)
+        respondTo ! PebblingFinishedMessage(modId)
       }
     }
 

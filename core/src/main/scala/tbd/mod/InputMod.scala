@@ -13,20 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd
+package tbd.mod
 
-import akka.pattern.ask
 import akka.actor.ActorRef
+import akka.pattern.ask
 import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import tbd.messages.CreateModMessage
-import tbd.mod.Mod
+import tbd.messages._
 
-class Dest[T](datastoreRef: ActorRef) {
+class InputMod[T](datastoreRef: ActorRef) extends Mod[T] {
   implicit val timeout = Timeout(30 seconds)
-  val modFuture = datastoreRef ? CreateModMessage(null)
-  val mod = Await.result(modFuture, timeout.duration).asInstanceOf[Mod[T]]
-  //val mod = new LocalMod()
+
+  def read(workerRef: ActorRef = null): T = {
+    val ret =
+      if (workerRef != null) {
+        val readFuture = datastoreRef ? ReadModMessage(id, workerRef)
+        Await.result(readFuture, timeout.duration)
+      } else {
+        val readFuture = datastoreRef ? GetMessage("mods", id.value)
+        Await.result(readFuture, timeout.duration)
+      }
+
+    ret match {
+      case NullMessage => null.asInstanceOf[T]
+      case _ => ret.asInstanceOf[T]
+    }
+  }
+
+  def update(value: T, workerRef: ActorRef): Int = {
+    val future = datastoreRef ? UpdateModMessage(id, value, workerRef)
+    Await.result(future, timeout.duration).asInstanceOf[Int]
+  }
 }

@@ -16,37 +16,15 @@
 package tbd.mod
 
 import akka.actor.ActorRef
-import akka.pattern.ask
-import akka.util.Timeout
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 import tbd.messages._
 
-class Mod[T](datastoreRef: ActorRef) {
+abstract class Mod[T] {
   val id = new ModId()
 
-  def read(workerRef: ActorRef = null): T = {
-    implicit val timeout = Timeout(30 seconds)
-    val ret =
-      if (workerRef != null) {
-        val readFuture = datastoreRef ? ReadModMessage(id, workerRef)
-        Await.result(readFuture, timeout.duration)
-      } else {
-        val readFuture = datastoreRef ? GetMessage("mods", id.value)
-        Await.result(readFuture, timeout.duration)
-      }
+  def read(workerRef: ActorRef = null): T
 
-    ret match {
-      case NullMessage => null.asInstanceOf[T]
-      case _ => ret.asInstanceOf[T]
-    }
-  }
-
-  /*def update(newValue: T) {
-    println("updating " + id + "-------------")
-    datastoreRef ! UpdateModMessage(id, newValue)
-  }*/
+  def update(value: T, workerRef: ActorRef): Int
 
   override def toString = {
     val value = read()

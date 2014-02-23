@@ -66,11 +66,11 @@ class TBD(
   def write[T](dest: Dest[T], value: T): Changeable[T] = {
     log.debug("Writing  to " + dest.mod.id)
 
-    val future = datastoreRef ! UpdateModMessage(dest.mod.id, value, workerRef)
+    awaiting += dest.mod.update(value, workerRef)
+    log.debug("Now awaiting " + awaiting)
     if (ddg.reads.contains(dest.mod.id)) {
       ddg.modUpdated(dest.mod.id)
     }
-    awaiting += 1
 
     val changeable = new Changeable(dest.mod)
     //ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]], currentParent)

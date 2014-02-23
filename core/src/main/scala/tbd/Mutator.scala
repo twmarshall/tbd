@@ -44,13 +44,13 @@ class Mutator {
   }
 
   def put(key: Any, value: Any) {
-    val future = main.masterRef ? PutMessage("input", key, value)
+    val future = main.masterRef ? PutInputMessage("input", key, value)
     val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
     Await.result(future2, timeout.duration)
   }
 
   def update(key: Any, value: Any) {
-    val future = main.masterRef ? UpdateMessage("input", key, value)
+    val future = main.masterRef ? UpdateInputMessage("input", key, value)
     val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
     Await.result(future2, timeout.duration)
   }

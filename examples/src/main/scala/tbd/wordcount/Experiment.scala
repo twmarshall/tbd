@@ -127,7 +127,7 @@ object Experiment {
     }
     print("\n")
 
-    //run(new WCAdjust(), options, "non")
+    run(new WCAdjust(), options, "non")
 
     run(new WCParAdjust(), options, "par")
 

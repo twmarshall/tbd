@@ -24,7 +24,7 @@ import scala.concurrent.duration._
 
 import tbd.ListNode
 import tbd.messages._
-import tbd.mod.{Matrix, Mod, ModId}
+import tbd.mod.{InputMod, Matrix, Mod, ModId}
 
 object Datastore {
   def props(): Props = Props(classOf[Datastore])
@@ -42,11 +42,6 @@ class Datastore extends Actor with ActorLogging {
 
   // Maps modIds to the workers that have read the corresponding mod.
   private val dependencies = Map[ModId, Set[ActorRef]]()
-
-  // When a mod is updated and we inform the workers that depend on it, awaiting
-  // is used to track how many PebblingFinishedMessages we've received, so that
-  // we can respond to the updating worker once all dependent workers respond.
-  private val awaiting = Map[ModId, AwaitRecord]()
 
   // Maps the name of an input table to a set containing mods representing the
   // tails of any linked lists that were returned containing this entire table,
@@ -66,37 +61,27 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private def createMod[T](value: T): Mod[T] = {
-    val mod = new Mod[T](self)
+    val mod = new InputMod[T](self)
     tables("mods")(mod.id.value) = value
     dependencies(mod.id) = Set[ActorRef]()
     mod
   }
 
-  private def updateMod(modId: ModId, value: Any, sender: ActorRef) {
+  private def updateMod(modId: ModId, value: Any, sender: ActorRef): Int = {
     log.debug("Updating mod(" + modId+ ") from " + sender)
     tables("mods")(modId.value) = value
-
-    // Each mod can only be updated once per run, so we should always wait for
-    // the pebbling for a given mod to be achieved before that mod can be
-    // updated again.
-    assert(!awaiting.contains(modId))
 
     var count = 0
     for (workerRef <- dependencies(modId)) {
       if (workerRef != sender) {
         log.debug("Informing " + workerRef + " that mod(" + modId +
                   ") has been updated.")
-        workerRef ! ModUpdatedMessage(modId)
+        workerRef ! ModUpdatedMessage(modId, sender)
         count += 1
       }
     }
 
-    if (count > 0) {
-      awaiting += (modId -> new AwaitRecord(count, sender))
-    } else {
-      log.debug("Sending PebblingFinishedMessage(" + modId + ") to " + sender)
-      sender ! PebblingFinishedMessage(modId)
-    }
+    count
   }
 
   private def getLists(table: String): Mod[ListNode[Mod[ListNode[Any]]]] = {
@@ -139,28 +124,28 @@ class Datastore extends Actor with ActorLogging {
       sender ! get(table, key)
     }
 
-    case PutMessage(table: String, key: Any, value: Any) => {
+    case PutMessage(table: String, key: Any, value: Any, respondTo: ActorRef) => {
       val mod = createMod(value)
       tables(table)(key) = mod
 
+      var count = 0
       if (lists.contains(table)) {
         val newTails = Set[Mod[ListNode[Any]]]()
         for (tail <- lists(table)) {
           log.debug("Appending to list for " + table)
           val newTail = createMod[ListNode[Any]](null)
-          updateMod(tail.id, new ListNode(mod, newTail), sender)
+          count += updateMod(tail.id, new ListNode(mod, newTail), respondTo)
           newTails += newTail
         }
         lists(table) = newTails
-      } else {
-        log.debug("Sending PebblingFinishedMessage")
-        sender ! PebblingFinishedMessage(mod.id)
       }
+
+      sender ! count
     }
 
-    case UpdateMessage(table: String, key: Any, value: Any) => {
+    case UpdateMessage(table: String, key: Any, value: Any, respondTo: ActorRef) => {
       val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
-      updateMod(modId, value, sender)
+      sender ! updateMod(modId, value, respondTo)
     }
 
     case CreateModMessage(value: Any) => {
@@ -174,22 +159,11 @@ class Datastore extends Actor with ActorLogging {
 
     case UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef) => {
       log.debug("UpdateModMessage")
-      updateMod(modId, value, workerRef)
+      sender ! updateMod(modId, value, workerRef)
     }
 
     case UpdateModMessage(modId: ModId, null, workerRef: ActorRef) => {
-      updateMod(modId, null, workerRef)
-    }
-
-    case PebblingFinishedMessage(modId: ModId) => {
-      log.debug("Datastore received PebblingFinishedMessage(" + modId + ").")
-      awaiting(modId).count -= 1
-
-      if (awaiting(modId).count == 0) {
-        log.debug("Sending PebblingFinishedMessage to " + awaiting(modId).ref)
-        awaiting(modId).ref ! PebblingFinishedMessage(modId)
-        awaiting.remove(modId)
-      }
+      sender ! updateMod(modId, null, workerRef)
     }
 
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
