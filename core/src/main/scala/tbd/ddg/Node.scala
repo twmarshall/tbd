@@ -96,7 +96,7 @@ class ParNode(
   var pebble2 = false
 
   override def toString(prefix: String) = {
-    implicit val timeout = Timeout(5 seconds)
+    implicit val timeout = Timeout(30 seconds)
     val future1 = workerRef1 ? DDGToStringMessage(prefix + "|")
     val future2 = workerRef2 ? DDGToStringMessage(prefix + "|")
 

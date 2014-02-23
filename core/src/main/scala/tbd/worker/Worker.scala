@@ -39,7 +39,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
   private val ddg = new DDG(log, id)
   private val tbd = new TBD(id, ddg, datastoreRef, self, context.system, true)
 
-  implicit val timeout = Timeout(5 seconds)
+  implicit val timeout = Timeout(30 seconds)
 
   // During change propagation, represents the number of child workers this
   // worker is waiting to receive FinishedPropagatingMessages from before it

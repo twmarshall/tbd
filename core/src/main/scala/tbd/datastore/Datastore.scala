@@ -53,7 +53,7 @@ class Datastore extends Actor with ActorLogging {
   // so that we can tolerate insertions into tables.
   private val lists = Map[String, Set[Mod[ListNode[Any]]]]()
 
-  implicit val timeout = Timeout(5 seconds)
+  implicit val timeout = Timeout(30 seconds)
 
   private def get(table: String, key: Any): Any = {
     val ret = tables(table)(key)
@@ -153,6 +153,7 @@ class Datastore extends Actor with ActorLogging {
         }
         lists(table) = newTails
       } else {
+        log.debug("Sending PebblingFinishedMessage")
         sender ! PebblingFinishedMessage(mod.id)
       }
     }
@@ -163,6 +164,7 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case CreateModMessage(value: Any) => {
+      log.debug("CreateModMessage")
       sender ! createMod(value)
     }
 
@@ -171,6 +173,7 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef) => {
+      log.debug("UpdateModMessage")
       updateMod(modId, value, workerRef)
     }
 
@@ -190,6 +193,7 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
+      log.debug("ReadModMessage.")
       dependencies(modId) += workerRef
       sender ! get("mods", modId.value)
     }

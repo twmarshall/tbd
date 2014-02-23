@@ -25,7 +25,7 @@ import tbd.messages.CreateModMessage
 import tbd.mod.Mod
 
 class Dest[T](datastoreRef: ActorRef) {
-  implicit val timeout = Timeout(5 seconds)
+  implicit val timeout = Timeout(30 seconds)
   val modFuture = datastoreRef ? CreateModMessage(null)
   val mod = Await.result(modFuture, timeout.duration).asInstanceOf[Mod[T]]
 }
