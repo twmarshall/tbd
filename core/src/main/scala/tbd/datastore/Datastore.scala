@@ -99,7 +99,7 @@ class Datastore extends Actor with ActorLogging {
     }
   }
 
-  private def getList(table: String): Mod[ListNode[Any]] = {
+  private def getLists(table: String): Mod[ListNode[Mod[ListNode[Any]]]] = {
     var tail = createMod[ListNode[Any]](null)
 
     if (lists.contains(table)) {
@@ -108,12 +108,26 @@ class Datastore extends Actor with ActorLogging {
       lists(table) = Set(tail)
     }
 
+    var outputTail = createMod[ListNode[Mod[ListNode[Any]]]](null)
+    val partitionSize = 100
+    var i = 1
     for (elem <- tables(table)) {
       val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))
-      tail = head
+      if (i % partitionSize == 0) {
+        val headMod = createMod(head)
+        outputTail = createMod(new ListNode[Mod[ListNode[Any]]](headMod, outputTail))
+        tail = createMod[ListNode[Any]](null)
+      } else {
+        tail = head
+      }
+      i += 1
+    }
+    if ((i - 1) % partitionSize != 0) {
+      val headMod = createMod(tail)
+      outputTail = createMod(new ListNode(headMod, outputTail))
     }
 
-    tail
+    outputTail
   }
 
   def receive = {
@@ -205,7 +219,7 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case GetDatasetMessage(table: String) => {
-      sender ! new Dataset(getList(table))
+      sender ! new Dataset(getLists(table))
     }
 
     case x => {
