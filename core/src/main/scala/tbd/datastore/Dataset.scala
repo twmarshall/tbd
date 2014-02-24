@@ -173,7 +173,13 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
       })
     })
 
-    reducedMod.read()
+    tbd.mod((dest: Dest[T]) => {
+      tbd.read(reducedMod, (mod: Mod[T]) => {
+        tbd.read(mod, (value: T) => {
+          tbd.write(dest, value)
+        })
+      })
+    })
   }
 
   private def parReduceHelper[U](
@@ -267,6 +273,12 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
       })
     })
 
-    reducedMod.read()
+    tbd.mod((dest: Dest[T]) => {
+      tbd.read(reducedMod, (mod: Mod[T]) => {
+        tbd.read(mod, (value: T) => {
+          tbd.write(dest, value)
+        })
+      })
+    })
   }
 }

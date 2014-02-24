@@ -33,7 +33,6 @@ case class GetMessage(table: String, key: Any)
 case class PutMessage(table: String, key: Any, value: Any, respondTo: ActorRef)
 case class UpdateMessage(table: String, key: Any, value: Any, respondTo: ActorRef)
 
-case class CreateModMessage(value: Any)
 case class UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef)
 case class ReadModMessage(modId: ModId, workerRef: ActorRef)
 

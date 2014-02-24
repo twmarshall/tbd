@@ -21,6 +21,7 @@ import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import tbd.TBD
 import tbd.messages._
 
 class InputMod[T](datastoreRef: ActorRef) extends Mod[T] {
@@ -42,7 +43,7 @@ class InputMod[T](datastoreRef: ActorRef) extends Mod[T] {
     }
   }
 
-  def update(value: T, workerRef: ActorRef): Int = {
+  def update(value: T, workerRef: ActorRef, tbd: TBD): Int = {
     val future = datastoreRef ? UpdateModMessage(id, value, workerRef)
     Await.result(future, timeout.duration).asInstanceOf[Int]
   }

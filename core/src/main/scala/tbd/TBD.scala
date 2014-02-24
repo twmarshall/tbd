@@ -19,6 +19,7 @@ import akka.pattern.ask
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.event.{Logging, LoggingAdapter}
 import akka.util.Timeout
+import scala.collection.mutable.{Map, Set}
 import scala.concurrent.{Await, Promise}
 import scala.concurrent.duration._
 
@@ -50,6 +51,11 @@ class TBD(
   // on before it can finish.
   var awaiting = 0
 
+  val mods = scala.collection.mutable.Map[Any, Any]()
+
+  // Maps modIds to the workers that have read the corresponding mod.
+  val dependencies = Map[ModId, Set[ActorRef]]()
+
   def read[T, U](mod: Mod[T], reader: T => (Changeable[U])): Changeable[U] = {
     log.debug("Executing read on  mod " + mod.id)
 
@@ -57,16 +63,28 @@ class TBD(
 
     val outerReader = currentParent
     currentParent = readNode
-    val changeable = reader(mod.read(workerRef))
+
+    val value =
+      if (mods.contains(mod.id.value)) {
+        mods(mod.id.value).asInstanceOf[T]
+      } else {
+        mod.read(workerRef)
+      }
+
+    val changeable = reader(value)
     currentParent = outerReader
 
     changeable
   }
 
   def write[T](dest: Dest[T], value: T): Changeable[T] = {
-    log.debug("Writing  to " + dest.mod.id)
+    if (value != null) {
+      log.debug("Writing " + value.getClass + " to " + dest.mod.id)
+    } else {
+      log.debug("Writing null to " + dest.mod.id)
+    }
 
-    awaiting += dest.mod.update(value, workerRef)
+    awaiting += dest.mod.update(value, workerRef, this)
     log.debug("Now awaiting " + awaiting)
     if (ddg.reads.contains(dest.mod.id)) {
       ddg.modUpdated(dest.mod.id)
@@ -79,7 +97,9 @@ class TBD(
   }
 
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
-    initializer(new Dest(datastoreRef)).mod
+    val d = new Dest[T](workerRef)
+    dependencies(d.mod.id) = Set()
+    initializer(d).mod
   }
 
   var workerId = 0

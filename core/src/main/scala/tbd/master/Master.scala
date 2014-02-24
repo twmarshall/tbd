@@ -64,8 +64,8 @@ class Master extends Actor with ActorLogging {
 
     case PropagateMessage => {
       log.info("Master actor initiating change propagation.")
-      //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-			//		                              timeout.duration).asInstanceOf[String])
+      log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
+					                              timeout.duration).asInstanceOf[String])
 
       result = Promise[Any]
       sender ! result.future
@@ -76,8 +76,8 @@ class Master extends Actor with ActorLogging {
     case FinishedPropagatingMessage => {
       log.debug("Master received FinishedPropagatingMessage.")
 
-      //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-			//		                              timeout.duration).asInstanceOf[String])
+      log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
+					                              timeout.duration).asInstanceOf[String])
 
       result.success("okay")
     }

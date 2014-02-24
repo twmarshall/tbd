@@ -18,7 +18,7 @@ package tbd.worker
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import scala.collection.mutable.Set
+import scala.collection.mutable.{Map, Set}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -57,8 +57,12 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
         log.debug("Propagating read of mod(" + readNode.mod.id + ")")
         ddg.removeSubtree(readNode)
 
-        val future = datastoreRef ? GetMessage("mods", readNode.mod.id.value)
-        val newValue = Await.result(future, timeout.duration)
+        val newValue =
+          if (tbd.mods.contains(readNode.mod.id.value)) {
+            tbd.mods(readNode.mod.id.value)
+          } else {
+            readNode.mod.read()
+          }
 
         tbd.currentParent = readNode
         readNode.updated = false
@@ -99,7 +103,33 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     return true
   }
 
+  private def get(table: String, key: Any): Any = {
+    val ret = tbd.mods(key)
+
+    if (ret == null) {
+      NullMessage
+    } else {
+      ret
+    }
+  }
+
   def receive = {
+    case GetMessage(table: String, key: Any) => {
+      assert(table == "mods")
+      sender ! tbd.mods(key)
+    }
+
+    case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
+      log.debug("Worker ReadModMessage.")
+      if (tbd.dependencies.contains(modId)) {
+        tbd.dependencies(modId) += workerRef
+      } else {
+        tbd.dependencies(modId) = Set(workerRef)
+      }
+
+      sender ! get("mods", modId.value)
+    }
+
     case ModUpdatedMessage(modId: ModId, respondTo: ActorRef) => {
       log.debug("Informed that mod(" + modId + ") has been updated.")
       ddg.modUpdated(modId)

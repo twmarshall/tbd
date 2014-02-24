@@ -17,6 +17,7 @@ package tbd.mod
 
 import akka.actor.ActorRef
 
+import tbd.TBD
 import tbd.messages._
 
 abstract class Mod[T] {
@@ -24,7 +25,7 @@ abstract class Mod[T] {
 
   def read(workerRef: ActorRef = null): T
 
-  def update(value: T, workerRef: ActorRef): Int
+  def update(value: T, workerRef: ActorRef, tbd: TBD): Int
 
   override def toString = {
     val value = read()

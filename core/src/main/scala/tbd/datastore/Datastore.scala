@@ -30,11 +30,6 @@ object Datastore {
   def props(): Props = Props(classOf[Datastore])
 }
 
-class AwaitRecord(aCount: Int, aRef: ActorRef) {
-  var count = aCount
-  val ref = aRef
-}
-
 class Datastore extends Actor with ActorLogging {
   private val tables = Map[String, Map[Any, Any]]()
   tables("mods") = Map[Any, Any]()
@@ -146,15 +141,6 @@ class Datastore extends Actor with ActorLogging {
     case UpdateMessage(table: String, key: Any, value: Any, respondTo: ActorRef) => {
       val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
       sender ! updateMod(modId, value, respondTo)
-    }
-
-    case CreateModMessage(value: Any) => {
-      log.debug("CreateModMessage")
-      sender ! createMod(value)
-    }
-
-    case CreateModMessage(null) => {
-      sender ! createMod(null)
     }
 
     case UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef) => {

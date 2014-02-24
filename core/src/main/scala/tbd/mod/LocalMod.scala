@@ -22,26 +22,39 @@ import scala.collection.mutable.Set
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import tbd.TBD
 import tbd.messages._
 
-class LocalMod[T] extends Mod[T] {
-  var value: T = null.asInstanceOf[T]
-  val dependencies = Set[ActorRef]()
+class LocalMod[T](datastoreRef: ActorRef) extends Mod[T] {
+  implicit val timeout = Timeout(30 seconds)
 
   def read(workerRef: ActorRef = null): T = {
-    dependencies += workerRef
-    value
+    val ret =
+      if (workerRef != null) {
+        val readFuture = datastoreRef ? ReadModMessage(id, workerRef)
+        Await.result(readFuture, timeout.duration)
+      } else {
+        val readFuture = datastoreRef ? GetMessage("mods", id.value)
+        Await.result(readFuture, timeout.duration)
+      }
+
+    ret match {
+      case NullMessage => null.asInstanceOf[T]
+      case _ => ret.asInstanceOf[T]
+    }
   }
 
-  def update(newValue: T, workerRef: ActorRef): Int = {
-    value = newValue
+  def update(value: T, workerRef: ActorRef, tbd: TBD): Int = {
+    tbd.mods += (id.value -> value)
 
-    for (dependency <- dependencies) {
-      if (dependency != workerRef) {
+    var count = 0
+    for (dependency <- tbd.dependencies(id)) {
+      if (workerRef != dependency) {
         dependency ! ModUpdatedMessage(id, workerRef)
+        count += 1
       }
     }
 
-    0
+    count
   }
 }

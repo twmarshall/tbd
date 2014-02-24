@@ -21,12 +21,8 @@ import akka.util.Timeout
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import tbd.messages.CreateModMessage
-import tbd.mod.Mod
+import tbd.mod.{LocalMod, Mod}
 
-class Dest[T](datastoreRef: ActorRef) {
-  implicit val timeout = Timeout(30 seconds)
-  val modFuture = datastoreRef ? CreateModMessage(null)
-  val mod = Await.result(modFuture, timeout.duration).asInstanceOf[Mod[T]]
-  //val mod = new LocalMod()
+class Dest[T](workerRef: ActorRef) {
+  val mod = new LocalMod[T](workerRef)
 }
