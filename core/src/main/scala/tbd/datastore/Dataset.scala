@@ -24,108 +24,29 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
   def map[U](tbd: TBD, func: T => U): Dataset[U] = {
     new Dataset(tbd.mod((dest: Dest[ListNode[Mod[ListNode[U]]]]) => {
       tbd.read(lists, (lsts: ListNode[Mod[ListNode[T]]]) => {
-        innerMap(tbd, dest, lsts, (list: Mod[ListNode[T]]) => {
+        lsts.map(tbd, dest, (list: Mod[ListNode[T]]) => {
           tbd.mod((dest: Dest[ListNode[U]]) => {
             tbd.read(list, (lst: ListNode[T]) => {
-              innerMap(tbd, dest, lst, func)
+              lst.map(tbd, dest, func)
             })
           })
         })
       })
     }))
-  }
-
-  private def innerMap[V, W](
-      tbd: TBD,
-      dest: Dest[ListNode[W]],
-      lst: ListNode[V],
-      f: V => W): Changeable[ListNode[W]] = {
-    if (lst != null) {
-      val newValue = tbd.mod((dest: Dest[W]) =>
-        tbd.read(lst.value, (value: V) => tbd.write(dest, f(value))))
-      val newNext = tbd.mod((dest: Dest[ListNode[W]]) =>
-        tbd.read(lst.next, (next: ListNode[V]) => innerMap(tbd, dest, next, f)))
-      tbd.write(dest, new ListNode[W](newValue, newNext))
-    } else {
-      tbd.write(dest, null)
-    }
   }
 
   def parMap[U](tbd: TBD, func: T => U): Dataset[U] = {
     new Dataset(tbd.mod((dest: Dest[ListNode[Mod[ListNode[U]]]]) => {
       tbd.read(lists, (lsts: ListNode[Mod[ListNode[T]]]) => {
-        innerParMap(tbd, dest, lsts, (tbd: TBD, list: Mod[ListNode[T]]) => {
+        lsts.parMap(tbd, dest, (tbd: TBD, list: Mod[ListNode[T]]) => {
           tbd.mod((dest: Dest[ListNode[U]]) => {
             tbd.read(list, (lst: ListNode[T]) => {
-              innerParMap(tbd, dest, lst, (tbd: TBD, value: T) => func(value))
+              lst.parMap(tbd, dest, (tbd: TBD, value: T) => func(value))
             })
           })
         })
       })
     }))
-  }
-
-  private def innerParMap[V, W](
-      tbd: TBD,
-      dest: Dest[ListNode[W]],
-      lst: ListNode[V],
-      f: (TBD, V) => W): Changeable[ListNode[W]] = {
-    if (lst != null) {
-	    val modTuple =
-        tbd.par((tbd: TBD) => {
-	        tbd.mod((valueDest: Dest[W]) => {
-            tbd.read(lst.value, (value: V) => {
-              tbd.write(valueDest, f(tbd, value))
-            })
-          })
-	      }, (tbd: TBD) => {
-          tbd.mod((nextDest: Dest[ListNode[W]]) => {
-	          tbd.read(lst.next, (next: ListNode[V]) => {
-              innerParMap(tbd, nextDest, next, f)
-            })
-          })
-	      })
-      tbd.write(dest, new ListNode[W](modTuple._1, modTuple._2))
-    } else {
-      tbd.write(dest, null)
-    }
-  }
-
-  private def reduceHelper[U](
-      tbd: TBD,
-      dest: Dest[ListNode[U]],
-      lst: ListNode[U],
-      func: (U, U) => U): Changeable[ListNode[U]] = {
-    if (lst == null) {
-      tbd.write(dest, null)
-    } else {
-      tbd.read(lst.next, (next: ListNode[U]) => {
-        if (next == null) {
-          val newValue = tbd.mod((dest: Dest[U]) => {
-            tbd.read(lst.value, (value: U) => tbd.write(dest, value))
-          })
-          val newNext = tbd.mod((dest: Dest[ListNode[U]]) => {
-            tbd.write(dest, null)
-          })
-          tbd.write(dest, new ListNode(newValue, newNext))
-        } else {
-          val newValue = tbd.mod((dest: Dest[U]) => {
-            tbd.read(lst.value, (value1: U) => {
-              tbd.read(next.value, (value2: U) => {
-                tbd.write(dest, func(value1, value2))
-              })
-            })
-          })
-
-          val newNext = tbd.mod((dest: Dest[ListNode[U]]) => {
-            tbd.read(next.next, (lst: ListNode[U]) => {
-              reduceHelper(tbd, dest, lst, func)
-            })
-          })
-          tbd.write(dest, new ListNode(newValue, newNext))
-        }
-      })
-    }
   }
 
   def reduce(tbd: TBD, func: (T, T) => T): Mod[T] = {
@@ -134,7 +55,7 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
         tbd.read(lst.next, (next: ListNode[U]) => {
           if (next != null) {
             val newList = tbd.mod((dest: Dest[ListNode[U]]) => {
-              reduceHelper(tbd, dest, lst, f)
+              lst.reduce(tbd, dest, f)
             })
 
             tbd.read(newList, (lst: ListNode[U]) => innerReduce(dest, lst, f))
@@ -149,7 +70,7 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
 
     val reducedLists: Mod[ListNode[Mod[T]]] = tbd.mod((dest: Dest[ListNode[Mod[T]]]) => {
       tbd.read(lists, (lsts: ListNode[Mod[ListNode[T]]]) => {
-        innerMap(tbd, dest, lsts, (list: Mod[ListNode[T]]) => {
+        lsts.map(tbd, dest, (list: Mod[ListNode[T]]) => {
           tbd.mod((dest: Dest[T]) => {
             tbd.read(list, (lst: ListNode[T]) => {
               innerReduce(dest, lst, func)
@@ -182,45 +103,6 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
     })
   }
 
-  private def parReduceHelper[U](
-      tbd: TBD,
-      dest: Dest[ListNode[U]],
-      lst: ListNode[U],
-      func: (TBD, U, U) => U,
-      next: ListNode[U]): Changeable[ListNode[U]] = {
-    if (next == null) {
-      val newValue = tbd.mod((dest: Dest[U]) => {
-        tbd.read(lst.value, (value: U) => tbd.write(dest, value))            
-      })
-      val newNext = tbd.mod((dest: Dest[ListNode[U]]) => tbd.write(dest, null))
-      tbd.write(dest, new ListNode(newValue, newNext))
-    } else {
-      val modTuple = tbd.par((tbd:TBD) => {
-        tbd.mod((dest: Dest[U]) => {
-          tbd.read(lst.value, (value1: U) => {
-            tbd.read(next.value, (value2: U) => {
-              tbd.write(dest, func(tbd, value1, value2))
-            })
-          })
-        })
-      }, (tbd:TBD) => {
-        tbd.mod((dest: Dest[ListNode[U]]) => {
-          tbd.read(next.next, (lst: ListNode[U]) => {
-	          if (lst == null) {
-	            tbd.write(dest, null)
-	          } else {
-	            tbd.read(lst.next, (next: ListNode[U]) => {
-		            parReduceHelper(tbd, dest, lst, func, next)
-	            })
-	          }
-          })
-        })
-      })
-
-      tbd.write(dest, new ListNode(modTuple._1, modTuple._2))
-    }
-  }
-
   def parReduce(tbd: TBD, func: (T, T) => T): Mod[T] = {
     def innerReduce[U](
         tbd: TBD,
@@ -231,7 +113,7 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
         tbd.read(lst.next, (next: ListNode[U]) => {
           if (next != null) {
             val newList = tbd.mod((dest: Dest[ListNode[U]]) => {
-	            parReduceHelper(tbd, dest, lst, f, next)
+	            lst.parReduce(tbd, dest, f)
 	          })
             tbd.read(newList, (lst: ListNode[U]) => {
               innerReduce(tbd, dest, lst, f)
@@ -247,7 +129,7 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
 
     val reducedLists = tbd.mod((dest: Dest[ListNode[Mod[T]]]) => {
       tbd.read(lists, (lsts: ListNode[Mod[ListNode[T]]]) => {
-        innerParMap(tbd, dest, lsts, (tbd: TBD, list: Mod[ListNode[T]]) => {
+        lsts.parMap(tbd, dest, (tbd: TBD, list: Mod[ListNode[T]]) => {
           tbd.mod((dest: Dest[T]) => {
             tbd.read(list, (lst: ListNode[T]) => {
               innerReduce(tbd, dest, lst, (tbd: TBD, value1: T, value2: T) => {
