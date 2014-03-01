@@ -65,9 +65,11 @@ object Experiment {
 
 	      val before = System.currentTimeMillis()
         val memBefore = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024)
+        //println(memBefore)
 	      val output = mutator.run[Mod[Map[String, Int]]](adjust)
 	      results("initial") += System.currentTimeMillis() - before
-        results("initialMem") += (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore
+        results("initialMem") = math.max((runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore,
+                                         results("initialMem"))
 
 	      for (percent <- percents) {
           var i =  0
@@ -79,7 +81,9 @@ object Experiment {
           val before2 = System.currentTimeMillis()
           mutator.propagate()
 	        results(percent + "") += System.currentTimeMillis() - before2
-          results(percent + "Mem") += (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore
+          val memUsed = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore
+          results(percent + "Mem") = math.max(memUsed, results(percent + "Mem"))
+          //println(memUsed)
 	      }
 
 	      run += 1
@@ -88,11 +92,11 @@ object Experiment {
 
       print(description + "\t" + count + "\t")
       print(round(results("initial") / runs))
-      print("\t" + round(results("initialMem") / runs))
+      print("\t" + round(results("initialMem")))
 
       for (percent <- percents) {
 	      print("\t" + round(results(percent + "") / runs))
-        print("\t" + round(results(percent + "Mem") / runs))
+        print("\t" + round(results(percent + "Mem")))
       }
       print("\n")
     }
