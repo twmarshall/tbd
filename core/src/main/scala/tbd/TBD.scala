@@ -40,7 +40,7 @@ class TBD(
     system: ActorSystem,
     initialRun: Boolean) {
 
-  var currentParent: Node = null
+  var currentParent: Node = ddg.root
   val input = new Reader(datastoreRef)
 
   val log = Logging(system, "TBD" + id)
@@ -51,7 +51,7 @@ class TBD(
   // on before it can finish.
   var awaiting = 0
 
-  val mods = scala.collection.mutable.Map[Any, Any]()
+  val mods = scala.collection.mutable.Map[ModId, Any]()
 
   // Maps modIds to the workers that have read the corresponding mod.
   val dependencies = Map[ModId, Set[ActorRef]]()
@@ -63,8 +63,8 @@ class TBD(
     currentParent = readNode
 
     val value =
-      if (mods.contains(mod.id.value)) {
-        mods(mod.id.value).asInstanceOf[T]
+      if (mods.contains(mod.id)) {
+        mods(mod.id).asInstanceOf[T]
       } else {
         mod.read(workerRef)
       }

@@ -57,8 +57,8 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
         ddg.removeSubtree(readNode)
 
         val newValue =
-          if (tbd.mods.contains(readNode.mod.id.value)) {
-            tbd.mods(readNode.mod.id.value)
+          if (tbd.mods.contains(readNode.mod.id)) {
+            tbd.mods(readNode.mod.id)
           } else {
             readNode.mod.read()
           }
@@ -68,40 +68,29 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
         readNode.reader(newValue)
       } else {
         val parNode = node.asInstanceOf[ParNode]
-        if (parNode.pebble1 && parNode.pebble2) {
-          val future1 = parNode.workerRef1 ! PropagateMessage
-          val future2 = parNode.workerRef2 ! PropagateMessage
+        //assert(awaiting == 0)
 
+        if (parNode.pebble1) {
+          parNode.workerRef1 ! PropagateMessage
           parNode.pebble1 = false
-          parNode.pebble2 = false
-
-          awaiting = 2
-          return false
-        } else if (parNode.pebble1) {
-          val future1 = parNode.workerRef1 ! PropagateMessage
-
-          parNode.pebble1 = false
-
           awaiting = 1
-          return false
-        } else if (parNode.pebble2) {
-          val future2 = parNode.workerRef2 ! PropagateMessage
-
-          parNode.pebble2 = false
-
-          awaiting = 1
-          return false
-        } else {
-          log.warning("parNode in updated queue that is not pebbled.")
         }
 
+        if (parNode.pebble2) {
+          parNode.workerRef2 ! PropagateMessage
+          parNode.pebble2 = false
+          awaiting += 1
+        }
+        //assert(awaiting > 0)
+
+        return false
       }
     }
 
     return true
   }
 
-  private def get(table: String, key: Any): Any = {
+  private def get(key: ModId): Any = {
     val ret = tbd.mods(key)
 
     if (ret == null) {
@@ -112,25 +101,26 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
   }
 
   def receive = {
-    case GetMessage(table: String, key: Any) => {
-      assert(table == "mods")
+    case GetMessage(table: String, key: ModId) => {
       sender ! tbd.mods(key)
+
+      assert(table == "mods")
     }
 
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
+      sender ! get(modId)
+
       if (tbd.dependencies.contains(modId)) {
         tbd.dependencies(modId) += workerRef
       } else {
         tbd.dependencies(modId) = Set(workerRef)
       }
-
-      sender ! get("mods", modId.value)
     }
 
     case ModUpdatedMessage(modId: ModId, respondTo: ActorRef) => {
-      ddg.modUpdated(modId)
-
       parent ! PebbleMessage(self, modId, respondTo)
+
+      ddg.modUpdated(modId)
     }
 
     case RunTaskMessage(aTask: Task) => {
@@ -144,7 +134,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
       val newPebble = ddg.parUpdated(workerRef)
 
       if (newPebble) {
-        val future = parent ! PebbleMessage(self, modId, respondTo)
+        parent ! PebbleMessage(self, modId, respondTo)
       } else {
         respondTo ! PebblingFinishedMessage(modId)
       }
@@ -154,7 +144,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
       assert(tbd.awaiting > 0)
       tbd.awaiting -= 1
 
-      if (propagating & tbd.awaiting == 0 && awaiting == 0) {
+      if (propagating && tbd.awaiting == 0 && awaiting == 0) {
         parent ! FinishedPropagatingMessage
       }
     }
@@ -175,7 +165,7 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
       if (awaiting == 0) {
         val done = propagate()
 
-        if (propagating && done && tbd.awaiting == 0) {
+        if (done && tbd.awaiting == 0) {
           parent ! FinishedPropagatingMessage
         }
       }

@@ -25,16 +25,16 @@ import scala.concurrent.duration._
 import tbd.TBD
 import tbd.messages._
 
-class LocalMod[T](datastoreRef: ActorRef) extends Mod[T] {
+class LocalMod[T](dataRef: ActorRef) extends Mod[T] {
   implicit val timeout = Timeout(30 seconds)
 
   def read(workerRef: ActorRef = null): T = {
     val ret =
       if (workerRef != null) {
-        val readFuture = datastoreRef ? ReadModMessage(id, workerRef)
+        val readFuture = dataRef ? ReadModMessage(id, workerRef)
         Await.result(readFuture, timeout.duration)
       } else {
-        val readFuture = datastoreRef ? GetMessage("mods", id.value)
+        val readFuture = dataRef ? GetMessage("mods", id)
         Await.result(readFuture, timeout.duration)
       }
 
@@ -45,7 +45,7 @@ class LocalMod[T](datastoreRef: ActorRef) extends Mod[T] {
   }
 
   def update(value: T, workerRef: ActorRef, tbd: TBD): Int = {
-    tbd.mods += (id.value -> value)
+    tbd.mods += (id -> value)
 
     var count = 0
     for (dependency <- tbd.dependencies(id)) {

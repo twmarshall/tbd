@@ -86,7 +86,7 @@ class Datastore extends Actor with ActorLogging {
     }
 
     var outputTail = createMod[ListNode[Mod[ListNode[Any]]]](null)
-    val partitionSize = 100
+    val partitionSize = tables(table).size / 8.0
     var i = 1
     for (elem <- tables(table)) {
       val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))

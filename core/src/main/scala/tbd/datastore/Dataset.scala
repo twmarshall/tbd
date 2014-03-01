@@ -41,7 +41,7 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
         lsts.parMap(tbd, dest, (tbd: TBD, list: Mod[ListNode[T]]) => {
           tbd.mod((dest: Dest[ListNode[U]]) => {
             tbd.read(list, (lst: ListNode[T]) => {
-              lst.parMap(tbd, dest, (tbd: TBD, value: T) => func(value))
+              lst.map(tbd, dest, (value: T) => func(value))
             })
           })
         })

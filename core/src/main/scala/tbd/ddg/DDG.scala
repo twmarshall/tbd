@@ -35,19 +35,11 @@ class DDG(log: LoggingAdapter, id: String) {
 
   def addRead[T, U](
       mod: Mod[Any],
-      aParent: Node,
+      parent: Node,
       reader: T => Changeable[U]): Node = {
-    val parent =
-      if (aParent == null) {
-	root
-      } else {
-	aParent
-      }
-
     val timestamp = nextTimestamp(parent)
     val readNode = new ReadNode(mod, parent, timestamp, reader)
     parent.addChild(readNode)
-    
 
     if (reads.contains(mod.id)) {
       reads(mod.id) += readNode.asInstanceOf[ReadNode[Any, Any]]
@@ -58,14 +50,7 @@ class DDG(log: LoggingAdapter, id: String) {
     readNode
   }
 
-  def addWrite(mod: Mod[Any], aParent: Node): Node = {
-    val parent =
-      if (aParent == null) {
-	root
-      } else {
-	aParent
-      }
-
+  def addWrite(mod: Mod[Any], parent: Node): Node = {
     val timestamp = nextTimestamp(parent)
     val writeNode = new WriteNode(mod, parent, timestamp)
 
@@ -74,14 +59,7 @@ class DDG(log: LoggingAdapter, id: String) {
     writeNode
   }
 
-  def addPar(workerRef1: ActorRef, workerRef2: ActorRef, aParent: Node) {
-    val parent =
-      if (aParent == null) {
-	root
-      } else {
-	aParent
-      }
-
+  def addPar(workerRef1: ActorRef, workerRef2: ActorRef, parent: Node) {
     val timestamp = nextTimestamp(parent)
 
     val parNode = new ParNode(workerRef1, workerRef2, parent, timestamp)
