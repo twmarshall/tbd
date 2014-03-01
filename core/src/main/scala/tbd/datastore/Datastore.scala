@@ -63,14 +63,11 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private def updateMod(modId: ModId, value: Any, sender: ActorRef): Int = {
-    log.debug("Updating mod(" + modId+ ") from " + sender)
     tables("mods")(modId.value) = value
 
     var count = 0
     for (workerRef <- dependencies(modId)) {
       if (workerRef != sender) {
-        log.debug("Informing " + workerRef + " that mod(" + modId +
-                  ") has been updated.")
         workerRef ! ModUpdatedMessage(modId, sender)
         count += 1
       }
@@ -127,7 +124,6 @@ class Datastore extends Actor with ActorLogging {
       if (lists.contains(table)) {
         val newTails = Set[Mod[ListNode[Any]]]()
         for (tail <- lists(table)) {
-          log.debug("Appending to list for " + table)
           val newTail = createMod[ListNode[Any]](null)
           count += updateMod(tail.id, new ListNode(mod, newTail), respondTo)
           newTails += newTail
@@ -144,7 +140,6 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef) => {
-      log.debug("UpdateModMessage")
       sender ! updateMod(modId, value, workerRef)
     }
 
@@ -153,7 +148,6 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
-      log.debug("ReadModMessage.")
       dependencies(modId) += workerRef
       sender ! get("mods", modId.value)
     }

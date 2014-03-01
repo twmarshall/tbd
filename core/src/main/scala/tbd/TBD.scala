@@ -57,8 +57,6 @@ class TBD(
   val dependencies = Map[ModId, Set[ActorRef]]()
 
   def read[T, U](mod: Mod[T], reader: T => (Changeable[U])): Changeable[U] = {
-    log.debug("Executing read on  mod " + mod.id)
-
     val readNode = ddg.addRead(mod.asInstanceOf[Mod[Any]], currentParent, reader)
 
     val outerReader = currentParent
@@ -78,14 +76,8 @@ class TBD(
   }
 
   def write[T](dest: Dest[T], value: T): Changeable[T] = {
-    if (value != null) {
-      log.debug("Writing " + value.getClass + " to " + dest.mod.id)
-    } else {
-      log.debug("Writing null to " + dest.mod.id)
-    }
-
     awaiting += dest.mod.update(value, workerRef, this)
-    log.debug("Now awaiting " + awaiting)
+
     if (ddg.reads.contains(dest.mod.id)) {
       ddg.modUpdated(dest.mod.id)
     }
@@ -104,7 +96,6 @@ class TBD(
 
   var workerId = 0
   def par[T, U](one: TBD => T, two: TBD => U): Tuple2[T, U] = {
-    log.debug("Executing par.")
     val task1 =  new Task(((tbd: TBD) => one(tbd)))
     val workerProps1 =
       Worker.props[U](id + "-" + workerId, datastoreRef, workerRef)

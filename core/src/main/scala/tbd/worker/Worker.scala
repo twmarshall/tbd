@@ -54,7 +54,6 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
 
       if (node.isInstanceOf[ReadNode[Any, Any]]) {
         val readNode = node.asInstanceOf[ReadNode[Any, Any]]
-        log.debug("Propagating read of mod(" + readNode.mod.id + ")")
         ddg.removeSubtree(readNode)
 
         val newValue =
@@ -69,7 +68,6 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
         readNode.reader(newValue)
       } else {
         val parNode = node.asInstanceOf[ParNode]
-        log.debug("Updating ParNode.")
         if (parNode.pebble1 && parNode.pebble2) {
           val future1 = parNode.workerRef1 ! PropagateMessage
           val future2 = parNode.workerRef2 ! PropagateMessage
@@ -120,7 +118,6 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
-      log.debug("Worker ReadModMessage.")
       if (tbd.dependencies.contains(modId)) {
         tbd.dependencies(modId) += workerRef
       } else {
@@ -131,10 +128,8 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case ModUpdatedMessage(modId: ModId, respondTo: ActorRef) => {
-      log.debug("Informed that mod(" + modId + ") has been updated.")
       ddg.modUpdated(modId)
 
-      log.debug("Sending PebbleMessage to " + parent)
       parent ! PebbleMessage(self, modId, respondTo)
     }
 
@@ -146,14 +141,11 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case PebbleMessage(workerRef: ActorRef, modId: ModId, respondTo: ActorRef) => {
-      log.debug("Received PebbleMessage for " + modId)
       val newPebble = ddg.parUpdated(workerRef)
 
       if (newPebble) {
-        log.debug("Sending PebbleMessage to " + parent)
         val future = parent ! PebbleMessage(self, modId, respondTo)
       } else {
-        log.debug("Sending PebblingFinishedMessage(" + modId + ") to datastore.")
         respondTo ! PebblingFinishedMessage(modId)
       }
     }
@@ -161,22 +153,17 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     case PebblingFinishedMessage(modId: ModId) => {
       assert(tbd.awaiting > 0)
       tbd.awaiting -= 1
-      log.debug("Received PebblingFinishedMessage. Still waiting on " + tbd.awaiting + " with updated=" + ddg.updated.size)
 
       if (propagating & tbd.awaiting == 0 && awaiting == 0) {
-        log.debug("Sending FinishedPropagatingMessage.")
         parent ! FinishedPropagatingMessage
       }
     }
 
     case PropagateMessage => {
-      log.debug("Asked to perform change propagation. updated: " + ddg.updated.size)
-
       propagating = true
       val done = propagate()
 
       if (done && tbd.awaiting == 0) {
-        log.debug("Sending FinishedPropagatingMessage to " + parent)
         parent ! FinishedPropagatingMessage
       }
     }
@@ -184,13 +171,11 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     case FinishedPropagatingMessage => {
       assert(awaiting > 0)
       awaiting -= 1
-      log.debug("Received FinishedPropagatingMessage. Still waiting on " + awaiting)
 
       if (awaiting == 0) {
         val done = propagate()
 
         if (propagating && done && tbd.awaiting == 0) {
-          log.debug("Sending FinishedPropagatingMessage to " + parent)
           parent ! FinishedPropagatingMessage
         }
       }
