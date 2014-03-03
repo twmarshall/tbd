@@ -29,7 +29,7 @@ class WordcountTests extends FlatSpec with Matchers {
     mutator.put(2, "cat boy boy ear cat dog")
     mutator.put(3, "ear cat apple")
 
-    val output = mutator.run[Mod[Map[String, Int]]](new WCAdjust())
+    val output = mutator.run[Mod[Map[String, Int]]](new WCAdjust(4))
     val answer = Map[String, Int]("apple" -> 3, "boy" -> 3, "cat" -> 6,
                                   "dog" -> 1, "ear" -> 2)
     assert(output.read() == answer)

@@ -116,13 +116,16 @@ object Experiment {
 	        nextOption(map ++ Map('counts -> value.split(",").map(_.toInt)), tail)
 	      case "--percents" :: value :: tail =>
 	        nextOption(map ++ Map('percents -> value.split(",").map(_.toDouble)), tail)
+        case "--partitions" :: value :: tail =>
+          nextOption(map ++ Map('partitions ->  value.toInt), tail)
         case option :: tail => println("Unknown option " + option + "\n" + usage)
                                exit(1)
       }
     }
     val options = nextOption(Map('repeat -> 3,
 				                         'counts -> Array(100, 200, 300, 400),
-				                         'percents -> Array(.01, .05, .1)),
+				                         'percents -> Array(.01, .05, .1),
+                                 'partitions -> 8),
                              args.toList)
 
     print("desc\tpages\tinitial\tmem")
@@ -131,9 +134,9 @@ object Experiment {
     }
     print("\n")
 
-    run(new WCAdjust(), options, "non")
+    run(new WCAdjust(options('partitions).asInstanceOf[Int]), options, "non")
 
-    run(new WCParAdjust(), options, "par")
+    run(new WCParAdjust(options('partitions).asInstanceOf[Int]), options, "par")
 
 
     println("New session, total memory = %s, max memory = %s, free memory = %s".format(

@@ -22,7 +22,7 @@ import tbd.mod.Mod
 
 class ListMapReduceTest extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {
-    val dataset = tbd.input.getDataset[Int]()
+    val dataset = tbd.input.getDataset[Int](partitions = 1)
     val mappedDataset = dataset.map(tbd, (_: Int) * 2)
     mappedDataset.reduce(tbd, (_: Int) + (_: Int))
   }

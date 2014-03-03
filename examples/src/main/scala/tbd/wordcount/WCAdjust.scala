@@ -20,9 +20,10 @@ import scala.collection.mutable.Map
 import tbd.{Adjustable, TBD}
 import tbd.mod.Mod
 
-class WCAdjust extends WC with Adjustable {
+class WCAdjust(partitions: Int) extends WC with Adjustable {
+
   def run(tbd: TBD): Mod[Map[String, Int]] = {
-    val pages = tbd.input.getDataset[String]()
+    val pages = tbd.input.getDataset[String](partitions)
     val counts = pages.map(tbd, (s: String) => wordcount(s))
     counts.reduce(tbd, reduce((_: Map[String, Int]), (_: Map[String, Int])))
   }

@@ -76,37 +76,6 @@ class Datastore extends Actor with ActorLogging {
     count
   }
 
-  private def getLists(table: String): Mod[ListNode[Mod[ListNode[Any]]]] = {
-    var tail = createMod[ListNode[Any]](null)
-
-    if (lists.contains(table)) {
-      lists(table) += tail
-    } else {
-      lists(table) = Set(tail)
-    }
-
-    var outputTail = createMod[ListNode[Mod[ListNode[Any]]]](null)
-    val partitionSize = tables(table).size / 8.0
-    var i = 1
-    for (elem <- tables(table)) {
-      val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))
-      if (i % partitionSize == 0) {
-        val headMod = createMod(head)
-        outputTail = createMod(new ListNode[Mod[ListNode[Any]]](headMod, outputTail))
-        tail = createMod[ListNode[Any]](null)
-      } else {
-        tail = head
-      }
-      i += 1
-    }
-    if ((i - 1) % partitionSize != 0) {
-      val headMod = createMod(tail)
-      outputTail = createMod(new ListNode(headMod, outputTail))
-    }
-
-    outputTail
-  }
-
   def receive = {
     case CreateTableMessage(table: String) => {
       tables(table) = Map[Any, Any]()
@@ -176,8 +145,35 @@ class Datastore extends Actor with ActorLogging {
       sender ! arr
     }
 
-    case GetDatasetMessage(table: String) => {
-      sender ! new Dataset(getLists(table))
+    case GetDatasetMessage(table: String, partitions: Int) => {
+      var tail = createMod[ListNode[Any]](null)
+
+      if (lists.contains(table)) {
+        lists(table) += tail
+      } else {
+        lists(table) = Set(tail)
+      }
+
+      var outputTail = createMod[ListNode[Mod[ListNode[Any]]]](null)
+      val partitionSize = math.max(1, tables(table).size / partitions)
+      var i = 1
+      for (elem <- tables(table)) {
+        val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))
+        if (i % partitionSize == 0) {
+          val headMod = createMod(head)
+          outputTail = createMod(new ListNode[Mod[ListNode[Any]]](headMod, outputTail))
+          tail = createMod[ListNode[Any]](null)
+        } else {
+          tail = head
+        }
+        i += 1
+      }
+      if ((i - 1) % partitionSize != 0) {
+        val headMod = createMod(tail)
+        outputTail = createMod(new ListNode(headMod, outputTail))
+      }
+
+      sender ! new Dataset(outputTail)
     }
 
     case x => {

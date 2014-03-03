@@ -40,8 +40,8 @@ class Reader(datastoreRef: ActorRef) {
       .asInstanceOf[Array[T]]
   }
 
-  def getDataset[T](): Dataset[T] = {
-    val datasetFuture = datastoreRef ? GetDatasetMessage("input")
+  def getDataset[T](partitions: Int = 8): Dataset[T] = {
+    val datasetFuture = datastoreRef ? GetDatasetMessage("input", partitions)
     Await.result(datasetFuture, timeout.duration)
       .asInstanceOf[Dataset[T]]
   }
