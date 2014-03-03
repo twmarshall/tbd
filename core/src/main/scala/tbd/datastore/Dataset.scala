@@ -108,12 +108,12 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
         tbd: TBD,
         dest: Dest[U],
         lst: ListNode[U],
-        f: (TBD, U, U) => U): Changeable[U] = {
+        f: (U, U) => U): Changeable[U] = {
       if (lst != null) {
         tbd.read(lst.next, (next: ListNode[U]) => {
           if (next != null) {
             val newList = tbd.mod((dest: Dest[ListNode[U]]) => {
-	            lst.parReduce(tbd, dest, f)
+	            lst.reduce(tbd, dest, f)
 	          })
             tbd.read(newList, (lst: ListNode[U]) => {
               innerReduce(tbd, dest, lst, f)
@@ -129,10 +129,12 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
 
     val reducedLists = tbd.mod((dest: Dest[ListNode[Mod[T]]]) => {
       tbd.read(lists, (lsts: ListNode[Mod[ListNode[T]]]) => {
+        // Do a parallel map over the partitions, where the mapping function is
+        // reduce.
         lsts.parMap(tbd, dest, (tbd: TBD, list: Mod[ListNode[T]]) => {
           tbd.mod((dest: Dest[T]) => {
             tbd.read(list, (lst: ListNode[T]) => {
-              innerReduce(tbd, dest, lst, (tbd: TBD, value1: T, value2: T) => {
+              innerReduce(tbd, dest, lst, (value1: T, value2: T) => {
                 func(value1, value2)
               })
             })
@@ -143,7 +145,7 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
 
     val reducedMod = tbd.mod((dest: Dest[Mod[T]]) => {
       tbd.read(reducedLists, (reducedLsts: ListNode[Mod[T]]) => {
-        innerReduce(tbd, dest, reducedLsts, (tbd: TBD, mod1: Mod[T], mod2: Mod[T]) => {
+        innerReduce(tbd, dest, reducedLsts, (mod1: Mod[T], mod2: Mod[T]) => {
           tbd.mod((dest: Dest[T]) => {
             tbd.read(mod1, (value1: T) => {
               tbd.read(mod2, (value2: T) => {
