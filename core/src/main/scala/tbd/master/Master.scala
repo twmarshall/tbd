@@ -48,9 +48,9 @@ class Master extends Actor with ActorLogging {
   var updateResult = Promise[String]
   var awaiting = 0
 
-  private def runTask[T](adjust: Adjustable): Future[Any] = {
+  private def runTask(adjust: Adjustable): Future[Any] = {
     i += 1
-    val workerProps = Worker.props[T]("worker" + i, datastoreRef, self)
+    val workerProps = Worker.props("worker" + i, datastoreRef, self)
     workerRef = context.actorOf(workerProps, "worker" + i)
     workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(tbd)))
   }

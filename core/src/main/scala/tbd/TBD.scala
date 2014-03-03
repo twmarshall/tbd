@@ -57,7 +57,7 @@ class TBD(
   val dependencies = Map[ModId, Set[ActorRef]]()
 
   def read[T, U](mod: Mod[T], reader: T => (Changeable[U])): Changeable[U] = {
-    val readNode = ddg.addRead(mod.asInstanceOf[Mod[Any]], currentParent, reader)
+    val readNode = ddg.addRead(mod.asInstanceOf[Mod[Any]], currentParent, reader.asInstanceOf[Any => Changeable[Any]])
 
     val outerReader = currentParent
     currentParent = readNode
@@ -98,14 +98,14 @@ class TBD(
   def par[T, U](one: TBD => T, two: TBD => U): Tuple2[T, U] = {
     val task1 =  new Task(((tbd: TBD) => one(tbd)))
     val workerProps1 =
-      Worker.props[U](id + "-" + workerId, datastoreRef, workerRef)
+      Worker.props(id + "-" + workerId, datastoreRef, workerRef)
     val workerRef1 = system.actorOf(workerProps1, id + "-" + workerId)
     workerId += 1
     val oneFuture = workerRef1 ? RunTaskMessage(task1)
 
     val task2 =  new Task(((tbd: TBD) => two(tbd)))
     val workerProps2 =
-      Worker.props[U](id + "-" + workerId, datastoreRef, workerRef)
+      Worker.props(id + "-" + workerId, datastoreRef, workerRef)
     val workerRef2 = system.actorOf(workerProps2, id + "-" +workerId)
     workerId += 1
     val twoFuture = workerRef2 ? RunTaskMessage(task2)

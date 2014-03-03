@@ -24,7 +24,7 @@ import tbd.mod.{Mod, ModId}
 
 class DDG(log: LoggingAdapter, id: String) {
   var root = new RootNode(id)
-  val reads = Map[ModId, Set[ReadNode[Any, Any]]]()
+  val reads = Map[ModId, Set[ReadNode]]()
   val pars = Map[ActorRef, ParNode]()
 
   implicit val order = scala.math.Ordering[Double]
@@ -33,18 +33,18 @@ class DDG(log: LoggingAdapter, id: String) {
 
   val ordering = new Ordering()
 
-  def addRead[T, U](
+  def addRead(
       mod: Mod[Any],
       parent: Node,
-      reader: T => Changeable[U]): Node = {
+      reader: Any => Changeable[Any]): Node = {
     val timestamp = nextTimestamp(parent)
     val readNode = new ReadNode(mod, parent, timestamp, reader)
     parent.addChild(readNode)
 
     if (reads.contains(mod.id)) {
-      reads(mod.id) += readNode.asInstanceOf[ReadNode[Any, Any]]
+      reads(mod.id) += readNode.asInstanceOf[ReadNode]
     } else {
-      reads(mod.id) = Set(readNode.asInstanceOf[ReadNode[Any, Any]])
+      reads(mod.id) = Set(readNode.asInstanceOf[ReadNode])
     }
 
     readNode
@@ -108,8 +108,8 @@ class DDG(log: LoggingAdapter, id: String) {
 
   def removeSubtree(node: Node) {
     for (child <- node.children) {
-      if (child.isInstanceOf[ReadNode[Any, Any]]) {
-        reads -= child.asInstanceOf[ReadNode[Any, Any]].mod.id
+      if (child.isInstanceOf[ReadNode]) {
+        reads -= child.asInstanceOf[ReadNode].mod.id
       }
 
       updated = updated.filter((node2: Node) => child != node2)

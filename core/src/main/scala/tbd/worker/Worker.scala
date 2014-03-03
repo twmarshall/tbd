@@ -28,11 +28,11 @@ import tbd.messages._
 import tbd.mod.ModId
 
 object Worker {
-  def props[T](id: String, datastoreRef: ActorRef, parent: ActorRef): Props =
-    Props(classOf[Worker[T]], id, datastoreRef, parent)
+  def props(id: String, datastoreRef: ActorRef, parent: ActorRef): Props =
+    Props(classOf[Worker], id, datastoreRef, parent)
 }
 
-class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
+class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
   extends Actor with ActorLogging {
   log.info("Worker " + id + " launched")
   private var task: Task = null
@@ -52,8 +52,8 @@ class Worker[T](id: String, datastoreRef: ActorRef, parent: ActorRef)
     while (!ddg.updated.isEmpty) {
       val node = ddg.updated.dequeue
 
-      if (node.isInstanceOf[ReadNode[Any, Any]]) {
-        val readNode = node.asInstanceOf[ReadNode[Any, Any]]
+      if (node.isInstanceOf[ReadNode]) {
+        val readNode = node.asInstanceOf[ReadNode]
         ddg.removeSubtree(readNode)
 
         val newValue =
