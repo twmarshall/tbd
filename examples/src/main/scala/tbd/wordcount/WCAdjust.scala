@@ -15,6 +15,8 @@
  */
 package tbd.examples.wordcount
 
+import scala.collection.mutable.Map
+
 import tbd.{Adjustable, TBD}
 import tbd.mod.Mod
 

@@ -15,14 +15,32 @@
  */
 package tbd.examples.wordcount
 
+import scala.collection.mutable.Map
+
 class WC {
   def wordcount(s: String): Map[String, Int] = {
-    s.split("\\W+").foldLeft(Map.empty[String, Int]) {
-      (count, word) => count + (word -> (count.getOrElse(word, 0) + 1))
+    val counts = Map[String, Int]()
+
+    for (word <- s.split("\\W+")) {
+      if (counts.contains(word)) {
+        counts(word) += 1
+      } else {
+        counts(word) = 1
+      }
     }
+
+    counts
   }
 
   def reduce(map1: Map[String, Int], map2: Map[String, Int]): Map[String, Int] = {
-    map1 ++ map2.map{ case (k,v) => k -> (v + map1.getOrElse(k,0)) }
+    val counts = map2.clone()
+    for ((key, value) <- map1) {
+      if (counts.contains(key)) {
+        counts(key) += map1(key)
+      } else {
+        counts(key) = map1(key)
+      }
+    }
+    counts
   }
 }
