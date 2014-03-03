@@ -15,23 +15,71 @@
  */
 package tbd.examples.wordcount
 
+import scala.collection.mutable.Map
+
 import tbd.{Adjustable, Mutator}
 import tbd.mod.Mod
 
 object Experiment {
   type Options = Map[Symbol, Any]
   val runtime = Runtime.getRuntime()
+  val rand = new scala.util.Random()
+
 
   def round(value: Double): Double = {
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+  }
+
+  def once(adjust: Adjustable, count: Int, percents: Array[Double], results: Map[String, Double]) {
+	  val mutator = new Mutator()
+
+	  val xml = scala.xml.XML.loadFile("wiki.xml")
+	  var i = 0
+
+	  val pages = scala.collection.mutable.Map[String, String]()
+	  (xml \ "elem").map(elem => {
+	    (elem \ "key").map(key => {
+	      (elem \ "value").map(value => {
+          if (i < count) {
+		        mutator.put(key.text, value.text)
+		        i += 1
+          } else {
+		        pages += (key.text -> value.text)
+          }
+        })
+      })
+	  })
+
+	  val before = System.currentTimeMillis()
+    val memBefore = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024)
+	  val output = mutator.run[Mod[Map[String, Int]]](adjust)
+    val initialElapsed = System.currentTimeMillis() - before
+    println(initialElapsed)
+	  results("initial") += initialElapsed
+    results("initialMem") = math.max((runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore,
+                                     results("initialMem"))
+
+	  for (percent <- percents) {
+      var i =  0
+      while (i < percent * count) {
+        mutator.update(rand.nextInt(count).toString, pages.head._2)
+        pages -= pages.head._1
+        i += 1
+      }
+      val before2 = System.currentTimeMillis()
+      mutator.propagate()
+	    results(percent + "") += System.currentTimeMillis() - before2
+      val memUsed = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore
+        results(percent + "Mem") = math.max(memUsed, results(percent + "Mem"))
+	  }
+
+	  mutator.shutdown()
   }
 
   def run(adjust: Adjustable, options: Options, description: String) {
     val counts = options('counts).asInstanceOf[Array[Int]]
     val percents = options('percents).asInstanceOf[Array[Double]]
     val runs = options('repeat).asInstanceOf[Int]
-
-    val r = new scala.util.Random()
 
     for (count <- counts) {
       var run = 0
@@ -44,50 +92,9 @@ object Experiment {
       }
 
       while (run < runs) {
-	      val mutator = new Mutator()
-
-	      val xml = scala.xml.XML.loadFile("wiki.xml")
-	      var i = 0
-
-	      val pages = scala.collection.mutable.Map[String, String]()
-	      (xml \ "elem").map(elem => {
-	        (elem \ "key").map(key => {
-	          (elem \ "value").map(value => {
-              if (i < count) {
-		            mutator.put(key.text, value.text)
-		            i += 1
-              } else {
-		            pages += (key.text -> value.text)
-              }
-            })
-          })
-	      })
-
-	      val before = System.currentTimeMillis()
-        val memBefore = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024)
-        //println(memBefore)
-	      val output = mutator.run[Mod[Map[String, Int]]](adjust)
-	      results("initial") += System.currentTimeMillis() - before
-        results("initialMem") = math.max((runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore,
-                                         results("initialMem"))
-
-	      for (percent <- percents) {
-          var i =  0
-          while (i < percent * count) {
-            mutator.update(r.nextInt(count).toString, pages.head._2)
-            pages -= pages.head._1
-            i += 1
-          }
-          val before2 = System.currentTimeMillis()
-          mutator.propagate()
-	        results(percent + "") += System.currentTimeMillis() - before2
-          val memUsed = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore
-          results(percent + "Mem") = math.max(memUsed, results(percent + "Mem"))
-          //println(memUsed)
-	      }
+        once(adjust, count, percents, results)
 
 	      run += 1
-	      mutator.shutdown()
       }
 
       print(description + "\t" + count + "\t")
@@ -133,6 +140,14 @@ object Experiment {
       print("\t" + (percent * 100) + "%\tmem")
     }
     print("\n")
+
+    // Warm up run.
+    val results = scala.collection.mutable.Map[String, Double]()
+    results("initial") = 0
+    results("initialMem") = 0
+	  results("0.1") = 0
+    results("0.1Mem") = 0
+    once(new WCAdjust(8), 200, Array(.1), results)
 
     run(new WCAdjust(options('partitions).asInstanceOf[Int]), options, "non")
 
