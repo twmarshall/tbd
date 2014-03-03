@@ -31,35 +31,35 @@ object Experiment {
   }
 
   def once(adjust: Adjustable, count: Int, percents: Array[Double], results: Map[String, Double]) {
-	  val mutator = new Mutator()
+    val mutator = new Mutator()
 
-	  val xml = scala.xml.XML.loadFile("wiki.xml")
-	  var i = 0
+    val xml = scala.xml.XML.loadFile("wiki.xml")
+    var i = 0
 
-	  val pages = scala.collection.mutable.Map[String, String]()
-	  (xml \ "elem").map(elem => {
-	    (elem \ "key").map(key => {
-	      (elem \ "value").map(value => {
-          if (i < count) {
-		        mutator.put(key.text, value.text)
-		        i += 1
-          } else {
-		        pages += (key.text -> value.text)
-          }
+    val pages = scala.collection.mutable.Map[String, String]()
+    (xml \ "elem").map(elem => {
+      (elem \ "key").map(key => {
+	(elem \ "value").map(value => {
+	  if (i < count) {
+	    mutator.put(key.text, value.text)
+	    i += 1
+	  } else {
+	    pages += (key.text -> value.text)
+	  }
         })
       })
-	  })
+    })
 
-	  val before = System.currentTimeMillis()
+    val before = System.currentTimeMillis()
     val memBefore = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024)
-	  val output = mutator.run[Mod[Map[String, Int]]](adjust)
+    val output = mutator.run[Mod[Map[String, Int]]](adjust)
     val initialElapsed = System.currentTimeMillis() - before
-    println(initialElapsed)
-	  results("initial") += initialElapsed
+    //println(initialElapsed)
+    results("initial") += initialElapsed
     results("initialMem") = math.max((runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore,
                                      results("initialMem"))
 
-	  for (percent <- percents) {
+    for (percent <- percents) {
       var i =  0
       while (i < percent * count) {
         mutator.update(rand.nextInt(count).toString, pages.head._2)
@@ -68,12 +68,12 @@ object Experiment {
       }
       val before2 = System.currentTimeMillis()
       mutator.propagate()
-	    results(percent + "") += System.currentTimeMillis() - before2
+      results(percent + "") += System.currentTimeMillis() - before2
       val memUsed = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore
-        results(percent + "Mem") = math.max(memUsed, results(percent + "Mem"))
-	  }
-
-	  mutator.shutdown()
+      results(percent + "Mem") = math.max(memUsed, results(percent + "Mem"))
+    }
+    
+    mutator.shutdown()
   }
 
   def run(adjust: Adjustable, options: Options, description: String) {
@@ -130,9 +130,9 @@ object Experiment {
       }
     }
     val options = nextOption(Map('repeat -> 3,
-				                         'counts -> Array(100, 200, 300, 400),
-				                         'percents -> Array(.01, .05, .1),
-                                 'partitions -> 8),
+				 'counts -> Array(100, 200, 300, 400),
+				 'percents -> Array(.01, .05, .1),
+                                 'partitions -> 10),
                              args.toList)
 
     print("desc\tpages\tinitial\tmem")
