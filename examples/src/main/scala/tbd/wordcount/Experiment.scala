@@ -130,7 +130,7 @@ object Experiment {
       }
     }
     val options = nextOption(Map('repeat -> 3,
-				 'counts -> Array(100, 200, 300, 400),
+				 'counts -> Array(200, 400, 600),
 				 'percents -> Array(.01, .05, .1),
                                  'partitions -> 10),
                              args.toList)
