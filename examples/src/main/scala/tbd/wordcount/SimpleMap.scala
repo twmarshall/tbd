@@ -49,7 +49,7 @@ class Worker extends Actor {
   }
 }
 
-object Map {
+object SimpleMap {
   def main(args: Array[String]) {
     //val system = ActorSystem("masterSystem")
     //val workerRef = system.actorOf(Worker.props(), "master")
