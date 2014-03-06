@@ -52,13 +52,14 @@ object Experiment {
 
     val before = System.currentTimeMillis()
     val memBefore = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024)
-    val output = mutator.run[Mod[Map[String, Int]]](adjust)
+    mutator.run(adjust)
     val initialElapsed = System.currentTimeMillis() - before
     //println(initialElapsed)
     results("initial") += initialElapsed
     results("initialMem") = math.max((runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore,
                                      results("initialMem"))
 
+    //while (true)
     for (percent <- percents) {
       var i =  0
       while (i < percent * count) {
@@ -87,14 +88,13 @@ object Experiment {
       results("initial") = 0
       results("initialMem") = 0
       for (percent <- percents) {
-	      results(percent + "") = 0
+        results(percent + "") = 0
         results(percent + "Mem") = 0
       }
 
       while (run < runs) {
         once(adjust, count, percents, results)
-
-	      run += 1
+        run += 1
       }
 
       print(description + "\t" + count + "\t")
@@ -102,7 +102,7 @@ object Experiment {
       print("\t" + round(results("initialMem")))
 
       for (percent <- percents) {
-	      print("\t" + round(results(percent + "") / runs))
+        print("\t" + round(results(percent + "") / runs))
         print("\t" + round(results(percent + "Mem")))
       }
       print("\n")
@@ -119,20 +119,23 @@ object Experiment {
         case Nil => map
         case "--repeat" :: value :: tail =>
           nextOption(map ++ Map('repeat -> value.toInt), tail)
-	      case "--counts" :: value :: tail =>
-	        nextOption(map ++ Map('counts -> value.split(",").map(_.toInt)), tail)
-	      case "--percents" :: value :: tail =>
-	        nextOption(map ++ Map('percents -> value.split(",").map(_.toDouble)), tail)
+        case "--counts" :: value :: tail =>
+          nextOption(map ++ Map('counts -> value.split(",").map(_.toInt)), tail)
+        case "--percents" :: value :: tail =>
+          nextOption(map ++ Map('percents -> value.split(",").map(_.toDouble)), tail)
         case "--partitions" :: value :: tail =>
           nextOption(map ++ Map('partitions ->  value.toInt), tail)
+        case "--algorithm" :: value :: tail =>
+          nextOption(map ++ Map('algorithm -> value), tail)
         case option :: tail => println("Unknown option " + option + "\n" + usage)
                                exit(1)
       }
     }
     val options = nextOption(Map('repeat -> 3,
-				 'counts -> Array(200, 400, 600),
-				 'percents -> Array(.01, .05, .1),
-                                 'partitions -> 10),
+                                 'counts -> Array(200, 400, 600),
+                                 'percents -> Array(.01, .05, .1),
+                                 'partitions -> 10,
+                                 'algorithm -> "map"),
                              args.toList)
 
     print("desc\tpages\tinitial\tmem")
@@ -145,16 +148,16 @@ object Experiment {
     val results = scala.collection.mutable.Map[String, Double]()
     results("initial") = 0
     results("initialMem") = 0
-	  results("0.1") = 0
+    results("0.1") = 0
     results("0.1Mem") = 0
     once(new WCAdjust(8), 200, Array(.1), results)
 
-    run(new WCAdjust(options('partitions).asInstanceOf[Int]), options, "non")
-
-    run(new WCParAdjust(options('partitions).asInstanceOf[Int]), options, "par")
-
-
-    println("New session, total memory = %s, max memory = %s, free memory = %s".format(
-      runtime.totalMemory / (1024 * 1024), runtime.maxMemory / (1024 * 1024), runtime.freeMemory / (1024 * 1024)))
+    if (options('algorithm) == "map") {
+      run(new MapAdjust(options('partitions).asInstanceOf[Int]), options, "non-map")
+      run(new MapParAdjust(options('partitions).asInstanceOf[Int]), options, "par-map")
+    } else {
+      run(new WCAdjust(options('partitions).asInstanceOf[Int]), options, "non")
+      run(new WCParAdjust(options('partitions).asInstanceOf[Int]), options, "par")
+    }
   }
 }

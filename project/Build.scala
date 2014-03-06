@@ -131,15 +131,14 @@ object IncrementalBuild extends Build {
     settings = buildSettings ++ Seq (
       resolvers += localResolver,
       libraryDependencies ++= commonDeps,
-      mkrun <<= (baseDirectory, fullClasspath in Runtime, mainClass in Runtime) map { (base, cp, main) =>
+      mkrun <<= (baseDirectory, fullClasspath in Runtime) map { (base, cp) =>
         val template = """#!/bin/sh
         java -Xmx2g -Xss4m -classpath "%s":/Users/thomas/incremental/core/target/classes/ \
          -Djava.util.logging.config.class=com.microsoft.reef.util.logging.Config \
          -Dcom.microsoft.reef.runtime.local.folder=/Users/thomas/incremental/examples/target \
         %s $@
         """
-        val mainStr = main getOrElse error("No main class specified")
-        val contents = template.format(cp.files.absString, mainStr)
+        val contents = template.format(cp.files.absString, "tbd.examples.wordcount.Experiment")
         val out = base / "run.sh"
         IO.write(out, contents)
         out.setExecutable(true)
