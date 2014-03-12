@@ -104,6 +104,7 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case UpdateMessage(table: String, key: Any, value: Any, respondTo: ActorRef) => {
+      log.debug("UpdateMessage")
       val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
       sender ! updateMod(modId, value, respondTo)
     }
@@ -119,6 +120,15 @@ class Datastore extends Actor with ActorLogging {
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
       dependencies(modId) += workerRef
       sender ! get("mods", modId.value)
+    }
+
+    case RemoveDependenciesMessage(workerRef: ActorRef) => {
+      log.debug("RemoveDependenciesMessage from " + sender)
+
+      for ((modId, dependencySet) <- dependencies) {
+        dependencySet -= workerRef
+      }
+      sender ! "done"
     }
 
     case PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]]) => {

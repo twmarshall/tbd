@@ -41,4 +41,8 @@ class Main {
   val datastoreFuture = datastoreSelection.resolveOne
   val datastoreRef = Await.result(datastoreFuture, timeout.duration)
     .asInstanceOf[ActorRef]
+
+  def shutdown() {
+    system.shutdown()
+  }
 }

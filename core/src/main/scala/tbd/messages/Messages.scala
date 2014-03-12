@@ -35,6 +35,7 @@ case class UpdateMessage(table: String, key: Any, value: Any, respondTo: ActorRe
 
 case class UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef)
 case class ReadModMessage(modId: ModId, workerRef: ActorRef)
+case class RemoveDependenciesMessage(workerRef: ActorRef)
 
 case class PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]])
 case class GetArrayMessage(table: String)
@@ -43,9 +44,10 @@ case class NullMessage
 
 // Master
 case class PutInputMessage(table: String, key: Any, value: Any)
-case class RunMessage(adjust: Adjustable)
-case class ShutdownMessage
+case class RunMessage(adjust: Adjustable, mutatorId: Int)
 case class UpdateInputMessage(table: String, key: Any, value: Any)
+case class RegisterMutatorMessage
+case class ShutdownMutatorMessage(mutatorId: Int)
 
 // Worker
 case class ModUpdatedMessage(modId: ModId, respondTo: ActorRef)
@@ -55,3 +57,4 @@ case class PropagateMessage
 case class RunTaskMessage(func: Task)
 case class FinishedPropagatingMessage
 case class DDGToStringMessage(prefix: String)
+case class CleanupWorkerMessage

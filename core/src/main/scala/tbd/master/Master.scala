@@ -18,7 +18,7 @@ package tbd.master
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
-import scala.collection.mutable.Set
+import scala.collection.mutable.{Map, Set}
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future, Promise}
 
@@ -39,7 +39,10 @@ class Master extends Actor with ActorLogging {
 
   private var workerRef: ActorRef = null
 
-  private var i = 0
+  private var nextMutatorId = 0
+
+  // Maps mutatorIds to their corresponding workers.
+  private val workers = Map[Int, ActorRef]()
 
   implicit val timeout = Timeout(3000 seconds)
 
@@ -48,24 +51,24 @@ class Master extends Actor with ActorLogging {
   var updateResult = Promise[String]
   var awaiting = 0
 
-  private def runTask(adjust: Adjustable): Future[Any] = {
-    i += 1
-    val workerProps = Worker.props("worker" + i, datastoreRef, self)
-    workerRef = context.actorOf(workerProps, "worker" + i)
-    workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(tbd)))
-  }
-
   def receive = {
-    case RunMessage(adjust: Adjustable) => {
+    case RunMessage(adjust: Adjustable, mutatorId: Int) => {
       log.debug("RunMessage")
       result = Promise[Any]
-      sender ! runTask(adjust)
+
+      val workerProps = Worker.props("worker", datastoreRef, self)
+      workerRef = context.actorOf(workerProps, "worker" + mutatorId)
+      workers(mutatorId) = workerRef
+
+      val resultFuture = workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(tbd)))
+
+      sender ! resultFuture
     }
 
     case PropagateMessage => {
       log.info("Master actor initiating change propagation.")
-      log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-					                              timeout.duration).asInstanceOf[String])
+      //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
+      //timeout.duration).asInstanceOf[String])
 
       result = Promise[Any]
       sender ! result.future
@@ -76,8 +79,8 @@ class Master extends Actor with ActorLogging {
     case FinishedPropagatingMessage => {
       log.debug("Master received FinishedPropagatingMessage.")
 
-      log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-					                              timeout.duration).asInstanceOf[String])
+      //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
+      //timeout.duration).asInstanceOf[String])
 
       result.success("okay")
     }
@@ -106,7 +109,6 @@ class Master extends Actor with ActorLogging {
 
       assert(awaiting == 0)
       awaiting = Await.result(future, timeout.duration).asInstanceOf[Int]
-      log.debug("UpdateMessage " + awaiting)
 
       if (awaiting == 0) {
         updateResult.success("okay")
@@ -136,9 +138,22 @@ class Master extends Actor with ActorLogging {
       }
     }
 
-    case ShutdownMessage => {
-      log.info("Master shutting down.")
-      context.system.shutdown()
+    case RegisterMutatorMessage => {
+      sender ! nextMutatorId
+      nextMutatorId += 1
+    }
+
+    case ShutdownMutatorMessage(mutatorId: Int) => {
+      if (workers.contains(mutatorId)) {
+        log.debug("Sending CleanupWorkerMessage to " + workers(mutatorId))
+        val future = workers(mutatorId) ? CleanupWorkerMessage
+        Await.result(future, timeout.duration)
+
+        context.stop(workers(mutatorId))
+        workers -= mutatorId
+      }
+
+      sender ! "done"
     }
 
     case x => {

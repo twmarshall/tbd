@@ -18,6 +18,7 @@ package tbd.examples.wordcount
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator}
+import tbd.master.Main
 import tbd.mod.Mod
 
 object Experiment {
@@ -25,36 +26,51 @@ object Experiment {
   val runtime = Runtime.getRuntime()
   val rand = new scala.util.Random()
 
-
   def round(value: Double): Double = {
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
   }
 
-  def once(adjust: Adjustable, count: Int, percents: Array[Double], results: Map[String, Double]) {
-    val mutator = new Mutator()
-
+  val pages = scala.collection.mutable.Map[String, String]()
+  def loadXML() {
+    pages.clear()
     val xml = scala.xml.XML.loadFile("wiki.xml")
-    var i = 0
 
-    val pages = scala.collection.mutable.Map[String, String]()
     (xml \ "elem").map(elem => {
       (elem \ "key").map(key => {
 	(elem \ "value").map(value => {
-	  if (i < count) {
-	    mutator.put(key.text, value.text)
-	    i += 1
-	  } else {
-	    pages += (key.text -> value.text)
-	  }
+	  pages += (key.text -> value.text)
         })
       })
     })
+  }
+
+  def addInput(start: Int, stop: Int, main: Main) {
+    val mutator = new Mutator(main)
+
+    var i = start
+    while (i < stop) {
+      assert(pages.head._2 != null)
+      mutator.put(i, pages.head._2)
+      pages -= pages.head._1
+      i += 1
+    }
+
+    mutator.shutdown()
+  }
+
+  def once(
+      adjust: Adjustable,
+      count: Int,
+      percents: Array[Double],
+      results: Map[String, Double],
+      main: Main) {
+    val mutator = new Mutator(main)
 
     val before = System.currentTimeMillis()
     val memBefore = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024)
     mutator.run(adjust)
     val initialElapsed = System.currentTimeMillis() - before
-    //println(initialElapsed)
+
     results("initial") += initialElapsed
     results("initialMem") = math.max((runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore,
                                      results("initialMem"))
@@ -63,7 +79,7 @@ object Experiment {
     for (percent <- percents) {
       var i =  0
       while (i < percent * count) {
-        mutator.update(rand.nextInt(count).toString, pages.head._2)
+        mutator.update(rand.nextInt(count), pages.head._2)
         pages -= pages.head._1
         i += 1
       }
@@ -73,7 +89,7 @@ object Experiment {
       val memUsed = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore
       results(percent + "Mem") = math.max(memUsed, results(percent + "Mem"))
     }
-    
+
     mutator.shutdown()
   }
 
@@ -82,7 +98,15 @@ object Experiment {
     val percents = options('percents).asInstanceOf[Array[Double]]
     val runs = options('repeat).asInstanceOf[Int]
 
+    val main = new Main()
+    loadXML()
+
+    // We load the data for the first experiment when we do the warmup run.
+    var lastCount = 0
+
     for (count <- counts) {
+      addInput(lastCount, count, main)
+
       var run = 0
       val results = scala.collection.mutable.Map[String, Double]()
       results("initial") = 0
@@ -93,7 +117,7 @@ object Experiment {
       }
 
       while (run < runs) {
-        once(adjust, count, percents, results)
+        once(adjust, count, percents, results, main)
         run += 1
       }
 
@@ -107,6 +131,8 @@ object Experiment {
       }
       print("\n")
     }
+
+    main.shutdown()
   }
 
   val usage = """
@@ -120,7 +146,7 @@ object Experiment {
         case "--repeat" :: value :: tail =>
           nextOption(map ++ Map('repeat -> value.toInt), tail)
         case "--counts" :: value :: tail =>
-          nextOption(map ++ Map('counts -> value.split(",").map(_.toInt)), tail)
+          nextOption(map ++ Map('runs -> value.split(",").map(_.toInt)), tail)
         case "--percents" :: value :: tail =>
           nextOption(map ++ Map('percents -> value.split(",").map(_.toDouble)), tail)
         case "--partitions" :: value :: tail =>
@@ -144,13 +170,17 @@ object Experiment {
     }
     print("\n")
 
+    val main = new Main()
+    loadXML()
     // Warm up run.
     val results = scala.collection.mutable.Map[String, Double]()
     results("initial") = 0
     results("initialMem") = 0
     results("0.1") = 0
     results("0.1Mem") = 0
-    once(new WCAdjust(8), 200, Array(.1), results)
+    addInput(0, 200, main)
+    once(new WCAdjust(8), 200, Array(.1), results, main)
+    main.shutdown()
 
     if (options('algorithm) == "map") {
       run(new MapAdjust(options('partitions).asInstanceOf[Int]), options, "non-map")
@@ -159,5 +189,6 @@ object Experiment {
       run(new WCAdjust(options('partitions).asInstanceOf[Int]), options, "non")
       run(new WCParAdjust(options('partitions).asInstanceOf[Int]), options, "par")
     }
+
   }
 }

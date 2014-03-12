@@ -19,7 +19,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import akka.util.Timeout
 import scala.collection.mutable.{Map, Set}
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 import tbd.TBD
@@ -173,6 +173,24 @@ class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
 
     case DDGToStringMessage(prefix: String) => {
       sender ! ddg.toString(prefix)
+    }
+
+    case CleanupWorkerMessage => {
+      val datastoreFuture = datastoreRef ? RemoveDependenciesMessage(self)
+
+      val futures = Set[Future[Any]]()
+      for ((actorRef, parNode) <- ddg.pars) {
+        futures += actorRef ? CleanupWorkerMessage
+        actorRef ! akka.actor.PoisonPill
+      }
+
+      for (future <- futures) {
+        Await.result(future, timeout.duration)
+      }
+
+      Await.result(datastoreFuture, timeout.duration)
+
+      sender ! "done"
     }
 
     case x => {

@@ -24,13 +24,13 @@ import tbd.master.Main
 import tbd.messages._
 import tbd.mod.Mod
 
-class Mutator {
-  val main = new Main()
-
+class Mutator(main: Main = new Main()) {
   implicit val timeout = Timeout(3000 seconds)
+  val idFuture = main.masterRef ? RegisterMutatorMessage
+  val id = Await.result(idFuture, timeout.duration).asInstanceOf[Int]
 
   def run[T](adjust: Adjustable): T = {
-    val future = main.masterRef ? RunMessage(adjust)
+    val future = main.masterRef ? RunMessage(adjust, id)
     val resultFuture =
       Await.result(future, timeout.duration).asInstanceOf[Future[Any]]
 
@@ -60,6 +60,6 @@ class Mutator {
   }
 
   def shutdown() {
-    main.masterRef ! ShutdownMessage
+    Await.result(main.masterRef ? ShutdownMutatorMessage(id), timeout.duration)
   }
 }
