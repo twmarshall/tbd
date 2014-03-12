@@ -15,82 +15,54 @@
  */
 package tbd.examples.wordcount
 
-import akka.actor._
-import akka.pattern.ask
-import akka.util.Timeout
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 class ListNode[T](aValue: T, aNext: ListNode[T]) {
   val value = aValue
   val next = aNext
 }
 
-object Worker {
-  def props(): Props =
-    Props(classOf[Worker])
-}
-
-case class RunMessage(tail: ListNode[String])
-
-class Worker extends Actor {
-  val wc = new WC()
-
-  def map[T, U](lst: ListNode[T], f: T => U): ListNode[U] = {
-    if (lst.next != null)
-      new ListNode[U](f(lst.value), map(lst.next, f))
-    else
-      new ListNode[U](f(lst.value), null)
-  }
-
-  def receive = {
-    case RunMessage(tail: ListNode[String]) =>
-      sender ! map(tail, wc.wordcount((_: String)))
-  }
-}
-
 object SimpleMap {
-  def main(args: Array[String]) {
-    //val system = ActorSystem("masterSystem")
-    //val workerRef = system.actorOf(Worker.props(), "master")
-
+  def run(count: Int, repeat: Int) {
     val xml = scala.xml.XML.loadFile("wiki.xml")
     var i = 0
-    val count = args(0).toInt
 
     val pages = scala.collection.mutable.Set[String]()
     var tail: ListNode[String] = null
     (xml \ "elem").map(elem => {
       (elem \ "key").map(key => {
-	      (elem \ "value").map(value => {
-	        if (i < count) {
+        (elem \ "value").map(value => {
+          if (i < count) {
             tail = new ListNode(value.text, tail)
-	          pages += value.text
-	          i += 1
-	        }
+            pages += value.text
+            i += 1
+          }
         })
       })
     })
 
-    val before = System.currentTimeMillis()
-    /*val mapped = scala.collection.mutable.Set[scala.collection.mutable.Map[String, Int]]()
-    for (page <- pages) {
-      mapped += wc.wordcount(page)
-    }*/
-    val wc = new WC()
     def map[T, U](lst: ListNode[T], f: T => U): ListNode[U] = {
       if (lst.next != null)
         new ListNode[U](f(lst.value), map(lst.next, f))
       else
         new ListNode[U](f(lst.value), null)
     }
+
+    // Warmup run.
+    val wc = new WC()
     val mapped = map(tail, wc.wordcount((_: String)))
 
-    /*implicit val timeout = Timeout(30 seconds)
+    var j = 0
+    var total: Long = 0
+    while (j < repeat) {
+      val before = System.currentTimeMillis()
 
-    val future = workerRef ? RunMessage(tail)
-    Await.result(future, timeout.duration)*/
+      val wc = new WC()
+      val mapped = map(tail, wc.wordcount((_: String)))
 
-    println(System.currentTimeMillis() - before)
+      total += System.currentTimeMillis() - before
+
+      j += 1
+    }
+
+    println("smap\t" + count + "\t" + total / repeat)
   }
 }

@@ -146,7 +146,7 @@ object Experiment {
         case "--repeat" :: value :: tail =>
           nextOption(map ++ Map('repeat -> value.toInt), tail)
         case "--counts" :: value :: tail =>
-          nextOption(map ++ Map('runs -> value.split(",").map(_.toInt)), tail)
+          nextOption(map ++ Map('counts -> value.split(",").map(_.toInt)), tail)
         case "--percents" :: value :: tail =>
           nextOption(map ++ Map('percents -> value.split(",").map(_.toDouble)), tail)
         case "--partitions" :: value :: tail =>
@@ -183,6 +183,10 @@ object Experiment {
     main.shutdown()
 
     if (options('algorithm) == "map") {
+      for (count <- options('counts).asInstanceOf[Array[Int]]) {
+        SimpleMap.run(count, options('repeat).asInstanceOf[Int])
+      }
+
       run(new MapAdjust(options('partitions).asInstanceOf[Int]), options, "non-map")
       run(new MapParAdjust(options('partitions).asInstanceOf[Int]), options, "par-map")
     } else {
