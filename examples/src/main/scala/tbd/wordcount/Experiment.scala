@@ -31,14 +31,13 @@ object Experiment {
   }
 
   val pages = scala.collection.mutable.Map[String, String]()
-  def loadXML() {
-    pages.clear()
+  def loadXML(prefix: String = "") {
     val xml = scala.xml.XML.loadFile("wiki.xml")
 
     (xml \ "elem").map(elem => {
       (elem \ "key").map(key => {
 	(elem \ "value").map(value => {
-	  pages += (key.text -> value.text)
+	  pages += (prefix + key.text -> value.text)
         })
       })
     })
@@ -52,6 +51,9 @@ object Experiment {
       assert(pages.head._2 != null)
       mutator.put(i, pages.head._2)
       pages -= pages.head._1
+      if (pages.size == 0) {
+        loadXML()
+      }
       i += 1
     }
 
@@ -81,6 +83,10 @@ object Experiment {
       while (i < percent * count) {
         mutator.update(rand.nextInt(count), pages.head._2)
         pages -= pages.head._1
+        if (pages.size == 0) {
+          loadXML()
+        }
+
         i += 1
       }
       val before2 = System.currentTimeMillis()
