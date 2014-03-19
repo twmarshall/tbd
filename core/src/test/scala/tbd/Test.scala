@@ -36,31 +36,42 @@ class MatrixMultTest extends Adjustable {
   }
 }
 
-/*class MemoTest extends Adjustable {
+class MemoTest extends Adjustable {
   // Note: real client applications should NOT have mutable state like this.
   // We are just using it to ensure that the memoized function doesn't get
   // reexecuted as appropriate.
   var count = 0
 
-  def run(dest: Dest, tbd: TBD): Changeable[Any] = {
+  def run(tbd: TBD): Mod[Int] = {
     val one = tbd.input.get[Mod[Int]](1)
     val two = tbd.input.get[Mod[Int]](2)
     val memo = tbd.memo[Int, Int]()
 
-    val memoMod = tbd.mod(dest => {
-      memo(List(two))(() => {
-	      tbd.read(two, valueTwo => {
-	        count += 1
-	        tbd.write(dest, valueTwo + 1)
-	      })
+    tbd.mod((dest: Dest[Int]) => {
+      tbd.read(one, (oneValue: Int) => {
+        if (oneValue == 3) {
+          tbd.mod((dest: Dest[Int]) => {
+            tbd.read(one, (oneValueAgain: Int) => {
+              tbd.write(dest, oneValueAgain)
+            })
+          })
+        }
+        val memoMod = tbd.mod((memoDest: Dest[Int]) => {
+          memo(List(two))(() => {
+	    count += 1
+	    tbd.read(two, (valueTwo: Int) => {
+	      tbd.write(memoDest, valueTwo + 1)
+	    })
+          })
+        })
+
+        tbd.read(memoMod, (memoValue: Int) => {
+          tbd.write(dest, oneValue + memoValue)
+        })
       })
     })
-
-    tbd.read(memoMod, (value1: Int) => {
-      tbd.read(one, (value2: Int) => tbd.write(dest, value1 + value2))
-    }).asInstanceOf[Changeable[Any]]
   }
-}*/
+}
 
 class TestSpec extends FlatSpec with Matchers {
   "ArrayMapTest" should "return a correctly mapped array" in {
@@ -85,24 +96,30 @@ class TestSpec extends FlatSpec with Matchers {
     mutator.shutdown()
   }*/
 
-  /*"MemoTest" should "do stuff" in {
+  "MemoTest" should "do stuff" in {
     val mutator = new Mutator()
     mutator.put(1, 1)
-    val twoMod = mutator.put(2, 10)
+    mutator.put(2, 10)
     val test = new MemoTest()
-    val output = mutator.run[Int](test)
+    val output = mutator.run[Mod[Int]](test)
     output.read() should be (12)
     test.count should be (1)
 
-    // Rerun without changes to ensure correct memoization.
-    mutator.propagate[Int]().read() should be (12)
+    // Change the mod not read by the memoized function,
+    // check that it isn't called.
+    mutator.update(1, 3)
+    mutator.propagate()
+    output.read() should be (14)
     test.count should be (1)
 
-    // Change the mod used by the memoized function and rerun.
-    twoMod.update(12)
-    mutator.propagate[Int]().read() should be (14)
+    // Change the other mod, the memoized function should
+    // be called.
+    mutator.update(1, 2)
+    mutator.update(2, 8)
+    mutator.propagate()
+    output.read() should be (11)
     test.count should be (2)
 
     mutator.shutdown()
-  }*/
+  }
 }

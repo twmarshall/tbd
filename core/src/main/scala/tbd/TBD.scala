@@ -37,9 +37,11 @@ class TBD(
     ddg: DDG,
     datastoreRef: ActorRef,
     workerRef: ActorRef,
-    system: ActorSystem,
-    initialRun: Boolean) {
+    system: ActorSystem) {
 
+  var initialRun = true
+
+  // The Node representing the currently executing reader.
   var currentParent: Node = ddg.root
   val input = new Reader(datastoreRef)
 
@@ -51,13 +53,18 @@ class TBD(
   // on before it can finish.
   var awaiting = 0
 
+  // Maps ModIds to the mod's value for LocalMods created in this TBD.
   val mods = scala.collection.mutable.Map[ModId, Any]()
 
   // Maps modIds to the workers that have read the corresponding mod.
   val dependencies = Map[ModId, Set[ActorRef]]()
 
+  val updatedMods = Set[ModId]()
+
   def read[T, U](mod: Mod[T], reader: T => (Changeable[U])): Changeable[U] = {
-    val readNode = ddg.addRead(mod.asInstanceOf[Mod[Any]], currentParent, reader.asInstanceOf[Any => Changeable[Any]])
+    val readNode = ddg.addRead(mod.asInstanceOf[Mod[Any]],
+                               currentParent,
+                               reader.asInstanceOf[Any => Changeable[Any]])
 
     val outerReader = currentParent
     currentParent = readNode
@@ -117,51 +124,49 @@ class TBD(
     new Tuple2(oneRet, twoRet)
   }
 
-  /*var memoId = 0
+  var memoId = 0
+  val memoTable = Map[List[Any], MemoEntry]()
   def memo[T, U](): (List[Mod[T]]) => (() => Changeable[U]) => Changeable[U] = {
-    implicit val timeout = Timeout(5 seconds)
     val thisMemoId = memoId
     memoId += 1
     (args: List[Mod[T]]) => {
       (func: () => Changeable[U]) => {
-	if (initialRun) {
-	  runMemo(args, func, thisMemoId)
-	} else {
-	  val updatedFuture = datastoreRef ? GetUpdatedMessage
-	  val updatedMods = Await.result(updatedFuture, timeout.duration)
-	    .asInstanceOf[Set[ModId]]
-
-	  var updated = false
-	  for (arg <- args) {
-	    if (updatedMods.contains(arg.id)) {
-	      updated = true
+        val memoized =
+          if (initialRun) {
+            false
+          } else {
+	    var updated = false
+	    for (arg <- args) {
+	      if (updatedMods.contains(arg.id)) {
+	        updated = true
+	      }
 	    }
-	  }
+            !updated
+          }
 
-	  if (updated) {
-	    log.debug("Did not find memoized value for call to " + thisMemoId)
-	    runMemo(args, func, thisMemoId)
-	  } else {
-	    val memoFuture = datastoreRef ?
-	      GetMessage("memo", thisMemoId :: args)
-	    val memo = Await.result(memoFuture, timeout.duration)
-	      .asInstanceOf[Changeable[U]]
-	    log.debug("Found memoized value for call to " + thisMemoId)
-	    memo
-	  }
+	if (memoized) {
+	  log.debug("Found memoized value for call to " + thisMemoId)
+          val memoEntry = memoTable(thisMemoId :: args)
+          ddg.attachSubtree(currentParent, memoEntry.node)
+          memoEntry.changeable.asInstanceOf[Changeable[U]]
+	} else {
+	  log.debug("Did not find memoized value for call to " + thisMemoId)
+
+          val memoNode = ddg.addMemo(currentParent)
+          val outerParent = currentParent
+          currentParent = memoNode
+          val changeable = func()
+          currentParent = outerParent
+
+          val memoEntry = new MemoEntry(changeable.asInstanceOf[Changeable[Any]],
+                                        memoNode)
+          memoTable += ((thisMemoId :: args) -> memoEntry)
+
+          changeable
 	}
       }
     }
   }
-
-  private def runMemo[T, U](
-      args: List[Mod[T]],
-      func: () => Changeable[U],
-      thisMemoId: Int): Changeable[U] = {
-    val changeable = func()
-    datastoreRef ! PutMessage("memo", thisMemoId :: args, changeable)
-    changeable
-  }*/
 
   def map[T, U](arr: Array[Mod[T]], func: T => U): Array[Mod[U]] = {
     arr.map((elem) =>

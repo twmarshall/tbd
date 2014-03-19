@@ -69,11 +69,18 @@ class DDG(log: LoggingAdapter, id: String) {
     pars(workerRef2) = parNode
   }
 
+  def addMemo(parent: Node): Node = {
+    val timestamp = nextTimestamp(parent)
+    val memoNode = new MemoNode(parent, timestamp)
+    parent.addChild(memoNode)
+    memoNode
+  }
+
   private def nextTimestamp(parent: Node): Timestamp = {
     if (parent.children.size == 0) {
       ordering.after(parent.timestamp)
     } else {
-      ordering.after(parent.children.last.timestamp)
+      nextTimestamp(parent.children.last)
     }
   }
 
@@ -106,17 +113,35 @@ class DDG(log: LoggingAdapter, id: String) {
     }
   }
 
-  def removeSubtree(node: Node) {
-    for (child <- node.children) {
-      if (child.isInstanceOf[ReadNode]) {
-        reads -= child.asInstanceOf[ReadNode].mod.id
-      }
+  def removeSubtree(subtree: Node) {
+    def innerRemoveSubtree(node: Node): Timestamp = {
+      var lastTime: Timestamp = null
+      if (node.children.size > 0) {
+        for (child <- node.children) {
+          if (child.isInstanceOf[ReadNode]) {
+            reads -= child.asInstanceOf[ReadNode].mod.id
+          }
 
-      updated = updated.filter((node2: Node) => child != node2)
-      removeSubtree(child)
+          updated = updated.filter((node2: Node) => child != node2)
+          lastTime = innerRemoveSubtree(child)
+        }
+
+        lastTime
+      } else {
+        node.timestamp
+      }
     }
 
-    node.children.clear()
+    if (subtree.children.size > 0) {
+      val lastTime = innerRemoveSubtree(subtree)
+      //ordering.detachRange(subtree.children.head.timestamp, lastTime)
+
+      subtree.children.clear()
+    }
+  }
+
+  def attachSubtree(parent: Node, subtree: Node) {
+    parent.addChild(subtree)
   }
 
   override def toString = {

@@ -37,7 +37,7 @@ class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
   log.info("Worker " + id + " launched")
   private var task: Task = null
   private val ddg = new DDG(log, id)
-  private val tbd = new TBD(id, ddg, datastoreRef, self, context.system, true)
+  private val tbd = new TBD(id, ddg, datastoreRef, self, context.system)
 
   implicit val timeout = Timeout(30 seconds)
 
@@ -45,8 +45,6 @@ class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
   // worker is waiting to receive FinishedPropagatingMessages from before it
   // can continue.
   var awaiting = 0
-
-  var propagating = false
 
   def propagate(): Boolean = {
     while (!ddg.updated.isEmpty) {
@@ -121,6 +119,7 @@ class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
       parent ! PebbleMessage(self, modId, respondTo)
 
       ddg.modUpdated(modId)
+      tbd.updatedMods += modId
     }
 
     case RunTaskMessage(aTask: Task) => {
@@ -144,13 +143,13 @@ class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
       assert(tbd.awaiting > 0)
       tbd.awaiting -= 1
 
-      if (propagating && tbd.awaiting == 0 && awaiting == 0) {
+      if (!tbd.initialRun && tbd.awaiting == 0 && awaiting == 0) {
         parent ! FinishedPropagatingMessage
       }
     }
 
     case PropagateMessage => {
-      propagating = true
+      tbd.initialRun = false
       val done = propagate()
 
       if (done && tbd.awaiting == 0) {

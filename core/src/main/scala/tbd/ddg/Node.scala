@@ -110,6 +110,15 @@ class ParNode(
   }
 }
 
+class MemoNode(
+    aParent: Node,
+    aTimestamp: Timestamp) extends Node(aParent, aTimestamp) {
+
+  override def toString(prefix: String) = {
+    prefix + "MemoNode time=" + timestamp + super.toString(prefix)
+  }
+}
+
 class RootNode(id: String) extends Node(null, null) {
   override def toString(prefix: String) = {
     prefix + "RootNode id=(" + id + ")" + super.toString(prefix)
