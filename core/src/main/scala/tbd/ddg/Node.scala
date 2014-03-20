@@ -18,7 +18,7 @@ package tbd.ddg
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
-import scala.collection.mutable.{PriorityQueue, Set}
+import scala.collection.mutable.{MutableList, PriorityQueue}
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -30,17 +30,13 @@ abstract class Node(aParent: Node, aTimestamp: Timestamp) {
   val parent = aParent
   var timestamp: Timestamp = aTimestamp
 
-  val children = Set[Node]()
+  val children = MutableList[Node]()
 
   def addChild(child: Node) {
     children += child
   }
 
-  def removeChild(child: Node) {
-    children -= child
-  }
-
-   def toString(prefix: String): String = {
+  def toString(prefix: String): String = {
     if (children.isEmpty) {
 	    ""
     } else if (children.size == 1) {

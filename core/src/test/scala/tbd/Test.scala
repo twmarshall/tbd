@@ -73,6 +73,31 @@ class MemoTest extends Adjustable {
   }
 }
 
+class PropagationOrderTest extends Adjustable {
+  var num = 0
+
+  def run(tbd: TBD): Mod[Int] = {
+    val one = tbd.input.get[Mod[Int]](1)
+
+    tbd.mod((dest: Dest[Int]) => {
+      tbd.read(one, (v1: Int) => {
+        assert(num == 0)
+        num += 1
+        tbd.read(one, (v2: Int) => {
+          assert(num == 1)
+          num += 1
+          tbd.write(dest, v2)
+        })
+      })
+
+      tbd.read(one, (v3: Int) => {
+        assert(num == 2)
+        tbd.write(dest, v3)
+      })
+    })
+  }
+}
+
 class TestSpec extends FlatSpec with Matchers {
   "ArrayMapTest" should "return a correctly mapped array" in {
     val mutator = new Mutator()
@@ -121,5 +146,18 @@ class TestSpec extends FlatSpec with Matchers {
     test.count should be (2)
 
     mutator.shutdown()
+  }
+
+  "PropagationOrderTest" should "reexecute reads in the correct order" in {
+    val mutator = new Mutator()
+    mutator.put(1, 1)
+    val test = new PropagationOrderTest()
+    val output = mutator.run[Mod[Int]](test)
+    test.num should be (2)
+
+    test.num = 0
+    mutator.update(1, 2)
+    mutator.propagate()
+    test.num should be (2)
   }
 }

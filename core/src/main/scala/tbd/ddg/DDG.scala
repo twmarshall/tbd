@@ -28,7 +28,7 @@ class DDG(log: LoggingAdapter, id: String) {
   val pars = Map[ActorRef, ParNode]()
 
   implicit val order = scala.math.Ordering[Double]
-    .on[Node](_.timestamp.time)
+    .on[Node](_.timestamp.time).reverse
   var updated = PriorityQueue[Node]()
 
   val ordering = new Ordering()
