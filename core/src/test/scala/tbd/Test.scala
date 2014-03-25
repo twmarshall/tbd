@@ -107,7 +107,7 @@ class TestSpec extends FlatSpec with Matchers {
     output.deep.mkString(", ") should be ("two mapped, one mapped")
 
     mutator.update(1, "three")
-    mutator.propagate[Array[Mod[String]]]()
+    mutator.propagate()
     output.deep.mkString(", ") should be ("two mapped, three mapped")
 
     mutator.shutdown()

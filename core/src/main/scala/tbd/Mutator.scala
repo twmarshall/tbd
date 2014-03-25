@@ -37,7 +37,7 @@ class Mutator(main: Main = new Main()) {
     Await.result(resultFuture, timeout.duration).asInstanceOf[T]
   }
 
-  def propagate[T]() {
+  def propagate() {
     val future = main.masterRef ? PropagateMessage
     val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
     Await.result(future2, timeout.duration)
