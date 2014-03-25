@@ -55,10 +55,6 @@ class Mutator(main: Main = new Main()) {
     Await.result(future2, timeout.duration)
   }
 
-  def putMatrix(key: Int, value: Array[Array[Int]]) {
-    main.masterRef ! PutMatrixMessage("input", key, value)
-  }
-
   def shutdown() {
     Await.result(main.masterRef ? ShutdownMutatorMessage(id), timeout.duration)
   }

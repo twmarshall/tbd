@@ -18,21 +18,12 @@ package tbd.test
 import org.scalatest._
 
 import tbd.{Adjustable, Changeable, Dest, Mutator, ListNode, TBD}
-import tbd.mod.{Matrix, Mod}
+import tbd.mod.Mod
 
 class ArrayMapTest extends Adjustable {
   def run(tbd: TBD): Array[Mod[String]] = {
     val array = tbd.input.getArray[Mod[String]]()
     tbd.map(array, (_: String) + " mapped")
-  }
-}
-
-class MatrixMultTest extends Adjustable {
-  def run(tbd: TBD): Matrix = {
-    val one = tbd.input.get[Matrix](1)
-    val two = tbd.input.get[Matrix](2)
-
-    one.mult(tbd, two)
   }
 }
 
@@ -112,14 +103,6 @@ class TestSpec extends FlatSpec with Matchers {
 
     mutator.shutdown()
   }
-
-  /*"MatrixMult" should "do stuff" in {
-    val mutator = new Mutator()
-    mutator.putMatrix(1, Array(Array(1, 3)))
-    mutator.putMatrix(2, Array(Array(5), Array(6)))
-    val output = mutator.run(new MatrixMultTest())
-    mutator.shutdown()
-  }*/
 
   "MemoTest" should "do stuff" in {
     val mutator = new Mutator()

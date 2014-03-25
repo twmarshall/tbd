@@ -24,7 +24,7 @@ import scala.concurrent.duration._
 
 import tbd.ListNode
 import tbd.messages._
-import tbd.mod.{InputMod, Matrix, Mod, ModId}
+import tbd.mod.{InputMod, Mod, ModId}
 
 object Datastore {
   def props(): Props = Props(classOf[Datastore])
@@ -129,16 +129,6 @@ class Datastore extends Actor with ActorLogging {
         dependencySet -= workerRef
       }
       sender ! "done"
-    }
-
-    case PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]]) => {
-      val mat = new Matrix(value.map(row => {
-        row.map(cell => {
-          createMod(cell)
-        })
-      }), self)
-      tables(table)(key) = mat
-      sender ! mat
     }
 
     // Return all of the entries from the specified table as an array, allowing

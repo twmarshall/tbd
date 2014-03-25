@@ -37,7 +37,6 @@ case class UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef)
 case class ReadModMessage(modId: ModId, workerRef: ActorRef)
 case class RemoveDependenciesMessage(workerRef: ActorRef)
 
-case class PutMatrixMessage(table: String, key: Any, value: Array[Array[Int]])
 case class GetArrayMessage(table: String)
 case class GetDatasetMessage(table: String, partitions: Int = 8)
 case class NullMessage

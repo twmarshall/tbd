@@ -115,14 +115,6 @@ class Master extends Actor with ActorLogging {
       }
     }
 
-    /*case PutMatrixMessage(
-        table: String,
-        key: Any,
-        value: Array[Array[Int]]) => {
-      val future = datastoreRef ? PutMatrixMessage(table, key, value)
-      sender ! Await.result(future, timeout.duration)
-    }*/
-
     case PebbleMessage(workerRef: ActorRef, modId: ModId, respondTo: ActorRef) => {
       log.debug("Master received PebbleMessage. Sending " +
                 "PebblingFinishedMessage(" + modId + ").")
