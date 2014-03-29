@@ -46,6 +46,7 @@ case class PutInputMessage(table: String, key: Any, value: Any)
 case class RunMessage(adjust: Adjustable, mutatorId: Int)
 case class UpdateInputMessage(table: String, key: Any, value: Any)
 case class RegisterMutatorMessage
+case class GetMutatorDDGMessage(mutatorId: Int)
 case class ShutdownMutatorMessage(mutatorId: Int)
 
 // Worker
@@ -55,5 +56,6 @@ case class PebblingFinishedMessage(modId: ModId)
 case class PropagateMessage
 case class RunTaskMessage(func: Task)
 case class FinishedPropagatingMessage
+case class GetDDGMessage
 case class DDGToStringMessage(prefix: String)
 case class CleanupWorkerMessage

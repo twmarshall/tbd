@@ -33,6 +33,9 @@ class DDG(log: LoggingAdapter, id: String) {
 
   val ordering = new Ordering()
 
+
+  var lastRemovedMemo: MemoNode = null
+
   def addRead(
       mod: Mod[Any],
       parent: Node,
@@ -114,27 +117,35 @@ class DDG(log: LoggingAdapter, id: String) {
   }
 
   def removeSubtree(subtree: Node) {
-    def innerRemoveSubtree(node: Node): Timestamp = {
-      var lastTime: Timestamp = null
-      if (node.children.size > 0) {
-        for (child <- node.children) {
-          if (child.isInstanceOf[ReadNode]) {
-            reads -= child.asInstanceOf[ReadNode].mod.id
-          }
+    def innerRemoveSubtree(node: Node, isMemo: Boolean) {
+      if (node.isInstanceOf[ReadNode]) {
+        reads -= node.asInstanceOf[ReadNode].mod.id
+      }
+      updated = updated.filter((node2: Node) => node != node2)
 
-          updated = updated.filter((node2: Node) => child != node2)
-          lastTime = innerRemoveSubtree(child)
+      var memo =
+        if (node.isInstanceOf[MemoNode]) {
+          if (!isMemo) {
+            lastRemovedMemo = node.asInstanceOf[MemoNode]
+          }
+          true
+        } else {
+          isMemo
         }
 
-        lastTime
-      } else {
-        node.timestamp
+      if (!memo) {
+        ordering.remove(node.timestamp)
+      }
+
+      for (child <- node.children) {
+        innerRemoveSubtree(child, memo)
       }
     }
 
     if (subtree.children.size > 0) {
-      val lastTime = innerRemoveSubtree(subtree)
-      //ordering.detachRange(subtree.children.head.timestamp, lastTime)
+      for (child <- subtree.children) {
+        innerRemoveSubtree(child, false)
+      }
 
       subtree.children.clear()
     }

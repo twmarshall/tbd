@@ -68,7 +68,7 @@ class Master extends Actor with ActorLogging {
     case PropagateMessage => {
       log.info("Master actor initiating change propagation.")
       //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-      //timeout.duration).asInstanceOf[String])
+      //                                  timeout.duration).asInstanceOf[String])
 
       result = Promise[Any]
       sender ! result.future
@@ -80,7 +80,7 @@ class Master extends Actor with ActorLogging {
       log.debug("Master received FinishedPropagatingMessage.")
 
       //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-      //timeout.duration).asInstanceOf[String])
+      //                                  timeout.duration).asInstanceOf[String])
 
       result.success("okay")
     }
@@ -133,6 +133,13 @@ class Master extends Actor with ActorLogging {
     case RegisterMutatorMessage => {
       sender ! nextMutatorId
       nextMutatorId += 1
+    }
+
+    case GetMutatorDDGMessage(mutatorId: Int) => {
+      if (workers.contains(mutatorId)) {
+        val future = workers(mutatorId) ? GetDDGMessage
+        sender ! Await.result(future, timeout.duration)
+      }
     }
 
     case ShutdownMutatorMessage(mutatorId: Int) => {

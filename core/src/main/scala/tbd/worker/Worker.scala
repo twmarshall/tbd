@@ -170,6 +170,10 @@ class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
       }
     }
 
+    case GetDDGMessage => {
+      sender ! ddg
+    }
+
     case DDGToStringMessage(prefix: String) => {
       sender ! ddg.toString(prefix)
     }

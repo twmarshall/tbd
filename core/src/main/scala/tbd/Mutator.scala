@@ -20,6 +20,7 @@ import akka.util.Timeout
 import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
+import tbd.ddg.DDG
 import tbd.master.Main
 import tbd.messages._
 import tbd.mod.Mod
@@ -53,6 +54,11 @@ class Mutator(main: Main = new Main()) {
     val future = main.masterRef ? UpdateInputMessage("input", key, value)
     val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
     Await.result(future2, timeout.duration)
+  }
+
+  def getDDG(): DDG  = {
+    val ddgFuture = main.masterRef ? GetMutatorDDGMessage(id)
+    Await.result(ddgFuture, timeout.duration).asInstanceOf[DDG]
   }
 
   def shutdown() {
