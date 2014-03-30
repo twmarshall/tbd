@@ -15,6 +15,8 @@
  */
 package tbd.datastore
 
+import scala.collection.mutable.Set
+
 import tbd.{Changeable, Dest, ListNode, TBD}
 import tbd.mod.Mod
 
@@ -28,6 +30,20 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
           tbd.mod((dest: Dest[ListNode[U]]) => {
             tbd.read(list, (lst: ListNode[T]) => {
               lst.map(tbd, dest, func)
+            })
+          })
+        })
+      })
+    }))
+  }
+
+  def memoMap[U](tbd: TBD, func: T => U): Dataset[U] = {
+    new Dataset(tbd.mod((dest: Dest[ListNode[Mod[ListNode[U]]]]) => {
+      tbd.read(lists, (lsts: ListNode[Mod[ListNode[T]]]) => {
+        lsts.map(tbd, dest, (list: Mod[ListNode[T]]) => {
+          tbd.mod((dest: Dest[ListNode[U]]) => {
+            tbd.read(list, (lst: ListNode[T]) => {
+              lst.memoMap(tbd, dest, func)
             })
           })
         })
@@ -164,5 +180,21 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
         })
       })
     })
+  }
+
+  /* Meta Operations */
+  def toSet(): Set[T] = {
+    val set = Set[T]()
+    var outerNode = lists.read()
+    while (outerNode != null) {
+      var innerNode = outerNode.value.read().read()
+      while (innerNode != null) {
+        set += innerNode.value.read()
+        innerNode = innerNode.next.read()
+      }
+      outerNode = outerNode.next.read()
+    }
+
+    set
   }
 }

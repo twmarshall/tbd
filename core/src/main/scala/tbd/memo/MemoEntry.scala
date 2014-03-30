@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd
+package tbd.memo
 
+import tbd.Changeable
 import tbd.ddg.Node
 
 class MemoEntry(aChangeable: Changeable[Any], aNode: Node) {

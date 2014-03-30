@@ -38,10 +38,10 @@ class Datastore extends Actor with ActorLogging {
   // Maps modIds to the workers that have read the corresponding mod.
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  // Maps the name of an input table to a set containing mods representing the
-  // tails of any linked lists that were returned containing this entire table,
-  // so that we can tolerate insertions into tables.
-  private val lists = Map[String, Set[Mod[ListNode[Any]]]]()
+  // Maps the name of an input table to a set containing the datasets that were
+  // returned containing this entire table, so that we can tolerate insertions
+  // into and deletions from tables.
+  private val datasets = Map[String, Set[Dataset[Any]]]()
 
   implicit val timeout = Timeout(30 seconds)
 
@@ -76,6 +76,69 @@ class Datastore extends Actor with ActorLogging {
     count
   }
 
+  private def remove(value: Any, dataset: Dataset[Any], respondTo: ActorRef): Int = {
+    var count = 0
+    var outerNode = tables("mods")(dataset.lists.id.value)
+      .asInstanceOf[ListNode[Mod[ListNode[Any]]]]
+    while (outerNode != null) {
+      val modList = tables("mods")(outerNode.value.id.value)
+        .asInstanceOf[Mod[ListNode[Any]]]
+      var innerNode = tables("mods")(modList.id.value)
+        .asInstanceOf[ListNode[Any]]
+
+      var previousNode: ListNode[Any] = null
+      while (innerNode != null) {
+        if (tables("mods")(innerNode.value.id.value) == value) {
+          if (previousNode != null) {
+            count += updateMod(previousNode.next.id,
+                               tables("mods")(innerNode.next.id.value),
+                               respondTo)
+          } else {
+            count += updateMod(modList.id,
+                               tables("mods")(innerNode.next.id.value),
+                               respondTo)
+          }
+        }
+
+        previousNode = innerNode
+        innerNode = tables("mods")(innerNode.next.id.value)
+          .asInstanceOf[ListNode[Any]]
+      }
+      outerNode = tables("mods")(outerNode.next.id.value)
+        .asInstanceOf[ListNode[Mod[ListNode[Any]]]]
+    }
+
+    count
+  }
+
+  private def insert(
+      mod: Mod[Any],
+      dataset: Dataset[Any],
+      respondTo: ActorRef): Int = {
+    var count = 0
+    var outerNode = tables("mods")(dataset.lists.id.value)
+      .asInstanceOf[ListNode[Mod[ListNode[Any]]]]
+
+    var lastMod: Mod[ListNode[Any]] = null
+    while (outerNode != null) {
+      val modList = tables("mods")(outerNode.value.id.value)
+        .asInstanceOf[Mod[ListNode[Any]]]
+      var innerNode = tables("mods")(modList.id.value)
+        .asInstanceOf[ListNode[Any]]
+
+      while (innerNode != null) {
+        lastMod = innerNode.next
+        innerNode = tables("mods")(innerNode.next.id.value)
+          .asInstanceOf[ListNode[Any]]
+      }
+      outerNode = tables("mods")(outerNode.next.id.value)
+        .asInstanceOf[ListNode[Mod[ListNode[Any]]]]
+    }
+
+    val newTail = createMod[ListNode[Any]](null)
+    updateMod(lastMod.id, new ListNode(mod, newTail), respondTo)
+  }
+
   def receive = {
     case CreateTableMessage(table: String) => {
       tables(table) = Map[Any, Any]()
@@ -90,14 +153,10 @@ class Datastore extends Actor with ActorLogging {
       tables(table)(key) = mod
 
       var count = 0
-      if (lists.contains(table)) {
-        val newTails = Set[Mod[ListNode[Any]]]()
-        for (tail <- lists(table)) {
-          val newTail = createMod[ListNode[Any]](null)
-          count += updateMod(tail.id, new ListNode(mod, newTail), respondTo)
-          newTails += newTail
+      if (datasets.contains(table)) {
+        for (dataset <- datasets(table)) {
+          count += insert(mod, dataset, respondTo)
         }
-        lists(table) = newTails
       }
 
       sender ! count
@@ -107,6 +166,23 @@ class Datastore extends Actor with ActorLogging {
       log.debug("UpdateMessage")
       val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
       sender ! updateMod(modId, value, respondTo)
+    }
+
+    case RemoveMessage(table: String, key: Any, respondTo: ActorRef) => {
+      log.debug("RemoveMessage")
+
+      var count = 0
+      if (datasets.contains(table)) {
+        for (dataset <- datasets(table)) {
+          val mod = tables(table)(key).asInstanceOf[Mod[Any]]
+          count += remove(tables("mods")(mod.id.value), dataset, respondTo)
+        }
+      }
+
+      tables(table).remove(key)
+
+      log.debug("RemoveMessage awaiting = " + count)
+      sender ! count
     }
 
     case UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef) => {
@@ -148,12 +224,6 @@ class Datastore extends Actor with ActorLogging {
     case GetDatasetMessage(table: String, partitions: Int) => {
       var tail = createMod[ListNode[Any]](null)
 
-      if (lists.contains(table)) {
-        lists(table) += tail
-      } else {
-        lists(table) = Set(tail)
-      }
-
       var outputTail = createMod[ListNode[Mod[ListNode[Any]]]](null)
       val partitionSize = math.max(1, tables(table).size / partitions)
       var i = 1
@@ -173,7 +243,15 @@ class Datastore extends Actor with ActorLogging {
         outputTail = createMod(new ListNode(headMod, outputTail))
       }
 
-      sender ! new Dataset(outputTail)
+      val dataset = new Dataset(outputTail)
+
+      if (datasets.contains(table)) {
+        datasets(table) += dataset
+      } else {
+        datasets(table) = Set(dataset)
+      }
+
+      sender ! dataset
     }
 
     case x => {

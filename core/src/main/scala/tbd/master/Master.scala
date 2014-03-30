@@ -115,6 +115,21 @@ class Master extends Actor with ActorLogging {
       }
     }
 
+    case RemoveInputMessage(table: String, key: Any) => {
+      log.debug("RemoveInputMessage")
+      val future = datastoreRef ? RemoveMessage(table, key, self)
+
+      updateResult = Promise[String]
+      sender ! updateResult.future
+
+      assert(awaiting == 0)
+      awaiting = Await.result(future, timeout.duration).asInstanceOf[Int]
+
+      if (awaiting == 0) {
+        updateResult.success("okay")
+      }
+    }
+
     case PebbleMessage(workerRef: ActorRef, modId: ModId, respondTo: ActorRef) => {
       log.debug("Master received PebbleMessage. Sending " +
                 "PebblingFinishedMessage(" + modId + ").")

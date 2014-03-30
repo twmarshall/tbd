@@ -100,7 +100,11 @@ class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
 
   def receive = {
     case GetMessage(table: String, key: ModId) => {
-      sender ! tbd.mods(key)
+      if (tbd.mods(key) == null) {
+        sender ! NullMessage
+      } else {
+        sender ! tbd.mods(key)
+      }
 
       assert(table == "mods")
     }

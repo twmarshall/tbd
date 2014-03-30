@@ -24,6 +24,7 @@ import scala.concurrent.{Await, Promise}
 import scala.concurrent.duration._
 
 import tbd.ddg.{DDG, Node}
+import tbd.memo.{Lift, MemoEntry}
 import tbd.messages._
 import tbd.mod.{Mod, ModId}
 import tbd.worker.{Worker, Task}
@@ -126,46 +127,44 @@ class TBD(
 
   var memoId = 0
   val memoTable = Map[List[Any], MemoEntry]()
-  def memo[T, U](): (List[Mod[T]]) => (() => Changeable[U]) => Changeable[U] = {
+  def makeLift[T, U](): Lift[T, U] = {
     val thisMemoId = memoId
     memoId += 1
-    (args: List[Mod[T]]) => {
-      (func: () => Changeable[U]) => {
-        val memoized =
-          if (initialRun) {
-            false
-          } else {
-	    var updated = false
-	    for (arg <- args) {
-	      if (updatedMods.contains(arg.id)) {
-	        updated = true
-	      }
+    new Lift((args: List[Mod[T]], func: () => Changeable[U]) => {
+      val memoized =
+        if (initialRun) {
+          false
+        } else {
+	  var updated = false
+	  for (arg <- args) {
+	    if (updatedMods.contains(arg.id)) {
+	      updated = true
 	    }
-            !updated
-          }
+	  }
+          !updated
+        }
 
-	if (memoized) {
-	  log.debug("Found memoized value for call to " + thisMemoId)
-          val memoEntry = memoTable(thisMemoId :: args)
-          ddg.attachSubtree(currentParent, memoEntry.node)
-          memoEntry.changeable.asInstanceOf[Changeable[U]]
-	} else {
-	  log.debug("Did not find memoized value for call to " + thisMemoId)
+      if (memoized && memoTable.contains(thisMemoId :: args)) {
+	log.debug("Found memoized value for call to " + thisMemoId)
+        val memoEntry = memoTable(thisMemoId :: args)
+        ddg.attachSubtree(currentParent, memoEntry.node)
+        memoEntry.changeable.asInstanceOf[Changeable[U]]
+      } else {
+	log.debug("Did not find memoized value for call to " + thisMemoId)
 
-          val memoNode = ddg.addMemo(currentParent)
-          val outerParent = currentParent
-          currentParent = memoNode
-          val changeable = func()
-          currentParent = outerParent
+        val memoNode = ddg.addMemo(currentParent)
+        val outerParent = currentParent
+        currentParent = memoNode
+        val changeable = func()
+        currentParent = outerParent
 
-          val memoEntry = new MemoEntry(changeable.asInstanceOf[Changeable[Any]],
+        val memoEntry = new MemoEntry(changeable.asInstanceOf[Changeable[Any]],
                                         memoNode)
-          memoTable += ((thisMemoId :: args) -> memoEntry)
+        memoTable += ((thisMemoId :: args) -> memoEntry)
 
-          changeable
-	}
+        changeable
       }
-    }
+    })
   }
 
   def map[T, U](arr: Array[Mod[T]], func: T => U): Array[Mod[U]] = {

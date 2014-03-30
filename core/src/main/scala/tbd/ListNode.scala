@@ -15,6 +15,7 @@
  */
 package tbd
 
+import tbd.memo.Lift
 import tbd.mod.Mod
 
 class ListNode[T](aValue: Mod[T], aNext: Mod[ListNode[T]]) {
@@ -36,6 +37,34 @@ class ListNode[T](aValue: Mod[T], aNext: Mod[ListNode[T]]) {
         }
       }))
     tbd.write(dest, new ListNode[W](newValue, newNext))
+  }
+
+  private def innerMemoMap[W](
+      tbd: TBD,
+      dest: Dest[ListNode[W]],
+      f: T => W,
+      lift: Lift[ListNode[T], ListNode[W]]): Changeable[ListNode[W]] = {
+    val newValue = tbd.mod((dest: Dest[W]) =>
+      tbd.read(value, (value: T) => tbd.write(dest, f(value))))
+    val newNext = tbd.mod((dest: Dest[ListNode[W]]) =>
+      lift.memo(List(next), () => {
+        tbd.read(next, (next: ListNode[T]) => {
+          if (next != null) {
+            next.map(tbd, dest, f)
+          } else {
+            tbd.write(dest, null)
+          }
+        })
+      }))
+    tbd.write(dest, new ListNode[W](newValue, newNext))
+  }
+
+  def memoMap[W](
+      tbd: TBD,
+      dest: Dest[ListNode[W]],
+      f: T => W): Changeable[ListNode[W]] = {
+    val lift = tbd.makeLift[ListNode[T], ListNode[W]]()
+    innerMemoMap(tbd, dest, f, lift)
   }
 
   def parMap[W](

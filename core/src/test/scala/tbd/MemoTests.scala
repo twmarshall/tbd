@@ -30,7 +30,7 @@ class MemoTest extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {
     val one = tbd.input.get[Mod[Int]](1)
     val two = tbd.input.get[Mod[Int]](2)
-    val memo = tbd.memo[Int, Int]()
+    val lift = tbd.makeLift[Int, Int]()
 
     tbd.mod((dest: Dest[Int]) => {
       tbd.read(one, (oneValue: Int) => {
@@ -42,7 +42,7 @@ class MemoTest extends Adjustable {
           })
         }
         val memoMod = tbd.mod((memoDest: Dest[Int]) => {
-          memo(List(two))(() => {
+          lift.memo(List(two), () => {
 	    count += 1
 	    tbd.read(two, (valueTwo: Int) => {
 	      tbd.write(memoDest, valueTwo + 1)

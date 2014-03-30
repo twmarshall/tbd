@@ -32,6 +32,7 @@ case class CreateTableMessage(table: String)
 case class GetMessage(table: String, key: Any)
 case class PutMessage(table: String, key: Any, value: Any, respondTo: ActorRef)
 case class UpdateMessage(table: String, key: Any, value: Any, respondTo: ActorRef)
+case class RemoveMessage(table: String, key: Any, respondTo: ActorRef)
 
 case class UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef)
 case class ReadModMessage(modId: ModId, workerRef: ActorRef)
@@ -42,9 +43,10 @@ case class GetDatasetMessage(table: String, partitions: Int = 8)
 case class NullMessage
 
 // Master
-case class PutInputMessage(table: String, key: Any, value: Any)
 case class RunMessage(adjust: Adjustable, mutatorId: Int)
+case class PutInputMessage(table: String, key: Any, value: Any)
 case class UpdateInputMessage(table: String, key: Any, value: Any)
+case class RemoveInputMessage(table: String, key: Any)
 case class RegisterMutatorMessage
 case class GetMutatorDDGMessage(mutatorId: Int)
 case class ShutdownMutatorMessage(mutatorId: Int)

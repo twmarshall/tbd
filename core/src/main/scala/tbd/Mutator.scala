@@ -56,6 +56,12 @@ class Mutator(main: Main = new Main()) {
     Await.result(future2, timeout.duration)
   }
 
+  def remove(key: Any) {
+    val future = main.masterRef ? RemoveInputMessage("input", key)
+    val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
+    Await.result(future2, timeout.duration)
+  }
+
   def getDDG(): DDG  = {
     val ddgFuture = main.masterRef ? GetMutatorDDGMessage(id)
     Await.result(ddgFuture, timeout.duration).asInstanceOf[DDG]
