@@ -152,7 +152,7 @@ class TBD(
       } else {
 	log.debug("Did not find memoized value for call to " + thisMemoId)
 
-        val memoNode = ddg.addMemo(currentParent)
+        val memoNode = ddg.addMemo(currentParent, (thisMemoId :: args))
         val outerParent = currentParent
         currentParent = memoNode
         val changeable = func()

@@ -72,9 +72,9 @@ class DDG(log: LoggingAdapter, id: String) {
     pars(workerRef2) = parNode
   }
 
-  def addMemo(parent: Node): Node = {
+  def addMemo(parent: Node, signature: List[Any]): Node = {
     val timestamp = nextTimestamp(parent)
-    val memoNode = new MemoNode(parent, timestamp)
+    val memoNode = new MemoNode(parent, timestamp, signature)
     parent.addChild(memoNode)
     memoNode
   }
@@ -116,43 +116,52 @@ class DDG(log: LoggingAdapter, id: String) {
     }
   }
 
-  def removeSubtree(subtree: Node) {
-    def innerRemoveSubtree(node: Node, isMemo: Boolean) {
-      if (node.isInstanceOf[ReadNode]) {
-        reads -= node.asInstanceOf[ReadNode].mod.id
-      }
-      updated = updated.filter((node2: Node) => node != node2)
-
-      var memo =
-        if (node.isInstanceOf[MemoNode]) {
-          if (!isMemo) {
-            lastRemovedMemo = node.asInstanceOf[MemoNode]
-          }
-          true
-        } else {
-          isMemo
+  /**
+   * Removes Nodes and their Timestamps and children from this graph, starting
+   * at 'subtree'. If 'saveMemo' is true, MemoNodes and their decendants are
+   * not cleaned up but instead returned in a Set so that the Worker can clean
+   * them up later
+   */
+  def removeSubtree(subtree: Node, saveMemo: Boolean): Set[Node] = {
+    val ret = Set[Node]()
+    def innerRemoveSubtree(node: Node) {
+      if (node.isInstanceOf[MemoNode] && saveMemo) {
+        node.parent = null
+        ret += node
+      } else {
+        if (node.isInstanceOf[ReadNode]) {
+          reads -= node.asInstanceOf[ReadNode].mod.id
         }
 
-      if (!memo) {
+        updated = updated.filter((node2: Node) => node != node2)
         ordering.remove(node.timestamp)
-      }
 
-      for (child <- node.children) {
-        innerRemoveSubtree(child, memo)
+        for (child <- node.children) {
+          innerRemoveSubtree(child)
+        }
+
+        node.children.clear()
       }
     }
 
     if (subtree.children.size > 0) {
       for (child <- subtree.children) {
-        innerRemoveSubtree(child, false)
+        innerRemoveSubtree(child)
       }
 
       subtree.children.clear()
     }
+
+    ret
   }
 
   def attachSubtree(parent: Node, subtree: Node) {
+    if (subtree.parent != null) {
+      subtree.parent.removeChild(subtree)
+    }
+
     parent.addChild(subtree)
+    subtree.parent = parent
   }
 
   override def toString = {

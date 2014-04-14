@@ -52,7 +52,7 @@ class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
 
       if (node.isInstanceOf[ReadNode]) {
         val readNode = node.asInstanceOf[ReadNode]
-        ddg.removeSubtree(readNode)
+        val memoNodes = ddg.removeSubtree(readNode, true)
 
         val newValue =
           if (tbd.mods.contains(readNode.mod.id)) {
@@ -64,6 +64,12 @@ class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
         tbd.currentParent = readNode
         readNode.updated = false
         readNode.reader(newValue)
+
+        for (node <- memoNodes) {
+          if (node.parent == null) {
+            //ddg.removeSubtree(node, false)
+          }
+        }
       } else {
         val parNode = node.asInstanceOf[ParNode]
         //assert(awaiting == 0)

@@ -27,13 +27,17 @@ import tbd.messages._
 import tbd.mod.Mod
 
 abstract class Node(aParent: Node, aTimestamp: Timestamp) {
-  val parent = aParent
+  var parent = aParent
   var timestamp: Timestamp = aTimestamp
 
-  val children = MutableList[Node]()
+  var children = MutableList[Node]()
 
   def addChild(child: Node) {
     children += child
+  }
+
+  def removeChild(child: Node) {
+    children = children.filter(_ != child)
   }
 
   def toString(prefix: String): String = {
@@ -108,7 +112,9 @@ class ParNode(
 
 class MemoNode(
     aParent: Node,
-    aTimestamp: Timestamp) extends Node(aParent, aTimestamp) {
+    aTimestamp: Timestamp,
+    aSignature: List[Any]) extends Node(aParent, aTimestamp) {
+  val signature = aSignature
 
   override def toString(prefix: String) = {
     prefix + "MemoNode time=" + timestamp + super.toString(prefix)

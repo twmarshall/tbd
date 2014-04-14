@@ -28,6 +28,8 @@ import tbd.messages._
 class LocalMod[T](dataRef: ActorRef) extends Mod[T] {
   implicit val timeout = Timeout(30 seconds)
 
+  //var value: T = null.asInstanceOf[T]
+
   def read(workerRef: ActorRef = null): T = {
     val ret =
       if (workerRef != null) {
@@ -36,6 +38,7 @@ class LocalMod[T](dataRef: ActorRef) extends Mod[T] {
       } else {
         val readFuture = dataRef ? GetMessage("mods", id)
         Await.result(readFuture, timeout.duration)
+        //value
       }
 
     ret match {
@@ -44,8 +47,10 @@ class LocalMod[T](dataRef: ActorRef) extends Mod[T] {
     }
   }
 
-  def update(value: T, workerRef: ActorRef, tbd: TBD): Int = {
-    tbd.mods += (id -> value)
+  def update(aValue: T, workerRef: ActorRef, tbd: TBD): Int = {
+    //value = aValue
+
+    tbd.mods += (id -> aValue)
 
     var count = 0
     for (dependency <- tbd.dependencies(id)) {

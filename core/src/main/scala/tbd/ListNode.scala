@@ -50,7 +50,7 @@ class ListNode[T](aValue: Mod[T], aNext: Mod[ListNode[T]]) {
       lift.memo(List(next), () => {
         tbd.read(next, (next: ListNode[T]) => {
           if (next != null) {
-            next.map(tbd, dest, f)
+            next.memoMap(tbd, dest, f)
           } else {
             tbd.write(dest, null)
           }
@@ -170,14 +170,14 @@ class ListNode[T](aValue: Mod[T], aNext: Mod[ListNode[T]]) {
     def toString(lst: ListNode[T]):String = {
       val nextRead = lst.next.read()
       val next =
-	      if (nextRead != null)
-	        ", " + toString(nextRead)
-	      else
-	        ")"
+	if (nextRead != null)
+	  ", " + toString(nextRead)
+	else
+	  ")"
 
-      lst.value.read() + next
+      lst.value + next
     }
 
-    "(" + toString(this)
+    "ListNode(" + toString(this)
   }
 }
