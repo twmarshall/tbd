@@ -58,6 +58,49 @@ class MemoTest extends Adjustable {
   }
 }
 
+class AlreadyMatchedTest extends Adjustable {
+  var count1 = 0
+  var count2 = 0
+
+  /**
+   * In the first run, one = 1, so the first call to lift doesn't get
+   * executed, so count1 = 0, count2 = 1. In the second run, one = 3, so the
+   * read of one is reexecuted, a memo match is found for the first call to
+   * memo, but a memo match should not be found for the second call since we
+   * can only match a memo entry once, so count1 = 0, count2 = 2.
+   *
+   * Note: it is generally not advisable to call memo on the same lift object with
+   * different parameters for the memoized function.
+   */
+  def run(tbd: TBD): Mod[Int] = {
+    val one = tbd.input.get[Mod[Int]](1)
+    val two = tbd.input.get[Mod[Int]](2)
+    val lift = tbd.makeLift[Int, Int]()
+
+    tbd.mod((dest: Dest[Int]) => {
+      tbd.read(one, (oneValue: Int) => {
+        if (oneValue == 3) {
+          tbd.mod((dest: Dest[Int]) => {
+            lift.memo(List(two), () => {
+	      count1 += 1
+	      tbd.read(two, (twoValue: Int) => {
+	        tbd.write(dest, twoValue + 2)
+	      })
+            })
+          })
+        }
+
+        lift.memo(List(two), () => {
+	  count2 += 1
+	  tbd.read(two, (twoValue: Int) => {
+	    tbd.write(dest, twoValue + 1)
+	  })
+        })
+      })
+    })
+  }
+}
+
 class MemoTests extends FlatSpec with Matchers {
   "MemoTest" should "do stuff" in {
     val mutator = new Mutator()
@@ -112,5 +155,22 @@ class MemoTests extends FlatSpec with Matchers {
     assert(root.isEqual(ddg3.root))
 
     mutator.shutdown()
+  }
+
+  "AlreadyMatchedTest" should "only reuse the memo entry once" in {
+    val mutator = new Mutator()
+    mutator.put(1, 1)
+    mutator.put(2, 10)
+    val test = new AlreadyMatchedTest()
+    val output = mutator.run[Mod[Int]](test)
+    output.read() should be (11)
+    test.count1 should be (0)
+    test.count2 should be (1)
+
+    mutator.update(1, 3)
+    mutator.propagate()
+    output.read() should be (11)
+    test.count1 should be (0)
+    test.count2 should be (2)
   }
 }

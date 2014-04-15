@@ -24,6 +24,7 @@ import scala.concurrent.duration._
 
 import tbd.TBD
 import tbd.ddg.{DDG, ParNode, ReadNode}
+import tbd.memo.MemoEntry
 import tbd.messages._
 import tbd.mod.ModId
 
@@ -32,12 +33,16 @@ object Worker {
     Props(classOf[Worker], id, datastoreRef, parent)
 }
 
-class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
+class Worker(id: String, aDatastoreRef: ActorRef, parent: ActorRef)
   extends Actor with ActorLogging {
   log.info("Worker " + id + " launched")
+
+  val datastoreRef = aDatastoreRef
+  val ddg = new DDG(log, id, this)
+  val memoTable = Map[List[Any], MemoEntry]()
+
   private var task: Task = null
-  private val ddg = new DDG(log, id)
-  private val tbd = new TBD(id, ddg, datastoreRef, self, context.system)
+  private val tbd = new TBD(id, this)
 
   implicit val timeout = Timeout(30 seconds)
 
@@ -52,6 +57,8 @@ class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
 
       if (node.isInstanceOf[ReadNode]) {
         val readNode = node.asInstanceOf[ReadNode]
+        log.debug("Reexecuting read of " + readNode.mod.id)
+
         val memoNodes = ddg.removeSubtree(readNode, true)
 
         val newValue =
@@ -67,7 +74,7 @@ class Worker(id: String, datastoreRef: ActorRef, parent: ActorRef)
 
         for (node <- memoNodes) {
           if (node.parent == null) {
-            //ddg.removeSubtree(node, false)
+            ddg.removeSubtree(node, false)
           }
         }
       } else {

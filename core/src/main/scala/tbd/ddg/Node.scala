@@ -117,7 +117,8 @@ class MemoNode(
   val signature = aSignature
 
   override def toString(prefix: String) = {
-    prefix + "MemoNode time=" + timestamp + super.toString(prefix)
+    prefix + "MemoNode time=" + timestamp + " signature=" + signature +
+      super.toString(prefix)
   }
 }
 

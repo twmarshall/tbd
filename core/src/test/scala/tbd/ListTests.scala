@@ -155,7 +155,6 @@ class ListTests extends FlatSpec with Matchers {
 
     mutator.update("four", -4)
     mutator.put("nine", 9)
-
     mutator.remove("seven")
     mutator.propagate()
     output.toSet() should be (Set(-1, 12))

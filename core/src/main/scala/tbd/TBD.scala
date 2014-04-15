@@ -16,14 +16,14 @@
 package tbd
 
 import akka.pattern.ask
-import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.event.{Logging, LoggingAdapter}
+import akka.actor.ActorRef
+import akka.event.Logging
 import akka.util.Timeout
 import scala.collection.mutable.{Map, Set}
-import scala.concurrent.{Await, Promise}
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import tbd.ddg.{DDG, Node}
+import tbd.ddg.Node
 import tbd.memo.{Lift, MemoEntry}
 import tbd.messages._
 import tbd.mod.{Mod, ModId}
@@ -35,18 +35,15 @@ object TBD {
 
 class TBD(
     id: String,
-    ddg: DDG,
-    datastoreRef: ActorRef,
-    workerRef: ActorRef,
-    system: ActorSystem) {
+    worker: Worker) {
 
   var initialRun = true
 
   // The Node representing the currently executing reader.
-  var currentParent: Node = ddg.root
-  val input = new Reader(datastoreRef)
+  var currentParent: Node = worker.ddg.root
+  val input = new Reader(worker.datastoreRef)
 
-  val log = Logging(system, "TBD" + id)
+  val log = Logging(worker.context.system, "TBD" + id)
 
   implicit val timeout = Timeout(300 seconds)
 
@@ -63,9 +60,9 @@ class TBD(
   val updatedMods = Set[ModId]()
 
   def read[T, U](mod: Mod[T], reader: T => (Changeable[U])): Changeable[U] = {
-    val readNode = ddg.addRead(mod.asInstanceOf[Mod[Any]],
-                               currentParent,
-                               reader.asInstanceOf[Any => Changeable[Any]])
+    val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],
+                                      currentParent,
+                                      reader.asInstanceOf[Any => Changeable[Any]])
 
     val outerReader = currentParent
     currentParent = readNode
@@ -74,7 +71,7 @@ class TBD(
       if (mods.contains(mod.id)) {
         mods(mod.id).asInstanceOf[T]
       } else {
-        mod.read(workerRef)
+        mod.read(worker.self)
       }
 
     val changeable = reader(value)
@@ -84,20 +81,20 @@ class TBD(
   }
 
   def write[T](dest: Dest[T], value: T): Changeable[T] = {
-    awaiting += dest.mod.update(value, workerRef, this)
+    awaiting += dest.mod.update(value, worker.self, this)
 
-    if (ddg.reads.contains(dest.mod.id)) {
-      ddg.modUpdated(dest.mod.id)
+    if (worker.ddg.reads.contains(dest.mod.id)) {
+      worker.ddg.modUpdated(dest.mod.id)
     }
 
     val changeable = new Changeable(dest.mod)
-    //ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]], currentParent)
+    //worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]], currentParent)
 
     changeable
   }
 
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
-    val d = new Dest[T](workerRef)
+    val d = new Dest[T](worker.self)
     dependencies(d.mod.id) = Set()
     initializer(d).mod
   }
@@ -106,19 +103,19 @@ class TBD(
   def par[T, U](one: TBD => T, two: TBD => U): Tuple2[T, U] = {
     val task1 =  new Task(((tbd: TBD) => one(tbd)))
     val workerProps1 =
-      Worker.props(id + "-" + workerId, datastoreRef, workerRef)
-    val workerRef1 = system.actorOf(workerProps1, id + "-" + workerId)
+      Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
+    val workerRef1 = worker.context.system.actorOf(workerProps1, id + "-" + workerId)
     workerId += 1
     val oneFuture = workerRef1 ? RunTaskMessage(task1)
 
     val task2 =  new Task(((tbd: TBD) => two(tbd)))
     val workerProps2 =
-      Worker.props(id + "-" + workerId, datastoreRef, workerRef)
-    val workerRef2 = system.actorOf(workerProps2, id + "-" +workerId)
+      Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
+    val workerRef2 = worker.context.system.actorOf(workerProps2, id + "-" +workerId)
     workerId += 1
     val twoFuture = workerRef2 ? RunTaskMessage(task2)
 
-    ddg.addPar(workerRef1, workerRef2, currentParent)
+    worker.ddg.addPar(workerRef1, workerRef2, currentParent)
 
     val oneRet = Await.result(oneFuture, timeout.duration).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, timeout.duration).asInstanceOf[U]
@@ -126,8 +123,8 @@ class TBD(
   }
 
   var memoId = 0
-  val memoTable = Map[List[Any], MemoEntry]()
   def makeLift[T, U](): Lift[T, U] = {
+    log.debug("Make lift")
     val thisMemoId = memoId
     memoId += 1
     new Lift((args: List[Mod[T]], func: () => Changeable[U]) => {
@@ -144,15 +141,18 @@ class TBD(
           !updated
         }
 
-      if (memoized && memoTable.contains(thisMemoId :: args)) {
-	log.debug("Found memoized value for call to " + thisMemoId)
-        val memoEntry = memoTable(thisMemoId :: args)
-        ddg.attachSubtree(currentParent, memoEntry.node)
+      log.debug("contains " + worker.memoTable.contains(thisMemoId :: args))
+      if (memoized && worker.memoTable.contains(thisMemoId :: args)) {
+	log.debug("Found memoized value for call to " + (thisMemoId :: args))
+        val memoEntry = worker.memoTable(thisMemoId :: args)
+        worker.ddg.attachSubtree(currentParent, memoEntry.node)
+        worker.memoTable -= (thisMemoId :: args)
+
         memoEntry.changeable.asInstanceOf[Changeable[U]]
       } else {
-	log.debug("Did not find memoized value for call to " + thisMemoId)
+	log.debug("Did not find memoized value for call to " + thisMemoId + " " + args + " " + memoized)
 
-        val memoNode = ddg.addMemo(currentParent, (thisMemoId :: args))
+        val memoNode = worker.ddg.addMemo(currentParent, (thisMemoId :: args))
         val outerParent = currentParent
         currentParent = memoNode
         val changeable = func()
@@ -160,7 +160,8 @@ class TBD(
 
         val memoEntry = new MemoEntry(changeable.asInstanceOf[Changeable[Any]],
                                         memoNode)
-        memoTable += ((thisMemoId :: args) -> memoEntry)
+        log.debug("inserting " + (thisMemoId :: args))
+        worker.memoTable += ((thisMemoId :: args) -> memoEntry)
 
         changeable
       }

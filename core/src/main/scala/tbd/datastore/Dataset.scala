@@ -41,9 +41,11 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
     new Dataset(tbd.mod((dest: Dest[ListNode[Mod[ListNode[U]]]]) => {
       tbd.read(lists, (lsts: ListNode[Mod[ListNode[T]]]) => {
         lsts.map(tbd, dest, (list: Mod[ListNode[T]]) => {
+          val lift = tbd.makeLift[ListNode[T], ListNode[U]]()
+
           tbd.mod((dest: Dest[ListNode[U]]) => {
             tbd.read(list, (lst: ListNode[T]) => {
-              lst.memoMap(tbd, dest, func)
+              lst.memoMap(tbd, dest, func, lift)
             })
           })
         })

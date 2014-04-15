@@ -21,8 +21,9 @@ import scala.collection.mutable.{Map, PriorityQueue, Set}
 
 import tbd.Changeable
 import tbd.mod.{Mod, ModId}
+import tbd.worker.Worker
 
-class DDG(log: LoggingAdapter, id: String) {
+class DDG(log: LoggingAdapter, id: String, worker: Worker) {
   var root = new RootNode(id)
   val reads = Map[ModId, Set[ReadNode]]()
   val pars = Map[ActorRef, ParNode]()
@@ -32,7 +33,6 @@ class DDG(log: LoggingAdapter, id: String) {
   var updated = PriorityQueue[Node]()
 
   val ordering = new Ordering()
-
 
   var lastRemovedMemo: MemoNode = null
 
@@ -88,13 +88,12 @@ class DDG(log: LoggingAdapter, id: String) {
   }
 
   def modUpdated(modId: ModId) {
-    if (reads.contains(modId)) {
-      for (readNode <- reads(modId)) {
-        if (!readNode.updated) {
-          updated += readNode
-        }
-        readNode.updated = true
+    assert(reads.contains(modId))
+    for (readNode <- reads(modId)) {
+      if (!readNode.updated) {
+        updated += readNode
       }
+      readNode.updated = true
     }
   }
 
@@ -126,11 +125,15 @@ class DDG(log: LoggingAdapter, id: String) {
     val ret = Set[Node]()
     def innerRemoveSubtree(node: Node) {
       if (node.isInstanceOf[MemoNode] && saveMemo) {
+        node.parent.removeChild(node)
         node.parent = null
         ret += node
       } else {
         if (node.isInstanceOf[ReadNode]) {
-          reads -= node.asInstanceOf[ReadNode].mod.id
+          val readNode = node.asInstanceOf[ReadNode]
+          reads(readNode.mod.id) -= readNode
+        } else if (node.isInstanceOf[MemoNode]) {
+          worker.memoTable -= node.asInstanceOf[MemoNode].signature
         }
 
         updated = updated.filter((node2: Node) => node != node2)
