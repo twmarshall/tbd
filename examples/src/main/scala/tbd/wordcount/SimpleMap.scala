@@ -21,7 +21,7 @@ class ListNode[T](aValue: T, aNext: ListNode[T]) {
 }
 
 object SimpleMap {
-  def run(count: Int, repeat: Int) {
+  def run(count: Int, repeat: Int): Long = {
     val xml = scala.xml.XML.loadFile("wiki.xml")
     var i = 0
 
@@ -64,5 +64,7 @@ object SimpleMap {
     }
 
     println("smap\t" + count + "\t" + total / repeat)
+
+    total / repeat
   }
 }

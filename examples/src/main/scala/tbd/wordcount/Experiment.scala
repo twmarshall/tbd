@@ -99,6 +99,7 @@ object Experiment {
     mutator.shutdown()
   }
 
+  val allResults = Map[String, Map[Int, Map[String, Double]]]()
   def run(adjust: Adjustable, options: Options, description: String) {
     val counts = options('counts).asInstanceOf[Array[Int]]
     val percents = options('percents).asInstanceOf[Array[Double]]
@@ -110,11 +111,12 @@ object Experiment {
     // We load the data for the first experiment when we do the warmup run.
     var lastCount = 0
 
+    val resultsByCount = Map[Int, Map[String, Double]]()
     for (count <- counts) {
       addInput(lastCount, count, main)
 
       var run = 0
-      val results = scala.collection.mutable.Map[String, Double]()
+      val results = Map[String, Double]()
       results("initial") = 0
       results("initialMem") = 0
       for (percent <- percents) {
@@ -129,15 +131,18 @@ object Experiment {
 
       print(description + "\t" + count + "\t")
       print(round(results("initial") / runs))
-      print("\t" + round(results("initialMem")))
+      //print("\t" + round(results("initialMem")))
 
       for (percent <- percents) {
         print("\t" + round(results(percent + "") / runs))
-        print("\t" + round(results(percent + "Mem")))
+        //print("\t" + round(results(percent + "Mem")))
       }
       print("\n")
+
+      resultsByCount(count) = results
     }
 
+    allResults(description) = resultsByCount
     main.shutdown()
   }
 
@@ -170,9 +175,9 @@ object Experiment {
                                  'algorithm -> "map"),
                              args.toList)
 
-    print("desc\tpages\tinitial\tmem")
+    print("desc\tpages\tinitial")
     for (percent <- options('percents).asInstanceOf[Array[Double]]) {
-      print("\t" + (percent * 100) + "%\tmem")
+      print("\t" + (percent * 100) + "%")
     }
     print("\n")
 
@@ -188,17 +193,44 @@ object Experiment {
     once(new WCAdjust(8), 200, Array(.1), results, main)
     main.shutdown()
 
+    val simpleResults = Map[Int, Long]()
+    var descriptions: List[String] = null
+    val percents = "initial" +: options('percents).asInstanceOf[Array[Double]]
     if (options('algorithm) == "map") {
+      allResults("smap") = Map[Int, Map[String, Double]]()
       for (count <- options('counts).asInstanceOf[Array[Int]]) {
-        SimpleMap.run(count, options('repeat).asInstanceOf[Int])
+        allResults("smap")(count) = Map[String, Double]()
+        val time = SimpleMap.run(count, options('repeat).asInstanceOf[Int])
+        for (percent <- percents) {
+          allResults("smap")(count)(percent+"") = time
+        }
       }
 
-      run(new MapAdjust(options('partitions).asInstanceOf[Int]), options, "non-map")
+      run(new MapAdjust(options('partitions).asInstanceOf[Int]), options, "seq-map")
       run(new MapParAdjust(options('partitions).asInstanceOf[Int]), options, "par-map")
+
+      descriptions = List("smap", "seq-map", "par-map")
     } else {
-      run(new WCAdjust(options('partitions).asInstanceOf[Int]), options, "non")
+      run(new WCAdjust(options('partitions).asInstanceOf[Int]), options, "seq")
       run(new WCParAdjust(options('partitions).asInstanceOf[Int]), options, "par")
     }
 
+    val counts = options('counts).asInstanceOf[Array[Int]]
+    for (percent <- percents) {
+      print(percent + "\t")
+      for (description <- descriptions) {
+        print(description + "\t")
+      }
+      print("\n")
+
+      for (count <- counts) {
+        print(count + "\t")
+
+        for (description <- descriptions) {
+          print(allResults(description)(count)(percent + "") + "\t")
+        }
+        print("\n")
+      }
+    }
   }
 }
