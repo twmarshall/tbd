@@ -15,7 +15,7 @@
  */
 package tbd.datastore
 
-import scala.collection.mutable.Set
+import scala.collection.mutable.{ArrayBuffer, Buffer, Set}
 
 import tbd.{Changeable, Dest, ListNode, TBD}
 import tbd.mod.Mod
@@ -198,5 +198,20 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
     }
 
     set
+  }
+
+  def toBuffer(): Buffer[T] = {
+    val buf = ArrayBuffer[T]()
+    var outerNode = lists.read()
+    while (outerNode != null) {
+      var innerNode = outerNode.value.read().read()
+      while (innerNode != null) {
+        buf += innerNode.value.read()
+        innerNode = innerNode.next.read()
+      }
+      outerNode = outerNode.next.read()
+    }
+
+    buf
   }
 }

@@ -33,7 +33,6 @@ object Datastore {
 class Datastore extends Actor with ActorLogging {
   private val tables = Map[String, Map[Any, Any]]()
   tables("mods") = Map[Any, Any]()
-  tables("memo") = Map[Any, Any]()
 
   // Maps modIds to the workers that have read the corresponding mod.
   private val dependencies = Map[ModId, Set[ActorRef]]()
@@ -63,6 +62,9 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private def updateMod(modId: ModId, value: Any, sender: ActorRef): Int = {
+    if (!tables("mods").contains(modId.value)) {
+      log.warning("Trying to update non-existent mod.")
+    }
     tables("mods")(modId.value) = value
 
     var count = 0
@@ -76,19 +78,21 @@ class Datastore extends Actor with ActorLogging {
     count
   }
 
-  private def remove(value: Any, dataset: Dataset[Any], respondTo: ActorRef): Int = {
+  private def remove(
+      toRemove: Mod[Any], dataset: Dataset[Any], respondTo: ActorRef): Int = {
     var count = 0
     var outerNode = tables("mods")(dataset.lists.id.value)
       .asInstanceOf[ListNode[Mod[ListNode[Any]]]]
-    while (outerNode != null) {
+    var found = false
+    while (outerNode != null && !found) {
       val modList = tables("mods")(outerNode.value.id.value)
         .asInstanceOf[Mod[ListNode[Any]]]
       var innerNode = tables("mods")(modList.id.value)
         .asInstanceOf[ListNode[Any]]
 
       var previousNode: ListNode[Any] = null
-      while (innerNode != null) {
-        if (tables("mods")(innerNode.value.id.value) == value) {
+      while (innerNode != null && !found) {
+        if (innerNode.value == toRemove) {
           if (previousNode != null) {
             count += updateMod(previousNode.next.id,
                                tables("mods")(innerNode.next.id.value),
@@ -98,6 +102,10 @@ class Datastore extends Actor with ActorLogging {
                                tables("mods")(innerNode.next.id.value),
                                respondTo)
           }
+
+	  tables("mods") -= innerNode.value.id.value
+
+	  found = true
         }
 
         previousNode = innerNode
@@ -106,6 +114,10 @@ class Datastore extends Actor with ActorLogging {
       }
       outerNode = tables("mods")(outerNode.next.id.value)
         .asInstanceOf[ListNode[Mod[ListNode[Any]]]]
+    }
+
+    if (!found) {
+      log.warning("Didn't find value to remove.")
     }
 
     count
@@ -149,6 +161,10 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case PutMessage(table: String, key: Any, value: Any, respondTo: ActorRef) => {
+      if (tables(table).contains(key)) {
+	log.warning("Putting input key that already exists.")
+      }
+
       val mod = createMod(value)
       tables(table)(key) = mod
 
@@ -174,12 +190,19 @@ class Datastore extends Actor with ActorLogging {
       var count = 0
       if (datasets.contains(table)) {
         for (dataset <- datasets(table)) {
+	  if (!tables(table).contains(key)) {
+	    log.warning("Trying to remove non-existent key from table.")
+	  }
           val mod = tables(table)(key).asInstanceOf[Mod[Any]]
-          count += remove(tables("mods")(mod.id.value), dataset, respondTo)
+
+	  if (!tables("mods").contains(mod.id.value)) {
+	    log.warning("Trying to remove non-existent mod " + mod.id)
+	  }
+          count += remove(tables(table)(key).asInstanceOf[Mod[Any]], dataset, respondTo)
         }
       }
 
-      tables(table).remove(key)
+      tables(table) -= key
 
       log.debug("RemoveMessage awaiting = " + count)
       sender ! count
