@@ -17,12 +17,19 @@ package tbd.examples.wordcount
 
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, ListNode, TBD}
+import tbd.{Adjustable, TBD}
 import tbd.datastore.Dataset
 
 class MapAdjust(partitions: Int) extends WC with Adjustable {
   def run(tbd: TBD): Dataset[Map[String, Int]] = {
     val pages = tbd.input.getDataset[String](partitions)
     pages.map(tbd, (s: String) => wordcount(s))
+  }
+}
+
+class MapParAdjust(partitions: Int) extends WC with Adjustable {
+  def run(tbd: TBD): Dataset[Map[String, Int]] = {
+    val pages = tbd.input.getDataset[String](partitions)
+    pages.parMap(tbd, (s: String) => wordcount(s))
   }
 }

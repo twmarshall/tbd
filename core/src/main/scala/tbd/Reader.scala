@@ -24,25 +24,27 @@ import scala.concurrent.duration._
 import tbd.datastore.Dataset
 import tbd.messages._
 import tbd.mod.Mod
+import tbd.worker.Worker
 
-class Reader(datastoreRef: ActorRef) {
+class Reader(worker: Worker) {
   implicit val timeout = Timeout(30 seconds)
 
   def get[T](key: Int): T = {
-    val modFuture = datastoreRef ? GetMessage("input", key)
+    val modFuture = worker.datastoreRef ? GetMessage("input", key)
     Await.result(modFuture, timeout.duration)
       .asInstanceOf[T]
   }
 
   def getArray[T](): Array[T] = {
-    val arrayFuture = datastoreRef ? GetArrayMessage("input")
+    val arrayFuture = worker.datastoreRef ? GetArrayMessage("input")
     Await.result(arrayFuture, timeout.duration)
       .asInstanceOf[Array[T]]
   }
 
   def getDataset[T](partitions: Int = 8): Dataset[T] = {
-    val datasetFuture = datastoreRef ? GetDatasetMessage("input", partitions)
-    Await.result(datasetFuture, timeout.duration)
-      .asInstanceOf[Dataset[T]]
+    val datasetFuture = worker.datastoreRef ? GetDatasetMessage("input", partitions)
+    val dataset = Await.result(datasetFuture, timeout.duration)
+    worker.datasets += dataset.asInstanceOf[Dataset[Any]]
+    dataset.asInstanceOf[Dataset[T]]
   }
 }

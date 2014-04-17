@@ -29,7 +29,11 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
         lsts.map(tbd, dest, (list: Mod[ListNode[T]]) => {
           tbd.mod((dest: Dest[ListNode[U]]) => {
             tbd.read(list, (lst: ListNode[T]) => {
-              lst.map(tbd, dest, func)
+              if (lst != null) {
+                lst.map(tbd, dest, func)
+              } else {
+                tbd.write(dest, null)
+              }
             })
           })
         })
@@ -45,7 +49,11 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
 
           tbd.mod((dest: Dest[ListNode[U]]) => {
             tbd.read(list, (lst: ListNode[T]) => {
-              lst.memoMap(tbd, dest, func, lift)
+              if (lst != null) {
+                lst.memoMap(tbd, dest, func, lift)
+              } else {
+                tbd.write(dest, null)
+              }
             })
           })
         })
@@ -59,7 +67,11 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
         lsts.parMap(tbd, dest, (tbd: TBD, list: Mod[ListNode[T]]) => {
           tbd.mod((dest: Dest[ListNode[U]]) => {
             tbd.read(list, (lst: ListNode[T]) => {
-              lst.map(tbd, dest, (value: T) => func(value))
+              if (lst != null) {
+                lst.map(tbd, dest, (value: T) => func(value))
+              } else {
+                tbd.write(dest, null)
+              }
             })
           })
         })

@@ -23,6 +23,7 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
 import tbd.TBD
+import tbd.datastore.Dataset
 import tbd.ddg.{DDG, ParNode, ReadNode}
 import tbd.memo.MemoEntry
 import tbd.messages._
@@ -40,6 +41,7 @@ class Worker(id: String, aDatastoreRef: ActorRef, parent: ActorRef)
   val datastoreRef = aDatastoreRef
   val ddg = new DDG(log, id, this)
   val memoTable = Map[List[Any], MemoEntry]()
+  val datasets = Set[Dataset[Any]]()
 
   private var task: Task = null
   private val tbd = new TBD(id, this)
@@ -196,7 +198,7 @@ class Worker(id: String, aDatastoreRef: ActorRef, parent: ActorRef)
     }
 
     case CleanupWorkerMessage => {
-      val datastoreFuture = datastoreRef ? RemoveDependenciesMessage(self)
+      val datastoreFuture = datastoreRef ? CleanUpMessage(self, datasets)
 
       val futures = Set[Future[Any]]()
       for ((actorRef, parNode) <- ddg.pars) {

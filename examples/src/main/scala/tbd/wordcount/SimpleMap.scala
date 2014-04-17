@@ -15,29 +15,43 @@
  */
 package tbd.examples.wordcount
 
+import java.io.{BufferedInputStream, File, FileInputStream}
+
+import scala.collection.mutable.ArrayBuffer
+
 class ListNode[T](aValue: T, aNext: ListNode[T]) {
   val value = aValue
   val next = aNext
 }
 
 object SimpleMap {
-  def run(count: Int, repeat: Int): Long = {
+  val chunks = ArrayBuffer[String]()
+  def loadFile(chunkSize: Int) {
+    val source = scala.io.Source.fromFile("input.txt")
+
+    val bb = new Array[Byte](chunkSize)
+    val bis = new BufferedInputStream(new FileInputStream(new File("input.txt")))
+    var bytesRead = bis.read(bb, 0, chunkSize)
+
+    while (bytesRead > 0) {
+      chunks += new String(bb)
+      bytesRead = bis.read(bb, 0, chunkSize)
+    }
+  }
+
+  def run(count: Int, repeat: Int, chunkSize: Int): Long = {
     val xml = scala.xml.XML.loadFile("wiki.xml")
     var i = 0
 
-    val pages = scala.collection.mutable.Set[String]()
+    loadFile(chunkSize)
     var tail: ListNode[String] = null
-    (xml \ "elem").map(elem => {
-      (elem \ "key").map(key => {
-        (elem \ "value").map(value => {
-          if (i < count) {
-            tail = new ListNode(value.text, tail)
-            pages += value.text
-            i += 1
-          }
-        })
-      })
-    })
+    for (i <- 0 to count) {
+      tail = new ListNode(chunks.head, tail)
+      chunks -= chunks.head
+      if (chunks.size == 0) {
+        loadFile(chunkSize)
+      }
+    }
 
     def map[T, U](lst: ListNode[T], f: T => U): ListNode[U] = {
       if (lst.next != null)

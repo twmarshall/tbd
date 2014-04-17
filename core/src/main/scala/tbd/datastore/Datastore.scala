@@ -221,12 +221,19 @@ class Datastore extends Actor with ActorLogging {
       sender ! get("mods", modId.value)
     }
 
-    case RemoveDependenciesMessage(workerRef: ActorRef) => {
+    case CleanUpMessage(workerRef: ActorRef, removeDatasets: Set[Dataset[Any]]) => {
       log.debug("RemoveDependenciesMessage from " + sender)
 
       for ((modId, dependencySet) <- dependencies) {
         dependencySet -= workerRef
       }
+
+      for ((table, sets) <- datasets) {
+        for (removeDataset <- removeDatasets) {
+          sets -= removeDataset
+        }
+      }
+
       sender ! "done"
     }
 

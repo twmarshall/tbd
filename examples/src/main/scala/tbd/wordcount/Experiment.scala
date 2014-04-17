@@ -15,13 +15,16 @@
  */
 package tbd.examples.wordcount
 
-import scala.collection.mutable.Map
+import java.io.{BufferedInputStream, File, FileInputStream}
+import scala.collection.mutable.{ArrayBuffer, Map}
 
 import tbd.{Adjustable, Mutator}
+import tbd.datastore.Dataset
 import tbd.master.Main
 import tbd.mod.Mod
 
 class Experiment(options: Map[Symbol, Any]) {
+  val chunkSize = options('chunkSize).asInstanceOf[Int]
   val counts = options('counts).asInstanceOf[Array[Int]]
   val descriptions = options('descriptions).asInstanceOf[Array[String]]
   val percents = options('percents).asInstanceOf[Array[Double]]
@@ -29,6 +32,7 @@ class Experiment(options: Map[Symbol, Any]) {
 
   val runtime = Runtime.getRuntime()
   val rand = new scala.util.Random()
+  val wc = new WC()
 
   print("desc\tpages\tinitial")
   for (percent <- percents) {
@@ -38,18 +42,34 @@ class Experiment(options: Map[Symbol, Any]) {
 
   def warmUp() {
     val main = new Main()
-    loadXML()
+    loadFile()
     addInput(0, 200, main)
     val results = Map[String, Double]()
-    once(new WCAdjust(8), 200, results, main)
+    once(new MapAdjust(8), 200, results, main)
     main.shutdown()
+    activeChunks.clear()
+    activeChunkValues.clear()
   }
 
   def round(value: Double): Double = {
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
   }
 
-  val pages = scala.collection.mutable.Map[String, String]()
+  val chunks = ArrayBuffer[String]()
+  def loadFile() {
+    val source = scala.io.Source.fromFile("input.txt")
+
+    val bb = new Array[Byte](chunkSize)
+    val bis = new BufferedInputStream(new FileInputStream(new File("input.txt")))
+    var bytesRead = bis.read(bb, 0, chunkSize)
+
+    while (bytesRead > 0) {
+      chunks += new String(bb)
+      bytesRead = bis.read(bb, 0, chunkSize)
+    }
+  }
+
+  /*val pages = Map[String, String]()
   def loadXML(prefix: String = "") {
     val xml = scala.xml.XML.loadFile("wiki.xml")
 
@@ -60,30 +80,40 @@ class Experiment(options: Map[Symbol, Any]) {
         })
       })
     })
-  }
+  }*/
 
+  var nextChunk = 0
+  val activeChunks = ArrayBuffer[Int]()
+  val activeChunkValues = Map[Int, String]()
   def addInput(start: Int, stop: Int, main: Main) {
     val mutator = new Mutator(main)
 
     var i = start
     while (i < stop) {
-      assert(pages.head._2 != null)
-      mutator.put(i, pages.head._2)
-      pages -= pages.head._1
-      if (pages.size == 0) {
-        loadXML()
-      }
+      putChunk(mutator)
       i += 1
     }
 
     mutator.shutdown()
   }
 
-  def runControl(description: String, control: (Int, Int) => Long) {
+  def putChunk(mutator: Mutator) {
+    mutator.put(nextChunk, chunks.head)
+    activeChunks += nextChunk
+    activeChunkValues += (nextChunk -> chunks.head)
+    nextChunk += 1
+    chunks -= chunks.head
+
+    if (chunks.size == 0) {
+      loadFile()
+    }
+  }
+
+  def runControl(description: String, control: (Int, Int, Int) => Long) {
     allResults(description) = Map[Int, Map[String, Double]]()
     for (count <- options('counts).asInstanceOf[Array[Int]]) {
       allResults(description)(count) = Map[String, Double]()
-      val time = control(count, repeat)
+      val time = control(count, repeat, chunkSize)
       for (percent <- "initial" +: percents) {
         allResults(description)(count)(percent+"") = time
       }
@@ -92,15 +122,24 @@ class Experiment(options: Map[Symbol, Any]) {
 
   def once(
       adjust: Adjustable,
-      count: Int,
+      aCount: Int,
       results: Map[String, Double],
       main: Main) {
     val mutator = new Mutator(main)
+    var count = aCount
+
+    while (activeChunks.size < count) {
+      putChunk(mutator)
+    }
 
     val before = System.currentTimeMillis()
     //val memBefore = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024)
-    mutator.run(adjust)
+    val output = mutator.run[Dataset[Map[String, Int]]](adjust)
     val initialElapsed = System.currentTimeMillis() - before
+
+    //val sortedOutput = output.toBuffer().sortWith(_ < _)
+    //val sortedAnswer = activeChunkValues.map(pair => wc.wordcount(pair._2)).toBuffer.sortWith(_ < _)
+    //assert(sortedOutput == sortedAnswer)
 
     if (results.contains("initial")) {
       results("initial") += initialElapsed
@@ -115,16 +154,39 @@ class Experiment(options: Map[Symbol, Any]) {
     for (percent <- percents) {
       var i =  0
       while (i < percent * count) {
-        mutator.update(rand.nextInt(count), pages.head._2)
-        pages -= pages.head._1
-        if (pages.size == 0) {
-          loadXML()
-        }
-
         i += 1
+
+        if (activeChunks.size == 1) {
+          putChunk(mutator)
+        } else {
+          rand.nextInt(2) match {
+            case 0 => {
+              val updated = rand.nextInt(activeChunks.size)
+              mutator.update(activeChunks(updated), chunks.head)
+              activeChunkValues(activeChunks(updated)) = chunks.head
+              chunks -= chunks.head
+              if (chunks.size == 0) {
+                loadFile()
+              }
+            }
+            case 1 => {
+              putChunk(mutator)
+            }
+            case 2 => {
+              val removedChunkId = activeChunks(rand.nextInt(activeChunks.size))
+              mutator.remove(removedChunkId)
+              activeChunks -= removedChunkId
+              activeChunkValues -= removedChunkId
+            }
+          }
+        }
       }
       val before2 = System.currentTimeMillis()
       mutator.propagate()
+
+      //val sortedOutput = output.toBuffer().sortWith(_ < _)
+      //val sortedAnswer = activeChunkValues.map(wc.wordcount(_._2)).toBuffer.sortWith(_ < _)
+      //assert(sortedOutput == sortedAnswer)
 
       if (results.contains(percent + "")) {
         results(percent + "") += System.currentTimeMillis() - before2
@@ -142,14 +204,14 @@ class Experiment(options: Map[Symbol, Any]) {
   val allResults = Map[String, Map[Int, Map[String, Double]]]()
   def run(adjust: Adjustable, description: String) {
     val main = new Main()
-    loadXML()
+    loadFile()
 
     // We load the data for the first experiment when we do the warmup run.
     var lastCount = 0
 
     val resultsByCount = Map[Int, Map[String, Double]]()
     for (count <- counts) {
-      addInput(lastCount, count, main)
+      //addInput(lastCount, count, main)
 
       var run = 0
       val results = Map[String, Double]()
@@ -173,6 +235,8 @@ class Experiment(options: Map[Symbol, Any]) {
 
     allResults(description) = resultsByCount
     main.shutdown()
+    activeChunks.clear()
+    activeChunkValues.clear()
   }
 
   def printFormattedResults() {
@@ -206,6 +270,8 @@ object Experiment {
         case Nil => map
         case "--repeat" :: value :: tail =>
           nextOption(map ++ Map('repeat -> value.toInt), tail)
+        case "--chunkSize" :: value :: tail =>
+          nextOption(map ++ Map('chunkSize -> value.toInt), tail)
         case "--counts" :: value :: tail =>
           nextOption(map ++ Map('counts -> value.split(",").map(_.toInt)), tail)
         case "--descriptions" :: value :: tail =>
@@ -221,6 +287,7 @@ object Experiment {
       }
     }
     val options = nextOption(Map('repeat -> 3,
+                                 'chunkSize -> 1024 * 25,
                                  'counts -> Array(200, 400, 600),
                                  'percents -> Array(.01, .05, .1),
                                  'partitions -> 10,
@@ -231,6 +298,7 @@ object Experiment {
     val descriptions = options('descriptions).asInstanceOf[Array[String]]
 
     val experiment = new Experiment(options)
+    experiment.loadFile()
     experiment.warmUp()
     for (description <- descriptions) {
       if (options('algorithm) == "map") {
