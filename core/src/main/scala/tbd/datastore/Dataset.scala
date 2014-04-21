@@ -79,6 +79,26 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
     }))
   }
 
+  def parMemoMap[U](tbd: TBD, func: T => U): Dataset[U] = {
+    new Dataset(tbd.mod((dest: Dest[ListNode[Mod[ListNode[U]]]]) => {
+      tbd.read(lists, (lsts: ListNode[Mod[ListNode[T]]]) => {
+        lsts.parMap(tbd, dest, (tbd: TBD, list: Mod[ListNode[T]]) => {
+          val lift = tbd.makeLift[ListNode[T], ListNode[U]]()
+
+          tbd.mod((dest: Dest[ListNode[U]]) => {
+            tbd.read(list, (lst: ListNode[T]) => {
+              if (lst != null) {
+                lst.memoMap(tbd, dest, func, lift)
+              } else {
+                tbd.write(dest, null)
+              }
+            })
+          })
+        })
+      })
+    }))
+  }
+
   def reduce(tbd: TBD, func: (T, T) => T): Mod[T] = {
     def innerReduce[U](dest: Dest[U], lst: ListNode[U], f: (U, U) => U): Changeable[U] = {
       if (lst != null) {
