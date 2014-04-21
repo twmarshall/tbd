@@ -134,24 +134,28 @@ class Experiment(options: Map[Symbol, Any]) {
 
     val before = System.currentTimeMillis()
     //val memBefore = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024)
-    val output = mutator.run[Dataset[Map[String, Int]]](adjust)
+    val output = mutator.run[Dataset[Int]](adjust)
     val initialElapsed = System.currentTimeMillis() - before
 
-    //val sortedOutput = output.toBuffer().sortWith(_ < _)
-    //val sortedAnswer = activeChunkValues.map(pair => wc.wordcount(pair._2)).toBuffer.sortWith(_ < _)
-    //assert(sortedOutput == sortedAnswer)
+    val sortedOutput = output.toBuffer().sortWith(_ < _)
+    val sortedAnswer = activeChunkValues.map(pair => {
+      MapAdjust.mapper(pair._2)
+    }).toBuffer.sortWith(_ < _)
+    assert(sortedOutput == sortedAnswer)
 
     if (results.contains("initial")) {
       results("initial") += initialElapsed
     } else {
       results("initial") = initialElapsed
     }
+    //print(initialElapsed)
 
     //results("initialMem") = math.max((runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore,
     //                                 results("initialMem"))
 
     //while (true)
     for (percent <- percents) {
+      //print("\n\n" + percent + "\n\n")
       var i =  0
       while (i < percent * count) {
         i += 1
@@ -159,7 +163,7 @@ class Experiment(options: Map[Symbol, Any]) {
         if (activeChunks.size == 1) {
           putChunk(mutator)
         } else {
-          rand.nextInt(2) match {
+          rand.nextInt(1) match {
             case 0 => {
               val updated = rand.nextInt(activeChunks.size)
               mutator.update(activeChunks(updated), chunks.head)
@@ -183,15 +187,18 @@ class Experiment(options: Map[Symbol, Any]) {
       }
       val before2 = System.currentTimeMillis()
       mutator.propagate()
+      val elapsed = System.currentTimeMillis() - before2
 
-      //val sortedOutput = output.toBuffer().sortWith(_ < _)
-      //val sortedAnswer = activeChunkValues.map(wc.wordcount(_._2)).toBuffer.sortWith(_ < _)
-      //assert(sortedOutput == sortedAnswer)
+      val sortedOutput = output.toBuffer().sortWith(_ < _)
+      val sortedAnswer = activeChunkValues.map(pair => {
+        MapAdjust.mapper(pair._2)
+      }).toBuffer.sortWith(_ < _)
+      assert(sortedOutput == sortedAnswer)
 
       if (results.contains(percent + "")) {
-        results(percent + "") += System.currentTimeMillis() - before2
+        results(percent + "") += elapsed
       } else {
-        results(percent + "") = System.currentTimeMillis() - before2
+        results(percent + "") = elapsed
       }
 
       //val memUsed = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore
@@ -222,14 +229,15 @@ class Experiment(options: Map[Symbol, Any]) {
 
       print(description + "\t" + count + "\t")
       print(round(results("initial") / repeat))
+      results("initial") = round(results("initial") / repeat)
       //print("\t" + round(results("initialMem")))
 
       for (percent <- percents) {
         print("\t" + round(results(percent + "") / repeat))
+        results(percent + "") = round(results(percent + "") / repeat)
         //print("\t" + round(results(percent + "Mem")))
       }
       print("\n")
-
       resultsByCount(count) = results
     }
 
@@ -287,11 +295,11 @@ object Experiment {
       }
     }
     val options = nextOption(Map('repeat -> 3,
-                                 'chunkSize -> 1024 * 25,
+                                 'chunkSize -> 1024 * 20,
                                  'counts -> Array(200, 400, 600),
                                  'percents -> Array(.01, .05, .1),
                                  'partitions -> 10,
-                                 'descriptions -> Array("smap", "seq-map", "par-map"),
+                                 'descriptions -> Array("smap", "seq", "par", "memo"),
                                  'algorithm -> "map"),
                              args.toList)
     val partitions = options('partitions).asInstanceOf[Int]
@@ -304,10 +312,12 @@ object Experiment {
       if (options('algorithm) == "map") {
         if (description == "smap") {
           experiment.runControl("smap", SimpleMap.run)
-        } else if (description == "seq-map") {
-          experiment.run(new MapAdjust(partitions), "seq-map")
-        } else if (description == "par-map") {
-          experiment.run(new MapParAdjust(partitions), "par-map")
+        } else if (description == "seq") {
+          experiment.run(new MapAdjust(partitions), "seq")
+        } else if (description == "par") {
+          experiment.run(new MapParAdjust(partitions), "par")
+        } else if (description == "memo") {
+          experiment.run(new MemoMapAdjust(partitions), "memo")
         }
       } else {
         experiment.run(new WCAdjust(partitions), "seq")

@@ -20,16 +20,33 @@ import scala.collection.mutable.Map
 import tbd.{Adjustable, TBD}
 import tbd.datastore.Dataset
 
+object MapAdjust {
+  def mapper(s: String): Int = {
+    var count = 0
+    /*for (word <- s.split("\\W+")) {
+      count += 1
+    }*/
+    return count
+  }
+}
+
 class MapAdjust(partitions: Int) extends WC with Adjustable {
-  def run(tbd: TBD): Dataset[Map[String, Int]] = {
+  def run(tbd: TBD): Dataset[Int] = {
     val pages = tbd.input.getDataset[String](partitions)
-    pages.map(tbd, (s: String) => wordcount(s))
+    pages.map(tbd, (s: String) => MapAdjust.mapper(s))
+  }
+}
+
+class MemoMapAdjust(partitions: Int) extends WC with Adjustable {
+  def run(tbd: TBD): Dataset[Int] = {
+    val pages = tbd.input.getDataset[String](partitions)
+    pages.memoMap(tbd, (s: String) => MapAdjust.mapper(s))
   }
 }
 
 class MapParAdjust(partitions: Int) extends WC with Adjustable {
-  def run(tbd: TBD): Dataset[Map[String, Int]] = {
+  def run(tbd: TBD): Dataset[Int] = {
     val pages = tbd.input.getDataset[String](partitions)
-    pages.parMap(tbd, (s: String) => wordcount(s))
+    pages.parMap(tbd, (s: String) => MapAdjust.mapper(s))
   }
 }

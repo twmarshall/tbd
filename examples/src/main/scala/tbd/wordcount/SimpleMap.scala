@@ -62,7 +62,7 @@ object SimpleMap {
 
     // Warmup run.
     val wc = new WC()
-    val mapped = map(tail, wc.wordcount((_: String)))
+    val mapped = map(tail, MapAdjust.mapper((_: String)))
 
     var j = 0
     var total: Long = 0
@@ -70,7 +70,7 @@ object SimpleMap {
       val before = System.currentTimeMillis()
 
       val wc = new WC()
-      val mapped = map(tail, wc.wordcount((_: String)))
+      val mapped = map(tail, MapAdjust.mapper((_: String)))
 
       total += System.currentTimeMillis() - before
 
