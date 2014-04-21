@@ -28,7 +28,6 @@ class MockNode(aChildren: List[MockNode]) {
   val children =  aChildren
 
   def isEqual(node: Node): Boolean = {
-    print("isEqual " + node.getClass + "x" + this + "\n")
     var equal = true
     assert(node.children.size == children.size)
     for (i <- 0 until node.children.size) {

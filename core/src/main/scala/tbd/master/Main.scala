@@ -36,12 +36,6 @@ class Main {
 
   val masterRef = system.actorOf(Master.props(), "master")
 
-  implicit val timeout = Timeout(30 seconds)
-  val datastoreSelection = system.actorSelection("/user/master/datastore")
-  val datastoreFuture = datastoreSelection.resolveOne
-  val datastoreRef = Await.result(datastoreFuture, timeout.duration)
-    .asInstanceOf[ActorRef]
-
   def shutdown() {
     system.shutdown()
   }

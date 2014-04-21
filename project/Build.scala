@@ -4,7 +4,7 @@ import Keys._
 object BuildSettings {
   val buildOrganization = "edu.cmu.cs"
   val buildVersion      = "0.1"
-  val buildScalaVersion = "2.10.3"
+  val buildScalaVersion = "2.11.0"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
     organization := buildOrganization,
@@ -52,14 +52,15 @@ object Dependencies {
   val reefCheckpoint = "com.microsoft.reef" % "reef-checkpoint" % reefVer exclude("com.google.protobuf", "protobuf-java")
   val reefIO = "com.microsoft.reef" % "reef-io" % reefVer exclude("com.google.protobuf", "protobuf-java")
 
-  val akka = "com.typesafe.akka" % "akka-actor_2.10" % "2.2.3"
-  val akkaRemote = "com.typesafe.akka" % "akka-remote_2.10" % "2.2.3"
+  val akka = "com.typesafe.akka" %% "akka-actor" % "2.3.2"
+  val akkaRemote = "com.typesafe.akka" %% "akka-remote" % "2.3.2"
 
   val postgresql = "org.postgresql" % "postgresql" % "9.2-1002-jdbc4"
 
-  val scalatest = "org.scalatest" % "scalatest_2.10" % "2.0" % "test"
+  val scalatest = "org.scalatest" %% "scalatest" % "2.1.3" % "test"
+  val scalaxml = "org.scala-lang.modules" % "scala-xml_2.11.0-RC1" % "1.0.0"
 
-  val logging = "com.typesafe" % "scalalogging-slf4j_2.10" % "1.0.1"
+  val logging = "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.0.4"
   val slf4j = "org.slf4j" % "slf4j-jdk14" % "1.7.5"
   val log4j = "log4j" % "log4j" % "1.2.17"
 }
@@ -75,6 +76,7 @@ object IncrementalBuild extends Build {
     //akkaRemote,
     postgresql,
     scalatest,
+    scalaxml,
     logging,
     slf4j,
     log4j

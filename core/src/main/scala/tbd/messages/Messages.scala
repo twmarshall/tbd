@@ -27,7 +27,7 @@ import tbd.worker.Task
 // DDG
 case class AddReadMessage(modId: ModId, parent: Node)
 case class AddWriteMessage(modId: ModId, parent: Node)
-case class ToStringMessage
+case class ToStringMessage()
 
 // Datastore
 case class CreateTableMessage(table: String)
@@ -42,14 +42,14 @@ case class CleanUpMessage(workerRef: ActorRef, datasets: Set[Dataset[Any]])
 
 case class GetArrayMessage(table: String)
 case class GetDatasetMessage(table: String, partitions: Int = 8)
-case class NullMessage
+case class NullMessage()
 
 // Master
 case class RunMessage(adjust: Adjustable, mutatorId: Int)
 case class PutInputMessage(table: String, key: Any, value: Any)
 case class UpdateInputMessage(table: String, key: Any, value: Any)
 case class RemoveInputMessage(table: String, key: Any)
-case class RegisterMutatorMessage
+case class RegisterMutatorMessage()
 case class GetMutatorDDGMessage(mutatorId: Int)
 case class ShutdownMutatorMessage(mutatorId: Int)
 
@@ -57,9 +57,9 @@ case class ShutdownMutatorMessage(mutatorId: Int)
 case class ModUpdatedMessage(modId: ModId, respondTo: ActorRef)
 case class PebbleMessage(workerRef: ActorRef, modId: ModId, respondTo: ActorRef)
 case class PebblingFinishedMessage(modId: ModId)
-case class PropagateMessage
+case class PropagateMessage()
 case class RunTaskMessage(func: Task)
-case class FinishedPropagatingMessage
-case class GetDDGMessage
+case class FinishedPropagatingMessage()
+case class GetDDGMessage()
 case class DDGToStringMessage(prefix: String)
-case class CleanupWorkerMessage
+case class CleanupWorkerMessage()

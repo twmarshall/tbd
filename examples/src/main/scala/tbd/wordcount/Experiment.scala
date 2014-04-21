@@ -291,7 +291,7 @@ object Experiment {
         case "--algorithm" :: value :: tail =>
           nextOption(map ++ Map('algorithm -> value), tail)
         case option :: tail => println("Unknown option " + option + "\n" + usage)
-                               exit(1)
+	  nextOption(map, tail)
       }
     }
     val options = nextOption(Map('repeat -> 3,

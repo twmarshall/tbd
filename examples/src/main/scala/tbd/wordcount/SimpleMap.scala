@@ -40,7 +40,6 @@ object SimpleMap {
   }
 
   def run(count: Int, repeat: Int, chunkSize: Int): Long = {
-    val xml = scala.xml.XML.loadFile("wiki.xml")
     var i = 0
 
     loadFile(chunkSize)
