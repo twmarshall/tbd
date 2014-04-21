@@ -3,7 +3,7 @@ import Keys._
 
 object BuildSettings {
   val buildOrganization = "edu.cmu.cs"
-  val buildVersion      = "0.1"
+  val buildVersion      = "0.1-SNAPSHOT"
   val buildScalaVersion = "2.11.0"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
@@ -38,107 +38,35 @@ object ShellPrompt {
   }
 }
 
-object Resolvers {
-  val localResolver = "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
-  val typesafeResolver = "Typesafe Repository" at "http://repo.typesafe.com/typesafe/releasesa/"
-}
-
-object Dependencies {
-  val reefVer = "0.1-SNAPSHOT"
-
-  val reefCommon = "com.microsoft.reef" % "reef-common" % reefVer
-  val reefRuntimeLocal = "com.microsoft.reef" % "reef-runtime-local" % reefVer exclude("com.google.protobuf", "protobuf-java")
-  val reefRuntimeYarn = "com.microsoft.reef" % "reef-runtime-yarn" % reefVer exclude("com.google.protobuf", "protobuf-java")
-  val reefCheckpoint = "com.microsoft.reef" % "reef-checkpoint" % reefVer exclude("com.google.protobuf", "protobuf-java")
-  val reefIO = "com.microsoft.reef" % "reef-io" % reefVer exclude("com.google.protobuf", "protobuf-java")
-
-  val akka = "com.typesafe.akka" %% "akka-actor" % "2.3.2"
-  val akkaRemote = "com.typesafe.akka" %% "akka-remote" % "2.3.2"
-
-  val postgresql = "org.postgresql" % "postgresql" % "9.2-1002-jdbc4"
-
-  val scalatest = "org.scalatest" %% "scalatest" % "2.1.3" % "test"
-  val scalaxml = "org.scala-lang.modules" % "scala-xml_2.11.0-RC1" % "1.0.0"
-
-  val logging = "com.typesafe.scala-logging" %% "scala-logging-slf4j" % "2.0.4"
-  val slf4j = "org.slf4j" % "slf4j-jdk14" % "1.7.5"
-  val log4j = "log4j" % "log4j" % "1.2.17"
-}
-
-object IncrementalBuild extends Build {
-  import Resolvers._
-  import Dependencies._
+object TBDBuild extends Build {
   import BuildSettings._
 
-  // Sub-project specific dependencies
   val commonDeps = Seq (
-    akka,
-    //akkaRemote,
-    postgresql,
-    scalatest,
-    scalaxml,
-    logging,
-    slf4j,
-    log4j
+    "com.typesafe.akka"          %% "akka-actor"           % "2.3.2",
+    "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
+    "org.scala-lang.modules"      % "scala-xml_2.11.0-RC1" % "1.0.0",
+    "org.scalatest"              %% "scalatest"            % "2.1.3" % "test"
   )
-
-  val reefDeps = Seq(
-    reefCommon,
-    reefRuntimeLocal,
-    reefRuntimeYarn,
-    reefCheckpoint,
-    reefIO
-  )
-
-  def addConflictManager(org: String, name: String, conflictManager: String) =
-    ivyModule <<= (ivyModule, streams) map { (module, s) =>
-      module.withModule(s.log) { (ivy, desc, _) =>
-        import _root_.org.apache.ivy.{core, plugins}
-        import core.module.id.ModuleId
-        import plugins.matcher.PatternMatcher
-
-        desc.addConflictManager(
-          ModuleId.newInstance(org, name),
-          ivy.getSettings.getMatcher(PatternMatcher.EXACT),
-          ivy.getSettings.getConflictManager("latest-compatible"))
-        module
-      }
-    }
 
   lazy val root = Project (
-    "root", file(".")) aggregate(coreProject, examples)
+    "root", file(".")) aggregate(core, examples)
 
-  lazy val reef = Project(
-    "reef",
-    file("reef"),
-    settings = buildSettings ++ Seq(resolvers += localResolver,
-                                    libraryDependencies ++= reefDeps)
-  )
-
-  val mkrun = TaskKey[File]("mkrun")
-  lazy val coreProject = Project (
+  lazy val core = Project (
     "core",
     file("core"),
     settings = buildSettings ++ Seq (
-      resolvers += localResolver,
-      addConflictManager("com.google.protobuf", "protobuf-java", "asdf"),
-      //dependencyOverrides += "com.google.protobuf" % "protobuf-java" % "2.4.1",
-      //unmanagedBase <<= baseDirectory { base => base / "lib" },
       libraryDependencies ++= commonDeps)
   )
 
+  val mkrun = TaskKey[File]("mkrun")
   lazy val examples = Project(
     "examples",
     file("examples"),
     settings = buildSettings ++ Seq (
-      resolvers += localResolver,
       libraryDependencies ++= commonDeps,
       mkrun <<= (baseDirectory, fullClasspath in Runtime) map { (base, cp) =>
         val template = """#!/bin/sh
-        java -Xmx2g -Xss4m -classpath "%s":/Users/thomas/incremental/core/target/classes/ \
-         -Djava.util.logging.config.class=com.microsoft.reef.util.logging.Config \
-         -Dcom.microsoft.reef.runtime.local.folder=/Users/thomas/incremental/examples/target \
-        %s $@
+        java -Xmx2g -Xss4m -classpath "%s" %s $@
         """
         val contents = template.format(cp.files.absString, "tbd.examples.wordcount.Experiment")
         val out = base / "run.sh"
@@ -147,5 +75,5 @@ object IncrementalBuild extends Build {
         out
       }
     )
-  ) dependsOn(coreProject)
+  ) dependsOn(core)
 }
