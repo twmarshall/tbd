@@ -124,34 +124,30 @@ class TBD(
 
   var memoId = 0
   def makeLift[T, U](): Lift[T, U] = {
-    log.debug("Make lift")
     val thisMemoId = memoId
     memoId += 1
-    new Lift((args: List[Mod[T]], func: () => Changeable[U]) => {
+    new Lift((aArgs: List[Mod[T]], func: () => Changeable[U]) => {
+      val args = aArgs.map(_.id)
       val memoized =
         if (initialRun) {
           false
         } else {
 	  var updated = false
 	  for (arg <- args) {
-	    if (updatedMods.contains(arg.id)) {
+	    if (updatedMods.contains(arg)) {
 	      updated = true
 	    }
 	  }
           !updated
         }
 
-      log.debug("contains " + worker.memoTable.contains(thisMemoId :: args))
       if (memoized && worker.memoTable.contains(thisMemoId :: args)) {
-	log.debug("Found memoized value for call to " + (thisMemoId :: args))
         val memoEntry = worker.memoTable(thisMemoId :: args)
         worker.ddg.attachSubtree(currentParent, memoEntry.node)
         worker.memoTable -= (thisMemoId :: args)
 
         memoEntry.changeable.asInstanceOf[Changeable[U]]
       } else {
-	log.debug("Did not find memoized value for call to " + thisMemoId + " " + args + " " + memoized)
-
         val memoNode = worker.ddg.addMemo(currentParent, (thisMemoId :: args))
         val outerParent = currentParent
         currentParent = memoNode
@@ -160,7 +156,6 @@ class TBD(
 
         val memoEntry = new MemoEntry(changeable.asInstanceOf[Changeable[Any]],
                                         memoNode)
-        log.debug("inserting " + (thisMemoId :: args))
         worker.memoTable += ((thisMemoId :: args) -> memoEntry)
 
         changeable
