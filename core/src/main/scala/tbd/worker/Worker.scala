@@ -36,7 +36,7 @@ object Worker {
 
 class Worker(id: String, aDatastoreRef: ActorRef, parent: ActorRef)
   extends Actor with ActorLogging {
-  log.info("Worker " + id + " launched")
+  //log.info("Worker " + id + " launched")
 
   val datastoreRef = aDatastoreRef
   val ddg = new DDG(log, id, this)
@@ -59,7 +59,7 @@ class Worker(id: String, aDatastoreRef: ActorRef, parent: ActorRef)
 
       if (node.isInstanceOf[ReadNode]) {
         val readNode = node.asInstanceOf[ReadNode]
-        log.debug("Reexecuting read of " + readNode.mod.id)
+        //log.debug("Reexecuting read of " + readNode.mod.id)
 
         val memoNodes = ddg.removeSubtree(readNode, true)
 
@@ -73,6 +73,7 @@ class Worker(id: String, aDatastoreRef: ActorRef, parent: ActorRef)
         tbd.currentParent = readNode
         readNode.updated = false
         readNode.reader(newValue)
+        tbd.updatedMods -= readNode.mod.id
 
         for (node <- memoNodes) {
           if (node.parent == null) {
