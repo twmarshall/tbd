@@ -45,6 +45,10 @@ class Datastore extends Actor with ActorLogging {
   implicit val timeout = Timeout(30 seconds)
 
   private def get(table: String, key: Any): Any = {
+    if (!tables(table).contains(key)) {
+      log.warning("Trying to get nonexistent key = " + key + " from table = " +
+                  table)
+    }
     val ret = tables(table)(key)
 
     if (ret == null) {
@@ -103,14 +107,15 @@ class Datastore extends Actor with ActorLogging {
                                respondTo)
           }
 
+          tables("mods") -= innerNode.next.id.value
 	  tables("mods") -= innerNode.value.id.value
 
 	  found = true
+        } else {
+          previousNode = innerNode
+          innerNode = tables("mods")(innerNode.next.id.value)
+            .asInstanceOf[ListNode[Any]]
         }
-
-        previousNode = innerNode
-        innerNode = tables("mods")(innerNode.next.id.value)
-          .asInstanceOf[ListNode[Any]]
       }
       outerNode = tables("mods")(outerNode.next.id.value)
         .asInstanceOf[ListNode[Mod[ListNode[Any]]]]
@@ -179,13 +184,13 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case UpdateMessage(table: String, key: Any, value: Any, respondTo: ActorRef) => {
-      log.debug("UpdateMessage")
+      //log.debug("UpdateMessage")
       val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
       sender ! updateMod(modId, value, respondTo)
     }
 
     case RemoveMessage(table: String, key: Any, respondTo: ActorRef) => {
-      log.debug("RemoveMessage")
+      //log.debug("RemoveMessage")
 
       var count = 0
       if (datasets.contains(table)) {
@@ -204,7 +209,6 @@ class Datastore extends Actor with ActorLogging {
 
       tables(table) -= key
 
-      log.debug("RemoveMessage awaiting = " + count)
       sender ! count
     }
 
@@ -222,7 +226,7 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case CleanUpMessage(workerRef: ActorRef, removeDatasets: Set[Dataset[Any]]) => {
-      log.debug("RemoveDependenciesMessage from " + sender)
+      //log.debug("RemoveDependenciesMessage from " + sender)
 
       for ((modId, dependencySet) <- dependencies) {
         dependencySet -= workerRef
