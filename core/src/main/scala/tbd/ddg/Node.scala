@@ -46,15 +46,8 @@ abstract class Node(aParent: Node, aTimestamp: Timestamp) {
     } else if (children.size == 1) {
 	    "\n" + children.head.toString(prefix + "-")
     } else {
-      implicit val order = scala.math.Ordering[Double]
-        .on[Node](_.timestamp.time).reverse
-      var updated = PriorityQueue[Node]()
-      for (child <- children) {
-        updated += child
-      }
-
       var ret = ""
-      for (child <- updated) {
+      for (child <- children) {
         ret += "\n" + child.toString(prefix + "-")
       }
       ret
