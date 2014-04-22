@@ -39,3 +39,13 @@ class Timestamp(aSublist: Sublist, aTime: Double, aNext: Timestamp) {
 
   override def toString = "(" + sublist.id + " " + time.toString + ")"
 }
+
+class TimestampOrdering extends scala.math.Ordering[Node] {
+  def compare(one: Node, two: Node) = {
+    if (one.timestamp < two.timestamp) {
+      1
+    } else {
+      -1
+    }
+  }
+}

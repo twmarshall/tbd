@@ -16,8 +16,10 @@
 package tbd.test
 
 import org.scalatest._
+import scala.collection.mutable.ArrayBuffer
 
 import tbd.{Adjustable, Changeable, Dest, Mutator, ListNode, TBD}
+import tbd.datastore.Dataset
 import tbd.mod.Mod
 
 class ArrayMapTest extends Adjustable {
@@ -52,7 +54,24 @@ class PropagationOrderTest extends Adjustable {
   }
 }
 
-class TestSpec extends FlatSpec with Matchers {
+class PropagationOrderTest2 extends Adjustable {
+  val values = ArrayBuffer[Int]()
+
+  def run(tbd: TBD): Dataset[Int] = {
+    val dataset = tbd.input.getDataset[Int]()
+    dataset.map(tbd, (value: Int) => {
+      if (tbd.initialRun) {
+        values += value
+      } else {
+        assert(value == values.head + 1)
+        values -= values.head
+      }
+      value
+    })
+  }
+}
+
+class ChangePropagationTests extends FlatSpec with Matchers {
   "ArrayMapTest" should "return a correctly mapped array" in {
     val mutator = new Mutator()
     mutator.put(1, "one")
@@ -78,5 +97,21 @@ class TestSpec extends FlatSpec with Matchers {
     mutator.update(1, 2)
     mutator.propagate()
     test.num should be (2)
+  }
+
+  "PropagationOrderTest2" should "reexecute map in the correct order" in {
+    val mutator = new Mutator()
+    for (i <- 0 to 100) {
+      mutator.put(i, i)
+    }
+    val test = new PropagationOrderTest2()
+    mutator.run[Dataset[Int]](test)
+
+    for (i <- 0 to 100) {
+      mutator.update(i, i + 1)
+    }
+    mutator.propagate()
+
+    mutator.shutdown()
   }
 }
