@@ -79,7 +79,7 @@ class Dataset[T](aLists: Mod[ListNode[Mod[ListNode[T]]]]) {
     }))
   }
 
-  def parMemoMap[U](tbd: TBD, func: T => U): Dataset[U] = {
+  def memoParMap[U](tbd: TBD, func: T => U): Dataset[U] = {
     new Dataset(tbd.mod((dest: Dest[ListNode[Mod[ListNode[U]]]]) => {
       tbd.read(lists, (lsts: ListNode[Mod[ListNode[T]]]) => {
         lsts.parMap(tbd, dest, (tbd: TBD, list: Mod[ListNode[T]]) => {

@@ -23,9 +23,9 @@ import tbd.datastore.Dataset
 object MapAdjust {
   def mapper(s: String): Int = {
     var count = 0
-    /*for (word <- s.split("\\W+")) {
+    for (word <- s.split("\\W+")) {
       count += 1
-    }*/
+    }
     return count
   }
 }
@@ -37,7 +37,7 @@ class MapAdjust(partitions: Int) extends WC with Adjustable {
   }
 }
 
-class MemoMapAdjust(partitions: Int) extends WC with Adjustable {
+class MapMemoAdjust(partitions: Int) extends WC with Adjustable {
   def run(tbd: TBD): Dataset[Int] = {
     val pages = tbd.input.getDataset[String](partitions)
     pages.memoMap(tbd, (s: String) => MapAdjust.mapper(s))
@@ -48,5 +48,12 @@ class MapParAdjust(partitions: Int) extends WC with Adjustable {
   def run(tbd: TBD): Dataset[Int] = {
     val pages = tbd.input.getDataset[String](partitions)
     pages.parMap(tbd, (s: String) => MapAdjust.mapper(s))
+  }
+}
+
+class MapMemoParAdjust(partitions: Int) extends WC with Adjustable {
+  def run(tbd: TBD): Dataset[Int] = {
+    val pages = tbd.input.getDataset[String](partitions)
+    pages.memoParMap(tbd, (s: String) => MapAdjust.mapper(s))
   }
 }
