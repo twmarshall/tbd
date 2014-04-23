@@ -15,14 +15,11 @@
  */
 package tbd
 
-import akka.pattern.ask
-import akka.actor.ActorRef
-import akka.util.Timeout
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import tbd.mod.{LocalMod, ModId}
+import tbd.worker.Worker
 
-import tbd.mod.{LocalMod, Mod}
-
-class Dest[T](workerRef: ActorRef) {
-  val mod = new LocalMod[T](workerRef)
+class Dest[T](worker: Worker) {
+  val modId = new ModId(worker.id + "." + worker.nextModId)
+  val mod = new LocalMod[T](worker.self, modId)
+  worker.nextModId += 1
 }

@@ -33,9 +33,10 @@ object Worker {
     Props(classOf[Worker], id, datastoreRef, parent)
 }
 
-class Worker(id: String, aDatastoreRef: ActorRef, parent: ActorRef)
+class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
   extends Actor with ActorLogging {
   //log.info("Worker " + id + " launched")
+  val id = aId
 
   val datastoreRef = aDatastoreRef
   val ddg = new DDG(log, id, this)
@@ -44,6 +45,8 @@ class Worker(id: String, aDatastoreRef: ActorRef, parent: ActorRef)
 
   private var task: Task = null
   private val tbd = new TBD(id, this)
+
+  var nextModId = 0
 
   // During change propagation, represents the number of child workers this
   // worker is waiting to receive FinishedPropagatingMessages from before it

@@ -54,8 +54,11 @@ class Datastore extends Actor with ActorLogging {
     }
   }
 
+  private var nextModId = 0
   private def createMod[T](value: T): Mod[T] = {
-    val mod = new InputMod[T](self)
+    val mod = new InputMod[T](self, new ModId("d." + nextModId))
+    nextModId += 1
+
     tables("mods")(mod.id.value) = value
     dependencies(mod.id) = Set[ActorRef]()
     mod

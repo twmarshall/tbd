@@ -24,7 +24,7 @@ import tbd.Constants._
 import tbd.TBD
 import tbd.messages._
 
-class LocalMod[T](dataRef: ActorRef) extends Mod[T] {
+class LocalMod[T](dataRef: ActorRef, aId: ModId) extends Mod[T](aId) {
   //var value: T = null.asInstanceOf[T]
 
   def read(workerRef: ActorRef = null): T = {

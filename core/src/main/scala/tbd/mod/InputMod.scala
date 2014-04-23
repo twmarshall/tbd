@@ -23,7 +23,7 @@ import tbd.Constants._
 import tbd.TBD
 import tbd.messages._
 
-class InputMod[T](datastoreRef: ActorRef) extends Mod[T] {
+class InputMod[T](datastoreRef: ActorRef, aId: ModId) extends Mod[T](aId) {
   def read(workerRef: ActorRef = null): T = {
     val ret =
       if (workerRef != null) {

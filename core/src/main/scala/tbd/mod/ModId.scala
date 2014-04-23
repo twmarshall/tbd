@@ -15,17 +15,8 @@
  */
 package tbd.mod
 
-object ModId {
-  private var current = 0
+class ModId(aValue: String) {
+  val value = aValue
 
-  private def newId = {
-    current += 1
-    current
-  }
-}
-
-class ModId {
-  val value = ModId.newId
-
-  override def toString = value.toString
+  override def toString = value
 }

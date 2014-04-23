@@ -91,7 +91,7 @@ class TBD(
   }
 
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
-    val d = new Dest[T](worker.self)
+    val d = new Dest[T](worker)
     dependencies(d.mod.id) = Set()
     initializer(d).mod
   }

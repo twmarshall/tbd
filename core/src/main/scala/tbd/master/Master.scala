@@ -53,7 +53,7 @@ class Master extends Actor with ActorLogging {
       log.debug("RunMessage")
       result = Promise[Any]
 
-      val workerProps = Worker.props("worker", datastoreRef, self)
+      val workerProps = Worker.props("w0", datastoreRef, self)
       workerRef = context.actorOf(workerProps, "worker" + mutatorId)
       workers(mutatorId) = workerRef
 

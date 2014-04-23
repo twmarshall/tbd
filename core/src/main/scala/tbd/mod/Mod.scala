@@ -20,8 +20,8 @@ import akka.actor.ActorRef
 import tbd.TBD
 import tbd.messages._
 
-abstract class Mod[T] {
-  val id = new ModId()
+abstract class Mod[T](aId: ModId) {
+  val id = aId
 
   def read(workerRef: ActorRef = null): T
 
