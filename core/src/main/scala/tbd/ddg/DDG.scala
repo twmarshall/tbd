@@ -85,6 +85,35 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     }
   }
 
+  /**
+   * Returns the timestamp for the next node in the graph after the execution
+   * this node represents completes, which is the timestamp of the node's next
+   * older sibling, unless it has no older siblings then its the node's parent's
+   * next older sibling, recursively up the tree until an older sibling is found.
+   */
+  def getTimestampAfter(node: Node): Timestamp = {
+    var previousChild: Node = null
+    var ret: Timestamp = null
+
+    if (node.parent == null) {
+      Timestamp.MAX_TIMESTAMP
+    } else {
+      for (child <- node.parent.children) {
+	if (previousChild == node) {
+	  ret = child.timestamp
+	}
+
+	previousChild = child
+      }
+
+      if (ret == null) {
+	getTimestampAfter(node.parent)
+      } else {
+	ret
+      }
+    }
+  }
+
   def modUpdated(modId: ModId) {
     assert(reads.contains(modId))
     for (readNode <- reads(modId)) {

@@ -101,6 +101,37 @@ class AlreadyMatchedTest extends Adjustable {
   }
 }
 
+class OutOfScopeTest extends Adjustable {
+  var num = 0
+
+  def run(tbd: TBD): Int = {
+    val one = tbd.input.get[Mod[Int]](1)
+    val two = tbd.input.get[Mod[Int]](2)
+    val lift = tbd.makeLift[Int, Int]()
+
+    tbd.mod((dest: Dest[Int]) => {
+      tbd.read(one, (oneValue: Int) => {
+	if (oneValue != 1) {
+	  lift.memo(List(two), () => {
+	    num += 1
+	    tbd.write(dest, 0)
+	  })
+	} else {
+	  tbd.write(dest, 1)
+	}
+      })
+    })
+
+    tbd.mod((dest: Dest[Int]) => {
+      lift.memo(List(two), () => {
+	tbd.write(dest, 2)
+      })
+    })
+
+    0
+  }
+}
+
 class MemoTests extends FlatSpec with Matchers {
   "MemoTest" should "do stuff" in {
     val mutator = new Mutator()
@@ -172,5 +203,24 @@ class MemoTests extends FlatSpec with Matchers {
     output.read() should be (11)
     test.count1 should be (0)
     test.count2 should be (2)
+
+    mutator.shutdown()
+  }
+
+  "OutOfScopeTest" should "not memo match outside of the reexecuted read" in {
+    val mutator = new Mutator()
+    mutator.put(1, 1)
+    mutator.put(2, 2)
+    val test = new OutOfScopeTest()
+    mutator.run[Int](test)
+
+    test.num should be (0)
+
+    mutator.update(1, 3)
+    mutator.propagate()
+
+    test.num should be (1)
+
+    mutator.shutdown()
   }
 }

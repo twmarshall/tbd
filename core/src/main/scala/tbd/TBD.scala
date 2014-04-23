@@ -22,7 +22,7 @@ import scala.collection.mutable.{Map, Set}
 import scala.concurrent.Await
 
 import tbd.Constants._
-import tbd.ddg.Node
+import tbd.ddg.{Node, Timestamp}
 import tbd.memo.{Lift, MemoEntry}
 import tbd.messages._
 import tbd.mod.{Mod, ModId}
@@ -54,7 +54,17 @@ class TBD(
   // Maps modIds to the workers that have read the corresponding mod.
   val dependencies = Map[ModId, Set[ActorRef]]()
 
+  // Contains a list of mods that have been updated since the last run of change
+  // propagation, to determine when memo matches can be made.
   val updatedMods = Set[ModId]()
+
+  // The timestamp of the read currently being reexecuting during change
+  // propagation.
+  var reexecutionStart: Timestamp = null
+
+  // The timestamp of the node immediately after the end of the read being
+  // reexecuted.
+  var reexecutionEnd: Timestamp = null
 
   def read[T, U](mod: Mod[T], reader: T => (Changeable[U])): Changeable[U] = {
     val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],
@@ -119,26 +129,35 @@ class TBD(
     new Tuple2(oneRet, twoRet)
   }
 
+  private def updated(args: List[ModId]): Boolean = {
+    var updated = false
+
+    for (arg <- args) {
+      if (updatedMods.contains(arg)) {
+	updated = true
+      }
+    }
+
+    updated
+  }
+
+  private def inMemoTable(thisMemoId: Int, args: List[ModId]): Boolean = {
+    if (worker.memoTable.contains(thisMemoId :: args)) {
+      val timestamp = worker.memoTable(thisMemoId :: args).node.timestamp
+      timestamp > reexecutionStart && timestamp < reexecutionEnd
+    } else {
+      false
+    }
+  }
+
   var memoId = 0
   def makeLift[T, U](): Lift[T, U] = {
     val thisMemoId = memoId
     memoId += 1
     new Lift((aArgs: List[Mod[T]], func: () => Changeable[U]) => {
       val args = aArgs.map(_.id)
-      val memoized =
-        if (initialRun) {
-          false
-        } else {
-	  var updated = false
-	  for (arg <- args) {
-	    if (updatedMods.contains(arg)) {
-	      updated = true
-	    }
-	  }
-          !updated
-        }
 
-      if (memoized && worker.memoTable.contains(thisMemoId :: args)) {
+      if (!initialRun && !updated(args) && inMemoTable(thisMemoId, args)) {
         val memoEntry = worker.memoTable(thisMemoId :: args)
         worker.ddg.attachSubtree(currentParent, memoEntry.node)
         worker.memoTable -= (thisMemoId :: args)

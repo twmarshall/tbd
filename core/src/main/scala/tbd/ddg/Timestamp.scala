@@ -15,6 +15,12 @@
  */
 package tbd.ddg
 
+object Timestamp {
+  // A dummy timestamp which all real Timestamps are less than. Only use for
+  // comparison since it isn't actually attached to the ordering data structure.
+  val MAX_TIMESTAMP = new Timestamp(new Sublist(Int.MaxValue, null), Int.MaxValue, null)
+}
+
 class Timestamp(aSublist: Sublist, aTime: Double, aNext: Timestamp) {
   var sublist = aSublist
   var time = aTime
