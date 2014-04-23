@@ -107,6 +107,9 @@ class Datastore extends Actor with ActorLogging {
                                respondTo)
           }
 
+          // Note: for now, we're not addressing what happens if you try to get
+          // a value from the table that doesn't exist, so we don't need to
+          // notify workers when a mod is removed.
           tables("mods") -= innerNode.next.id.value
 	  tables("mods") -= innerNode.value.id.value
 
