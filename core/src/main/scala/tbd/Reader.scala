@@ -17,33 +17,30 @@ package tbd
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import akka.util.Timeout
 import scala.concurrent.Await
-import scala.concurrent.duration._
 
+import tbd.Constants._
 import tbd.datastore.Dataset
 import tbd.messages._
 import tbd.mod.Mod
 import tbd.worker.Worker
 
 class Reader(worker: Worker) {
-  implicit val timeout = Timeout(30 seconds)
-
   def get[T](key: Int): T = {
     val modFuture = worker.datastoreRef ? GetMessage("input", key)
-    Await.result(modFuture, timeout.duration)
+    Await.result(modFuture, DURATION)
       .asInstanceOf[T]
   }
 
   def getArray[T](): Array[T] = {
     val arrayFuture = worker.datastoreRef ? GetArrayMessage("input")
-    Await.result(arrayFuture, timeout.duration)
+    Await.result(arrayFuture, DURATION)
       .asInstanceOf[Array[T]]
   }
 
   def getDataset[T](partitions: Int = 8): Dataset[T] = {
     val datasetFuture = worker.datastoreRef ? GetDatasetMessage("input", partitions)
-    val dataset = Await.result(datasetFuture, timeout.duration)
+    val dataset = Await.result(datasetFuture, DURATION)
     worker.datasets += dataset.asInstanceOf[Dataset[Any]]
     dataset.asInstanceOf[Dataset[T]]
   }

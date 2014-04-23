@@ -17,24 +17,21 @@ package tbd.mod
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import akka.util.Timeout
 import scala.concurrent.Await
-import scala.concurrent.duration._
 
+import tbd.Constants._
 import tbd.TBD
 import tbd.messages._
 
 class InputMod[T](datastoreRef: ActorRef) extends Mod[T] {
-  implicit val timeout = Timeout(30 seconds)
-
   def read(workerRef: ActorRef = null): T = {
     val ret =
       if (workerRef != null) {
         val readFuture = datastoreRef ? ReadModMessage(id, workerRef)
-        Await.result(readFuture, timeout.duration)
+        Await.result(readFuture, DURATION)
       } else {
         val readFuture = datastoreRef ? GetMessage("mods", id.value)
-        Await.result(readFuture, timeout.duration)
+        Await.result(readFuture, DURATION)
       }
 
     ret match {
@@ -45,6 +42,6 @@ class InputMod[T](datastoreRef: ActorRef) extends Mod[T] {
 
   def update(value: T, workerRef: ActorRef, tbd: TBD): Int = {
     val future = datastoreRef ? UpdateModMessage(id, value, workerRef)
-    Await.result(future, timeout.duration).asInstanceOf[Int]
+    Await.result(future, DURATION).asInstanceOf[Int]
   }
 }

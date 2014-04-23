@@ -17,10 +17,8 @@ package tbd.datastore
 
 import akka.actor.{Actor, ActorRef, ActorLogging, Props}
 import akka.pattern.ask
-import akka.util.Timeout
 import scala.collection.mutable.{Map, Set}
 import scala.concurrent.Await
-import scala.concurrent.duration._
 
 import tbd.ListNode
 import tbd.messages._
@@ -41,8 +39,6 @@ class Datastore extends Actor with ActorLogging {
   // returned containing this entire table, so that we can tolerate insertions
   // into and deletions from tables.
   private val datasets = Map[String, Set[Dataset[Any]]]()
-
-  implicit val timeout = Timeout(30 seconds)
 
   private def get(table: String, key: Any): Any = {
     if (!tables(table).contains(key)) {

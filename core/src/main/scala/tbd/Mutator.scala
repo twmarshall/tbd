@@ -16,58 +16,56 @@
 package tbd
 
 import akka.pattern.ask
-import akka.util.Timeout
 import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
 
+import tbd.Constants._
 import tbd.ddg.DDG
 import tbd.master.Main
 import tbd.messages._
 import tbd.mod.Mod
 
 class Mutator(main: Main = new Main()) {
-  implicit val timeout = Timeout(3000 seconds)
   val idFuture = main.masterRef ? RegisterMutatorMessage
-  val id = Await.result(idFuture, timeout.duration).asInstanceOf[Int]
+  val id = Await.result(idFuture, DURATION).asInstanceOf[Int]
 
   def run[T](adjust: Adjustable): T = {
     val future = main.masterRef ? RunMessage(adjust, id)
     val resultFuture =
-      Await.result(future, timeout.duration).asInstanceOf[Future[Any]]
+      Await.result(future, DURATION).asInstanceOf[Future[Any]]
 
-    Await.result(resultFuture, timeout.duration).asInstanceOf[T]
+    Await.result(resultFuture, DURATION).asInstanceOf[T]
   }
 
   def propagate() {
     val future = main.masterRef ? PropagateMessage
-    val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
-    Await.result(future2, timeout.duration)
+    val future2 = Await.result(future, DURATION).asInstanceOf[Future[String]]
+    Await.result(future2, DURATION)
   }
 
   def put(key: Any, value: Any) {
     val future = main.masterRef ? PutInputMessage("input", key, value)
-    val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
-    Await.result(future2, timeout.duration)
+    val future2 = Await.result(future, DURATION).asInstanceOf[Future[String]]
+    Await.result(future2, DURATION)
   }
 
   def update(key: Any, value: Any) {
     val future = main.masterRef ? UpdateInputMessage("input", key, value)
-    val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
-    Await.result(future2, timeout.duration)
+    val future2 = Await.result(future, DURATION).asInstanceOf[Future[String]]
+    Await.result(future2, DURATION)
   }
 
   def remove(key: Any) {
     val future = main.masterRef ? RemoveInputMessage("input", key)
-    val future2 = Await.result(future, timeout.duration).asInstanceOf[Future[String]]
-    Await.result(future2, timeout.duration)
+    val future2 = Await.result(future, DURATION).asInstanceOf[Future[String]]
+    Await.result(future2, DURATION)
   }
 
   def getDDG(): DDG  = {
     val ddgFuture = main.masterRef ? GetMutatorDDGMessage(id)
-    Await.result(ddgFuture, timeout.duration).asInstanceOf[DDG]
+    Await.result(ddgFuture, DURATION).asInstanceOf[DDG]
   }
 
   def shutdown() {
-    Await.result(main.masterRef ? ShutdownMutatorMessage(id), timeout.duration)
+    Await.result(main.masterRef ? ShutdownMutatorMessage(id), DURATION)
   }
 }

@@ -17,11 +17,10 @@ package tbd.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
-import akka.util.Timeout
 import scala.collection.mutable.{Map, Set}
 import scala.concurrent.{Await, Future}
-import scala.concurrent.duration._
 
+import tbd.Constants._
 import tbd.TBD
 import tbd.datastore.Dataset
 import tbd.ddg.{DDG, ParNode, ReadNode}
@@ -45,8 +44,6 @@ class Worker(id: String, aDatastoreRef: ActorRef, parent: ActorRef)
 
   private var task: Task = null
   private val tbd = new TBD(id, this)
-
-  implicit val timeout = Timeout(30 seconds)
 
   // During change propagation, represents the number of child workers this
   // worker is waiting to receive FinishedPropagatingMessages from before it
@@ -208,10 +205,10 @@ class Worker(id: String, aDatastoreRef: ActorRef, parent: ActorRef)
       }
 
       for (future <- futures) {
-        Await.result(future, timeout.duration)
+        Await.result(future, DURATION)
       }
 
-      Await.result(datastoreFuture, timeout.duration)
+      Await.result(datastoreFuture, DURATION)
 
       sender ! "done"
     }

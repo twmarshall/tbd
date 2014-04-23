@@ -17,27 +17,24 @@ package tbd.mod
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import akka.util.Timeout
 import scala.collection.mutable.Set
 import scala.concurrent.Await
-import scala.concurrent.duration._
 
+import tbd.Constants._
 import tbd.TBD
 import tbd.messages._
 
 class LocalMod[T](dataRef: ActorRef) extends Mod[T] {
-  implicit val timeout = Timeout(30 seconds)
-
   //var value: T = null.asInstanceOf[T]
 
   def read(workerRef: ActorRef = null): T = {
     val ret =
       if (workerRef != null) {
         val readFuture = dataRef ? ReadModMessage(id, workerRef)
-        Await.result(readFuture, timeout.duration)
+        Await.result(readFuture, DURATION)
       } else {
         val readFuture = dataRef ? GetMessage("mods", id)
-        Await.result(readFuture, timeout.duration)
+        Await.result(readFuture, DURATION)
         //value
       }
 

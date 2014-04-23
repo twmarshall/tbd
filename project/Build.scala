@@ -11,7 +11,8 @@ object BuildSettings {
     version      := buildVersion,
     scalaVersion := buildScalaVersion,
     shellPrompt  := ShellPrompt.buildShellPrompt,
-    fork         := true
+    fork         := true,
+    scalacOptions ++= Seq("-feature")
   )
 }
 

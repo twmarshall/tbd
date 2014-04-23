@@ -17,12 +17,11 @@ package tbd.ddg
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import akka.util.Timeout
-import scala.collection.mutable.{MutableList, PriorityQueue}
+import scala.collection.mutable.MutableList
 import scala.concurrent.Await
-import scala.concurrent.duration._
 
 import tbd.Changeable
+import tbd.Constants._
 import tbd.messages._
 import tbd.mod.Mod
 
@@ -91,12 +90,11 @@ class ParNode(
   var pebble2 = false
 
   override def toString(prefix: String) = {
-    implicit val timeout = Timeout(30 seconds)
     val future1 = workerRef1 ? DDGToStringMessage(prefix + "|")
     val future2 = workerRef2 ? DDGToStringMessage(prefix + "|")
 
-    val output1 = Await.result(future1, timeout.duration).asInstanceOf[String]
-    val output2 = Await.result(future2, timeout.duration).asInstanceOf[String]
+    val output1 = Await.result(future1, DURATION).asInstanceOf[String]
+    val output2 = Await.result(future2, DURATION).asInstanceOf[String]
 
     prefix + "ParNode time=" + timestamp + " pebbles=(" + pebble1 + ", " +
       pebble2 + ")\n" + output1 + "\n" + output2 + super.toString(prefix)

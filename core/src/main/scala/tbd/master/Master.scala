@@ -17,12 +17,11 @@ package tbd.master
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
-import akka.util.Timeout
-import scala.collection.mutable.{Map, Set}
-import scala.concurrent.duration._
-import scala.concurrent.{Await, Future, Promise}
+import scala.collection.mutable.Map
+import scala.concurrent.{Await, Promise}
 
-import tbd.{Adjustable, Dest, TBD}
+import tbd.{Adjustable, TBD}
+import tbd.Constants._
 import tbd.datastore.Datastore
 import tbd.messages._
 import tbd.mod.ModId
@@ -43,8 +42,6 @@ class Master extends Actor with ActorLogging {
 
   // Maps mutatorIds to their corresponding workers.
   private val workers = Map[Int, ActorRef]()
-
-  implicit val timeout = Timeout(3000 seconds)
 
   var result = Promise[Any]
   var resultWaiter: ActorRef = null
@@ -68,7 +65,7 @@ class Master extends Actor with ActorLogging {
     case PropagateMessage => {
       log.info("Master actor initiating change propagation.")
       //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-      //                                  timeout.duration).asInstanceOf[String])
+      //                                  DURATION).asInstanceOf[String])
 
       result = Promise[Any]
       sender ! result.future
@@ -80,7 +77,7 @@ class Master extends Actor with ActorLogging {
       log.debug("Master received FinishedPropagatingMessage.")
 
       //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-      //                                  timeout.duration).asInstanceOf[String])
+      //                                  DURATION).asInstanceOf[String])
 
       result.success("okay")
     }
@@ -93,7 +90,7 @@ class Master extends Actor with ActorLogging {
       sender ! updateResult.future
 
       assert(awaiting == 0)
-      awaiting = Await.result(future, timeout.duration).asInstanceOf[Int]
+      awaiting = Await.result(future, DURATION).asInstanceOf[Int]
 
       if (awaiting == 0) {
         updateResult.success("okay")
@@ -108,7 +105,7 @@ class Master extends Actor with ActorLogging {
       sender ! updateResult.future
 
       assert(awaiting == 0)
-      awaiting = Await.result(future, timeout.duration).asInstanceOf[Int]
+      awaiting = Await.result(future, DURATION).asInstanceOf[Int]
 
       if (awaiting == 0) {
         updateResult.success("okay")
@@ -123,7 +120,7 @@ class Master extends Actor with ActorLogging {
       sender ! updateResult.future
 
       assert(awaiting == 0)
-      awaiting = Await.result(future, timeout.duration).asInstanceOf[Int]
+      awaiting = Await.result(future, DURATION).asInstanceOf[Int]
 
       if (awaiting == 0) {
         updateResult.success("okay")
@@ -153,7 +150,7 @@ class Master extends Actor with ActorLogging {
     case GetMutatorDDGMessage(mutatorId: Int) => {
       if (workers.contains(mutatorId)) {
         val future = workers(mutatorId) ? GetDDGMessage
-        sender ! Await.result(future, timeout.duration)
+        sender ! Await.result(future, DURATION)
       }
     }
 
@@ -161,7 +158,7 @@ class Master extends Actor with ActorLogging {
       if (workers.contains(mutatorId)) {
         log.debug("Sending CleanupWorkerMessage to " + workers(mutatorId))
         val future = workers(mutatorId) ? CleanupWorkerMessage
-        Await.result(future, timeout.duration)
+        Await.result(future, DURATION)
 
         context.stop(workers(mutatorId))
         workers -= mutatorId

@@ -18,11 +18,10 @@ package tbd
 import akka.pattern.ask
 import akka.actor.ActorRef
 import akka.event.Logging
-import akka.util.Timeout
 import scala.collection.mutable.{Map, Set}
 import scala.concurrent.Await
-import scala.concurrent.duration._
 
+import tbd.Constants._
 import tbd.ddg.Node
 import tbd.memo.{Lift, MemoEntry}
 import tbd.messages._
@@ -44,8 +43,6 @@ class TBD(
   val input = new Reader(worker)
 
   val log = Logging(worker.context.system, "TBD" + id)
-
-  implicit val timeout = Timeout(300 seconds)
 
   // Represents the number of PebblingFinishedMessages this worker is waiting
   // on before it can finish.
@@ -117,8 +114,8 @@ class TBD(
 
     worker.ddg.addPar(workerRef1, workerRef2, currentParent)
 
-    val oneRet = Await.result(oneFuture, timeout.duration).asInstanceOf[T]
-    val twoRet = Await.result(twoFuture, timeout.duration).asInstanceOf[U]
+    val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
+    val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]
     new Tuple2(oneRet, twoRet)
   }
 
