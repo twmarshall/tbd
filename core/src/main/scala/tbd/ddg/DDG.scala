@@ -17,7 +17,7 @@ package tbd.ddg
 
 import akka.actor.ActorRef
 import akka.event.LoggingAdapter
-import scala.collection.mutable.{Map, PriorityQueue, Set}
+import scala.collection.mutable.{ArrayBuffer, Map, PriorityQueue, Set}
 
 import tbd.Changeable
 import tbd.mod.{Mod, ModId}
@@ -114,46 +114,50 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
   }
 
   /**
-   * Removes Nodes and their Timestamps and children from this graph, starting
-   * at 'subtree'. If 'saveMemo' is true, MemoNodes and their decendants are
-   * not cleaned up but instead returned in a Set so that the Worker can clean
-   * them up later
+   * Called before a read is reexecuted, the descendents of this node are
+   * cleaned up, up to the first memo nodes, which are returned so that
+   * they can be reattached or cleaned up later.
    */
-  def removeSubtree(subtree: Node, saveMemo: Boolean): Set[Node] = {
-    val ret = Set[Node]()
-    def innerRemoveSubtree(node: Node) {
-      if (node.isInstanceOf[MemoNode] && saveMemo) {
-        node.parent.removeChild(node)
-        node.parent = null
-        ret += node
-      } else {
-        if (node.isInstanceOf[ReadNode]) {
-          val readNode = node.asInstanceOf[ReadNode]
-          reads(readNode.mod.id) -= readNode
-        } else if (node.isInstanceOf[MemoNode]) {
-          worker.memoTable -= node.asInstanceOf[MemoNode].signature
-        }
-
-        updated = updated.filter((node2: Node) => node != node2)
-        ordering.remove(node.timestamp)
-
-        for (child <- node.children) {
-          innerRemoveSubtree(child)
-        }
-
-        node.children.clear()
-      }
-    }
-
+  def cleanupRead(subtree: Node): ArrayBuffer[Node] = {
+    val ret = ArrayBuffer[Node]()
     if (subtree.children.size > 0) {
       for (child <- subtree.children) {
-        innerRemoveSubtree(child)
+        if (child.isInstanceOf[MemoNode]) {
+          child.parent.removeChild(subtree)
+          child.parent = null
+          ret += child
+        } else {
+          ret ++= cleanupRead(child)
+          cleanup(child)
+        }
       }
-
-      subtree.children.clear()
     }
 
+    subtree.children.clear()
+
     ret
+  }
+
+  def cleanupSubtree(subtree: Node) {
+    for (child <- subtree.children) {
+      cleanupSubtree(child)
+    }
+
+    cleanup(subtree)
+  }
+
+  private def cleanup(node: Node) {
+    if (node.isInstanceOf[ReadNode]) {
+      val readNode = node.asInstanceOf[ReadNode]
+      reads(readNode.mod.id) -= readNode
+    } else if (node.isInstanceOf[MemoNode]) {
+      worker.memoTable -= node.asInstanceOf[MemoNode].signature
+    }
+
+    updated = updated.filter((node2: Node) => node != node2)
+    ordering.remove(node.timestamp)
+
+    node.children.clear()
   }
 
   def attachSubtree(parent: Node, subtree: Node) {
