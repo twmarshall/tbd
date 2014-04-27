@@ -23,28 +23,22 @@ import tbd.datastore.Dataset
 import tbd.master.Main
 import tbd.mod.Mod
 
-class Experiment(options: Map[Symbol, Any]) {
-  val chunkSize = options('chunkSize).asInstanceOf[Int]
-  var counts = options('counts).asInstanceOf[Array[Int]]
-  val descriptions = options('descriptions).asInstanceOf[Array[String]]
-  val percents = options('percents).asInstanceOf[Array[Double]]
-  val repeat = options('repeat).asInstanceOf[Int]
-
+class Experiment(conf: ExperimentConf) {
   val runtime = Runtime.getRuntime()
   val rand = new scala.util.Random()
   val wc = new WC()
 
   print("desc\tpages\tinitial")
-  for (percent <- percents) {
+  for (percent <- conf.percents) {
     print("\t" + (percent * 100) + "%")
   }
   print("\n")
 
   def warmUp() {
-    var oldCounts = counts
-    counts = Array(1000)
+    var oldCounts = conf.counts
+    conf.counts = Array(1000)
     run(new MapMemoParAdjust(8), "warmup")
-    counts = oldCounts
+    conf.counts = oldCounts
   }
 
   def round(value: Double): Double = {
@@ -55,28 +49,15 @@ class Experiment(options: Map[Symbol, Any]) {
   def loadFile() {
     val source = scala.io.Source.fromFile("input.txt")
 
-    val bb = new Array[Byte](chunkSize)
+    val bb = new Array[Byte](conf.chunkSize)
     val bis = new BufferedInputStream(new FileInputStream(new File("input.txt")))
-    var bytesRead = bis.read(bb, 0, chunkSize)
+    var bytesRead = bis.read(bb, 0, conf.chunkSize)
 
     while (bytesRead > 0) {
       chunks += new String(bb)
-      bytesRead = bis.read(bb, 0, chunkSize)
+      bytesRead = bis.read(bb, 0, conf.chunkSize)
     }
   }
-
-  /*val pages = Map[String, String]()
-  def loadXML(prefix: String = "") {
-    val xml = scala.xml.XML.loadFile("wiki.xml")
-
-    (xml \ "elem").map(elem => {
-      (elem \ "key").map(key => {
-	(elem \ "value").map(value => {
-	  pages += (prefix + key.text -> value.text)
-        })
-      })
-    })
-  }*/
 
   var nextChunk = 0
   val activeChunks = ArrayBuffer[Int]()
@@ -107,10 +88,10 @@ class Experiment(options: Map[Symbol, Any]) {
 
   def runControl(description: String, control: (Int, Int, Int) => Long) {
     allResults(description) = Map[Int, Map[String, Double]]()
-    for (count <- options('counts).asInstanceOf[Array[Int]]) {
+    for (count <- conf.counts) {
       allResults(description)(count) = Map[String, Double]()
-      val time = control(count, repeat, chunkSize)
-      for (percent <- "initial" +: percents) {
+      val time = control(count, conf.repeat, conf.chunkSize)
+      for (percent <- "initial" +: conf.percents) {
         allResults(description)(count)(percent+"") = time
       }
     }
@@ -123,14 +104,12 @@ class Experiment(options: Map[Symbol, Any]) {
       main: Main) {
     val mutator = new Mutator(main)
     var count = aCount
-    print(count)
 
     while (activeChunks.size < count) {
       putChunk(mutator)
     }
 
     val before = System.currentTimeMillis()
-    //val memBefore = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024)
     val output = mutator.run[Dataset[Int]](adjust)
     val initialElapsed = System.currentTimeMillis() - before
 
@@ -147,12 +126,7 @@ class Experiment(options: Map[Symbol, Any]) {
     }
     print("\t" + initialElapsed)
 
-    //results("initialMem") = math.max((runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore,
-    //                                 results("initialMem"))
-
-    //while (true)
-    for (percent <- percents) {
-      //print("\n\n" + percent + "\n\n")
+    for (percent <- conf.percents) {
       var i =  0
       while (i < percent * count) {
         i += 1
@@ -198,9 +172,6 @@ class Experiment(options: Map[Symbol, Any]) {
       } else {
         results(percent + "") = elapsed
       }
-
-      //val memUsed = (runtime.totalMemory - runtime.freeMemory) / (1024 * 1024) - memBefore
-      //results(percent + "Mem") = math.max(memUsed, results(percent + "Mem"))
     }
 
     println("")
@@ -212,31 +183,22 @@ class Experiment(options: Map[Symbol, Any]) {
     val main = new Main()
     loadFile()
 
-    // We load the data for the first experiment when we do the warmup run.
-    var lastCount = 0
-
     val resultsByCount = Map[Int, Map[String, Double]]()
-    for (count <- counts) {
-      //addInput(lastCount, count, main)
-
+    for (count <- conf.counts) {
       var run = 0
       val results = Map[String, Double]()
-      while (run < repeat) {
+      while (run < conf.repeat) {
+        print(description + "\t" + count)
         once(adjust, count, results, main)
         run += 1
       }
 
-      print(description + "\t" + count + "\t")
-      print(round(results("initial") / repeat))
-      results("initial") = round(results("initial") / repeat)
-      //print("\t" + round(results("initialMem")))
+      results("initial") = round(results("initial") / conf.repeat)
 
-      for (percent <- percents) {
-        print("\t" + round(results(percent + "") / repeat))
-        results(percent + "") = round(results(percent + "") / repeat)
-        //print("\t" + round(results(percent + "Mem")))
+      for (percent <- conf.percents) {
+        results(percent + "") = round(results(percent + "") / conf.repeat)
       }
-      print("\n")
+
       resultsByCount(count) = results
     }
 
@@ -247,17 +209,17 @@ class Experiment(options: Map[Symbol, Any]) {
   }
 
   def printFormattedResults() {
-    for (percent <- "initial" +: percents) {
+    for (percent <- "initial" +: conf.percents) {
       print(percent + "\t")
-      for (description <- descriptions) {
+      for (description <- conf.descriptions) {
         print(description + "\t")
       }
       print("\n")
 
-      for (count <- counts) {
+      for (count <- conf.counts) {
         print(count + "\t")
 
-        for (description <- descriptions) {
+        for (description <- conf.descriptions) {
           print(allResults(description)(count)(percent + "") + "\t")
         }
         print("\n")
@@ -269,61 +231,64 @@ class Experiment(options: Map[Symbol, Any]) {
 object Experiment {
   val usage = """
     Usage: run.sh [--repeat num] [--counts int,int,...] [--percents float,float,...]
+      [--chunkSize int] [--descriptions seq,par,memo,...] [--partitions int]
   """
 
   def main(args: Array[String]) {
-    def nextOption(map : Map[Symbol, Any], list: List[String]): Map[Symbol, Any] = {
+    val conf = new ExperimentConf()
+
+    def parse(list: List[String]) {
       list match {
-        case Nil => map
+        case Nil =>
         case "--repeat" :: value :: tail =>
-          nextOption(map ++ Map('repeat -> value.toInt), tail)
+          conf.repeat = value.toInt
+          parse(tail)
         case "--chunkSize" :: value :: tail =>
-          nextOption(map ++ Map('chunkSize -> value.toInt), tail)
+          conf.chunkSize = value.toInt
+          parse(tail)
         case "--counts" :: value :: tail =>
-          nextOption(map ++ Map('counts -> value.split(",").map(_.toInt)), tail)
+          println("found counts")
+          conf.counts = value.split(",").map(_.toInt)
+          parse(tail)
         case "--descriptions" :: value :: tail =>
-          nextOption(map ++ Map('descriptions -> value.split(",")), tail)
+          conf.descriptions = value.split(",")
+          parse(tail)
         case "--percents" :: value :: tail =>
-          nextOption(map ++ Map('percents -> value.split(",").map(_.toDouble)), tail)
+          conf.percents = value.split(",").map(_.toDouble)
+          parse(tail)
         case "--partitions" :: value :: tail =>
-          nextOption(map ++ Map('partitions ->  value.toInt), tail)
+          conf.partitions = value.toInt
+          parse(tail)
         case "--algorithm" :: value :: tail =>
-          nextOption(map ++ Map('algorithm -> value), tail)
+          conf.algorithm = value
+          parse(tail)
         case option :: tail => println("Unknown option " + option + "\n" + usage)
-	  nextOption(map, tail)
       }
     }
-    val options =
-      nextOption(Map('repeat -> 3,
-                     'chunkSize -> 1024 * 20,
-                     'counts -> Array(200, 400, 600),
-                     'percents -> Array(.01, .05, .1),
-                     'partitions -> 10,
-                     'descriptions -> Array("smap", "seq", "par", "memo", "memopar"),
-                     'algorithm -> "map"),
-                 args.toList)
-    val partitions = options('partitions).asInstanceOf[Int]
-    val descriptions = options('descriptions).asInstanceOf[Array[String]]
+    parse(args.toList)
 
-    val experiment = new Experiment(options)
+    val experiment = new Experiment(conf)
     experiment.loadFile()
     experiment.warmUp()
-    for (description <- descriptions) {
-      if (options('algorithm) == "map") {
-        if (description == "smap") {
-          experiment.runControl("smap", SimpleMap.run)
-        } else if (description == "seq") {
-          experiment.run(new MapAdjust(partitions), description)
-        } else if (description == "par") {
-          experiment.run(new MapParAdjust(partitions), description)
-        } else if (description == "memo") {
-          experiment.run(new MapMemoAdjust(partitions), description)
-        } else if (description == "memopar") {
-          experiment.run(new MapMemoParAdjust(partitions), description)
+    for (description <- conf.descriptions) {
+      if (conf.algorithm == "map") {
+        description match {
+          case "smap" =>
+            experiment.runControl("smap", SimpleMap.run)
+          case "seq" =>
+            experiment.run(new MapAdjust(conf.partitions), description)
+          case "par" =>
+            experiment.run(new MapParAdjust(conf.partitions), description)
+          case "memo" =>
+            experiment.run(new MapMemoAdjust(conf.partitions), description)
+          case "memopar" =>
+            experiment.run(new MapMemoParAdjust(conf.partitions), description)
+          case _ =>
+            println("Unrecognized description.")
         }
       } else {
-        experiment.run(new WCAdjust(partitions), "seq")
-        experiment.run(new WCParAdjust(partitions), "par")
+        experiment.run(new WCAdjust(conf.partitions), "seq")
+        experiment.run(new WCParAdjust(conf.partitions), "par")
       }
     }
 

@@ -22,6 +22,7 @@ object TBDBuild extends Build {
   )
 
   val mkrun = TaskKey[File]("mkrun")
+  val mkexamples = TaskKey[File]("mkexamples")
   lazy val root = Project (
     "root",
     file(".")
@@ -43,11 +44,6 @@ object TBDBuild extends Build {
         IO.write(masterOut, master)
         masterOut.setExecutable(true)
 
-        val experiment = template.format(classpath, "tbd.examples.wordcount.Experiment")
-        val experimentOut = baseDirectory.value / "../bin/experiment.sh"
-        IO.write(experimentOut, experiment)
-        experimentOut.setExecutable(true)
-
         masterOut
       }
     )
@@ -57,7 +53,20 @@ object TBDBuild extends Build {
     "examples",
     file("examples"),
     settings = buildSettings ++ Seq (
-      libraryDependencies ++= commonDeps
+      libraryDependencies ++= commonDeps,
+      mkexamples := {
+        val classpath = (fullClasspath in Runtime).value.files.absString
+        val template = """#!/bin/sh
+        java -Xmx2g -Xss4m -classpath "%s" %s $@
+        """
+
+        val experiment = template.format(classpath, "tbd.examples.wordcount.Experiment")
+        val experimentOut = baseDirectory.value / "../bin/experiment.sh"
+        IO.write(experimentOut, experiment)
+        experimentOut.setExecutable(true)
+
+        experimentOut
+      }
     )
   ) dependsOn(core)
 }
