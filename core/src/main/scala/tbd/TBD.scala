@@ -18,7 +18,7 @@ package tbd
 import akka.pattern.ask
 import akka.actor.ActorRef
 import akka.event.Logging
-import scala.collection.mutable.{Map, Set}
+import scala.collection.mutable.{ArrayBuffer, Map, Set}
 import scala.concurrent.Await
 
 import tbd.Constants._
@@ -141,41 +141,57 @@ class TBD(
     updated
   }
 
-  private def inMemoTable(thisMemoId: Int, args: List[ModId]): Boolean = {
-    if (worker.memoTable.contains(thisMemoId :: args)) {
-      val timestamp = worker.memoTable(thisMemoId :: args).node.timestamp
-      timestamp > reexecutionStart && timestamp < reexecutionEnd
-    } else {
-      false
-    }
-  }
-
   var memoId = 0
   def makeLift[T, U](): Lift[T, U] = {
     val thisMemoId = memoId
     memoId += 1
     new Lift((aArgs: List[Mod[T]], func: () => Changeable[U]) => {
       val args = aArgs.map(_.id)
+      val signature = thisMemoId :: args
 
-      if (!initialRun && !updated(args) && inMemoTable(thisMemoId, args)) {
-        val memoEntry = worker.memoTable(thisMemoId :: args)
-        worker.ddg.attachSubtree(currentParent, memoEntry.node)
-        worker.memoTable -= (thisMemoId :: args)
+      var found = false
+      var toRemove: MemoEntry = null
+      var ret: Changeable[U] = null
+      if (!initialRun && !updated(args)) {
+        if (worker.memoTable.contains(signature)) {
 
-        memoEntry.changeable.asInstanceOf[Changeable[U]]
-      } else {
-        val memoNode = worker.ddg.addMemo(currentParent, (thisMemoId :: args))
+          // Search through the memo entries matching this signature to see if
+          // there's one in the right time range.
+          for (memoEntry <- worker.memoTable(signature)) {
+            val timestamp = memoEntry.node.timestamp
+            if (!found && timestamp > reexecutionStart &&
+                timestamp < reexecutionEnd) {
+              found = true
+              worker.ddg.attachSubtree(currentParent, memoEntry.node)
+              toRemove = memoEntry
+              ret = memoEntry.changeable.asInstanceOf[Changeable[U]]
+            }
+          }
+        }
+      }
+
+      if (!found) {
+        val memoNode = worker.ddg.addMemo(currentParent, signature)
         val outerParent = currentParent
         currentParent = memoNode
         val changeable = func()
         currentParent = outerParent
 
         val memoEntry = new MemoEntry(changeable.asInstanceOf[Changeable[Any]],
-                                        memoNode)
-        worker.memoTable += ((thisMemoId :: args) -> memoEntry)
+                                      memoNode)
 
-        changeable
+        if (worker.memoTable.contains(signature)) {
+          worker.memoTable(signature) += memoEntry
+        } else {
+          worker.memoTable += (signature -> ArrayBuffer(memoEntry))
+        }
+
+        ret = changeable
+      } else {
+        worker.memoTable(signature) -= toRemove
       }
+
+      ret
     })
   }
 

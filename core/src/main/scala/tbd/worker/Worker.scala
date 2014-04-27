@@ -17,7 +17,7 @@ package tbd.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
-import scala.collection.mutable.{Map, Set}
+import scala.collection.mutable.{ArrayBuffer, Map, Set}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
@@ -40,7 +40,7 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
 
   val datastoreRef = aDatastoreRef
   val ddg = new DDG(log, id, this)
-  val memoTable = Map[List[Any], MemoEntry]()
+  val memoTable = Map[List[Any], ArrayBuffer[MemoEntry]]()
   val datasets = Set[Dataset[Any]]()
 
   private var task: Task = null

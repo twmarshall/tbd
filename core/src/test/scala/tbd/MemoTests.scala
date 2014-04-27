@@ -132,6 +132,37 @@ class OutOfScopeTest extends Adjustable {
   }
 }
 
+class MatchingSignaturesTest extends Adjustable {
+  var count1 = 0
+  var count2 = 0
+
+  def run(tbd: TBD): Int = {
+    val one = tbd.input.get[Mod[Int]](1)
+    val two = tbd.input.get[Mod[Int]](2)
+    val lift = tbd.makeLift[Int, Int]()
+
+    tbd.mod((dest: Dest[Int]) => {
+      tbd.read(one, (oneValue: Int) => {
+        lift.memo(List(two), () => {
+          count1 += 1
+          tbd.write(dest, 0)
+        })
+      })
+    })
+
+    tbd.mod((dest: Dest[Int]) => {
+      tbd.read(one, (oneValue: Int) => {
+        lift.memo(List(two), () => {
+          count2 += 1
+          tbd.write(dest, 0)
+        })
+      })
+    })
+
+    0
+  }
+}
+
 class MemoTests extends FlatSpec with Matchers {
   "MemoTest" should "do stuff" in {
     val mutator = new Mutator()
@@ -220,6 +251,24 @@ class MemoTests extends FlatSpec with Matchers {
     mutator.propagate()
 
     test.num should be (1)
+
+    mutator.shutdown()
+  }
+
+  "MatchingSignaturesTest" should "find both memo matches" in {
+    val mutator = new Mutator()
+    mutator.put(1, 1)
+    mutator.put(2, 2)
+    val test = new MatchingSignaturesTest()
+
+    mutator.run[Int](test)
+    test.count1 should be (1)
+    test.count2 should be (1)
+
+    mutator.update(1, 2)
+    mutator.propagate()
+    test.count1 should be (1)
+    test.count2 should be (1)
 
     mutator.shutdown()
   }

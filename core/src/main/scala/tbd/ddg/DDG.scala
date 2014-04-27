@@ -20,6 +20,7 @@ import akka.event.LoggingAdapter
 import scala.collection.mutable.{ArrayBuffer, Map, PriorityQueue, Set}
 
 import tbd.Changeable
+import tbd.memo.MemoEntry
 import tbd.mod.{Mod, ModId}
 import tbd.worker.Worker
 
@@ -180,7 +181,15 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
       val readNode = node.asInstanceOf[ReadNode]
       reads(readNode.mod.id) -= readNode
     } else if (node.isInstanceOf[MemoNode]) {
-      worker.memoTable -= node.asInstanceOf[MemoNode].signature
+      val signature = node.asInstanceOf[MemoNode].signature
+
+      var toRemove: MemoEntry = null
+      for (memoEntry <- worker.memoTable(signature)) {
+        if (toRemove == null && memoEntry.node.timestamp == node.timestamp) {
+          toRemove = memoEntry
+        }
+      }
+      worker.memoTable(signature) -= toRemove
     }
 
     updated = updated.filter((node2: Node) => node != node2)
