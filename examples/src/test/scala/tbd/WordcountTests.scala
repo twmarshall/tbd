@@ -19,7 +19,7 @@ import org.scalatest._
 import scala.collection.mutable.Map
 
 import tbd.Mutator
-import tbd.examples.wordcount.WCAdjust
+import tbd.examples.list.WCAdjust
 import tbd.mod.Mod
 
 class WordcountTests extends FlatSpec with Matchers {

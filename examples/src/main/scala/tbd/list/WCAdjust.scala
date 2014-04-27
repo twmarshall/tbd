@@ -13,12 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.examples.wordcount
+package tbd.examples.list
 
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, TBD}
 import tbd.mod.Mod
+
+class WCAdjust(partitions: Int) extends WC with Adjustable {
+
+  def run(tbd: TBD): Mod[Map[String, Int]] = {
+    val pages = tbd.input.getDataset[String](partitions)
+    val counts = pages.map(tbd, (s: String) => wordcount(s))
+    counts.reduce(tbd, reduce((_: Map[String, Int]), (_: Map[String, Int])))
+  }
+}
 
 class WCParAdjust(partitions: Int) extends WC with Adjustable {
   def run(tbd: TBD): Mod[Map[String, Int]] = {

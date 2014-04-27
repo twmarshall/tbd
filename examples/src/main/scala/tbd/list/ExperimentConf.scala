@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.examples.wordcount
+package tbd.examples.list
 
 class ExperimentConf {
   var repeat = 3
