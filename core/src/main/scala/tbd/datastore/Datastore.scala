@@ -37,7 +37,7 @@ class Datastore extends Actor with ActorLogging {
   // Maps the name of an input table to a set containing the ModLists that were
   // returned containing this entire table, so that we can tolerate insertions
   // into and deletions from tables.
-  private val modLists = Map[String, Set[ModList[Any]]]()
+  private val modifiers = Map[String, Set[Modifier[Any]]]()
 
   private def get(table: String, key: Any): Any = {
     if (!tables(table).contains(key)) {
@@ -58,16 +58,20 @@ class Datastore extends Actor with ActorLogging {
     val mod = new InputMod[T](self, new ModId("d." + nextModId))
     nextModId += 1
 
-    tables("mods")(mod.id.value) = value
+    tables("mods")(mod.id) = value
     dependencies(mod.id) = Set[ActorRef]()
     mod
   }
 
+  def getMod(modId: ModId): Any = {
+    tables("mods")(modId)
+  }
+
   def updateMod(modId: ModId, value: Any, sender: ActorRef): Int = {
-    if (!tables("mods").contains(modId.value)) {
+    if (!tables("mods").contains(modId)) {
       log.warning("Trying to update non-existent mod.")
     }
-    tables("mods")(modId.value) = value
+    tables("mods")(modId) = value
 
     var count = 0
     for (workerRef <- dependencies(modId)) {
@@ -98,9 +102,9 @@ class Datastore extends Actor with ActorLogging {
       tables(table)(key) = mod
 
       var count = 0
-      if (modLists.contains(table)) {
-        for (modList <- modLists(table)) {
-          count += modList.insert(mod, respondTo, this)
+      if (modifiers.contains(table)) {
+        for (modifier <- modifiers(table)) {
+          count += modifier.insert(mod, respondTo)
         }
       }
 
@@ -117,17 +121,17 @@ class Datastore extends Actor with ActorLogging {
       //log.debug("RemoveMessage")
 
       var count = 0
-      if (modLists.contains(table)) {
-        for (modList <- modLists(table)) {
+      if (modifiers.contains(table)) {
+        for (modifier <- modifiers(table)) {
 	  if (!tables(table).contains(key)) {
 	    log.warning("Trying to remove non-existent key from table.")
 	  }
           val mod = tables(table)(key).asInstanceOf[Mod[Any]]
 
-	  if (!tables("mods").contains(mod.id.value)) {
+	  if (!tables("mods").contains(mod.id)) {
 	    log.warning("Trying to remove non-existent mod " + mod.id)
 	  }
-          count += modList.remove(tables(table)(key).asInstanceOf[Mod[Any]], respondTo, this)
+          count += modifier.remove(tables(table)(key).asInstanceOf[Mod[Any]], respondTo)
         }
       }
 
@@ -146,7 +150,7 @@ class Datastore extends Actor with ActorLogging {
 
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
       dependencies(modId) += workerRef
-      sender ! get("mods", modId.value)
+      sender ! get("mods", modId)
     }
 
     case CleanUpMessage(workerRef: ActorRef, removeModLists: Set[ModList[Any]]) => {
@@ -156,9 +160,9 @@ class Datastore extends Actor with ActorLogging {
         dependencySet -= workerRef
       }
 
-      for ((table, sets) <- modLists) {
+      for ((table, sets) <- modifiers) {
         for (removeModList <- removeModLists) {
-          sets -= removeModList
+          //sets -= removeModList
         }
       }
 
@@ -180,36 +184,15 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case GetModListMessage(table: String, partitions: Int) => {
-      var tail = createMod[DoubleModList[Any]](null)
+      val modifier = new PDMLModifier[Any](this, tables(table), partitions)
 
-      var outputTail = createMod[DoubleModList[Mod[DoubleModList[Any]]]](null)
-      val partitionSize = math.max(1, tables(table).size / partitions)
-      var i = 1
-      for (elem <- tables(table)) {
-        val head = createMod(new DoubleModList(elem._2.asInstanceOf[Mod[Any]], tail))
-        if (i % partitionSize == 0) {
-          val headMod = createMod(head)
-          outputTail = createMod(new DoubleModList[Mod[DoubleModList[Any]]](headMod, outputTail))
-          tail = createMod[DoubleModList[Any]](null)
-        } else {
-          tail = head
-        }
-        i += 1
-      }
-      if ((i - 1) % partitionSize != 0) {
-        val headMod = createMod(tail)
-        outputTail = createMod(new DoubleModList(headMod, outputTail))
-      }
-
-      val modList = new PartitionedDoubleModList(outputTail)
-
-      if (modLists.contains(table)) {
-        modLists(table) += modList
+      if (modifiers.contains(table)) {
+        modifiers(table) += modifier
       } else {
-        modLists(table) = Set(modList)
+        modifiers(table) = Set(modifier)
       }
 
-      sender ! modList
+      sender ! modifier.modList
     }
 
     case x => {

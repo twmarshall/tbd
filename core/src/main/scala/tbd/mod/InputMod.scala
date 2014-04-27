@@ -30,7 +30,7 @@ class InputMod[T](datastoreRef: ActorRef, aId: ModId) extends Mod[T](aId) {
         val readFuture = datastoreRef ? ReadModMessage(id, workerRef)
         Await.result(readFuture, DURATION)
       } else {
-        val readFuture = datastoreRef ? GetMessage("mods", id.value)
+        val readFuture = datastoreRef ? GetMessage("mods", id)
         Await.result(readFuture, DURATION)
       }
 

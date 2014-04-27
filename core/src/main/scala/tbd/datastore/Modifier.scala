@@ -13,29 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.mod
+package tbd.datastore
 
 import akka.actor.ActorRef
-import scala.collection.mutable.{Buffer, Set}
 
-import tbd.TBD
-import tbd.datastore.Datastore
+import tbd.mod.Mod
 
-trait ModList[T] {
-  def map[U](tbd: TBD, func: T => U): ModList[U]
+abstract class Modifier[T](aDatastore: Datastore) {
+  val datastore = aDatastore
 
-  def memoMap[U](tbd: TBD, func: T => U): ModList[U]
+  def insert(mod: Mod[T], respondTo: ActorRef): Int
 
-  def parMap[U](tbd: TBD, func: T => U): ModList[U]
-
-  def memoParMap[U](tbd: TBD, func: T => U): ModList[U]
-
-  def reduce(tbd: TBD, func: (T, T) => T): Mod[T]
-
-  def parReduce(tbd: TBD, func: (T, T) => T): Mod[T]
-
-  /* Meta functions */
-  def toSet(): Set[T]
-
-  def toBuffer(): Buffer[T]
+  def remove(toRemove: Mod[T], respondTo: ActorRef): Int
 }
