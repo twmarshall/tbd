@@ -19,9 +19,8 @@ import akka.actor.ActorRef
 import scala.collection.mutable.Set
 
 import tbd.{Adjustable, Changeable, TBD}
-import tbd.datastore.Dataset
 import tbd.ddg.Node
-import tbd.mod.{Mod, ModId}
+import tbd.mod.{Mod, ModId, ModList}
 import tbd.worker.Task
 
 // DDG
@@ -38,10 +37,10 @@ case class RemoveMessage(table: String, key: Any, respondTo: ActorRef)
 
 case class UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef)
 case class ReadModMessage(modId: ModId, workerRef: ActorRef)
-case class CleanUpMessage(workerRef: ActorRef, datasets: Set[Dataset[Any]])
+case class CleanUpMessage(workerRef: ActorRef, modLists: Set[ModList[Any]])
 
 case class GetArrayMessage(table: String)
-case class GetDatasetMessage(table: String, partitions: Int = 8)
+case class GetModListMessage(table: String, partitions: Int = 8)
 case class NullMessage()
 
 // Master

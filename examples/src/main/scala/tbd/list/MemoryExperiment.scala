@@ -16,12 +16,12 @@
 package tbd.examples.list
 
 import tbd.{Adjustable, Mutator, TBD}
-import tbd.datastore.Dataset
+import tbd.mod.ModList
 
 class MemoryExperiment extends Adjustable {
-  def run(tbd: TBD): Dataset[Int] = {
-    val dataset = tbd.input.getDataset[Int]()
-    dataset.map(tbd, (value: Int) => value)
+  def run(tbd: TBD): ModList[Int] = {
+    val modList = tbd.input.getModList[Int]()
+    modList.map(tbd, (value: Int) => value)
   }
 }
 
@@ -33,7 +33,7 @@ object MemoryExperiment {
       mutator.put(i, i)
     }
 
-    val output = mutator.run[Dataset[Int]](new MemoryExperiment)
+    val output = mutator.run[ModList[Int]](new MemoryExperiment)
 
     val rand = new scala.util.Random()
     while (true) {

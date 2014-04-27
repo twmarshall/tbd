@@ -19,11 +19,11 @@ import org.scalatest._
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator, TBD}
-import tbd.datastore.Dataset
+import tbd.mod.ModList
 
-class DatasetTest extends Adjustable {
-  def run(tbd: TBD): Dataset[Int] = {
-    tbd.input.getDataset[Int](partitions = 1)
+class ModListTest extends Adjustable {
+  def run(tbd: TBD): ModList[Int] = {
+    tbd.input.getModList[Int](partitions = 1)
   }
 }
 
@@ -62,7 +62,7 @@ class MutatorTests extends FlatSpec with Matchers {
     }
   }
 
-  "DatasetTests" should "update the dataset correctly" in {
+  "ModListTests" should "update the modList correctly" in {
     val mutator = new Mutator()
     val answer = Map[Int, Int]()
 
@@ -72,7 +72,7 @@ class MutatorTests extends FlatSpec with Matchers {
       mutator.put(i, i)
       i += 1
     }
-    val output = mutator.run[Dataset[Int]](new DatasetTest())
+    val output = mutator.run[ModList[Int]](new ModListTest())
     output.toBuffer().sortWith(_ < _) should be (answer.values.toBuffer.sortWith(_ < _))
 
     for (j <- 0 to i - 1) {

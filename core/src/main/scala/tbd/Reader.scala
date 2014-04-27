@@ -20,9 +20,8 @@ import akka.pattern.ask
 import scala.concurrent.Await
 
 import tbd.Constants._
-import tbd.datastore.Dataset
 import tbd.messages._
-import tbd.mod.Mod
+import tbd.mod.{Mod, ModList}
 import tbd.worker.Worker
 
 class Reader(worker: Worker) {
@@ -38,10 +37,10 @@ class Reader(worker: Worker) {
       .asInstanceOf[Array[T]]
   }
 
-  def getDataset[T](partitions: Int = 8): Dataset[T] = {
-    val datasetFuture = worker.datastoreRef ? GetDatasetMessage("input", partitions)
-    val dataset = Await.result(datasetFuture, DURATION)
-    worker.datasets += dataset.asInstanceOf[Dataset[Any]]
-    dataset.asInstanceOf[Dataset[T]]
+  def getModList[T](partitions: Int = 8): ModList[T] = {
+    val modListFuture = worker.datastoreRef ? GetModListMessage("input", partitions)
+    val modList = Await.result(modListFuture, DURATION)
+    worker.modLists += modList.asInstanceOf[ModList[Any]]
+    modList.asInstanceOf[ModList[T]]
   }
 }

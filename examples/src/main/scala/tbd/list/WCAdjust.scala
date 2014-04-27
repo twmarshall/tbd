@@ -23,7 +23,7 @@ import tbd.mod.Mod
 class WCAdjust(partitions: Int) extends WC with Adjustable {
 
   def run(tbd: TBD): Mod[Map[String, Int]] = {
-    val pages = tbd.input.getDataset[String](partitions)
+    val pages = tbd.input.getModList[String](partitions)
     val counts = pages.map(tbd, (s: String) => wordcount(s))
     counts.reduce(tbd, reduce((_: Map[String, Int]), (_: Map[String, Int])))
   }
@@ -31,7 +31,7 @@ class WCAdjust(partitions: Int) extends WC with Adjustable {
 
 class WCParAdjust(partitions: Int) extends WC with Adjustable {
   def run(tbd: TBD): Mod[Map[String, Int]] = {
-    val pages = tbd.input.getDataset[String](partitions)
+    val pages = tbd.input.getModList[String](partitions)
     val counts = pages.parMap(tbd, (s: String) => wordcount(s))
     counts.parReduce(tbd, reduce((_: Map[String, Int]), (_: Map[String, Int])))
   }

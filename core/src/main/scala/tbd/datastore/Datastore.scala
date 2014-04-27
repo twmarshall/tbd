@@ -20,25 +20,24 @@ import akka.pattern.ask
 import scala.collection.mutable.{Map, Set}
 import scala.concurrent.Await
 
-import tbd.ListNode
 import tbd.messages._
-import tbd.mod.{InputMod, Mod, ModId}
+import tbd.mod.{DoubleModList, InputMod, Mod, ModId, ModList, PartitionedDoubleModList}
 
 object Datastore {
   def props(): Props = Props(classOf[Datastore])
 }
 
 class Datastore extends Actor with ActorLogging {
-  private val tables = Map[String, Map[Any, Any]]()
+  val tables = Map[String, Map[Any, Any]]()
   tables("mods") = Map[Any, Any]()
 
   // Maps modIds to the workers that have read the corresponding mod.
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  // Maps the name of an input table to a set containing the datasets that were
+  // Maps the name of an input table to a set containing the ModLists that were
   // returned containing this entire table, so that we can tolerate insertions
   // into and deletions from tables.
-  private val datasets = Map[String, Set[Dataset[Any]]]()
+  private val modLists = Map[String, Set[ModList[Any]]]()
 
   private def get(table: String, key: Any): Any = {
     if (!tables(table).contains(key)) {
@@ -55,7 +54,7 @@ class Datastore extends Actor with ActorLogging {
   }
 
   private var nextModId = 0
-  private def createMod[T](value: T): Mod[T] = {
+  def createMod[T](value: T): Mod[T] = {
     val mod = new InputMod[T](self, new ModId("d." + nextModId))
     nextModId += 1
 
@@ -64,7 +63,7 @@ class Datastore extends Actor with ActorLogging {
     mod
   }
 
-  private def updateMod(modId: ModId, value: Any, sender: ActorRef): Int = {
+  def updateMod(modId: ModId, value: Any, sender: ActorRef): Int = {
     if (!tables("mods").contains(modId.value)) {
       log.warning("Trying to update non-existent mod.")
     }
@@ -79,83 +78,6 @@ class Datastore extends Actor with ActorLogging {
     }
 
     count
-  }
-
-  private def remove(
-      toRemove: Mod[Any], dataset: Dataset[Any], respondTo: ActorRef): Int = {
-    var count = 0
-    var outerNode = tables("mods")(dataset.lists.id.value)
-      .asInstanceOf[ListNode[Mod[ListNode[Any]]]]
-    var found = false
-    while (outerNode != null && !found) {
-      val modList = tables("mods")(outerNode.value.id.value)
-        .asInstanceOf[Mod[ListNode[Any]]]
-      var innerNode = tables("mods")(modList.id.value)
-        .asInstanceOf[ListNode[Any]]
-
-      var previousNode: ListNode[Any] = null
-      while (innerNode != null && !found) {
-        if (innerNode.value == toRemove) {
-          if (previousNode != null) {
-            count += updateMod(previousNode.next.id,
-                               tables("mods")(innerNode.next.id.value),
-                               respondTo)
-          } else {
-            count += updateMod(modList.id,
-                               tables("mods")(innerNode.next.id.value),
-                               respondTo)
-          }
-
-          // Note: for now, we're not addressing what happens if you try to get
-          // a value from the table that doesn't exist, so we don't need to
-          // notify workers when a mod is removed.
-          tables("mods") -= innerNode.next.id.value
-	  tables("mods") -= innerNode.value.id.value
-
-	  found = true
-        } else {
-          previousNode = innerNode
-          innerNode = tables("mods")(innerNode.next.id.value)
-            .asInstanceOf[ListNode[Any]]
-        }
-      }
-      outerNode = tables("mods")(outerNode.next.id.value)
-        .asInstanceOf[ListNode[Mod[ListNode[Any]]]]
-    }
-
-    if (!found) {
-      log.warning("Didn't find value to remove.")
-    }
-
-    count
-  }
-
-  private def insert(
-      mod: Mod[Any],
-      dataset: Dataset[Any],
-      respondTo: ActorRef): Int = {
-    var count = 0
-    var outerNode = tables("mods")(dataset.lists.id.value)
-      .asInstanceOf[ListNode[Mod[ListNode[Any]]]]
-
-    var lastMod: Mod[ListNode[Any]] = null
-    while (outerNode != null) {
-      val modList = tables("mods")(outerNode.value.id.value)
-        .asInstanceOf[Mod[ListNode[Any]]]
-      var innerNode = tables("mods")(modList.id.value)
-        .asInstanceOf[ListNode[Any]]
-
-      while (innerNode != null) {
-        lastMod = innerNode.next
-        innerNode = tables("mods")(innerNode.next.id.value)
-          .asInstanceOf[ListNode[Any]]
-      }
-      outerNode = tables("mods")(outerNode.next.id.value)
-        .asInstanceOf[ListNode[Mod[ListNode[Any]]]]
-    }
-
-    val newTail = createMod[ListNode[Any]](null)
-    updateMod(lastMod.id, new ListNode(mod, newTail), respondTo)
   }
 
   def receive = {
@@ -176,9 +98,9 @@ class Datastore extends Actor with ActorLogging {
       tables(table)(key) = mod
 
       var count = 0
-      if (datasets.contains(table)) {
-        for (dataset <- datasets(table)) {
-          count += insert(mod, dataset, respondTo)
+      if (modLists.contains(table)) {
+        for (modList <- modLists(table)) {
+          count += modList.insert(mod, respondTo, this)
         }
       }
 
@@ -195,8 +117,8 @@ class Datastore extends Actor with ActorLogging {
       //log.debug("RemoveMessage")
 
       var count = 0
-      if (datasets.contains(table)) {
-        for (dataset <- datasets(table)) {
+      if (modLists.contains(table)) {
+        for (modList <- modLists(table)) {
 	  if (!tables(table).contains(key)) {
 	    log.warning("Trying to remove non-existent key from table.")
 	  }
@@ -205,7 +127,7 @@ class Datastore extends Actor with ActorLogging {
 	  if (!tables("mods").contains(mod.id.value)) {
 	    log.warning("Trying to remove non-existent mod " + mod.id)
 	  }
-          count += remove(tables(table)(key).asInstanceOf[Mod[Any]], dataset, respondTo)
+          count += modList.remove(tables(table)(key).asInstanceOf[Mod[Any]], respondTo, this)
         }
       }
 
@@ -227,16 +149,16 @@ class Datastore extends Actor with ActorLogging {
       sender ! get("mods", modId.value)
     }
 
-    case CleanUpMessage(workerRef: ActorRef, removeDatasets: Set[Dataset[Any]]) => {
+    case CleanUpMessage(workerRef: ActorRef, removeModLists: Set[ModList[Any]]) => {
       //log.debug("RemoveDependenciesMessage from " + sender)
 
       for ((modId, dependencySet) <- dependencies) {
         dependencySet -= workerRef
       }
 
-      for ((table, sets) <- datasets) {
-        for (removeDataset <- removeDatasets) {
-          sets -= removeDataset
+      for ((table, sets) <- modLists) {
+        for (removeModList <- removeModLists) {
+          sets -= removeModList
         }
       }
 
@@ -257,18 +179,18 @@ class Datastore extends Actor with ActorLogging {
       sender ! arr
     }
 
-    case GetDatasetMessage(table: String, partitions: Int) => {
-      var tail = createMod[ListNode[Any]](null)
+    case GetModListMessage(table: String, partitions: Int) => {
+      var tail = createMod[DoubleModList[Any]](null)
 
-      var outputTail = createMod[ListNode[Mod[ListNode[Any]]]](null)
+      var outputTail = createMod[DoubleModList[Mod[DoubleModList[Any]]]](null)
       val partitionSize = math.max(1, tables(table).size / partitions)
       var i = 1
       for (elem <- tables(table)) {
-        val head = createMod(new ListNode(elem._2.asInstanceOf[Mod[Any]], tail))
+        val head = createMod(new DoubleModList(elem._2.asInstanceOf[Mod[Any]], tail))
         if (i % partitionSize == 0) {
           val headMod = createMod(head)
-          outputTail = createMod(new ListNode[Mod[ListNode[Any]]](headMod, outputTail))
-          tail = createMod[ListNode[Any]](null)
+          outputTail = createMod(new DoubleModList[Mod[DoubleModList[Any]]](headMod, outputTail))
+          tail = createMod[DoubleModList[Any]](null)
         } else {
           tail = head
         }
@@ -276,18 +198,18 @@ class Datastore extends Actor with ActorLogging {
       }
       if ((i - 1) % partitionSize != 0) {
         val headMod = createMod(tail)
-        outputTail = createMod(new ListNode(headMod, outputTail))
+        outputTail = createMod(new DoubleModList(headMod, outputTail))
       }
 
-      val dataset = new Dataset(outputTail)
+      val modList = new PartitionedDoubleModList(outputTail)
 
-      if (datasets.contains(table)) {
-        datasets(table) += dataset
+      if (modLists.contains(table)) {
+        modLists(table) += modList
       } else {
-        datasets(table) = Set(dataset)
+        modLists(table) = Set(modList)
       }
 
-      sender ! dataset
+      sender ! modList
     }
 
     case x => {

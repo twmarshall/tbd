@@ -18,7 +18,7 @@ package tbd.examples.list
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, TBD}
-import tbd.datastore.Dataset
+import tbd.mod.ModList
 
 object MapAdjust {
   def mapper(s: String): Int = {
@@ -31,29 +31,29 @@ object MapAdjust {
 }
 
 class MapAdjust(partitions: Int) extends WC with Adjustable {
-  def run(tbd: TBD): Dataset[Int] = {
-    val pages = tbd.input.getDataset[String](partitions)
+  def run(tbd: TBD): ModList[Int] = {
+    val pages = tbd.input.getModList[String](partitions)
     pages.map(tbd, (s: String) => MapAdjust.mapper(s))
   }
 }
 
 class MapMemoAdjust(partitions: Int) extends WC with Adjustable {
-  def run(tbd: TBD): Dataset[Int] = {
-    val pages = tbd.input.getDataset[String](partitions)
+  def run(tbd: TBD): ModList[Int] = {
+    val pages = tbd.input.getModList[String](partitions)
     pages.memoMap(tbd, (s: String) => MapAdjust.mapper(s))
   }
 }
 
 class MapParAdjust(partitions: Int) extends WC with Adjustable {
-  def run(tbd: TBD): Dataset[Int] = {
-    val pages = tbd.input.getDataset[String](partitions)
+  def run(tbd: TBD): ModList[Int] = {
+    val pages = tbd.input.getModList[String](partitions)
     pages.parMap(tbd, (s: String) => MapAdjust.mapper(s))
   }
 }
 
 class MapMemoParAdjust(partitions: Int) extends WC with Adjustable {
-  def run(tbd: TBD): Dataset[Int] = {
-    val pages = tbd.input.getDataset[String](partitions)
+  def run(tbd: TBD): ModList[Int] = {
+    val pages = tbd.input.getModList[String](partitions)
     pages.memoParMap(tbd, (s: String) => MapAdjust.mapper(s))
   }
 }

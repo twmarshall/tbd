@@ -17,30 +17,29 @@ package tbd.test
 
 import org.scalatest._
 
-import tbd.{Adjustable, Changeable, Dest, Mutator, ListNode, TBD}
-import tbd.datastore.Dataset
-import tbd.mod.Mod
+import tbd.{Adjustable, Changeable, Dest, Mutator, TBD}
+import tbd.mod.{Mod, ModList}
 
 class ListMapReduceTest extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {
-    val dataset = tbd.input.getDataset[Int](partitions = 1)
-    val mappedDataset = dataset.map(tbd, (_: Int) * 2)
-    mappedDataset.reduce(tbd, (_: Int) + (_: Int))
+    val modList = tbd.input.getModList[Int](partitions = 1)
+    val mappedModList = modList.map(tbd, (_: Int) * 2)
+    mappedModList.reduce(tbd, (_: Int) + (_: Int))
   }
 }
 
 class ListParMapReduceTest extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {
-    val dataset = tbd.input.getDataset[Int]()
-    val mappedDataset = dataset.parMap(tbd, (_: Int) + 1)
-    mappedDataset.parReduce(tbd, (_: Int) + (_: Int))
+    val modList = tbd.input.getModList[Int]()
+    val mappedModList = modList.parMap(tbd, (_: Int) + 1)
+    mappedModList.parReduce(tbd, (_: Int) + (_: Int))
   }
 }
 
 class ListMemoMapTest extends Adjustable {
-  def run(tbd: TBD): Dataset[Int] = {
-    val dataset = tbd.input.getDataset[Int](partitions = 1)
-    dataset.memoMap(tbd, (_: Int) + 3)
+  def run(tbd: TBD): ModList[Int] = {
+    val modList = tbd.input.getModList[Int](partitions = 1)
+    modList.memoMap(tbd, (_: Int) + 3)
   }
 }
 
@@ -122,13 +121,13 @@ class ListTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 
-  "ListMemoMapTest" should "return the mapped Dataset" in {
+  "ListMemoMapTest" should "return the mapped ModList" in {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
     mutator.put("three", 3)
     mutator.put("four", 4)
-    val output = mutator.run[Dataset[Int]](new ListMemoMapTest())
+    val output = mutator.run[ModList[Int]](new ListMemoMapTest())
     output.toSet() should be (Set(4, 5, 6, 7))
 
     mutator.remove("two")

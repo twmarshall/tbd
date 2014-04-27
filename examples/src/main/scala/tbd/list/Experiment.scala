@@ -19,9 +19,8 @@ import java.io.{BufferedInputStream, File, FileInputStream}
 import scala.collection.mutable.{ArrayBuffer, Map}
 
 import tbd.{Adjustable, Mutator}
-import tbd.datastore.Dataset
 import tbd.master.Main
-import tbd.mod.Mod
+import tbd.mod.{Mod, ModList}
 
 class Experiment(conf: ExperimentConf) {
   val runtime = Runtime.getRuntime()
@@ -110,7 +109,7 @@ class Experiment(conf: ExperimentConf) {
     }
 
     val before = System.currentTimeMillis()
-    val output = mutator.run[Dataset[Int]](adjust)
+    val output = mutator.run[ModList[Int]](adjust)
     val initialElapsed = System.currentTimeMillis() - before
 
     val sortedOutput = output.toBuffer().sortWith(_ < _)
