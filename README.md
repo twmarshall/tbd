@@ -1,15 +1,17 @@
 TBD
 ===========
 
-Build with SBT (Note: we only support sbt 0.12.0 due to a bug in 0.13.0
-outlined here: https://github.com/sbt/sbt/issues/810, but as we include the 
-sbt jar in the repo, you shouldn't need to install anything anyways):
+Build with SBT (you don't need to install SBT on your machine)
 
 # sbt/sbt
 
 > compile
 
 > test
+
+> mkrun
+
+The 'mkrun' command will create the files bin/master.sh, which can be used to launch a master, and bin/experiment, which runs the experiments.
 
 To turn on debug log output, edit core/src/main/resources/common.conf, changing
 loglevel to "DEBUG".

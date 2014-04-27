@@ -25,13 +25,14 @@ object Main {
   var id = 0
 
   def main(args: Array[String]) {
-    new Main()
+    val main = new Main()
+    println("New master started at: akka.tcp://" + main.system.name + "@127.0.0.1:2552")
   }
 }
 
 class Main {
   val system = ActorSystem("masterSystem" + Main.id,
-                           ConfigFactory.load.getConfig("client"))
+                           ConfigFactory.load.getConfig("master"))
   Main.id += 1
 
   val masterRef = system.actorOf(Master.props(), "master")
