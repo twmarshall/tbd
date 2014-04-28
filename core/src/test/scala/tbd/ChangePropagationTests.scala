@@ -18,8 +18,8 @@ package tbd.test
 import org.scalatest._
 import scala.collection.mutable.ArrayBuffer
 
-import tbd.{Adjustable, Changeable, Dest, Mutator, TBD}
-import tbd.mod.{Mod, ModList}
+import tbd.{Adjustable, Changeable, Mutator, TBD}
+import tbd.mod.{Dest, Mod, ModList}
 
 class ArrayMapTest extends Adjustable {
   def run(tbd: TBD): Array[Mod[String]] = {

@@ -15,10 +15,9 @@
  */
 package tbd.memo
 
-import tbd.Changeable
 import tbd.ddg.Node
 
-class MemoEntry(aChangeable: Changeable[Any], aNode: Node) {
-  val changeable = aChangeable
+class MemoEntry(aValue: Any, aNode: Node) {
+  val value = aValue
   val node = aNode
 }

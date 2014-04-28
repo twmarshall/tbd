@@ -17,8 +17,8 @@ package tbd.test
 
 import org.scalatest._
 
-import tbd.{Adjustable, Changeable, Dest, Mutator, TBD}
-import tbd.mod.{Mod, ModList}
+import tbd.{Adjustable, Changeable, Mutator, TBD}
+import tbd.mod.{Dest, Mod, ModList}
 
 class ListMapReduceTest extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {

@@ -25,7 +25,7 @@ import tbd.Constants._
 import tbd.ddg.{Node, Timestamp}
 import tbd.memo.{Lift, MemoEntry}
 import tbd.messages._
-import tbd.mod.{Mod, ModId}
+import tbd.mod.{Dest, Mod, ModId}
 import tbd.worker.{Worker, Task}
 
 object TBD {
@@ -101,9 +101,11 @@ class TBD(
   }
 
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
-    val d = new Dest[T](worker)
+    val modId = new ModId(worker.id + "." + worker.nextModId)
+    val d = new Dest[T](worker, modId)
     dependencies(d.mod.id) = Set()
     initializer(d).mod
+    d.mod
   }
 
   var workerId = 0
@@ -145,13 +147,13 @@ class TBD(
   def makeLift[T, U](): Lift[T, U] = {
     val thisMemoId = memoId
     memoId += 1
-    new Lift((aArgs: List[Mod[T]], func: () => Changeable[U]) => {
+    new Lift((aArgs: List[Mod[T]], func: () => U) => {
       val args = aArgs.map(_.id)
       val signature = thisMemoId :: args
 
       var found = false
       var toRemove: MemoEntry = null
-      var ret: Changeable[U] = null
+      var ret: U = null.asInstanceOf[U]
       if (!initialRun && !updated(args)) {
         if (worker.memoTable.contains(signature)) {
 
@@ -164,7 +166,7 @@ class TBD(
               found = true
               worker.ddg.attachSubtree(currentParent, memoEntry.node)
               toRemove = memoEntry
-              ret = memoEntry.changeable.asInstanceOf[Changeable[U]]
+              ret = memoEntry.value.asInstanceOf[U]
             }
           }
         }
@@ -174,11 +176,10 @@ class TBD(
         val memoNode = worker.ddg.addMemo(currentParent, signature)
         val outerParent = currentParent
         currentParent = memoNode
-        val changeable = func()
+        val value = func()
         currentParent = outerParent
 
-        val memoEntry = new MemoEntry(changeable.asInstanceOf[Changeable[Any]],
-                                      memoNode)
+        val memoEntry = new MemoEntry(value, memoNode)
 
         if (worker.memoTable.contains(signature)) {
           worker.memoTable(signature) += memoEntry
@@ -186,7 +187,7 @@ class TBD(
           worker.memoTable += (signature -> ArrayBuffer(memoEntry))
         }
 
-        ret = changeable
+        ret = value
       } else {
         worker.memoTable(signature) -= toRemove
       }

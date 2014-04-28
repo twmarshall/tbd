@@ -15,7 +15,7 @@
  */
 package tbd.mod
 
-import tbd.{Changeable, Dest, TBD}
+import tbd.{Changeable, TBD}
 import tbd.memo.Lift
 
 class DoubleModList[T](aValue: Mod[T], aNext: Mod[DoubleModList[T]]) {
@@ -43,11 +43,11 @@ class DoubleModList[T](aValue: Mod[T], aNext: Mod[DoubleModList[T]]) {
       tbd: TBD,
       dest: Dest[DoubleModList[W]],
       f: T => W,
-      lift: Lift[DoubleModList[T], DoubleModList[W]]): Changeable[DoubleModList[W]] = {
+      lift: Lift[DoubleModList[T], Mod[DoubleModList[W]]]): Changeable[DoubleModList[W]] = {
     val newValue = tbd.mod((dest: Dest[W]) =>
       tbd.read(value, (value: T) => tbd.write(dest, f(value))))
-    val newNext = tbd.mod((dest: Dest[DoubleModList[W]]) =>
-      lift.memo(List(next), () => {
+    val newNext = lift.memo(List(next), () => {
+      tbd.mod((dest: Dest[DoubleModList[W]]) =>
         tbd.read(next, (next: DoubleModList[T]) => {
           if (next != null) {
             next.memoMap(tbd, dest, f, lift)
@@ -55,7 +55,8 @@ class DoubleModList[T](aValue: Mod[T], aNext: Mod[DoubleModList[T]]) {
             tbd.write(dest, null)
           }
         })
-      }))
+      )
+    })
     tbd.write(dest, new DoubleModList[W](newValue, newNext))
   }
 
@@ -63,24 +64,25 @@ class DoubleModList[T](aValue: Mod[T], aNext: Mod[DoubleModList[T]]) {
       tbd: TBD,
       dest: Dest[DoubleModList[W]],
       f: (TBD, T) => W): Changeable[DoubleModList[W]] = {
-	  val modTuple =
+    val modTuple =
       tbd.par((tbd: TBD) => {
-	      tbd.mod((valueDest: Dest[W]) => {
+	tbd.mod((valueDest: Dest[W]) => {
           tbd.read(value, (value: T) => {
             tbd.write(valueDest, f(tbd, value))
           })
         })
-	    }, (tbd: TBD) => {
+      }, (tbd: TBD) => {
         tbd.mod((nextDest: Dest[DoubleModList[W]]) => {
-	        tbd.read(next, (next: DoubleModList[T]) => {
+	  tbd.read(next, (next: DoubleModList[T]) => {
             if (next != null) {
               next.parMap(tbd, nextDest, f)
             } else {
               tbd.write(nextDest, null)
             }
-          })
+            })
         })
-	    })
+      })
+
     tbd.write(dest, new DoubleModList[W](modTuple._1, modTuple._2))
   }
 

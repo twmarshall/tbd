@@ -18,7 +18,7 @@ package tbd.mod
 import akka.actor.ActorRef
 import scala.collection.mutable.{ArrayBuffer, Buffer, Set}
 
-import tbd.{Changeable, Dest, TBD}
+import tbd.{Changeable, TBD}
 import tbd.datastore.Datastore
 
 class PartitionedDoubleModList[T](
@@ -47,7 +47,7 @@ class PartitionedDoubleModList[T](
     new PartitionedDoubleModList(tbd.mod((dest: Dest[DoubleModList[Mod[DoubleModList[U]]]]) => {
       tbd.read(lists, (lsts: DoubleModList[Mod[DoubleModList[T]]]) => {
         lsts.map(tbd, dest, (list: Mod[DoubleModList[T]]) => {
-          val lift = tbd.makeLift[DoubleModList[T], DoubleModList[U]]()
+          val lift = tbd.makeLift[DoubleModList[T], Mod[DoubleModList[U]]]()
 
           tbd.mod((dest: Dest[DoubleModList[U]]) => {
             tbd.read(list, (lst: DoubleModList[T]) => {
@@ -85,7 +85,7 @@ class PartitionedDoubleModList[T](
     new PartitionedDoubleModList(tbd.mod((dest: Dest[DoubleModList[Mod[DoubleModList[U]]]]) => {
       tbd.read(lists, (lsts: DoubleModList[Mod[DoubleModList[T]]]) => {
         lsts.parMap(tbd, dest, (tbd: TBD, list: Mod[DoubleModList[T]]) => {
-          val lift = tbd.makeLift[DoubleModList[T], DoubleModList[U]]()
+          val lift = tbd.makeLift[DoubleModList[T], Mod[DoubleModList[U]]]()
 
           tbd.mod((dest: Dest[DoubleModList[U]]) => {
             tbd.read(list, (lst: DoubleModList[T]) => {

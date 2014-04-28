@@ -13,13 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd
+package tbd.mod
 
-import tbd.mod.{LocalMod, ModId}
+import akka.actor.ActorRef
+
+import tbd.TBD
 import tbd.worker.Worker
 
-class Dest[T](worker: Worker) {
-  val modId = new ModId(worker.id + "." + worker.nextModId)
-  val mod = new LocalMod[T](worker.self, modId)
+class Dest[T](worker: Worker, aModId: ModId) extends Mod[T](aModId) {
+  val mod = new LocalMod[T](worker.self, id)
   worker.nextModId += 1
+
+  def read(workerRef: ActorRef = null): T = {
+    throw new RuntimeException("Not implemented.")
+  }
+
+  def update(value: T, workerRef: ActorRef, tbd: TBD): Int = {
+    throw new RuntimeException("Not implemented.")
+  }
 }

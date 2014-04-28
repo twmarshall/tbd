@@ -15,13 +15,12 @@
  */
 package tbd.memo
 
-import tbd.Changeable
 import tbd.mod.Mod
 
 class Lift[T, U](
-    lifter: (List[Mod[T]],  () => Changeable[U]) => Changeable[U]) {
+    lifter: (List[Mod[T]],  () => U) => U) {
 
-  def memo(lst: List[Mod[T]], func: () => Changeable[U]): Changeable[U] = {
+  def memo(lst: List[Mod[T]], func: () => U): U = {
     lifter(lst, func)
   }
 }
