@@ -41,7 +41,7 @@ class DoubleModList[T](
   def memoMap[U](
       tbd: TBD,
       f: T => U): DoubleModList[U] = {
-    val lift = tbd.makeLift[DoubleModListNode[T], Mod[DoubleModListNode[U]]]()
+    val lift = tbd.makeLift[Mod[DoubleModListNode[U]]]()
 
     new DoubleModList(
       tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
@@ -88,11 +88,30 @@ class DoubleModList[T](
     )
   }
 
+  def filter(
+      tbd: TBD,
+      pred: T => Boolean,
+      parallel: Boolean = false): DoubleModList[T] = {
+    val lift = tbd.makeLift[Mod[DoubleModListNode[T]]]()
+
+    new DoubleModList(
+      tbd.mod((dest: Dest[DoubleModListNode[T]]) => {
+        tbd.read(head, (node: DoubleModListNode[T]) => {
+          if (node != null) {
+            node.memoFilter(tbd, dest, pred, lift)
+          } else {
+            tbd.write(dest, null)
+          }
+        })
+      })
+    )
+  }
+
   def toBuffer(): Buffer[T] = {
     val buf = ArrayBuffer[T]()
     var node = head.read()
     while (node != null) {
-      buf += node.value.read()
+      buf += node.valueMod.read()
       node = node.next.read()
     }
 

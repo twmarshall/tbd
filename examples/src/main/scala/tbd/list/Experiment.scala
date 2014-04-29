@@ -97,7 +97,7 @@ class Experiment(conf: ExperimentConf) {
   }
 
   def once(
-      adjust: Adjustable,
+      algorithm: Algorithm,
       aCount: Int,
       results: Map[String, Double],
       main: Main) {
@@ -109,14 +109,10 @@ class Experiment(conf: ExperimentConf) {
     }
 
     val before = System.currentTimeMillis()
-    val output = mutator.run[ModList[Int]](adjust)
+    algorithm.initialRun(mutator)
     val initialElapsed = System.currentTimeMillis() - before
 
-    val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val sortedAnswer = activeChunkValues.map(pair => {
-      MapAdjust.mapper(pair._2)
-    }).toBuffer.sortWith(_ < _)
-    assert(sortedOutput == sortedAnswer)
+    assert(algorithm.checkOutput(activeChunkValues))
 
     if (results.contains("initial")) {
       results("initial") += initialElapsed
@@ -160,11 +156,7 @@ class Experiment(conf: ExperimentConf) {
       val elapsed = System.currentTimeMillis() - before2
       print("\t" + elapsed)
 
-      val sortedOutput = output.toBuffer().sortWith(_ < _)
-      val sortedAnswer = activeChunkValues.map(pair => {
-        MapAdjust.mapper(pair._2)
-      }).toBuffer.sortWith(_ < _)
-      assert(sortedOutput == sortedAnswer)
+      assert(algorithm.checkOutput(activeChunkValues))
 
       if (results.contains(percent + "")) {
         results(percent + "") += elapsed
@@ -178,7 +170,7 @@ class Experiment(conf: ExperimentConf) {
   }
 
   val allResults = Map[String, Map[Int, Map[String, Double]]]()
-  def run(adjust: Adjustable, description: String) {
+  def run(algorithm: Algorithm, description: String) {
     val main = new Main()
     loadFile()
 
@@ -188,7 +180,7 @@ class Experiment(conf: ExperimentConf) {
       val results = Map[String, Double]()
       while (run < conf.repeat) {
         print(description + "\t" + count)
-        once(adjust, count, results, main)
+        once(algorithm, count, results, main)
         run += 1
       }
 
@@ -270,6 +262,7 @@ object Experiment {
     experiment.warmUp()
     for (description <- conf.descriptions) {
       if (conf.algorithm == "map") {
+        println("map")
         description match {
           case "smap" =>
             experiment.runControl("smap", SimpleMap.run)
@@ -284,9 +277,14 @@ object Experiment {
           case _ =>
             println("Unrecognized description.")
         }
-      } else {
-        //experiment.run(new WCAdjust(conf.partitions), "seq")
-        //experiment.run(new WCParAdjust(conf.partitions), "par")
+      } else if (conf.algorithm == "filter") {
+        println("filter")
+        description match {
+          case "seq" =>
+            experiment.run(new FilterAdjust(1), description)
+          case "par" =>
+            experiment.run(new FilterAdjust(4), description)
+        }
       }
     }
 

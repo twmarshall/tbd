@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.memo
+package tbd.examples.list
 
-import tbd.mod.Mod
+import scala.collection.mutable.Map
 
-class Lift[T](
-    lifter: (List[Mod[_]],  () => T) => T) {
+import tbd.{Adjustable, Mutator}
 
-  def memo(lst: List[Mod[_]], func: () => T): T = {
-    lifter(lst, func)
-  }
+abstract class Algorithm extends Adjustable {
+  def initialRun(mutator: Mutator)
+
+  def checkOutput(answer: Map[Int, String]): Boolean
 }

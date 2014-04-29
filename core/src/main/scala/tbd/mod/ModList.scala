@@ -22,6 +22,10 @@ import tbd.TBD
 import tbd.datastore.Datastore
 
 trait ModList[T] {
+  /**
+   * Returns a ModList containing the results of applying the given function
+   * to each of the elements of this ModList.
+   */
   def map[U](tbd: TBD, f: T => U): ModList[U]
 
   def memoMap[U](tbd: TBD, f: T => U): ModList[U]
@@ -29,6 +33,12 @@ trait ModList[T] {
   def parMap[U](tbd: TBD, f: (TBD, T) => U): ModList[U]
 
   def memoParMap[U](tbd: TBD, f: (TBD, T) => U): ModList[U]
+
+  /**
+   * Returns a ModList containing all of the elements from this ModList that
+   * satisfy the given predicate.
+   */
+  def filter(tbd: TBD, pred: T => Boolean, parallel: Boolean = false): ModList[T]
 
   /* Meta functions */
   def toBuffer(): Buffer[T]

@@ -65,7 +65,7 @@ class DMLModifier[T](
 
     var previousNode: DoubleModListNode[T] = null
     while (innerNode != null && !found) {
-      if (innerNode.value == toRemove) {
+      if (innerNode.valueMod == toRemove) {
         if (previousNode != null) {
           count += datastore.updateMod(previousNode.next.id,
                                        datastore.tables("mods")(innerNode.next.id),
@@ -80,7 +80,7 @@ class DMLModifier[T](
         // a value from the table that doesn't exist, so we don't need to
         // notify workers when a mod is removed.
         datastore.tables("mods") -= innerNode.next.id
-	datastore.tables("mods") -= innerNode.value.id
+	datastore.tables("mods") -= innerNode.valueMod.id
 
 	found = true
       } else {
@@ -103,7 +103,7 @@ class DMLModifier[T](
       .asInstanceOf[DoubleModListNode[T]]
 
     while (innerNode != null && !found) {
-      if (innerNode.value == toRemove) {
+      if (innerNode.valueMod == toRemove) {
 	found = true
       } else {
         innerNode = datastore.getMod(innerNode.next.id)

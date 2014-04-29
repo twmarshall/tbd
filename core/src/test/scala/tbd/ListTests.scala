@@ -15,27 +15,25 @@
  */
 package tbd.test
 
-import scala.collection.mutable.Buffer
+import scala.collection.mutable.{Buffer, Map}
 import org.scalatest._
 
 import tbd.{Adjustable, Changeable, Mutator, TBD}
 import tbd.mod.{Dest, Mod, ModList}
 
-/*class ListMapReduceTest extends Adjustable {
-  def run(tbd: TBD): Mod[Int] = {
+class ListMapTest extends Adjustable {
+  def run(tbd: TBD): ModList[Int] = {
     val modList = tbd.input.getModList[Int](partitions = 1)
-    val mappedModList = modList.map(tbd, (_: Int) * 2)
-    mappedModList.reduce(tbd, (_: Int) + (_: Int))
+    modList.map(tbd, (_: Int) * 2)
   }
 }
 
-class ListParMapReduceTest extends Adjustable {
-  def run(tbd: TBD): Mod[Int] = {
+class ListParMapTest extends Adjustable {
+  def run(tbd: TBD): ModList[Int] = {
     val modList = tbd.input.getModList[Int]()
-    val mappedModList = modList.parMap(tbd, (_: Int) + 1)
-    mappedModList.parReduce(tbd, (_: Int) + (_: Int))
+    modList.parMap(tbd, (tbd: TBD, value: Int) => value + 1)
   }
-}*/
+}
 
 class ListMemoMapTest extends Adjustable {
   def run(tbd: TBD): ModList[Int] = {
@@ -44,31 +42,38 @@ class ListMemoMapTest extends Adjustable {
   }
 }
 
+class ListFilterTest(partitions: Int) extends Adjustable {
+  def run(tbd: TBD): ModList[Int] = {
+    val modList = tbd.input.getModList[Int](partitions = partitions)
+    modList.filter(tbd, (_: Int) % 2 == 0)
+  }
+}
+
 class ListTests extends FlatSpec with Matchers {
-  /*"ListMapReduceTest" should "return the reduced value" in {
+  "ListMapTest" should "return the mapped list" in {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
-    val output = mutator.run[Mod[Int]](new ListMapReduceTest())
-    // (1 * 2) + (2 * 2)
-    output.read() should be (6)
+    val output = mutator.run[ModList[Int]](new ListMapTest())
+    // (1 * 2), (2 * 2)
+    output.toBuffer().sortWith(_ < _) should be (Buffer(2, 4))
 
     mutator.update("one", 5)
     mutator.propagate()
-    // (5 * 2) + (2 * 2)
-    output.read() should be (14)
+    // (5 * 2), (2 * 2)
+    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 10))
 
     mutator.put("three", 4)
     mutator.propagate()
-    // (5 * 2) + (2 * 2) + (4 * 2)
-    output.read() should be (22)
+    // (5 * 2), (2 * 2), (4 * 2)
+    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 8, 10))
 
     mutator.update("three", 3)
     mutator.update("one", -2)
     mutator.put("four", 6)
     mutator.propagate()
-    // (-2 * 2) + (2 * 2) + (3 * 2) + (6 * 2)
-    output.read() should be (18)
+    // (-2 * 2), (2 * 2), (3 * 2), (6 * 2)
+    output.toBuffer().sortWith(_ < _) should be (Buffer(-4, 4, 6, 12))
 
     mutator.put("five", 9)
     mutator.update("five", 8)
@@ -76,51 +81,51 @@ class ListTests extends FlatSpec with Matchers {
     mutator.update("four", 3)
     mutator.put("seven", 5)
     mutator.propagate()
-    // (-2 * 2) + (2 * 2) + (3 * 2) + (3 * 2) + (8 * 2) + (10 * 2) + (5 * 2)
-    output.read() should be (58)
+    // (-2 * 2), (2 * 2), (3 * 2), (3 * 2), (8 * 2), (10 * 2), (5 * 2)
+    output.toBuffer().sortWith(_ < _) should be (Buffer(-4, 4, 6, 6, 10, 16, 20))
 
     mutator.shutdown()
   }
 
-  "ListParMapReduceTest" should "return the reduced value" in {
+  "ListParMapTest" should "return the mapped list" in {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
-    val output = mutator.run[Mod[Int]](new ListParMapReduceTest())
-    // (1 + 1) + (2 + 1)
-    output.read() should be (5)
+    val output = mutator.run[ModList[Int]](new ListParMapTest())
+    // (1 + 1), (2 + 1)
+    output.toBuffer().sortWith(_ < _) should be (Buffer(2, 3))
 
     mutator.put("three", 3)
     mutator.propagate()
-    // (1 + 1) + (2 + 1) + (3 + 1)
-    output.read() should be (9)
+    // (1 + 1), (2 + 1), (3 + 1)
+    output.toBuffer().sortWith(_ < _) should be (Buffer(2, 3, 4))
 
     mutator.update("one", 4)
     mutator.propagate()
-    // (4 + 1) + (2 + 1) + (3 + 1)
-    output.read() should be (12)
+    // (4 + 1), (2 + 1), (3 + 1)
+    output.toBuffer().sortWith(_ < _) should be (Buffer(3, 4, 5))
 
     mutator.update("three", 2)
     mutator.update("one", 7)
     mutator.propagate()
-    // (7 + 1) + (2 + 1) + (2 + 1)
-    output.read() should be (14)
+    // (7 + 1), (2 + 1), (2 + 1)
+    output.toBuffer().sortWith(_ < _) should be (Buffer(3, 3, 8))
 
     mutator.put("four", -1)
     mutator.put("five", 10)
     mutator.propagate()
-    // (7 + 1) + (2 + 1) + (2 + 1) + (-1 + 1) + (10 + 1)
-    output.read() should be (25)
+    // (7 + 1), (2 + 1), (2 + 1), (-1 + 1), (10 + 1)
+    output.toBuffer().sortWith(_ < _) should be (Buffer(0, 3, 3, 8, 11))
 
     mutator.put("six", -3)
     mutator.update("four", 3)
     mutator.update("three", 5)
     mutator.propagate()
-    // (7 + 1) + (2 + 1) + (5 + 1) + (3 + 1) + (10 + 1) + (-3 + 1)
-    output.read() should be (30)
+    // (7 + 1), (2 + 1), (5 + 1), (3 + 1), (10 + 1), (-3 + 1)
+    output.toBuffer().sortWith(_ < _) should be (Buffer(-2, 3, 4, 6, 8, 11))
 
     mutator.shutdown()
-  }*/
+  }
 
   "ListMemoMapTest" should "return the mapped ModList" in {
     val mutator = new Mutator()
@@ -158,5 +163,74 @@ class ListTests extends FlatSpec with Matchers {
     mutator.remove("seven")
     mutator.propagate()
     output.toBuffer().sortWith(_ < _) should be (Buffer(-1, 12))
+  }
+
+  val maxKey = 1000
+  val rand = new scala.util.Random()
+  def addValue(mutator: Mutator, table: Map[Int, Int]) {
+    var key = rand.nextInt(maxKey)
+    val value = rand.nextInt(Int.MaxValue)
+    while (table.contains(key)) {
+      key = rand.nextInt(maxKey)
+    }
+    mutator.put(key, value)
+    table += (key -> value)
+  }
+
+  def removeValue(mutator: Mutator, table: Map[Int, Int]) {
+    if (table.size > 1) {
+      var key = rand.nextInt(maxKey)
+      while (!table.contains(key)) {
+        key = rand.nextInt(maxKey)
+      }
+      mutator.remove(key)
+      table -= key
+    }
+  }
+
+  def updateValue(mutator: Mutator, table: Map[Int, Int]) {
+    var key = rand.nextInt(maxKey)
+    val value = rand.nextInt(Int.MaxValue)
+    while (!table.contains(key)) {
+      key = rand.nextInt(maxKey)
+    }
+    mutator.update(key, value)
+    table(key) = value
+  }
+
+  def update(mutator: Mutator, table: Map[Int, Int]) {
+    rand.nextInt(3) match {
+      case 0 => addValue(mutator, table)
+      case 1 => removeValue(mutator, table)
+      case 2 => updateValue(mutator, table)
+    }
+  }
+
+  "ListFilterTest" should "return the filtered list" in {
+    for (partitions <- List(1, 2, 8)) {
+      val mutator = new Mutator()
+      val table = Map[Int, Int]()
+
+      for (i <- 0 to 100) {
+        addValue(mutator, table)
+      }
+
+      val output = mutator.run[ModList[Int]](new ListFilterTest(partitions))
+      var answer = table.values.filter(_ % 2 == 0).toBuffer.sortWith(_ < _)
+      output.toBuffer().sortWith(_ < _) should be (answer)
+
+      for (i <- 0 to 5) {
+        for (j <- 0 to 10) {
+          update(mutator, table)
+        }
+
+        mutator.propagate()
+
+        answer = table.values.filter(_ % 2 == 0).toBuffer.sortWith(_ < _)
+        output.toBuffer().sortWith(_ < _) should be (answer)
+      }
+
+      mutator.shutdown()
+    }
   }
 }

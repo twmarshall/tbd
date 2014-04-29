@@ -17,7 +17,7 @@ package tbd.examples.list
 
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, TBD}
+import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.ModList
 
 object MapAdjust {
@@ -26,34 +26,94 @@ object MapAdjust {
     for (word <- s.split("\\W+")) {
       count += 1
     }
-    return count
+    count
   }
 }
 
-class MapAdjust(partitions: Int) extends WC with Adjustable {
+class MapAdjust(partitions: Int) extends Algorithm {
+  var output: ModList[Int] = null
+
   def run(tbd: TBD): ModList[Int] = {
     val pages = tbd.input.getModList[String](partitions)
     pages.map(tbd, (s: String) => MapAdjust.mapper(s))
   }
+
+  def initialRun(mutator: Mutator) {
+    output = mutator.run[ModList[Int]](this)
+  }
+
+  def checkOutput(answer: Map[Int, String]): Boolean = {
+    val sortedOutput = output.toBuffer().sortWith(_ < _)
+    val sortedAnswer = answer.map(pair => {
+      MapAdjust.mapper(pair._2)
+    }).toBuffer.sortWith(_ < _)
+
+    return sortedOutput == sortedAnswer
+  }
 }
 
-class MapMemoAdjust(partitions: Int) extends WC with Adjustable {
+class MapMemoAdjust(partitions: Int) extends Algorithm {
+  var output: ModList[Int] = null
+
   def run(tbd: TBD): ModList[Int] = {
     val pages = tbd.input.getModList[String](partitions)
     pages.memoMap(tbd, (s: String) => MapAdjust.mapper(s))
   }
+
+  def initialRun(mutator: Mutator) {
+    output = mutator.run[ModList[Int]](this)
+  }
+
+  def checkOutput(answer: Map[Int, String]): Boolean = {
+    val sortedOutput = output.toBuffer().sortWith(_ < _)
+    val sortedAnswer = answer.map(pair => {
+      MapAdjust.mapper(pair._2)
+    }).toBuffer.sortWith(_ < _)
+
+    return sortedOutput == sortedAnswer
+  }
 }
 
-class MapParAdjust(partitions: Int) extends WC with Adjustable {
+class MapParAdjust(partitions: Int) extends Algorithm {
+  var output: ModList[Int] = null
+
   def run(tbd: TBD): ModList[Int] = {
     val pages = tbd.input.getModList[String](partitions)
     pages.parMap(tbd, (tbd: TBD, s: String) => MapAdjust.mapper(s))
   }
+
+  def initialRun(mutator: Mutator) {
+    output = mutator.run[ModList[Int]](this)
+  }
+
+  def checkOutput(answer: Map[Int, String]): Boolean = {
+    val sortedOutput = output.toBuffer().sortWith(_ < _)
+    val sortedAnswer = answer.map(pair => {
+      MapAdjust.mapper(pair._2)
+    }).toBuffer.sortWith(_ < _)
+
+    return sortedOutput == sortedAnswer
+  }
 }
 
-class MapMemoParAdjust(partitions: Int) extends WC with Adjustable {
+class MapMemoParAdjust(partitions: Int) extends Algorithm {
+  var output: ModList[Int] = null
+
   def run(tbd: TBD): ModList[Int] = {
     val pages = tbd.input.getModList[String](partitions)
     pages.memoParMap(tbd, (tbd: TBD, s: String) => MapAdjust.mapper(s))
+  }
+
+  def initialRun(mutator: Mutator) {
+    output = mutator.run[ModList[Int]](this)
+  }
+
+  def checkOutput(answer: Map[Int, String]): Boolean = {
+    val sortedOutput = output.toBuffer().sortWith(_ < _)
+    val sortedAnswer = answer.map(pair => {
+      MapAdjust.mapper(pair._2)
+    }).toBuffer.sortWith(_ < _)
+
+    return sortedOutput == sortedAnswer
   }
 }

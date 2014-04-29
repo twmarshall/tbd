@@ -21,7 +21,7 @@ import tbd.memo.Lift
 class DoubleModListNode[T](
     aValue: Mod[T],
     aNext: Mod[DoubleModListNode[T]]) {
-  val value = aValue
+  val valueMod = aValue
   val next = aNext
 
   def map[U](
@@ -29,7 +29,7 @@ class DoubleModListNode[T](
       dest: Dest[DoubleModListNode[U]],
       f: T => U): Changeable[DoubleModListNode[U]] = {
     val newValue = tbd.mod((dest: Dest[U]) =>
-      tbd.read(value, (value: T) => tbd.write(dest, f(value))))
+      tbd.read(valueMod, (value: T) => tbd.write(dest, f(value))))
     val newNext = tbd.mod((dest: Dest[DoubleModListNode[U]]) =>
       tbd.read(next, (next: DoubleModListNode[T]) => {
         if (next != null) {
@@ -45,9 +45,9 @@ class DoubleModListNode[T](
       tbd: TBD,
       dest: Dest[DoubleModListNode[W]],
       f: T => W,
-      lift: Lift[DoubleModListNode[T], Mod[DoubleModListNode[W]]]): Changeable[DoubleModListNode[W]] = {
+      lift: Lift[Mod[DoubleModListNode[W]]]): Changeable[DoubleModListNode[W]] = {
     val newValue = tbd.mod((dest: Dest[W]) =>
-      tbd.read(value, (value: T) => tbd.write(dest, f(value))))
+      tbd.read(valueMod, (value: T) => tbd.write(dest, f(value))))
     val newNext = lift.memo(List(next), () => {
       tbd.mod((dest: Dest[DoubleModListNode[W]]) =>
         tbd.read(next, (next: DoubleModListNode[T]) => {
@@ -69,7 +69,7 @@ class DoubleModListNode[T](
     val modTuple =
       tbd.par((tbd: TBD) => {
 	tbd.mod((valueDest: Dest[W]) => {
-          tbd.read(value, (value: T) => {
+          tbd.read(valueMod, (value: T) => {
             tbd.write(valueDest, f(tbd, value))
           })
         })
@@ -88,6 +88,68 @@ class DoubleModListNode[T](
     tbd.write(dest, new DoubleModListNode[W](modTuple._1, modTuple._2))
   }
 
+  def filter(
+      tbd: TBD,
+      dest: Dest[DoubleModListNode[T]],
+      pred: T => Boolean): Changeable[DoubleModListNode[T]] = {
+    tbd.read(valueMod, (value: T) => {
+      if (pred(value)) {
+        val newNext = tbd.mod((nextDest: Dest[DoubleModListNode[T]]) => {
+          tbd.read(next, (nextValue: DoubleModListNode[T]) => {
+            if (nextValue == null) {
+              tbd.write(nextDest, null)
+            } else {
+              nextValue.filter(tbd, nextDest, pred)
+            }
+          })
+        })
+        tbd.write(dest, new DoubleModListNode(valueMod, newNext))
+      } else {
+        tbd.read(next, (nextValue: DoubleModListNode[T]) => {
+          if (nextValue == null) {
+            tbd.write(dest, null)
+          } else {
+            nextValue.filter(tbd, dest, pred)
+          }
+        })
+      }
+    })
+  }
+
+  def memoFilter(
+      tbd: TBD,
+      dest: Dest[DoubleModListNode[T]],
+      pred: T => Boolean,
+      lift: Lift[Mod[DoubleModListNode[T]]])
+        : Changeable[DoubleModListNode[T]] = {
+    tbd.read(valueMod, (value: T) => {
+      if (pred(value)) {
+        val newNext = lift.memo(List(next), () => {
+          tbd.mod((nextDest: Dest[DoubleModListNode[T]]) => {
+            tbd.read(next, (nextValue: DoubleModListNode[T]) => {
+                if (nextValue == null) {
+                  tbd.write(nextDest, null)
+                } else {
+                  nextValue.memoFilter(tbd, nextDest, pred, lift)
+                }
+              })
+            })
+          })
+        tbd.write(dest, new DoubleModListNode(valueMod, newNext))
+      } else {
+        //lift.memo(List(next, dest), () => {
+          tbd.read(next, (nextValue: DoubleModListNode[T]) => {
+            if (nextValue == null) {
+              tbd.write(dest, null)
+            } else {
+              nextValue.memoFilter(tbd, dest, pred, lift)
+            }
+          })
+        //})
+      }
+    })
+  }
+
   override def toString: String = {
     def toString(lst: DoubleModListNode[T]):String = {
       val nextRead = lst.next.read()
@@ -97,7 +159,7 @@ class DoubleModListNode[T](
 	else
 	  ")"
 
-      lst.value + next
+      lst.valueMod + next
     }
 
     "DoubleModListNode(" + toString(this)

@@ -144,16 +144,16 @@ class TBD(
   }
 
   var memoId = 0
-  def makeLift[T, U](): Lift[T, U] = {
+  def makeLift[T](): Lift[T] = {
     val thisMemoId = memoId
     memoId += 1
-    new Lift((aArgs: List[Mod[T]], func: () => U) => {
+    new Lift((aArgs: List[Mod[_]], func: () => T) => {
       val args = aArgs.map(_.id)
       val signature = thisMemoId :: args
 
       var found = false
       var toRemove: MemoEntry = null
-      var ret: U = null.asInstanceOf[U]
+      var ret = null.asInstanceOf[T]
       if (!initialRun && !updated(args)) {
         if (worker.memoTable.contains(signature)) {
 
@@ -166,7 +166,7 @@ class TBD(
               found = true
               worker.ddg.attachSubtree(currentParent, memoEntry.node)
               toRemove = memoEntry
-              ret = memoEntry.value.asInstanceOf[U]
+              ret = memoEntry.value.asInstanceOf[T]
             }
           }
         }

@@ -77,6 +77,35 @@ class PartitionedDoubleModList[T](
     new PartitionedDoubleModList(innerMemoParMap(tbd, 0))
   }
 
+  def filter(
+      tbd: TBD,
+      pred: T => Boolean,
+      parallel: Boolean = true): PartitionedDoubleModList[T] = {
+    def parFilter(tbd: TBD, i: Int): ArrayBuffer[DoubleModList[T]] = {
+      if (i < partitions.size) {
+        val parTup = tbd.par((tbd: TBD) => {
+          partitions(i).filter(tbd, pred)
+        }, (tbd: TBD) => {
+          parFilter(tbd, i + 1)
+        })
+
+        parTup._2 += parTup._1
+      } else {
+        ArrayBuffer[DoubleModList[T]]()
+      }
+    }
+
+    if (parallel) {
+      new PartitionedDoubleModList(parFilter(tbd, 0))
+    } else {
+      new PartitionedDoubleModList(
+        partitions.map((partition: DoubleModList[T]) => {
+          partition.filter(tbd, pred)
+        })
+      )
+    }
+  }
+
   /* Meta Operations */
   def toBuffer(): Buffer[T] = {
     val buf = ArrayBuffer[T]()
@@ -84,7 +113,7 @@ class PartitionedDoubleModList[T](
     for (partition <- partitions) {
       var innerNode = partition.head.read()
       while (innerNode != null) {
-        buf += innerNode.value.read()
+        buf += innerNode.valueMod.read()
         innerNode = innerNode.next.read()
       }
     }
