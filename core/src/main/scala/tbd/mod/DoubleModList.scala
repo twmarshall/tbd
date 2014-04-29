@@ -15,163 +15,91 @@
  */
 package tbd.mod
 
+import scala.collection.mutable.{ArrayBuffer, Buffer}
+
 import tbd.{Changeable, TBD}
 import tbd.memo.Lift
 
-class DoubleModList[T](aValue: Mod[T], aNext: Mod[DoubleModList[T]]) {
-  val value = aValue
-  val next = aNext
+class DoubleModList[T](
+    aHead: Mod[DoubleModListNode[T]]) extends ModList[T] {
+  val head = aHead
 
-  def map[W](
-      tbd: TBD,
-      dest: Dest[DoubleModList[W]],
-      f: T => W): Changeable[DoubleModList[W]] = {
-    val newValue = tbd.mod((dest: Dest[W]) =>
-      tbd.read(value, (value: T) => tbd.write(dest, f(value))))
-    val newNext = tbd.mod((dest: Dest[DoubleModList[W]]) =>
-      tbd.read(next, (next: DoubleModList[T]) => {
-        if (next != null) {
-          next.map(tbd, dest, f)
-        } else {
-          tbd.write(dest, null)
-        }
-      }))
-    tbd.write(dest, new DoubleModList[W](newValue, newNext))
-  }
-
-  def memoMap[W](
-      tbd: TBD,
-      dest: Dest[DoubleModList[W]],
-      f: T => W,
-      lift: Lift[DoubleModList[T], Mod[DoubleModList[W]]]): Changeable[DoubleModList[W]] = {
-    val newValue = tbd.mod((dest: Dest[W]) =>
-      tbd.read(value, (value: T) => tbd.write(dest, f(value))))
-    val newNext = lift.memo(List(next), () => {
-      tbd.mod((dest: Dest[DoubleModList[W]]) =>
-        tbd.read(next, (next: DoubleModList[T]) => {
-          if (next != null) {
-            next.memoMap(tbd, dest, f, lift)
+  def map[U](tbd: TBD, f: T => U): DoubleModList[U] = {
+    new DoubleModList(
+      tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
+        tbd.read(head, (node: DoubleModListNode[T]) => {
+          if (node != null) {
+            node.map(tbd, dest, f)
           } else {
             tbd.write(dest, null)
           }
         })
-      )
-    })
-    tbd.write(dest, new DoubleModList[W](newValue, newNext))
+      })
+    )
   }
 
-  def parMap[W](
+  def memoMap[U](
       tbd: TBD,
-      dest: Dest[DoubleModList[W]],
-      f: (TBD, T) => W): Changeable[DoubleModList[W]] = {
-    val modTuple =
-      tbd.par((tbd: TBD) => {
-	tbd.mod((valueDest: Dest[W]) => {
-          tbd.read(value, (value: T) => {
-            tbd.write(valueDest, f(tbd, value))
-          })
-        })
-      }, (tbd: TBD) => {
-        tbd.mod((nextDest: Dest[DoubleModList[W]]) => {
-	  tbd.read(next, (next: DoubleModList[T]) => {
-            if (next != null) {
-              next.parMap(tbd, nextDest, f)
-            } else {
-              tbd.write(nextDest, null)
-            }
-            })
+      f: T => U): DoubleModList[U] = {
+    val lift = tbd.makeLift[DoubleModListNode[T], Mod[DoubleModListNode[U]]]()
+
+    new DoubleModList(
+      tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
+        tbd.read(head, (node: DoubleModListNode[T]) => {
+          if (node != null) {
+            node.memoMap(tbd, dest, f, lift)
+          } else {
+            tbd.write(dest, null)
+          }
         })
       })
-
-    tbd.write(dest, new DoubleModList[W](modTuple._1, modTuple._2))
+    )
   }
 
-  def reduce(
+  def parMap[U](
       tbd: TBD,
-      dest: Dest[DoubleModList[T]],
-      func: (T, T) => T): Changeable[DoubleModList[T]] = {
-    tbd.read(next, (next: DoubleModList[T]) => {
-      if (next == null) {
-        val newValue = tbd.mod((dest: Dest[T]) => {
-          tbd.read(value, (value: T) => tbd.write(dest, value))
+      f: (TBD, T) => U): DoubleModList[U] = {
+    new DoubleModList(
+      tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
+        tbd.read(head, (node: DoubleModListNode[T]) => {
+          if (node != null) {
+            node.parMap(tbd, dest, f)
+          } else {
+            tbd.write(dest, null)
+          }
         })
-        val newNext = tbd.mod((dest: Dest[DoubleModList[T]]) => {
-          tbd.write(dest, null)
-        })
-        tbd.write(dest, new DoubleModList(newValue, newNext))
-      } else {
-        val newValue = tbd.mod((dest: Dest[T]) => {
-          tbd.read(value, (value1: T) => {
-            tbd.read(next.value, (value2: T) => {
-              tbd.write(dest, func(value1, value2))
-            })
-          })
-        })
-
-        val newNext = tbd.mod((dest: Dest[DoubleModList[T]]) => {
-          tbd.read(next.next, (lst: DoubleModList[T]) => {
-            if (lst != null) {
-              lst.reduce(tbd, dest, func)
-            } else {
-              tbd.write(dest, null)
-            }
-          })
-        })
-        tbd.write(dest, new DoubleModList(newValue, newNext))
-      }
-    })
+      })
+    )
   }
 
-  def parReduce(
-      tbd: TBD,
-      dest: Dest[DoubleModList[T]],
-      func: (TBD, T, T) => T): Changeable[DoubleModList[T]] = {
-    tbd.read(next, (next: DoubleModList[T]) => {
-      if (next == null) {
-        val newValue = tbd.mod((dest: Dest[T]) => {
-          tbd.read(value, (value: T) => tbd.write(dest, value))
+  def memoParMap[U](
+    tbd: TBD,
+    f: (TBD, T) => U): DoubleModList[U] = {
+    new DoubleModList(
+      tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
+        tbd.read(head, (node: DoubleModListNode[T]) => {
+          if (node != null) {
+            node.parMap(tbd, dest, f)
+          } else {
+            tbd.write(dest, null)
+          }
         })
+      })
+    )
+  }
 
-        val newNext = tbd.mod((dest: Dest[DoubleModList[T]]) => tbd.write(dest, null))
-        tbd.write(dest, new DoubleModList(newValue, newNext))
-      } else {
-        val modTuple = tbd.par((tbd:TBD) => {
-          tbd.mod((dest: Dest[T]) => {
-            tbd.read(value, (value1: T) => {
-              tbd.read(next.value, (value2: T) => {
-                tbd.write(dest, func(tbd, value1, value2))
-              })
-            })
-          })
-        }, (tbd:TBD) => {
-          tbd.mod((dest: Dest[DoubleModList[T]]) => {
-            tbd.read(next.next, (lst: DoubleModList[T]) => {
-	            if (lst == null) {
-	              tbd.write(dest, null)
-	            } else {
-		            lst.parReduce(tbd, dest, func)
-	            }
-            })
-          })
-        })
+  def toBuffer(): Buffer[T] = {
+    val buf = ArrayBuffer[T]()
+    var node = head.read()
+    while (node != null) {
+      buf += node.value.read()
+      node = node.next.read()
+    }
 
-        tbd.write(dest, new DoubleModList(modTuple._1, modTuple._2))
-      }
-    })
+    buf
   }
 
   override def toString: String = {
-    def toString(lst: DoubleModList[T]):String = {
-      val nextRead = lst.next.read()
-      val next =
-	if (nextRead != null)
-	  ", " + toString(nextRead)
-	else
-	  ")"
-
-      lst.value + next
-    }
-
-    "DoubleModList(" + toString(this)
+    head.toString
   }
 }

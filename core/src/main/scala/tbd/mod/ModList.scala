@@ -22,20 +22,14 @@ import tbd.TBD
 import tbd.datastore.Datastore
 
 trait ModList[T] {
-  def map[U](tbd: TBD, func: T => U): ModList[U]
+  def map[U](tbd: TBD, f: T => U): ModList[U]
 
-  def memoMap[U](tbd: TBD, func: T => U): ModList[U]
+  def memoMap[U](tbd: TBD, f: T => U): ModList[U]
 
-  def parMap[U](tbd: TBD, func: T => U): ModList[U]
+  def parMap[U](tbd: TBD, f: (TBD, T) => U): ModList[U]
 
-  def memoParMap[U](tbd: TBD, func: T => U): ModList[U]
-
-  def reduce(tbd: TBD, func: (T, T) => T): Mod[T]
-
-  def parReduce(tbd: TBD, func: (T, T) => T): Mod[T]
+  def memoParMap[U](tbd: TBD, f: (TBD, T) => U): ModList[U]
 
   /* Meta functions */
-  def toSet(): Set[T]
-
   def toBuffer(): Buffer[T]
 }

@@ -69,7 +69,7 @@ class Datastore extends Actor with ActorLogging {
 
   def updateMod(modId: ModId, value: Any, sender: ActorRef): Int = {
     if (!tables("mods").contains(modId)) {
-      log.warning("Trying to update non-existent mod.")
+      log.warning("Trying to update non-existent mod " + modId)
     }
     tables("mods")(modId) = value
 
@@ -112,7 +112,6 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case UpdateMessage(table: String, key: Any, value: Any, respondTo: ActorRef) => {
-      //log.debug("UpdateMessage")
       val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
       sender ! updateMod(modId, value, respondTo)
     }
@@ -160,9 +159,11 @@ class Datastore extends Actor with ActorLogging {
         dependencySet -= workerRef
       }
 
-      for ((table, sets) <- modifiers) {
+      for (table <- modifiers.keys) {
         for (removeModList <- removeModLists) {
-          //sets -= removeModList
+          modifiers(table) = modifiers(table).filter((modifier: Modifier[Any]) => {
+            removeModList != modifier.modList
+          })
         }
       }
 
@@ -184,7 +185,12 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case GetModListMessage(table: String, partitions: Int) => {
-      val modifier = new PDMLModifier[Any](this, tables(table), partitions)
+      val modifier =
+        if (partitions == 1) {
+          new DMLModifier[Any](this, tables(table))
+        } else {
+          new PDMLModifier[Any](this, tables(table), partitions)
+        }
 
       if (modifiers.contains(table)) {
         modifiers(table) += modifier

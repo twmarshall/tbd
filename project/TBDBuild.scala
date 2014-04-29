@@ -60,7 +60,7 @@ object TBDBuild extends Build {
         java -Xmx2g -Xss4m -classpath "%s" %s $@
         """
 
-        val experiment = template.format(classpath, "tbd.examples.wordcount.Experiment")
+        val experiment = template.format(classpath, "tbd.examples.list.Experiment")
         val experimentOut = baseDirectory.value / "../bin/experiment.sh"
         IO.write(experimentOut, experiment)
         experimentOut.setExecutable(true)

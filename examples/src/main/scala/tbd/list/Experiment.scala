@@ -246,7 +246,6 @@ object Experiment {
           conf.chunkSize = value.toInt
           parse(tail)
         case "--counts" :: value :: tail =>
-          println("found counts")
           conf.counts = value.split(",").map(_.toInt)
           parse(tail)
         case "--descriptions" :: value :: tail =>
@@ -286,8 +285,8 @@ object Experiment {
             println("Unrecognized description.")
         }
       } else {
-        experiment.run(new WCAdjust(conf.partitions), "seq")
-        experiment.run(new WCParAdjust(conf.partitions), "par")
+        //experiment.run(new WCAdjust(conf.partitions), "seq")
+        //experiment.run(new WCParAdjust(conf.partitions), "par")
       }
     }
 

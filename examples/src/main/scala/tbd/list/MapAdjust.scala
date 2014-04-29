@@ -47,13 +47,13 @@ class MapMemoAdjust(partitions: Int) extends WC with Adjustable {
 class MapParAdjust(partitions: Int) extends WC with Adjustable {
   def run(tbd: TBD): ModList[Int] = {
     val pages = tbd.input.getModList[String](partitions)
-    pages.parMap(tbd, (s: String) => MapAdjust.mapper(s))
+    pages.parMap(tbd, (tbd: TBD, s: String) => MapAdjust.mapper(s))
   }
 }
 
 class MapMemoParAdjust(partitions: Int) extends WC with Adjustable {
   def run(tbd: TBD): ModList[Int] = {
     val pages = tbd.input.getModList[String](partitions)
-    pages.memoParMap(tbd, (s: String) => MapAdjust.mapper(s))
+    pages.memoParMap(tbd, (tbd: TBD, s: String) => MapAdjust.mapper(s))
   }
 }

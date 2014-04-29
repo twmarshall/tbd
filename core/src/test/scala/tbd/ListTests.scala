@@ -15,12 +15,13 @@
  */
 package tbd.test
 
+import scala.collection.mutable.Buffer
 import org.scalatest._
 
 import tbd.{Adjustable, Changeable, Mutator, TBD}
 import tbd.mod.{Dest, Mod, ModList}
 
-class ListMapReduceTest extends Adjustable {
+/*class ListMapReduceTest extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {
     val modList = tbd.input.getModList[Int](partitions = 1)
     val mappedModList = modList.map(tbd, (_: Int) * 2)
@@ -34,7 +35,7 @@ class ListParMapReduceTest extends Adjustable {
     val mappedModList = modList.parMap(tbd, (_: Int) + 1)
     mappedModList.parReduce(tbd, (_: Int) + (_: Int))
   }
-}
+}*/
 
 class ListMemoMapTest extends Adjustable {
   def run(tbd: TBD): ModList[Int] = {
@@ -44,7 +45,7 @@ class ListMemoMapTest extends Adjustable {
 }
 
 class ListTests extends FlatSpec with Matchers {
-  "ListMapReduceTest" should "return the reduced value" in {
+  /*"ListMapReduceTest" should "return the reduced value" in {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
@@ -119,7 +120,7 @@ class ListTests extends FlatSpec with Matchers {
     output.read() should be (30)
 
     mutator.shutdown()
-  }
+  }*/
 
   "ListMemoMapTest" should "return the mapped ModList" in {
     val mutator = new Mutator()
@@ -128,34 +129,34 @@ class ListTests extends FlatSpec with Matchers {
     mutator.put("three", 3)
     mutator.put("four", 4)
     val output = mutator.run[ModList[Int]](new ListMemoMapTest())
-    output.toSet() should be (Set(4, 5, 6, 7))
+    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 5, 6, 7))
 
     mutator.remove("two")
     mutator.propagate()
-    output.toSet() should be (Set(4, 6, 7))
+    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 6, 7))
 
     mutator.put("five", 5)
     mutator.remove("three")
     mutator.propagate()
-    output.toSet() should be (Set(4, 7, 8))
+    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 7, 8))
 
     mutator.put("six", 6)
     mutator.put("seven", 7)
     mutator.put("eight", 8)
     mutator.remove("six")
     mutator.propagate()
-    output.toSet() should be (Set(4, 7, 8, 10, 11))
+    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 7, 8, 10, 11))
 
     mutator.remove("one")
     mutator.remove("five")
     mutator.remove("eight")
     mutator.propagate()
-    output.toSet() should be (Set(7, 10))
+    output.toBuffer().sortWith(_ < _) should be (Buffer(7, 10))
 
     mutator.update("four", -4)
     mutator.put("nine", 9)
     mutator.remove("seven")
     mutator.propagate()
-    output.toSet() should be (Set(-1, 12))
+    output.toBuffer().sortWith(_ < _) should be (Buffer(-1, 12))
   }
 }

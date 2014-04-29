@@ -22,228 +22,71 @@ import tbd.{Changeable, TBD}
 import tbd.datastore.Datastore
 
 class PartitionedDoubleModList[T](
-    aLists: Mod[DoubleModList[Mod[DoubleModList[T]]]]) extends ModList[T] {
-  val lists = aLists
+    aPartitions: ArrayBuffer[DoubleModList[T]]) extends ModList[T] {
+  val partitions = aPartitions
 
-  def map[U](tbd: TBD, func: T => U): ModList[U] = {
-    new PartitionedDoubleModList(tbd.mod((dest: Dest[DoubleModList[Mod[DoubleModList[U]]]]) => {
-      tbd.read(lists, (lsts: DoubleModList[Mod[DoubleModList[T]]]) => {
-        lsts.map(tbd, dest, (list: Mod[DoubleModList[T]]) => {
-          tbd.mod((dest: Dest[DoubleModList[U]]) => {
-            tbd.read(list, (lst: DoubleModList[T]) => {
-              if (lst != null) {
-                lst.map(tbd, dest, func)
-              } else {
-                tbd.write(dest, null)
-              }
-            })
-          })
-        })
+  def map[U](tbd: TBD, f: T => U): PartitionedDoubleModList[U] = {
+    new PartitionedDoubleModList(
+      partitions.map((partition: DoubleModList[T]) => {
+        partition.map(tbd, f)
       })
-    }))
+    )
   }
 
-  def memoMap[U](tbd: TBD, func: T => U): ModList[U] = {
-    new PartitionedDoubleModList(tbd.mod((dest: Dest[DoubleModList[Mod[DoubleModList[U]]]]) => {
-      tbd.read(lists, (lsts: DoubleModList[Mod[DoubleModList[T]]]) => {
-        lsts.map(tbd, dest, (list: Mod[DoubleModList[T]]) => {
-          val lift = tbd.makeLift[DoubleModList[T], Mod[DoubleModList[U]]]()
-
-          tbd.mod((dest: Dest[DoubleModList[U]]) => {
-            tbd.read(list, (lst: DoubleModList[T]) => {
-              if (lst != null) {
-                lst.memoMap(tbd, dest, func, lift)
-              } else {
-                tbd.write(dest, null)
-              }
-            })
-          })
-        })
+  def memoMap[U](tbd: TBD, f: T => U): ModList[U] = {
+    new PartitionedDoubleModList(
+      partitions.map((partition: DoubleModList[T]) => {
+        partition.memoMap(tbd, f)
       })
-    }))
+    )
   }
 
-  def parMap[U](tbd: TBD, func: T => U): ModList[U] = {
-    new PartitionedDoubleModList(tbd.mod((dest: Dest[DoubleModList[Mod[DoubleModList[U]]]]) => {
-      tbd.read(lists, (lsts: DoubleModList[Mod[DoubleModList[T]]]) => {
-        lsts.parMap(tbd, dest, (tbd: TBD, list: Mod[DoubleModList[T]]) => {
-          tbd.mod((dest: Dest[DoubleModList[U]]) => {
-            tbd.read(list, (lst: DoubleModList[T]) => {
-              if (lst != null) {
-                lst.map(tbd, dest, (value: T) => func(value))
-              } else {
-                tbd.write(dest, null)
-              }
-            })
-          })
+  def parMap[U](tbd: TBD, f: (TBD, T) => U): ModList[U] = {
+    def innerParMap(tbd: TBD, i: Int): ArrayBuffer[DoubleModList[U]] = {
+      if (i < partitions.size) {
+        val parTup = tbd.par((tbd: TBD) => {
+          partitions(i).map(tbd, (value: T) => f(tbd, value))
+        }, (tbd: TBD) => {
+          innerParMap(tbd, i + 1)
         })
-      })
-    }))
-  }
 
-  def memoParMap[U](tbd: TBD, func: T => U): ModList[U] = {
-    new PartitionedDoubleModList(tbd.mod((dest: Dest[DoubleModList[Mod[DoubleModList[U]]]]) => {
-      tbd.read(lists, (lsts: DoubleModList[Mod[DoubleModList[T]]]) => {
-        lsts.parMap(tbd, dest, (tbd: TBD, list: Mod[DoubleModList[T]]) => {
-          val lift = tbd.makeLift[DoubleModList[T], Mod[DoubleModList[U]]]()
-
-          tbd.mod((dest: Dest[DoubleModList[U]]) => {
-            tbd.read(list, (lst: DoubleModList[T]) => {
-              if (lst != null) {
-                lst.memoMap(tbd, dest, func, lift)
-              } else {
-                tbd.write(dest, null)
-              }
-            })
-          })
-        })
-      })
-    }))
-  }
-
-  def reduce(tbd: TBD, func: (T, T) => T): Mod[T] = {
-    def innerReduce[U](dest: Dest[U], lst: DoubleModList[U], f: (U, U) => U): Changeable[U] = {
-      if (lst != null) {
-        tbd.read(lst.next, (next: DoubleModList[U]) => {
-          if (next != null) {
-            val newList = tbd.mod((dest: Dest[DoubleModList[U]]) => {
-              lst.reduce(tbd, dest, f)
-            })
-
-            tbd.read(newList, (lst: DoubleModList[U]) => innerReduce(dest, lst, f))
-          } else {
-            tbd.read(lst.value, (value: U) => tbd.write(dest, value))
-          }
-        })
+        parTup._2 += parTup._1
       } else {
-        tbd.write(dest, null.asInstanceOf[U])
+        ArrayBuffer[DoubleModList[U]]()
+      }
+    }
+      
+    new PartitionedDoubleModList(innerParMap(tbd, 0))
+  }
+
+  def memoParMap[U](tbd: TBD, f: (TBD, T) => U): ModList[U] = {
+    def innerMemoParMap(tbd: TBD, i: Int): ArrayBuffer[DoubleModList[U]] = {
+      if (i < partitions.size) {
+        val parTup = tbd.par((tbd: TBD) => {
+          partitions(i).memoMap(tbd, (value: T) => f(tbd, value))
+        }, (tbd: TBD) => {
+          innerMemoParMap(tbd, i + 1)
+        })
+
+        parTup._2 += parTup._1
+      } else {
+        ArrayBuffer[DoubleModList[U]]()
       }
     }
 
-    val reducedLists: Mod[DoubleModList[Mod[T]]] = tbd.mod((dest: Dest[DoubleModList[Mod[T]]]) => {
-      tbd.read(lists, (lsts: DoubleModList[Mod[DoubleModList[T]]]) => {
-        lsts.map(tbd, dest, (list: Mod[DoubleModList[T]]) => {
-          tbd.mod((dest: Dest[T]) => {
-            tbd.read(list, (lst: DoubleModList[T]) => {
-              innerReduce(dest, lst, func)
-            })
-          })
-        })
-      })
-    })
-
-    val reducedMod = tbd.mod((dest: Dest[Mod[T]]) => {
-      tbd.read(reducedLists, (reducedLsts: DoubleModList[Mod[T]]) => {
-        innerReduce[Mod[T]](dest, reducedLsts, (mod1: Mod[T], mod2: Mod[T]) => {
-          tbd.mod((dest: Dest[T]) => {
-            tbd.read(mod1, (value1: T) => {
-              tbd.read(mod2, (value2: T) => {
-                tbd.write(dest, func(value1, value2))
-              })
-            })
-          })
-        })
-      })
-    })
-
-    tbd.mod((dest: Dest[T]) => {
-      tbd.read(reducedMod, (mod: Mod[T]) => {
-        tbd.read(mod, (value: T) => {
-          tbd.write(dest, value)
-        })
-      })
-    })
-  }
-
-  def parReduce(tbd: TBD, func: (T, T) => T): Mod[T] = {
-    def innerReduce[U](
-        tbd: TBD,
-        dest: Dest[U],
-        lst: DoubleModList[U],
-        f: (U, U) => U): Changeable[U] = {
-      if (lst != null) {
-        tbd.read(lst.next, (next: DoubleModList[U]) => {
-          if (next != null) {
-            val newList = tbd.mod((dest: Dest[DoubleModList[U]]) => {
-	            lst.reduce(tbd, dest, f)
-	          })
-            tbd.read(newList, (lst: DoubleModList[U]) => {
-              innerReduce(tbd, dest, lst, f)
-            })
-          } else {
-            tbd.read(lst.value, (value: U) => tbd.write(dest, value))
-          }
-        })
-      } else {
-        tbd.write(dest, null.asInstanceOf[U])
-      }
-    }
-
-    val reducedLists = tbd.mod((dest: Dest[DoubleModList[Mod[T]]]) => {
-      tbd.read(lists, (lsts: DoubleModList[Mod[DoubleModList[T]]]) => {
-        // Do a parallel map over the partitions, where the mapping function is
-        // reduce.
-        lsts.parMap(tbd, dest, (tbd: TBD, list: Mod[DoubleModList[T]]) => {
-          tbd.mod((dest: Dest[T]) => {
-            tbd.read(list, (lst: DoubleModList[T]) => {
-              innerReduce(tbd, dest, lst, (value1: T, value2: T) => {
-                func(value1, value2)
-              })
-            })
-          })
-        })
-      })
-    })
-
-    val reducedMod = tbd.mod((dest: Dest[Mod[T]]) => {
-      tbd.read(reducedLists, (reducedLsts: DoubleModList[Mod[T]]) => {
-        innerReduce(tbd, dest, reducedLsts, (mod1: Mod[T], mod2: Mod[T]) => {
-          tbd.mod((dest: Dest[T]) => {
-            tbd.read(mod1, (value1: T) => {
-              tbd.read(mod2, (value2: T) => {
-                tbd.write(dest, func(value1, value2))
-              })
-            })
-          })
-        })
-      })
-    })
-
-    tbd.mod((dest: Dest[T]) => {
-      tbd.read(reducedMod, (mod: Mod[T]) => {
-        tbd.read(mod, (value: T) => {
-          tbd.write(dest, value)
-        })
-      })
-    })
+    new PartitionedDoubleModList(innerMemoParMap(tbd, 0))
   }
 
   /* Meta Operations */
-  def toSet(): Set[T] = {
-    val set = Set[T]()
-    var outerNode = lists.read()
-    while (outerNode != null) {
-      var innerNode = outerNode.value.read().read()
-      while (innerNode != null) {
-        set += innerNode.value.read()
-        innerNode = innerNode.next.read()
-      }
-      outerNode = outerNode.next.read()
-    }
-
-    set
-  }
-
   def toBuffer(): Buffer[T] = {
     val buf = ArrayBuffer[T]()
-    var outerNode = lists.read()
-    while (outerNode != null) {
-      var innerNode = outerNode.value.read().read()
+
+    for (partition <- partitions) {
+      var innerNode = partition.head.read()
       while (innerNode != null) {
         buf += innerNode.value.read()
         innerNode = innerNode.next.read()
       }
-      outerNode = outerNode.next.read()
     }
 
     buf
