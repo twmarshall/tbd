@@ -27,9 +27,9 @@ class DoubleModListNode[T](
   def map[U](
       tbd: TBD,
       dest: Dest[DoubleModListNode[U]],
-      f: T => U): Changeable[DoubleModListNode[U]] = {
+      f: (TBD, T) => U): Changeable[DoubleModListNode[U]] = {
     val newValue = tbd.mod((dest: Dest[U]) =>
-      tbd.read(valueMod, (value: T) => tbd.write(dest, f(value))))
+      tbd.read(valueMod, (value: T) => tbd.write(dest, f(tbd, value))))
     val newNext = tbd.mod((dest: Dest[DoubleModListNode[U]]) =>
       tbd.read(next, (next: DoubleModListNode[T]) => {
         if (next != null) {
@@ -44,10 +44,10 @@ class DoubleModListNode[T](
   def memoMap[W](
       tbd: TBD,
       dest: Dest[DoubleModListNode[W]],
-      f: T => W,
+      f: (TBD, T) => W,
       lift: Lift[Mod[DoubleModListNode[W]]]): Changeable[DoubleModListNode[W]] = {
     val newValue = tbd.mod((dest: Dest[W]) =>
-      tbd.read(valueMod, (value: T) => tbd.write(dest, f(value))))
+      tbd.read(valueMod, (value: T) => tbd.write(dest, f(tbd, value))))
     val newNext = lift.memo(List(next), () => {
       tbd.mod((dest: Dest[DoubleModListNode[W]]) =>
         tbd.read(next, (next: DoubleModListNode[T]) => {

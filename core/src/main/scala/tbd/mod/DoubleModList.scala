@@ -24,68 +24,66 @@ class DoubleModList[T](
     aHead: Mod[DoubleModListNode[T]]) extends ModList[T] {
   val head = aHead
 
-  def map[U](tbd: TBD, f: T => U): DoubleModList[U] = {
-    new DoubleModList(
-      tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
-        tbd.read(head, (node: DoubleModListNode[T]) => {
-          if (node != null) {
-            node.map(tbd, dest, f)
-          } else {
-            tbd.write(dest, null)
-          }
-        })
-      })
-    )
-  }
-
-  def memoMap[U](
+  def map[U](
       tbd: TBD,
-      f: T => U): DoubleModList[U] = {
-    val lift = tbd.makeLift[Mod[DoubleModListNode[U]]]()
+      f: (TBD, T) => U,
+      parallel: Boolean = false,
+      memoized: Boolean = true): DoubleModList[U] = {
+    if (parallel) {
+      if (memoized) {
+        new DoubleModList(
+          tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
+            tbd.read(head, (node: DoubleModListNode[T]) => {
+              if (node != null) {
+                node.parMap(tbd, dest, f)
+              } else {
+                tbd.write(dest, null)
+              }
+            })
+          })
+        )
+      } else {
+        new DoubleModList(
+          tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
+            tbd.read(head, (node: DoubleModListNode[T]) => {
+              if (node != null) {
+                node.parMap(tbd, dest, f)
+              } else {
+                tbd.write(dest, null)
+              }
+            })
+          })
+        )
+      }
+    } else {
+      if (memoized) {
+        val lift = tbd.makeLift[Mod[DoubleModListNode[U]]]()
 
-    new DoubleModList(
-      tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
-        tbd.read(head, (node: DoubleModListNode[T]) => {
-          if (node != null) {
-            node.memoMap(tbd, dest, f, lift)
-          } else {
-            tbd.write(dest, null)
-          }
-        })
-      })
-    )
-  }
-
-  def parMap[U](
-      tbd: TBD,
-      f: (TBD, T) => U): DoubleModList[U] = {
-    new DoubleModList(
-      tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
-        tbd.read(head, (node: DoubleModListNode[T]) => {
-          if (node != null) {
-            node.parMap(tbd, dest, f)
-          } else {
-            tbd.write(dest, null)
-          }
-        })
-      })
-    )
-  }
-
-  def memoParMap[U](
-    tbd: TBD,
-    f: (TBD, T) => U): DoubleModList[U] = {
-    new DoubleModList(
-      tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
-        tbd.read(head, (node: DoubleModListNode[T]) => {
-          if (node != null) {
-            node.parMap(tbd, dest, f)
-          } else {
-            tbd.write(dest, null)
-          }
-        })
-      })
-    )
+        new DoubleModList(
+          tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
+            tbd.read(head, (node: DoubleModListNode[T]) => {
+              if (node != null) {
+                node.memoMap(tbd, dest, f, lift)
+              } else {
+                tbd.write(dest, null)
+              }
+            })
+          })
+        )
+      } else {
+        new DoubleModList(
+          tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
+            tbd.read(head, (node: DoubleModListNode[T]) => {
+              if (node != null) {
+                node.map(tbd, dest, f)
+              } else {
+                tbd.write(dest, null)
+              }
+            })
+          })
+        )
+      }
+    }
   }
 
   def filter(

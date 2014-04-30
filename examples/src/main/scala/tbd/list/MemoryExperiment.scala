@@ -21,7 +21,7 @@ import tbd.mod.ModList
 class MemoryExperiment extends Adjustable {
   def run(tbd: TBD): ModList[Int] = {
     val modList = tbd.input.getModList[Int]()
-    modList.map(tbd, (value: Int) => value)
+    modList.map(tbd, (tbd: TBD, value: Int) => value)
   }
 }
 

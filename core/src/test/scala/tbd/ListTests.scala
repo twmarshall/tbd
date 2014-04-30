@@ -24,21 +24,21 @@ import tbd.mod.{Dest, Mod, ModList}
 class ListMapTest extends Adjustable {
   def run(tbd: TBD): ModList[Int] = {
     val modList = tbd.input.getModList[Int](partitions = 1)
-    modList.map(tbd, (_: Int) * 2)
+    modList.map(tbd, (tbd: TBD, value: Int) => value * 2)
   }
 }
 
 class ListParMapTest extends Adjustable {
   def run(tbd: TBD): ModList[Int] = {
     val modList = tbd.input.getModList[Int]()
-    modList.parMap(tbd, (tbd: TBD, value: Int) => value + 1)
+    modList.map(tbd, (tbd: TBD, value: Int) => value + 1, parallel = true)
   }
 }
 
 class ListMemoMapTest extends Adjustable {
   def run(tbd: TBD): ModList[Int] = {
     val modList = tbd.input.getModList[Int](partitions = 1)
-    modList.memoMap(tbd, (_: Int) + 3)
+    modList.map(tbd, (tbd: TBD, value: Int) => value + 3, memoized = true)
   }
 }
 

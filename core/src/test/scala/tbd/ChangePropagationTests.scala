@@ -57,8 +57,8 @@ class PropagationOrderTest2 extends Adjustable {
   val values = ArrayBuffer[Int]()
 
   def run(tbd: TBD): ModList[Int] = {
-    val modList = tbd.input.getModList[Int]()
-    modList.map(tbd, (value: Int) => {
+    val modList = tbd.input.getModList[Int](partitions = 1)
+    modList.map(tbd, (tbd: TBD, value: Int) => {
       if (tbd.initialRun) {
         values += value
       } else {

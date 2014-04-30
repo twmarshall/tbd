@@ -36,7 +36,7 @@ class Experiment(conf: ExperimentConf) {
   def warmUp() {
     var oldCounts = conf.counts
     conf.counts = Array(1000)
-    run(new MapMemoParAdjust(8), "warmup")
+    run(new MapAdjust(8, true, true), "warmup")
     conf.counts = oldCounts
   }
 
@@ -267,13 +267,17 @@ object Experiment {
           case "smap" =>
             experiment.runControl("smap", SimpleMap.run)
           case "seq" =>
-            experiment.run(new MapAdjust(conf.partitions), description)
+            experiment.run(new MapAdjust(conf.partitions, false, false),
+                           description)
           case "par" =>
-            experiment.run(new MapParAdjust(conf.partitions), description)
+            experiment.run(new MapAdjust(conf.partitions, true, false),
+                           description)
           case "memo" =>
-            experiment.run(new MapMemoAdjust(conf.partitions), description)
+            experiment.run(new MapAdjust(conf.partitions, false, true),
+                           description)
           case "memopar" =>
-            experiment.run(new MapMemoParAdjust(conf.partitions), description)
+            experiment.run(new MapAdjust(conf.partitions, true, true),
+                           description)
           case _ =>
             println("Unrecognized description.")
         }

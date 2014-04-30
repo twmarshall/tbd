@@ -21,18 +21,27 @@ import scala.collection.mutable.{Buffer, Set}
 import tbd.TBD
 import tbd.datastore.Datastore
 
+/**
+ * A linked list made up of modifiables. The classes that implement this trait
+ * each structure their modifiables in different ways for certain performance
+ * characteristics.
+ *
+ * The functions of this class are various list operations, implemented in an
+ * self-adjustabling way, so they can be called by an Adjustable.
+ *
+ * The 'parallel' and 'memo' parameters to these functions are performance hints
+ * and may be ignored by some subclasses.
+ */
 trait ModList[T] {
   /**
    * Returns a ModList containing the results of applying the given function
    * to each of the elements of this ModList.
    */
-  def map[U](tbd: TBD, f: T => U): ModList[U]
-
-  def memoMap[U](tbd: TBD, f: T => U): ModList[U]
-
-  def parMap[U](tbd: TBD, f: (TBD, T) => U): ModList[U]
-
-  def memoParMap[U](tbd: TBD, f: (TBD, T) => U): ModList[U]
+  def map[U](
+    tbd: TBD,
+    f: (TBD, T) => U,
+    parallel: Boolean = false,
+    memoized: Boolean = true): ModList[U]
 
   /**
    * Returns a ModList containing all of the elements from this ModList that

@@ -21,7 +21,7 @@ import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.ModList
 
 object MapAdjust {
-  def mapper(s: String): Int = {
+  def mapper(tbd: TBD, s: String): Int = {
     var count = 0
     for (word <- s.split("\\W+")) {
       count += 1
@@ -30,12 +30,15 @@ object MapAdjust {
   }
 }
 
-class MapAdjust(partitions: Int) extends Algorithm {
+class MapAdjust(
+    partitions: Int,
+    parallel: Boolean,
+    memoized: Boolean) extends Algorithm {
   var output: ModList[Int] = null
 
   def run(tbd: TBD): ModList[Int] = {
     val pages = tbd.input.getModList[String](partitions)
-    pages.map(tbd, (s: String) => MapAdjust.mapper(s))
+    pages.map(tbd, MapAdjust.mapper, parallel = parallel, memoized = memoized)
   }
 
   def initialRun(mutator: Mutator) {
@@ -45,73 +48,7 @@ class MapAdjust(partitions: Int) extends Algorithm {
   def checkOutput(answer: Map[Int, String]): Boolean = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
     val sortedAnswer = answer.map(pair => {
-      MapAdjust.mapper(pair._2)
-    }).toBuffer.sortWith(_ < _)
-
-    return sortedOutput == sortedAnswer
-  }
-}
-
-class MapMemoAdjust(partitions: Int) extends Algorithm {
-  var output: ModList[Int] = null
-
-  def run(tbd: TBD): ModList[Int] = {
-    val pages = tbd.input.getModList[String](partitions)
-    pages.memoMap(tbd, (s: String) => MapAdjust.mapper(s))
-  }
-
-  def initialRun(mutator: Mutator) {
-    output = mutator.run[ModList[Int]](this)
-  }
-
-  def checkOutput(answer: Map[Int, String]): Boolean = {
-    val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val sortedAnswer = answer.map(pair => {
-      MapAdjust.mapper(pair._2)
-    }).toBuffer.sortWith(_ < _)
-
-    return sortedOutput == sortedAnswer
-  }
-}
-
-class MapParAdjust(partitions: Int) extends Algorithm {
-  var output: ModList[Int] = null
-
-  def run(tbd: TBD): ModList[Int] = {
-    val pages = tbd.input.getModList[String](partitions)
-    pages.parMap(tbd, (tbd: TBD, s: String) => MapAdjust.mapper(s))
-  }
-
-  def initialRun(mutator: Mutator) {
-    output = mutator.run[ModList[Int]](this)
-  }
-
-  def checkOutput(answer: Map[Int, String]): Boolean = {
-    val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val sortedAnswer = answer.map(pair => {
-      MapAdjust.mapper(pair._2)
-    }).toBuffer.sortWith(_ < _)
-
-    return sortedOutput == sortedAnswer
-  }
-}
-
-class MapMemoParAdjust(partitions: Int) extends Algorithm {
-  var output: ModList[Int] = null
-
-  def run(tbd: TBD): ModList[Int] = {
-    val pages = tbd.input.getModList[String](partitions)
-    pages.memoParMap(tbd, (tbd: TBD, s: String) => MapAdjust.mapper(s))
-  }
-
-  def initialRun(mutator: Mutator) {
-    output = mutator.run[ModList[Int]](this)
-  }
-
-  def checkOutput(answer: Map[Int, String]): Boolean = {
-    val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val sortedAnswer = answer.map(pair => {
-      MapAdjust.mapper(pair._2)
+      MapAdjust.mapper(null, pair._2)
     }).toBuffer.sortWith(_ < _)
 
     return sortedOutput == sortedAnswer

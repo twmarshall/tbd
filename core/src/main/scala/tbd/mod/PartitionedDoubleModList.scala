@@ -25,56 +25,34 @@ class PartitionedDoubleModList[T](
     aPartitions: ArrayBuffer[DoubleModList[T]]) extends ModList[T] {
   val partitions = aPartitions
 
-  def map[U](tbd: TBD, f: T => U): PartitionedDoubleModList[U] = {
-    new PartitionedDoubleModList(
-      partitions.map((partition: DoubleModList[T]) => {
-        partition.map(tbd, f)
-      })
-    )
-  }
+  def map[U](
+      tbd: TBD,
+      f: (TBD, T) => U,
+      parallel: Boolean = true,
+      memoized: Boolean = false): PartitionedDoubleModList[U] = {
+    if (parallel) {
+      def innerMemoParMap(tbd: TBD, i: Int): ArrayBuffer[DoubleModList[U]] = {
+        if (i < partitions.size) {
+          val parTup = tbd.par((tbd: TBD) => {
+            partitions(i).map(tbd, f, memoized = memoized)
+          }, (tbd: TBD) => {
+            innerMemoParMap(tbd, i + 1)
+          })
 
-  def memoMap[U](tbd: TBD, f: T => U): ModList[U] = {
-    new PartitionedDoubleModList(
-      partitions.map((partition: DoubleModList[T]) => {
-        partition.memoMap(tbd, f)
-      })
-    )
-  }
-
-  def parMap[U](tbd: TBD, f: (TBD, T) => U): ModList[U] = {
-    def innerParMap(tbd: TBD, i: Int): ArrayBuffer[DoubleModList[U]] = {
-      if (i < partitions.size) {
-        val parTup = tbd.par((tbd: TBD) => {
-          partitions(i).map(tbd, (value: T) => f(tbd, value))
-        }, (tbd: TBD) => {
-          innerParMap(tbd, i + 1)
-        })
-
-        parTup._2 += parTup._1
-      } else {
-        ArrayBuffer[DoubleModList[U]]()
+          parTup._2 += parTup._1
+        } else {
+          ArrayBuffer[DoubleModList[U]]()
+        }
       }
-    }
-      
-    new PartitionedDoubleModList(innerParMap(tbd, 0))
-  }
 
-  def memoParMap[U](tbd: TBD, f: (TBD, T) => U): ModList[U] = {
-    def innerMemoParMap(tbd: TBD, i: Int): ArrayBuffer[DoubleModList[U]] = {
-      if (i < partitions.size) {
-        val parTup = tbd.par((tbd: TBD) => {
-          partitions(i).memoMap(tbd, (value: T) => f(tbd, value))
-        }, (tbd: TBD) => {
-          innerMemoParMap(tbd, i + 1)
+      new PartitionedDoubleModList(innerMemoParMap(tbd, 0))
+    } else {
+      new PartitionedDoubleModList(
+        partitions.map((partition: DoubleModList[T]) => {
+          partition.map(tbd, f, memoized = memoized)
         })
-
-        parTup._2 += parTup._1
-      } else {
-        ArrayBuffer[DoubleModList[U]]()
-      }
+      )
     }
-
-    new PartitionedDoubleModList(innerMemoParMap(tbd, 0))
   }
 
   def filter(
