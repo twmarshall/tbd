@@ -19,7 +19,7 @@ import org.scalatest._
 import scala.collection.mutable.ArrayBuffer
 
 import tbd.{Adjustable, Changeable, Mutator, TBD}
-import tbd.mod.{Dest, Mod, ModList}
+import tbd.mod.{Dest, Mod, AdjustableList}
 
 class ArrayMapTest extends Adjustable {
   def run(tbd: TBD): Array[Mod[String]] = {
@@ -56,9 +56,9 @@ class PropagationOrderTest extends Adjustable {
 class PropagationOrderTest2 extends Adjustable {
   val values = ArrayBuffer[Int]()
 
-  def run(tbd: TBD): ModList[Int] = {
-    val modList = tbd.input.getModList[Int](partitions = 1)
-    modList.map(tbd, (tbd: TBD, value: Int) => {
+  def run(tbd: TBD): AdjustableList[Int] = {
+    val adjustableList = tbd.input.getAdjustableList[Int](partitions = 1)
+    adjustableList.map(tbd, (tbd: TBD, value: Int) => {
       if (tbd.initialRun) {
         values += value
       } else {
@@ -104,7 +104,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
       mutator.put(i, i)
     }
     val test = new PropagationOrderTest2()
-    mutator.run[ModList[Int]](test)
+    mutator.run[AdjustableList[Int]](test)
 
     for (i <- 0 to 100) {
       mutator.update(i, i + 1)

@@ -20,7 +20,7 @@ import scala.collection.mutable.{ArrayBuffer, Map}
 
 import tbd.{Adjustable, Mutator}
 import tbd.master.Main
-import tbd.mod.{Mod, ModList}
+import tbd.mod.Mod
 
 class Experiment(conf: ExperimentConf) {
   val runtime = Runtime.getRuntime()

@@ -21,7 +21,7 @@ import tbd.{Changeable, TBD}
 import tbd.memo.Lift
 
 class DoubleModList[T](
-    aHead: Mod[DoubleModListNode[T]]) extends ModList[T] {
+    aHead: Mod[DoubleModListNode[T]]) extends AdjustableList[T] {
   val head = aHead
 
   def map[U](

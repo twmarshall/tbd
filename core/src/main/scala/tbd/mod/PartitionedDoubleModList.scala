@@ -22,7 +22,7 @@ import tbd.{Changeable, TBD}
 import tbd.datastore.Datastore
 
 class PartitionedDoubleModList[T](
-    aPartitions: ArrayBuffer[DoubleModList[T]]) extends ModList[T] {
+    aPartitions: ArrayBuffer[DoubleModList[T]]) extends AdjustableList[T] {
   val partitions = aPartitions
 
   def map[U](

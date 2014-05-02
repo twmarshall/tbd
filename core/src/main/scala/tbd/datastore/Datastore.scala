@@ -21,7 +21,7 @@ import scala.collection.mutable.{Map, Set}
 import scala.concurrent.Await
 
 import tbd.messages._
-import tbd.mod.{DoubleModList, InputMod, Mod, ModId, ModList, PartitionedDoubleModList}
+import tbd.mod._
 
 object Datastore {
   def props(): Props = Props(classOf[Datastore])
@@ -34,7 +34,7 @@ class Datastore extends Actor with ActorLogging {
   // Maps modIds to the workers that have read the corresponding mod.
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  // Maps the name of an input table to a set containing the ModLists that were
+  // Maps the name of an input table to a set containing the Modifiers that were
   // returned containing this entire table, so that we can tolerate insertions
   // into and deletions from tables.
   private val modifiers = Map[String, Set[Modifier[Any]]]()
@@ -152,7 +152,9 @@ class Datastore extends Actor with ActorLogging {
       sender ! get("mods", modId)
     }
 
-    case CleanUpMessage(workerRef: ActorRef, removeModLists: Set[ModList[Any]]) => {
+    case CleanUpMessage(
+        workerRef: ActorRef,
+        removeLists: Set[AdjustableList[Any]]) => {
       //log.debug("RemoveDependenciesMessage from " + sender)
 
       for ((modId, dependencySet) <- dependencies) {
@@ -160,9 +162,9 @@ class Datastore extends Actor with ActorLogging {
       }
 
       for (table <- modifiers.keys) {
-        for (removeModList <- removeModLists) {
+        for (removeList <- removeLists) {
           modifiers(table) = modifiers(table).filter((modifier: Modifier[Any]) => {
-            removeModList != modifier.modList
+            removeList != modifier.getAdjustableList()
           })
         }
       }
@@ -184,7 +186,7 @@ class Datastore extends Actor with ActorLogging {
       sender ! arr
     }
 
-    case GetModListMessage(table: String, partitions: Int) => {
+    case GetAdjustableListMessage(table: String, partitions: Int) => {
       val modifier =
         if (partitions == 1) {
           new DMLModifier[Any](this, tables(table))
@@ -198,7 +200,7 @@ class Datastore extends Actor with ActorLogging {
         modifiers(table) = Set(modifier)
       }
 
-      sender ! modifier.modList
+      sender ! modifier.getAdjustableList()
     }
 
     case x => {

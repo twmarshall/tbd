@@ -18,7 +18,7 @@ package tbd.examples.list
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator, TBD}
-import tbd.mod.ModList
+import tbd.mod.AdjustableList
 
 object MapAdjust {
   def mapper(tbd: TBD, s: String): Int = {
@@ -34,15 +34,15 @@ class MapAdjust(
     partitions: Int,
     parallel: Boolean,
     memoized: Boolean) extends Algorithm {
-  var output: ModList[Int] = null
+  var output: AdjustableList[Int] = null
 
-  def run(tbd: TBD): ModList[Int] = {
-    val pages = tbd.input.getModList[String](partitions)
+  def run(tbd: TBD): AdjustableList[Int] = {
+    val pages = tbd.input.getAdjustableList[String](partitions)
     pages.map(tbd, MapAdjust.mapper, parallel = parallel, memoized = memoized)
   }
 
   def initialRun(mutator: Mutator) {
-    output = mutator.run[ModList[Int]](this)
+    output = mutator.run[AdjustableList[Int]](this)
   }
 
   def checkOutput(answer: Map[Int, String]): Boolean = {

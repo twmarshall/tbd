@@ -18,7 +18,7 @@ package tbd.examples.list
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator, TBD}
-import tbd.mod.ModList
+import tbd.mod.AdjustableList
 
 object FilterAdjust {
   def predicate(s: String): Boolean = {
@@ -31,15 +31,15 @@ object FilterAdjust {
 }
 
 class FilterAdjust(partitions: Int) extends Algorithm {
-  var output: ModList[String] = null
+  var output: AdjustableList[String] = null
 
-  def run(tbd: TBD): ModList[String] = {
-    val pages = tbd.input.getModList[String](partitions)
+  def run(tbd: TBD): AdjustableList[String] = {
+    val pages = tbd.input.getAdjustableList[String](partitions)
     pages.filter(tbd, (s: String) => FilterAdjust.predicate(s))
   }
 
   def initialRun(mutator: Mutator) {
-    output = mutator.run[ModList[String]](this)
+    output = mutator.run[AdjustableList[String]](this)
   }
 
   def checkOutput(answer: Map[Int, String]): Boolean = {

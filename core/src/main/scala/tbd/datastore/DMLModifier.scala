@@ -18,13 +18,12 @@ package tbd.datastore
 import akka.actor.ActorRef
 import scala.collection.mutable.Map
 
-import tbd.mod.{DoubleModList, DoubleModListNode, Mod, ModId}
+import tbd.mod._
 
 class DMLModifier[T](
     aDatastore: Datastore,
     table: Map[Any, Any] = Map[Any, Any]()) extends Modifier[T](aDatastore) {
   val doubleModList = initialize()
-  modList = doubleModList
 
   private def initialize(): DoubleModList[T] = {
     var tail = datastore.createMod[DoubleModListNode[T]](null)
@@ -112,5 +111,9 @@ class DMLModifier[T](
     }
 
     found
+  }
+
+  def getAdjustableList(): AdjustableList[T] = {
+    doubleModList
   }
 }
