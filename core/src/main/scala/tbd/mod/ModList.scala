@@ -48,6 +48,12 @@ trait ModList[T] {
    * satisfy the given predicate.
    */
   def filter(tbd: TBD, pred: T => Boolean, parallel: Boolean = false): ModList[T]
+  
+  /**
+  * Reduces all elements in the list using f, from left to right, starting with 
+  * initialValue
+  */
+  def foldl(tbd: TBD, initialValueMod: Mod[T], f: (TBD, T, T) => T) : Mod[T]
 
   /* Meta functions */
   def toBuffer(): Buffer[T]

@@ -41,6 +41,27 @@ class DoubleModListNode[T](
     tbd.write(dest, new DoubleModListNode[U](newValue, newNext))
   }
 
+  def foldl(
+      tbd: TBD,
+      dest: Dest[T],
+      initialValueMod: Mod[T],
+      f: (TBD, T, T) => T): Changeable[T] = {
+    tbd.read(initialValueMod, (initialValue: T) => {
+      val reducedValueMod = tbd.mod((dest: Dest[T]) => {  
+        tbd.read(valueMod, (value: T) =>
+        tbd.write(dest, f(tbd, value, initialValue))) 
+      })
+      tbd.read(next, (next: DoubleModListNode[T]) => {
+        if(next != null) {
+          next.foldl(tbd, dest, reducedValueMod, f)
+        } else {
+          tbd.read(reducedValueMod, (reducedValue: T) => 
+          tbd.write(dest, reducedValue))
+        }
+      })
+    })
+  }
+
   def memoMap[W](
       tbd: TBD,
       dest: Dest[DoubleModListNode[W]],

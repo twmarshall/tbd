@@ -86,6 +86,22 @@ class DoubleModList[T](
     }
   }
 
+  def foldl(
+      tbd: TBD,
+      initialValueMod: Mod[T], 
+      f: (TBD, T, T) => T): Mod[T] = {
+    tbd.mod((dest: Dest[T]) => {
+      tbd.read(head, (node: DoubleModListNode[T]) => {
+        if(node != null) {
+          node.foldl(tbd, dest, initialValueMod, f)
+        } else {
+          tbd.read(initialValueMod, (initialValue: T) => 
+          tbd.write(dest, initialValue)) 
+        }
+      })
+    })
+  }
+
   def filter(
       tbd: TBD,
       pred: T => Boolean,
