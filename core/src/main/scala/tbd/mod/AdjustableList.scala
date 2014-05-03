@@ -50,7 +50,8 @@ trait AdjustableList[T] {
   def filter(
       tbd: TBD,
       pred: T => Boolean,
-      parallel: Boolean = false): AdjustableList[T]
+      parallel: Boolean = false,
+      memoized: Boolean = true): AdjustableList[T]
 
   /* Meta functions */
   def toBuffer(): Buffer[T]

@@ -30,12 +30,15 @@ object FilterAdjust {
   }
 }
 
-class FilterAdjust(partitions: Int) extends Algorithm {
+class FilterAdjust(
+    partitions: Int,
+    parallel: Boolean,
+    memoized: Boolean) extends Algorithm {
   var output: AdjustableList[String] = null
 
   def run(tbd: TBD): AdjustableList[String] = {
     val pages = tbd.input.getAdjustableList[String](partitions)
-    pages.filter(tbd, (s: String) => FilterAdjust.predicate(s))
+    pages.filter(tbd, (s: String) => FilterAdjust.predicate(s), parallel, memoized)
   }
 
   def initialRun(mutator: Mutator) {

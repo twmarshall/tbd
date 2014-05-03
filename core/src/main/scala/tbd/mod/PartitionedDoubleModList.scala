@@ -58,11 +58,12 @@ class PartitionedDoubleModList[T](
   def filter(
       tbd: TBD,
       pred: T => Boolean,
-      parallel: Boolean = true): PartitionedDoubleModList[T] = {
+      parallel: Boolean = true,
+      memoized: Boolean = true): PartitionedDoubleModList[T] = {
     def parFilter(tbd: TBD, i: Int): ArrayBuffer[DoubleModList[T]] = {
       if (i < partitions.size) {
         val parTup = tbd.par((tbd: TBD) => {
-          partitions(i).filter(tbd, pred)
+          partitions(i).filter(tbd, pred, parallel, memoized)
         }, (tbd: TBD) => {
           parFilter(tbd, i + 1)
         })
@@ -78,7 +79,7 @@ class PartitionedDoubleModList[T](
     } else {
       new PartitionedDoubleModList(
         partitions.map((partition: DoubleModList[T]) => {
-          partition.filter(tbd, pred)
+          partition.filter(tbd, pred, parallel, memoized)
         })
       )
     }

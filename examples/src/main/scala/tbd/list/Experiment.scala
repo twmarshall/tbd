@@ -284,10 +284,22 @@ object Experiment {
       } else if (conf.algorithm == "filter") {
         println("filter")
         description match {
+          //case "smap" =>
+          //  experiment.runControl("smap", SimpleMap.run)
           case "seq" =>
-            experiment.run(new FilterAdjust(1), description)
+            experiment.run(new FilterAdjust(conf.partitions, false, false),
+                           description)
           case "par" =>
-            experiment.run(new FilterAdjust(4), description)
+            experiment.run(new FilterAdjust(conf.partitions, true, false),
+                           description)
+          case "memo" =>
+            experiment.run(new FilterAdjust(conf.partitions, false, true),
+                           description)
+          case "memopar" =>
+            experiment.run(new FilterAdjust(conf.partitions, true, true),
+                           description)
+          case _ =>
+            println("Unrecognized description.")
         }
       }
     }

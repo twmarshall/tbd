@@ -137,15 +137,13 @@ class DoubleModListNode[T](
           })
         tbd.write(dest, new DoubleModListNode(valueMod, newNext))
       } else {
-        //lift.memo(List(next, dest), () => {
-          tbd.read(next, (nextValue: DoubleModListNode[T]) => {
-            if (nextValue == null) {
-              tbd.write(dest, null)
-            } else {
-              nextValue.memoFilter(tbd, dest, pred, lift)
-            }
-          })
-        //})
+        tbd.read(next, (nextValue: DoubleModListNode[T]) => {
+          if (nextValue == null) {
+            tbd.write(dest, null)
+          } else {
+            nextValue.memoFilter(tbd, dest, pred, lift)
+          }
+        })
       }
     })
   }
