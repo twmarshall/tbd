@@ -20,7 +20,7 @@ import scala.collection.mutable.Set
 
 import tbd.{Adjustable, Changeable, TBD}
 import tbd.ddg.Node
-import tbd.mod.{Mod, ModId, ModList}
+import tbd.mod.{AdjustableList, Mod, ModId}
 import tbd.worker.Task
 
 // DDG
@@ -32,15 +32,21 @@ case class ToStringMessage()
 case class CreateTableMessage(table: String)
 case class GetMessage(table: String, key: Any)
 case class PutMessage(table: String, key: Any, value: Any, respondTo: ActorRef)
-case class UpdateMessage(table: String, key: Any, value: Any, respondTo: ActorRef)
+case class UpdateMessage(
+    table: String,
+    key: Any,
+    value: Any,
+    respondTo: ActorRef)
 case class RemoveMessage(table: String, key: Any, respondTo: ActorRef)
 
 case class UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef)
 case class ReadModMessage(modId: ModId, workerRef: ActorRef)
-case class CleanUpMessage(workerRef: ActorRef, modLists: Set[ModList[Any]])
+case class CleanUpMessage(
+    workerRef: ActorRef,
+    adjustableLists: Set[AdjustableList[Any]])
 
 case class GetArrayMessage(table: String)
-case class GetModListMessage(table: String, partitions: Int = 8)
+case class GetAdjustableListMessage(table: String, partitions: Int = 8)
 case class NullMessage()
 
 // Master

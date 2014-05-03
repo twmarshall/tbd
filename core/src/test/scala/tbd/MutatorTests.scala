@@ -19,11 +19,11 @@ import org.scalatest._
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator, TBD}
-import tbd.mod.ModList
+import tbd.mod.AdjustableList
 
-class ModListTest extends Adjustable {
-  def run(tbd: TBD): ModList[Int] = {
-    tbd.input.getModList[Int](partitions = 1)
+class AdjustableListTest extends Adjustable {
+  def run(tbd: TBD): AdjustableList[Int] = {
+    tbd.input.getAdjustableList[Int](partitions = 1)
   }
 }
 
@@ -62,7 +62,7 @@ class MutatorTests extends FlatSpec with Matchers {
     }
   }
 
-  "ModListTests" should "update the modList correctly" in {
+  "AdjustableListTests" should "update the modList correctly" in {
     val mutator = new Mutator()
     val answer = Map[Int, Int]()
 
@@ -72,27 +72,31 @@ class MutatorTests extends FlatSpec with Matchers {
       mutator.put(i, i)
       i += 1
     }
-    val output = mutator.run[ModList[Int]](new ModListTest())
-    output.toBuffer().sortWith(_ < _) should be (answer.values.toBuffer.sortWith(_ < _))
+    val output = mutator.run[AdjustableList[Int]](new AdjustableListTest())
+    var sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+    output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
 
     for (j <- 0 to i - 1) {
       updateValue(mutator, answer)
     }
 
-    output.toBuffer().sortWith(_ < _) should be (answer.values.toBuffer.sortWith(_ < _))
+    sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+    output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
 
     while (i < 200) {
       insertValue(mutator, answer, i)
       i += 1
     }
 
-    output.toBuffer().sortWith(_ < _) should be (answer.values.toBuffer.sortWith(_ < _))
+    sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+    output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
 
     for (j <- 0 to 99) {
       removeValue(mutator, answer)
     }
 
-    output.toBuffer().sortWith(_ < _) should be (answer.values.toBuffer.sortWith(_ < _))
+    sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+    output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
 
     for (j <- 0 to 99) {
       rand.nextInt(3) match {
@@ -109,6 +113,7 @@ class MutatorTests extends FlatSpec with Matchers {
       }
     }
 
-    output.toBuffer().sortWith(_ < _) should be (answer.values.toBuffer.sortWith(_ < _))
+    sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+    output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
   }
 }

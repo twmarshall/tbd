@@ -32,20 +32,20 @@ import tbd.datastore.Datastore
  * The 'parallel' and 'memo' parameters to these functions are performance hints
  * and may be ignored by some subclasses.
  */
-trait ModList[T] {
+trait AdjustableList[T] {
   /**
-   * Returns a ModList containing the results of applying the given function
-   * to each of the elements of this ModList.
+   * Returns a AdjustableList containing the results of applying the given
+   * function to each of the elements of this AdjustableList.
    */
   def map[U](
-    tbd: TBD,
-    f: (TBD, T) => U,
-    parallel: Boolean = false,
-    memoized: Boolean = true): ModList[U]
+      tbd: TBD,
+      f: (TBD, T) => U,
+      parallel: Boolean = false,
+      memoized: Boolean = true): AdjustableList[U]
 
   /**
-   * Returns a ModList containing all of the elements from this ModList that
-   * satisfy the given predicate.
+   * Returns a AdjustableList containing all of the elements from this
+   * AdjustableList that satisfy the given predicate.
    */
   def filter(tbd: TBD, pred: T => Boolean, parallel: Boolean = false): ModList[T]
   
@@ -60,7 +60,6 @@ trait ModList[T] {
   * initialValue
   */
   def reduce(tbd: TBD, initialValueMod: Mod[T], f: (TBD, T, T) => T) : Mod[T]
-
 
   /* Meta functions */
   def toBuffer(): Buffer[T]

@@ -17,13 +17,14 @@ package tbd.datastore
 
 import akka.actor.ActorRef
 
-import tbd.mod.{Mod, ModList}
+import tbd.mod.{AdjustableList, Mod}
 
 abstract class Modifier[T](aDatastore: Datastore) {
   val datastore = aDatastore
-  var modList: ModList[T] = null
 
   def insert(mod: Mod[T], respondTo: ActorRef): Int
 
   def remove(toRemove: Mod[T], respondTo: ActorRef): Int
+
+  def getAdjustableList(): AdjustableList[T]
 }

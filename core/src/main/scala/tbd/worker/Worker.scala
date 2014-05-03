@@ -25,7 +25,7 @@ import tbd.TBD
 import tbd.ddg.{DDG, ParNode, ReadNode}
 import tbd.memo.MemoEntry
 import tbd.messages._
-import tbd.mod.{ModId, ModList}
+import tbd.mod.{AdjustableList, ModId}
 
 object Worker {
   def props(id: String, datastoreRef: ActorRef, parent: ActorRef): Props =
@@ -40,7 +40,7 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
   val datastoreRef = aDatastoreRef
   val ddg = new DDG(log, id, this)
   val memoTable = Map[List[Any], ArrayBuffer[MemoEntry]]()
-  val modLists = Set[ModList[Any]]()
+  val adjustableLists = Set[AdjustableList[Any]]()
 
   private var task: Task = null
   private val tbd = new TBD(id, this)
@@ -201,7 +201,7 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
     }
 
     case CleanupWorkerMessage => {
-      val datastoreFuture = datastoreRef ? CleanUpMessage(self, modLists)
+      val datastoreFuture = datastoreRef ? CleanUpMessage(self, adjustableLists)
 
       val futures = Set[Future[Any]]()
       for ((actorRef, parNode) <- ddg.pars) {

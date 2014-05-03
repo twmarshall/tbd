@@ -19,33 +19,33 @@ import scala.collection.mutable.{Buffer, Map}
 import org.scalatest._
 
 import tbd.{Adjustable, Changeable, Mutator, TBD}
-import tbd.mod.{Dest, Mod, ModList}
+import tbd.mod.{AdjustableList, Dest, Mod}
 
 class ListMapTest extends Adjustable {
-  def run(tbd: TBD): ModList[Int] = {
-    val modList = tbd.input.getModList[Int](partitions = 1)
-    modList.map(tbd, (tbd: TBD, value: Int) => value * 2)
+  def run(tbd: TBD): AdjustableList[Int] = {
+    val list = tbd.input.getAdjustableList[Int](partitions = 1)
+    list.map(tbd, (tbd: TBD, value: Int) => value * 2)
   }
 }
 
 class ListParMapTest extends Adjustable {
-  def run(tbd: TBD): ModList[Int] = {
-    val modList = tbd.input.getModList[Int]()
-    modList.map(tbd, (tbd: TBD, value: Int) => value + 1, parallel = true)
+  def run(tbd: TBD): AdjustableList[Int] = {
+    val list = tbd.input.getAdjustableList[Int]()
+    list.map(tbd, (tbd: TBD, value: Int) => value + 1, parallel = true)
   }
 }
 
 class ListMemoMapTest extends Adjustable {
-  def run(tbd: TBD): ModList[Int] = {
-    val modList = tbd.input.getModList[Int](partitions = 1)
-    modList.map(tbd, (tbd: TBD, value: Int) => value + 3, memoized = true)
+  def run(tbd: TBD): AdjustableList[Int] = {
+    val list = tbd.input.getAdjustableList[Int](partitions = 1)
+    list.map(tbd, (tbd: TBD, value: Int) => value + 3, memoized = true)
   }
 }
 
 class ListFilterTest(partitions: Int) extends Adjustable {
-  def run(tbd: TBD): ModList[Int] = {
-    val modList = tbd.input.getModList[Int](partitions = partitions)
-    modList.filter(tbd, (_: Int) % 2 == 0)
+  def run(tbd: TBD): AdjustableList[Int] = {
+    val list = tbd.input.getAdjustableList[Int](partitions = partitions)
+    list.filter(tbd, (_: Int) % 2 == 0)
   }
 }
 
@@ -70,7 +70,7 @@ class ListTests extends FlatSpec with Matchers {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
-    val output = mutator.run[ModList[Int]](new ListMapTest())
+    val output = mutator.run[AdjustableList[Int]](new ListMapTest())
     // (1 * 2), (2 * 2)
     output.toBuffer().sortWith(_ < _) should be (Buffer(2, 4))
 
@@ -107,7 +107,7 @@ class ListTests extends FlatSpec with Matchers {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
-    val output = mutator.run[ModList[Int]](new ListParMapTest())
+    val output = mutator.run[AdjustableList[Int]](new ListParMapTest())
     // (1 + 1), (2 + 1)
     output.toBuffer().sortWith(_ < _) should be (Buffer(2, 3))
 
@@ -143,13 +143,13 @@ class ListTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 
-  "ListMemoMapTest" should "return the mapped ModList" in {
+  "ListMemoMapTest" should "return the mapped AdjustableList" in {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
     mutator.put("three", 3)
     mutator.put("four", 4)
-    val output = mutator.run[ModList[Int]](new ListMemoMapTest())
+    val output = mutator.run[AdjustableList[Int]](new ListMemoMapTest())
     output.toBuffer().sortWith(_ < _) should be (Buffer(4, 5, 6, 7))
 
     mutator.remove("two")
@@ -231,9 +231,11 @@ class ListTests extends FlatSpec with Matchers {
         addValue(mutator, table)
       }
 
-      val output = mutator.run[ModList[Int]](new ListFilterTest(partitions))
+      val output = mutator.run[AdjustableList[Int]](new ListFilterTest(partitions))
       var answer = table.values.filter(_ % 2 == 0).toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (answer)
+
+      println(mutator.getDDG())
 
       for (i <- 0 to 5) {
         for (j <- 0 to 10) {

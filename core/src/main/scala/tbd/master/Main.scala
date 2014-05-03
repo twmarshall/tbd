@@ -22,6 +22,8 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 object Main {
+  val debug = false
+
   var id = 0
 
   def main(args: Array[String]) {

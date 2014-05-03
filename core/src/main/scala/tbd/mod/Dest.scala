@@ -18,10 +18,17 @@ package tbd.mod
 import akka.actor.ActorRef
 
 import tbd.TBD
+import tbd.master.Main
 import tbd.worker.Worker
 
 class Dest[T](worker: Worker, aModId: ModId) extends Mod[T](aModId) {
-  val mod = new LocalMod[T](worker.self, id)
+  val mod =
+    if (Main.debug) {
+      new DebugMod[T](worker.self, id)
+    } else {
+      new LocalMod[T](worker.self, id)
+    }
+
   worker.nextModId += 1
 
   def read(workerRef: ActorRef = null): T = {

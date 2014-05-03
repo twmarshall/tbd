@@ -21,7 +21,7 @@ import scala.concurrent.Await
 
 import tbd.Constants._
 import tbd.messages._
-import tbd.mod.{Mod, ModList}
+import tbd.mod.{Mod, AdjustableList}
 import tbd.worker.Worker
 
 class Reader(worker: Worker) {
@@ -37,10 +37,11 @@ class Reader(worker: Worker) {
       .asInstanceOf[Array[T]]
   }
 
-  def getModList[T](partitions: Int = 8): ModList[T] = {
-    val modListFuture = worker.datastoreRef ? GetModListMessage("input", partitions)
-    val modList = Await.result(modListFuture, DURATION)
-    worker.modLists += modList.asInstanceOf[ModList[Any]]
-    modList.asInstanceOf[ModList[T]]
+  def getAdjustableList[T](partitions: Int = 8): AdjustableList[T] = {
+    val adjustableListFuture =
+      worker.datastoreRef ? GetAdjustableListMessage("input", partitions)
+    val adjustableList = Await.result(adjustableListFuture, DURATION)
+    worker.adjustableLists += adjustableList.asInstanceOf[AdjustableList[Any]]
+    adjustableList.asInstanceOf[AdjustableList[T]]
   }
 }

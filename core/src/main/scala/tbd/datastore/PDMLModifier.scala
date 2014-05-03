@@ -18,7 +18,7 @@ package tbd.datastore
 import akka.actor.ActorRef
 import scala.collection.mutable.{ArrayBuffer, Map}
 
-import tbd.mod.{DoubleModList, DoubleModListNode, Mod, PartitionedDoubleModList}
+import tbd.mod._
 
 class PDMLModifier[T](
     aDatastore: Datastore,
@@ -26,7 +26,7 @@ class PDMLModifier[T](
     numPartitions: Int) extends Modifier[T](aDatastore) {
 
   val partitionModifiers = ArrayBuffer[DMLModifier[T]]()
-  modList = initialize()
+  val modList = initialize()
 
   private def initialize(): PartitionedDoubleModList[T] = {
     val partitions = new ArrayBuffer[DoubleModList[T]]()
@@ -69,5 +69,9 @@ class PDMLModifier[T](
     }
 
     count
+  }
+
+  def getAdjustableList(): AdjustableList[T] = {
+    modList
   }
 }
