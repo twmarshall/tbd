@@ -22,6 +22,7 @@ import scala.concurrent.Await
 
 import tbd.Changeable
 import tbd.Constants._
+import tbd.master.Main
 import tbd.messages._
 import tbd.mod.Mod
 
@@ -61,9 +62,15 @@ class ReadNode(aMod: Mod[Any], aParent: Node, aTimestamp: Timestamp, aReader: An
   val reader = aReader
 
   override def toString(prefix: String) = {
+    val value = 
+      if (Main.debug) {
+	" value=" + mod
+      } else {
+	""
+      }
+
     prefix + "ReadNode modId=(" + mod.id + ") " + " time=" + timestamp +
-      //" value=" + mod +
-      " updated=(" + updated + ")" + super.toString(prefix)
+      value + " updated=(" + updated + ")" + super.toString(prefix)
   }
 }
 
@@ -72,9 +79,15 @@ class WriteNode(aMod: Mod[Any], aParent: Node, aTimestamp: Timestamp)
   val mod: Mod[Any] = aMod
 
   override def toString(prefix: String) = {
+    val value = 
+      if (Main.debug) {
+	" value=" + mod
+      } else {
+	""
+      }
+
     prefix + "WriteNode modId=(" + mod.id + ") " +
-      //"value=" + mod +
-      " time=" + timestamp + super.toString(prefix)
+      value + " time=" + timestamp + super.toString(prefix)
   }
 }
 

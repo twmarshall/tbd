@@ -219,6 +219,8 @@ class ListTests extends FlatSpec with Matchers {
       var answer = table.values.filter(_ % 2 == 0).toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (answer)
 
+      println(mutator.getDDG())
+
       for (i <- 0 to 5) {
         for (j <- 0 to 10) {
           update(mutator, table)

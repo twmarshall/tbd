@@ -23,6 +23,7 @@ import scala.concurrent.Await
 
 import tbd.Constants._
 import tbd.ddg.{Node, Timestamp}
+import tbd.master.Main
 import tbd.memo.{Lift, MemoEntry}
 import tbd.messages._
 import tbd.mod.{Dest, Mod, ModId}
@@ -95,7 +96,9 @@ class TBD(
     }
 
     val changeable = new Changeable(dest.mod)
-    //worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]], currentParent)
+    if (Main.debug) {
+      worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]], currentParent)
+    }
 
     changeable
   }
