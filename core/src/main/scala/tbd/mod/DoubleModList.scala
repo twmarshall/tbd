@@ -107,7 +107,8 @@ class DoubleModList[T](
       initialValueMod: Mod[T],
       f: (TBD, T, T) => T): Mod[T] = {
     reduceHelper(tbd, initialValueMod, head, f)
-  }       
+  }      
+   
   def reduceHelper(
       tbd: TBD,
       initialValueMod: Mod[T],

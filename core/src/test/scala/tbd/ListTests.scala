@@ -51,7 +51,7 @@ class ListFilterTest(partitions: Int) extends Adjustable {
 
 class ListFoldlSumTest extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {
-    val modList = tbd.input.getModList[Int](partitions = 1)
+    val modList = tbd.input.getAdjustableList[Int](partitions = 1)
     val zero = tbd.mod((dest : Dest[Int]) => tbd.write(dest, 0))
     modList.foldl(tbd, zero, (tbd: TBD, a: Int, b:Int) => a + b)
   }
@@ -59,7 +59,7 @@ class ListFoldlSumTest extends Adjustable {
 
 class ListReduceSumTest extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {
-    val modList = tbd.input.getModList[Int](partitions = 1)
+    val modList = tbd.input.getAdjustableList[Int](partitions = 1)
     val zero = tbd.mod((dest : Dest[Int]) => tbd.write(dest, 0))
     modList.reduce(tbd, zero, (tbd: TBD, a: Int, b:Int) => a + b)
   }

@@ -47,7 +47,7 @@ trait AdjustableList[T] {
    * Returns a AdjustableList containing all of the elements from this
    * AdjustableList that satisfy the given predicate.
    */
-  def filter(tbd: TBD, pred: T => Boolean, parallel: Boolean = false): ModList[T]
+  def filter(tbd: TBD, pred: T => Boolean, parallel: Boolean = false): AdjustableList[T]
   
   /**
   * Reduces all elements in the list using f, from left to right, starting with 
