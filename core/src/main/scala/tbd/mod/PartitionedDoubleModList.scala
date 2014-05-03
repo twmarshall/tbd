@@ -65,6 +65,10 @@ class PartitionedDoubleModList[T](
     tbd.write(dest, initialValue))) 
   }
 
+  def reduce(tbd: TBD, initialValueMod: Mod[T], f: (TBD, T, T) => T) : Mod[T] = {
+    foldl(tbd, initialValueMod, f)
+  }
+
   def filter(
       tbd: TBD,
       pred: T => Boolean,

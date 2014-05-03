@@ -55,6 +55,13 @@ trait ModList[T] {
   */
   def foldl(tbd: TBD, initialValueMod: Mod[T], f: (TBD, T, T) => T) : Mod[T]
 
+  /**
+  * Reduces all elements in the list using f, in an unspecified order, starting with 
+  * initialValue
+  */
+  def reduce(tbd: TBD, initialValueMod: Mod[T], f: (TBD, T, T) => T) : Mod[T]
+
+
   /* Meta functions */
   def toBuffer(): Buffer[T]
 }
