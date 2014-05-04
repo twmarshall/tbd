@@ -127,7 +127,7 @@ class DoubleModList[T](
               tbd.write(dest, reducedList))
             } else {
               tbd.read(head.valueMod, (value: T) => 
-              tbd.read(initialValueMod, (initialValue: T) =>
+              tbd.read(initialValueMod, (initialValue: T) => 
               tbd.write(dest, f(tbd, value, initialValue))))
             }
           })

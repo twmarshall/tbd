@@ -70,7 +70,7 @@ class DoubleModListNode[T](
       if(next != null) {
         val newValueMod = tbd.mod((dest: Dest[T]) => 
         tbd.read(next.valueMod, (nextValue: T) => 
-        tbd.read(valueMod, (value: T) => 
+        tbd.read(valueMod, (value: T) =>
         tbd.write(dest, f(tbd, value, nextValue)))))
         val newNext = tbd.mod((dest: Dest[DoubleModListNode[T]]) =>
         tbd.read(next.next, (nextNext: DoubleModListNode[T]) => {
