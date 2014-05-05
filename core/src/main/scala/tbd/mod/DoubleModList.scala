@@ -96,7 +96,7 @@ class DoubleModList[T](
           node.foldl(tbd, dest, initialValueMod, f)
         } else {
           tbd.read(initialValueMod, (initialValue: T) => 
-          tbd.write(dest, initialValue)) 
+            tbd.write(dest, initialValue)) 
         }
       })
     })
@@ -106,36 +106,34 @@ class DoubleModList[T](
       tbd: TBD,
       initialValueMod: Mod[T],
       f: (TBD, T, T) => T): Mod[T] = {
-    reduceHelper(tbd, initialValueMod, head, f)
+    tbd.mod((dest: Dest[T]) =>
+      reduceHelper(tbd, initialValueMod, head, dest, f))
   }      
    
   def reduceHelper(
       tbd: TBD,
       initialValueMod: Mod[T],
-      head: Mod[DoubleModListNode[T]], 
-      f: (TBD, T, T) => T): Mod[T] = {
-    tbd.mod((dest: Dest[T]) => {
-      tbd.read(head, (head: DoubleModListNode[T]) => {
-        if(head != null) {
-          tbd.read(head.next, (next: DoubleModListNode[T]) => {
-            if(next != null) {
-              val newListMod = tbd.mod((dest: Dest[DoubleModListNode[T]]) => {
-                head.reducePairs(tbd, dest, f)
-              })
-              val reducedListMod = reduceHelper(tbd, initialValueMod, newListMod, f)
-              tbd.read(reducedListMod, (reducedList: T) => 
-              tbd.write(dest, reducedList))
-            } else {
-              tbd.read(head.valueMod, (value: T) => 
+      head: Mod[DoubleModListNode[T]],
+      dest: Dest[T],  
+      f: (TBD, T, T) => T): Changeable[T] = {
+    tbd.read(head, (head: DoubleModListNode[T]) => {
+      if(head != null) {
+        tbd.read(head.next, (next: DoubleModListNode[T]) => {
+          if(next != null) {
+            val newListMod = tbd.mod((dest: Dest[DoubleModListNode[T]]) => {
+              head.reducePairs(tbd, dest, f)
+            })
+            reduceHelper(tbd, initialValueMod, newListMod, dest, f)
+          } else {
+            tbd.read(head.valueMod, (value: T) => 
               tbd.read(initialValueMod, (initialValue: T) => 
-              tbd.write(dest, f(tbd, value, initialValue))))
-            }
-          })
-        } else {
-          tbd.read(initialValueMod, (initialValue: T) => 
+                tbd.write(dest, f(tbd, value, initialValue))))
+          }
+        })
+      } else {
+        tbd.read(initialValueMod, (initialValue: T) => 
           tbd.write(dest, initialValue))
-        }
-      })
+      }
     })
   }
 
