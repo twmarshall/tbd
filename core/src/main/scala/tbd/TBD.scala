@@ -66,6 +66,13 @@ class TBD(
   // The timestamp of the node immediately after the end of the read being
   // reexecuted.
   var reexecutionEnd: Timestamp = null
+  
+  def read2[T, V, U](a: Mod[T], b: Mod[V])
+                    (reader: (T, V) => (Changeable[U])): Changeable[U] = {
+    read(a)((a) => {
+      read(b)((b) => reader(a, b))
+    })
+  }
 
   def read[T, U](mod: Mod[T])(reader: T => (Changeable[U])): Changeable[U] = {
     val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],

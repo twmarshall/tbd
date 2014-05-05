@@ -111,9 +111,10 @@ class DoubleModList[T](
             })
             reduceHelper(tbd, initialValueMod, newListMod, dest, f)
           } else {
-            tbd.read(head.valueMod)(value =>
-              tbd.read(initialValueMod)(initialValue =>
-                tbd.write(dest, f(tbd, value, initialValue))))
+            tbd.read2(head.valueMod, initialValueMod) {
+              (value, initialValue) =>
+                tbd.write(dest, f(tbd, value, initialValue))
+            }
           }
         })
       } else {
