@@ -48,9 +48,10 @@ trait AdjustableList[T] {
    * AdjustableList that satisfy the given predicate.
    */
   def filter(
-      tbd: TBD, 
-      pred: T => Boolean, 
-      parallel: Boolean = false): AdjustableList[T]
+      tbd: TBD,
+      pred: T => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = true): AdjustableList[T]
   
   /**
    * Reduces all elements in the list using f, from left to right, starting with 

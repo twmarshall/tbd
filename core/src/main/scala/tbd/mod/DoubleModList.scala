@@ -30,31 +30,17 @@ class DoubleModList[T](
       parallel: Boolean = false,
       memoized: Boolean = true): DoubleModList[U] = {
     if (parallel) {
-      if (memoized) {
-        new DoubleModList(
-          tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
-            tbd.read(head, (node: DoubleModListNode[T]) => {
-              if (node != null) {
-                node.parMap(tbd, dest, f)
-              } else {
-                tbd.write(dest, null)
-              }
-            })
+      new DoubleModList(
+        tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
+          tbd.read(head, (node: DoubleModListNode[T]) => {
+            if (node != null) {
+              node.parMap(tbd, dest, f)
+            } else {
+              tbd.write(dest, null)
+            }
           })
-        )
-      } else {
-        new DoubleModList(
-          tbd.mod((dest: Dest[DoubleModListNode[U]]) => {
-            tbd.read(head, (node: DoubleModListNode[T]) => {
-              if (node != null) {
-                node.parMap(tbd, dest, f)
-              } else {
-                tbd.write(dest, null)
-              }
-            })
-          })
-        )
-      }
+        })
+      )
     } else {
       if (memoized) {
         val lift = tbd.makeLift[Mod[DoubleModListNode[U]]]()
@@ -140,20 +126,35 @@ class DoubleModList[T](
   def filter(
       tbd: TBD,
       pred: T => Boolean,
-      parallel: Boolean = false): DoubleModList[T] = {
-    val lift = tbd.makeLift[Mod[DoubleModListNode[T]]]()
+      parallel: Boolean = false,
+      memoized: Boolean = true): DoubleModList[T] = {
+    if (memoized) {
+      val lift = tbd.makeLift[Mod[DoubleModListNode[T]]]()
 
-    new DoubleModList(
-      tbd.mod((dest: Dest[DoubleModListNode[T]]) => {
-        tbd.read(head, (node: DoubleModListNode[T]) => {
-          if (node != null) {
-            node.memoFilter(tbd, dest, pred, lift)
-          } else {
-            tbd.write(dest, null)
-          }
+      new DoubleModList(
+        tbd.mod((dest: Dest[DoubleModListNode[T]]) => {
+          tbd.read(head, (node: DoubleModListNode[T]) => {
+            if (node != null) {
+              node.memoFilter(tbd, dest, pred, lift)
+            } else {
+              tbd.write(dest, null)
+            }
+          })
         })
-      })
-    )
+      )
+    } else {
+      new DoubleModList(
+        tbd.mod((dest: Dest[DoubleModListNode[T]]) => {
+          tbd.read(head, (node: DoubleModListNode[T]) => {
+            if (node != null) {
+              node.filter(tbd, dest, pred)
+            } else {
+              tbd.write(dest, null)
+            }
+          })
+        })
+      )
+    }
   }
 
   def toBuffer(): Buffer[T] = {
