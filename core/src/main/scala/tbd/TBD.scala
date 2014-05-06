@@ -74,6 +74,12 @@ class TBD(
     })
   }
 
+  def increment(mod: Mod[Int]): Mod[Int] = {
+    this.mod((dest: Dest[Int]) =>
+      read(mod)(mod => 
+        write(dest, mod + 1)))
+  }
+
   def read[T, U](mod: Mod[T])(reader: T => (Changeable[U])): Changeable[U] = {
     val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],
                                       currentParent,
@@ -108,6 +114,12 @@ class TBD(
     }
 
     changeable
+  }
+
+  def createMod[T](value: T): Mod[T] = {
+    this.mod((dest: Dest[T]) => {
+      write(dest, value)
+    })
   }
 
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {

@@ -88,40 +88,106 @@ class DoubleModList[T](
     })
   }
 
+  def randomReduce(
+      tbd: TBD,
+      initialValueMod: Mod[T],
+      f: (TBD, T, T) => T): Mod[T] = {
+    val idList = toIdList(tbd, head)
+    val zero = tbd.createMod(0)
+    tbd.mod((dest: Dest[T]) => {
+      randomReduceIdList(tbd, initialValueMod, idList, zero, dest, f)
+   }) 
+  }
+
+  def toIdList(
+      tbd: TBD,  
+      head: Mod[DoubleModListNode[T]]): Mod[DoubleModListNode[(ModId, T)]] = {
+    tbd.mod((dest: Dest[DoubleModListNode[(ModId, T)]]) => {
+      tbd.read(head)(head => {
+        if(head == null) {
+          tbd.write(dest, null)
+        } else {
+          tbd.read(head.valueMod)(value => {
+            val newValue = tbd.createMod((head.valueMod.id, value))
+            val newList = toIdList(tbd, head.next)
+            tbd.write(dest, new DoubleModListNode[(ModId, T)](newValue, newList))
+          })
+        }
+      })
+    })
+  }
+
+  def randomReduceIdList(
+      tbd: TBD,
+      identityMod: Mod[T],
+      head: Mod[DoubleModListNode[(ModId, T)]],
+      round: Mod[Int],
+      dest: Dest[T],
+      f: (TBD, T, T) => T): Changeable[T] = {
+    
+    tbd.read(head)(head => {
+      if(head != null) {
+        val a = tbd.mod((dest: Dest[(T, Mod[DoubleModListNode[(ModId, T)]])]) =>
+          halfIdList(tbd, identityMod, head, round, dest, f))
+        tbd.read(a)(a => {
+          val b = tbd.mod((dest: Dest[T]) => 
+            randomReduceIdList(tbd, 
+                               identityMod,
+                               a._2,
+                               tbd.increment(round),
+                               dest,
+                               f))  
+          tbd.read(b)(b =>     
+            tbd.write(dest, f(tbd, a._1, b)))
+        })
+      } else {
+        tbd.read(identityMod)(identity => {
+          tbd.write(dest, identity) 
+        })
+      }
+    })
+  }
+
+  def halfIdList(
+      tbd: TBD,
+      identityMod: Mod[T],
+      head: DoubleModListNode[(ModId, T)],
+      round: Mod[Int],
+      dest: Dest[(T, Mod[DoubleModListNode[(ModId, T)]])],
+      f: (TBD, T, T) => T): Changeable[(T, Mod[DoubleModListNode[(ModId, T)]])] = {
+    if(head != null) {
+      tbd.read2(head.valueMod, head.next)((value, next) => {
+        val halfResult = tbd.mod((dest: Dest[(T, Mod[DoubleModListNode[(ModId, T)]])]) =>
+          halfIdList(tbd, identityMod, next, round, dest, f))
+        tbd.read2(round, halfResult)((round, halfResult) => {
+          if(binaryHash(value._1, round)) {
+            val newList = tbd.createMod(
+              new DoubleModListNode(
+                tbd.createMod((value._1, value._2)), 
+                halfResult._2))
+            tbd.write(dest, (halfResult._1, newList))
+          } else {
+            tbd.write(dest, (f(tbd, halfResult._1, value._2), halfResult._2))
+          }
+        })
+      })
+    } else { 
+      tbd.read(identityMod)(identity => {
+        tbd.write(dest, (identity, tbd.createMod(head))) 
+      })
+    }
+  }
+
+  def binaryHash(id: ModId, round: Int) = {
+    var k:Int = round
+    (k > 32) || ((id.value.hashCode() >> k) % 2 == 0)
+  }
+
   def reduce(
       tbd: TBD,
       initialValueMod: Mod[T],
       f: (TBD, T, T) => T): Mod[T] = {
-    tbd.mod((dest: Dest[T]) =>
-      reduceHelper(tbd, initialValueMod, head, dest, f))
-  }
-
-  def reduceHelper(
-      tbd: TBD,
-      initialValueMod: Mod[T],
-      head: Mod[DoubleModListNode[T]],
-      dest: Dest[T],
-      f: (TBD, T, T) => T): Changeable[T] = {
-    tbd.read(head)(head => {
-      if(head != null) {
-        tbd.read(head.next)(next => {
-          if(next != null) {
-            val newListMod = tbd.mod((dest: Dest[DoubleModListNode[T]]) => {
-              head.reducePairs(tbd, dest, f)
-            })
-            reduceHelper(tbd, initialValueMod, newListMod, dest, f)
-          } else {
-            tbd.read2(head.valueMod, initialValueMod) {
-              (value, initialValue) =>
-                tbd.write(dest, f(tbd, value, initialValue))
-            }
-          }
-        })
-      } else {
-        tbd.read(initialValueMod)(initialValue =>
-          tbd.write(dest, initialValue))
-      }
-    })
+    randomReduce(tbd, initialValueMod, f)
   }
 
   def filter(
