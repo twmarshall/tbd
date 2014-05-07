@@ -88,21 +88,29 @@ class DoubleModList[T](
     })
   }
 
+  type HalfList = (T, Mod[IdListNode])
+  type IdListNode = DoubleModListNode[(ModId, T)]
+
   def randomReduce(
       tbd: TBD,
       initialValueMod: Mod[T],
       f: (TBD, T, T) => T): Mod[T] = {
     val idList = toIdList(tbd, head)
     val zero = tbd.createMod(0)
+    val halfLift = tbd.makeLift[Mod[HalfList]]()
+    val reduceLift = tbd.makeLift[Mod[T]]()
+    
     tbd.mod((dest: Dest[T]) => {
-      randomReduceIdList(tbd, initialValueMod, idList, zero, dest, f)
+      randomReduceIdList(tbd, initialValueMod, 
+                         idList, zero, dest, 
+                         halfLift, reduceLift, f)
    }) 
   }
 
   def toIdList(
       tbd: TBD,  
-      head: Mod[DoubleModListNode[T]]): Mod[DoubleModListNode[(ModId, T)]] = {
-    tbd.mod((dest: Dest[DoubleModListNode[(ModId, T)]]) => {
+      head: Mod[DoubleModListNode[T]]): Mod[IdListNode] = {
+    tbd.mod((dest: Dest[IdListNode]) => {
       tbd.read(head)(head => {
         if(head == null) {
           tbd.write(dest, null)
@@ -110,7 +118,7 @@ class DoubleModList[T](
           tbd.read(head.valueMod)(value => {
             val newValue = tbd.createMod((head.valueMod.id, value))
             val newList = toIdList(tbd, head.next)
-            tbd.write(dest, new DoubleModListNode[(ModId, T)](newValue, newList))
+            tbd.write(dest, new IdListNode(newValue, newList))
           })
         }
       })
@@ -120,26 +128,36 @@ class DoubleModList[T](
   def randomReduceIdList(
       tbd: TBD,
       identityMod: Mod[T],
-      head: Mod[DoubleModListNode[(ModId, T)]],
+      headMod: Mod[IdListNode],
       round: Mod[Int],
       dest: Dest[T],
+      halfLift: Lift[Mod[HalfList]],
+      reduceLift: Lift[Mod[T]],
       f: (TBD, T, T) => T): Changeable[T] = {
     
-    tbd.read(head)(head => {
+    tbd.read(headMod)(head => {
       if(head != null) {
-        val a = tbd.mod((dest: Dest[(T, Mod[DoubleModListNode[(ModId, T)]])]) =>
-          halfIdList(tbd, identityMod, head, round, dest, f))
-        tbd.read(a)(a => {
-          val b = tbd.mod((dest: Dest[T]) => 
-            randomReduceIdList(tbd, 
-                               identityMod,
-                               a._2,
-                               tbd.increment(round),
-                               dest,
-                               f))  
-          tbd.read(b)(b =>     
-            tbd.write(dest, f(tbd, a._1, b)))
+     
+        var fixedVars = List(headMod, round, identityMod) 
+        val halfList = halfLift.memo(fixedVars, () => {
+          tbd.mod((dest: Dest[HalfList]) =>
+            halfIdList(tbd, identityMod, head, round, dest, f))
         })
+
+        tbd.read(halfList)(halfList => {
+          
+          fixedVars = List(headMod, halfList._2, round, identityMod)
+          val result = reduceLift.memo(fixedVars, () => {
+            tbd.mod((dest: Dest[T]) => 
+              randomReduceIdList(tbd, identityMod, halfList._2,
+                                 tbd.increment(round), dest,
+                                 halfLift, reduceLift, f))  
+          })
+          
+          tbd.read(result)(result =>     
+            tbd.write(dest, f(tbd, halfList._1, result)))
+        })
+
       } else {
         tbd.read(identityMod)(identity => {
           tbd.write(dest, identity) 
@@ -151,13 +169,13 @@ class DoubleModList[T](
   def halfIdList(
       tbd: TBD,
       identityMod: Mod[T],
-      head: DoubleModListNode[(ModId, T)],
+      head: IdListNode,
       round: Mod[Int],
-      dest: Dest[(T, Mod[DoubleModListNode[(ModId, T)]])],
-      f: (TBD, T, T) => T): Changeable[(T, Mod[DoubleModListNode[(ModId, T)]])] = {
+      dest: Dest[HalfList],
+      f: (TBD, T, T) => T): Changeable[HalfList] = {
     if(head != null) {
       tbd.read2(head.valueMod, head.next)((value, next) => {
-        val halfResult = tbd.mod((dest: Dest[(T, Mod[DoubleModListNode[(ModId, T)]])]) =>
+        val halfResult = tbd.mod((dest: Dest[HalfList]) =>
           halfIdList(tbd, identityMod, next, round, dest, f))
         tbd.read2(round, halfResult)((round, halfResult) => {
           if(binaryHash(value._1, round)) {
