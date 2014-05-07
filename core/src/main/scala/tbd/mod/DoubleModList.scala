@@ -175,21 +175,28 @@ class DoubleModList[T](
       f: (TBD, T, T) => T): Changeable[HalfList] = {
     if(head != null) {
       tbd.read2(head.valueMod, head.next)((value, next) => {
+
         val halfResult = tbd.mod((dest: Dest[HalfList]) =>
           halfIdList(tbd, identityMod, next, round, dest, f))
+
         tbd.read2(round, halfResult)((round, halfResult) => {
+          
           if(binaryHash(value._1, round)) {
+            println("skip " + value._1)
             val newList = tbd.createMod(
               new DoubleModListNode(
                 tbd.createMod((value._1, value._2)), 
                 halfResult._2))
             tbd.write(dest, (halfResult._1, newList))
           } else {
+            println("consume " + value._1)
             tbd.write(dest, (f(tbd, halfResult._1, value._2), halfResult._2))
           }
+          
         })
       })
     } else { 
+      println("bot.")
       tbd.read(identityMod)(identity => {
         tbd.write(dest, (identity, tbd.createMod(head))) 
       })
@@ -197,8 +204,33 @@ class DoubleModList[T](
   }
 
   def binaryHash(id: ModId, round: Int) = {
-    var k:Int = round
-    (k > 32) || ((id.value.hashCode() >> k) % 2 == 0)
+    hash(id.value.hashCode() ^ round) == 0
+  }
+
+  var coefs:List[BigInt] = null
+  def hash(x: Int) = {
+    val k = 2
+    val m = 2
+
+    val p = BigInt(1073741789)
+
+
+    if(coefs == null) {
+      coefs = List()
+      val rand = new scala.util.Random()
+      for(i <- 0 to k) {
+        coefs = BigInt(rand.nextInt(1000) + 1) :: coefs
+      }
+    }
+
+    val bigX = BigInt(x)
+    val bigM = BigInt(m)
+
+    val (s,_) = coefs.foldLeft((BigInt(0), BigInt(k))) {
+      (t, c) => (t._1 + c * bigX.modPow(t._2, p), t._2 - 1)
+    }
+
+    s.mod(bigM).toInt
   }
 
   def reduce(
