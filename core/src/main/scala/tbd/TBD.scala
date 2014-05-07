@@ -165,8 +165,22 @@ class TBD(
     updated
   }
 
+  def makeLift[T](dummy:Boolean = false) = {
+    if(dummy) {
+      makeDummyLift[T]()
+    } else {
+      makeRealLift[T]()
+    }
+  }
+
+  def makeDummyLift[T](): Lift[T] = {
+    new Lift((aArgs: List[Mod[_]], func: () => T) => {
+      func()
+    })
+  }
+
   var memoId = 0
-  def makeLift[T](): Lift[T] = {
+  def makeRealLift[T](): Lift[T] = {
     val thisMemoId = memoId
     memoId += 1
     new Lift((aArgs: List[Mod[_]], func: () => T) => {
