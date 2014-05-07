@@ -39,7 +39,7 @@ object SimpleMap {
     }
   }
 
-  def run(count: Int, repeat: Int, chunkSize: Int): Long = {
+  def run(chunkSize: Int, count: Int): Long = {
     var i = 0
 
     loadFile(chunkSize)
@@ -59,25 +59,10 @@ object SimpleMap {
         new ListNode[U](f(lst.value), null)
     }
 
-    // Warmup run.
-    val wc = new WC()
-    val mapped = map(tail, MapAdjust.mapper(null, (_: String)))
+    val before = System.currentTimeMillis()
+    map(tail, MapAdjust.mapper(null, (_: String)))
+    val time = System.currentTimeMillis() - before
 
-    var j = 0
-    var total: Long = 0
-    while (j < repeat) {
-      val before = System.currentTimeMillis()
-
-      val wc = new WC()
-      val mapped = map(tail, MapAdjust.mapper(null, (_: String)))
-
-      total += System.currentTimeMillis() - before
-
-      j += 1
-    }
-
-    println("smap\t" + count + "\t" + total / repeat)
-
-    total / repeat
+    time
   }
 }

@@ -16,17 +16,15 @@
 package tbd.examples.list
 
 class ExperimentConf {
-  var repeat = 3
+  var algorithms = Array("smap", "memoparmap")
 
-  var chunkSize = 1024 * 20
+  var chunkSizes = Array(1024 * 20)
 
-  var counts = Array(200, 400, 600)
+  var counts = Array(1000)
+
+  var partitions = Array(10)
 
   var percents = Array(.01, .05, .1)
 
-  var partitions = 10
-
-  var descriptions = Array("smap", "seq", "par", "memo", "memopar")
-
-  var algorithm = "map"
+  var repeat = 3
 }

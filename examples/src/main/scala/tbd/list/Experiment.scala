@@ -22,192 +22,149 @@ import tbd.{Adjustable, Mutator}
 import tbd.master.Main
 import tbd.mod.Mod
 
-class Experiment(conf: ExperimentConf) {
-  val runtime = Runtime.getRuntime()
-  val rand = new scala.util.Random()
-  val wc = new WC()
-
-  var nextChunk = 0
-  val activeChunks = ArrayBuffer[Int]()
-  val activeChunkValues = Map[Int, String]()
-
-  print("desc\tpages\tinitial")
-  for (percent <- conf.percents) {
-    print("\t" + (percent * 100) + "%")
-  }
-  print("\n")
-
-  def warmUp() {
-    var oldCounts = conf.counts
-    conf.counts = Array(1000)
-    run(new MapAdjust(8, true, true), "warmup")
-    conf.counts = oldCounts
-  }
-
-  def round(value: Double): Double = {
-    BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
-  }
+class Experiment(
+    aAlgorithm: String,
+    aChunkSize: Int,
+    aCount: Int,
+    aPartition: Int,
+    aPercent: Double,
+    warmup: Boolean) {
+  val algorithm = aAlgorithm
+  val chunkSize = aChunkSize
+  val count = aCount
+  val partition = aPartition
+  val percent = aPercent
 
   val chunks = ArrayBuffer[String]()
   def loadFile() {
     val source = scala.io.Source.fromFile("input.txt")
 
-    val bb = new Array[Byte](conf.chunkSize)
+    val bb = new Array[Byte](chunkSize)
     val bis = new BufferedInputStream(new FileInputStream(new File("input.txt")))
-    var bytesRead = bis.read(bb, 0, conf.chunkSize)
+    var bytesRead = bis.read(bb, 0, chunkSize)
 
     while (bytesRead > 0) {
       chunks += new String(bb)
-      bytesRead = bis.read(bb, 0, conf.chunkSize)
+      bytesRead = bis.read(bb, 0, chunkSize)
     }
 
     source.close()
   }
 
-  def putChunk(mutator: Mutator) {
-    mutator.put(nextChunk, chunks.head)
-    activeChunks += nextChunk
-    activeChunkValues += (nextChunk -> chunks.head)
-    nextChunk += 1
-    chunks -= chunks.head
-
+  val rand = new scala.util.Random()
+  val maxKey = count * 2
+  def addValue(mutator: Mutator, table: Map[Int, String]) {
     if (chunks.size == 0) {
       loadFile()
     }
+
+    var key = rand.nextInt(maxKey)
+    val value = rand.nextInt(Int.MaxValue)
+    while (table.contains(key)) {
+      key = rand.nextInt(maxKey)
+    }
+    mutator.put(key, chunks.head)
+    table += (key -> chunks.head)
+    chunks -= chunks.head
   }
 
-  def runControl(description: String, control: (Int, Int, Int) => Long) {
-    allResults(description) = Map[Int, Map[String, Double]]()
-    for (count <- conf.counts) {
-      allResults(description)(count) = Map[String, Double]()
-      val time = control(count, conf.repeat, conf.chunkSize)
-      for (percent <- "initial" +: conf.percents) {
-        allResults(description)(count)(percent+"") = time
+  def removeValue(mutator: Mutator, table: Map[Int, String]) {
+    if (table.size > 1) {
+      var key = rand.nextInt(maxKey)
+      while (!table.contains(key)) {
+        key = rand.nextInt(maxKey)
       }
+      mutator.remove(key)
+      table -= key
+    } else {
+      addValue(mutator, table)
     }
   }
 
-  def once(
-      algorithm: Algorithm,
-      aCount: Int,
-      results: Map[String, Double],
-      main: Main) {
-    val mutator = new Mutator(main)
-    var count = aCount
-
-    while (activeChunks.size < count) {
-      putChunk(mutator)
+  def updateValue(mutator: Mutator, table: Map[Int, String]) {
+    if (chunks.size == 0) {
+      loadFile()
     }
 
-    val before = System.currentTimeMillis()
-    algorithm.initialRun(mutator)
-    val initialElapsed = System.currentTimeMillis() - before
+    var key = rand.nextInt(maxKey)
+    val value = rand.nextInt(Int.MaxValue)
+    while (!table.contains(key)) {
+      key = rand.nextInt(maxKey)
+    }
+    mutator.update(key, chunks.head)
+    table(key) = chunks.head
+    chunks -= chunks.head
+  }
 
-    assert(algorithm.checkOutput(activeChunkValues))
+  def update(mutator: Mutator, table: Map[Int, String]) {
+    rand.nextInt(3) match {
+      case 0 => addValue(mutator, table)
+      case 1 => removeValue(mutator, table)
+      case 2 => updateValue(mutator, table)
+    }
+  }
 
-    if (results.contains("initial")) {
-      results("initial") += initialElapsed
+  def run() {
+    val results = Map[String, Double]()
+
+    if (algorithm == "smap") {
+      val time = SimpleMap.run(chunkSize, count)
+      results("initial") = time
+      results("propagation") = time
     } else {
-      results("initial") = initialElapsed
-    }
-    print("\t" + initialElapsed)
+      val mutator = new Mutator()
+      val table = Map[Int, String]()
 
-    for (percent <- conf.percents) {
+      while (table.size < count) {
+        addValue(mutator, table)
+      }
+
+      val alg = algorithm match {
+        case "map" => new MapAdjust(partition, false, false)
+        case "parmap" => new MapAdjust(partition, true, false)
+        case "memomap" => new MapAdjust(partition, false, true)
+        case "memoparmap" => new MapAdjust(partition, true, true)
+        case "filter" => new FilterAdjust(partition, false, false)
+        case "parfilter" => new FilterAdjust(partition, true, false)
+        case "memofilter" => new FilterAdjust(partition, false, true)
+        case "memoparfilter" => new FilterAdjust(partition, true, true)
+      }
+
+      val before = System.currentTimeMillis()
+      alg.initialRun(mutator)
+      val initialElapsed = System.currentTimeMillis() - before
+
+      assert(alg.checkOutput(table))
+
+      results("initial") = initialElapsed
+
       var i =  0
       while (i < percent * count) {
         i += 1
-
-        if (activeChunks.size == 1) {
-          putChunk(mutator)
-        } else {
-          rand.nextInt(3) match {
-            case 0 => {
-              val updated = rand.nextInt(activeChunks.size)
-              mutator.update(activeChunks(updated), chunks.head)
-              activeChunkValues(activeChunks(updated)) = chunks.head
-              chunks -= chunks.head
-              if (chunks.size == 0) {
-                loadFile()
-              }
-            }
-            case 1 => {
-              putChunk(mutator)
-            }
-            case 2 => {
-              val removedChunkId = activeChunks(rand.nextInt(activeChunks.size))
-              mutator.remove(removedChunkId)
-              activeChunks -= removedChunkId
-              activeChunkValues -= removedChunkId
-            }
-          }
-        }
+        update(mutator, table)
       }
+
       val before2 = System.currentTimeMillis()
       mutator.propagate()
       val elapsed = System.currentTimeMillis() - before2
-      print("\t" + elapsed)
 
-      assert(algorithm.checkOutput(activeChunkValues))
+      assert(alg.checkOutput(table))
 
-      if (results.contains(percent + "")) {
-        results(percent + "") += elapsed
-      } else {
-        results(percent + "") = elapsed
-      }
+      results("propagation") = elapsed
+
+      mutator.shutdown()
     }
 
-    println("")
-    mutator.shutdown()
-  }
+    println(algorithm + "\t" + count + "\t" + percent + "\t" + results)
 
-  val allResults = Map[String, Map[Int, Map[String, Double]]]()
-  def run(algorithm: Algorithm, description: String) {
-    val main = new Main()
-    loadFile()
-
-    val resultsByCount = Map[Int, Map[String, Double]]()
-    for (count <- conf.counts) {
-      var run = 0
-      val results = Map[String, Double]()
-      while (run < conf.repeat) {
-        print(description + "\t" + count)
-        once(algorithm, count, results, main)
-        run += 1
-      }
-
-      results("initial") = round(results("initial") / conf.repeat)
-
-      for (percent <- conf.percents) {
-        results(percent + "") = round(results(percent + "") / conf.repeat)
-      }
-
-      resultsByCount(count) = results
-    }
-
-    allResults(description) = resultsByCount
-    main.shutdown()
-    activeChunks.clear()
-    activeChunkValues.clear()
-  }
-
-  def printFormattedResults() {
-    for (percent <- "initial" +: conf.percents) {
-      print(percent + "\t")
-      for (description <- conf.descriptions) {
-        print(description + "\t")
-      }
-      print("\n")
-
-      for (count <- conf.counts) {
-        print(count + "\t")
-
-        for (description <- conf.descriptions) {
-          print(allResults(description)(count)(percent + "") + "\t")
-        }
-        print("\n")
-      }
+    if (!warmup) {
+      Experiment.allResults += (this -> results)
     }
   }
+
+  override def toString: String =
+    "Experiment: " + algorithm + " " + chunkSize + " " + count + " " +
+      partition + " " + percent
 }
 
 object Experiment {
@@ -216,85 +173,98 @@ object Experiment {
       [--chunkSize int] [--descriptions seq,par,memo,...] [--partitions int]
   """
 
-  def main(args: Array[String]) {
-    val conf = new ExperimentConf()
+  val conf = new ExperimentConf()
 
+  val allResults = Map[Experiment, Map[String, Double]]()
+
+  def round(value: Double): Double = {
+    BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+  }
+
+  def printTimeByCountByAlgorithm() {
+    for (percent <- "initial" +: conf.percents) {
+      print(percent + "\t")
+      for (algorithm <- conf.algorithms) {
+        print(algorithm + "\t")
+      }
+      print("\n")
+
+      for (count <- conf.counts) {
+        print(count)
+
+        for (algorithm <- conf.algorithms) {
+          var total = 0.0
+          var repeat = 0
+
+          for ((experiment, results) <- allResults) {
+            if (experiment.algorithm == algorithm && experiment.count == count) {
+              if (percent == "initial") {
+                total += results("initial")
+                repeat += 1
+              } else if (experiment.percent == percent) {
+                total += results("propagation")
+                repeat += 1
+              }
+            }
+          }
+
+          print("\t" + round(total / repeat))
+        }
+        print("\n")
+      }
+    }
+  }
+
+  def main(args: Array[String]) {
     def parse(list: List[String]) {
       list match {
         case Nil =>
-        case "--repeat" :: value :: tail =>
-          conf.repeat = value.toInt
+        case "--algorithms" :: value :: tail =>
+          conf.algorithms = value.split(",")
           parse(tail)
-        case "--chunkSize" :: value :: tail =>
-          conf.chunkSize = value.toInt
+        case "--chunkSizes" :: value :: tail =>
+          conf.chunkSizes = value.split(",").map(_.toInt)
           parse(tail)
         case "--counts" :: value :: tail =>
           conf.counts = value.split(",").map(_.toInt)
           parse(tail)
-        case "--descriptions" :: value :: tail =>
-          conf.descriptions = value.split(",")
+        case "--partitions" :: value :: tail =>
+          conf.partitions = value.split(",").map(_.toInt)
           parse(tail)
         case "--percents" :: value :: tail =>
           conf.percents = value.split(",").map(_.toDouble)
           parse(tail)
-        case "--partitions" :: value :: tail =>
-          conf.partitions = value.toInt
-          parse(tail)
-        case "--algorithm" :: value :: tail =>
-          conf.algorithm = value
+        case "--repeat" :: value :: tail =>
+          conf.repeat = value.toInt
           parse(tail)
         case option :: tail => println("Unknown option " + option + "\n" + usage)
       }
     }
     parse(args.toList)
 
-    val experiment = new Experiment(conf)
-    experiment.loadFile()
-    experiment.warmUp()
-    for (description <- conf.descriptions) {
-      if (conf.algorithm == "map") {
-        println("map")
-        description match {
-          case "smap" =>
-            experiment.runControl("smap", SimpleMap.run)
-          case "seq" =>
-            experiment.run(new MapAdjust(conf.partitions, false, false),
-                           description)
-          case "par" =>
-            experiment.run(new MapAdjust(conf.partitions, true, false),
-                           description)
-          case "memo" =>
-            experiment.run(new MapAdjust(conf.partitions, false, true),
-                           description)
-          case "memopar" =>
-            experiment.run(new MapAdjust(conf.partitions, true, true),
-                           description)
-          case _ =>
-            println("Unrecognized description.")
-        }
-      } else if (conf.algorithm == "filter") {
-        println("filter")
-        description match {
-          //case "smap" =>
-          //  experiment.runControl("smap", SimpleMap.run)
-          case "seq" =>
-            experiment.run(new FilterAdjust(conf.partitions, false, false),
-                           description)
-          case "par" =>
-            experiment.run(new FilterAdjust(conf.partitions, true, false),
-                           description)
-          case "memo" =>
-            experiment.run(new FilterAdjust(conf.partitions, false, true),
-                           description)
-          case "memopar" =>
-            experiment.run(new FilterAdjust(conf.partitions, true, true),
-                           description)
-          case _ =>
-            println("Unrecognized description.")
+    for (i <- 0 to conf.repeat) {
+      if (i == 0) {
+        println("warmup")
+      } else if (i == 1) {
+        println("done warming up")
+      }
+
+      for (algorithm <- conf.algorithms) {
+        for (chunkSize <- conf.chunkSizes) {
+          for (count <- conf.counts) {
+            for (partition <- conf.partitions) {
+              for (percent <- conf.percents) {
+                val experiment = new Experiment(algorithm, chunkSize, count,
+                                                partition, percent, i == 0)
+
+                experiment.run()
+              }
+            }
+          }
         }
       }
     }
 
-    experiment.printFormattedResults()
+    printTimeByCountByAlgorithm()
   }
 }
