@@ -33,6 +33,7 @@ object TBDBuild extends Build {
     file("core"),
     settings = buildSettings ++ Seq (
       libraryDependencies ++= commonDeps,
+      javaOptions += "-Xss64M",
       mkrun := {
         val classpath = (fullClasspath in Runtime).value.files.absString
         val template = """#!/bin/sh
