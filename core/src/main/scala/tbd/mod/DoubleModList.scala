@@ -72,31 +72,17 @@ class DoubleModList[T](
     }
   }
 
-  def foldl(
-      tbd: TBD,
-      initialValueMod: Mod[T],
-      f: (TBD, T, T) => T): Mod[T] = {
-    tbd.mod((dest: Dest[T]) => {
-      tbd.read(head)(node => {
-        if(node != null) {
-          node.foldl(tbd, dest, initialValueMod, f)
-        } else {
-          tbd.read(initialValueMod)(initialValue =>
-            tbd.write(dest, initialValue))
-        }
-      })
-    })
-  }
-
   type IdListNode = DoubleModListNode[(ModId, T)]
 
   def randomReduce(
       tbd: TBD,
       initialValueMod: Mod[T],
-      f: (TBD, T, T) => T): Mod[T] = {
+      f: (TBD, T, T) => T, 
+      parallel: Boolean = false,
+      memoized: Boolean = true): Mod[T] = {
     val idListMod = toIdList(tbd, head)
     val zero = tbd.createMod(0)
-    val halfLift = tbd.makeLift[Mod[IdListNode]]()
+    val halfLift = tbd.makeLift[Mod[IdListNode]](!memoized)
     
     tbd.mod((dest: Dest[T]) => {
       tbd.read(idListMod)(idList => {
@@ -197,7 +183,9 @@ class DoubleModList[T](
   def reduce(
       tbd: TBD,
       initialValueMod: Mod[T],
-      f: (TBD, T, T) => T): Mod[T] = {
+      f: (TBD, T, T) => T,
+      parallel: Boolean = false,
+      memoized: Boolean = true): Mod[T] = {
     randomReduce(tbd, initialValueMod, f)
   }
 

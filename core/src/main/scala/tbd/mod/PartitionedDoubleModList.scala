@@ -55,18 +55,35 @@ class PartitionedDoubleModList[T](
     }
   }
   
-  /*
-  * Note: Placeholder to satisfy the trait implementation
-  */
-  def foldl(tbd: TBD, initialValueMod: Mod[T], f: (TBD, T, T) => T) : Mod[T] = {
-    throw new java.lang.UnsupportedOperationException("Not Implemented")
-    tbd.mod((dest : Dest[T]) =>
-      tbd.read(initialValueMod)(initialValue =>
-        tbd.write(dest, initialValue)))
-  }
+  def reduce(
+      tbd: TBD, 
+      initialValueMod: Mod[T], 
+      f: (TBD, T, T) => T, 
+      parallel: Boolean = true,
+      memoized: Boolean = true) : Mod[T] = {
+    
+    
+    def parReduce(tbd: TBD, i: Int): Mod[T] = {
+      if (i < partitions.size) {
+        val parTup = tbd.par((tbd: TBD) => {
+          partitions(i).reduce(tbd, initialValueMod, f, parallel, memoized)
+        }, (tbd: TBD) => {
+          parReduce(tbd, i + 1)
+        })
+        
+        tbd.apply(parTup._1, parTup._2, f)
+      } else {
+        initialValueMod
+      }
+    }
 
-  def reduce(tbd: TBD, initialValueMod: Mod[T], f: (TBD, T, T) => T) : Mod[T] = {
-    foldl(tbd, initialValueMod, f)
+    if(parallel) {
+      parReduce(tbd, 0)
+    } else {
+      partitions.map((partition: DoubleModList[T]) => {
+        partition.reduce(tbd, initialValueMod, f, parallel, memoized)
+      }).reduce((a, b) => tbd.apply(a, b, f))
+    }
   }
 
   def filter(
