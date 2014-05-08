@@ -27,8 +27,6 @@ class ListNode[T](aValue: T, aNext: ListNode[T]) {
 object SimpleMap {
   val chunks = ArrayBuffer[String]()
   def loadFile(chunkSize: Int) {
-    val source = scala.io.Source.fromFile("input.txt")
-
     val bb = new Array[Byte](chunkSize)
     val bis = new BufferedInputStream(new FileInputStream(new File("input.txt")))
     var bytesRead = bis.read(bb, 0, chunkSize)
@@ -37,6 +35,8 @@ object SimpleMap {
       chunks += new String(bb)
       bytesRead = bis.read(bb, 0, chunkSize)
     }
+
+    bis.close()
   }
 
   def run(chunkSize: Int, count: Int): Long = {

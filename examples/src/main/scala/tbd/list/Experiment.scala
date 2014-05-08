@@ -37,8 +37,6 @@ class Experiment(
 
   val chunks = ArrayBuffer[String]()
   def loadFile() {
-    val source = scala.io.Source.fromFile("input.txt")
-
     val bb = new Array[Byte](chunkSize)
     val bis = new BufferedInputStream(new FileInputStream(new File("input.txt")))
     var bytesRead = bis.read(bb, 0, chunkSize)
@@ -48,7 +46,7 @@ class Experiment(
       bytesRead = bis.read(bb, 0, chunkSize)
     }
 
-    source.close()
+    bis.close()
   }
 
   val rand = new scala.util.Random()
