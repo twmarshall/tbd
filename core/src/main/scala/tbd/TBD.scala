@@ -74,6 +74,14 @@ class TBD(
     })
   }
 
+  def apply[T, V, U](a: Mod[T], b: Mod[V], f:(TBD, T, V) => U): Mod[U] = {
+    this.mod((dest: Dest[U]) => {
+      read2(a, b)((a, b) => {
+        write(dest, f(this, a, b))
+      })
+    })
+  }
+
   def increment(mod: Mod[Int]): Mod[Int] = {
     this.mod((dest: Dest[Int]) =>
       read(mod)(mod => 

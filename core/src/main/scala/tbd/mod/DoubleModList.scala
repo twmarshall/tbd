@@ -88,24 +88,29 @@ class DoubleModList[T](
     })
   }
 
-  type HalfList = (T, Mod[IdListNode])
   type IdListNode = DoubleModListNode[(ModId, T)]
 
   def randomReduce(
       tbd: TBD,
       initialValueMod: Mod[T],
       f: (TBD, T, T) => T): Mod[T] = {
-    val idList = toIdList(tbd, head)
+    val idListMod = toIdList(tbd, head)
     val zero = tbd.createMod(0)
-    val halfLift = tbd.makeLift[Mod[HalfList]]()
-    val reduceLift = tbd.makeLift[Mod[T]]()
+    val halfLift = tbd.makeLift[Mod[IdListNode]]()
     
     tbd.mod((dest: Dest[T]) => {
-      randomReduceIdList(tbd, initialValueMod, 
-                         idList, zero, dest, 
-                         halfLift, reduceLift, f)
-   }) 
-  }
+      tbd.read(idListMod)(idList => {
+        if(idList == null) {
+          tbd.read(initialValueMod)(initialValue => 
+            tbd.write(dest, initialValue))
+        } else {
+          randomReduceIdList(tbd, initialValueMod, 
+                             idListMod, zero, dest, 
+                             halfLift, f)
+        }
+      })
+    }) 
+ }
 
   def toIdList(
       tbd: TBD,  
@@ -128,111 +133,67 @@ class DoubleModList[T](
   def randomReduceIdList(
       tbd: TBD,
       identityMod: Mod[T],
-      headMod: Mod[IdListNode],
+      head: Mod[IdListNode],
       round: Mod[Int],
       dest: Dest[T],
-      halfLift: Lift[Mod[HalfList]],
-      reduceLift: Lift[Mod[T]],
+      lift: Lift[Mod[IdListNode]],
       f: (TBD, T, T) => T): Changeable[T] = {
     
-    tbd.read(headMod)(head => {
-      if(head != null) {
-     
-        var fixedVars = List(headMod, round, identityMod) 
-        val halfList = halfLift.memo(fixedVars, () => {
-          tbd.mod((dest: Dest[HalfList]) =>
-            halfIdList(tbd, identityMod, head, round, dest, f))
-        })
+    val halfListMod = lift.memo(List(identityMod, head, round), () => {
+        tbd.mod((dest: Dest[IdListNode]) => {
+          halfIdList(tbd, identityMod, identityMod, head, round, dest, f)
+      })
+    })
 
-        tbd.read(halfList)(halfList => {
-          
-          fixedVars = List(headMod, halfList._2, round, identityMod)
-          val result = reduceLift.memo(fixedVars, () => {
-            tbd.mod((dest: Dest[T]) => 
-              randomReduceIdList(tbd, identityMod, halfList._2,
-                                 tbd.increment(round), dest,
-                                 halfLift, reduceLift, f))  
-          })
-          
-          tbd.read(result)(result =>     
-            tbd.write(dest, f(tbd, halfList._1, result)))
-        })
-
-      } else {
-        tbd.read(identityMod)(identity => {
-          tbd.write(dest, identity) 
-        })
-      }
+    tbd.read(halfListMod)(halfList => {
+      tbd.read(halfList.next)(next => {  
+        if(next == null) {
+          tbd.read(halfList.valueMod)(value => 
+            tbd.write(dest, value._2))
+        } else {
+            randomReduceIdList(tbd, identityMod, halfListMod,
+                               tbd.increment(round), dest,
+                               lift, f)
+        }
+      })
     })
   }
+
+  val hasher = new Hasher(2, 8)
 
   def halfIdList(
       tbd: TBD,
       identityMod: Mod[T],
-      head: IdListNode,
-      round: Mod[Int],
-      dest: Dest[HalfList],
-      f: (TBD, T, T) => T): Changeable[HalfList] = {
-    if(head != null) {
+      acc: Mod[T], 
+      head: Mod[IdListNode],
+      roundMod: Mod[Int],
+      dest: Dest[IdListNode],
+      f: (TBD, T, T) => T): Changeable[IdListNode] = {
+    tbd.read(head)(head => {
       tbd.read2(head.valueMod, head.next)((value, next) => {
-
-        val halfResult = tbd.mod((dest: Dest[HalfList]) =>
-          halfIdList(tbd, identityMod, next, round, dest, f))
-
-        tbd.read2(round, halfResult)((round, halfResult) => {
-          
-          if(binaryHash(value._1, round)) {
-            println("skip " + value._1)
-            val newList = tbd.createMod(
-              new DoubleModListNode(
-                tbd.createMod((value._1, value._2)), 
-                halfResult._2))
-            tbd.write(dest, (halfResult._1, newList))
+        tbd.read2(acc, roundMod)((acc, round) => { 
+          if(next == null) {
+              val newValue = tbd.createMod((value._1, f(tbd, acc, value._2)))
+              val newList =  new DoubleModListNode(newValue, tbd.createMod[IdListNode](null))
+              tbd.write(dest, newList)
           } else {
-            println("consume " + value._1)
-            tbd.write(dest, (f(tbd, halfResult._1, value._2), halfResult._2))
+            if(hasher.binaryHash(value._1, round)) {
+              val reducedList = tbd.mod((dest: Dest[IdListNode]) => {
+                halfIdList(tbd, identityMod, identityMod, head.next, roundMod, dest, f)
+              })
+              val newValue = tbd.createMod((value._1, f(tbd, acc, value._2)))
+              val newList =  new DoubleModListNode(newValue, reducedList)
+              tbd.write(dest, newList)
+            } else {
+              val newAcc = tbd.createMod(f(tbd, acc, value._2))
+              halfIdList(tbd, identityMod, newAcc, head.next, roundMod, dest, f)   
+            }
           }
-          
         })
       })
-    } else { 
-      println("bot.")
-      tbd.read(identityMod)(identity => {
-        tbd.write(dest, (identity, tbd.createMod(head))) 
-      })
-    }
+    })
   }
-
-  def binaryHash(id: ModId, round: Int) = {
-    hash(id.value.hashCode() ^ round) == 0
-  }
-
-  var coefs:List[BigInt] = null
-  def hash(x: Int) = {
-    val k = 2
-    val m = 2
-
-    val p = BigInt(1073741789)
-
-
-    if(coefs == null) {
-      coefs = List()
-      val rand = new scala.util.Random()
-      for(i <- 0 to k) {
-        coefs = BigInt(rand.nextInt(1000) + 1) :: coefs
-      }
-    }
-
-    val bigX = BigInt(x)
-    val bigM = BigInt(m)
-
-    val (s,_) = coefs.foldLeft((BigInt(0), BigInt(k))) {
-      (t, c) => (t._1 + c * bigX.modPow(t._2, p), t._2 - 1)
-    }
-
-    s.mod(bigM).toInt
-  }
-
+  
   def reduce(
       tbd: TBD,
       initialValueMod: Mod[T],
