@@ -82,10 +82,10 @@ class AdjustableExperiment(aConf: Map[String, _])
   }
 
   def update(mutator: Mutator, table: Map[Int, String]) {
-    rand.nextInt(3) match {
-      case 0 => addValue(mutator, table)
-      case 1 => removeValue(mutator, table)
-      case 2 => updateValue(mutator, table)
+    mutations(rand.nextInt(mutations.size)) match {
+      case "insert" => addValue(mutator, table)
+      case "remove" => removeValue(mutator, table)
+      case "update" => updateValue(mutator, table)
     }
   }
 

@@ -22,6 +22,7 @@ abstract class Experiment(aConf: Map[String, _]) {
   val algorithm = conf("algorithms")
   val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
   val count = conf("counts").asInstanceOf[String].toInt
+  val mutations = conf("mutations").asInstanceOf[Array[String]]
   val partition = conf("partitions").asInstanceOf[String].toInt
   val percents = conf("percents").asInstanceOf[Array[String]]
 
@@ -39,6 +40,7 @@ object Experiment {
   val confs = Map(("algorithms" -> Array("nmap", "mpmap")),
                   ("chunkSizes" -> Array("20000")),
                   ("counts" -> Array("1000")),
+                  ("mutations" -> Array("insert", "update", "remove")),
                   ("partitions" -> Array("10")),
                   ("percents" -> Array("initial", ".01", ".05", ".1")),
                   ("print" -> Array("percents", "algorithms", "counts")))
@@ -117,6 +119,9 @@ object Experiment {
         case "--counts" :: value :: tail =>
           confs("counts") = value.split(",")
           parse(tail)
+        case "--mutations" :: value :: tail =>
+          confs("mutations") = value.split(",")
+          parse(tail)
         case "--partitions" :: value :: tail =>
           confs("partitions") = value.split(",")
           parse(tail)
@@ -149,6 +154,7 @@ object Experiment {
               val conf = Map(("algorithms" -> algorithm),
                              ("chunkSizes" -> chunkSize),
                              ("counts" -> count),
+                             ("mutations" -> confs("mutations")),
                              ("partitions" -> partition),
                              ("percents" -> confs("percents")))
 	      val experiment =
