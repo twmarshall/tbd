@@ -130,6 +130,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     val parNode = pars(workerRef)
     if (!parNode.pebble1 && !parNode.pebble2) {
       updated += parNode
+      parNode.updated = true
     }
 
     if (parNode.workerRef1 == workerRef) {
@@ -192,7 +193,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
       worker.memoTable(signature) -= toRemove
     }
 
-    updated = updated.filter((node2: Node) => node != node2)
+    node.updated = false
     ordering.remove(node.timestamp)
 
     node.children.clear()

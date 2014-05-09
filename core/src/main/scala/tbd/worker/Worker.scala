@@ -56,50 +56,52 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
     while (!ddg.updated.isEmpty) {
       val node = ddg.updated.dequeue
 
-      if (node.isInstanceOf[ReadNode]) {
-        val readNode = node.asInstanceOf[ReadNode]
-        //log.debug("Reexecuting read of " + readNode.mod.id)
+      if (node.updated) {
+        if (node.isInstanceOf[ReadNode]) {
+          val readNode = node.asInstanceOf[ReadNode]
+          //log.debug("Reexecuting read of " + readNode.mod.id)
 
-        val memoNodes = ddg.cleanupRead(readNode)
+          val memoNodes = ddg.cleanupRead(readNode)
 
-        val newValue =
-          if (tbd.mods.contains(readNode.mod.id)) {
-            tbd.mods(readNode.mod.id)
-          } else {
-            readNode.mod.read()
+          val newValue =
+            if (tbd.mods.contains(readNode.mod.id)) {
+              tbd.mods(readNode.mod.id)
+            } else {
+              readNode.mod.read()
+            }
+
+          tbd.currentParent = readNode
+	  tbd.reexecutionStart = readNode.timestamp
+	  tbd.reexecutionEnd = ddg.getTimestampAfter(readNode)
+
+          readNode.updated = false
+          readNode.reader(newValue)
+          tbd.updatedMods -= readNode.mod.id
+
+          for (node <- memoNodes) {
+            if (node.parent == null) {
+              ddg.cleanupSubtree(node)
+            }
+          }
+        } else {
+          val parNode = node.asInstanceOf[ParNode]
+          //assert(awaiting == 0)
+
+          if (parNode.pebble1) {
+            parNode.workerRef1 ! PropagateMessage
+            parNode.pebble1 = false
+            awaiting = 1
           }
 
-        tbd.currentParent = readNode
-	tbd.reexecutionStart = readNode.timestamp
-	tbd.reexecutionEnd = ddg.getTimestampAfter(readNode)
-
-        readNode.updated = false
-        readNode.reader(newValue)
-        tbd.updatedMods -= readNode.mod.id
-
-        for (node <- memoNodes) {
-          if (node.parent == null) {
-            ddg.cleanupSubtree(node)
+          if (parNode.pebble2) {
+            parNode.workerRef2 ! PropagateMessage
+            parNode.pebble2 = false
+            awaiting += 1
           }
-        }
-      } else {
-        val parNode = node.asInstanceOf[ParNode]
-        //assert(awaiting == 0)
+          //assert(awaiting > 0)
 
-        if (parNode.pebble1) {
-          parNode.workerRef1 ! PropagateMessage
-          parNode.pebble1 = false
-          awaiting = 1
+          return false
         }
-
-        if (parNode.pebble2) {
-          parNode.workerRef2 ! PropagateMessage
-          parNode.pebble2 = false
-          awaiting += 1
-        }
-        //assert(awaiting > 0)
-
-        return false
       }
     }
 
