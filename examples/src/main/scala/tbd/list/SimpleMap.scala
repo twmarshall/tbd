@@ -24,7 +24,9 @@ class ListNode[T](aValue: T, aNext: ListNode[T]) {
   val next = aNext
 }
 
-object SimpleMap {
+class SimpleMap(
+    chunkSize: Int,
+    count: Int) {
   val chunks = ArrayBuffer[String]()
   def loadFile(chunkSize: Int) {
     val bb = new Array[Byte](chunkSize)
@@ -39,7 +41,7 @@ object SimpleMap {
     bis.close()
   }
 
-  def run(chunkSize: Int, count: Int): Long = {
+  def run(): Long = {
     var i = 0
 
     loadFile(chunkSize)
