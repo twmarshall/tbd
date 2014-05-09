@@ -37,11 +37,11 @@ class Reader(worker: Worker) {
       .asInstanceOf[Array[T]]
   }
 
-  def getAdjustableList[T](partitions: Int = 8): AdjustableList[T] = {
+  def getAdjustableList[T, V](partitions: Int = 8): AdjustableList[T, V] = {
     val adjustableListFuture =
       worker.datastoreRef ? GetAdjustableListMessage("input", partitions)
     val adjustableList = Await.result(adjustableListFuture, DURATION)
-    worker.adjustableLists += adjustableList.asInstanceOf[AdjustableList[Any]]
-    adjustableList.asInstanceOf[AdjustableList[T]]
+    worker.adjustableLists += adjustableList.asInstanceOf[AdjustableList[Any, Any]]
+    adjustableList.asInstanceOf[AdjustableList[T, V]]
   }
 }

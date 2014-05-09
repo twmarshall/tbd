@@ -40,7 +40,7 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
   val datastoreRef = aDatastoreRef
   val ddg = new DDG(log, id, this)
   val memoTable = Map[List[Any], ArrayBuffer[MemoEntry]]()
-  val adjustableLists = Set[AdjustableList[Any]]()
+  val adjustableLists = Set[AdjustableList[Any, Any]]()
 
   private var task: Task = null
   private val tbd = new TBD(id, this)

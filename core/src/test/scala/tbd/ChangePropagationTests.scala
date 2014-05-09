@@ -56,16 +56,16 @@ class PropagationOrderTest extends Adjustable {
 class PropagationOrderTest2 extends Adjustable {
   val values = ArrayBuffer[Int]()
 
-  def run(tbd: TBD): AdjustableList[Int] = {
-    val adjustableList = tbd.input.getAdjustableList[Int](partitions = 1)
-    adjustableList.map(tbd, (tbd: TBD, value: Int) => {
+  def run(tbd: TBD): AdjustableList[Int, Int] = {
+    val adjustableList = tbd.input.getAdjustableList[Int, Int](partitions = 1)
+    adjustableList.map(tbd, (tbd: TBD, value: Int, key: Int) => {
       if (tbd.initialRun) {
         values += value
       } else {
         assert(value == values.head + 1)
         values -= values.head
       }
-      value
+      (value, key)
     })
   }
 }
@@ -104,7 +104,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
       mutator.put(i, i)
     }
     val test = new PropagationOrderTest2()
-    mutator.run[AdjustableList[Int]](test)
+    mutator.run[AdjustableList[Int, String]](test)
 
     for (i <- 0 to 100) {
       mutator.update(i, i + 1)
