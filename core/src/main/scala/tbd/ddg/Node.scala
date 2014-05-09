@@ -32,6 +32,8 @@ abstract class Node(aParent: Node, aTimestamp: Timestamp) {
 
   var children = MutableList[Node]()
 
+  var updated = false
+
   def addChild(child: Node) {
     children += child
   }
@@ -58,7 +60,6 @@ abstract class Node(aParent: Node, aTimestamp: Timestamp) {
 class ReadNode(aMod: Mod[Any], aParent: Node, aTimestamp: Timestamp, aReader: Any => Changeable[Any])
     extends Node(aParent, aTimestamp) {
   val mod: Mod[Any] = aMod
-  var updated = false
   val reader = aReader
 
   override def toString(prefix: String) = {
