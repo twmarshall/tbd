@@ -17,7 +17,7 @@ package tbd.ddg
 
 import akka.actor.ActorRef
 import akka.event.LoggingAdapter
-import scala.collection.mutable.{ArrayBuffer, Map, PriorityQueue, Set}
+import scala.collection.mutable.{Map, MutableList, PriorityQueue, Set}
 
 import tbd.Changeable
 import tbd.memo.MemoEntry
@@ -149,20 +149,14 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
    * cleaned up, up to the first memo nodes, which are returned so that
    * they can be reattached or cleaned up later.
    */
-  def cleanupRead(subtree: Node): ArrayBuffer[Node] = {
-    val ret = ArrayBuffer[Node]()
-    if (subtree.children.size > 0) {
-      for (child <- subtree.children) {
-        if (child.isInstanceOf[MemoNode]) {
-          child.parent.removeChild(subtree)
-          child.parent = null
-          ret += child
-        } else {
-          ret ++= cleanupRead(child)
-          cleanup(child)
-        }
-      }
+  def cleanupRead(subtree: Node): MutableList[Node] = {
+    val ret = new MutableList[Node]()
+
+    for (child <- subtree.children) {
+      child.parent = null
     }
+
+    ret ++= subtree.children
 
     subtree.children.clear()
 
@@ -200,8 +194,13 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
   }
 
   def attachSubtree(parent: Node, subtree: Node) {
-    if (subtree.parent != null) {
-      subtree.parent.removeChild(subtree)
+    var oldParent = subtree.parent
+    while (oldParent != null) {
+      worker.toCleanUp ++= oldParent.children
+
+      val oldParentParent = oldParent.parent
+      cleanup(oldParent)
+      oldParent = oldParentParent
     }
 
     parent.addChild(subtree)

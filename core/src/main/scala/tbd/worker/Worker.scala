@@ -17,12 +17,12 @@ package tbd.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
-import scala.collection.mutable.{ArrayBuffer, Map, Set}
+import scala.collection.mutable.{ArrayBuffer, Map, MutableList, Set}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
 import tbd.TBD
-import tbd.ddg.{DDG, ParNode, ReadNode}
+import tbd.ddg.{DDG, Node, ParNode, ReadNode}
 import tbd.memo.MemoEntry
 import tbd.messages._
 import tbd.mod.{AdjustableList, ModId}
@@ -41,6 +41,7 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
   val ddg = new DDG(log, id, this)
   val memoTable = Map[List[Any], ArrayBuffer[MemoEntry]]()
   val adjustableLists = Set[AdjustableList[Any]]()
+  val toCleanUp = new MutableList[Node]()
 
   private var task: Task = null
   private val tbd = new TBD(id, this)
@@ -61,7 +62,7 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
           val readNode = node.asInstanceOf[ReadNode]
           //log.debug("Reexecuting read of " + readNode.mod.id)
 
-          val memoNodes = ddg.cleanupRead(readNode)
+          toCleanUp ++= ddg.cleanupRead(readNode)
 
           val newValue =
             if (tbd.mods.contains(readNode.mod.id)) {
@@ -78,11 +79,13 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
           readNode.reader(newValue)
           tbd.updatedMods -= readNode.mod.id
 
-          for (node <- memoNodes) {
+          for (node <- toCleanUp) {
             if (node.parent == null) {
               ddg.cleanupSubtree(node)
             }
           }
+
+          toCleanUp.clear()
         } else {
           val parNode = node.asInstanceOf[ParNode]
           //assert(awaiting == 0)
