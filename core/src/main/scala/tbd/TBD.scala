@@ -206,7 +206,7 @@ class TBD(
           for (memoEntry <- worker.memoTable(signature)) {
             val timestamp = memoEntry.node.timestamp
             if (!found && timestamp > reexecutionStart &&
-                timestamp < reexecutionEnd) {
+                timestamp < reexecutionEnd && memoEntry.node.matchable) {
               found = true
               worker.ddg.attachSubtree(currentParent, memoEntry.node)
               toRemove = memoEntry
