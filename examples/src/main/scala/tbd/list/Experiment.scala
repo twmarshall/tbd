@@ -20,7 +20,7 @@ import scala.collection.mutable.Map
 abstract class Experiment(aConf: Map[String, _]) {
   val conf = aConf
   val algorithm = conf("algorithms")
-  val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
+  val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt * 1024
   val count = conf("counts").asInstanceOf[String].toInt
   val mutations = conf("mutations").asInstanceOf[Array[String]]
   val partition = conf("partitions").asInstanceOf[String].toInt
@@ -30,20 +30,35 @@ abstract class Experiment(aConf: Map[String, _]) {
 }
 
 object Experiment {
-  val usage = """
-    Usage: run.sh [--repeat num] [--counts int,int,...] [--percents float,float,...]
-      [--chunkSize int] [--descriptions seq,par,memo,...] [--partitions int]
+  val usage ="""Usage: run.sh [OPTION]...
+
+Options:
+  -a, --algorithms s,s,...   Algorithms to run, where s could be: map,nmap,
+                               pmap,mpmap,mmap,filter,etc.
+  -c, --chunkSizes n,n,...   Chunk sizes, in KB.
+  -m, --mutations s,s,...    Mutations to perform on the input data. Must be
+                               one of 'update', 'insert', or 'remove'.
+  -n, --counts n,n,...       Number of chunks to load initially.
+  -o, --output chart,line,x  How to format the printed results - each of
+                               'chart', 'line', and 'x' must be one of
+                               'algorithms', 'chunkSizes', 'counts',
+                               'partitons', or 'percents', with one required
+                               to be 'percents'.
+  -p, --partitions n,n,...   Number of partitions for the input data.
+  -%, --percents f,f,...     Percent of chunks to update before running
+                               change propagation, as a decimal.
+  -r, --repeat int           Number of times to repeat each experiment.
   """
 
   var repeat = 3
 
   val confs = Map(("algorithms" -> Array("nmap", "mpmap")),
-                  ("chunkSizes" -> Array("20000")),
+                  ("chunkSizes" -> Array("20")),
                   ("counts" -> Array("1000")),
                   ("mutations" -> Array("insert", "update", "remove")),
                   ("partitions" -> Array("10")),
                   ("percents" -> Array("initial", ".01", ".05", ".1")),
-                  ("print" -> Array("percents", "algorithms", "counts")))
+                  ("output" -> Array("percents", "algorithms", "counts")))
 
   val allResults = Map[Experiment, Map[String, Double]]()
 
@@ -107,38 +122,34 @@ object Experiment {
   }
 
   def main(args: Array[String]) {
-    def parse(list: List[String]) {
-      list match {
-        case Nil =>
-        case "--algorithms" :: value :: tail =>
-          confs("algorithms") = value.split(",")
-          parse(tail)
-        case "--chunkSizes" :: value :: tail =>
-          confs("chunkSizes") = value.split(",")
-          parse(tail)
-        case "--counts" :: value :: tail =>
-          confs("counts") = value.split(",")
-          parse(tail)
-        case "--mutations" :: value :: tail =>
-          confs("mutations") = value.split(",")
-          parse(tail)
-        case "--partitions" :: value :: tail =>
-          confs("partitions") = value.split(",")
-          parse(tail)
-        case "--percents" :: value :: tail =>
-          confs("percents") = "initial" +: value.split(",")
-          parse(tail)
-        case "--repeat" :: value :: tail =>
-          repeat = value.toInt
-          parse(tail)
-        case "--print" :: value :: tail =>
-          confs("print") = value.split(",")
-          assert(confs("print").size == 3)
-          parse(tail)
-        case option :: tail => println("Unknown option " + option + "\n" + usage)
+    for (i <- 0 to (args.size - 1) / 2) {
+      args(i * 2) match {
+        case "--algorithms" | "-a" =>
+          confs("algorithms") = args(i + 1).split(",")
+        case "--chunkSizes" | "-c" =>
+          confs("chunkSizes") = args(i + 1).split(",")
+        case "--counts" | "-n" =>
+          confs("counts") = args(i + 1).split(",")
+        case "--help" | "-h" =>
+          println(usage)
+          sys.exit()
+        case "--mutations" | "-m" =>
+          confs("mutations") = args(i * 2 + 1).split(",")
+        case "--partitions" | "-p" =>
+          confs("partitions") = args(i * 2 + 1).split(",")
+        case "--percents" | "-%" =>
+          confs("percents") = "initial" +: args(i * 2 + 1).split(",")
+        case "--repeat" | "-r" =>
+          repeat = args(i + 1).toInt
+        case "--output" | "-o" =>
+          confs("output") = args(i * 2 + 1).split(",")
+          println(confs("output")(0))
+          assert(confs("output").size == 3)
+        case _ =>
+          println("Unknown option " + args(i * 2) + "\n" + usage)
+          sys.exit()
       }
     }
-    parse(args.toList)
 
     for (i <- 0 to repeat) {
       if (i == 0) {
@@ -175,6 +186,6 @@ object Experiment {
       }
     }
 
-    printCharts(confs("print")(0), confs("print")(1), confs("print")(2))
+    printCharts(confs("output")(0), confs("output")(1), confs("output")(2))
   }
 }
