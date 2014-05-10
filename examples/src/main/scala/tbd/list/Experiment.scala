@@ -125,11 +125,11 @@ Options:
     for (i <- 0 to (args.size - 1) / 2) {
       args(i * 2) match {
         case "--algorithms" | "-a" =>
-          confs("algorithms") = args(i + 1).split(",")
+          confs("algorithms") = args(i * 2 + 1).split(",")
         case "--chunkSizes" | "-c" =>
-          confs("chunkSizes") = args(i + 1).split(",")
+          confs("chunkSizes") = args(i * 2 + 1).split(",")
         case "--counts" | "-n" =>
-          confs("counts") = args(i + 1).split(",")
+          confs("counts") = args(i * 2 + 1).split(",")
         case "--help" | "-h" =>
           println(usage)
           sys.exit()
