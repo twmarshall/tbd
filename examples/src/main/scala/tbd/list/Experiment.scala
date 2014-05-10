@@ -20,8 +20,9 @@ import scala.collection.mutable.Map
 abstract class Experiment(aConf: Map[String, _]) {
   val conf = aConf
   val algorithm = conf("algorithms")
-  val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt * 1024
+  val inputSize = conf("inputSizes").asInstanceOf[String].toInt * 1024
   val count = conf("counts").asInstanceOf[String].toInt
+  val chunkSize = inputSize / count
   val mutations = conf("mutations").asInstanceOf[Array[String]]
   val partition = conf("partitions").asInstanceOf[String].toInt
   val percents = conf("percents").asInstanceOf[Array[String]]
@@ -35,25 +36,27 @@ object Experiment {
 Options:
   -a, --algorithms s,s,...   Algorithms to run, where s could be: map,nmap,
                                pmap,mpmap,mmap,filter,etc.
-  -c, --chunkSizes n,n,...   Chunk sizes, in KB.
+  -i, --inputSizes n,n,...   Total sizes of initial input to load, in KB.
   -m, --mutations s,s,...    Mutations to perform on the input data. Must be
                                one of 'update', 'insert', or 'remove'.
   -n, --counts n,n,...       Number of chunks to load initially.
   -o, --output chart,line,x  How to format the printed results - each of
                                'chart', 'line', and 'x' must be one of
-                               'algorithms', 'chunkSizes', 'counts',
+                               'algorithms', 'inputSizes', 'counts',
                                'partitons', or 'percents', with one required
                                to be 'percents'.
   -p, --partitions n,n,...   Number of partitions for the input data.
   -%, --percents f,f,...     Percent of chunks to update before running
                                change propagation, as a decimal.
-  -r, --repeat int           Number of times to repeat each experiment.
+  -r, --repeat n             Number of times to repeat each experiment.
   """
 
   var repeat = 3
 
+  var inputSize = 0
+
   val confs = Map(("algorithms" -> Array("nmap", "mpmap")),
-                  ("chunkSizes" -> Array("20")),
+                  ("inputSizes" -> Array("1000")),
                   ("counts" -> Array("1000")),
                   ("mutations" -> Array("insert", "update", "remove")),
                   ("partitions" -> Array("10")),
@@ -126,13 +129,13 @@ Options:
       args(i * 2) match {
         case "--algorithms" | "-a" =>
           confs("algorithms") = args(i * 2 + 1).split(",")
-        case "--chunkSizes" | "-c" =>
-          confs("chunkSizes") = args(i * 2 + 1).split(",")
         case "--counts" | "-n" =>
           confs("counts") = args(i * 2 + 1).split(",")
         case "--help" | "-h" =>
           println(usage)
           sys.exit()
+        case "--inputSizes" | "-i" =>
+          confs("inputSizes") = args(i * 2 + 1).split(",")
         case "--mutations" | "-m" =>
           confs("mutations") = args(i * 2 + 1).split(",")
         case "--partitions" | "-p" =>
@@ -140,7 +143,7 @@ Options:
         case "--percents" | "-%" =>
           confs("percents") = "initial" +: args(i * 2 + 1).split(",")
         case "--repeat" | "-r" =>
-          repeat = args(i + 1).toInt
+          repeat = args(i * 2 + 1).toInt
         case "--output" | "-o" =>
           confs("output") = args(i * 2 + 1).split(",")
           println(confs("output")(0))
@@ -159,15 +162,16 @@ Options:
       }
 
       for (algorithm <- confs("algorithms")) {
-        for (chunkSize <- confs("chunkSizes")) {
+        for (inputSize <- confs("inputSizes")) {
           for (count <- confs("counts")) {
             for (partition <- confs("partitions")) {
               val conf = Map(("algorithms" -> algorithm),
-                             ("chunkSizes" -> chunkSize),
+                             ("inputSizes" -> inputSize),
                              ("counts" -> count),
                              ("mutations" -> confs("mutations")),
                              ("partitions" -> partition),
                              ("percents" -> confs("percents")))
+
 	      val experiment =
 		if (algorithm.startsWith("n")) {
 		  new ControlExperiment(conf)
@@ -176,7 +180,9 @@ Options:
 		}
 
               val results = experiment.run()
-	      println(algorithm + "\t" + count + "\t" + results)
+	      println(algorithm + "\t" + conf("counts") + " from " +
+                      conf("inputSizes") + "KB")
+              println(results)
 	      if (i != 0) {
 		Experiment.allResults += (experiment -> results)
               }
