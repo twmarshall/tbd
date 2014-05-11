@@ -19,14 +19,10 @@ import java.io.{BufferedInputStream, File, FileInputStream}
 
 import scala.collection.mutable.ArrayBuffer
 
-class ListNode[T](aValue: T, aNext: ListNode[T]) {
-  val value = aValue
-  val next = aNext
-}
-
 class SimpleMap(
     chunkSize: Int,
-    count: Int) {
+    count: Int,
+    parallel: Boolean) {
   val chunks = ArrayBuffer[String]()
   def loadFile(chunkSize: Int) {
     val bb = new Array[Byte](chunkSize)
@@ -42,29 +38,29 @@ class SimpleMap(
   }
 
   def run(): Long = {
-    var i = 0
+    def generate(i: Int): Vector[String] = {
+      if (i == count) {
+        Vector[String]()
+      } else {
+        if (chunks.size == 0) {
+          loadFile(chunkSize)
+        }
 
-    loadFile(chunkSize)
-    var tail: ListNode[String] = null
-    for (i <- 0 to count) {
-      tail = new ListNode(chunks.head, tail)
-      chunks -= chunks.head
-      if (chunks.size == 0) {
-        loadFile(chunkSize)
+        val elem = chunks.head
+        chunks -= elem
+        generate(i + 1) :+ elem
       }
     }
 
-    def map[T, U](lst: ListNode[T], f: T => U): ListNode[U] = {
-      if (lst.next != null)
-        new ListNode[U](f(lst.value), map(lst.next, f))
-      else
-        new ListNode[U](f(lst.value), null)
-    }
+    val vector =
+      if (parallel) {
+        generate(0).par
+      } else {
+        generate(0)
+      }
 
     val before = System.currentTimeMillis()
-    map(tail, MapAdjust.mapper(null, (_: String)))
-    val time = System.currentTimeMillis() - before
-
-    time
+    vector.map(MapAdjust.mapper(null, (_: String)))
+    System.currentTimeMillis() - before
   }
 }
