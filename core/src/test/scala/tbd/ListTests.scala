@@ -54,7 +54,9 @@ class ListReduceSumTest extends Adjustable {
     val modList = tbd.input.getAdjustableList[Int, String](partitions = 1)
     val zero = tbd.mod((dest : Dest[(Int, String)]) => tbd.write(dest, (0, "")))
     modList.reduce(tbd, zero, 
-      (tbd: TBD, a: Int, ka: String, b:Int, kb: String) => (a + b, ka))
+      (tbd: TBD, a: Int, ka: String, b:Int, kb: String) => {
+        (a + b, kb)
+      })
   }
 }
 
