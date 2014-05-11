@@ -38,7 +38,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
   def addRead(
       mod: Mod[Any],
       parent: Node,
-      reader: Any => Changeable[Any]): Node = {
+      reader: Any => Changeable[Any]): ReadNode = {
     val timestamp = nextTimestamp(parent)
     val readNode = new ReadNode(mod, parent, timestamp, reader)
     parent.addChild(readNode)
@@ -78,7 +78,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     memoNode
   }
 
-  private def nextTimestamp(parent: Node): Timestamp = {
+  def nextTimestamp(parent: Node): Timestamp = {
     if (parent.children.size == 0) {
       ordering.after(parent.timestamp)
     } else {

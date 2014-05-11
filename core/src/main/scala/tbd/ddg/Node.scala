@@ -70,6 +70,8 @@ class ReadNode(
   val mod: Mod[Any] = aMod
   val reader = aReader
 
+  var endTime: Timestamp = null
+
   override def toString(prefix: String) = {
     val value = 
       if (Main.debug) {

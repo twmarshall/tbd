@@ -72,7 +72,7 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
 
           tbd.currentParent = readNode
 	  tbd.reexecutionStart = readNode.timestamp
-	  tbd.reexecutionEnd = ddg.getTimestampAfter(readNode)
+	  tbd.reexecutionEnd = readNode.endTime
 
           readNode.updated = false
           readNode.reader(newValue)
