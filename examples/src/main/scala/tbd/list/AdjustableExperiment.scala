@@ -37,7 +37,7 @@ class AdjustableExperiment(aConf: Map[String, _])
   }
 
   val rand = new scala.util.Random()
-  val maxKey = count * 2
+  val maxKey = count * 10
   def addValue(mutator: Mutator, table: Map[Int, String]) {
     if (chunks.size == 0) {
       loadFile()
