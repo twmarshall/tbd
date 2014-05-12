@@ -30,15 +30,15 @@ class DMLModifier[T, U](
 
     for (elem <- table) {
       val newNode = new DoubleModListNode[T, U](
-                  elem._2.asInstanceOf[Mod[T]], 
-                  elem._1.asInstanceOf[U], tail)
+                  elem._1.asInstanceOf[T],
+                  datastore.createMod(elem._2.asInstanceOf[U]), tail)
       tail = datastore.createMod(newNode)
     }
 
     new DoubleModList[T, U](tail)
   }
 
-  def insert(mod: Mod[T], key: U, respondTo: ActorRef): Int = {
+  def insert(key: T, value: U, respondTo: ActorRef): Int = {
     var innerNode = datastore.getMod(doubleModList.head.id)
       .asInstanceOf[DoubleModListNode[T, U]]
     var previousNode: DoubleModListNode[T, U] = null
@@ -49,7 +49,7 @@ class DMLModifier[T, U](
     }
 
     val newTail = datastore.createMod[DoubleModListNode[T, U]](null)
-    val newNode = new DoubleModListNode(mod, key, newTail)
+    val newNode = new DoubleModListNode(key, datastore.createMod(value), newTail)
 
     if (previousNode != null) {
       datastore.updateMod(previousNode.next.id, newNode, respondTo)
@@ -58,7 +58,30 @@ class DMLModifier[T, U](
     }
   }
 
-  def remove(toRemove: Mod[T], key: U, respondTo: ActorRef): Int = {
+  def update(key: T, value: U, respondTo: ActorRef): Int = {
+    var count = 0
+    var found = false
+    var innerNode = datastore.getMod(doubleModList.head.id)
+      .asInstanceOf[DoubleModListNode[T, U]]
+
+    while (innerNode != null && !found) {
+      if (innerNode.key == key) {
+	count = datastore.updateMod(innerNode.valueMod.id, value, respondTo)
+	found = true
+      } else {
+        innerNode = datastore.getMod(innerNode.next.id)
+          .asInstanceOf[DoubleModListNode[T, U]]
+      }
+    }
+
+    if (!found) {
+      print("Didn't find value to remove.")
+    }
+
+    count
+  }
+
+  def remove(key: T, respondTo: ActorRef): Int = {
     var count = 0
     var found = false
     var innerNode = datastore.getMod(doubleModList.head.id)
@@ -66,7 +89,7 @@ class DMLModifier[T, U](
 
     var previousNode: DoubleModListNode[T, U] = null
     while (innerNode != null && !found) {
-      if (innerNode.valueMod == toRemove) {
+      if (innerNode.key == key) {
         if (previousNode != null) {
           count += datastore.updateMod(previousNode.next.id,
                                        datastore.tables("mods")(innerNode.next.id),
@@ -98,13 +121,13 @@ class DMLModifier[T, U](
     count
   }
 
-  def contains(toRemove: Mod[T]): Boolean = {
+  def contains(key: T): Boolean = {
     var found = false
     var innerNode = datastore.getMod(doubleModList.head.id)
       .asInstanceOf[DoubleModListNode[T, U]]
 
     while (innerNode != null && !found) {
-      if (innerNode.valueMod == toRemove) {
+      if (innerNode.key == key) {
 	found = true
       } else {
         innerNode = datastore.getMod(innerNode.next.id)
@@ -115,7 +138,7 @@ class DMLModifier[T, U](
     found
   }
 
-  def getAdjustableList(): AdjustableList[T, U] = {
+  def getModifiable(): AdjustableList[T, U] = {
     doubleModList
   }
 }

@@ -100,7 +100,7 @@ class DoubleModList[T, V](
       tbd.read(halfList.next)(next => {  
         if(next == null) {
           tbd.read(halfList.valueMod)(value => 
-            tbd.write(dest, (value, halfList.key)))
+            tbd.write(dest, (halfList.key, value)))
         } else {
             randomReduceList(tbd, identityMod, halfListMod,
                                round + 1, dest,
@@ -112,7 +112,7 @@ class DoubleModList[T, V](
 
   val hasher = new Hasher(2, 8)
 
-  def binaryHash(id: V, round: Int) = {
+  def binaryHash(id: T, round: Int) = {
     hasher.hash(id.hashCode() ^ round) == 0
   }
 
@@ -128,11 +128,11 @@ class DoubleModList[T, V](
       tbd.read2(head.valueMod, head.next)((value, next) => {
         if(next == null) {
             val newValue = tbd.createMod(
-                             f(tbd, acc._1, acc._2, value, head.key))
+                             f(tbd, acc._1, acc._2, head.key, value))
             tbd.read(newValue)(value => {
               val newList = new DoubleModListNode(
-                              tbd.createMod(value._1), 
-                              value._2,
+                              value._1,
+                              tbd.createMod(value._2),
                               tbd.createMod[DoubleModListNode[T, V]](null))
               tbd.write(dest, newList)
             })
@@ -141,12 +141,13 @@ class DoubleModList[T, V](
             val reducedList = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
               halfList(tbd, identityMod, identityMod, head.next, round, dest, f)
             })
-            val newValue = f(tbd, acc._1, acc._2, value, head.key)
-            val newList =  new DoubleModListNode(tbd.createMod(newValue._1), 
-                                            newValue._2, reducedList)
+            val newValue = f(tbd, acc._1, acc._2, head.key, value)
+            val newList =  new DoubleModListNode(newValue._1,
+						 tbd.createMod(newValue._2),
+						 reducedList)
             tbd.write(dest, newList)
           } else {
-            val newAcc = tbd.createMod(f(tbd, acc._1, acc._2, value, head.key))
+            val newAcc = tbd.createMod(f(tbd, acc._1, acc._2, head.key, value))
             halfList(tbd, identityMod, newAcc, head.next, round, dest, f)   
           }
         }
@@ -183,8 +184,8 @@ class DoubleModList[T, V](
     )
   }
 
-  def toBuffer(): Buffer[T] = {
-    val buf = ArrayBuffer[T]()
+  def toBuffer(): Buffer[V] = {
+    val buf = ArrayBuffer[V]()
     var node = head.read()
     while (node != null) {
       buf += node.valueMod.read()

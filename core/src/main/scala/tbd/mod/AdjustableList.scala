@@ -65,5 +65,5 @@ trait AdjustableList[T, U] {
       memoized: Boolean = true) : Mod[(T, U)]
 
   /* Meta functions */
-  def toBuffer(): Buffer[T]
+  def toBuffer(): Buffer[U]
 }

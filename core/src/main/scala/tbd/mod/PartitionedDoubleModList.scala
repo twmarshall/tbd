@@ -128,8 +128,8 @@ class PartitionedDoubleModList[T, V](
   }
 
   /* Meta Operations */
-  def toBuffer(): Buffer[T] = {
-    val buf = ArrayBuffer[T]()
+  def toBuffer(): Buffer[V] = {
+    val buf = ArrayBuffer[V]()
 
     for (partition <- partitions) {
       var innerNode = partition.head.read()

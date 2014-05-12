@@ -45,7 +45,7 @@ case class CleanUpMessage(
     workerRef: ActorRef,
     adjustableLists: Set[AdjustableList[Any, Any]])
 
-case class GetArrayMessage(table: String)
+case class GetModMessage(table: String, key: Any)
 case class GetAdjustableListMessage(table: String, partitions: Int = 8)
 case class NullMessage()
 
