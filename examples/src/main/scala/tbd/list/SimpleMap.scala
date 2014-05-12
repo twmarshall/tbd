@@ -62,7 +62,7 @@ class SimpleMap(
     }
 
     val before = System.currentTimeMillis()
-    map(tail, MapAdjust.mapper(null, (_: String)))
+    map(tail, MapAdjust.mapper(null, (_: String), 0))
     val time = System.currentTimeMillis() - before
 
     time

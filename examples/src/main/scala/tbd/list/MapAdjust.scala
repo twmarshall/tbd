@@ -21,12 +21,12 @@ import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.AdjustableList
 
 object MapAdjust {
-  def mapper(tbd: TBD, s: String): Int = {
+  def mapper(tbd: TBD, s: String, key: Int): (Int, Int) = {
     var count = 0
     for (word <- s.split("\\W+")) {
       count += 1
     }
-    count
+    (count, key)
   }
 }
 
@@ -34,22 +34,22 @@ class MapAdjust(
     partitions: Int,
     parallel: Boolean,
     memoized: Boolean) extends Algorithm {
-  var output: AdjustableList[Int] = null
+  var output: AdjustableList[Int, Int] = null
 
-  def run(tbd: TBD): AdjustableList[Int] = {
-    val pages = tbd.input.getAdjustableList[String](partitions)
+  def run(tbd: TBD): AdjustableList[Int, Int] = {
+    val pages = tbd.input.getAdjustableList[String, Int](partitions)
     pages.map(tbd, MapAdjust.mapper, parallel = parallel, memoized = memoized)
   }
 
   def initialRun(mutator: Mutator) {
-    output = mutator.run[AdjustableList[Int]](this)
+    output = mutator.run[AdjustableList[Int, Int]](this)
   }
 
   def checkOutput(answer: Map[Int, String]): Boolean = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
     val sortedAnswer = answer.map(pair => {
-      MapAdjust.mapper(null, pair._2)
-    }).toBuffer.sortWith(_ < _)
+      MapAdjust.mapper(null, pair._2, 0)
+    }).toBuffer.map((x: (Int, Int)) => x._1).sortWith(_ < _)
 
     return sortedOutput == sortedAnswer
   }
