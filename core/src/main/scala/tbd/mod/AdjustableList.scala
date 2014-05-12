@@ -32,7 +32,7 @@ import tbd.datastore.Datastore
  * The 'parallel' and 'memo' parameters to these functions are performance hints
  * and may be ignored by some subclasses.
  */
-trait AdjustableList[T, U] {
+trait AdjustableList[T, U] extends Iterable[T, U] {
   /**
    * Returns a AdjustableList containing the results of applying the given
    * function to each of the elements of this AdjustableList.

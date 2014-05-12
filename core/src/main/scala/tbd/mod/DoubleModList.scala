@@ -23,6 +23,14 @@ import tbd.memo.Lift
 class DoubleModList[T, V](
     aHead: Mod[DoubleModListNode[T, V]]) extends AdjustableList[T, V] {
   val head = aHead
+  
+  def iterators(tbd: TBD) = {
+    List(tbd.mod((dest: Dest[Iterator[T, V]]) => {
+      tbd.read(head) { 
+        next => tbd.write(dest, new DoubleModListIterator[T, V](tbd, next))
+      }
+    }))
+  }
 
   def map[U, Q](
       tbd: TBD,
