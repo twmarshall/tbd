@@ -127,7 +127,8 @@ class DoubleModList[T, V](
     tbd.read2(head, acc)((head, acc) => {
       tbd.read2(head.valueMod, head.next)((value, next) => {
         if(next == null) {
-            val newValue = tbd.createMod(f(tbd, acc._1, acc._2, value, head.key))
+            val newValue = tbd.createMod(
+                             f(tbd, acc._1, acc._2, value, head.key))
             tbd.read(newValue)(value => {
               val newList = new DoubleModListNode(
                               tbd.createMod(value._1), 

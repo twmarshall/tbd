@@ -35,7 +35,8 @@ class PDMLModifier[T, U](
     val partitionSize = math.max(1, table.size / numPartitions)
     var i = 1
     for (elem <- table) {
-      dmlModifier.insert(elem._2.asInstanceOf[Mod[T]], elem._1.asInstanceOf[U], null)
+      dmlModifier.insert(elem._2.asInstanceOf[Mod[T]], 
+                         elem._1.asInstanceOf[U], null)
 
       if (i % partitionSize == 0) {
         partitionModifiers += dmlModifier

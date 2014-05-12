@@ -54,8 +54,8 @@ trait AdjustableList[T, U] {
       memoized: Boolean = true): AdjustableList[T, U]
 
   /**
-   * Reduces all elements in the list using f, in an unspecified order, starting with 
-   * initialValue
+   * Reduces all elements in the list using f, in an unspecified order, 
+   * starting with initialValue
    */
   def reduce(
       tbd: TBD, 

@@ -30,7 +30,8 @@ class DoubleModListNode[T, V](
       tbd: TBD,
       dest: Dest[DoubleModListNode[U, Q]],
       f: (TBD, T, V) => (U, Q),
-      lift: Lift[Mod[DoubleModListNode[U, Q]]]): Changeable[DoubleModListNode[U, Q]] = {
+      lift: Lift[Mod[DoubleModListNode[U, Q]]]
+      ): Changeable[DoubleModListNode[U, Q]] = {
     val newValue = tbd.mod((dest: Dest[(U, Q)]) =>
       tbd.read(valueMod)(value => tbd.write(dest, f(tbd, value, key))))
     val newNext = lift.memo(List(next), () => {

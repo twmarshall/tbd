@@ -31,14 +31,18 @@ class ListMapTest extends Adjustable {
 class ListParMapTest extends Adjustable {
   def run(tbd: TBD): AdjustableList[Int, String] = {
     val list = tbd.input.getAdjustableList[Int, String]()
-    list.map(tbd, (tbd: TBD, value: Int, key: String) => (value + 1, key), parallel = true)
+    list.map(tbd, 
+             (tbd: TBD, value: Int, key: String) => (value + 1, key), 
+             parallel = true)
   }
 }
 
 class ListMemoMapTest extends Adjustable {
   def run(tbd: TBD): AdjustableList[Int, String] = {
     val list = tbd.input.getAdjustableList[Int, String](partitions = 1)
-    list.map(tbd, (tbd: TBD, value: Int, key: String) => (value + 3, key), memoized = true)
+    list.map(tbd, 
+             (tbd: TBD, value: Int, key: String) => (value + 3, key), 
+             memoized = true)
   }
 }
 
@@ -93,7 +97,8 @@ class ListTests extends FlatSpec with Matchers {
     mutator.put("seven", 5)
     mutator.propagate()
     // (-2 * 2), (2 * 2), (3 * 2), (3 * 2), (8 * 2), (10 * 2), (5 * 2)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(-4, 4, 6, 6, 10, 16, 20))
+    output.toBuffer().sortWith(_ < _) should be 
+                                      (Buffer(-4, 4, 6, 6, 10, 16, 20))
 
     mutator.shutdown()
   }
@@ -226,7 +231,8 @@ class ListTests extends FlatSpec with Matchers {
         addValue(mutator, table)
       }
 
-      val output = mutator.run[AdjustableList[Int, String]](new ListFilterTest(partitions))
+      val output = mutator.run[AdjustableList[Int, String]](
+                                            new ListFilterTest(partitions))
       var answer = table.values.filter(_ % 2 == 0).toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (answer)
 
