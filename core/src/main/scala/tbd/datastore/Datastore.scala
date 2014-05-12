@@ -18,7 +18,6 @@ package tbd.datastore
 import akka.actor.{Actor, ActorRef, ActorLogging, Props}
 import akka.pattern.ask
 import scala.collection.mutable.{Map, Set}
-import scala.concurrent.Await
 
 import tbd.messages._
 import tbd.mod._
@@ -55,7 +54,7 @@ class Datastore extends Actor with ActorLogging {
 
   private var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
-    val mod = new InputMod[T](self, new ModId("d." + nextModId))
+    val mod = new Mod[T](self, new ModId("d." + nextModId))
     nextModId += 1
 
     tables("mods")(mod.id) = value
@@ -146,6 +145,14 @@ class Datastore extends Actor with ActorLogging {
       sender ! count
     }
 
+    case CreateModMessage(value: Any) => {
+      sender ! createMod(value)
+    }
+
+    case CreateModMessage(null) => {
+      sender ! createMod(null)
+    }
+
     case UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef) => {
       sender ! updateMod(modId, value, workerRef)
     }
@@ -155,6 +162,10 @@ class Datastore extends Actor with ActorLogging {
     }
 
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
+      if (!tables("mods").contains(modId)) {
+        log.warning("Trying to read non-existent mod")
+      }
+
       dependencies(modId) += workerRef
       sender ! get("mods", modId)
     }
