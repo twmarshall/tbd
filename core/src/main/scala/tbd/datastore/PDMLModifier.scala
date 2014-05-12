@@ -35,8 +35,8 @@ class PDMLModifier[T, U](
     val partitionSize = math.max(1, table.size / numPartitions)
     var i = 1
     for (elem <- table) {
-      dmlModifier.insert(elem._2.asInstanceOf[Mod[T]], 
-                         elem._1.asInstanceOf[U], null)
+      dmlModifier.insert(elem._1.asInstanceOf[T],
+			 elem._2.asInstanceOf[U], null)
 
       if (i % partitionSize == 0) {
         partitionModifiers += dmlModifier
@@ -54,17 +54,35 @@ class PDMLModifier[T, U](
     new PartitionedDoubleModList[T, U](partitions)
   }
 
-  def insert(mod: Mod[T], key: U, respondTo: ActorRef): Int = {
-    partitionModifiers(0).insert(mod, key, respondTo)
+  def insert(key: T, value: U, respondTo: ActorRef): Int = {
+    partitionModifiers(0).insert(key, value, respondTo)
   }
 
-  def remove(toRemove: Mod[T], key: U, respondTo: ActorRef): Int = {
+  def update(key: T, value: U, respondTo: ActorRef): Int = {
     var count = 0
 
     var found = false
     for (partitionModifier <- partitionModifiers) {
-      if (!found && partitionModifier.contains(toRemove)) {
-        count = partitionModifier.remove(toRemove, key, respondTo)
+      if (!found && partitionModifier.contains(key)) {
+        count = partitionModifier.update(key, value, respondTo)
+        found = true
+      }
+    }
+
+   if (!found) {
+     println("Warning: tried to update nonexistant key")
+   }
+
+    count
+  }
+
+  def remove(key: T, respondTo: ActorRef): Int = {
+    var count = 0
+
+    var found = false
+    for (partitionModifier <- partitionModifiers) {
+      if (!found && partitionModifier.contains(key)) {
+        count = partitionModifier.remove(key, respondTo)
         found = true
       }
     }
@@ -72,7 +90,7 @@ class PDMLModifier[T, U](
     count
   }
 
-  def getAdjustableList(): AdjustableList[T, U] = {
+  def getModifiable(): AdjustableList[T, U] = {
     modList
   }
 }

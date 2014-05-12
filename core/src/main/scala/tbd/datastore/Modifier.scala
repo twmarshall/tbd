@@ -22,9 +22,11 @@ import tbd.mod.{AdjustableList, Mod}
 abstract class Modifier[T, U](aDatastore: Datastore) {
   val datastore = aDatastore
 
-  def insert(mod: Mod[T], key: U, respondTo: ActorRef): Int
+  def insert(key: T, value: U, respondTo: ActorRef): Int
 
-  def remove(toRemove: Mod[T], key: U, respondTo: ActorRef): Int
+  def update(key: T, value: U, respondTo: ActorRef): Int
 
-  def getAdjustableList(): AdjustableList[T, U]
+  def remove(key: T, respondTo: ActorRef): Int
+
+  def getModifiable(): Any
 }

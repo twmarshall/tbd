@@ -39,13 +39,14 @@ case class UpdateMessage(
     respondTo: ActorRef)
 case class RemoveMessage(table: String, key: Any, respondTo: ActorRef)
 
+case class CreateModMessage(value: Any)
 case class UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef)
 case class ReadModMessage(modId: ModId, workerRef: ActorRef)
 case class CleanUpMessage(
     workerRef: ActorRef,
     adjustableLists: Set[AdjustableList[Any, Any]])
 
-case class GetArrayMessage(table: String)
+case class GetModMessage(table: String, key: Any)
 case class GetAdjustableListMessage(table: String, partitions: Int = 8)
 case class NullMessage()
 

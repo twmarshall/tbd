@@ -19,12 +19,12 @@ import tbd.{Changeable, TBD}
 import tbd.memo.Lift
 
 class DoubleModListNode[T, V](
-    aValue: Mod[T],
-    aKey: V,
+    aKey: T,
+    aValue: Mod[V],
     aNext: Mod[DoubleModListNode[T, V]]) {
+  val key = aKey
   val valueMod = aValue
   val next = aNext
-  val key = aKey
 
   def map[U, Q](
       tbd: TBD,
@@ -33,7 +33,7 @@ class DoubleModListNode[T, V](
       lift: Lift[Mod[DoubleModListNode[U, Q]]]
       ): Changeable[DoubleModListNode[U, Q]] = {
     val newValue = tbd.mod((dest: Dest[(U, Q)]) =>
-      tbd.read(valueMod)(value => tbd.write(dest, f(tbd, value, key))))
+      tbd.read(valueMod)(value => tbd.write(dest, f(tbd, key, value))))
     val newNext = lift.memo(List(next), () => {
       tbd.mod((dest: Dest[DoubleModListNode[U, Q]]) =>
         tbd.read(next)(next => {
@@ -47,8 +47,8 @@ class DoubleModListNode[T, V](
     })
     tbd.read(newValue)(newValue => {
       tbd.write(dest, new DoubleModListNode[U, Q](
-                            tbd.createMod(newValue._1), 
-                            newValue._2, 
+                            newValue._1,
+                            tbd.createMod(newValue._2),
                             newNext))
     })
   }
@@ -61,7 +61,7 @@ class DoubleModListNode[T, V](
       tbd.par((tbd: TBD) => {
 	      tbd.mod((valueDest: Dest[(U, Q)]) => {
           tbd.read(valueMod)(value => {
-            tbd.write(valueDest, f(tbd, value, key))
+            tbd.write(valueDest, f(tbd, key, value))
           })
         })
       }, (tbd: TBD) => {
@@ -77,8 +77,8 @@ class DoubleModListNode[T, V](
       })
     tbd.read(modTuple._1)(value => 
       tbd.write(dest, new DoubleModListNode[U, Q](
-                            tbd.createMod(value._1), 
-                            value._2, 
+                            value._1,
+                            tbd.createMod(value._2),
                             modTuple._2)))
   }
 
@@ -89,7 +89,7 @@ class DoubleModListNode[T, V](
       lift: Lift[Mod[DoubleModListNode[T, V]]])
         : Changeable[DoubleModListNode[T, V]] = {
     tbd.read(valueMod)(value => {
-      if (pred(value, key)) {
+      if (pred(key, value)) {
         val newNext = lift.memo(List(next), () => {
           tbd.mod((nextDest: Dest[DoubleModListNode[T, V]]) => {
             tbd.read(next)(nextValue => {
@@ -101,7 +101,7 @@ class DoubleModListNode[T, V](
               })
             })
           })
-        tbd.write(dest, new DoubleModListNode(valueMod, key, newNext))
+        tbd.write(dest, new DoubleModListNode(key, valueMod, newNext))
       } else {
         tbd.read(next)(nextValue => {
           if (nextValue == null) {

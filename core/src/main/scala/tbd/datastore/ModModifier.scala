@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.mod
+package tbd.datastore
 
 import akka.actor.ActorRef
-import akka.pattern.ask
-import scala.concurrent.Await
 
-import tbd.Constants._
-import tbd.TBD
-import tbd.master.Main
-import tbd.messages.CreateModMessage
-import tbd.worker.Worker
+class ModModifier[T, U](_datastore: Datastore, _key: T, value: U)
+    extends Modifier[T, U](_datastore) {
+  val mod = datastore.createMod(value)
 
-class Dest[T](worker: Worker, aModId: ModId) extends Mod[T](null, aModId) {
-  val future = worker.datastoreRef ? CreateModMessage(null)
-  val mod = Await.result(future, DURATION).asInstanceOf[Mod[T]]
+  def insert(key: T, value: U, respondTo: ActorRef): Int = ???
 
-  worker.nextModId += 1
+  def update(key: T, value: U, respondTo: ActorRef): Int = {
+    if (key == _key) {
+      datastore.updateMod(mod.id, value, respondTo)
+    } else {
+      0
+    }
+  }
 
-  override def read(workerRef: ActorRef = null): T = ???
+  def remove(key: T, respondTo: ActorRef): Int = ???
 
-  override def update(value: T, workerRef: ActorRef, tbd: TBD): Int = ???
+  def getModifiable(): Any = mod
 }

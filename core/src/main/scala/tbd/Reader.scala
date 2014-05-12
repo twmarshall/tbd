@@ -25,16 +25,10 @@ import tbd.mod.{Mod, AdjustableList}
 import tbd.worker.Worker
 
 class Reader(worker: Worker) {
-  def get[T](key: Int): T = {
-    val modFuture = worker.datastoreRef ? GetMessage("input", key)
+  def getMod[T](key: Int): Mod[T] = {
+    val modFuture = worker.datastoreRef ? GetModMessage("input", key)
     Await.result(modFuture, DURATION)
-      .asInstanceOf[T]
-  }
-
-  def getArray[T](): Array[T] = {
-    val arrayFuture = worker.datastoreRef ? GetArrayMessage("input")
-    Await.result(arrayFuture, DURATION)
-      .asInstanceOf[Array[T]]
+      .asInstanceOf[Mod[T]]
   }
 
   def getAdjustableList[T, V](partitions: Int = 8): AdjustableList[T, V] = {

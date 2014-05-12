@@ -19,6 +19,6 @@ import akka.util.Timeout
 import scala.concurrent.duration._
 
 object Constants {
-  val DURATION = 10.seconds
+  val DURATION = 30.seconds
   implicit val TIMEOUT = Timeout(DURATION)
 }
