@@ -20,16 +20,20 @@ import scala.collection.mutable.Map
 import tbd.{Adjustable, TBD}
 import tbd.mod.Mod
 
-/*class WCAdjust(partitions: Int) extends WC with Adjustable {
+class WCAdjust(partitions: Int, parallel: Boolean) extends WC with Adjustable {
 
-  def run(tbd: TBD): Mod[Map[String, Int]] = {
-    val pages = tbd.input.getAdjustableList[String](partitions)
-    val counts = pages.map(tbd, (s: String) => wordcount(s))
-    counts.reduce(tbd, reduce((_: Map[String, Int]), (_: Map[String, Int])))
+  def reducer(tbd: TBD, k1: Int, v1: Map[String, Int], k2: Int, v2: Map[String, Int]) =
+    (0, reduce(v1, v2))
+
+  def run(tbd: TBD): Mod[(Int, Map[String, Int])] = {
+    val pages = tbd.input.getAdjustableList[Int, String](partitions)
+    val counts = pages.map(tbd, (tbd: TBD, key: Int, s: String) => (key, wordcount(s)))
+    val initialValue = tbd.createMod((0, Map[String, Int]()))
+    counts.reduce(tbd, initialValue, reducer)
   }
 }
 
-class WCParAdjust(partitions: Int) extends WC with Adjustable {
+/*class WCParAdjust(partitions: Int) extends WC with Adjustable {
   def run(tbd: TBD): Mod[Map[String, Int]] = {
     val pages = tbd.input.getAdjustableList[String](partitions)
     val counts = pages.parMap(tbd, (s: String) => wordcount(s))

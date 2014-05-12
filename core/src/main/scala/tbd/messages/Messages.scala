@@ -39,6 +39,7 @@ case class UpdateMessage(
     respondTo: ActorRef)
 case class RemoveMessage(table: String, key: Any, respondTo: ActorRef)
 
+case class CreateModMessage(value: Any)
 case class UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef)
 case class ReadModMessage(modId: ModId, workerRef: ActorRef)
 case class CleanUpMessage(

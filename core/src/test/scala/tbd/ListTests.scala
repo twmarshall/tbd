@@ -78,6 +78,8 @@ class ListTests extends FlatSpec with Matchers {
     // (5 * 2), (2 * 2)
     output.toBuffer().sortWith(_ < _) should be (Buffer(4, 10))
 
+    println(mutator.getDDG())
+
     mutator.put("three", 4)
     mutator.propagate()
     // (5 * 2), (2 * 2), (4 * 2)
