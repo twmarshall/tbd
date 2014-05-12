@@ -125,7 +125,7 @@ Options:
   }
 
   def main(args: Array[String]) {
-    for (i <- 0 to (args.size - 1) / 2) {
+    for (i <- 0 to args.size / 2 - 1) {
       args(i * 2) match {
         case "--algorithms" | "-a" =>
           confs("algorithms") = args(i * 2 + 1).split(",")

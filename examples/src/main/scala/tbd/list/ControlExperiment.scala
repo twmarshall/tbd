@@ -23,7 +23,8 @@ class ControlExperiment(aConf: Map[String, _])
     val results = Map[String, Double]()
 
     val alg = algorithm match {
-      case "nmap" => new SimpleMap(chunkSize, count)
+      case "nmap" => new SimpleMap(chunkSize, count, false)
+      case "npmap" => new SimpleMap(chunkSize, count, true)
     }
 
     val time = alg.run()

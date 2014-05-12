@@ -41,8 +41,7 @@ class Reader(worker: Worker) {
     val adjustableListFuture =
       worker.datastoreRef ? GetAdjustableListMessage("input", partitions)
     val adjustableList = Await.result(adjustableListFuture, DURATION)
-    worker.adjustableLists 
-        += adjustableList.asInstanceOf[AdjustableList[Any, Any]]
+    worker.adjustableLists += adjustableList.asInstanceOf[AdjustableList[Any, Any]]
     adjustableList.asInstanceOf[AdjustableList[T, V]]
   }
 }
