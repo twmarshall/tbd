@@ -20,10 +20,6 @@ class Hasher(
   k: Int,
   m: Int) {
 
-  def binaryHash(id: ModId, round: Int) = {
-    hash(id.value.hashCode() ^ round) == 0
-  }
-
   var coefs:List[BigInt] = null
   def hash(x: Int) = {
     val p = BigInt(1073741789)

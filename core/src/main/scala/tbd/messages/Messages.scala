@@ -43,7 +43,7 @@ case class UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef)
 case class ReadModMessage(modId: ModId, workerRef: ActorRef)
 case class CleanUpMessage(
     workerRef: ActorRef,
-    adjustableLists: Set[AdjustableList[Any]])
+    adjustableLists: Set[AdjustableList[Any, Any]])
 
 case class GetArrayMessage(table: String)
 case class GetAdjustableListMessage(table: String, partitions: Int = 8)

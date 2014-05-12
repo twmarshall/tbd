@@ -37,7 +37,7 @@ class Datastore extends Actor with ActorLogging {
   // Maps the name of an input table to a set containing the Modifiers that were
   // returned containing this entire table, so that we can tolerate insertions
   // into and deletions from tables.
-  private val modifiers = Map[String, Set[Modifier[Any]]]()
+  private val modifiers = Map[String, Set[Modifier[Any, Any]]]()
 
   private def get(table: String, key: Any): Any = {
     if (!tables(table).contains(key)) {
@@ -93,7 +93,10 @@ class Datastore extends Actor with ActorLogging {
       sender ! get(table, key)
     }
 
-    case PutMessage(table: String, key: Any, value: Any, respondTo: ActorRef) => {
+    case PutMessage(table: String, 
+                    key: Any, 
+                    value: Any, 
+                    respondTo: ActorRef) => {
       if (tables(table).contains(key)) {
 	log.warning("Putting input key that already exists.")
       }
@@ -104,14 +107,17 @@ class Datastore extends Actor with ActorLogging {
       var count = 0
       if (modifiers.contains(table)) {
         for (modifier <- modifiers(table)) {
-          count += modifier.insert(mod, respondTo)
+          count += modifier.insert(mod, key, respondTo)
         }
       }
 
       sender ! count
     }
 
-    case UpdateMessage(table: String, key: Any, value: Any, respondTo: ActorRef) => {
+    case UpdateMessage(table: String, 
+                       key: Any, 
+                       value: Any, 
+                       respondTo: ActorRef) => {
       val modId = tables(table)(key).asInstanceOf[Mod[Any]].id
       sender ! updateMod(modId, value, respondTo)
     }
@@ -130,7 +136,9 @@ class Datastore extends Actor with ActorLogging {
 	  if (!tables("mods").contains(mod.id)) {
 	    log.warning("Trying to remove non-existent mod " + mod.id)
 	  }
-          count += modifier.remove(tables(table)(key).asInstanceOf[Mod[Any]], respondTo)
+          count += modifier.remove(tables(table)(key).asInstanceOf[Mod[Any]], 
+                                   key, 
+                                   respondTo)
         }
       }
 
@@ -154,7 +162,7 @@ class Datastore extends Actor with ActorLogging {
 
     case CleanUpMessage(
         workerRef: ActorRef,
-        removeLists: Set[AdjustableList[Any]]) => {
+        removeLists: Set[AdjustableList[Any, Any]]) => {
       //log.debug("RemoveDependenciesMessage from " + sender)
 
       for ((modId, dependencySet) <- dependencies) {
@@ -163,7 +171,8 @@ class Datastore extends Actor with ActorLogging {
 
       for (table <- modifiers.keys) {
         for (removeList <- removeLists) {
-          modifiers(table) = modifiers(table).filter((modifier: Modifier[Any]) => {
+          modifiers(table) = modifiers(table)
+                             .filter((modifier: Modifier[Any, Any]) => {
             removeList != modifier.getAdjustableList()
           })
         }
@@ -189,9 +198,9 @@ class Datastore extends Actor with ActorLogging {
     case GetAdjustableListMessage(table: String, partitions: Int) => {
       val modifier =
         if (partitions == 1) {
-          new DMLModifier[Any](this, tables(table))
+          new DMLModifier[Any, Any](this, tables(table))
         } else {
-          new PDMLModifier[Any](this, tables(table), partitions)
+          new PDMLModifier[Any, Any](this, tables(table), partitions)
         }
 
       if (modifiers.contains(table)) {

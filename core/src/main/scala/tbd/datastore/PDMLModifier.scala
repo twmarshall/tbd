@@ -20,27 +20,28 @@ import scala.collection.mutable.{ArrayBuffer, Map}
 
 import tbd.mod._
 
-class PDMLModifier[T](
+class PDMLModifier[T, U](
     aDatastore: Datastore,
     table: Map[Any, Any],
-    numPartitions: Int) extends Modifier[T](aDatastore) {
+    numPartitions: Int) extends Modifier[T, U](aDatastore) {
 
-  val partitionModifiers = ArrayBuffer[DMLModifier[T]]()
+  val partitionModifiers = ArrayBuffer[DMLModifier[T, U]]()
   val modList = initialize()
 
-  private def initialize(): PartitionedDoubleModList[T] = {
-    val partitions = new ArrayBuffer[DoubleModList[T]]()
-    var dmlModifier = new DMLModifier[T](datastore)
+  private def initialize(): PartitionedDoubleModList[T, U] = {
+    val partitions = new ArrayBuffer[DoubleModList[T, U]]()
+    var dmlModifier = new DMLModifier[T, U](datastore)
 
     val partitionSize = math.max(1, table.size / numPartitions)
     var i = 1
     for (elem <- table) {
-      dmlModifier.insert(elem._2.asInstanceOf[Mod[T]], null)
+      dmlModifier.insert(elem._2.asInstanceOf[Mod[T]], 
+                         elem._1.asInstanceOf[U], null)
 
       if (i % partitionSize == 0) {
         partitionModifiers += dmlModifier
         partitions += dmlModifier.doubleModList
-        dmlModifier = new DMLModifier[T](datastore)
+        dmlModifier = new DMLModifier[T, U](datastore)
       }
       i += 1
     }
@@ -50,20 +51,20 @@ class PDMLModifier[T](
       partitions += dmlModifier.doubleModList
     }
 
-    new PartitionedDoubleModList[T](partitions)
+    new PartitionedDoubleModList[T, U](partitions)
   }
 
-  def insert(mod: Mod[T], respondTo: ActorRef): Int = {
-    partitionModifiers(0).insert(mod, respondTo)
+  def insert(mod: Mod[T], key: U, respondTo: ActorRef): Int = {
+    partitionModifiers(0).insert(mod, key, respondTo)
   }
 
-  def remove(toRemove: Mod[T], respondTo: ActorRef): Int = {
+  def remove(toRemove: Mod[T], key: U, respondTo: ActorRef): Int = {
     var count = 0
 
     var found = false
     for (partitionModifier <- partitionModifiers) {
       if (!found && partitionModifier.contains(toRemove)) {
-        count = partitionModifier.remove(toRemove, respondTo)
+        count = partitionModifier.remove(toRemove, key, respondTo)
         found = true
       }
     }
@@ -71,7 +72,7 @@ class PDMLModifier[T](
     count
   }
 
-  def getAdjustableList(): AdjustableList[T] = {
+  def getAdjustableList(): AdjustableList[T, U] = {
     modList
   }
 }

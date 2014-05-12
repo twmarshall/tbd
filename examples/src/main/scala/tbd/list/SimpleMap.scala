@@ -22,7 +22,7 @@ import scala.collection.mutable.ArrayBuffer
 class SimpleMap(
     chunkSize: Int,
     count: Int,
-    parallel: Boolean) {
+    parallel: Boolean) { 
   val chunks = ArrayBuffer[String]()
   def loadFile(chunkSize: Int) {
     val bb = new Array[Byte](chunkSize)
@@ -60,7 +60,8 @@ class SimpleMap(
       }
 
     val before = System.currentTimeMillis()
-    vector.map(MapAdjust.mapper(null, (_: String)))
+    vector.map(MapAdjust.mapper(null, (_: String), 0))
+
     System.currentTimeMillis() - before
   }
 }

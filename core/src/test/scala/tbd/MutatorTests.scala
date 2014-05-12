@@ -22,8 +22,8 @@ import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.AdjustableList
 
 class AdjustableListTest extends Adjustable {
-  def run(tbd: TBD): AdjustableList[Int] = {
-    tbd.input.getAdjustableList[Int](partitions = 1)
+  def run(tbd: TBD): AdjustableList[Int, String] = {
+    tbd.input.getAdjustableList[Int, String](partitions = 1)
   }
 }
 
@@ -72,7 +72,7 @@ class MutatorTests extends FlatSpec with Matchers {
       mutator.put(i, i)
       i += 1
     }
-    val output = mutator.run[AdjustableList[Int]](new AdjustableListTest())
+    val output = mutator.run[AdjustableList[Int, String]](new AdjustableListTest())
     var sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
     output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
 
