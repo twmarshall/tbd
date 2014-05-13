@@ -15,28 +15,6 @@
  */
 package tbd.examples.list
 
-import scala.collection.mutable.Map
-
-class ControlExperiment(aConf: Map[String, _])
-    extends Experiment(aConf) {
-  def run() = {
-    val results = Map[String, Double]()
-
-    val alg = algorithm match {
-      case "nmap" => new SimpleMap(inputSize, partition, false)
-      case "npmap" => new SimpleMap(inputSize, partition, true)
-      case "nwc" => new SimpleWC(inputSize, partition, false)
-      case "npwc" => new SimpleWC(inputSize, partition, true)
-    }
-
-    val time = alg.run()
-    results("initial") = time
-
-    for (percent <- percents) {
-      results(percent) = time
-    }
-
-    results
-  }
+trait ControlAlgorithm {
+  def run(): Long
 }
-

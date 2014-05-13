@@ -17,26 +17,28 @@ package tbd.examples.list
 
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, TBD}
-import tbd.mod.Mod
+import tbd.{Adjustable, Mutator, TBD}
+import tbd.mod.{AdjustableList, Mod}
 
-class WCAdjust(partitions: Int, parallel: Boolean) extends WC with Adjustable {
+class WCAdjust(partitions: Int, parallel: Boolean) extends Algorithm {
+  var output: Mod[(Int, Map[String, Int])] = null
+
+  def initialRun(mutator: Mutator) {
+    output = mutator.run[Mod[(Int, Map[String, Int])]](this)
+  }
+
+  def checkOutput(chunks: Map[Int, String]): Boolean = {
+    val answer = chunks.map(value => WC.wordcount(value._2)).reduce(WC.reduce)
+    output.read()._2 == answer
+  }
 
   def reducer(tbd: TBD, k1: Int, v1: Map[String, Int], k2: Int, v2: Map[String, Int]) =
-    (0, reduce(v1, v2))
+    (0, WC.reduce(v1, v2))
 
   def run(tbd: TBD): Mod[(Int, Map[String, Int])] = {
     val pages = tbd.input.getAdjustableList[Int, String](partitions)
-    val counts = pages.map(tbd, (tbd: TBD, key: Int, s: String) => (key, wordcount(s)))
+    val counts = pages.map(tbd, (tbd: TBD, key: Int, s: String) => (key, WC.wordcount(s)))
     val initialValue = tbd.createMod((0, Map[String, Int]()))
     counts.reduce(tbd, initialValue, reducer)
   }
 }
-
-/*class WCParAdjust(partitions: Int) extends WC with Adjustable {
-  def run(tbd: TBD): Mod[Map[String, Int]] = {
-    val pages = tbd.input.getAdjustableList[String](partitions)
-    val counts = pages.parMap(tbd, (s: String) => wordcount(s))
-    counts.parReduce(tbd, reduce((_: Map[String, Int]), (_: Map[String, Int])))
-  }
-}*/

@@ -51,6 +51,6 @@ class FilterAdjust(
       FilterAdjust.predicate(value)
     }).toBuffer.sortWith(_ < _)
 
-    return sortedOutput == sortedAnswer
+    sortedOutput == sortedAnswer
   }
 }

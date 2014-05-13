@@ -100,14 +100,19 @@ class AdjustableExperiment(aConf: Map[String, _])
     }
 
     val alg = algorithm match {
+      // Map
       case "map" => new MapAdjust(partition, false, false)
       case "pmap" => new MapAdjust(partition, true, false)
       case "mmap" => new MapAdjust(partition, false, true)
       case "mpmap" => new MapAdjust(partition, true, true)
+      // Filter
       case "filter" => new FilterAdjust(partition, false, false)
       case "pfilter" => new FilterAdjust(partition, true, false)
       case "mfilter" => new FilterAdjust(partition, false, true)
       case "mpfilter" => new FilterAdjust(partition, true, true)
+      // Wordcount
+      case "wc" => new WCAdjust(partition, false)
+      case "pwc" => new WCAdjust(partition, true)
     }
 
     val before = System.currentTimeMillis()

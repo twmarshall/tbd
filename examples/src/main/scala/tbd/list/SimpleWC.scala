@@ -17,9 +17,9 @@ package tbd.examples.list
 
 import java.io.{BufferedInputStream, File, FileInputStream}
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, Map}
 
-class SimpleMap(
+class SimpleWC(
     inputSize: Int,
     partitions: Int,
     parallel: Boolean) extends ControlAlgorithm {
@@ -62,8 +62,7 @@ class SimpleMap(
       }
 
     val before = System.currentTimeMillis()
-    vector.map(MapAdjust.mapper(null, 0, (_: String)))
-
+    vector.aggregate(Map[String, Int]())((x, line) => WC.countReduce(line, x), WC.reduce)
     System.currentTimeMillis() - before
   }
 }
