@@ -22,7 +22,8 @@ import tbd.{Changeable, TBD}
 import tbd.datastore.Datastore
 
 class PartitionedDoubleModList[T, V](
-    aPartitions: ArrayBuffer[DoubleModList[T, V]]) extends AdjustableList[T, V] {
+    aPartitions: ArrayBuffer[DoubleModList[T, V]])
+    extends AdjustableList[T, V] {
   val partitions = aPartitions
 
   def map[U, Q](
@@ -54,15 +55,15 @@ class PartitionedDoubleModList[T, V](
       )
     }
   }
-  
+
   def reduce(
-      tbd: TBD, 
-      initialValueMod: Mod[(T, V)], 
-      f: (TBD, T, V, T, V) => (T, V), 
+      tbd: TBD,
+      initialValueMod: Mod[(T, V)],
+      f: (TBD, T, V, T, V) => (T, V),
       parallel: Boolean = true,
       memoized: Boolean = true) : Mod[(T, V)] = {
-    
-    
+
+
     def parReduce(tbd: TBD, i: Int): Mod[(T, V)] = {
       if (i < partitions.size) {
         val parTup = tbd.par((tbd: TBD) => {
@@ -70,11 +71,11 @@ class PartitionedDoubleModList[T, V](
         }, (tbd: TBD) => {
           parReduce(tbd, i + 1)
         })
-       
-        
-        tbd.mod((dest: Dest[(T, V)]) => {  
+
+
+        tbd.mod((dest: Dest[(T, V)]) => {
           tbd.read2(parTup._1, parTup._2)((a, b) => {
-            tbd.write(dest, f(tbd, a._1, a._2, b._1, b._2))     
+            tbd.write(dest, f(tbd, a._1, a._2, b._1, b._2))
           })
         })
       } else {
@@ -88,9 +89,9 @@ class PartitionedDoubleModList[T, V](
       partitions.map((partition: DoubleModList[T, V]) => {
         partition.reduce(tbd, initialValueMod, f, parallel, memoized)
       }).reduce((a, b) => {
-        tbd.mod((dest: Dest[(T, V)]) => {  
+        tbd.mod((dest: Dest[(T, V)]) => {
           tbd.read2(a, b)((a, b) => {
-            tbd.write(dest, f(tbd, a._1, a._2, b._1, b._2))     
+            tbd.write(dest, f(tbd, a._1, a._2, b._1, b._2))
           })
         })
       })
@@ -134,7 +135,7 @@ class PartitionedDoubleModList[T, V](
     for (partition <- partitions) {
       var innerNode = partition.head.read()
       while (innerNode != null) {
-        buf += innerNode.valueMod.read()
+        buf += innerNode.value.read()
         innerNode = innerNode.next.read()
       }
     }
