@@ -21,19 +21,12 @@ import org.scalatest._
 import tbd.{Adjustable, Changeable, Mutator, TBD}
 import tbd.mod.{AdjustableList, Dest, Mod}
 
-class ListMapTest extends Adjustable {
+class ListMapTest(
+    f: (TBD, String, Int) => (String, Int),
+    parallel: Boolean) extends Adjustable {
   def run(tbd: TBD): AdjustableList[String, Int] = {
     val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
-    list.map(tbd, (tbd: TBD, key: String, value: Int) => (key, value * 2))
-  }
-}
-
-class ListParMapTest extends Adjustable {
-  def run(tbd: TBD): AdjustableList[String, Int] = {
-    val list = tbd.input.getAdjustableList[String, Int]()
-    list.map(tbd,
-             (tbd: TBD, key: String, value: Int) => (key, value + 1),
-             parallel = true)
+    list.map(tbd, f)
   }
 }
 
@@ -43,6 +36,15 @@ class ListMemoMapTest extends Adjustable {
     list.map(tbd,
              (tbd: TBD, key: String, value: Int) => (key, value + 3),
              memoized = true)
+  }
+}
+
+class ChunkListMapTest(partitions: Int) extends Adjustable {
+  def run(tbd: TBD): AdjustableList[Int, Int] = {
+    val list = tbd.input.getAdjustableList[Int, Int](partitions = partitions,
+                                                     chunkSize = 2,
+                                                     chunkSizer = _ => 1)
+    list.map(tbd, (tbd: TBD, key: Int, value: Int) => (key, value - 2))
   }
 }
 
@@ -69,7 +71,9 @@ class ListTests extends FlatSpec with Matchers {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
-    val output = mutator.run[AdjustableList[String, Int]](new ListMapTest())
+    val f = (tbd: TBD, key: String, value: Int) => (key, value * 2)
+    val output =
+      mutator.run[AdjustableList[String, Int]](new ListMapTest(f, false))
     // (1 * 2), (2 * 2)
     output.toBuffer().sortWith(_ < _) should be (Buffer(2, 4))
 
@@ -107,7 +111,8 @@ class ListTests extends FlatSpec with Matchers {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
-    val output = mutator.run[AdjustableList[String, Int]](new ListParMapTest())
+    val f = (tbd: TBD, key: String, value: Int) => (key, value + 1)
+    val output = mutator.run[AdjustableList[String, Int]](new ListMapTest(f, true))
     // (1 + 1), (2 + 1)
     output.toBuffer().sortWith(_ < _) should be (Buffer(2, 3))
 
@@ -219,6 +224,36 @@ class ListTests extends FlatSpec with Matchers {
       case 0 => addValue(mutator, table)
       case 1 => removeValue(mutator, table)
       case 2 => updateValue(mutator, table)
+    }
+  }
+
+  "ChunkListMapTest" should "return the filtered list" in {
+    for (partitions <- List(1, 2, 8)) {
+      val mutator = new Mutator()
+      val table = Map[Int, Int]()
+
+      for (i <- 0 to 100) {
+        addValue(mutator, table)
+      }
+
+      val test = new ChunkListMapTest(partitions)
+      val output = mutator.run[AdjustableList[String, Int]](test)
+
+      var answer = table.values.map(_ - 2).toBuffer.sortWith(_ < _)
+      output.toBuffer().sortWith(_ < _) should be (answer)
+
+      for (i <- 0 to 5) {
+        for (j <- 0 to 10) {
+          update(mutator, table)
+        }
+
+        mutator.propagate()
+
+        answer = table.values.map(_ - 2).toBuffer.sortWith(_ < _)
+        output.toBuffer().sortWith(_ < _) should be (answer)
+      }
+
+      mutator.shutdown()
     }
   }
 

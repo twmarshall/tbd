@@ -28,17 +28,19 @@ class WCAdjust(partitions: Int, parallel: Boolean) extends Algorithm {
   }
 
   def checkOutput(chunks: Map[Int, String]): Boolean = {
-    val answer = chunks.map(value => WC.wordcount(value._2)).reduce(WC.reduce)
+    val answer = chunks.par.map(value => WC.wordcount(value._2)).reduce(WC.reduce)
     output.read()._2 == answer
   }
 
+  def mapper(tbd: TBD, key: Int, s: String) = (key, WC.wordcount(s))
+
   def reducer(tbd: TBD, k1: Int, v1: Map[String, Int], k2: Int, v2: Map[String, Int]) =
-    (0, WC.reduce(v1, v2))
+    (k1, WC.reduce(v1, v2))
 
   def run(tbd: TBD): Mod[(Int, Map[String, Int])] = {
     val pages = tbd.input.getAdjustableList[Int, String](partitions)
-    val counts = pages.map(tbd, (tbd: TBD, key: Int, s: String) => (key, WC.wordcount(s)))
+    val counts = pages.map(tbd, mapper, parallel = parallel)
     val initialValue = tbd.createMod((0, Map[String, Int]()))
-    counts.reduce(tbd, initialValue, reducer)
+    counts.reduce(tbd, initialValue, reducer, parallel = parallel)
   }
 }

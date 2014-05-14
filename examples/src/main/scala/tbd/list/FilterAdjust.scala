@@ -47,7 +47,7 @@ class FilterAdjust(
 
   def checkOutput(answer: Map[Int, String]): Boolean = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val sortedAnswer = answer.values.filter(value => {
+    val sortedAnswer = answer.par.values.filter(value => {
       FilterAdjust.predicate(value)
     }).toBuffer.sortWith(_ < _)
 

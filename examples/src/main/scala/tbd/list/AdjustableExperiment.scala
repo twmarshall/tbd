@@ -119,7 +119,9 @@ class AdjustableExperiment(aConf: Map[String, _])
     alg.initialRun(mutator)
     val initialElapsed = System.currentTimeMillis() - before
 
-    assert(alg.checkOutput(table))
+    if (Experiment.check) {
+      assert(alg.checkOutput(table))
+    }
 
     results("initial") = initialElapsed
 
@@ -135,7 +137,9 @@ class AdjustableExperiment(aConf: Map[String, _])
         mutator.propagate()
         val elapsed = System.currentTimeMillis() - before2
 
-        assert(alg.checkOutput(table))
+	if (Experiment.check) {
+          assert(alg.checkOutput(table))
+	}
 
         results(percent) = elapsed
       }

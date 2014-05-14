@@ -31,9 +31,15 @@ class Reader(worker: Worker) {
       .asInstanceOf[Mod[T]]
   }
 
-  def getAdjustableList[T, V](partitions: Int = 8): AdjustableList[T, V] = {
-    val adjustableListFuture =
-      worker.datastoreRef ? GetAdjustableListMessage("input", partitions)
+  def getAdjustableList[T, V](
+      partitions: Int = 8,
+      chunkSize: Int = 0,
+      chunkSizer: V => Int = (v: V) => 0): AdjustableList[T, V] = {
+    val anySizer = chunkSizer.asInstanceOf[Any => Int]
+    val message = GetAdjustableListMessage("input", partitions, chunkSize, anySizer)
+
+    val adjustableListFuture = worker.datastoreRef ? message
+
     val adjustableList = Await.result(adjustableListFuture, DURATION)
     worker.adjustableLists += adjustableList.asInstanceOf[AdjustableList[Any, Any]]
     adjustableList.asInstanceOf[AdjustableList[T, V]]

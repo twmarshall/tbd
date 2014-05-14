@@ -39,6 +39,7 @@ Options:
   -i, --inputSizes n,n,...   Total sizes of initial input to load, in KB.
   -m, --mutations s,s,...    Mutations to perform on the input data. Must be
                                one of 'update', 'insert', or 'remove'.
+  -c, --check                Turns output checking on, for debugging.
   -n, --counts n,n,...       Number of chunks to load initially.
   -o, --output chart,line,x  How to format the printed results - each of
                                'chart', 'line', and 'x' must be one of
@@ -54,6 +55,8 @@ Options:
   var repeat = 3
 
   var inputSize = 0
+
+  var check = false
 
   val confs = Map(("algorithms" -> Array("nmap", "mpmap")),
                   ("inputSizes" -> Array("1000")),
@@ -125,33 +128,45 @@ Options:
   }
 
   def main(args: Array[String]) {
-    for (i <- 0 to args.size / 2 - 1) {
-      args(i * 2) match {
+    var i = 0
+    while (i < args.size) {
+      args(i) match {
         case "--algorithms" | "-a" =>
-          confs("algorithms") = args(i * 2 + 1).split(",")
+          confs("algorithms") = args(i + 1).split(",")
+	  i += 1
+	case "--check" | "-c" =>
+	  check = true
         case "--counts" | "-n" =>
-          confs("counts") = args(i * 2 + 1).split(",")
+          confs("counts") = args(i + 1).split(",")
+	  i += 1
         case "--help" | "-h" =>
           println(usage)
           sys.exit()
         case "--inputSizes" | "-i" =>
-          confs("inputSizes") = args(i * 2 + 1).split(",")
+          confs("inputSizes") = args(i + 1).split(",")
+	  i += 1
         case "--mutations" | "-m" =>
-          confs("mutations") = args(i * 2 + 1).split(",")
+          confs("mutations") = args(i + 1).split(",")
+	  i += 1
         case "--partitions" | "-p" =>
-          confs("partitions") = args(i * 2 + 1).split(",")
+          confs("partitions") = args(i + 1).split(",")
+	  i += 1
         case "--percents" | "-%" =>
-          confs("percents") = "initial" +: args(i * 2 + 1).split(",")
+          confs("percents") = "initial" +: args(i + 1).split(",")
+	  i += 1
         case "--repeat" | "-r" =>
-          repeat = args(i * 2 + 1).toInt
+          repeat = args(i + 1).toInt
+	  i += 1
         case "--output" | "-o" =>
-          confs("output") = args(i * 2 + 1).split(",")
-          println(confs("output")(0))
+          confs("output") = args(i + 1).split(",")
+	  i += 1
           assert(confs("output").size == 3)
         case _ =>
           println("Unknown option " + args(i * 2) + "\n" + usage)
           sys.exit()
       }
+
+      i += 1
     }
 
     for (i <- 0 to repeat) {
