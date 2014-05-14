@@ -25,12 +25,6 @@ class PartitionedDoubleModList[T, V](
     aPartitions: ArrayBuffer[DoubleModList[T, V]]) extends AdjustableList[T, V] {
   val partitions = aPartitions
 
-  def iterators(tbd: TBD) = {
-    partitions.flatMap(
-      (part: DoubleModList[T, V]) => part.iterators(tbd)
-    ).toList
-  }
-
   def map[U, Q](
       tbd: TBD,
       f: (TBD, T, V) => (U, Q),
