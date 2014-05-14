@@ -15,37 +15,20 @@
  */
 package tbd.examples.list
 
-import java.io.{BufferedInputStream, File, FileInputStream}
-
 import scala.collection.mutable.ArrayBuffer
 
 class SimpleMap(
-    inputSize: Int,
-    partitions: Int,
+    count: Int,
     parallel: Boolean) extends ControlAlgorithm {
-  val chunkSize = inputSize / partitions
-
   val chunks = ArrayBuffer[String]()
-  def loadFile(chunkSize: Int) {
-    val bb = new Array[Byte](chunkSize)
-    val bis = new BufferedInputStream(new FileInputStream(new File("input.txt")))
-    var bytesRead = bis.read(bb, 0, chunkSize)
-
-    while (bytesRead > 0) {
-      chunks += new String(bb)
-      bytesRead = bis.read(bb, 0, chunkSize)
-    }
-
-    bis.close()
-  }
 
   def run(): Long = {
     def generate(i: Int): Vector[String] = {
-      if (i == partitions) {
+      if (i == count) {
         Vector[String]()
       } else {
         if (chunks.size == 0) {
-          loadFile(chunkSize)
+	  chunks ++= Experiment.loadPages()
         }
 
         val elem = chunks.head

@@ -15,14 +15,13 @@
  */
 package tbd.examples.list
 
-import scala.collection.mutable.Map
+import scala.collection.mutable.{ArrayBuffer, Map}
 
 abstract class Experiment(aConf: Map[String, _]) {
   val conf = aConf
   val algorithm = conf("algorithms")
-  val inputSize = conf("inputSizes").asInstanceOf[String].toInt * 1024
   val count = conf("counts").asInstanceOf[String].toInt
-  val chunkSize = inputSize / count
+  val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
   val mutations = conf("mutations").asInstanceOf[Array[String]]
   val partition = conf("partitions").asInstanceOf[String].toInt
   val percents = conf("percents").asInstanceOf[Array[String]]
@@ -36,20 +35,21 @@ object Experiment {
 Options:
   -a, --algorithms s,s,...   Algorithms to run, where s could be: map,nmap,
                                pmap,mpmap,mmap,filter,etc.
-  -i, --inputSizes n,n,...   Total sizes of initial input to load, in KB.
+  -c, --check                Turns output checking on, for debugging.
+  -h, --help                 Display this message.
   -m, --mutations s,s,...    Mutations to perform on the input data. Must be
                                one of 'update', 'insert', or 'remove'.
-  -c, --check                Turns output checking on, for debugging.
   -n, --counts n,n,...       Number of chunks to load initially.
   -o, --output chart,line,x  How to format the printed results - each of
                                'chart', 'line', and 'x' must be one of
-                               'algorithms', 'inputSizes', 'counts',
+                               'algorithms', 'chunkSizes', 'counts',
                                'partitons', or 'percents', with one required
                                to be 'percents'.
   -p, --partitions n,n,...   Number of partitions for the input data.
-  -%, --percents f,f,...     Percent of chunks to update before running
-                               change propagation, as a decimal.
   -r, --repeat n             Number of times to repeat each experiment.
+  -s, --chunkSizes n,n,...   Size of each chunk in the list, in KB.
+  -%, --percents f,f,...     Percent of chunks to update before running
+                               change propagation, as a decimal.=
   """
 
   var repeat = 3
@@ -59,10 +59,10 @@ Options:
   var check = false
 
   val confs = Map(("algorithms" -> Array("nmap", "mpmap")),
-                  ("inputSizes" -> Array("1000")),
                   ("counts" -> Array("1000")),
+		  ("chunkSizes" -> Array("1")),
                   ("mutations" -> Array("insert", "update", "remove")),
-                  ("partitions" -> Array("10")),
+                  ("partitions" -> Array("8")),
                   ("percents" -> Array("initial", ".01", ".05", ".1")),
                   ("output" -> Array("percents", "algorithms", "counts")))
 
@@ -70,6 +70,20 @@ Options:
 
   def round(value: Double): Double = {
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
+  }
+
+
+  def loadPages(): ArrayBuffer[String] = {
+    val chunks = ArrayBuffer[String]()
+    val elems = scala.xml.XML.loadFile("wiki.xml")
+
+    (elems \\ "elem").map(elem => {
+      (elem \\ "value").map(value => {
+	chunks += value.text
+      })
+    })
+
+    chunks
   }
 
   /**
@@ -142,9 +156,6 @@ Options:
         case "--help" | "-h" =>
           println(usage)
           sys.exit()
-        case "--inputSizes" | "-i" =>
-          confs("inputSizes") = args(i + 1).split(",")
-	  i += 1
         case "--mutations" | "-m" =>
           confs("mutations") = args(i + 1).split(",")
 	  i += 1
@@ -161,6 +172,9 @@ Options:
           confs("output") = args(i + 1).split(",")
 	  i += 1
           assert(confs("output").size == 3)
+	case "--chunkSizes" | "-s" =>
+	  confs("chunkSizes") = args(i + 1).split(",")
+	  i += 1
         case _ =>
           println("Unknown option " + args(i * 2) + "\n" + usage)
           sys.exit()
@@ -177,11 +191,11 @@ Options:
       }
 
       for (algorithm <- confs("algorithms")) {
-        for (inputSize <- confs("inputSizes")) {
+	for (chunkSize <- confs("chunkSizes")) {
           for (count <- confs("counts")) {
             for (partition <- confs("partitions")) {
-              val conf = Map(("algorithms" -> algorithm),
-                             ("inputSizes" -> inputSize),
+	      val conf = Map(("algorithms" -> algorithm),
+			     ("chunkSizes" -> chunkSize),
                              ("counts" -> count),
                              ("mutations" -> confs("mutations")),
                              ("partitions" -> partition),
@@ -194,13 +208,13 @@ Options:
                   new AdjustableExperiment(conf)
 		}
 
-              val results = experiment.run()
-	      println(algorithm + "\t" + conf("counts") + " from " +
-                      conf("inputSizes") + "KB")
-              println(results)
+	      val results = experiment.run()
+	      println(algorithm + "\t" + conf("counts") + " chunks - " +
+		      conf("chunkSizes") + " / chunk")
+	      println(results)
 	      if (i != 0) {
 		Experiment.allResults += (experiment -> results)
-              }
+	      }
             }
           }
         }

@@ -27,7 +27,7 @@ class ChunkList[T, U](
       tbd: TBD,
       f: (TBD, T, U) => (V, Q),
       parallel: Boolean = false,
-      memoized: Boolean = true): AdjustableList[V, Q] = {
+      memoized: Boolean = true): ChunkList[V, Q] = {
     if (parallel) {
       new ChunkList(
         tbd.mod((dest: Dest[ChunkListNode[V, Q]]) => {
@@ -42,7 +42,6 @@ class ChunkList[T, U](
       )
     } else {
       val lift = tbd.makeLift[Mod[ChunkListNode[V, Q]]](!memoized)
-    
       new ChunkList(
         tbd.mod((dest: Dest[ChunkListNode[V, Q]]) => {
           tbd.read(head)(node => {
@@ -61,7 +60,7 @@ class ChunkList[T, U](
       tbd: TBD,
       pred: (T, U) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = true): AdjustableList[T, U] = ???
+      memoized: Boolean = true): ChunkList[T, U] = ???
 
   def reduce(
       tbd: TBD, 
