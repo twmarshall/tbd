@@ -97,10 +97,11 @@ class DoubleModList[T, V](
       dest: Dest[(T, V)],
       lift: Lift[Mod[DoubleModListNode[T, V]]],
       f: (TBD, T, V, T, V) => (T, V)): Changeable[(T, V)] = {
+   
     
     val halfListMod = lift.memo(List(identityMod, head), () => {
         tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
-          halfList(tbd, identityMod, identityMod, head, round, dest, f)
+          halfList(tbd, identityMod, identityMod, head, round, new Hasher(2, 8), lift, dest, f)
       })
     })
 
@@ -118,9 +119,7 @@ class DoubleModList[T, V](
     })
   }
 
-  val hasher = new Hasher(2, 8)
-
-  def binaryHash(id: T, round: Int) = {
+  def binaryHash(id: T, round: Int, hasher: Hasher) = {
     hasher.hash(id.hashCode() ^ round) == 0
   }
 
@@ -130,6 +129,8 @@ class DoubleModList[T, V](
       acc: Mod[(T, V)], 
       head: Mod[DoubleModListNode[T, V]],
       round: Int,
+      hasher: Hasher,
+      lift: Lift[Mod[DoubleModListNode[T, V]]],
       dest: Dest[DoubleModListNode[T, V]],
       f: (TBD, T, V, T, V) => (T, V)): Changeable[DoubleModListNode[T, V]] = {
     tbd.read2(head, acc)((head, acc) => {
@@ -145,9 +146,11 @@ class DoubleModList[T, V](
               tbd.write(dest, newList)
             })
         } else {
-          if(binaryHash(head.key, round)) {
-            val reducedList = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
-              halfList(tbd, identityMod, identityMod, head.next, round, dest, f)
+          if(binaryHash(head.key, round, hasher)) {
+            val reducedList = lift.memo(List(head.next, identityMod), () => {
+              tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
+                halfList(tbd, identityMod, identityMod, head.next, round, hasher, lift, dest, f)
+              })
             })
             val newValue = f(tbd, acc._1, acc._2, head.key, value)
             val newList =  new DoubleModListNode(newValue._1,
@@ -156,7 +159,7 @@ class DoubleModList[T, V](
             tbd.write(dest, newList)
           } else {
             val newAcc = tbd.createMod(f(tbd, acc._1, acc._2, head.key, value))
-            halfList(tbd, identityMod, newAcc, head.next, round, dest, f)   
+            halfList(tbd, identityMod, newAcc, head.next, round, hasher, lift, dest, f)   
           }
         }
       })
