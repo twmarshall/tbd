@@ -22,7 +22,7 @@ import tbd.TBD
  */
 trait Iterator[T, U, N <: Iterator[T, U, N]] {
   /**
-   * The key of the current element. 
+   * The key of the current element.
    */
   def key: T
   /**
@@ -30,7 +30,7 @@ trait Iterator[T, U, N <: Iterator[T, U, N]] {
    */
   def value: Mod[U]
   /**
-   * Returns an interator which referes the next element. 
+   * Returns an interator which referes the next element.
    */
-  def next: Mod[N] 
+  def next: Mod[N]
 }

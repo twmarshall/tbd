@@ -22,8 +22,8 @@ import tbd.TBD
  */
 trait Iterable[T, U, N <: Iterator[T, U, N]] {
   /**
-   * Returns multiple disjoint iterators for the collection, which can be used 
-   * in parallel. It is guaranteed that at least one iterator is returned.  
+   * Returns multiple disjoint iterators for the collection, which can be used
+   * in parallel. It is guaranteed that at least one iterator is returned.
    */
   def iterators(tbd: TBD): List[Mod[N]]
 }

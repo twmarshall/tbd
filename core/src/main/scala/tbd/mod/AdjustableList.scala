@@ -54,12 +54,12 @@ trait AdjustableList[T, U] {
       memoized: Boolean = true): AdjustableList[T, U]
 
   /**
-   * Reduces all elements in the list using f, in an unspecified order, 
+   * Reduces all elements in the list using f, in an unspecified order,
    * starting with initialValue
    */
   def reduce(
-      tbd: TBD, 
-      initialValueMod: Mod[(T, U)], 
+      tbd: TBD,
+      initialValueMod: Mod[(T, U)],
       f: (TBD, T, U, T, U) => (T, U),
       parallel: Boolean = false,
       memoized: Boolean = true) : Mod[(T, U)]
