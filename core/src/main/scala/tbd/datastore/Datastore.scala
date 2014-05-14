@@ -201,12 +201,24 @@ class Datastore extends Actor with ActorLogging {
       sender ! modifier.getModifiable()
     }
 
-    case GetAdjustableListMessage(table: String, partitions: Int) => {
+    case GetAdjustableListMessage(
+        table: String,
+        partitions: Int,
+        chunkSize: Int,
+        chunkSizer: (Any => Int)) => {
       val modifier =
-        if (partitions == 1) {
-          new DMLModifier[Any, Any](this, tables(table))
+        if (chunkSize == 0) {
+          if (partitions == 1) {
+            new DMLModifier[Any, Any](this, tables(table))
+          } else {
+            new PDMLModifier[Any, Any](this, tables(table), partitions)
+          }
         } else {
-          new PDMLModifier[Any, Any](this, tables(table), partitions)
+          new ChunkListModifier[Any, Any](
+            this,
+            tables(table),
+            chunkSize,
+            chunkSizer)
         }
 
       if (modifiers.contains(table)) {

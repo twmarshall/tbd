@@ -47,7 +47,11 @@ case class CleanUpMessage(
     adjustableLists: Set[AdjustableList[Any, Any]])
 
 case class GetModMessage(table: String, key: Any)
-case class GetAdjustableListMessage(table: String, partitions: Int = 8)
+case class GetAdjustableListMessage(
+    table: String,
+    partitions: Int = 8,
+    chunkSize: Int = 0,
+    chunkSizer: Any => Int)
 case class NullMessage()
 
 // Master
