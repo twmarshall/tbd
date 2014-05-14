@@ -214,11 +214,20 @@ class Datastore extends Actor with ActorLogging {
             new PDMLModifier[Any, Any](this, tables(table), partitions)
           }
         } else {
-          new ChunkListModifier[Any, Any](
-            this,
-            tables(table),
-            chunkSize,
-            chunkSizer)
+	  if (partitions == 1) {
+            new ChunkListModifier[Any, Any](
+              this,
+              tables(table),
+              chunkSize,
+              chunkSizer)
+	  } else {
+	    new PCLModifier[Any, Any](
+              this,
+              tables(table),
+	      partitions,
+              chunkSize,
+              chunkSizer)
+	  }
         }
 
       if (modifiers.contains(table)) {

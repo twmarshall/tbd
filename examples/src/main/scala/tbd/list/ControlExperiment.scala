@@ -23,10 +23,10 @@ class ControlExperiment(aConf: Map[String, _])
     val results = Map[String, Double]()
 
     val alg = algorithm match {
-      case "nmap" => new SimpleMap(inputSize, partition, false)
-      case "npmap" => new SimpleMap(inputSize, partition, true)
-      case "nwc" => new SimpleWC(inputSize, partition, false)
-      case "npwc" => new SimpleWC(inputSize, partition, true)
+      case "nmap" => new SimpleMap(count, false)
+      case "npmap" => new SimpleMap(count, true)
+      case "nwc" => new SimpleWC(count, false)
+      case "npwc" => new SimpleWC(count, true)
     }
 
     val time = alg.run()
