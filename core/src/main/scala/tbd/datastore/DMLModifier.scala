@@ -66,7 +66,7 @@ class DMLModifier[T, U](
 
     while (innerNode != null && !found) {
       if (innerNode.key == key) {
-	count = datastore.updateMod(innerNode.valueMod.id, value, respondTo)
+	count = datastore.updateMod(innerNode.value.id, value, respondTo)
 	found = true
       } else {
         innerNode = datastore.getMod(innerNode.next.id)
@@ -104,7 +104,7 @@ class DMLModifier[T, U](
         // a value from the table that doesn't exist, so we don't need to
         // notify workers when a mod is removed.
         datastore.tables("mods") -= innerNode.next.id
-	datastore.tables("mods") -= innerNode.valueMod.id
+	datastore.tables("mods") -= innerNode.value.id
 
 	found = true
       } else {

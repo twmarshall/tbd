@@ -18,13 +18,14 @@ package tbd.mod
 import tbd.{Changeable, TBD}
 import tbd.memo.Lift
 
-class DoubleModListNode[T, V](
+class DoubleModListNode[T, V] (
     aKey: T,
     aValue: Mod[V],
-    aNext: Mod[DoubleModListNode[T, V]]) {
-  val key = aKey
-  val valueMod = aValue
-  val next = aNext
+    aNext: Mod[DoubleModListNode[T, V]])
+    extends Iterator[T, V, DoubleModListNode[T, V]] {
+  def key = aKey
+  def value = aValue
+  def next = aNext
 
   def map[U, Q](
       tbd: TBD,
@@ -33,7 +34,7 @@ class DoubleModListNode[T, V](
       lift: Lift[Mod[DoubleModListNode[U, Q]]]
       ): Changeable[DoubleModListNode[U, Q]] = {
     val newValue = tbd.mod((dest: Dest[(U, Q)]) =>
-      tbd.read(valueMod)(value => tbd.write(dest, f(tbd, key, value))))
+      tbd.read(value)(value => tbd.write(dest, f(tbd, key, value))))
     val newNext = lift.memo(List(next), () => {
       tbd.mod((dest: Dest[DoubleModListNode[U, Q]]) =>
         tbd.read(next)(next => {
@@ -60,7 +61,7 @@ class DoubleModListNode[T, V](
     val modTuple =
       tbd.par((tbd: TBD) => {
 	      tbd.mod((valueDest: Dest[(U, Q)]) => {
-          tbd.read(valueMod)(value => {
+          tbd.read(value)(value => {
             tbd.write(valueDest, f(tbd, key, value))
           })
         })
@@ -75,7 +76,7 @@ class DoubleModListNode[T, V](
           })
         })
       })
-    tbd.read(modTuple._1)(value => 
+    tbd.read(modTuple._1)(value =>
       tbd.write(dest, new DoubleModListNode[U, Q](
                             value._1,
                             tbd.createMod(value._2),
@@ -88,8 +89,8 @@ class DoubleModListNode[T, V](
       pred: (T, V) => Boolean,
       lift: Lift[Mod[DoubleModListNode[T, V]]])
         : Changeable[DoubleModListNode[T, V]] = {
-    tbd.read(valueMod)(value => {
-      if (pred(key, value)) {
+    tbd.read(value)(v => {
+      if (pred(key, v)) {
         val newNext = lift.memo(List(next), () => {
           tbd.mod((nextDest: Dest[DoubleModListNode[T, V]]) => {
             tbd.read(next)(nextValue => {
@@ -101,7 +102,7 @@ class DoubleModListNode[T, V](
               })
             })
           })
-        tbd.write(dest, new DoubleModListNode(key, valueMod, newNext))
+        tbd.write(dest, new DoubleModListNode(key, value, newNext))
       } else {
         tbd.read(next)(nextValue => {
           if (nextValue == null) {
@@ -123,7 +124,7 @@ class DoubleModListNode[T, V](
 	else
 	  ")"
 
-      lst.valueMod + next
+      lst.value + next
     }
 
     "DoubleModListNode(" + toString(this)

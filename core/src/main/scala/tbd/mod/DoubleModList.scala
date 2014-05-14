@@ -21,8 +21,14 @@ import tbd.{Changeable, TBD}
 import tbd.memo.Lift
 
 class DoubleModList[T, V](
-    aHead: Mod[DoubleModListNode[T, V]]) extends AdjustableList[T, V] {
+    aHead: Mod[DoubleModListNode[T, V]])
+    extends AdjustableList[T, V]
+    with Iterable[T, V, DoubleModListNode[T, V]] {
   val head = aHead
+
+  def iterators(tbd: TBD) = {
+    List(head)
+  }
 
   def map[U, Q](
       tbd: TBD,
@@ -43,7 +49,7 @@ class DoubleModList[T, V](
       )
     } else {
       val lift = tbd.makeLift[Mod[DoubleModListNode[U, Q]]](!memoized)
-    
+
       new DoubleModList(
         tbd.mod((dest: Dest[DoubleModListNode[U, Q]]) => {
           tbd.read(head)(node => {
@@ -61,24 +67,24 @@ class DoubleModList[T, V](
   def randomReduce(
       tbd: TBD,
       initialValueMod: Mod[(T, V)],
-      f: (TBD, T, V, T, V) => (T, V), 
+      f: (TBD, T, V, T, V) => (T, V),
       parallel: Boolean = false,
       memoized: Boolean = false): Mod[(T, V)] = {
     val zero = 0
     val halfLift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
-    
+
     tbd.mod((dest: Dest[(T, V)]) => {
       tbd.read(head)(h => {
         if(h == null) {
-          tbd.read(initialValueMod)(initialValue => 
+          tbd.read(initialValueMod)(initialValue =>
             tbd.write(dest, initialValue))
         } else {
-          randomReduceList(tbd, initialValueMod, 
-                             head, zero, dest, 
+          randomReduceList(tbd, initialValueMod,
+                             head, zero, dest,
                              halfLift, f)
         }
       })
-    }) 
+    })
   }
 
   def randomReduceList(
@@ -89,18 +95,20 @@ class DoubleModList[T, V](
       dest: Dest[(T, V)],
       lift: Lift[Mod[DoubleModListNode[T, V]]],
       f: (TBD, T, V, T, V) => (T, V)): Changeable[(T, V)] = {
-   
-    
+
+
     val halfListMod = lift.memo(List(identityMod, head), () => {
         tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
-          halfList(tbd, identityMod, identityMod, head, round, new Hasher(2, 8), lift, dest, f)
+          halfList(tbd, identityMod, identityMod,
+                   head, round, new Hasher(2, 8),
+                   lift, dest, f)
       })
     })
 
     tbd.read(halfListMod)(halfList => {
-      tbd.read(halfList.next)(next => {  
+      tbd.read(halfList.next)(next => {
         if(next == null) {
-          tbd.read(halfList.valueMod)(value => 
+          tbd.read(halfList.value)(value =>
             tbd.write(dest, (halfList.key, value)))
         } else {
             randomReduceList(tbd, identityMod, halfListMod,
@@ -118,7 +126,7 @@ class DoubleModList[T, V](
   def halfList(
       tbd: TBD,
       identityMod: Mod[(T, V)],
-      acc: Mod[(T, V)], 
+      acc: Mod[(T, V)],
       head: Mod[DoubleModListNode[T, V]],
       round: Int,
       hasher: Hasher,
@@ -126,7 +134,7 @@ class DoubleModList[T, V](
       dest: Dest[DoubleModListNode[T, V]],
       f: (TBD, T, V, T, V) => (T, V)): Changeable[DoubleModListNode[T, V]] = {
     tbd.read2(head, acc)((head, acc) => {
-      tbd.read2(head.valueMod, head.next)((value, next) => {
+      tbd.read2(head.value, head.next)((value, next) => {
         if(next == null) {
             val newValue = tbd.createMod(
                              f(tbd, acc._1, acc._2, head.key, value))
@@ -141,7 +149,8 @@ class DoubleModList[T, V](
           if(binaryHash(head.key, round, hasher)) {
             val reducedList = lift.memo(List(head.next, identityMod), () => {
               tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
-                halfList(tbd, identityMod, identityMod, head.next, round, hasher, lift, dest, f)
+                halfList(tbd, identityMod, identityMod,
+                         head.next, round, hasher, lift, dest, f)
               })
             })
             val newValue = f(tbd, acc._1, acc._2, head.key, value)
@@ -151,13 +160,14 @@ class DoubleModList[T, V](
             tbd.write(dest, newList)
           } else {
             val newAcc = tbd.createMod(f(tbd, acc._1, acc._2, head.key, value))
-            halfList(tbd, identityMod, newAcc, head.next, round, hasher, lift, dest, f)   
+            halfList(tbd, identityMod, newAcc,
+                     head.next, round, hasher, lift, dest, f)
           }
         }
       })
     })
   }
-  
+
   def reduce(
       tbd: TBD,
       initialValueMod: Mod[(T, V)],
@@ -191,7 +201,7 @@ class DoubleModList[T, V](
     val buf = ArrayBuffer[V]()
     var node = head.read()
     while (node != null) {
-      buf += node.valueMod.read()
+      buf += node.value.read()
       node = node.next.read()
     }
 
