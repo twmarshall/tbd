@@ -47,7 +47,7 @@ class MapAdjust(
 
   def checkOutput(answer: Map[Int, String]): Boolean = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val sortedAnswer = answer.map(pair => {
+    val sortedAnswer = answer.par.map(pair => {
       MapAdjust.mapper(null, 0, pair._2)._2
     }).toBuffer.sortWith(_ < _)
 

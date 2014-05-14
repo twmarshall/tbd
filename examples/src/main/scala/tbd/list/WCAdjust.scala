@@ -28,7 +28,7 @@ class WCAdjust(partitions: Int, parallel: Boolean) extends Algorithm {
   }
 
   def checkOutput(chunks: Map[Int, String]): Boolean = {
-    val answer = chunks.map(value => WC.wordcount(value._2)).reduce(WC.reduce)
+    val answer = chunks.par.map(value => WC.wordcount(value._2)).reduce(WC.reduce)
     output.read()._2 == answer
   }
 
