@@ -76,7 +76,6 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
 
           readNode.updated = false
           readNode.reader(newValue)
-          tbd.updatedMods -= readNode.mod.id
 
           for (node <- toCleanup) {
             if (node.parent == null) {
@@ -105,6 +104,7 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
       }
     }
 
+    tbd.updatedMods.clear()
     return true
   }
 

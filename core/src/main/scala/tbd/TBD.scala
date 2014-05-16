@@ -108,6 +108,7 @@ class TBD(
 
     if (worker.ddg.reads.contains(dest.mod.id)) {
       worker.ddg.modUpdated(dest.mod.id)
+      updatedMods += dest.mod.id
     }
 
     val changeable = new Changeable(dest.mod)
