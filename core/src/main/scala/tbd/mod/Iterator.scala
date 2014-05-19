@@ -13,33 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tbd.mod
 
-class Hasher(
-  k: Int,
-  m: Int) {
+import tbd.TBD
 
-  val bigM = BigInt(m) 
-  var coefs:List[BigInt] = null
-
-  def hash(x: Int) = {
-    val p = BigInt(1073741789)
-
-
-    if(coefs == null) {
-      coefs = List()
-      val rand = new scala.util.Random()
-      for(i <- 0 to k - 1) {
-        coefs = BigInt(rand.nextInt()) :: coefs
-      }
-    }
-
-    val bigX = BigInt(x)
-
-    val (s,_) = coefs.foldLeft((BigInt(0), BigInt(k))) {
-      (t, c) => (t._1 + c * bigX.modPow(t._2, p), t._2 - 1)
-    }
-    s.mod(bigM).toInt
-  }
+/**
+ * A simple iterator trait.
+ */
+trait Iterator[T, U, N <: Iterator[T, U, N]] {
+  /**
+   * The key of the current element.
+   */
+  def key: T
+  /**
+   * The value of the current element.
+   */
+  def value: Mod[U]
+  /**
+   * Returns an interator which referes the next element.
+   */
+  def next: Mod[N]
 }
