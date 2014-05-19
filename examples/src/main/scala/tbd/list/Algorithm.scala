@@ -21,6 +21,8 @@ import tbd.{Adjustable, Mutator}
 
 abstract class Algorithm extends Adjustable {
   def initialRun(mutator: Mutator)
+  
+  def traditionalRun(input: Map[Int, String])
 
   def checkOutput(answer: Map[Int, String]): Boolean
 }

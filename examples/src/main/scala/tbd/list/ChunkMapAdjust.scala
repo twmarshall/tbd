@@ -45,6 +45,10 @@ class ChunkMapAdjust(
   def initialRun(mutator: Mutator) {
     output = mutator.run[AdjustableList[Int, Int]](this)
   }
+  
+  def traditionalRun(input: Map[Int, String]) {
+     Map[Int, String]()
+  }
 
   def checkOutput(answer: Map[Int, String]): Boolean = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)

@@ -40,6 +40,10 @@ class FilterAdjust(
     val pages = tbd.input.getAdjustableList[String, Int](partitions)
     pages.filter(tbd, (s: String, key: Int) => FilterAdjust.predicate(s), parallel, memoized)
   }
+  
+  def traditionalRun(input: Map[Int, String]) {
+     Map[Int, String]()
+  }
 
   def initialRun(mutator: Mutator) {
     output = mutator.run[AdjustableList[String, Int]](this)

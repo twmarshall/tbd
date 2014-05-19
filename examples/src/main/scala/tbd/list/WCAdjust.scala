@@ -22,14 +22,22 @@ import tbd.mod.{AdjustableList, Mod}
 
 class WCAdjust(partitions: Int, parallel: Boolean) extends Algorithm {
   var output: Mod[(Int, Map[String, Int])] = null
+  
+  var traditionalAnswer: Map[String, Int] = null;
 
   def initialRun(mutator: Mutator) {
     output = mutator.run[Mod[(Int, Map[String, Int])]](this)
   }
 
   def checkOutput(chunks: Map[Int, String]): Boolean = {
-    val answer = chunks.par.map(value => WC.wordcount(value._2)).reduce(WC.reduce)
-    output.read()._2 == answer
+    if(traditionalAnswer == null) {
+      traditionalRun(chunks)
+    }
+    output.read()._2 == traditionalAnswer
+  }
+  
+  def traditionalRun(input: Map[Int, String]) {
+    traditionalAnswer = input.par.map(value => WC.wordcount(value._2)).reduce(WC.reduce)
   }
 
   def mapper(tbd: TBD, key: Int, s: String) = (key, WC.wordcount(s))

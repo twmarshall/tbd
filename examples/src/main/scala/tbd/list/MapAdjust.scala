@@ -41,6 +41,10 @@ class MapAdjust(
     pages.map(tbd, MapAdjust.mapper, parallel = parallel, memoized = memoized)
   }
 
+  def traditionalRun(input: Map[Int, String]) {
+     Map[Int, String]()
+  }
+
   def initialRun(mutator: Mutator) {
     output = mutator.run[AdjustableList[Int, Int]](this)
   }

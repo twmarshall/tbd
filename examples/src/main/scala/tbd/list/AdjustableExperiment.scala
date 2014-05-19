@@ -108,18 +108,27 @@ class AdjustableExperiment(aConf: Map[String, _])
       case "pwc" => new WCAdjust(partition, true)
     }
 
-    val before = System.currentTimeMillis()
+    val beforeInitial = System.currentTimeMillis()
     alg.initialRun(mutator)
-    val initialElapsed = System.currentTimeMillis() - before
+    val initialElapsed = System.currentTimeMillis() - beforeInitial
 
     if (Experiment.check) {
       assert(alg.checkOutput(table))
     }
 
     results("initial") = initialElapsed
+    
+    val beforeTraditional = System.currentTimeMillis()
+    
+    alg.traditionalRun(table);
+    
+    val traditionalElapsed = System.currentTimeMillis() - beforeTraditional
+    
+    
+    results("traditional") = traditionalElapsed
 
     for (percent <- percents) {
-      if (percent != "initial") {
+      if (percent != "initial" && percent != "traditional") {
         var i =  0
         while (i < percent.toDouble * count) {
 	  i += 1

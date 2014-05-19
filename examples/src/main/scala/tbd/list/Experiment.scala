@@ -63,7 +63,7 @@ Options:
 		  ("chunkSizes" -> Array("1")),
                   ("mutations" -> Array("insert", "update", "remove")),
                   ("partitions" -> Array("8")),
-                  ("percents" -> Array("initial", ".01", ".05", ".1")),
+                  ("percents" -> Array("traditional", "initial", ".01", ".05", ".1")),
                   ("output" -> Array("percents", "algorithms", "counts")))
 
   val allResults = Map[Experiment, Map[String, Double]]()
