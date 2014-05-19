@@ -24,5 +24,4 @@ To turn on debug log output, edit core/src/main/resources/common.conf, changing
 loglevel to "DEBUG".
 
 To turn on more useful DDG output, edit core/src/main/scala/tbd/master/Main.scala,
-changing 'val debug' to 'true'. Note: this will cause tests using MockDDG to
-fail. Just ignore that.
+changing 'val debug' to 'true'.
