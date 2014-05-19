@@ -30,9 +30,7 @@ class WCAdjust(partitions: Int, parallel: Boolean) extends Algorithm {
   }
 
   def checkOutput(chunks: Map[Int, String]): Boolean = {
-    if(traditionalAnswer == null) {
-      traditionalRun(chunks)
-    }
+    traditionalRun(chunks)
     output.read()._2 == traditionalAnswer
   }
   
