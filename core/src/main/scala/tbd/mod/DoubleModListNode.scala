@@ -82,6 +82,52 @@ class DoubleModListNode[T, V] (
                             tbd.createMod(value._2),
                             modTuple._2)))
   }
+  
+
+  def halfListReduce(
+      tbd: TBD,
+      round: Int,
+      hasher: Hasher,
+      lift: Lift[Mod[DoubleModListNode[T, V]]],
+      dest: Dest[DoubleModListNode[T, V]],
+      f: (TBD, T, V, T, V) => (T, V)): Changeable[DoubleModListNode[T, V]] = {
+    tbd.read(this.next)((next) => {
+      if(next == null) {
+            tbd.write(dest, this)
+      } else {
+        
+        val reducedList = lift.memo(List(next.next, next.value), () => {
+          tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
+            next.halfListReduce(tbd, round, hasher, lift, dest, f)
+          })
+        })
+        
+        if(binaryHash(key, round, hasher)) {
+          // Do not merge the current node with the reduced list. 
+          val newList =  new DoubleModListNode(key, value, reducedList)
+          tbd.write(dest, newList)
+        } else {
+          // Merge the current node with the reduced list. 
+          tbd.read(reducedList)(reducedList => {
+            tbd.read2(value, reducedList.value)((myValue, nextValue) => {
+                
+              val reductionResult = f(tbd, reducedList.key, nextValue, key, myValue)
+              val newValue = tbd.createMod(reductionResult._2)
+              val newKey = reductionResult._1
+              
+              val newList = new DoubleModListNode(newKey, newValue, 
+                                                  reducedList.next)
+              tbd.write(dest, newList)
+            })
+          })
+        }
+      }
+    })
+  }
+  
+  def binaryHash(id: T, round: Int, hasher: Hasher) = {
+    hasher.hash(id.hashCode() ^ round) == 0
+  }
 
   def filter(
       tbd: TBD,
