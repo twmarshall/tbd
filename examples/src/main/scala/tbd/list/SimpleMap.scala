@@ -45,7 +45,7 @@ class SimpleMap(
       }
 
     val before = System.currentTimeMillis()
-    vector.map(MapAdjust.mapper(null, 0, (_: String)))
+    vector.map((s: String) => MapAdjust.mapper(null, (0, s)))
 
     System.currentTimeMillis() - before
   }

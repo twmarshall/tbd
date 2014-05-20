@@ -73,7 +73,7 @@ class ReadNode(
   var endTime: Timestamp = null
 
   override def toString(prefix: String) = {
-    prefix + "ReadNode modId=(" + mod.id + ") " + " time=" + timestamp +
+    prefix + this + " modId=(" + mod.id + ") " + " time=" + timestamp +
       " value=" + mod + " updated=(" + updated + ")" + super.toString(prefix)
   }
 }

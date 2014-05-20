@@ -16,9 +16,10 @@
 package tbd.master
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.pattern.ask
-import scala.collection.mutable.Map
+import akka.pattern.{ask, pipe}
+import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.{Await, Promise}
+import scala.util.Try
 
 import tbd.{Adjustable, TBD}
 import tbd.Constants._
@@ -32,6 +33,7 @@ object Master {
 }
 
 class Master extends Actor with ActorLogging {
+  import context.dispatcher
   log.info("Master launced.")
   private val datastoreRef = context.actorOf(Datastore.props(), "datastore")
   datastoreRef ! CreateTableMessage("input")
@@ -46,7 +48,6 @@ class Master extends Actor with ActorLogging {
   var result = Promise[Any]
   var resultWaiter: ActorRef = null
   var updateResult = Promise[String]
-  var awaiting = 0
 
   def receive = {
     case RunMessage(adjust: Adjustable, mutatorId: Int) => {
@@ -67,14 +68,14 @@ class Master extends Actor with ActorLogging {
       //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
       //                                  DURATION).asInstanceOf[String])
 
-      result = Promise[Any]
-      sender ! result.future
-
-      workerRef ! PropagateMessage
+      val future = workerRef ? PropagateMessage
+      val respondTo = sender
+      future.onComplete((_try: Try[Any]) =>
+        respondTo ! "done")
     }
 
     case FinishedPropagatingMessage => {
-      log.debug("Master received FinishedPropagatingMessage.")
+      log.info("Master received FinishedPropagatingMessage.")
 
       //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
       //                                  DURATION).asInstanceOf[String])
@@ -84,62 +85,30 @@ class Master extends Actor with ActorLogging {
 
     case PutInputMessage(table: String, key: Any, value: Any) => {
       log.debug("PutInputMessage")
-      val future = datastoreRef ? PutMessage(table, key, value, self)
-
-      updateResult = Promise[String]
-      sender ! updateResult.future
-
-      assert(awaiting == 0)
-      awaiting = Await.result(future, DURATION).asInstanceOf[Int]
-
-      if (awaiting == 0) {
-        updateResult.success("okay")
-      }
+      val future = datastoreRef ? PutMessage(table, key, value)
+      val respondTo = sender
+      future.onComplete((_try: Try[Any]) =>
+        respondTo ! "done")
     }
 
     case UpdateInputMessage(table: String, key: Any, value: Any) => {
       log.debug("UpdateInputMessage")
-      val future = datastoreRef ? UpdateMessage(table, key, value, self)
-
-      updateResult = Promise[String]
-      sender ! updateResult.future
-
-      assert(awaiting == 0)
-      awaiting = Await.result(future, DURATION).asInstanceOf[Int]
-
-      if (awaiting == 0) {
-        updateResult.success("okay")
-      }
+      val future = datastoreRef ? UpdateMessage(table, key, value)
+      val respondTo = sender
+      future.onComplete((_try: Try[Any]) =>
+        respondTo ! "done")
     }
 
     case RemoveInputMessage(table: String, key: Any) => {
       log.debug("RemoveInputMessage")
-      val future = datastoreRef ? RemoveMessage(table, key, self)
-
-      updateResult = Promise[String]
-      sender ! updateResult.future
-
-      assert(awaiting == 0)
-      awaiting = Await.result(future, DURATION).asInstanceOf[Int]
-
-      if (awaiting == 0) {
-        updateResult.success("okay")
-      }
+      val future = datastoreRef ? RemoveMessage(table, key)
+      val respondTo = sender
+      future.onComplete((_try: Try[Any]) =>
+        respondTo ! "done")
     }
 
-    case PebbleMessage(workerRef: ActorRef, modId: ModId, respondTo: ActorRef) => {
-      log.debug("Master received PebbleMessage. Sending " +
-                "PebblingFinishedMessage(" + modId + ").")
-      respondTo ! PebblingFinishedMessage(modId)
-    }
-
-    case PebblingFinishedMessage(modId: ModId) => {
-      log.debug("Master received PebblingFinishedMessage.")
-      assert(awaiting > 0)
-      awaiting -= 1
-      if (awaiting == 0) {
-        updateResult.success("okay")
-      }
+    case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {
+      finished.success("done")
     }
 
     case RegisterMutatorMessage => {

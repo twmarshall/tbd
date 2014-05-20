@@ -16,7 +16,8 @@
 package tbd.datastore
 
 import akka.actor.ActorRef
-import scala.collection.mutable.Map
+import scala.collection.mutable.{ArrayBuffer, Map}
+import scala.concurrent.Future
 
 import tbd.mod.{ChunkList, ChunkListNode, Mod}
 
@@ -63,17 +64,17 @@ class ChunkListModifier[T, U](
     new ChunkList[T, U](tail)
   }
 
-  def insert(key: T, value: U, respondTo: ActorRef): Int = {
+  def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
     val lastNode =
       datastore.getMod(lastNodeMod.id).asInstanceOf[ChunkListNode[T, U]]
 
-    var count = 0
+    var futures = ArrayBuffer[Future[String]]()
     if (lastNode == null) {
       val chunkMod = datastore.createMod(Vector[(T, U)]((key -> value)))
       val size = chunkSizer(value)
 
       val newNode = new ChunkListNode(chunkMod, tailMod, size)
-      count += datastore.updateMod(lastNodeMod.id, newNode, respondTo)
+      futures = datastore.updateMod(lastNodeMod.id, newNode)
     } else if (lastNode.size >= chunkSize) {
       val lastChunk = datastore.getMod(lastNode.chunkMod.id).asInstanceOf[Vector[(T, U)]]
 
@@ -81,7 +82,7 @@ class ChunkListModifier[T, U](
       val chunkMod = datastore.createMod(Vector[(T, U)]((key -> value)))
       val newNode = new ChunkListNode(chunkMod, newTailMod, chunkSizer(value))
 
-      count += datastore.updateMod(tailMod.id, newNode, respondTo)
+      futures = datastore.updateMod(tailMod.id, newNode)
 
       lastNodeMod = tailMod
       tailMod = newTailMod
@@ -92,16 +93,16 @@ class ChunkListModifier[T, U](
       val size = lastNode.size + chunkSizer(value)
 
       val newNode = new ChunkListNode(chunkMod, tailMod, size)
-      count += datastore.updateMod(lastNodeMod.id, newNode, respondTo)
+      futures = datastore.updateMod(lastNodeMod.id, newNode)
     }
 
-    count
+    futures
   }
 
-  def update(key: T, value: U, respondTo: ActorRef): Int = {
+  def update(key: T, value: U): ArrayBuffer[Future[String]] = {
     var node = datastore.getMod(list.head.id).asInstanceOf[ChunkListNode[T, U]]
 
-    var count = 0
+    var futures = ArrayBuffer[Future[String]]()
     var found = false
     while (!found && node != null) {
       val chunk = datastore.getMod(node.chunkMod.id).asInstanceOf[Vector[(T, U)]]
@@ -116,22 +117,22 @@ class ChunkListModifier[T, U](
       }}
 
       if (found) {
-        count += datastore.updateMod(node.chunkMod.id, newChunk, respondTo)
+        futures = datastore.updateMod(node.chunkMod.id, newChunk)
       } else {
         node = datastore.getMod(node.nextMod.id).asInstanceOf[ChunkListNode[T, U]]
       }
     }
 
-    count
+    futures
   }
 
-  def remove(key: T, respondTo: ActorRef): Int = {
+  def remove(key: T): ArrayBuffer[Future[String]] = {
     var previousNode: ChunkListNode[T, U] = null
     var previousMod: Mod[ChunkListNode[T, U]] = null
     var mod = list.head
     var node = datastore.getMod(list.head.id).asInstanceOf[ChunkListNode[T, U]]
 
-    var count = 0
+    var futures = ArrayBuffer[Future[String]]()
     var found = false
     while (!found && node != null) {
       val chunk = datastore.getMod(node.chunkMod.id).asInstanceOf[Vector[(T, U)]]
@@ -156,14 +157,13 @@ class ChunkListModifier[T, U](
             .asInstanceOf[ChunkListNode[T, U]]
 
           if (previousNode == null) {
-            count += datastore.updateMod(list.head.id, nextNode, respondTo)
+            futures = datastore.updateMod(list.head.id, nextNode)
           } else {
-            count += datastore.updateMod(previousNode.nextMod.id,
-                                         nextNode,
-                                         respondTo)
+            futures = datastore.updateMod(previousNode.nextMod.id,
+                                         nextNode)
           }
         } else {
-          count += datastore.updateMod(node.chunkMod.id, newChunk, respondTo)
+          futures = datastore.updateMod(node.chunkMod.id, newChunk)
         }
       } else {
         previousNode = node
@@ -174,7 +174,7 @@ class ChunkListModifier[T, U](
       }
     }
 
-    count
+    futures
   }
 
   def contains(key: T): Boolean = {

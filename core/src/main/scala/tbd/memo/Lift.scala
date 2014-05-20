@@ -29,21 +29,25 @@ class Lift[T](tbd: TBD, memoId: Int) {
     var found = false
     var toRemove: MemoEntry = null
     var ret = null.asInstanceOf[T]
-    if (!tbd.initialRun && !tbd.updated(args)) {
-      if (tbd.worker.memoTable.contains(signature)) {
+    //println("looking for " + signature)
+    if (!tbd.initialRun) {
+      if (!tbd.updated(args)) {
+	if (tbd.worker.memoTable.contains(signature)) {
 
-        // Search through the memo entries matching this signature to see if
-        // there's one in the right time range.
-        for (memoEntry <- tbd.worker.memoTable(signature)) {
-          val timestamp = memoEntry.node.timestamp
-          if (!found && timestamp > tbd.reexecutionStart &&
-		timestamp < tbd.reexecutionEnd && memoEntry.node.matchable) {
-            found = true
-            tbd.worker.ddg.attachSubtree(tbd.currentParent, memoEntry.node)
-            toRemove = memoEntry
-            ret = memoEntry.value.asInstanceOf[T]
+          // Search through the memo entries matching this signature to see if
+          // there's one in the right time range.
+          for (memoEntry <- tbd.worker.memoTable(signature)) {
+            val timestamp = memoEntry.node.timestamp
+            if (!found && timestamp > tbd.reexecutionStart &&
+		  timestamp < tbd.reexecutionEnd && memoEntry.node.matchable) {
+	      //println("found a match on " + signature)
+              found = true
+              tbd.worker.ddg.attachSubtree(tbd.currentParent, memoEntry.node)
+              toRemove = memoEntry
+              ret = memoEntry.value.asInstanceOf[T]
+            }
           }
-        }
+	}
       }
     }
 

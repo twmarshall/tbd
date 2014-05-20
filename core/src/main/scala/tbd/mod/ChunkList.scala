@@ -25,7 +25,7 @@ class ChunkList[T, U](
 
   def map[V, Q](
       tbd: TBD,
-      f: (TBD, T, U) => (V, Q),
+      f: (TBD, (T, U)) => (V, Q),
       parallel: Boolean = false,
       memoized: Boolean = true): ChunkList[V, Q] = {
     if (parallel) {
@@ -58,14 +58,14 @@ class ChunkList[T, U](
 
   def filter(
       tbd: TBD,
-      pred: (T, U) => Boolean,
+      pred: ((T, U)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = true): ChunkList[T, U] = ???
 
   def reduce(
       tbd: TBD, 
       initialValueMod: Mod[(T, U)], 
-      f: (TBD, T, U, T, U) => (T, U),
+      f: (TBD, (T, U), (T, U)) => (T, U),
       parallel: Boolean = false,
       memoized: Boolean = true) : Mod[(T, U)] = ???
 

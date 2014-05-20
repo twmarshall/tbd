@@ -51,15 +51,42 @@ class PropagationOrderTest2 extends Adjustable {
 
   def run(tbd: TBD): AdjustableList[Int, Int] = {
     val adjustableList = tbd.input.getAdjustableList[Int, Int](partitions = 1)
-    adjustableList.map(tbd, (tbd: TBD, key: Int, value: Int) => {
+    adjustableList.map(tbd, (tbd: TBD, pair: (Int, Int)) => {
       if (tbd.initialRun) {
-        values += value
+        values += pair._2
       } else {
-        assert(value == values.head + 1)
+        assert(pair._2 == values.head + 1)
         values -= values.head
       }
-      (key, value)
+      pair
     })
+  }
+}
+
+class ReduceTest extends Adjustable {
+  def run(tbd: TBD): Mod[(Int, Int)] = {
+    val list = tbd.input.getAdjustableList[Int, Int](partitions = 1)
+    val zero = tbd.createMod((0, 0))
+    list.reduce(tbd, zero, (tbd: TBD, pair1: (Int, Int), pair2: (Int, Int)) => {
+      //println("reducing " + pair1._2 + " " + pair2._2)
+      (pair1._1, pair1._2 + pair2._2)
+    })
+  }
+}
+
+class ParTest extends Adjustable {
+  def run(tbd: TBD): Mod[Int] = {
+    val one = tbd.input.getMod[Int](1)
+
+    val pair = tbd.par((tbd: TBD) =>
+      tbd.mod((dest: Dest[Int]) =>
+        tbd.read(one)(oneValue =>
+          tbd.write(dest, oneValue + 1))),
+      (tbd: TBD) => 0)
+
+    tbd.mod((dest: Dest[Int]) =>
+      tbd.read(pair._1)(value =>
+        tbd.write(dest, value * 2)))
   }
 }
 
@@ -92,5 +119,37 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     mutator.propagate()
 
     mutator.shutdown()
+  }
+
+  "ReduceTest" should "reexecute only the necessary reduce steps" in {
+    val mutator = new Mutator()
+    for (i <- 1 to 16) {
+      mutator.put(i, i)
+    }
+    val test = new ReduceTest()
+    val output = mutator.run[Mod[(Int, Int)]](test)
+
+    output.read()._2 should be (136)
+    //println(mutator.getDDG())
+
+    mutator.remove(16)
+    mutator.remove(7)
+    //println(mutator.getDDG())
+    mutator.propagate()
+    //println(mutator.getDDG())
+
+    output.read()._2 should be (113)
+  }
+
+  "ParTest" should "do something" in {
+    val mutator = new Mutator()
+    mutator.put(1, 1)
+    val output = mutator.run[Mod[Int]](new ParTest())
+    output.read() should be (4)
+
+    mutator.update(1, 2)
+    mutator.propagate()
+
+    output.read() should be (6)
   }
 }

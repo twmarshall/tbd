@@ -32,10 +32,10 @@ class WCAdjust(partitions: Int, parallel: Boolean) extends Algorithm {
     output.read()._2 == answer
   }
 
-  def mapper(tbd: TBD, key: Int, s: String) = (key, WC.wordcount(s))
+  def mapper(tbd: TBD, pair: (Int, String)) = (pair._1, WC.wordcount(pair._2))
 
-  def reducer(tbd: TBD, k1: Int, v1: Map[String, Int], k2: Int, v2: Map[String, Int]) =
-    (k1, WC.reduce(v1, v2))
+  def reducer(tbd: TBD, pair1: (Int, Map[String, Int]), pair2: (Int, Map[String, Int])) =
+    (pair1._1, WC.reduce(pair1._2, pair2._2))
 
   def run(tbd: TBD): Mod[(Int, Map[String, Int])] = {
     val pages = tbd.input.getAdjustableList[Int, String](partitions)

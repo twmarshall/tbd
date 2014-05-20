@@ -21,12 +21,12 @@ import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.AdjustableList
 
 object FilterAdjust {
-  def predicate(s: String): Boolean = {
+  def predicate(pair: (Int, String)): Boolean = {
     var count = 0
-    for (word <- s.split("\\W+")) {
+    for (word <- pair._2.split("\\W+")) {
       count += 1
     }
-    s.hashCode() % 2 == 0
+    pair._2.hashCode() % 2 == 0
   }
 }
 
@@ -34,21 +34,21 @@ class FilterAdjust(
     partitions: Int,
     parallel: Boolean,
     memoized: Boolean) extends Algorithm {
-  var output: AdjustableList[String, Int] = null
+  var output: AdjustableList[Int, String] = null
 
-  def run(tbd: TBD): AdjustableList[String, Int] = {
-    val pages = tbd.input.getAdjustableList[String, Int](partitions)
-    pages.filter(tbd, (s: String, key: Int) => FilterAdjust.predicate(s), parallel, memoized)
+  def run(tbd: TBD): AdjustableList[Int, String] = {
+    val pages = tbd.input.getAdjustableList[Int, String](partitions)
+    pages.filter(tbd, FilterAdjust.predicate, parallel, memoized)
   }
 
   def initialRun(mutator: Mutator) {
-    output = mutator.run[AdjustableList[String, Int]](this)
+    output = mutator.run[AdjustableList[Int, String]](this)
   }
 
   def checkOutput(answer: Map[Int, String]): Boolean = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
     val sortedAnswer = answer.par.values.filter(value => {
-      FilterAdjust.predicate(value)
+      FilterAdjust.predicate((0, value))
     }).toBuffer.sortWith(_ < _)
 
     sortedOutput == sortedAnswer
