@@ -19,6 +19,7 @@ import org.scalatest._
 
 import tbd.{Adjustable, Changeable, Mutator, TBD}
 import tbd.ddg.{MemoNode, ReadNode, RootNode}
+import tbd.master.Main
 import tbd.mod.{Dest, Mod}
 
 class MemoTest extends Adjustable {
@@ -224,7 +225,10 @@ class MemoTests extends FlatSpec with Matchers {
     ))
 
     val ddg = mutator.getDDG()
-    assert(root.isEqual(ddg.root))
+
+    if (!Main.debug) {
+      assert(root.isEqual(ddg.root))
+    }
 
     // Change the mod not read by the memoized function,
     // check that it isn't called.
@@ -244,7 +248,9 @@ class MemoTests extends FlatSpec with Matchers {
     ))
 
     val ddg2 = mutator.getDDG()
-    assert(root2.isEqual(ddg2.root))
+    if (!Main.debug) {
+      assert(root2.isEqual(ddg2.root))
+    }
 
     // Change the other mod, the memoized function should
     // be called.
@@ -255,7 +261,9 @@ class MemoTests extends FlatSpec with Matchers {
     test.count should be (2)
 
     val ddg3 = mutator.getDDG()
-    assert(root.isEqual(ddg3.root))
+    if (!Main.debug) {
+      assert(root.isEqual(ddg3.root))
+    }
 
     mutator.shutdown()
   }

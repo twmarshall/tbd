@@ -21,12 +21,12 @@ import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.AdjustableList
 
 object ChunkMapAdjust {
-  def mapper(tbd: TBD, key: Int, s: String): (Int, Int) = {
+  def mapper(tbd: TBD, pair: (Int, String)): (Int, Int) = {
     var count = 0
-    for (word <- s.split("\\W+")) {
+    for (word <- pair._2.split("\\W+")) {
       count += 1
     }
-    (key, count)
+    (pair._1, count)
   }
 }
 
@@ -49,7 +49,7 @@ class ChunkMapAdjust(
   def checkOutput(answer: Map[Int, String]): Boolean = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
     val sortedAnswer = answer.par.map(pair => {
-      MapAdjust.mapper(null, 0, pair._2)._2
+      MapAdjust.mapper(null, (0, pair._2))._2
     }).toBuffer.sortWith(_ < _)
 
     return sortedOutput == sortedAnswer

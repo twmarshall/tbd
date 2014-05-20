@@ -19,7 +19,7 @@ import akka.pattern.ask
 import akka.actor.ActorRef
 import akka.event.Logging
 import scala.collection.mutable.{ArrayBuffer, Map, Set}
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future, Promise}
 
 import tbd.Constants._
 import tbd.ddg.{Node, Timestamp}
@@ -36,6 +36,7 @@ object TBD {
 class TBD(
     id: String,
     aWorker: Worker) {
+  import worker.context.dispatcher
   val worker = aWorker
   var initialRun = true
 
@@ -45,15 +46,7 @@ class TBD(
 
   val log = Logging(worker.context.system, "TBD" + id)
 
-  // Represents the number of PebblingFinishedMessages this worker is waiting
-  // on before it can finish.
-  var awaiting = 0
-
-  // Maps ModIds to the mod's value for LocalMods created in this TBD.
-  val mods = scala.collection.mutable.Map[ModId, Any]()
-
-  // Maps modIds to the workers that have read the corresponding mod.
-  val dependencies = Map[ModId, Set[ActorRef]]()
+  val awaiting = ArrayBuffer[Future[String]]()
 
   // Contains a list of mods that have been updated since the last run of change
   // propagation, to determine when memo matches can be made.
@@ -88,12 +81,7 @@ class TBD(
     val outerReader = currentParent
     currentParent = readNode
 
-    val value =
-      if (mods.contains(mod.id)) {
-        mods(mod.id).asInstanceOf[T]
-      } else {
-        mod.read(worker.self)
-      }
+    val value = mod.read(worker.self)
 
     val changeable = reader(value)
     currentParent = outerReader
@@ -104,7 +92,9 @@ class TBD(
   }
 
   def write[T](dest: Dest[T], value: T): Changeable[T] = {
-    awaiting += dest.mod.update(value, worker.self, this)
+    awaiting ++= dest.mod.update(value)
+
+    Await.result(Future.sequence(awaiting), DURATION)
 
     if (worker.ddg.reads.contains(dest.mod.id)) {
       worker.ddg.modUpdated(dest.mod.id)
@@ -128,7 +118,6 @@ class TBD(
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
     val modId = new ModId(worker.id + "." + worker.nextModId)
     val d = new Dest[T](worker, modId)
-    dependencies(d.mod.id) = Set()
     initializer(d).mod
     d.mod
   }
@@ -177,11 +166,4 @@ class TBD(
       new Lift[T](this, liftId)
     }
   }
-
-  def map[T, U](arr: Array[Mod[T]], func: T => U): Array[Mod[U]] = {
-    arr.map((elem) =>
-      mod((dest: Dest[U]) => read(elem)((value) => write(dest, func(value)))))
-  }
-
-
 }

@@ -22,7 +22,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 object Main {
-  val debug = false
+  val debug = true
 
   var id = 0
 

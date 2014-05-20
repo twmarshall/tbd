@@ -15,23 +15,24 @@
  */
 package tbd.datastore
 
-import akka.actor.ActorRef
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.Future
 
 class ModModifier[T, U](_datastore: Datastore, _key: T, value: U)
     extends Modifier[T, U](_datastore) {
   val mod = datastore.createMod(value)
 
-  def insert(key: T, value: U, respondTo: ActorRef): Int = ???
+  def insert(key: T, value: U): ArrayBuffer[Future[String]] = ???
 
-  def update(key: T, value: U, respondTo: ActorRef): Int = {
+  def update(key: T, value: U): ArrayBuffer[Future[String]] = {
     if (key == _key) {
-      datastore.updateMod(mod.id, value, respondTo)
+      datastore.updateMod(mod.id, value)
     } else {
-      0
+      ArrayBuffer[Future[String]]()
     }
   }
 
-  def remove(key: T, respondTo: ActorRef): Int = ???
+  def remove(key: T): ArrayBuffer[Future[String]] = ???
 
   def getModifiable(): Any = mod
 }

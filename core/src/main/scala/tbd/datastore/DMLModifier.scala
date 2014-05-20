@@ -15,8 +15,8 @@
  */
 package tbd.datastore
 
-import akka.actor.ActorRef
-import scala.collection.mutable.Map
+import scala.collection.mutable.{ArrayBuffer, Map}
+import scala.concurrent.{Future, Promise}
 
 import tbd.mod._
 
@@ -29,16 +29,17 @@ class DMLModifier[T, U](
     var tail = datastore.createMod[DoubleModListNode[T, U]](null)
 
     for (elem <- table) {
+    //for (elem <- scala.collection.immutable.TreeMap(table.asInstanceOf[Map[Int, U]].toSeq: _*)) {
+      //println("creating node " + elem._1)
       val newNode = new DoubleModListNode[T, U](
-                  elem._1.asInstanceOf[T],
-                  datastore.createMod(elem._2.asInstanceOf[U]), tail)
+                  datastore.createMod(elem.asInstanceOf[(T, U)]), tail)
       tail = datastore.createMod(newNode)
     }
 
     new DoubleModList[T, U](tail)
   }
 
-  def insert(key: T, value: U, respondTo: ActorRef): Int = {
+  def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
     var innerNode = datastore.getMod(doubleModList.head.id)
       .asInstanceOf[DoubleModListNode[T, U]]
     var previousNode: DoubleModListNode[T, U] = null
@@ -49,24 +50,26 @@ class DMLModifier[T, U](
     }
 
     val newTail = datastore.createMod[DoubleModListNode[T, U]](null)
-    val newNode = new DoubleModListNode(key, datastore.createMod(value), newTail)
+    val newNode = new DoubleModListNode(datastore.createMod((key, value)), newTail)
 
     if (previousNode != null) {
-      datastore.updateMod(previousNode.next.id, newNode, respondTo)
+      datastore.updateMod(previousNode.next.id, newNode)
     } else {
-      datastore.updateMod(doubleModList.head.id, newNode, respondTo)
+      datastore.updateMod(doubleModList.head.id, newNode)
     }
   }
 
-  def update(key: T, value: U, respondTo: ActorRef): Int = {
-    var count = 0
+  def update(key: T, value: U): ArrayBuffer[Future[String]] = {
+    var futures = ArrayBuffer[Future[String]]()
     var found = false
     var innerNode = datastore.getMod(doubleModList.head.id)
       .asInstanceOf[DoubleModListNode[T, U]]
 
     while (innerNode != null && !found) {
-      if (innerNode.key == key) {
-	count = datastore.updateMod(innerNode.value.id, value, respondTo)
+      val oldValue = datastore.getMod(innerNode.value.id)
+	.asInstanceOf[(T, U)]
+      if (oldValue._1 == key) {
+	futures = datastore.updateMod(innerNode.value.id, (key, value))
 	found = true
       } else {
         innerNode = datastore.getMod(innerNode.next.id)
@@ -78,26 +81,26 @@ class DMLModifier[T, U](
       print("Didn't find value to remove.")
     }
 
-    count
+    futures
   }
 
-  def remove(key: T, respondTo: ActorRef): Int = {
-    var count = 0
+  def remove(key: T): ArrayBuffer[Future[String]] = {
+    var futures = ArrayBuffer[Future[String]]()
     var found = false
     var innerNode = datastore.getMod(doubleModList.head.id)
       .asInstanceOf[DoubleModListNode[T, U]]
 
     var previousNode: DoubleModListNode[T, U] = null
     while (innerNode != null && !found) {
-      if (innerNode.key == key) {
+      val oldValue = datastore.getMod(innerNode.value.id)
+	.asInstanceOf[(T, U)]
+      if (oldValue._1 == key) {
         if (previousNode != null) {
-          count += datastore.updateMod(previousNode.next.id,
-                                       datastore.tables("mods")(innerNode.next.id),
-                                       respondTo)
+          futures = datastore.updateMod(previousNode.next.id,
+                                       datastore.tables("mods")(innerNode.next.id))
         } else {
-          count += datastore.updateMod(doubleModList.head.id,
-                                       datastore.tables("mods")(innerNode.next.id),
-                                       respondTo)
+          futures = datastore.updateMod(doubleModList.head.id,
+                                       datastore.tables("mods")(innerNode.next.id))
         }
 
         // Note: for now, we're not addressing what happens if you try to get
@@ -118,7 +121,7 @@ class DMLModifier[T, U](
       print("Didn't find value to remove.")
     }
 
-    count
+    futures
   }
 
   def contains(key: T): Boolean = {
@@ -127,7 +130,9 @@ class DMLModifier[T, U](
       .asInstanceOf[DoubleModListNode[T, U]]
 
     while (innerNode != null && !found) {
-      if (innerNode.key == key) {
+      val oldValue = datastore.getMod(innerNode.value.id)
+	.asInstanceOf[(T, U)]
+      if (oldValue._1 == key) {
 	found = true
       } else {
         innerNode = datastore.getMod(innerNode.next.id)

@@ -15,8 +15,8 @@
  */
 package tbd.datastore
 
-import akka.actor.ActorRef
 import scala.collection.mutable.{ArrayBuffer, Map}
+import scala.concurrent.Future
 
 import tbd.mod._
 
@@ -39,7 +39,7 @@ class PCLModifier[T, U](
     var i = 1
     for (elem <- table) {
       chunkListModifier.insert(elem._1.asInstanceOf[T],
-			       elem._2.asInstanceOf[U], null)
+			       elem._2.asInstanceOf[U])
 
       if (i % partitionSize == 0) {
         partitionModifiers += chunkListModifier
@@ -60,17 +60,17 @@ class PCLModifier[T, U](
     new PartitionedChunkList[T, U](partitions)
   }
 
-  def insert(key: T, value: U, respondTo: ActorRef): Int = {
-    partitionModifiers(0).insert(key, value, respondTo)
+  def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
+    partitionModifiers(0).insert(key, value)
   }
 
-  def update(key: T, value: U, respondTo: ActorRef): Int = {
-    var count = 0
+  def update(key: T, value: U): ArrayBuffer[Future[String]] = {
+    var futures = ArrayBuffer[Future[String]]()
 
     var found = false
     for (partitionModifier <- partitionModifiers) {
       if (!found && partitionModifier.contains(key)) {
-        count = partitionModifier.update(key, value, respondTo)
+        futures = partitionModifier.update(key, value)
         found = true
       }
     }
@@ -79,16 +79,16 @@ class PCLModifier[T, U](
      println("Warning: tried to update nonexistant key " + key)
    }
 
-    count
+    futures
   }
 
-  def remove(key: T, respondTo: ActorRef): Int = {
-    var count = 0
+  def remove(key: T): ArrayBuffer[Future[String]] = {
+    var futures = ArrayBuffer[Future[String]]()
 
     var found = false
     for (partitionModifier <- partitionModifiers) {
       if (!found && partitionModifier.contains(key)) {
-        count = partitionModifier.remove(key, respondTo)
+        futures = partitionModifier.remove(key)
         found = true
       }
     }
@@ -97,8 +97,9 @@ class PCLModifier[T, U](
      println("Warning: tried to remove nonexistant key " + key)
    }
 
-    count
+    futures
   }
 
   def getModifiable(): AdjustableList[T, U] = list
 }
+

@@ -18,7 +18,8 @@ package tbd.worker
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import scala.collection.mutable.{ArrayBuffer, Map, MutableList, Set}
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{Await, Future, Promise}
+import scala.util.Try
 
 import tbd.Constants._
 import tbd.TBD
@@ -32,12 +33,14 @@ object Worker {
     Props(classOf[Worker], id, datastoreRef, parent)
 }
 
-class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
+class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
   extends Actor with ActorLogging {
-  //log.info("Worker " + id + " launched")
-  val id = aId
+  import context.dispatcher
 
-  val datastoreRef = aDatastoreRef
+  //log.info("Worker " + id + " launched")
+  val id = _id
+
+  val datastoreRef = _datastoreRef
   val ddg = new DDG(log, id, this)
   val memoTable = Map[List[Any], ArrayBuffer[MemoEntry]]()
   val adjustableLists = Set[AdjustableList[Any, Any]]()
@@ -47,151 +50,85 @@ class Worker(aId: String, aDatastoreRef: ActorRef, parent: ActorRef)
 
   var nextModId = 0
 
-  // During change propagation, represents the number of child workers this
-  // worker is waiting to receive FinishedPropagatingMessages from before it
-  // can continue.
-  var awaiting = 0
+  def propagate(): Future[Boolean] = {
+    Future {
+      while (!ddg.updated.isEmpty) {
+        val node = ddg.updated.dequeue
 
-  def propagate(): Boolean = {
-    while (!ddg.updated.isEmpty) {
-      val node = ddg.updated.dequeue
+        if (node.updated) {
+          if (node.isInstanceOf[ReadNode]) {
+            val readNode = node.asInstanceOf[ReadNode]
 
-      if (node.updated) {
-        if (node.isInstanceOf[ReadNode]) {
-          val readNode = node.asInstanceOf[ReadNode]
-          //log.debug("Reexecuting read of " + readNode.mod.id)
+            val toCleanup = ddg.cleanupRead(readNode)
 
-          val toCleanup = ddg.cleanupRead(readNode)
+            val newValue = readNode.mod.read()
 
-          val newValue =
-            if (tbd.mods.contains(readNode.mod.id)) {
-              tbd.mods(readNode.mod.id)
-            } else {
-              readNode.mod.read()
+            tbd.currentParent = readNode
+	    tbd.reexecutionStart = readNode.timestamp
+	    tbd.reexecutionEnd = readNode.endTime
+
+            readNode.updated = false
+            readNode.reader(newValue)
+
+            for (node <- toCleanup) {
+              if (node.parent == null) {
+                ddg.cleanupSubtree(node)
+              }
             }
+          } else {
+            val parNode = node.asInstanceOf[ParNode]
 
-          tbd.currentParent = readNode
-	  tbd.reexecutionStart = readNode.timestamp
-	  tbd.reexecutionEnd = readNode.endTime
+            val future1 = parNode.workerRef1 ? PropagateMessage
+            val future2 = parNode.workerRef2 ? PropagateMessage
 
-          readNode.updated = false
-          readNode.reader(newValue)
-
-          for (node <- toCleanup) {
-            if (node.parent == null) {
-              ddg.cleanupSubtree(node)
-            }
-          }
-        } else {
-          val parNode = node.asInstanceOf[ParNode]
-          //assert(awaiting == 0)
-
-          if (parNode.pebble1) {
-            parNode.workerRef1 ! PropagateMessage
             parNode.pebble1 = false
-            awaiting = 1
-          }
-
-          if (parNode.pebble2) {
-            parNode.workerRef2 ! PropagateMessage
             parNode.pebble2 = false
-            awaiting += 1
+
+            Await.result(future1, DURATION)
+            Await.result(future2, DURATION)
           }
-          //assert(awaiting > 0)
-
-          return false
-        }
+        } 
       }
+
+      tbd.updatedMods.clear()
+
+      true
     }
 
-    tbd.updatedMods.clear()
-    return true
-  }
-
-  private def get(key: ModId): Any = {
-    val ret = tbd.mods(key)
-
-    if (ret == null) {
-      NullMessage
-    } else {
-      ret
-    }
   }
 
   def receive = {
-    case GetMessage(table: String, key: ModId) => {
-      if (tbd.mods(key) == null) {
-        sender ! NullMessage
-      } else {
-        sender ! tbd.mods(key)
-      }
-
-      assert(table == "mods")
-    }
-
-    case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
-      sender ! get(modId)
-
-      if (tbd.dependencies.contains(modId)) {
-        tbd.dependencies(modId) += workerRef
-      } else {
-        tbd.dependencies(modId) = Set(workerRef)
-      }
-    }
-
-    case ModUpdatedMessage(modId: ModId, respondTo: ActorRef) => {
-      parent ! PebbleMessage(self, modId, respondTo)
+    case ModUpdatedMessage(modId: ModId, finished: Future[String]) => {
+      parent ! PebbleMessage(self, modId, finished)
 
       ddg.modUpdated(modId)
       tbd.updatedMods += modId
     }
 
-    case RunTaskMessage(aTask: Task) => {
-      task = aTask
+    case RunTaskMessage(_task: Task) => {
+      task = _task
       val output = task.func(tbd)
 
       sender ! output
     }
 
-    case PebbleMessage(workerRef: ActorRef, modId: ModId, respondTo: ActorRef) => {
+    case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {
       val newPebble = ddg.parUpdated(workerRef)
 
       if (newPebble) {
-        parent ! PebbleMessage(self, modId, respondTo)
+        parent ! PebbleMessage(self, modId, finished)
       } else {
-        respondTo ! PebblingFinishedMessage(modId)
-      }
-    }
-
-    case PebblingFinishedMessage(modId: ModId) => {
-      assert(tbd.awaiting > 0)
-      tbd.awaiting -= 1
-
-      if (!tbd.initialRun && tbd.awaiting == 0 && awaiting == 0) {
-        parent ! FinishedPropagatingMessage
+        finished.success("done")
       }
     }
 
     case PropagateMessage => {
       tbd.initialRun = false
-      val done = propagate()
-
-      if (done && tbd.awaiting == 0) {
-        parent ! FinishedPropagatingMessage
-      }
-    }
-
-    case FinishedPropagatingMessage => {
-      assert(awaiting > 0)
-      awaiting -= 1
-
-      if (awaiting == 0) {
-        val done = propagate()
-
-        if (done && tbd.awaiting == 0) {
-          parent ! FinishedPropagatingMessage
-        }
-      }
+      val respondTo = sender
+      val future = propagate()
+      future.onComplete((t: Try[Boolean]) => {
+        respondTo ! "done"
+      })
     }
 
     case GetDDGMessage => {

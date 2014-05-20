@@ -17,23 +17,24 @@ package tbd.mod
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import scala.concurrent.Await
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.{Await, Future, Promise}
 
 import tbd.Constants._
 import tbd.TBD
 import tbd.messages._
 
-class Mod[T](datastoreRef: ActorRef, aId: ModId) {
-  val id = aId
+class Mod[T](datastoreRef: ActorRef, _id: ModId) {
+  val id = _id
 
   def read(workerRef: ActorRef = null): T = {
     val ret =
       if (workerRef != null) {
-        val readFuture = datastoreRef ? ReadModMessage(id, workerRef)
-        Await.result(readFuture, DURATION)
+        val readPromise = datastoreRef ? ReadModMessage(id, workerRef)
+        Await.result(readPromise, DURATION)
       } else {
-        val readFuture = datastoreRef ? GetMessage("mods", id)
-        Await.result(readFuture, DURATION)
+        val readPromise = datastoreRef ? GetMessage("mods", id)
+        Await.result(readPromise, DURATION)
       }
 
     ret match {
@@ -42,9 +43,9 @@ class Mod[T](datastoreRef: ActorRef, aId: ModId) {
     }
   }
 
-  def update(value: T, workerRef: ActorRef, tbd: TBD): Int = {
-    val future = datastoreRef ? UpdateModMessage(id, value, workerRef)
-    Await.result(future, DURATION).asInstanceOf[Int]
+  def update(value: T): ArrayBuffer[Future[String]] = {
+    val future = datastoreRef ? UpdateModMessage(id, value)
+    Await.result(future, DURATION).asInstanceOf[ArrayBuffer[Future[String]]]
   }
 
   override def toString = {

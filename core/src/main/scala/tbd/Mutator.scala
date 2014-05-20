@@ -48,26 +48,22 @@ class Mutator(aMain: Main = null) {
 
   def propagate() {
     val future = main.masterRef ? PropagateMessage
-    val future2 = Await.result(future, DURATION).asInstanceOf[Future[String]]
-    Await.result(future2, DURATION)
+    Await.result(future, DURATION)
   }
 
   def put(key: Any, value: Any) {
     val future = main.masterRef ? PutInputMessage("input", key, value)
-    val future2 = Await.result(future, DURATION).asInstanceOf[Future[String]]
-    Await.result(future2, DURATION)
+    Await.result(future, DURATION)
   }
 
   def update(key: Any, value: Any) {
     val future = main.masterRef ? UpdateInputMessage("input", key, value)
-    val future2 = Await.result(future, DURATION).asInstanceOf[Future[String]]
-    Await.result(future2, DURATION)
+    Await.result(future, DURATION)
   }
 
   def remove(key: Any) {
     val future = main.masterRef ? RemoveInputMessage("input", key)
-    val future2 = Await.result(future, DURATION).asInstanceOf[Future[String]]
-    Await.result(future2, DURATION)
+    Await.result(future, DURATION)
   }
 
   def getDDG(): DDG  = {

@@ -17,6 +17,7 @@ package tbd.messages
 
 import akka.actor.ActorRef
 import scala.collection.mutable.Set
+import scala.concurrent.Promise
 
 import tbd.{Adjustable, Changeable, TBD}
 import tbd.ddg.Node
@@ -31,16 +32,12 @@ case class ToStringMessage()
 // Datastore
 case class CreateTableMessage(table: String)
 case class GetMessage(table: String, key: Any)
-case class PutMessage(table: String, key: Any, value: Any, respondTo: ActorRef)
-case class UpdateMessage(
-    table: String,
-    key: Any,
-    value: Any,
-    respondTo: ActorRef)
-case class RemoveMessage(table: String, key: Any, respondTo: ActorRef)
+case class PutMessage(table: String, key: Any, value: Any)
+case class UpdateMessage(table: String, key: Any, value: Any)
+case class RemoveMessage(table: String, key: Any)
 
 case class CreateModMessage(value: Any)
-case class UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef)
+case class UpdateModMessage(modId: ModId, value: Any)
 case class ReadModMessage(modId: ModId, workerRef: ActorRef)
 case class CleanUpMessage(
     workerRef: ActorRef,
@@ -64,9 +61,8 @@ case class GetMutatorDDGMessage(mutatorId: Int)
 case class ShutdownMutatorMessage(mutatorId: Int)
 
 // Worker
-case class ModUpdatedMessage(modId: ModId, respondTo: ActorRef)
-case class PebbleMessage(workerRef: ActorRef, modId: ModId, respondTo: ActorRef)
-case class PebblingFinishedMessage(modId: ModId)
+case class ModUpdatedMessage(modId: ModId, finished: Promise[String])
+case class PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String])
 case class PropagateMessage()
 case class RunTaskMessage(func: Task)
 case class FinishedPropagatingMessage()
