@@ -106,10 +106,10 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 
   def receive = {
     case ModUpdatedMessage(modId: ModId, finished: Future[String]) => {
-      parent ! PebbleMessage(self, modId, finished)
-
       ddg.modUpdated(modId)
       tbd.updatedMods += modId
+
+      parent ! PebbleMessage(self, modId, finished)
     }
 
     case RunTaskMessage(_task: Task) => {
