@@ -45,7 +45,8 @@ class SimpleWC(
       }
 
     val before = System.currentTimeMillis()
-    vector.aggregate(Map[String, Int]())((x, line) => WC.countReduce(line, x), WC.reduce)
+    vector.aggregate(Map[String, Int]())((x, line) =>
+      WC.countReduce(line, x), WC.mutableReduce)
     System.currentTimeMillis() - before
   }
 }

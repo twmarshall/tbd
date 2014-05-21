@@ -21,10 +21,10 @@ import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.{AdjustableList, Mod}
 
 class WCAdjust(partitions: Int, parallel: Boolean) extends Algorithm {
-  var output: Mod[(Int, Map[String, Int])] = null
+  var output: Mod[(Int, scala.collection.immutable.HashMap[String, Int])] = null
 
   def initialRun(mutator: Mutator) {
-    output = mutator.run[Mod[(Int, Map[String, Int])]](this)
+    output = mutator.run[Mod[(Int, scala.collection.immutable.HashMap[String, Int])]](this)
   }
 
   def checkOutput(chunks: Map[Int, String]): Boolean = {
@@ -34,13 +34,13 @@ class WCAdjust(partitions: Int, parallel: Boolean) extends Algorithm {
 
   def mapper(tbd: TBD, pair: (Int, String)) = (pair._1, WC.wordcount(pair._2))
 
-  def reducer(tbd: TBD, pair1: (Int, Map[String, Int]), pair2: (Int, Map[String, Int])) =
+  def reducer(tbd: TBD, pair1: (Int, scala.collection.immutable.HashMap[String, Int]), pair2: (Int, scala.collection.immutable.HashMap[String, Int])) =
     (pair1._1, WC.reduce(pair1._2, pair2._2))
 
-  def run(tbd: TBD): Mod[(Int, Map[String, Int])] = {
+  def run(tbd: TBD): Mod[(Int, scala.collection.immutable.HashMap[String, Int])] = {
     val pages = tbd.input.getAdjustableList[Int, String](partitions)
     val counts = pages.map(tbd, mapper, parallel = parallel)
-    val initialValue = tbd.createMod((0, Map[String, Int]()))
+    val initialValue = tbd.createMod((0, scala.collection.immutable.HashMap[String, Int]()))
     counts.reduce(tbd, initialValue, reducer, parallel = parallel)
   }
 }
