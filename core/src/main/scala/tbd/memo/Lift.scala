@@ -16,7 +16,9 @@
 package tbd.memo
 
 import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.Await
 
+import tbd.Constants._
 import tbd.TBD
 import tbd.mod.Mod
 
@@ -39,12 +41,16 @@ class Lift[T](tbd: TBD, memoId: Int) {
           for (memoEntry <- tbd.worker.memoTable(signature)) {
             val timestamp = memoEntry.node.timestamp
             if (!found && timestamp > tbd.reexecutionStart &&
-		  timestamp < tbd.reexecutionEnd && memoEntry.node.matchable) {
+		timestamp < tbd.reexecutionEnd && memoEntry.node.matchable) {
 	      //println("found a match on " + signature)
               found = true
               tbd.worker.ddg.attachSubtree(tbd.currentParent, memoEntry.node)
               toRemove = memoEntry
               ret = memoEntry.value.asInstanceOf[T]
+
+              val future = tbd.worker.propagate(timestamp,
+                                                memoEntry.node.endTime)
+              Await.result(future, DURATION)
             }
           }
 	}
@@ -57,6 +63,7 @@ class Lift[T](tbd: TBD, memoId: Int) {
       tbd.currentParent = memoNode
       val value = func()
       tbd.currentParent = outerParent
+      memoNode.endTime = tbd.worker.ddg.nextTimestamp(memoNode)
 
       val memoEntry = new MemoEntry(value, memoNode)
 

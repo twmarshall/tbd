@@ -33,11 +33,9 @@ object TBD {
   var id = 0
 }
 
-class TBD(
-    id: String,
-    aWorker: Worker) {
+class TBD(id: String, _worker: Worker) {
   import worker.context.dispatcher
-  val worker = aWorker
+  val worker = _worker
   var initialRun = true
 
   // The Node representing the currently executing reader.
@@ -59,7 +57,7 @@ class TBD(
   // The timestamp of the node immediately after the end of the read being
   // reexecuted.
   var reexecutionEnd: Timestamp = null
-  
+
   def read2[T, V, U](a: Mod[T], b: Mod[V])
                     (reader: (T, V) => (Changeable[U])): Changeable[U] = {
     read(a)((a) => {
@@ -103,7 +101,9 @@ class TBD(
 
     val changeable = new Changeable(dest.mod)
     if (Main.debug) {
-      worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]], currentParent)
+      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+                                          currentParent)
+      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
     }
 
     changeable

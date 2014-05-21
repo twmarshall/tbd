@@ -205,6 +205,33 @@ class MatchParentTest extends Adjustable {
   }
 }
 
+// Tests that change propagation is done through a memoized subddg before
+// moving on.
+class PropagateThroughMemoTest extends Adjustable {
+  var count = 0
+
+  def run(tbd: TBD): Mod[Int] = {
+    val one = tbd.input.getMod[Int](1)
+    val two = tbd.input.getMod[Int](2)
+    val three = tbd.input.getMod[Int](3)
+    val lift = tbd.makeLift[Mod[Int]]()
+
+    tbd.mod((dest: Dest[Int]) =>
+      tbd.read(one)(oneValue => {
+        val mod = lift.memo(List(two), () =>
+          tbd.mod((dest: Dest[Int]) =>
+            tbd.read(three)(threeValue => {
+              tbd.write(dest, threeValue)
+            })))
+
+        tbd.read(mod)(modValue => {
+          count += 1
+          tbd.write(dest, modValue)
+        })
+      }))
+  }
+}
+
 class MemoTests extends FlatSpec with Matchers {
   "MemoTest" should "do stuff" in {
     val mutator = new Mutator()
@@ -342,6 +369,23 @@ class MemoTests extends FlatSpec with Matchers {
     test.count2 should be (1)
     test.count3 should be (0)
     test.count4 should be (1)
+
+    mutator.shutdown()
+  }
+
+  "PropagateThroughMemoTest" should "only reexecute the read once" in {
+    val mutator = new Mutator()
+    mutator.put(1, 1)
+    mutator.put(2, 2)
+    mutator.put(3, 3)
+    val test = new PropagateThroughMemoTest()
+    mutator.run[Mod[Int]](test)
+    test.count should be (1)
+
+    mutator.update(1, 4)
+    mutator.update(3, 5)
+    mutator.propagate()
+    test.count should be (2)
 
     mutator.shutdown()
   }

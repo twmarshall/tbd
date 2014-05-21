@@ -23,7 +23,7 @@ import scala.util.Try
 
 import tbd.Constants._
 import tbd.TBD
-import tbd.ddg.{DDG, Node, ParNode, ReadNode}
+import tbd.ddg.{DDG, Node, ParNode, ReadNode, Timestamp}
 import tbd.memo.MemoEntry
 import tbd.messages._
 import tbd.mod.{AdjustableList, ModId}
@@ -50,10 +50,14 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 
   var nextModId = 0
 
-  def propagate(): Future[Boolean] = {
+  def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
+                end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
     Future {
-      while (!ddg.updated.isEmpty) {
-        val node = ddg.updated.dequeue
+      var option = ddg.updated.find((node: Node) =>
+        node.timestamp > start && node.timestamp < end)
+      while (!option.isEmpty) {
+        val node = option.get
+        ddg.updated = ddg.updated.filter((_node: Node) => node != _node)
 
         if (node.updated) {
           if (node.isInstanceOf[ReadNode]) {
@@ -87,7 +91,10 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
             Await.result(future1, DURATION)
             Await.result(future2, DURATION)
           }
-        } 
+        }
+
+        option = ddg.updated.find((node: Node) =>
+          node.timestamp > start && node.timestamp < end)
       }
 
       tbd.updatedMods.clear()
