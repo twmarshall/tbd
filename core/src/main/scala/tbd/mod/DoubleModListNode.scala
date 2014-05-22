@@ -71,7 +71,37 @@ class DoubleModListNode[T, V] (
       })
     tbd.write(dest, new DoubleModListNode[U, Q](modTuple._1, modTuple._2))
   }
-  
+   
+  def split(
+      tbd: TBD,
+      destMatch: Dest[DoubleModListNode[T, V]],
+      destNoMatch: Dest[DoubleModListNode[T, V]],
+      pred: (TBD, T, V) => Boolean)
+        : Changeable[DoubleModListNode[T, V]] = {
+    tbd.read2(value, next)((v, next) => {
+      if(pred(tbd, key, v)) {
+        val newNext = tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
+          if(next != null) {
+            next.split(tbd, newDest, destNoMatch, pred)
+          } else {
+            tbd.write(newDest, null)
+          }
+       })
+      
+        tbd.write(destMatch, new DoubleModListNode(key, value, newNext))
+      } else {
+        val newNext = tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
+          if(next != null) {
+            next.split(tbd, destMatch, newDest, pred)
+          } else {
+            tbd.write(newDest, null)
+          }
+        })
+      
+        tbd.write(destNoMatch, new DoubleModListNode(key, value, newNext))
+      }
+    })
+  }
 
   def halfListReduce(
       tbd: TBD,

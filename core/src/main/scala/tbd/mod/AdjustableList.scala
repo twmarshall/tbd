@@ -63,6 +63,17 @@ trait AdjustableList[T, U] {
       f: (TBD, (T, U), (T, U)) => (T, U),
       parallel: Boolean = false,
       memoized: Boolean = true) : Mod[(T, U)]
+    
+  /**
+   * Returns a tuple of two AdjustableList, whereas the first AdjustableList 
+   * containins all of the elements from this AdjustableList that satisfy the 
+   * given predicate, and the second AdjustableList contains all other elements. 
+   */
+  def split(
+      tbd: TBD,
+      pred: (TBD, T, U) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): (AdjustableList[T, U], AdjustableList[T, U])
 
   /* Meta functions */
   def toBuffer(): Buffer[U]

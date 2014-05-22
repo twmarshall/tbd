@@ -35,6 +35,7 @@ class DoubleModList[T, V](
       f: (TBD, T, V) => (U, Q),
       parallel: Boolean = false,
       memoized: Boolean = true): DoubleModList[U, Q] = {
+      
     if (parallel) {
       new DoubleModList(
         tbd.mod((dest: Dest[DoubleModListNode[U, Q]]) => {
@@ -62,6 +63,28 @@ class DoubleModList[T, V](
         })
       )
     }
+  }
+  
+  def split(
+      tbd: TBD,
+      pred: (TBD, T, V) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): 
+       (AdjustableList[T, V], AdjustableList[T, V]) = {
+    
+    val result = tbd.mod2((matches: Dest[DoubleModListNode[T, V]], diffs: Dest[DoubleModListNode[T, V]]) => {
+        
+      tbd.read(head)(head => {
+        if(head == null) {
+          tbd.write(matches, null)
+          tbd.write(diffs, null)
+        } else {
+          head.split(tbd, matches, diffs, pred)
+        }
+      })
+    })
+  
+    (new DoubleModList(result._1), new DoubleModList(result._2))
   }
 
   def randomReduce(

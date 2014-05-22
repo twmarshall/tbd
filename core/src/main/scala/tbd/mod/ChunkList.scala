@@ -68,6 +68,13 @@ class ChunkList[T, U](
       f: (TBD, (T, U), (T, U)) => (T, U),
       parallel: Boolean = false,
       memoized: Boolean = true) : Mod[(T, U)] = ???
+    
+  def split(
+      tbd: TBD,
+      pred: (TBD, T, U) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): 
+       (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   /* Meta functions */
   def toBuffer(): Buffer[U] = {
