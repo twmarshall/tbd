@@ -97,17 +97,14 @@ class DMLModifier[T, U](
       if (oldValue._1 == key) {
         if (previousNode != null) {
           futures = datastore.updateMod(previousNode.next.id,
-                                       datastore.tables("mods")(innerNode.next.id))
+                                        datastore.getMod(innerNode.next.id))
         } else {
           futures = datastore.updateMod(doubleModList.head.id,
-                                       datastore.tables("mods")(innerNode.next.id))
+                                        datastore.getMod(innerNode.next.id))
         }
 
-        // Note: for now, we're not addressing what happens if you try to get
-        // a value from the table that doesn't exist, so we don't need to
-        // notify workers when a mod is removed.
-        datastore.tables("mods") -= innerNode.next.id
-	datastore.tables("mods") -= innerNode.value.id
+        datastore.removeMod(innerNode.next.id)
+        datastore.removeMod(innerNode.value.id)
 
 	found = true
       } else {

@@ -20,6 +20,7 @@ import akka.pattern.ask
 import scala.collection.mutable.{ArrayBuffer, Map, Set}
 import scala.concurrent.{Future, Promise}
 
+import tbd.Constants._
 import tbd.messages._
 import tbd.mod._
 
@@ -29,7 +30,7 @@ object Datastore {
 
 class Datastore extends Actor with ActorLogging {
   import context.dispatcher
-  val tables = Map[String, Map[Any, Any]]()
+  private val tables = Map[String, Map[Any, Any]]()
   tables("mods") = Map[Any, Any]()
 
   // Maps modIds to the workers that have read the corresponding mod.
@@ -84,6 +85,14 @@ class Datastore extends Actor with ActorLogging {
     }
 
     futures
+  }
+
+  def removeMod(modId: ModId) {
+    if (!tables("mods").contains(modId)) {
+      log.warning("Trying to remove nonexistent mod " + modId)
+    }
+    tables("mods") -= modId
+    dependencies -= modId
   }
 
   def receive = {
