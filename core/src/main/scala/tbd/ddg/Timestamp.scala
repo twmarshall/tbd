@@ -19,6 +19,9 @@ object Timestamp {
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
   val MAX_TIMESTAMP = new Timestamp(new Sublist(Int.MaxValue, null), Int.MaxValue, null)
+
+  // A dummy timestamp which all real Timestamps are greater than.
+  val MIN_TIMESTAMP = new Timestamp(new Sublist(-1, null), -1, null)
 }
 
 class Timestamp(aSublist: Sublist, aTime: Double, aNext: Timestamp) {

@@ -60,7 +60,7 @@ Options:
 
   val confs = Map(("algorithms" -> Array("nmap", "mpmap")),
                   ("counts" -> Array("1000")),
-		  ("chunkSizes" -> Array("1")),
+		  ("chunkSizes" -> Array("0")),
                   ("mutations" -> Array("insert", "update", "remove")),
                   ("partitions" -> Array("8")),
                   ("percents" -> Array("initial", ".01", ".05", ".1")),

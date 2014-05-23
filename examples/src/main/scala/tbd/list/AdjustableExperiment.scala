@@ -104,8 +104,8 @@ class AdjustableExperiment(aConf: Map[String, _])
       case "mfilter" => new FilterAdjust(partition, false, true)
       case "mpfilter" => new FilterAdjust(partition, true, true)
       // Wordcount
-      case "wc" => new WCAdjust(partition, false)
-      case "pwc" => new WCAdjust(partition, true)
+      case "wc" => new WCAdjust(partition, chunkSize, false)
+      case "pwc" => new WCAdjust(partition, chunkSize, true)
     }
 
     val before = System.currentTimeMillis()

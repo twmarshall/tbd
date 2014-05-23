@@ -15,9 +15,9 @@
  */
 package tbd.memo
 
-import tbd.ddg.Node
+import tbd.ddg.MemoNode
 
-class MemoEntry(aValue: Any, aNode: Node) {
-  val value = aValue
-  val node = aNode
+class MemoEntry(_value: Any, _node: MemoNode) {
+  val value = _value
+  val node = _node
 }

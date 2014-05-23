@@ -29,6 +29,7 @@ import tbd.mod.Mod
 abstract class Node(aParent: Node, aTimestamp: Timestamp) {
   var parent = aParent
   var timestamp: Timestamp = aTimestamp
+  var endTime: Timestamp = null
 
   var children = MutableList[Node]()
 
@@ -70,10 +71,8 @@ class ReadNode(
   val mod: Mod[Any] = aMod
   val reader = aReader
 
-  var endTime: Timestamp = null
-
   override def toString(prefix: String) = {
-    prefix + this + " modId=(" + mod.id + ") " + " time=" + timestamp +
+    prefix + this + " modId=(" + mod.id + ") " + " time=" + timestamp + " to " + endTime +
       " value=" + mod + " updated=(" + updated + ")" + super.toString(prefix)
   }
 }
@@ -118,7 +117,7 @@ class MemoNode(
   val signature = aSignature
 
   override def toString(prefix: String) = {
-    prefix + "MemoNode time=" + timestamp + " signature=" + signature +
+    prefix + "MemoNode time=" + timestamp + " to " + endTime + " signature=" + signature +
       super.toString(prefix)
   }
 }
