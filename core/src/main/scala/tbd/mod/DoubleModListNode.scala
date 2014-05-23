@@ -71,15 +71,15 @@ class DoubleModListNode[T, V] (
       })
     tbd.write(dest, new DoubleModListNode[U, Q](modTuple._1, modTuple._2))
   }
-   
+
   def split(
       tbd: TBD,
       destMatch: Dest[DoubleModListNode[T, V]],
       destNoMatch: Dest[DoubleModListNode[T, V]],
-      pred: (TBD, T, V) => Boolean)
+      pred: (TBD, (T, V)) => Boolean)
         : Changeable[DoubleModListNode[T, V]] = {
     tbd.read2(value, next)((v, next) => {
-      if(pred(tbd, key, v)) {
+      if(pred(tbd, (v._1, v._2))) {
         val newNext = tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
           if(next != null) {
             next.split(tbd, newDest, destNoMatch, pred)
@@ -87,8 +87,8 @@ class DoubleModListNode[T, V] (
             tbd.write(newDest, null)
           }
        })
-      
-        tbd.write(destMatch, new DoubleModListNode(key, value, newNext))
+
+        tbd.write(destMatch, new DoubleModListNode(value, newNext))
       } else {
         val newNext = tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
           if(next != null) {
@@ -97,8 +97,8 @@ class DoubleModListNode[T, V] (
             tbd.write(newDest, null)
           }
         })
-      
-        tbd.write(destNoMatch, new DoubleModListNode(key, value, newNext))
+
+        tbd.write(destNoMatch, new DoubleModListNode(value, newNext))
       }
     })
   }
@@ -109,32 +109,33 @@ class DoubleModListNode[T, V] (
       hasher: Hasher,
       lift: Lift[Mod[DoubleModListNode[T, V]]],
       dest: Dest[DoubleModListNode[T, V]],
-      f: (TBD, T, V, T, V) => (T, V)): Changeable[DoubleModListNode[T, V]] = {
-    tbd.read(this.next)((next) => {
+      f: (TBD, (T, V), (T, V)) => (T, V)): Changeable[DoubleModListNode[T, V]] = {
+    tbd.read2(next, value)((next, v) => {
       if(next == null) {
             tbd.write(dest, this)
       } else {
-        
+
         val reducedList = lift.memo(List(next.next, next.value), () => {
           tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
             next.halfListReduce(tbd, round, hasher, lift, dest, f)
           })
         })
-        
-        if(binaryHash(key, round, hasher)) {
-          // Do not merge the current node with the reduced list. 
-          val newList =  new DoubleModListNode(key, value, reducedList)
+
+        if(binaryHash(v._1, round, hasher)) {
+          // Do not merge the current node with the reduced list.
+          val newList =  new DoubleModListNode(value,
+                                               reducedList)
           tbd.write(dest, newList)
         } else {
-          // Merge the current node with the reduced list. 
+          // Merge the current node with the reduced list.
           tbd.read(reducedList)(reducedList => {
-            tbd.read2(value, reducedList.value)((myValue, nextValue) => {
-                
-              val reductionResult = f(tbd, reducedList.key, nextValue, key, myValue)
-              val newValue = tbd.createMod(reductionResult._2)
+            tbd.read(reducedList.value)((nextValue) => {
+
+              val reductionResult = f(tbd, nextValue, v)
+              val newValue = reductionResult._2
               val newKey = reductionResult._1
-              
-              val newList = new DoubleModListNode(newKey, newValue, 
+
+              val newList = new DoubleModListNode(tbd.createMod(newKey, newValue),
                                                   reducedList.next)
               tbd.write(dest, newList)
             })
@@ -143,7 +144,7 @@ class DoubleModListNode[T, V] (
       }
     })
   }
-  
+
   def binaryHash(id: T, round: Int, hasher: Hasher) = {
     hasher.hash(id.hashCode() ^ round) == 0
   }

@@ -31,7 +31,7 @@ class ListMapTest(
 }
 
 class ListSplitTest(
-    f: (TBD, String, Int) => Boolean) extends Adjustable {
+    f: (TBD, (String, Int)) => Boolean) extends Adjustable {
   def run(tbd: TBD):
         (AdjustableList[String, Int], AdjustableList[String, Int]) = {
     val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
@@ -356,8 +356,8 @@ class ListTests extends FlatSpec with Matchers {
     mutator.put("one", 0)
     mutator.put("two", 2)
     val output = mutator.run[(AdjustableList[String, Int], AdjustableList[String, Int])](
-      new ListSplitTest((tbd, key, value) => {
-          value % 2 == 0
+      new ListSplitTest((tbd, value) => {
+          value._2 % 2 == 0
       }))
 
     output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2))
@@ -393,8 +393,8 @@ class ListTests extends FlatSpec with Matchers {
 
     val output = mutator.run[(AdjustableList[String, Int],
                               AdjustableList[String, Int])](
-      new ListSplitTest((tbd, key, value) => {
-          value % 2 == 0
+      new ListSplitTest((tbd, value) => {
+          value._2 % 2 == 0
       }))
 
     var answer = (data.filter(x => x % 2 == 0), data.filter(x => x % 2 != 0))

@@ -127,12 +127,12 @@ class PartitionedDoubleModList[T, V](
       )
     }
   }
-  
+
   def split(
       tbd: TBD,
-      pred: (TBD, T, V) => Boolean,
+      pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = false): 
+      memoized: Boolean = false):
        (AdjustableList[T, V], AdjustableList[T, V]) = ???
 
   /* Meta Operations */
