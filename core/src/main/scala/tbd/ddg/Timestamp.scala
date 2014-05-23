@@ -46,6 +46,15 @@ class Timestamp(aSublist: Sublist, aTime: Double, aNext: Timestamp) {
     }
   }
 
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[Timestamp]) {
+      false
+    } else {
+      val that = obj.asInstanceOf[Timestamp]
+      that.time == time && that.sublist.id == sublist.id
+    }
+  }
+
   override def toString = "(" + sublist.id + " " + time.toString + ")"
 }
 
@@ -53,6 +62,8 @@ class TimestampOrdering extends scala.math.Ordering[Node] {
   def compare(one: Node, two: Node) = {
     if (one.timestamp < two.timestamp) {
       1
+    } else if (one.timestamp == two.timestamp) {
+      0
     } else {
       -1
     }
