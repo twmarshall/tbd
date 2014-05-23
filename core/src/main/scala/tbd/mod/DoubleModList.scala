@@ -72,7 +72,8 @@ class DoubleModList[T, V](
       memoized: Boolean = false):
        (AdjustableList[T, V], AdjustableList[T, V]) = {
 
-    val result = tbd.mod2((matches: Dest[DoubleModListNode[T, V]], diffs: Dest[DoubleModListNode[T, V]]) => {
+    val result = tbd.mod2((matches: Dest[DoubleModListNode[T, V]],
+                           diffs: Dest[DoubleModListNode[T, V]]) => {
 
       tbd.read(head)(head => {
         if(head == null) {

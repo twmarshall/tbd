@@ -76,8 +76,10 @@ class DoubleModListNode[T, V] (
       tbd: TBD,
       destMatch: Dest[DoubleModListNode[T, V]],
       destNoMatch: Dest[DoubleModListNode[T, V]],
-      pred: (TBD, (T, V)) => Boolean)
-        : Changeable[DoubleModListNode[T, V]] = {
+      pred: (TBD, (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+        Changeable[DoubleModListNode[T, V]] = {
     tbd.read2(value, next)((v, next) => {
       if(pred(tbd, (v._1, v._2))) {
         val newNext = tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
@@ -99,6 +101,50 @@ class DoubleModListNode[T, V] (
         })
 
         tbd.write(destNoMatch, new DoubleModListNode(value, newNext))
+      }
+    })
+  }
+
+  def quicksort(
+        tbd: TBD,
+        dest: Dest[DoubleModListNode[T, V]],
+        toAppend: Mod[DoubleModListNode[T, V]],
+        comperator: (TBD, (T, V), (T, V)) => Boolean,
+        parallel: Boolean = false,
+        memoized: Boolean = false):
+          Changeable[DoubleModListNode[T, V]] = {
+    tbd.read(next)(next => {
+      if(next != null) {
+        tbd.read(value)(v => {
+          val splitResult = tbd.mod2((matches: Dest[DoubleModListNode[T, V]],
+                                      diffs: Dest[DoubleModListNode[T, V]]) => {
+
+            next.split(tbd, matches, diffs,
+              (tbd, cv) => { comperator(tbd, v, cv) },
+              parallel, memoized)
+          })
+          tbd.read2(splitResult._1, splitResult._2)((smaller, greater) => {
+            val greaterSorted = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
+              if(greater != null) {
+                greater.quicksort(tbd, dest, null, comperator, parallel, memoized)
+              } else {
+                tbd.write(dest, null)
+              }
+            })
+
+            val mid = new DoubleModListNode(value, greaterSorted)
+
+            if(smaller != null) {
+              smaller.quicksort(tbd, dest, tbd.createMod(mid),
+                                comperator, parallel, memoized)
+            } else {
+              tbd.write(dest, mid)
+            }
+
+          })
+        })
+      } else {
+        tbd.write(dest, new DoubleModListNode(value, toAppend))
       }
     })
   }
