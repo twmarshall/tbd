@@ -116,8 +116,7 @@ class TBD(id: String, _worker: Worker) {
   }
 
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
-    val modId = new ModId(worker.id + "." + worker.nextModId)
-    val d = new Dest[T](worker, modId)
+    val d = new Dest[T](worker)
     initializer(d).mod
     d.mod
   }
