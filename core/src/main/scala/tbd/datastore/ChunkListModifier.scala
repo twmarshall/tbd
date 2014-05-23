@@ -162,9 +162,6 @@ class ChunkListModifier[T, U](
             futures = datastore.updateMod(previousNode.nextMod.id,
                                          nextNode)
           }
-
-          datastore.removeMod(node.nextMod.id)
-          datastore.removeMod(node.chunkMod.id)
         } else {
           futures = datastore.updateMod(node.chunkMod.id, newChunk)
         }
