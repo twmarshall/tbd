@@ -30,7 +30,7 @@ class PartitionedDoubleModList[T, V](
       tbd: TBD,
       f: (TBD, (T, V)) => (U, Q),
       parallel: Boolean = true,
-      memoized: Boolean = false): PartitionedDoubleModList[U, Q] = {
+      memoized: Boolean = true): PartitionedDoubleModList[U, Q] = {
     if (parallel) {
       def innerMemoParMap(tbd: TBD, i: Int): ArrayBuffer[DoubleModList[U, Q]] = {
         if (i < partitions.size) {
