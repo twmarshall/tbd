@@ -30,6 +30,7 @@ abstract class Node(aParent: Node, aTimestamp: Timestamp) {
   var parent = aParent
   var timestamp: Timestamp = aTimestamp
   var endTime: Timestamp = null
+  var stacktrace = Thread.currentThread().getStackTrace()
 
   var children = MutableList[Node]()
 
