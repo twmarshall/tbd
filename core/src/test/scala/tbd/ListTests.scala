@@ -39,6 +39,15 @@ class ListSplitTest(
   }
 }
 
+class ListSortTest() extends Adjustable {
+  def run(tbd: TBD): (AdjustableList[String, Int]) = {
+    val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
+    list.sort(tbd, (tbd, a, b) => {
+        a._2 < b._2
+    })
+  }
+}
+
 class ListMemoMapTest extends Adjustable {
   def run(tbd: TBD): AdjustableList[String, Int] = {
     val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
@@ -376,6 +385,33 @@ class ListTests extends FlatSpec with Matchers {
     output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
     output._2.toBuffer().sortWith(_ < _) should be (Buffer(1, 3))
 
+    mutator.put("seven", -1)
+    mutator.propagate()
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 3))
+
+    mutator.update("two", 5)
+    mutator.propagate()
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 5))
+
+
+    mutator.update("four", 7)
+    mutator.propagate()
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 5, 7))
+
+
+    mutator.update("two", 4)
+    mutator.update("four", 2)
+    mutator.update("seven", 8)
+    mutator.propagate()
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2, 4, 8))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer(1))
 
     mutator.shutdown()
   }
@@ -432,6 +468,32 @@ class ListTests extends FlatSpec with Matchers {
 
     output._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
     output._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
+
+    mutator.shutdown()
+  }
+
+  "ListSortTest" should "return the sorted list" in {
+    val mutator = new Mutator()
+    mutator.put("one", 0)
+    mutator.put("two", 3)
+    mutator.put("three", 2)
+    mutator.put("four", 4)
+    mutator.put("five", 1)
+    val output = mutator.run[AdjustableList[String, Int]](new ListSortTest())
+
+    output.toBuffer() should be (Buffer(0, 1, 2, 3, 4))
+
+    mutator.put("six", 5)
+    mutator.propagate()
+    output.toBuffer() should be (Buffer(0, 1, 2, 3, 4, 5))
+
+    mutator.put("seven", -1)
+    mutator.propagate()
+    output.toBuffer() should be (Buffer(-1, 0, 1, 2, 3, 4, 5))
+
+    mutator.update("two", 5)
+    mutator.propagate()
+    output.toBuffer() should be (Buffer(-1, 0, 1, 2, 4, 5, 5))
 
     mutator.shutdown()
   }
