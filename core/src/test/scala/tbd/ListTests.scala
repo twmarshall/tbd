@@ -497,4 +497,47 @@ class ListTests extends FlatSpec with Matchers {
 
     mutator.shutdown()
   }
+
+   it should "return the sorted big list" in {
+    val mutator = new Mutator()
+
+    var data = new ArrayBuffer[Int]()
+
+    for(i <- 0 to 100) {
+      val r = rand.nextInt(1000)
+      mutator.put(i.toString, r)
+      data += r
+    }
+
+    val output = mutator.run[AdjustableList[String, Int]](new ListSortTest())
+
+    output.toBuffer() should be (data.sortWith(_ < _))
+
+    for(i <- 0 to 100) {
+      if(rand.nextInt(10) > 8) {
+        val r = rand.nextInt(1000)
+        mutator.update(i.toString, r)
+        data(i) = r
+      }
+    }
+
+    mutator.propagate()
+
+    output.toBuffer() should be (data.sortWith(_ < _))
+
+    for(i <- 0 to 100) {
+      if(i < data.size && rand.nextInt(10) > 8) {
+        mutator.remove(i.toString)
+        data(i) = -1
+      }
+    }
+
+    data = data.filter(x => x != -1)
+
+    mutator.propagate()
+
+    output.toBuffer() should be (data.sortWith(_ < _))
+
+    mutator.shutdown()
+  }
 }
