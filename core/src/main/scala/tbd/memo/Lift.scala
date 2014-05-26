@@ -31,7 +31,6 @@ class Lift[T](tbd: TBD, memoId: Int) {
     var found = false
     var toRemove: MemoEntry = null
     var ret = null.asInstanceOf[T]
-    //println("looking for " + signature)
     if (!tbd.initialRun) {
       if (!tbd.updated(args)) {
 	if (tbd.worker.memoTable.contains(signature)) {
@@ -42,7 +41,6 @@ class Lift[T](tbd: TBD, memoId: Int) {
             val timestamp = memoEntry.node.timestamp
             if (!found && timestamp > tbd.reexecutionStart &&
 		timestamp < tbd.reexecutionEnd && memoEntry.node.matchable) {
-	      //println("found a match on " + signature)
               found = true
               tbd.worker.ddg.attachSubtree(tbd.currentParent, memoEntry.node)
               toRemove = memoEntry

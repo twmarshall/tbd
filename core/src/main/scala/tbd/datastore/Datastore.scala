@@ -20,6 +20,7 @@ import akka.pattern.ask
 import scala.collection.mutable.{ArrayBuffer, Map, Set}
 import scala.concurrent.{Future, Promise}
 
+import tbd.Constants._
 import tbd.messages._
 import tbd.mod._
 
@@ -29,7 +30,7 @@ object Datastore {
 
 class Datastore extends Actor with ActorLogging {
   import context.dispatcher
-  val tables = Map[String, Map[Any, Any]]()
+  private val tables = Map[String, Map[Any, Any]]()
   tables("mods") = Map[Any, Any]()
 
   // Maps modIds to the workers that have read the corresponding mod.
@@ -70,12 +71,9 @@ class Datastore extends Actor with ActorLogging {
     tables("mods")(modId)
   }
 
-  def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
-    if (!tables("mods").contains(modId)) {
-      log.warning("Trying to update non-existent mod " + modId)
-    }
-    tables("mods")(modId) = value
-
+  // Marks a mod as updated and informs Workers that have read it, without
+  // actually changing the value.
+  def updateMod(modId: ModId): ArrayBuffer[Future[String]] = {
     val futures = ArrayBuffer[Future[String]]()
     for (workerRef <- dependencies(modId)) {
       val finished = Promise[String]()
@@ -84,6 +82,24 @@ class Datastore extends Actor with ActorLogging {
     }
 
     futures
+  }
+
+  def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
+    if (!tables("mods").contains(modId)) {
+      log.warning("Trying to update non-existent mod " + modId)
+    }
+
+    tables("mods")(modId) = value
+
+    updateMod(modId)
+  }
+
+  def removeMod(modId: ModId) {
+    if (!tables("mods").contains(modId)) {
+      log.warning("Trying to remove nonexistent mod " + modId)
+    }
+    tables("mods") -= modId
+    dependencies -= modId
   }
 
   def receive = {
@@ -202,22 +218,35 @@ class Datastore extends Actor with ActorLogging {
         table: String,
         partitions: Int,
         chunkSize: Int,
-        chunkSizer: (Any => Int)) => {
+        chunkSizer: (Any => Int),
+        valueMod: Boolean) => {
       val modifier =
-        if (chunkSize == 0) {
+	if (!valueMod) {
+	  if (partitions == 1) {
+	    log.info("Creating new ModList.")
+	    new ModListModifier[Any, Any](this, tables(table))
+	  } else {
+	    log.info("Creating new PartitionedModList.")
+	    new PartitionedModListModifier[Any, Any](this, tables(table), partitions)
+	  }
+	} else if (chunkSize == 0) {
           if (partitions == 1) {
+	    log.info("Creating new DoubleModList.")
             new DMLModifier[Any, Any](this, tables(table))
           } else {
+	    log.info("Creating new PartitionedDoubleModList.")
             new PDMLModifier[Any, Any](this, tables(table), partitions)
           }
         } else {
 	  if (partitions == 1) {
+	    log.info("Creating new ChunkList.")
             new ChunkListModifier[Any, Any](
               this,
               tables(table),
               chunkSize,
               chunkSizer)
 	  } else {
+	    log.info("Creating new PartitionedChunkList.")
 	    new PCLModifier[Any, Any](
               this,
               tables(table),
