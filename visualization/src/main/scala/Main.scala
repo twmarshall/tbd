@@ -51,8 +51,9 @@ object Main {
     }
     node {
       text-alignment: under;
-      text-background-color: #C0C0C0;
+      text-background-color: #EEEEEE;
       text-background-mode: rounded-box;
+      text-padding: 2px;
     }
   """
 
