@@ -40,13 +40,14 @@ class FilterAdjust(
 
   def run(tbd: TBD): AdjustableList[Int, String] = {
     val pages = tbd.input.getAdjustableList[Int, String](partitions)
-    pages.filter(tbd, (key: Int, s: String) => FilterAdjust.predicate(s), parallel, memoized)
+    pages.filter(tbd, (pair:(Int, String)) => FilterAdjust.predicate(pair), parallel, memoized)
   }
 
   def traditionalRun(input: Map[Int, String]) {
      traditionalAnswer = input.par.values.filter(value => {
-      FilterAdjust.predicate(value)
+      FilterAdjust.predicate((0, value))
     }).toBuffer
+  }
 
   def initialRun(mutator: Mutator) {
     output = mutator.run[AdjustableList[Int, String]](this)

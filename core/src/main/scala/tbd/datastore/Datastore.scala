@@ -17,8 +17,10 @@ package tbd.datastore
 
 import akka.actor.{Actor, ActorRef, ActorLogging, Props}
 import akka.pattern.ask
-import scala.collection.mutable.{Map, Set}
+import scala.collection.mutable.{ArrayBuffer, Map, Set}
+import scala.concurrent.{Future, Promise}
 
+import tbd.Constants._
 import tbd.messages._
 import tbd.mod._
 
@@ -27,7 +29,8 @@ object Datastore {
 }
 
 class Datastore extends Actor with ActorLogging {
-  val tables = Map[String, Map[Any, Any]]()
+  import context.dispatcher
+  private val tables = Map[String, Map[Any, Any]]()
   tables("mods") = Map[Any, Any]()
 
   // Maps modIds to the workers that have read the corresponding mod.
@@ -42,13 +45,15 @@ class Datastore extends Actor with ActorLogging {
     if (!tables(table).contains(key)) {
       log.warning("Trying to get nonexistent key = " + key + " from table = " +
                   table)
-    }
-    val ret = tables(table)(key)
-
-    if (ret == null) {
       NullMessage
     } else {
-      ret
+      val ret = tables(table)(key)
+
+      if (ret == null) {
+	NullMessage
+      } else {
+	ret
+      }
     }
   }
 
@@ -66,21 +71,35 @@ class Datastore extends Actor with ActorLogging {
     tables("mods")(modId)
   }
 
-  def updateMod(modId: ModId, value: Any, sender: ActorRef): Int = {
+  // Marks a mod as updated and informs Workers that have read it, without
+  // actually changing the value.
+  def updateMod(modId: ModId): ArrayBuffer[Future[String]] = {
+    val futures = ArrayBuffer[Future[String]]()
+    for (workerRef <- dependencies(modId)) {
+      val finished = Promise[String]()
+      workerRef ! ModUpdatedMessage(modId, finished)
+      futures += finished.future
+    }
+
+    futures
+  }
+
+  def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
     if (!tables("mods").contains(modId)) {
       log.warning("Trying to update non-existent mod " + modId)
     }
+
     tables("mods")(modId) = value
 
-    var count = 0
-    for (workerRef <- dependencies(modId)) {
-      if (workerRef != sender) {
-        workerRef ! ModUpdatedMessage(modId, sender)
-        count += 1
-      }
-    }
+    updateMod(modId)
+  }
 
-    count
+  def removeMod(modId: ModId) {
+    if (!tables("mods").contains(modId)) {
+      log.warning("Trying to remove nonexistent mod " + modId)
+    }
+    tables("mods") -= modId
+    dependencies -= modId
   }
 
   def receive = {
@@ -92,57 +111,51 @@ class Datastore extends Actor with ActorLogging {
       sender ! get(table, key)
     }
 
-    case PutMessage(table: String,
-                    key: Any,
-                    value: Any,
-                    respondTo: ActorRef) => {
+    case PutMessage(table: String, key: Any, value: Any) => {
       if (tables(table).contains(key)) {
 	log.warning("Putting input key that already exists.")
       }
 
       tables(table)(key) = value
 
-      var count = 0
+      val futures = ArrayBuffer[Future[String]]()
       if (modifiers.contains(table)) {
         for (modifier <- modifiers(table)) {
-          count += modifier.insert(key, value, respondTo)
+          futures ++= modifier.insert(key, value)
         }
       }
 
-      sender ! count
+      sender ! Future.sequence(futures)
     }
 
-    case UpdateMessage(table: String,
-                       key: Any,
-                       value: Any,
-                       respondTo: ActorRef) => {
+    case UpdateMessage(table: String, key: Any, value: Any) => {
       tables(table)(key) = value
 
-      var count = 0
+      val futures = ArrayBuffer[Future[String]]()
       if (modifiers.contains(table)) {
         for (modifier <- modifiers(table)) {
-          count += modifier.update(key, value, respondTo)
+          futures ++= modifier.update(key, value)
         }
       }
 
-      sender ! count
+      sender ! Future.sequence(futures)
     }
 
-    case RemoveMessage(table: String, key: Any, respondTo: ActorRef) => {
+    case RemoveMessage(table: String, key: Any) => {
       if (!tables(table).contains(key)) {
 	log.warning("Trying to remove non-existent key from table.")
       }
 
-      var count = 0
+      val futures = ArrayBuffer[Future[String]]()
       if (modifiers.contains(table)) {
         for (modifier <- modifiers(table)) {
-          count += modifier.remove(key, respondTo)
+          futures ++= modifier.remove(key)
         }
       }
 
       tables(table) -= key
 
-      sender ! count
+      sender ! Future.sequence(futures)
     }
 
     case CreateModMessage(value: Any) => {
@@ -153,12 +166,12 @@ class Datastore extends Actor with ActorLogging {
       sender ! createMod(null)
     }
 
-    case UpdateModMessage(modId: ModId, value: Any, workerRef: ActorRef) => {
-      sender ! updateMod(modId, value, workerRef)
+    case UpdateModMessage(modId: ModId, value: Any) => {
+      sender ! updateMod(modId, value)
     }
 
-    case UpdateModMessage(modId: ModId, null, workerRef: ActorRef) => {
-      sender ! updateMod(modId, null, workerRef)
+    case UpdateModMessage(modId: ModId, null) => {
+      sender ! updateMod(modId, null)
     }
 
     case ReadModMessage(modId: ModId, workerRef: ActorRef) => {
@@ -205,22 +218,35 @@ class Datastore extends Actor with ActorLogging {
         table: String,
         partitions: Int,
         chunkSize: Int,
-        chunkSizer: (Any => Int)) => {
+        chunkSizer: (Any => Int),
+        valueMod: Boolean) => {
       val modifier =
-        if (chunkSize == 0) {
+	if (!valueMod) {
+	  if (partitions == 1) {
+	    log.info("Creating new ModList.")
+	    new ModListModifier[Any, Any](this, tables(table))
+	  } else {
+	    log.info("Creating new PartitionedModList.")
+	    new PartitionedModListModifier[Any, Any](this, tables(table), partitions)
+	  }
+	} else if (chunkSize == 0) {
           if (partitions == 1) {
+	    log.info("Creating new DoubleModList.")
             new DMLModifier[Any, Any](this, tables(table))
           } else {
+	    log.info("Creating new PartitionedDoubleModList.")
             new PDMLModifier[Any, Any](this, tables(table), partitions)
           }
         } else {
 	  if (partitions == 1) {
+	    log.info("Creating new ChunkList.")
             new ChunkListModifier[Any, Any](
               this,
               tables(table),
               chunkSize,
               chunkSizer)
 	  } else {
+	    log.info("Creating new PartitionedChunkList.")
 	    new PCLModifier[Any, Any](
               this,
               tables(table),

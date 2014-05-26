@@ -28,9 +28,9 @@ class PartitionedDoubleModList[T, V](
 
   def map[U, Q](
       tbd: TBD,
-      f: (TBD, T, V) => (U, Q),
+      f: (TBD, (T, V)) => (U, Q),
       parallel: Boolean = true,
-      memoized: Boolean = false): PartitionedDoubleModList[U, Q] = {
+      memoized: Boolean = true): PartitionedDoubleModList[U, Q] = {
     if (parallel) {
       def innerMemoParMap(tbd: TBD, i: Int): ArrayBuffer[DoubleModList[U, Q]] = {
         if (i < partitions.size) {
@@ -59,7 +59,7 @@ class PartitionedDoubleModList[T, V](
   def reduce(
       tbd: TBD,
       initialValueMod: Mod[(T, V)],
-      f: (TBD, T, V, T, V) => (T, V),
+      f: (TBD, (T, V), (T, V)) => (T, V),
       parallel: Boolean = true,
       memoized: Boolean = true) : Mod[(T, V)] = {
 
@@ -75,7 +75,7 @@ class PartitionedDoubleModList[T, V](
 
         tbd.mod((dest: Dest[(T, V)]) => {
           tbd.read2(parTup._1, parTup._2)((a, b) => {
-            tbd.write(dest, f(tbd, a._1, a._2, b._1, b._2))
+            tbd.write(dest, f(tbd, a, b))
           })
         })
       } else {
@@ -91,7 +91,7 @@ class PartitionedDoubleModList[T, V](
       }).reduce((a, b) => {
         tbd.mod((dest: Dest[(T, V)]) => {
           tbd.read2(a, b)((a, b) => {
-            tbd.write(dest, f(tbd, a._1, a._2, b._1, b._2))
+            tbd.write(dest, f(tbd, a, b))
           })
         })
       })
@@ -100,7 +100,7 @@ class PartitionedDoubleModList[T, V](
 
   def filter(
       tbd: TBD,
-      pred: (T, V) => Boolean,
+      pred: ((T, V)) => Boolean,
       parallel: Boolean = true,
       memoized: Boolean = true): PartitionedDoubleModList[T, V] = {
     def parFilter(tbd: TBD, i: Int): ArrayBuffer[DoubleModList[T, V]] = {
@@ -135,7 +135,7 @@ class PartitionedDoubleModList[T, V](
     for (partition <- partitions) {
       var innerNode = partition.head.read()
       while (innerNode != null) {
-        buf += innerNode.value.read()
+        buf += innerNode.value.read()._2
         innerNode = innerNode.next.read()
       }
     }

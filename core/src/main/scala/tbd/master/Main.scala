@@ -18,7 +18,6 @@ package tbd.master
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import scala.concurrent.Await
 import scala.concurrent.duration._
 
 object Main {

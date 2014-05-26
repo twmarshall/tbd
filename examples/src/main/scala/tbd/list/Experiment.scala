@@ -63,7 +63,7 @@ Options:
 		  ("chunkSizes" -> Array("0")),
                   ("mutations" -> Array("insert", "update", "remove")),
                   ("partitions" -> Array("8")),
-                  ("percents" -> Array("traditional", "initial", ".01", ".05", ".1")),
+                  ("percents" -> Array("nontbd", "initial", ".01", ".05", ".1")),
                   ("output" -> Array("percents", "algorithms", "counts")))
 
   val allResults = Map[Experiment, Map[String, Double]]()
@@ -135,7 +135,7 @@ Options:
 
           print("\t" + round(total / repeat))
         }
-        print("\n") 
+        print("\n")
       }
     }
   }

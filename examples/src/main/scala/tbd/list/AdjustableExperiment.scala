@@ -122,18 +122,18 @@ class AdjustableExperiment(aConf: Map[String, _])
     }
 
     results("initial") = initialElapsed
-    
+
     val beforeTraditional = System.currentTimeMillis()
-    
+
     alg.traditionalRun(table);
-    
+
     val traditionalElapsed = System.currentTimeMillis() - beforeTraditional
-    
-    
-    results("traditional") = traditionalElapsed
+
+
+    results("nontbd") = traditionalElapsed
 
     for (percent <- percents) {
-      if (percent != "initial" && percent != "traditional") {
+      if (percent != "initial" && percent != "nontbd") {
         var i =  0
         while (i < percent.toDouble * count) {
 	  i += 1

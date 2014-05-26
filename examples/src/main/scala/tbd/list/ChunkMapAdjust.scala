@@ -50,7 +50,7 @@ class ChunkMapAdjust(
 
   def traditionalRun(input: Map[Int, String]) {
     traditionalAnswer = input.par.map(pair => {
-      MapAdjust.mapper(null, 0, pair._2)._2
+      MapAdjust.mapper(null, (0, pair._2))._2
     }).toBuffer
   }
 

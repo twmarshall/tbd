@@ -32,7 +32,7 @@ class DoubleModList[T, V](
 
   def map[U, Q](
       tbd: TBD,
-      f: (TBD, T, V) => (U, Q),
+      f: (TBD, (T, V)) => (U, Q),
       parallel: Boolean = false,
       memoized: Boolean = true): DoubleModList[U, Q] = {
     if (parallel) {
@@ -64,122 +64,99 @@ class DoubleModList[T, V](
     }
   }
 
-  def randomReduce(
-      tbd: TBD,
-      initialValueMod: Mod[(T, V)],
-      f: (TBD, T, V, T, V) => (T, V),
-      parallel: Boolean = false,
-      memoized: Boolean = false): Mod[(T, V)] = {
-    val zero = 0
-    val halfLift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
-
-    tbd.mod((dest: Dest[(T, V)]) => {
-      tbd.read(head)(h => {
-        if(h == null) {
-          tbd.read(initialValueMod)(initialValue =>
-            tbd.write(dest, initialValue))
-        } else {
-          randomReduceList(tbd, initialValueMod,
-                             head, zero, dest,
-                             halfLift, f)
-        }
-      })
-    })
-  }
-
-  def randomReduceList(
-      tbd: TBD,
-      identityMod: Mod[(T, V)],
-      head: Mod[DoubleModListNode[T, V]],
-      round: Int,
-      dest: Dest[(T, V)],
-      lift: Lift[Mod[DoubleModListNode[T, V]]],
-      f: (TBD, T, V, T, V) => (T, V)): Changeable[(T, V)] = {
-
-
-    val halfListMod = lift.memo(List(identityMod, head), () => {
-        tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
-          halfList(tbd, identityMod, identityMod,
-                   head, round, new Hasher(2, 8),
-                   lift, dest, f)
-      })
-    })
-
-    tbd.read(halfListMod)(halfList => {
-      tbd.read(halfList.next)(next => {
-        if(next == null) {
-          tbd.read(halfList.value)(value =>
-            tbd.write(dest, (halfList.key, value)))
-        } else {
-            randomReduceList(tbd, identityMod, halfListMod,
-                               round + 1, dest,
-                               lift, f)
-        }
-      })
-    })
-  }
-
-  def binaryHash(id: T, round: Int, hasher: Hasher) = {
-    hasher.hash(id.hashCode() ^ round) == 0
-  }
-
-  def halfList(
-      tbd: TBD,
-      identityMod: Mod[(T, V)],
-      acc: Mod[(T, V)],
-      head: Mod[DoubleModListNode[T, V]],
-      round: Int,
-      hasher: Hasher,
-      lift: Lift[Mod[DoubleModListNode[T, V]]],
-      dest: Dest[DoubleModListNode[T, V]],
-      f: (TBD, T, V, T, V) => (T, V)): Changeable[DoubleModListNode[T, V]] = {
-    tbd.read2(head, acc)((head, acc) => {
-      tbd.read2(head.value, head.next)((value, next) => {
-        if(next == null) {
-            val newValue = tbd.createMod(
-                             f(tbd, acc._1, acc._2, head.key, value))
-            tbd.read(newValue)(value => {
-              val newList = new DoubleModListNode(
-                              value._1,
-                              tbd.createMod(value._2),
-                              tbd.createMod[DoubleModListNode[T, V]](null))
-              tbd.write(dest, newList)
-            })
-        } else {
-          if(binaryHash(head.key, round, hasher)) {
-            val reducedList = lift.memo(List(head.next, identityMod), () => {
-              tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
-                halfList(tbd, identityMod, identityMod,
-                         head.next, round, hasher, lift, dest, f)
-              })
-            })
-            val newValue = f(tbd, acc._1, acc._2, head.key, value)
-            val newList =  new DoubleModListNode(newValue._1,
-						 tbd.createMod(newValue._2),
-						 reducedList)
-            tbd.write(dest, newList)
-          } else {
-            val newAcc = tbd.createMod(f(tbd, acc._1, acc._2, head.key, value))
-            halfList(tbd, identityMod, newAcc,
-                     head.next, round, hasher, lift, dest, f)
-          }
-        }
-      })
-    })
-  }
-
   def reduce(
       tbd: TBD,
-      initialValueMod: Mod[(T, V)],
-      f: (TBD, T, V, T, V) => (T, V),
+      identityMod: Mod[(T, V)],
+      f: (TBD, (T, V), (T, V)) => (T, V),
       parallel: Boolean = false,
-      memoized: Boolean = false): Mod[(T, V)] = {
-    randomReduce(tbd, initialValueMod, f)
+      memoized: Boolean = true): Mod[(T, V)] = {
+
+    // Each round we need a hasher and a lift, and we need to guarantee that the
+    // same hasher and lift are used for a given round during change propagation,
+    // even if the first mod of the list is deleted. 
+    class RoundLift {
+      val lift = tbd.makeLift[(Hasher,
+                               Lift[Mod[DoubleModListNode[T, V]]],
+                               RoundLift)](!memoized)
+
+      def getTuple() =
+        lift.memo(List(), () =>
+                  (new Hasher(2, 4),
+                   tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized),
+                   new RoundLift()))
+    }
+
+    def randomReduceList(
+        head: DoubleModListNode[T, V],
+        round: Int,
+        dest: Dest[(T, V)],
+        roundLift: RoundLift): Changeable[(T, V)] = {
+      val tuple = roundLift.getTuple()
+
+      val halfListMod =
+        tbd.mod((dest: Dest[DoubleModListNode[T, V]]) =>
+          halfList(identityMod, head, round, tuple._1, tuple._2, dest))
+
+      tbd.read(halfListMod)(halfList =>
+        tbd.read(halfList.next)(next =>
+          if(next == null)
+            tbd.read(halfList.value)(value =>
+              tbd.write(dest, value))
+          else
+            randomReduceList(halfList, round + 1, dest, tuple._3)))
+    }
+
+    def binaryHash(id: ModId, round: Int, hasher: Hasher) = {
+      hasher.hash(id.hashCode() ^ round) == 0
+    }
+
+    def halfList(
+        acc: Mod[(T, V)],
+        head: DoubleModListNode[T, V],
+        round: Int,
+        hasher: Hasher,
+        lift: Lift[Mod[DoubleModListNode[T, V]]],
+        dest: Dest[DoubleModListNode[T, V]])
+          : Changeable[DoubleModListNode[T, V]] = {
+      val newAcc = tbd.mod((dest: Dest[(T, V)]) =>
+        tbd.read(acc)((acc) =>
+	  tbd.read(head.value)(value =>
+            tbd.write(dest, f(tbd, acc, value)))))
+
+      if(binaryHash(head.value.id, round, hasher)) {
+        val newNext = lift.memo(List(head.next, identityMod), () =>
+	  tbd.mod((dest: Dest[DoubleModListNode[T, V]]) =>
+	    tbd.read(head.next)(next =>
+	      if (next == null)
+	        tbd.write(dest, null)
+	      else
+	        halfList(identityMod, next, round, hasher, lift, dest))))
+        tbd.write(dest, new DoubleModListNode(newAcc, newNext))
+      } else {
+        tbd.read(head.next)(next =>
+	  if (next == null) {
+	    val newNext = tbd.createMod[DoubleModListNode[T, V]](null)
+            tbd.write(dest, new DoubleModListNode(newAcc, newNext))
+	  } else {
+	    halfList(newAcc, next, round, hasher, lift, dest)
+	  }
+        )
+      }
+    }
+
+    val roundLift = new RoundLift()
+    tbd.mod((dest: Dest[(T, V)]) =>
+      tbd.read(head)(head =>
+        if(head == null)
+          tbd.read(identityMod)(identity =>
+            tbd.write(dest, identity))
+        else
+          randomReduceList(head, 0, dest, roundLift)))
   }
 
   def filter(
       tbd: TBD,
-      pred: (T, V) => Boolean,
+      pred: ((T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = true): DoubleModList[T, V] = {
     val lift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
@@ -201,7 +178,7 @@ class DoubleModList[T, V](
     val buf = ArrayBuffer[V]()
     var node = head.read()
     while (node != null) {
-      buf += node.value.read()
+      buf += node.value.read()._2
       node = node.next.read()
     }
 

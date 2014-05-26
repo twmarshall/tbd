@@ -16,6 +16,7 @@
 package tbd.examples.list
 
 import scala.collection.mutable.Map
+import scala.collection.immutable.HashMap
 
 import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.{AdjustableList, Mod}
@@ -24,9 +25,9 @@ class WCAdjust(
     partitions: Int,
     chunkSize: Int,
     parallel: Boolean) extends Algorithm {
-  var output: Mod[(Int, scala.collection.immutable.HashMap[String, Int])] = null
+  var output: Mod[(Int, HashMap[String, Int])] = null
 
-  var traditionalAnswer: Map[String, Int] = null;
+  var traditionalAnswer: HashMap[String, Int] = null;
 
   def initialRun(mutator: Mutator) {
     output = mutator.run[Mod[(Int, scala.collection.immutable.HashMap[String, Int])]](this)
