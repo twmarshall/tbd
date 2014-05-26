@@ -18,7 +18,7 @@ package tbd
 import akka.pattern.ask
 import akka.actor.ActorRef
 import akka.event.Logging
-import scala.collection.mutable.{ArrayBuffer, Map, Set, ListBuffer}
+import scala.collection.mutable.{ArrayBuffer, Map, Set}
 import scala.concurrent.{Await, Future, Promise}
 
 import tbd.Constants._
@@ -65,50 +65,9 @@ class TBD(id: String, _worker: Worker) {
     })
   }
 
-  /* readN - Read n mods. Experimental function.
-   *
-   * Usage Example:
-   *
-   *  tbd.mod((dest: Dest[AnyRef]) => {
-   *    val a = tbd.createMod("Hello");
-   *    val b = tbd.createMod(12);
-   *    val c = tbd.createMod("Bla");
-   *
-   *    tbd.readN(a, b, c)(x => x match {
-   *      case Seq(a:String, b:Int, c:String) => {
-   *        println(a + b + c)
-   *        tbd.write(dest, null)
-   *      }
-   *    })
-   *  })
-   */
-  def readN[U](args: Mod[U]*)
-              (reader: (Seq[_]) => (Changeable[U])) : Changeable[U] = {
-
-    readNHelper(args, ListBuffer(), reader)
-  }
-
-  private def readNHelper[U](mods: Seq[Mod[_]],
-                     values: ListBuffer[AnyRef],
-                     reader: (Seq[_]) => (Changeable[U])) : Changeable[U] = {
-    val tail = mods.tail
-    val head = mods.head
-
-
-    read(head)((value) => {
-      values += value.asInstanceOf[AnyRef]
-      if(tail.isEmpty) {
-        reader(values.toSeq)
-      } else {
-        readNHelper(tail, values, reader)
-      }
-    })
-  }
-
-
   def increment(mod: Mod[Int]): Mod[Int] = {
     this.mod((dest: Dest[Int]) =>
-      read(mod)(mod =>
+      read(mod)(mod => 
         write(dest, mod + 1)))
   }
 
@@ -149,21 +108,6 @@ class TBD(id: String, _worker: Worker) {
     this.mod((dest: Dest[T]) => {
       write(dest, value)
     })
-  }
-
-  def mod2[T, V](initializer : (Dest[T], Dest[V]) => Changeable[V]):
-        (Mod[T], Mod[V]) = {
-    var first: Mod[T] = null
-    var second: Mod[V] = null
-    first = this.mod((first: Dest[T]) => {
-      second = this.mod((second: Dest[V]) => {
-        initializer(first, second);
-        new Changeable[V](null)
-      })
-      new Changeable[T](null)
-    })
-
-    (first, second)
   }
 
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
