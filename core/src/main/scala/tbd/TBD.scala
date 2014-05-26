@@ -135,11 +135,6 @@ class TBD(id: String, _worker: Worker) {
 
     Await.result(Future.sequence(awaiting), DURATION)
 
-    if (worker.ddg.reads.contains(dest.mod.id)) {
-      worker.ddg.modUpdated(dest.mod.id)
-      updatedMods += dest.mod.id
-    }
-
     val changeable = new Changeable(dest.mod)
     if (Main.debug) {
       val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
@@ -157,8 +152,7 @@ class TBD(id: String, _worker: Worker) {
   }
 
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
-    val modId = new ModId(worker.id + "." + worker.nextModId)
-    val d = new Dest[T](worker, modId)
+    val d = new Dest[T](worker)
     initializer(d).mod
     d.mod
   }

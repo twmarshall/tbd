@@ -1,4 +1,4 @@
- /**
+/**
  * Copyright (C) 2013 Carnegie Mellon University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -57,7 +57,7 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
         node.timestamp > start && node.timestamp < end)
       while (!option.isEmpty) {
         val node = option.get
-        ddg.updated = ddg.updated.filter((_node: Node) => node != _node)
+        ddg.updated -= node
 
         if (node.updated) {
           if (node.isInstanceOf[ReadNode]) {

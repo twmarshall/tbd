@@ -26,7 +26,7 @@ import tbd.master.Main
 import tbd.messages.CreateModMessage
 import tbd.worker.Worker
 
-class Dest[T](worker: Worker, aModId: ModId) extends Mod[T](null, aModId) {
+class Dest[T](worker: Worker) extends Mod[T](null, null) {
   val future = worker.datastoreRef ? CreateModMessage(null)
   val mod = Await.result(future, DURATION).asInstanceOf[Mod[T]]
 
