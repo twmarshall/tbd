@@ -48,7 +48,8 @@ case class GetAdjustableListMessage(
     table: String,
     partitions: Int = 8,
     chunkSize: Int = 0,
-    chunkSizer: Any => Int)
+    chunkSizer: Any => Int,
+    valueMod: Boolean)
 case class NullMessage()
 
 // Master

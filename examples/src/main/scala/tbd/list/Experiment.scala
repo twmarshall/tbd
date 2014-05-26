@@ -72,7 +72,6 @@ Options:
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
   }
 
-
   def loadPages(): ArrayBuffer[String] = {
     val chunks = ArrayBuffer[String]()
     val elems = scala.xml.XML.loadFile("wiki.xml")

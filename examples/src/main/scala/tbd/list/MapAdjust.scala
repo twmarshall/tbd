@@ -32,12 +32,15 @@ object MapAdjust {
 
 class MapAdjust(
     partitions: Int,
+    chunkSize: Int,
+    valueMod: Boolean,
     parallel: Boolean,
     memoized: Boolean) extends Algorithm {
   var output: AdjustableList[Int, Int] = null
 
   def run(tbd: TBD): AdjustableList[Int, Int] = {
-    val pages = tbd.input.getAdjustableList[Int, String](partitions)
+    val pages = tbd.input.getAdjustableList[Int, String](
+      partitions, chunkSize, _ => 1, valueMod)
     pages.map(tbd, MapAdjust.mapper, parallel = parallel, memoized = memoized)
   }
 
