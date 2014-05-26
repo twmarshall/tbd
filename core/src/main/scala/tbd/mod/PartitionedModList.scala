@@ -133,7 +133,7 @@ class PartitionedModList[T, V](
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
-       (AdjustableList[T, V], AdjustableList[T, V]) = ???
+       Mod[(AdjustableList[T, V], AdjustableList[T, V])] = ???
 
   def sort(
       tbd: TBD,
@@ -141,7 +141,7 @@ class PartitionedModList[T, V](
       parallel: Boolean = false,
       memoized: Boolean = false): AdjustableList[T, V] = ???
 
-  
+
   /* Meta Operations */
   def toBuffer(): Buffer[V] = {
     val buf = ArrayBuffer[V]()

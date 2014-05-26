@@ -72,7 +72,7 @@ class DoubleModListNode[T, V] (
     tbd.write(dest, new DoubleModListNode[U, Q](modTuple._1, modTuple._2))
   }
 
-  def split(
+  def fastSplit(
       tbd: TBD,
       destMatch: Dest[DoubleModListNode[T, V]],
       destNoMatch: Dest[DoubleModListNode[T, V]],
@@ -84,7 +84,7 @@ class DoubleModListNode[T, V] (
       if(pred(tbd, (v._1, v._2))) {
         val newNext = tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
           if(next != null) {
-            next.split(tbd, newDest, destNoMatch, pred)
+            next.fastSplit(tbd, newDest, destNoMatch, pred)
           } else {
             tbd.write(newDest, null)
             tbd.write(destNoMatch, null)
@@ -95,7 +95,7 @@ class DoubleModListNode[T, V] (
       } else {
         val newNext = tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
           if(next != null) {
-            next.split(tbd, destMatch, newDest, pred)
+            next.fastSplit(tbd, destMatch, newDest, pred)
           } else {
             tbd.write(newDest, null)
             tbd.write(destMatch, null)
@@ -103,6 +103,36 @@ class DoubleModListNode[T, V] (
         })
 
         tbd.write(destNoMatch, new DoubleModListNode(value, newNext))
+      }
+    })
+  }
+
+  def split(
+      tbd: TBD,
+      dest: Dest[(DoubleModListNode[T, V], DoubleModListNode[T, V])],
+      pred: (TBD, (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+        Changeable[(DoubleModListNode[T, V], DoubleModListNode[T, V])] = {
+
+    tbd.read2(value, next)((v, next) => {
+
+      val newNext = tbd.mod((dest:  Dest[(DoubleModListNode[T, V], DoubleModListNode[T, V])]) => {
+        if(next != null) {
+          next.split(tbd, dest, pred, parallel, memoized)
+        } else {
+          tbd.write(dest, (null, null))
+        }
+      })
+
+      if(pred(tbd, (v._1, v._2))) {
+        tbd.read(newNext)(newNext => {
+          tbd.write(dest, (new DoubleModListNode(value, tbd.createMod(newNext._1)), newNext._2))
+        })
+      } else {
+        tbd.read(newNext)(newNext => {
+          tbd.write(dest, (newNext._1, new DoubleModListNode(value, tbd.createMod(newNext._2))))
+        })
       }
     })
   }
@@ -118,20 +148,23 @@ class DoubleModListNode[T, V] (
     tbd.read(next)(next => {
       if(next != null) {
         tbd.read(value)(v => {
-          val splitResult = tbd.mod2((matches: Dest[DoubleModListNode[T, V]],
-                                      diffs: Dest[DoubleModListNode[T, V]]) => {
+          val splitResult = tbd.mod((dest: Dest[(DoubleModListNode[T, V],
+                                           DoubleModListNode[T, V])]) => {
 
-            next.split(tbd, matches, diffs,
+            next.split(tbd, dest,
               (tbd, cv) => { comperator(tbd, cv, v) },
               parallel, memoized)
           })
-          tbd.read2(splitResult._1, splitResult._2)((smaller, greater) => {
+          tbd.read(splitResult)(splitResult => {
+            val (smaller, greater) = splitResult
             val greaterSorted = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
               if(greater != null) {
                 greater.quicksort(tbd, dest, toAppend,
                                   comperator, parallel, memoized)
               } else {
-                tbd.write(dest, null)
+                tbd.read(toAppend)(toAppend => {
+                  tbd.write(dest, toAppend)
+                })
               }
             })
 

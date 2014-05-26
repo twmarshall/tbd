@@ -33,7 +33,7 @@ class ListMapTest(
 class ListSplitTest(
     f: (TBD, (String, Int)) => Boolean) extends Adjustable {
   def run(tbd: TBD):
-        (AdjustableList[String, Int], AdjustableList[String, Int]) = {
+        Mod[(AdjustableList[String, Int], AdjustableList[String, Int])] = {
     val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
     list.split(tbd, f)
   }
@@ -364,45 +364,45 @@ class ListTests extends FlatSpec with Matchers {
     val mutator = new Mutator()
     mutator.put("one", 0)
     mutator.put("two", 2)
-    val output = mutator.run[(AdjustableList[String, Int], AdjustableList[String, Int])](
+    val output = mutator.run[Mod[(AdjustableList[String, Int], AdjustableList[String, Int])]](
       new ListSplitTest((tbd, value) => {
           value._2 % 2 == 0
       }))
 
-    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2))
-    output._2.toBuffer().sortWith(_ < _) should be (Buffer())
+    output.read()._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2))
+    output.read()._2.toBuffer().sortWith(_ < _) should be (Buffer())
 
     mutator.put("three", 1)
     mutator.propagate()
 
-    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2))
-    output._2.toBuffer().sortWith(_ < _) should be (Buffer(1))
+    output.read()._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2))
+    output.read()._2.toBuffer().sortWith(_ < _) should be (Buffer(1))
 
     mutator.update("two", 3)
     mutator.put("four", 4)
     mutator.propagate()
 
-    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
-    output._2.toBuffer().sortWith(_ < _) should be (Buffer(1, 3))
+    output.read()._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
+    output.read()._2.toBuffer().sortWith(_ < _) should be (Buffer(1, 3))
 
     mutator.put("seven", -1)
     mutator.propagate()
 
-    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
-    output._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 3))
+    output.read()._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
+    output.read()._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 3))
 
     mutator.update("two", 5)
     mutator.propagate()
 
-    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
-    output._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 5))
+    output.read()._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
+    output.read()._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 5))
 
 
     mutator.update("four", 7)
     mutator.propagate()
 
-    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0))
-    output._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 5, 7))
+    output.read()._1.toBuffer().sortWith(_ < _) should be (Buffer(0))
+    output.read()._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 5, 7))
 
 
     mutator.update("two", 4)
@@ -410,8 +410,8 @@ class ListTests extends FlatSpec with Matchers {
     mutator.update("seven", 8)
     mutator.propagate()
 
-    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2, 4, 8))
-    output._2.toBuffer().sortWith(_ < _) should be (Buffer(1))
+    output.read()._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2, 4, 8))
+    output.read()._2.toBuffer().sortWith(_ < _) should be (Buffer(1))
 
     mutator.shutdown()
   }
@@ -427,16 +427,16 @@ class ListTests extends FlatSpec with Matchers {
       data += r
     }
 
-    val output = mutator.run[(AdjustableList[String, Int],
-                              AdjustableList[String, Int])](
+    val output = mutator.run[Mod[(AdjustableList[String, Int],
+                              AdjustableList[String, Int])]](
       new ListSplitTest((tbd, value) => {
           value._2 % 2 == 0
       }))
 
     var answer = (data.filter(x => x % 2 == 0), data.filter(x => x % 2 != 0))
 
-    output._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
-    output._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
+    output.read()._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
+    output.read()._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
 
     for(i <- 0 to 100) {
       if(rand.nextInt(10) > 8) {
@@ -450,8 +450,8 @@ class ListTests extends FlatSpec with Matchers {
 
     answer = (data.filter(x => x % 2 == 0), data.filter(x => x % 2 != 0))
 
-    output._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
-    output._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
+    output.read()._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
+    output.read()._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
 
     for(i <- 0 to 100) {
       if(i < data.size && rand.nextInt(10) > 8) {
@@ -466,8 +466,8 @@ class ListTests extends FlatSpec with Matchers {
 
     answer = (data.filter(x => x % 2 == 0), data.filter(x => x % 2 != 0))
 
-    output._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
-    output._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
+    output.read()._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
+    output.read()._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
 
     mutator.shutdown()
   }
