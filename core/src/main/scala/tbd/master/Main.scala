@@ -21,7 +21,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 
 object Main {
-  val debug = false
+  val debug = true
 
   var id = 0
 
