@@ -135,6 +135,12 @@ class PartitionedDoubleModList[T, V](
       memoized: Boolean = false):
        (AdjustableList[T, V], AdjustableList[T, V]) = ???
 
+  def sort(
+      tbd: TBD,
+      comperator: (TBD, (T, V), (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): AdjustableList[T, V] = ???
+
   /* Meta Operations */
   def toBuffer(): Buffer[V] = {
     val buf = ArrayBuffer[V]()

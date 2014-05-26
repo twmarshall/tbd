@@ -132,6 +132,12 @@ class PartitionedChunkList[T, U](
       memoized: Boolean = false):
        (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
+  def sort(
+      tbd: TBD,
+      comperator: (TBD, (T, U), (T, U)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): AdjustableList[T, U] = ???
+
   /* Meta Operations */
   def toBuffer(): Buffer[U] = {
     val buf = ArrayBuffer[U]()

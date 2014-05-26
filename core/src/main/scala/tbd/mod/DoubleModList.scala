@@ -88,6 +88,25 @@ class DoubleModList[T, V](
     (new DoubleModList(result._1), new DoubleModList(result._2))
   }
 
+  def sort(
+      tbd: TBD,
+      comperator: (TBD, (T, V), (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): AdjustableList[T, V] = {
+    val sorted = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
+      tbd.read(head)(head => {
+        if(head == null) {
+          tbd.write(dest, null)
+        } else {
+          head.quicksort(tbd, dest, tbd.createMod(null),
+                         comperator, parallel, memoized)
+        }
+      })
+    })
+
+    new DoubleModList(sorted)
+  }
+
   def randomReduce(
       tbd: TBD,
       initialValueMod: Mod[(T, V)],
