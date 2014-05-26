@@ -21,12 +21,12 @@ import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.AdjustableList
 
 object ChunkMapAdjust {
-  def mapper(tbd: TBD, key: Int, s: String): (Int, Int) = {
+  def mapper(tbd: TBD, pair: (Int, String)): (Int, Int) = {
     var count = 0
-    for (word <- s.split("\\W+")) {
+    for (word <- pair._2.split("\\W+")) {
       count += 1
     }
-    (key, count)
+    (pair._1, count)
   }
 }
 
@@ -36,7 +36,7 @@ class ChunkMapAdjust(
     parallel: Boolean,
     memoized: Boolean) extends Algorithm {
   var output: AdjustableList[Int, Int] = null
-  
+
   var traditionalAnswer: Buffer[Int] = null
 
   def run(tbd: TBD): AdjustableList[Int, Int] = {
@@ -47,7 +47,7 @@ class ChunkMapAdjust(
   def initialRun(mutator: Mutator) {
     output = mutator.run[AdjustableList[Int, Int]](this)
   }
-  
+
   def traditionalRun(input: Map[Int, String]) {
     traditionalAnswer = input.par.map(pair => {
       MapAdjust.mapper(null, 0, pair._2)._2
@@ -56,9 +56,9 @@ class ChunkMapAdjust(
 
   def checkOutput(input: Map[Int, String]): Boolean = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
-    
+
     traditionalRun(input)
-    
+
     return sortedOutput == traditionalAnswer.sortWith(_ < _)
   }
 }

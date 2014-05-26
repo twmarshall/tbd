@@ -18,25 +18,20 @@ package tbd.mod
 import tbd.{Changeable, TBD}
 import tbd.memo.Lift
 
-class DoubleModListNode[T, V] (
-    aKey: T,
-    aValue: Mod[V],
-    aNext: Mod[DoubleModListNode[T, V]])
-    extends Iterator[T, V, DoubleModListNode[T, V]] {
-  def key = aKey
-  def value = aValue
-  def next = aNext
+class ModListNode[T, V] (
+    _value: (T, V),
+    _next: Mod[ModListNode[T, V]]) {
+  var value = _value
+  def next = _next
 
   def map[U, Q](
       tbd: TBD,
-      dest: Dest[DoubleModListNode[U, Q]],
-      f: (TBD, T, V) => (U, Q),
-      lift: Lift[Mod[DoubleModListNode[U, Q]]]
-      ): Changeable[DoubleModListNode[U, Q]] = {
-    val newValue = tbd.mod((dest: Dest[(U, Q)]) =>
-      tbd.read(value)(value => tbd.write(dest, f(tbd, key, value))))
+      dest: Dest[ModListNode[U, Q]],
+      f: (TBD, (T, V)) => (U, Q),
+      lift: Lift[Mod[ModListNode[U, Q]]]
+      ): Changeable[ModListNode[U, Q]] = {
     val newNext = lift.memo(List(next), () => {
-      tbd.mod((dest: Dest[DoubleModListNode[U, Q]]) =>
+      tbd.mod((dest: Dest[ModListNode[U, Q]]) =>
         tbd.read(next)(next => {
           if (next != null) {
             next.map(tbd, dest, f, lift)
@@ -46,27 +41,18 @@ class DoubleModListNode[T, V] (
         })
       )
     })
-    tbd.read(newValue)(newValue => {
-      tbd.write(dest, new DoubleModListNode[U, Q](
-                            newValue._1,
-                            tbd.createMod(newValue._2),
-                            newNext))
-    })
+    tbd.write(dest, new ModListNode[U, Q](f(tbd, value), newNext))
   }
 
   def parMap[U, Q](
       tbd: TBD,
-      dest: Dest[DoubleModListNode[U, Q]],
-      f: (TBD, T, V) => (U, Q)): Changeable[DoubleModListNode[U, Q]] = {
+      dest: Dest[ModListNode[U, Q]],
+      f: (TBD, (T, V)) => (U, Q)): Changeable[ModListNode[U, Q]] = {
     val modTuple =
       tbd.par((tbd: TBD) => {
-	      tbd.mod((valueDest: Dest[(U, Q)]) => {
-          tbd.read(value)(value => {
-            tbd.write(valueDest, f(tbd, key, value))
-          })
-        })
+	f(tbd, value)
       }, (tbd: TBD) => {
-        tbd.mod((nextDest: Dest[DoubleModListNode[U, Q]]) => {
+        tbd.mod((nextDest: Dest[ModListNode[U, Q]]) => {
 	        tbd.read(next)(next => {
             if (next != null) {
               next.parMap(tbd, nextDest, f)
@@ -76,23 +62,19 @@ class DoubleModListNode[T, V] (
           })
         })
       })
-    tbd.read(modTuple._1)(value =>
-      tbd.write(dest, new DoubleModListNode[U, Q](
-                            value._1,
-                            tbd.createMod(value._2),
-                            modTuple._2)))
+    tbd.write(dest, new ModListNode[U, Q](modTuple._1, modTuple._2))
   }
 
-  def filter(
+  /*def filter(
       tbd: TBD,
-      dest: Dest[DoubleModListNode[T, V]],
-      pred: (T, V) => Boolean,
-      lift: Lift[Mod[DoubleModListNode[T, V]]])
-        : Changeable[DoubleModListNode[T, V]] = {
-    tbd.read(value)(v => {
-      if (pred(key, v)) {
+      dest: Dest[ModListNode[T, V]],
+      pred: ((T, V)) => Boolean,
+      lift: Lift[Mod[ModListNode[T, V]]])
+        : Changeable[ModListNode[T, V]] = {
+    tbd.read(value)(value => {
+      if (pred(value)) {
         val newNext = lift.memo(List(next), () => {
-          tbd.mod((nextDest: Dest[DoubleModListNode[T, V]]) => {
+          tbd.mod((nextDest: Dest[ModListNode[T, V]]) => {
             tbd.read(next)(nextValue => {
                 if (nextValue == null) {
                   tbd.write(nextDest, null)
@@ -102,7 +84,7 @@ class DoubleModListNode[T, V] (
               })
             })
           })
-        tbd.write(dest, new DoubleModListNode(key, value, newNext))
+        tbd.write(dest, new ModListNode(tbd.createMod(value), newNext))
       } else {
         tbd.read(next)(nextValue => {
           if (nextValue == null) {
@@ -116,7 +98,7 @@ class DoubleModListNode[T, V] (
   }
 
   override def toString: String = {
-    def toString(lst: DoubleModListNode[T, V]):String = {
+    def toString(lst: ModListNode[T, V]):String = {
       val nextRead = lst.next.read()
       val next =
 	if (nextRead != null)
@@ -127,6 +109,6 @@ class DoubleModListNode[T, V] (
       lst.value + next
     }
 
-    "DoubleModListNode(" + toString(this)
-  }
+    "ModListNode(" + toString(this)
+  }*/
 }

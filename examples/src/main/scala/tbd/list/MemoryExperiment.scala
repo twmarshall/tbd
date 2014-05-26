@@ -19,15 +19,19 @@ import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.AdjustableList
 
 class MemoryExperiment extends Adjustable {
+  val partitions = 4
+  val chunkSize = 0
+  val valueMod = true
   def run(tbd: TBD): AdjustableList[Int, Int] = {
-    val list = tbd.input.getAdjustableList[Int, Int]()
-    list.map(tbd, (tbd: TBD, value: Int, key: Int) => (value, key))
+    val list = tbd.input.getAdjustableList[Int, Int](
+      partitions, chunkSize, _ => 1, valueMod)
+    list.map(tbd, (tbd: TBD, pair: (Int, Int)) => pair)
   }
 }
 
 object MemoryExperiment {
   def main(args: Array[String]) {
-    val max = 1000000
+    val max = 100000
     val mutator = new Mutator()
     for (i <- 0 to max) {
       mutator.put(i, i)
@@ -41,7 +45,9 @@ object MemoryExperiment {
 	mutator.update(rand.nextInt(max), rand.nextInt(10))
       }
 
+      println("starting propagating")
       mutator.propagate()
+      println("done propagating")
     }
   }
 }

@@ -33,6 +33,12 @@ class ChunkListTest extends Adjustable {
   }
 }
 
+class ModListTest extends Adjustable {
+  def run(tbd: TBD): AdjustableList[Int, Int] = {
+    tbd.input.getAdjustableList[Int, Int](partitions = 1, chunkSize = 100, chunkSizer = _ => 32, valueMod = false)
+  }
+}
+
 class MutatorTests extends FlatSpec with Matchers {
   val rand = new scala.util.Random()
 
@@ -69,7 +75,7 @@ class MutatorTests extends FlatSpec with Matchers {
   }
 
   "AdjustableListTests" should "update the AdjustableList correctly" in {
-    for (adjustable <- List(new AdjustableListTest(), new ChunkListTest())) {
+    for (adjustable <- List(new AdjustableListTest(), new ChunkListTest(), new ModListTest())) {
       val mutator = new Mutator()
       val answer = Map[Int, Int]()
 

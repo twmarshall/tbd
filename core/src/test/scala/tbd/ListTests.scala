@@ -22,7 +22,7 @@ import tbd.{Adjustable, Changeable, Mutator, TBD}
 import tbd.mod.{AdjustableList, Dest, Mod}
 
 class ListMapTest(
-    f: (TBD, String, Int) => (String, Int),
+    f: (TBD, (String, Int)) => (String, Int),
     parallel: Boolean) extends Adjustable {
   def run(tbd: TBD): AdjustableList[String, Int] = {
     val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
@@ -34,7 +34,7 @@ class ListMemoMapTest extends Adjustable {
   def run(tbd: TBD): AdjustableList[String, Int] = {
     val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
     list.map(tbd,
-             (tbd: TBD, key: String, value: Int) => (key, value + 3),
+             (tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 + 3),
              memoized = true)
   }
 }
@@ -44,14 +44,14 @@ class ChunkListMapTest(partitions: Int) extends Adjustable {
     val list = tbd.input.getAdjustableList[Int, Int](partitions = partitions,
                                                      chunkSize = 2,
                                                      chunkSizer = _ => 1)
-    list.map(tbd, (tbd: TBD, key: Int, value: Int) => (key, value - 2))
+    list.map(tbd, (tbd: TBD, pair: (Int, Int)) => (pair._1, pair._2 - 2))
   }
 }
 
 class ListFilterTest(partitions: Int) extends Adjustable {
   def run(tbd: TBD): AdjustableList[Int, Int] = {
     val list = tbd.input.getAdjustableList[Int, Int](partitions = partitions)
-    list.filter(tbd, (key: Int, value: Int) => value % 2 == 0)
+    list.filter(tbd, (pair: (Int, Int)) => pair._2 % 2 == 0)
   }
 }
 
@@ -60,8 +60,8 @@ class ListReduceSumTest extends Adjustable {
     val modList = tbd.input.getAdjustableList[String, Int](partitions = 1)
     val zero = tbd.mod((dest : Dest[(String, Int)]) => tbd.write(dest, ("", 0)))
     modList.reduce(tbd, zero,
-      (tbd: TBD, ka: String, a: Int, kb: String, b: Int) => {
-        (kb, a + b)
+      (tbd: TBD, pair1: (String, Int), pair2: (String, Int)) => {
+        (pair2._1, pair1._2 + pair2._2)
       })
   }
 }
@@ -71,7 +71,7 @@ class ListTests extends FlatSpec with Matchers {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
-    val f = (tbd: TBD, key: String, value: Int) => (key, value * 2)
+    val f = (tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 * 2)
     val output =
       mutator.run[AdjustableList[String, Int]](new ListMapTest(f, false))
     // (1 * 2), (2 * 2)
@@ -111,7 +111,7 @@ class ListTests extends FlatSpec with Matchers {
     val mutator = new Mutator()
     mutator.put("one", 1)
     mutator.put("two", 2)
-    val f = (tbd: TBD, key: String, value: Int) => (key, value + 1)
+    val f = (tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 + 1)
     val output = mutator.run[AdjustableList[String, Int]](new ListMapTest(f, true))
     // (1 + 1), (2 + 1)
     output.toBuffer().sortWith(_ < _) should be (Buffer(2, 3))
@@ -227,7 +227,7 @@ class ListTests extends FlatSpec with Matchers {
     }
   }
 
-  "ChunkListMapTest" should "return the filtered list" in {
+  "ChunkListMapTest" should "return the mapped list" in {
     for (partitions <- List(1, 2, 8)) {
       val mutator = new Mutator()
       val table = Map[Int, Int]()

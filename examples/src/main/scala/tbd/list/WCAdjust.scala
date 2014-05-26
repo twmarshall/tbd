@@ -20,33 +20,36 @@ import scala.collection.mutable.Map
 import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.{AdjustableList, Mod}
 
-class WCAdjust(partitions: Int, parallel: Boolean) extends Algorithm {
-  var output: Mod[(Int, Map[String, Int])] = null
-  
+class WCAdjust(
+    partitions: Int,
+    chunkSize: Int,
+    parallel: Boolean) extends Algorithm {
+  var output: Mod[(Int, scala.collection.immutable.HashMap[String, Int])] = null
+
   var traditionalAnswer: Map[String, Int] = null;
 
   def initialRun(mutator: Mutator) {
-    output = mutator.run[Mod[(Int, Map[String, Int])]](this)
+    output = mutator.run[Mod[(Int, scala.collection.immutable.HashMap[String, Int])]](this)
   }
 
   def checkOutput(chunks: Map[Int, String]): Boolean = {
     traditionalRun(chunks)
     output.read()._2 == traditionalAnswer
   }
-  
+
   def traditionalRun(input: Map[Int, String]) {
     traditionalAnswer = input.par.map(value => WC.wordcount(value._2)).reduce(WC.reduce)
   }
 
-  def mapper(tbd: TBD, key: Int, s: String) = (key, WC.wordcount(s))
+  def mapper(tbd: TBD, pair: (Int, String)) = (pair._1, WC.wordcount(pair._2))
 
-  def reducer(tbd: TBD, k1: Int, v1: Map[String, Int], k2: Int, v2: Map[String, Int]) =
-    (k1, WC.reduce(v1, v2))
+  def reducer(tbd: TBD, pair1: (Int, scala.collection.immutable.HashMap[String, Int]), pair2: (Int, scala.collection.immutable.HashMap[String, Int])) =
+    (pair1._1, WC.reduce(pair1._2, pair2._2))
 
-  def run(tbd: TBD): Mod[(Int, Map[String, Int])] = {
-    val pages = tbd.input.getAdjustableList[Int, String](partitions)
+  def run(tbd: TBD): Mod[(Int, scala.collection.immutable.HashMap[String, Int])] = {
+    val pages = tbd.input.getAdjustableList[Int, String](partitions, chunkSize = chunkSize, chunkSizer = _ => 1)
     val counts = pages.map(tbd, mapper, parallel = parallel)
-    val initialValue = tbd.createMod((0, Map[String, Int]()))
+    val initialValue = tbd.createMod((0, scala.collection.immutable.HashMap[String, Int]()))
     counts.reduce(tbd, initialValue, reducer, parallel = parallel)
   }
 }

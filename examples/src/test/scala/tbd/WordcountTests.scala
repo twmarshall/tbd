@@ -16,7 +16,7 @@
 package tbd.examples.test
 
 import org.scalatest._
-import scala.collection.mutable.Map
+import scala.collection.immutable.HashMap
 
 import tbd.Mutator
 import tbd.examples.list.WCAdjust
@@ -29,30 +29,31 @@ class WordcountTests extends FlatSpec with Matchers {
     mutator.put(2, "cat boy boy ear cat dog")
     mutator.put(3, "ear cat apple")
 
-    val output = mutator.run[Mod[(Int, Map[String, Int])]](new WCAdjust(2, false))
-    val answer = Map[String, Int]("apple" -> 3, "boy" -> 3, "cat" -> 6,
-                                  "dog" -> 1, "ear" -> 2)
+    val output =
+      mutator.run[Mod[(Int, HashMap[String, Int])]](new WCAdjust(2, 0, false))
+    val answer = HashMap[String, Int]("apple" -> 3, "boy" -> 3, "cat" -> 6,
+                                      "dog" -> 1, "ear" -> 2)
     assert(output.read()._2 == answer)
 
 
     mutator.update(1, "apple dog dog dog face")
     mutator.propagate()
-    val answer2 = Map[String, Int]("apple" -> 2, "boy" -> 2, "cat" -> 3,
-                                   "dog" -> 4, "ear" -> 2, "face" -> 1)
+    val answer2 = HashMap[String, Int]("apple" -> 2, "boy" -> 2, "cat" -> 3,
+                                       "dog" -> 4, "ear" -> 2, "face" -> 1)
     assert(output.read()._2 == answer2)
 
     mutator.put(4, "cat apple")
     mutator.propagate()
-    val answer3 = Map[String, Int]("apple" -> 3, "boy" -> 2, "cat" -> 4,
-                                   "dog" -> 4, "ear" -> 2, "face" -> 1)
+    val answer3 = HashMap[String, Int]("apple" -> 3, "boy" -> 2, "cat" -> 4,
+                                       "dog" -> 4, "ear" -> 2, "face" -> 1)
     assert(output.read()._2 == answer3)
 
     mutator.update(4, "boy dog")
     mutator.put(5, "girl girl girl apple")
     mutator.propagate()
-    val answer4 = Map[String, Int]("apple" -> 3, "boy" -> 3, "cat" -> 3,
-                                   "dog" -> 5, "ear" -> 2, "face" -> 1,
-                                   "girl" -> 3)
+    val answer4 = HashMap[String, Int]("apple" -> 3, "boy" -> 3, "cat" -> 3,
+                                       "dog" -> 5, "ear" -> 2, "face" -> 1,
+                                       "girl" -> 3)
     assert(output.read()._2 == answer4)
 
     mutator.shutdown()

@@ -15,10 +15,15 @@
  */
 package tbd.examples.list
 
+import scala.collection.immutable.HashMap
 import scala.collection.mutable.Map
 
 object WC {
-  def wordcount(s: String): Map[String, Int] = {
+  def wordcount(s: String): HashMap[String, Int] = {
+    HashMap(mutableWordcount(s).toSeq: _*)
+  }
+
+  def mutableWordcount(s: String): Map[String, Int] = {
     val counts = Map[String, Int]()
 
     for (word <- s.split("\\W+")) {
@@ -44,7 +49,11 @@ object WC {
     counts
   }
 
-  def reduce(map1: Map[String, Int], map2: Map[String, Int]): Map[String, Int] = {
+  def reduce(map1: scala.collection.immutable.HashMap[String, Int], map2: scala.collection.immutable.HashMap[String, Int]): scala.collection.immutable.HashMap[String, Int] = {
+    map1.merged(map2)({ case ((k, v1),(_, v2)) => (k, v1 + v2)})
+  }
+
+  def mutableReduce(map1: Map[String, Int], map2: Map[String, Int]): Map[String, Int] = {
     val counts = map2.clone()
     for ((key, value) <- map1) {
       if (counts.contains(key)) {
@@ -54,5 +63,6 @@ object WC {
       }
     }
     counts
+    //Map[String, Int]()
   }
 }

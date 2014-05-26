@@ -89,23 +89,28 @@ class AdjustableExperiment(aConf: Map[String, _])
 
     val alg = algorithm match {
       // Map
-      case "map" => new MapAdjust(partition, false, false)
-      case "pmap" => new MapAdjust(partition, true, false)
-      case "mmap" => new MapAdjust(partition, false, true)
-      case "mpmap" => new MapAdjust(partition, true, true)
+      case "map" => new MapAdjust(partition, 0, false, false, false)
+      case "pmap" => new MapAdjust(partition, 0, false, true, false)
+      case "mmap" => new MapAdjust(partition, 0, false, false, true)
+      case "mpmap" => new MapAdjust(partition, 0, false, true, true)
 
-      case "cmap" => new ChunkMapAdjust(partition, chunkSize, false, false)
-      case "pcmap" => new ChunkMapAdjust(partition, chunkSize, true, false)
-      case "mcmap" => new ChunkMapAdjust(partition, chunkSize, false, true)
-      case "mpcmap" => new ChunkMapAdjust(partition, chunkSize, true, true)
+      case "dmap" => new MapAdjust(partition, 0, true, false, false)
+      case "dpmap" => new MapAdjust(partition, 0, true, true, false)
+      case "dmmap" => new MapAdjust(partition, 0, true, false, true)
+      case "dmpmap" => new MapAdjust(partition, 0, true, true, true)
+
+      case "cmap" => new MapAdjust(partition, chunkSize, true, false, false)
+      case "pcmap" => new MapAdjust(partition, chunkSize, true, true, false)
+      case "mcmap" => new MapAdjust(partition, chunkSize, true, false, true)
+      case "mpcmap" => new MapAdjust(partition, chunkSize, true, true, true)
       // Filter
       case "filter" => new FilterAdjust(partition, false, false)
       case "pfilter" => new FilterAdjust(partition, true, false)
       case "mfilter" => new FilterAdjust(partition, false, true)
       case "mpfilter" => new FilterAdjust(partition, true, true)
       // Wordcount
-      case "wc" => new WCAdjust(partition, false)
-      case "pwc" => new WCAdjust(partition, true)
+      case "wc" => new WCAdjust(partition, chunkSize, false)
+      case "pwc" => new WCAdjust(partition, chunkSize, true)
     }
 
     val beforeInitial = System.currentTimeMillis()

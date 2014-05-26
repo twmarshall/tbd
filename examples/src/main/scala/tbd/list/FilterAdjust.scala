@@ -21,12 +21,12 @@ import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.AdjustableList
 
 object FilterAdjust {
-  def predicate(s: String): Boolean = {
+  def predicate(pair: (Int, String)): Boolean = {
     var count = 0
-    for (word <- s.split("\\W+")) {
+    for (word <- pair._2.split("\\W+")) {
       count += 1
     }
-    s.hashCode() % 2 == 0
+    pair._2.hashCode() % 2 == 0
   }
 }
 
@@ -35,19 +35,18 @@ class FilterAdjust(
     parallel: Boolean,
     memoized: Boolean) extends Algorithm {
   var output: AdjustableList[Int, String] = null
-  
+
   var traditionalAnswer: Buffer[String] = null
 
   def run(tbd: TBD): AdjustableList[Int, String] = {
     val pages = tbd.input.getAdjustableList[Int, String](partitions)
     pages.filter(tbd, (key: Int, s: String) => FilterAdjust.predicate(s), parallel, memoized)
   }
-  
+
   def traditionalRun(input: Map[Int, String]) {
      traditionalAnswer = input.par.values.filter(value => {
       FilterAdjust.predicate(value)
     }).toBuffer
-  }
 
   def initialRun(mutator: Mutator) {
     output = mutator.run[AdjustableList[Int, String]](this)
