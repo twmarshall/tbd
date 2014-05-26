@@ -28,7 +28,7 @@ object Main {
   def graphStyle = """
     node.root {
       size: 20px;
-      fill-color: red;
+      fill-color: orange;
     }
     edge {
       arrow-shape: arrow;
@@ -57,6 +57,8 @@ object Main {
   """
 
   def main(args: Array[String]) {
+
+    System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer")
 
     val mutator = new Mutator()
     mutator.put("one", 0)
