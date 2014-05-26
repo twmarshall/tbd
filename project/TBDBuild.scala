@@ -24,10 +24,12 @@ object TBDBuild extends Build {
 
   val mkrun = TaskKey[File]("mkrun")
   val mkexamples = TaskKey[File]("mkexamples")
+  val mkvisualization = TaskKey[File]("mkvisualization")
+
   lazy val root = Project (
     "root",
     file(".")
-  ) aggregate(core, examples)
+  ) aggregate(core, examples, visualization)
 
   lazy val core = Project (
     "core",
@@ -68,6 +70,30 @@ object TBDBuild extends Build {
         experimentOut.setExecutable(true)
 
         experimentOut
+      }
+    )
+  ) dependsOn(core)
+
+
+  lazy val visualization = Project(
+    "visualization",
+    file("visualization"),
+    settings = buildSettings ++ Seq (
+      libraryDependencies ++= (commonDeps
+                          ++ Seq("org.graphstream" % "gs-core" % "1.2",
+                                 "org.graphstream" % "gs-ui" % "1.2")),
+      mkvisualization := {
+        val classpath = (fullClasspath in Runtime).value.files.absString
+        val template = """#!/bin/sh
+        java -Xmx8g -Xss256m -classpath "%s" %s $@
+        """
+
+        val visualization = template.format(classpath, "tbd.visualization.Main")
+        val visualizationOut = baseDirectory.value / "../bin/visualization.sh"
+        IO.write(visualizationOut, visualization)
+        visualizationOut.setExecutable(true)
+
+        visualizationOut
       }
     )
   ) dependsOn(core)
