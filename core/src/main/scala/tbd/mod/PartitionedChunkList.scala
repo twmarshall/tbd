@@ -130,7 +130,7 @@ class PartitionedChunkList[T, U](
       pred: (TBD, (T, U)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
-       (AdjustableList[T, U], AdjustableList[T, U]) = ???
+       Mod[(AdjustableList[T, U], AdjustableList[T, U])] = ???
 
   def sort(
       tbd: TBD,
