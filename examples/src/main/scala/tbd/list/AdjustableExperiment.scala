@@ -121,12 +121,13 @@ class AdjustableExperiment(aConf: Map[String, _])
       assert(alg.checkOutput(table))
     }
 
+    val tableForTraditionalRun = alg.prepareTraditionalRun(table)
+    tableForTraditionalRun
+
     results("initial") = initialElapsed
 
     val beforeTraditional = System.currentTimeMillis()
-
     alg.traditionalRun(table);
-
     val traditionalElapsed = System.currentTimeMillis() - beforeTraditional
 
 

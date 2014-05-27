@@ -19,10 +19,14 @@ import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator}
 
-abstract class Algorithm extends Adjustable {
+abstract class Algorithm(parallel: Boolean, memoized: Boolean) extends Adjustable {
   def initialRun(mutator: Mutator)
-  
+
   def traditionalRun(input: Map[Int, String])
 
   def checkOutput(answer: Map[Int, String]): Boolean
+
+  def prepareTraditionalRun(input: Map[Int, String]) {
+    if(parallel) input.par else input
+  }
 }
