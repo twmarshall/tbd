@@ -16,6 +16,7 @@
 package tbd.examples.list
 
 import scala.collection.mutable.Map
+import scala.collection.Seq
 
 import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.AdjustableList
@@ -33,24 +34,30 @@ object FilterAdjust {
 class FilterAdjust(
     partitions: Int,
     parallel: Boolean,
-    memoized: Boolean) extends Algorithm {
+    memoized: Boolean) extends Algorithm(parallel, memoized) {
   var output: AdjustableList[Int, String] = null
+
+  var traditionalAnswer: Iterable[String] = null
 
   def run(tbd: TBD): AdjustableList[Int, String] = {
     val pages = tbd.input.getAdjustableList[Int, String](partitions)
-    pages.filter(tbd, FilterAdjust.predicate, parallel, memoized)
+    pages.filter(tbd, (pair:(Int, String)) => FilterAdjust.predicate(pair), parallel, memoized)
+  }
+
+  def traditionalRun(input: Map[Int, String]) {
+     traditionalAnswer = input.values.filter(value => {
+      FilterAdjust.predicate((0, value))
+    })
   }
 
   def initialRun(mutator: Mutator) {
     output = mutator.run[AdjustableList[Int, String]](this)
   }
 
-  def checkOutput(answer: Map[Int, String]): Boolean = {
+  def checkOutput(input: Map[Int, String]): Boolean = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val sortedAnswer = answer.par.values.filter(value => {
-      FilterAdjust.predicate((0, value))
-    }).toBuffer.sortWith(_ < _)
+    traditionalRun(input)
 
-    sortedOutput == sortedAnswer
+    sortedOutput == traditionalAnswer.toBuffer.sortWith(_ < _)
   }
 }

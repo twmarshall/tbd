@@ -16,6 +16,7 @@
 package tbd.examples.list
 
 import scala.collection.mutable.Map
+import scala.collection.immutable.HashMap
 
 import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.{AdjustableList, Mod}
@@ -23,16 +24,23 @@ import tbd.mod.{AdjustableList, Mod}
 class WCAdjust(
     partitions: Int,
     chunkSize: Int,
-    parallel: Boolean) extends Algorithm {
-  var output: Mod[(Int, scala.collection.immutable.HashMap[String, Int])] = null
+    parallel: Boolean) extends Algorithm(parallel, false) {
+  var output: Mod[(Int, HashMap[String, Int])] = null
+
+  var traditionalAnswer: Map[String, Int] = null;
 
   def initialRun(mutator: Mutator) {
     output = mutator.run[Mod[(Int, scala.collection.immutable.HashMap[String, Int])]](this)
   }
 
   def checkOutput(chunks: Map[Int, String]): Boolean = {
-    val answer = chunks.par.map(value => WC.wordcount(value._2)).reduce(WC.reduce)
-    output.read()._2 == answer
+    traditionalRun(chunks)
+    output.read()._2 == traditionalAnswer
+  }
+
+  def traditionalRun(input: Map[Int, String]) {
+    traditionalAnswer = input.values.aggregate(Map[String, Int]())((x, line) =>
+      WC.countReduce(line, x), WC.mutableReduce)
   }
 
   def mapper(tbd: TBD, pair: (Int, String)) = (pair._1, WC.wordcount(pair._2))

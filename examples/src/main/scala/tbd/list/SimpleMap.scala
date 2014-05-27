@@ -44,8 +44,12 @@ class SimpleMap(
         generate(0)
       }
 
+    //Force evaulation of expression "vector" - Scala seemed to do some
+    //kind of lazy evaluation during the benchmark. 
+    vector
+
     val before = System.currentTimeMillis()
-    vector.map((s: String) => MapAdjust.mapper(null, (0, s)))
+    vector.map((s: String) => MapAdjust.mapper(null, (0, s))._2)
 
     System.currentTimeMillis() - before
   }

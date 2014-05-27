@@ -44,6 +44,10 @@ class SimpleWC(
         generate(0)
       }
 
+    //Force evaluation of expression "vector" - Scala seemed to do some
+    //kind of lazy evaluation during the benchmark.
+    vector
+
     val before = System.currentTimeMillis()
     vector.aggregate(Map[String, Int]())((x, line) =>
       WC.countReduce(line, x), WC.mutableReduce)
