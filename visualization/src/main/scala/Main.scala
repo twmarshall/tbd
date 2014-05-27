@@ -16,50 +16,14 @@
 
 package tbd.visualization
 
-import org.graphstream.graph.implementations.{SingleGraph}
-
 import scala.collection.mutable.ArrayBuffer
 import tbd.{Adjustable, Changeable, Mutator, TBD}
 import tbd.mod.{AdjustableList, Dest, Mod}
-import tbd.ddg.{Node, RootNode, ReadNode, MemoNode, WriteNode, ParNode}
 
 object Main {
-
-  def graphStyle = """
-    node.root {
-      size: 20px;
-      fill-color: orange;
-    }
-    edge {
-      arrow-shape: arrow;
-    }
-    node.read{
-      size: 10px;
-      fill-color: blue;
-    }
-    node.write {
-      size: 10px;
-      fill-color: red;
-    }
-    node.memo {
-      size: 10px;
-      fill-color: green;
-    }
-    node.par {
-      size: 10px;
-      fill-color: yellow;
-    }
-    node {
-      text-alignment: under;
-      text-background-color: #EEEEEE;
-      text-background-mode: rounded-box;
-      text-padding: 2px;
-    }
-  """
-
   def main(args: Array[String]) {
 
-    System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer")
+    val visualizer = new TbdVisualizer()
 
     val mutator = new Mutator()
     mutator.put("one", 0)
@@ -70,96 +34,28 @@ object Main {
     val output = mutator.run[Mod[(String, Int)]](new ListReduceSumTest())
 
     println(output.read())
+    visualizer.showDDG(mutator.getDDG().root)
+    readLine()
 
     mutator.put("six", 5)
     mutator.propagate()
     println(output.read())
+    visualizer.showDDG(mutator.getDDG().root)
+    readLine()
 
     mutator.put("seven", -1)
     mutator.propagate()
     println(output.read())
+    visualizer.showDDG(mutator.getDDG().root)
+    readLine()
 
     mutator.update("two", 5)
     mutator.propagate()
     println(output.read())
-    showDDG(mutator.getDDG().root)
+    visualizer.showDDG(mutator.getDDG().root)
+    readLine()
 
     mutator.shutdown()
-  }
-
-  def showDDG(node: RootNode) = {
-    val graph = new SingleGraph("DDG")
-    graph.addAttribute("ui.stylesheet", graphStyle);
-
-    val n:org.graphstream.graph.Node = graph.addNode(System.identityHashCode(node).toString())
-    n.addAttribute("ui.label", "root")
-    n.addAttribute("ui.class", "root")
-    var cx = 0.asInstanceOf[AnyRef]
-    var cy = 0.asInstanceOf[AnyRef]
-    var cz = 0.asInstanceOf[AnyRef]
-    n.setAttribute("xyz", cx, cy, cz);
-
-
-    showDDGTraverse(graph, node, 1, 0)
-
-    var display = graph.display()
-    display.disableAutoLayout()
-  }
-
-  def showDDGTraverse(graph: SingleGraph, node: Node, depth: Int, span: Int): Int = {
-
-    var lspan = span;
-
-    if(node.children.length == 0)
-      return lspan + 1
-
-    var lastWasWrite = true
-    node.children.foreach(x => {
-
-      val n:org.graphstream.graph.Node = graph.addNode(System.identityHashCode(x).toString())
-
-      var desc = ""
-
-      var cx = (lspan * 50)
-      var cy = (depth * -10)
-      var cz = 0
-      var nodeClass = x match {
-        case x:WriteNode =>
-             desc = x.mod.toString().replace("DoubleModListNode", "DMLN")
-             "write"
-        case x:ReadNode =>
-             desc = x.mod.toString().replace("DoubleModListNode", "DMLN")
-             "read"
-        case x:MemoNode => "memo"
-        case x:ParNode => "par"
-      }
-
-      n.setAttribute("xyz", cx.asInstanceOf[AnyRef], cy.asInstanceOf[AnyRef], cz.asInstanceOf[AnyRef]);
-
-      val methodNames = x.stacktrace.map(y => y.getMethodName())
-      var currentMethod = methodNames.filter(y => (!y.startsWith("<init>")
-                                              && !y.startsWith("addRead")
-                                              && !y.startsWith("addWrite")
-                                              && !y.startsWith("createMod")
-                                              && !y.startsWith("getStackTrace")
-                                              && !y.startsWith("liftedTree")
-                                              && !y.startsWith("apply")
-                                              && !y.startsWith("read")
-                                              && !y.startsWith("write")
-                                              && !y.startsWith("mod")))(0)
-
-      if(methodNames.find(x => x == "createMod").isDefined) {
-        currentMethod += " (createMod)"
-      }
-
-      n.addAttribute("ui.class", nodeClass)
-      n.addAttribute("ui.label", "  " + nodeClass + " " + desc + " in " + currentMethod)
-      graph.addEdge(System.identityHashCode(node).toString() + "->" + System.identityHashCode(x).toString(), System.identityHashCode(node).toString(), System.identityHashCode(x).toString())
-
-      lspan = showDDGTraverse(graph, x, depth + 1, lspan)
-    })
-
-  lspan
   }
 }
 
