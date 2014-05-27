@@ -67,26 +67,22 @@ object Main {
     mutator.put("three", 2)
     mutator.put("four", 4)
     mutator.put("five", 1)
-    val output = mutator.run[AdjustableList[String, Int]](new ListSortTest())
+    val output = mutator.run[Mod[(String, Int)]](new ListReduceSumTest())
 
-    output.toBuffer().foreach(x => { print(x); print(" ") })
-    println()
-    showDDG(mutator.getDDG().root)
+    println(output.read())
 
     mutator.put("six", 5)
     mutator.propagate()
-    output.toBuffer().foreach(x => { print(x); print(" ") })
-    println()
+    println(output.read())
 
     mutator.put("seven", -1)
     mutator.propagate()
-    output.toBuffer().foreach(x => { print(x); print(" ") })
-    println()
+    println(output.read())
 
     mutator.update("two", 5)
     mutator.propagate()
-    output.toBuffer().foreach(x => { print(x); print(" ") })
-    println()
+    println(output.read())
+    showDDG(mutator.getDDG().root)
 
     mutator.shutdown()
   }
@@ -175,4 +171,13 @@ class ListSortTest() extends Adjustable {
     })
   }
 }
-
+class ListReduceSumTest extends Adjustable {
+  def run(tbd: TBD): Mod[(String, Int)] = {
+    val modList = tbd.input.getAdjustableList[String, Int](partitions = 1)
+    val zero = tbd.mod((dest : Dest[(String, Int)]) => tbd.write(dest, ("", 0)))
+    modList.reduce(tbd, zero,
+      (tbd: TBD, pair1: (String, Int), pair2: (String, Int)) => {
+        (pair2._1, pair1._2 + pair2._2)
+      })
+  }
+}
