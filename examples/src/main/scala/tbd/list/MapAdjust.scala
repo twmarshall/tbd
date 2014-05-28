@@ -15,6 +15,7 @@
  */
 package tbd.examples.list
 
+import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator, TBD}
@@ -35,8 +36,10 @@ class MapAdjust(
     chunkSize: Int,
     valueMod: Boolean,
     parallel: Boolean,
-    memoized: Boolean) extends Algorithm {
+    memoized: Boolean) extends Algorithm(parallel, memoized) {
   var output: AdjustableList[Int, Int] = null
+
+  var traditionalAnswer: GenIterable[Int] = null
 
   def run(tbd: TBD): AdjustableList[Int, Int] = {
     val pages = tbd.input.getAdjustableList[Int, String](
@@ -44,16 +47,19 @@ class MapAdjust(
     pages.map(tbd, MapAdjust.mapper, parallel = parallel, memoized = memoized)
   }
 
+  def traditionalRun(input: GenIterable[String]) {
+    traditionalAnswer = input.map(s => {
+      MapAdjust.mapper(null, (0, s))._2
+    })
+  }
+
   def initialRun(mutator: Mutator) {
     output = mutator.run[AdjustableList[Int, Int]](this)
   }
 
-  def checkOutput(answer: Map[Int, String]): Boolean = {
+  def checkOutput(input: GenMap[Int, String]): Boolean = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val sortedAnswer = answer.par.map(pair => {
-      MapAdjust.mapper(null, (0, pair._2))._2
-    }).toBuffer.sortWith(_ < _)
-
-    return sortedOutput == sortedAnswer
+    traditionalRun(input.values)
+    sortedOutput == traditionalAnswer.toBuffer.sortWith(_ < _)
   }
 }
