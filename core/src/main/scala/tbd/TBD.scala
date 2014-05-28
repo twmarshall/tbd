@@ -88,7 +88,7 @@ class TBD(id: String, _worker: Worker) {
     readNHelper(args, ListBuffer(), reader)
   }
 
-  def readNHelper[U](mods: Seq[Mod[_]],
+  private def readNHelper[U](mods: Seq[Mod[_]],
                      values: ListBuffer[AnyRef],
                      reader: (Seq[_]) => (Changeable[U])) : Changeable[U] = {
     val tail = mods.tail
@@ -150,7 +150,7 @@ class TBD(id: String, _worker: Worker) {
       write(dest, value)
     })
   }
-
+  
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
     val d = new Dest[T](worker)
     initializer(d).mod

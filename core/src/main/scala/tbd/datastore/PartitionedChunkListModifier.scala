@@ -20,7 +20,7 @@ import scala.concurrent.Future
 
 import tbd.mod._
 
-class PCLModifier[T, U](
+class PartitionedChunkListModifier[T, U](
     _datastore: Datastore,
     table: Map[Any, Any],
     numPartitions: Int,

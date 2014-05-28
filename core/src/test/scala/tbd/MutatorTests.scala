@@ -21,21 +21,10 @@ import scala.collection.mutable.Map
 import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.AdjustableList
 
-class AdjustableListTest extends Adjustable {
+class ListTest(partitions: Int, chunkSize: Int, valueMod: Boolean)
+    extends Adjustable {
   def run(tbd: TBD): AdjustableList[Int, Int] = {
-    tbd.input.getAdjustableList[Int, Int](partitions = 1)
-  }
-}
-
-class ChunkListTest extends Adjustable {
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
-    tbd.input.getAdjustableList[Int, Int](partitions = 1, chunkSize = 100, chunkSizer = _ => 32)
-  }
-}
-
-class ModListTest extends Adjustable {
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
-    tbd.input.getAdjustableList[Int, Int](partitions = 1, chunkSize = 100, chunkSizer = _ => 32, valueMod = false)
+    tbd.input.getAdjustableList[Int, Int](partitions, chunkSize, _ => 1, valueMod)
   }
 }
 
@@ -75,7 +64,10 @@ class MutatorTests extends FlatSpec with Matchers {
   }
 
   "AdjustableListTests" should "update the AdjustableList correctly" in {
-    for (adjustable <- List(new AdjustableListTest(), new ChunkListTest(), new ModListTest())) {
+    for (adjustable <- List(new ListTest(1, 0, true), new ListTest(2, 0, true),
+                            new ListTest(1, 2, true), new ListTest(2, 2, true),
+                            new ListTest(1, 0, false), new ListTest(2, 0, false),
+                            new ListTest(1, 2, false), new ListTest(2, 2, false))) {
       val mutator = new Mutator()
       val answer = Map[Int, Int]()
 
@@ -91,6 +83,8 @@ class MutatorTests extends FlatSpec with Matchers {
 
       for (j <- 0 to i - 1) {
         updateValue(mutator, answer)
+        sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+        output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
       }
 
       sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
@@ -99,6 +93,8 @@ class MutatorTests extends FlatSpec with Matchers {
       while (i < 200) {
         insertValue(mutator, answer, i)
         i += 1
+      sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+      output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
       }
 
       sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
@@ -106,6 +102,8 @@ class MutatorTests extends FlatSpec with Matchers {
 
       for (j <- 0 to 99) {
         removeValue(mutator, answer)
+        sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+        output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
       }
 
       sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
@@ -124,6 +122,8 @@ class MutatorTests extends FlatSpec with Matchers {
 	    updateValue(mutator, answer)
 	  }
         }
+        sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+        output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
       }
 
       sortedAnswer = answer.values.toBuffer.sortWith(_ < _)

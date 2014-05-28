@@ -19,45 +19,46 @@ import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator, TBD}
-import tbd.mod.AdjustableList
+import tbd.mod.{AdjustableList, Mod}
 
-object FilterAdjust {
+object SplitAdjust {
   def predicate(pair: (Int, String)): Boolean = {
-    var count = 0
-    for (word <- pair._2.split("\\W+")) {
-      count += 1
-    }
-    pair._2.hashCode() % 2 == 0
+    pair._2.length % 2 == 0
   }
 }
 
-class FilterAdjust(
+class SplitAdjust(
     partitions: Int,
     parallel: Boolean,
     memoized: Boolean) extends Algorithm(parallel, memoized) {
-  var output: AdjustableList[Int, String] = null
+  var output: SplitResult = null
 
-  var traditionalAnswer: GenIterable[String] = null
+  var traditionalAnswer: (GenIterable[String], GenIterable[String]) = null
+  type SplitResult = Mod[(AdjustableList[Int, String], AdjustableList[Int, String])]
 
-  def run(tbd: TBD): AdjustableList[Int, String] = {
+  def run(tbd: TBD): SplitResult = {
     val pages = tbd.input.getAdjustableList[Int, String](partitions)
-    pages.filter(tbd, (pair:(Int, String)) => FilterAdjust.predicate(pair), parallel, memoized)
+    pages.split(tbd, (tbd: TBD, pair:(Int, String)) => SplitAdjust.predicate(pair),
+                parallel, memoized)
   }
 
   def traditionalRun(input: GenIterable[String]) {
-     traditionalAnswer = input.filter(value => {
-      FilterAdjust.predicate((0, value))
+     traditionalAnswer = input.partition(value => {
+      SplitAdjust.predicate((0, value))
     })
   }
 
   def initialRun(mutator: Mutator) {
-    output = mutator.run[AdjustableList[Int, String]](this)
+    output = mutator.run[SplitResult](this)
   }
 
   def checkOutput(input: GenMap[Int, String]): Boolean = {
-    val sortedOutput = output.toBuffer().sortWith(_ < _)
-    traditionalRun(input.values)
+    val sortedOutputA = output.read()._1.toBuffer().sortWith(_ < _)
+    val sortedOutputB = output.read()._2.toBuffer().sortWith(_ < _)
 
-    sortedOutput == traditionalAnswer.toBuffer.sortWith(_ < _)
+    traditionalRun(input.values)
+    
+    sortedOutputA == traditionalAnswer._1.toBuffer.sortWith(_ < _)
+    sortedOutputB == traditionalAnswer._2.toBuffer.sortWith(_ < _)
   }
 }

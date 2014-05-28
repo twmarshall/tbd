@@ -35,7 +35,7 @@ class ListSplitTest(
   def run(tbd: TBD):
         Mod[(AdjustableList[String, Int], AdjustableList[String, Int])] = {
     val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
-    list.split(tbd, f)
+    list.split(tbd, f, true, true)
   }
 }
 

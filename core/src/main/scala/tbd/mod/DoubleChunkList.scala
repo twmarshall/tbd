@@ -20,18 +20,18 @@ import scala.collection.mutable.Buffer
 import tbd.{Changeable, TBD}
 import tbd.memo.Lift
 
-class ChunkList[T, U](
-    _head: Mod[ChunkListNode[T, U]]) extends AdjustableList[T, U] {
+class DoubleChunkList[T, U](
+    _head: Mod[DoubleChunkListNode[T, U]]) extends AdjustableList[T, U] {
   val head = _head
 
   def map[V, Q](
       tbd: TBD,
       f: (TBD, (T, U)) => (V, Q),
       parallel: Boolean = false,
-      memoized: Boolean = true): ChunkList[V, Q] = ??? /*{
+      memoized: Boolean = true): DoubleChunkList[V, Q] = {
     if (parallel) {
-      new ChunkList(
-        tbd.mod((dest: Dest[ChunkListNode[V, Q]]) => {
+      new DoubleChunkList(
+        tbd.mod((dest: Dest[DoubleChunkListNode[V, Q]]) => {
           tbd.read(head)(node => {
             if (node != null) {
               node.parMap(tbd, dest, f)
@@ -42,9 +42,9 @@ class ChunkList[T, U](
         })
       )
     } else {
-      val lift = tbd.makeLift[Mod[ChunkListNode[V, Q]]](!memoized)
-      new ChunkList(
-        tbd.mod((dest: Dest[ChunkListNode[V, Q]]) => {
+      val lift = tbd.makeLift[Mod[DoubleChunkListNode[V, Q]]](!memoized)
+      new DoubleChunkList(
+        tbd.mod((dest: Dest[DoubleChunkListNode[V, Q]]) => {
           tbd.read(head)(node => {
             if (node != null) {
               node.map(tbd, dest, f, lift)
@@ -55,22 +55,22 @@ class ChunkList[T, U](
         })
       )
     }
-  }*/
+  }
 
   def filter(
       tbd: TBD,
       pred: ((T, U)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = true): ChunkList[T, U] = ???
+      memoized: Boolean = true): DoubleChunkList[T, U] = ???
 
   def randomReduce(
       tbd: TBD,
       initialValueMod: Mod[(T, U)],
       f: (TBD, (T, U), (T, U)) => (T, U),
       parallel: Boolean,
-      memoized: Boolean): Mod[(T, U)] = ??? /*{
+      memoized: Boolean): Mod[(T, U)] = {
     val zero = 0
-    val halfLift = tbd.makeLift[Mod[ChunkListNode[T, U]]](!memoized)
+    val halfLift = tbd.makeLift[Mod[DoubleChunkListNode[T, U]]](!memoized)
 
     val identityMod = tbd.mod((dest: Dest[Vector[(T, U)]]) => {
       tbd.read(initialValueMod)(initialValue => {
@@ -96,14 +96,14 @@ class ChunkList[T, U](
   def randomReduceList(
       tbd: TBD,
       identityMod: Mod[Vector[(T, U)]],
-      head: ChunkListNode[T, U],
-      headMod: Mod[ChunkListNode[T, U]],
+      head: DoubleChunkListNode[T, U],
+      headMod: Mod[DoubleChunkListNode[T, U]],
       round: Int,
       dest: Dest[(T, U)],
-      lift: Lift[Mod[ChunkListNode[T, U]]],
+      lift: Lift[Mod[DoubleChunkListNode[T, U]]],
       f: (TBD, (T, U), (T, U)) => (T, U)): Changeable[(T, U)] = {
     val halfListMod =
-        tbd.mod((dest: Dest[ChunkListNode[T, U]]) => {
+        tbd.mod((dest: Dest[DoubleChunkListNode[T, U]]) => {
           halfList(tbd, identityMod, identityMod,
                    head, round, new Hasher(2, 8),
                    lift, dest, f)
@@ -131,12 +131,12 @@ class ChunkList[T, U](
       tbd: TBD,
       identityMod: Mod[Vector[(T, U)]],
       acc: Mod[Vector[(T, U)]],
-      head: ChunkListNode[T, U],
+      head: DoubleChunkListNode[T, U],
       round: Int,
       hasher: Hasher,
-      lift: Lift[Mod[ChunkListNode[T, U]]],
-      dest: Dest[ChunkListNode[T, U]],
-      f: (TBD, (T, U), (T, U)) => (T, U)): Changeable[ChunkListNode[T, U]] = {
+      lift: Lift[Mod[DoubleChunkListNode[T, U]]],
+      dest: Dest[DoubleChunkListNode[T, U]],
+      f: (TBD, (T, U), (T, U)) => (T, U)): Changeable[DoubleChunkListNode[T, U]] = {
     val newAcc = tbd.mod((dest: Dest[Vector[(T, U)]]) =>
       tbd.read(acc)((acc) =>
 	tbd.read(head.chunkMod)(chunk =>
@@ -148,35 +148,35 @@ class ChunkList[T, U](
 
     if(binaryHash(head.chunkMod.id, round, hasher)) {
       val newNext =
-	tbd.mod((dest: Dest[ChunkListNode[T, U]]) =>
+	tbd.mod((dest: Dest[DoubleChunkListNode[T, U]]) =>
 	  tbd.read(head.nextMod)(next =>
 	    if (next == null)
 	      tbd.write(dest, null)
 	    else
 	      halfList(tbd, identityMod, identityMod,
 		       next, round, hasher, lift, dest, f)))
-      tbd.write(dest, new ChunkListNode(newAcc, newNext))
+      tbd.write(dest, new DoubleChunkListNode(newAcc, newNext))
     } else {
       tbd.read(head.nextMod)(next => {
 	if (next == null) {
-	  val newNext = tbd.createMod[ChunkListNode[T, U]](null)
-          tbd.write(dest, new ChunkListNode(newAcc, newNext))
+	  val newNext = tbd.createMod[DoubleChunkListNode[T, U]](null)
+          tbd.write(dest, new DoubleChunkListNode(newAcc, newNext))
 	} else {
 	  halfList(tbd, identityMod, newAcc,
 		   next, round, hasher, lift, dest, f)
 	}
       })
     }
-  }*/
+  }
 
   def reduce(
       tbd: TBD,
       initialValueMod: Mod[(T, U)],
       f: (TBD, (T, U), (T, U)) => (T, U),
       parallel: Boolean = false,
-      memoized: Boolean = true): Mod[(T, U)] = ??? /* {
+      memoized: Boolean = true): Mod[(T, U)] = {
     randomReduce(tbd, initialValueMod, f, parallel, memoized)
-  }*/
+  }
 
   def split(
       tbd: TBD,
@@ -196,7 +196,7 @@ class ChunkList[T, U](
     val buf = Buffer[U]()
     var node = head.read()
     while (node != null) {
-      buf ++= node.chunk.map(value => value._2)
+      buf ++= node.chunkMod.read().map(value => value._2)
       node = node.nextMod.read()
     }
 

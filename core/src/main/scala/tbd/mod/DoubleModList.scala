@@ -65,30 +65,33 @@ class DoubleModList[T, V](
     }
   }
 
-  def fastSplit(
+  def split(
       tbd: TBD,
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
-       (AdjustableList[T, V], AdjustableList[T, V]) = {
+       Mod[(AdjustableList[T, V], AdjustableList[T, V])] = {
 
     val result = tbd.mod2((matches: Dest[DoubleModListNode[T, V]],
                            diffs: Dest[DoubleModListNode[T, V]]) => {
+
+      val matchLift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
+      val diffLift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
 
       tbd.read(head)(head => {
         if(head == null) {
           tbd.write(matches, null)
           tbd.write(diffs, null)
         } else {
-          head.fastSplit(tbd, matches, diffs, pred)
+          head.fastSplit(tbd, matches, diffs, matchLift, diffLift, pred)
         }
       })
     })
 
-    (new DoubleModList(result._1), new DoubleModList(result._2))
+    tbd.createMod((new DoubleModList(result._1), new DoubleModList(result._2)))
   }
 
-  def split(
+  def slowSplit(
       tbd: TBD,
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
