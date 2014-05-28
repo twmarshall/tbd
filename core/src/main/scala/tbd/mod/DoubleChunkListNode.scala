@@ -20,53 +20,51 @@ import tbd.memo.Lift
 
 // The default value of zero for size works because size is only ever
 // accessed by the Modifier, which will set it appropriately.
-class ChunkListNode[T, U](
-    _chunk: Vector[(T, U)],
-    _nextMod: Mod[ChunkListNode[T, U]],
+class DoubleChunkListNode[T, U](
+    _chunkMod: Mod[Vector[(T, U)]],
+    _nextMod: Mod[DoubleChunkListNode[T, U]],
     _size: Int = 0) {
-  val chunk = _chunk
+  val chunkMod = _chunkMod
   val nextMod = _nextMod
   val size = _size
 
-  /*def map[V, Q](
+  def map[V, Q](
       tbd: TBD,
-      dest: Dest[ChunkListNode[V, Q]],
+      dest: Dest[DoubleChunkListNode[V, Q]],
       f: (TBD, (T, U)) => (V, Q),
-      lift: Lift[Mod[ChunkListNode[V, Q]]])
-        : Changeable[ChunkListNode[V, Q]] = {
+      lift: Lift[Mod[DoubleChunkListNode[V, Q]]])
+        : Changeable[DoubleChunkListNode[V, Q]] = {
     val newChunkMod = tbd.mod((dest: Dest[Vector[(V, Q)]]) =>
       tbd.read(chunkMod)(chunk =>
         tbd.write(dest, chunk.map(pair => f(tbd, pair)))))
     val newNextMod = lift.memo(List(nextMod), () =>
-      tbd.mod((dest: Dest[ChunkListNode[V, Q]]) =>
+      tbd.mod((dest: Dest[DoubleChunkListNode[V, Q]]) =>
         tbd.read(nextMod)(next =>
           if (next != null)
             next.map(tbd, dest, f, lift)
           else
             tbd.write(dest, null))))
 
-    tbd.write(dest, new ChunkListNode[V, Q](newChunkMod, newNextMod))
+    tbd.write(dest, new DoubleChunkListNode[V, Q](newChunkMod, newNextMod))
   }
 
   def parMap[V, Q](
       tbd: TBD,
-      dest: Dest[ChunkListNode[V, Q]],
-      f: (TBD, (T, U)) => (V, Q)): Changeable[ChunkListNode[V, Q]] = {
+      dest: Dest[DoubleChunkListNode[V, Q]],
+      f: (TBD, (T, U)) => (V, Q)): Changeable[DoubleChunkListNode[V, Q]] = {
     val parTuple = tbd.par(
       (tbd: TBD) =>
         tbd.mod((dest: Dest[Vector[(V, Q)]]) =>
           tbd.read(chunkMod)(chunk =>
             tbd.write(dest, chunk.map(pair => f(tbd, pair))))),
       (tbd: TBD) =>
-        tbd.mod((dest: Dest[ChunkListNode[V, Q]]) =>
+        tbd.mod((dest: Dest[DoubleChunkListNode[V, Q]]) =>
           tbd.read(nextMod)(next =>
             if (next != null)
               next.parMap(tbd, dest, f)
             else
               tbd.write(dest, null))))
 
-    tbd.write(dest, new ChunkListNode[V, Q](parTuple._1, parTuple._2))
-  }*/
-
-  def print = "ChunkListNode(" + chunk + ")"
+    tbd.write(dest, new DoubleChunkListNode[V, Q](parTuple._1, parTuple._2))
+  }
 }

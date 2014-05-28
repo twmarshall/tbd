@@ -222,38 +222,52 @@ class Datastore extends Actor with ActorLogging {
         valueMod: Boolean) => {
       val modifier =
 	if (!valueMod) {
-	  if (partitions == 1) {
-	    log.info("Creating new ModList.")
-	    new ModListModifier[Any, Any](this, tables(table))
-	  } else {
-	    log.info("Creating new PartitionedModList.")
-	    new PartitionedModListModifier[Any, Any](this, tables(table), partitions)
-	  }
-	} else if (chunkSize == 0) {
-          if (partitions == 1) {
-	    log.info("Creating new DoubleModList.")
-            new DMLModifier[Any, Any](this, tables(table))
+          if (chunkSize == 0) {
+	    if (partitions == 1) {
+	      log.info("Creating new ModList.")
+	      new ModListModifier[Any, Any](this, tables(table))
+	    } else {
+	      log.info("Creating new PartitionedModList.")
+	      new PartitionedModListModifier[Any, Any](this, tables(table), partitions)
+	    }
           } else {
-	    log.info("Creating new PartitionedDoubleModList.")
-            new PDMLModifier[Any, Any](this, tables(table), partitions)
+            if (partitions == 1) {
+              log.info("Creating new ChunkList.")
+              new ChunkListModifier[Any, Any](this, tables(table), chunkSize,
+                                              chunkSizer)
+            } else {
+              log.info("Creating new PartitionedChunkList.")
+              new PartitionedChunkListModifier[Any, Any](this, tables(table), partitions,
+                                                         chunkSize, chunkSizer)
+            }
           }
-        } else {
-	  if (partitions == 1) {
-	    log.info("Creating new ChunkList.")
-            new ChunkListModifier[Any, Any](
-              this,
-              tables(table),
-              chunkSize,
-              chunkSizer)
-	  } else {
-	    log.info("Creating new PartitionedChunkList.")
-	    new PCLModifier[Any, Any](
-              this,
-              tables(table),
-	      partitions,
-              chunkSize,
-              chunkSizer)
-	  }
+	} else {
+          if (chunkSize == 0) {
+            if (partitions == 1) {
+	      log.info("Creating new DoubleModList.")
+              new DMLModifier[Any, Any](this, tables(table))
+            } else {
+	      log.info("Creating new PartitionedDoubleModList.")
+              new PDMLModifier[Any, Any](this, tables(table), partitions)
+            }
+          } else {
+	    if (partitions == 1) {
+	      log.info("Creating new DoubleChunkList.")
+              new DoubleChunkListModifier[Any, Any](
+                this,
+                tables(table),
+                chunkSize,
+                chunkSizer)
+	    } else {
+	      log.info("Creating new PartitionedDoubleChunkList.")
+	      new PartitionedDoubleChunkListModifier[Any, Any](
+                this,
+                tables(table),
+	        partitions,
+                chunkSize,
+                chunkSizer)
+	    }
+          }
         }
 
       if (modifiers.contains(table)) {
