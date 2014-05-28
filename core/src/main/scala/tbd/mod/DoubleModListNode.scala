@@ -76,33 +76,43 @@ class DoubleModListNode[T, V] (
       tbd: TBD,
       destMatch: Dest[DoubleModListNode[T, V]],
       destNoMatch: Dest[DoubleModListNode[T, V]],
+      matchLift: Lift[Mod[DoubleModListNode[T, V]]],
+      diffLift: Lift[Mod[DoubleModListNode[T, V]]],
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
         Changeable[DoubleModListNode[T, V]] = {
-    tbd.read2(value, next)((v, next) => {
+    tbd.read(value)((v) => {
       if(pred(tbd, (v._1, v._2))) {
-        val newNext = tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
-          if(next != null) {
-            next.fastSplit(tbd, newDest, destNoMatch, pred)
-          } else {
-            tbd.write(newDest, null)
-            tbd.write(destNoMatch, null)
-          }
+        val newDestNext = matchLift.memo(List(next), () => {
+          tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
+            tbd.read(next)(next => {
+              if(next != null) {
+                next.fastSplit(tbd, newDest, destNoMatch, matchLift, diffLift, pred)
+              } else {
+                tbd.write(newDest, null)
+                tbd.write(destNoMatch, null)
+              }
+            })
+          })
         })
 
-        tbd.write(destMatch, new DoubleModListNode(value, newNext))
+        tbd.write(destMatch, new DoubleModListNode(value, newDestNext))
       } else {
-        val newNext = tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
-          if(next != null) {
-            next.fastSplit(tbd, destMatch, newDest, pred)
-          } else {
-            tbd.write(newDest, null)
-            tbd.write(destMatch, null)
-          }
+        val newDiffNext = diffLift.memo(List(next), () => {
+          tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
+            tbd.read(next)(next => {
+             if(next != null) {
+                next.fastSplit(tbd, destMatch, newDest, matchLift, diffLift, pred)
+              } else {
+                tbd.write(newDest, null)
+                tbd.write(destMatch, null)
+              }
+            })
+          })
         })
 
-        tbd.write(destNoMatch, new DoubleModListNode(value, newNext))
+        tbd.write(destNoMatch, new DoubleModListNode(value, newDiffNext))
       }
     })
   }

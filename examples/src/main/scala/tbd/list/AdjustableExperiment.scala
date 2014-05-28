@@ -109,13 +109,28 @@ class AdjustableExperiment(aConf: Map[String, _])
       case "mfilter" => new FilterAdjust(partition, false, true)
       case "mpfilter" => new FilterAdjust(partition, true, true)
       // Wordcount
-      case "wc" => new WCAdjust(partition, chunkSize, false)
-      case "pwc" => new WCAdjust(partition, chunkSize, true)
+      case "wc" => new WCAdjust(partition, chunkSize, false, false)
+      case "pwc" => new WCAdjust(partition, chunkSize, false, true)
+      case "dwc" => new WCAdjust(partition, chunkSize, true, false)
+      case "dpwc" => new WCAdjust(partition, chunkSize, true, true)
+      // Split
+      case "split" => new SplitAdjust(partition, false, false)
+      case "psplit" => new SplitAdjust(partition, false, true)
+      case "msplit" => new SplitAdjust(partition, true, false)
+      case "mpsplit" => new SplitAdjust(partition, true, true)
     }
 
-    val before = System.currentTimeMillis()
+    val tableForTraditionalRun = alg.prepareTraditionalRun(table)
+
+    val beforeTraditional = System.currentTimeMillis()
+    alg.traditionalRun(tableForTraditionalRun);
+    val traditionalElapsed = System.currentTimeMillis() - beforeTraditional
+
+    results("nontbd") = traditionalElapsed
+
+    val beforeInitial = System.currentTimeMillis()
     alg.initialRun(mutator)
-    val initialElapsed = System.currentTimeMillis() - before
+    val initialElapsed = System.currentTimeMillis() - beforeInitial
 
     if (Experiment.check) {
       assert(alg.checkOutput(table))
@@ -124,7 +139,7 @@ class AdjustableExperiment(aConf: Map[String, _])
     results("initial") = initialElapsed
 
     for (percent <- percents) {
-      if (percent != "initial") {
+      if (percent != "initial" && percent != "nontbd") {
         var i =  0
         while (i < percent.toDouble * count) {
 	  i += 1

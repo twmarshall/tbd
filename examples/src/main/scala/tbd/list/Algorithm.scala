@@ -15,12 +15,19 @@
  */
 package tbd.examples.list
 
+import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator}
 
-abstract class Algorithm extends Adjustable {
+abstract class Algorithm(parallel: Boolean, memoized: Boolean) extends Adjustable {
   def initialRun(mutator: Mutator)
 
-  def checkOutput(answer: Map[Int, String]): Boolean
+  def traditionalRun(input: GenIterable[String])
+
+  def checkOutput(answer: GenMap[Int, String]): Boolean
+
+  def prepareTraditionalRun(input: Map[Int, String]): GenIterable[String] = {
+    if(parallel) Vector[String](input.values.toSeq: _*).par else Vector[String](input.values.toSeq: _*)
+  }
 }

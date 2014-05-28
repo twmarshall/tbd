@@ -21,6 +21,7 @@ class SimpleWC(
     count: Int,
     parallel: Boolean) extends ControlAlgorithm {
   val chunks = ArrayBuffer[String]()
+  val table = Map[Int, String]()
 
   def run(): Long = {
     def generate(i: Int): Vector[String] = {
@@ -31,6 +32,7 @@ class SimpleWC(
           chunks ++= Experiment.loadPages()
         }
 
+        table += (i -> chunks.head)
         val elem = chunks.head
         chunks -= elem
         generate(i + 1) :+ elem

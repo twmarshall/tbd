@@ -15,7 +15,9 @@
  */
 package tbd.examples.list
 
+import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
+import scala.collection.immutable.HashMap
 
 import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.{AdjustableList, Mod}
@@ -23,27 +25,36 @@ import tbd.mod.{AdjustableList, Mod}
 class WCAdjust(
     partitions: Int,
     chunkSize: Int,
-    parallel: Boolean) extends Algorithm {
-  var output: Mod[(Int, scala.collection.immutable.HashMap[String, Int])] = null
+    valueMod: Boolean,
+    parallel: Boolean) extends Algorithm(parallel, false) {
+  var output: Mod[(Int, HashMap[String, Int])] = null
+
+  var traditionalAnswer: Map[String, Int] = null;
 
   def initialRun(mutator: Mutator) {
     output = mutator.run[Mod[(Int, scala.collection.immutable.HashMap[String, Int])]](this)
   }
 
-  def checkOutput(chunks: Map[Int, String]): Boolean = {
-    val answer = chunks.par.map(value => WC.wordcount(value._2)).reduce(WC.reduce)
-    output.read()._2 == answer
+  def checkOutput(chunks: GenMap[Int, String]): Boolean = {
+    traditionalRun(chunks.values)
+    output.read()._2 == traditionalAnswer
+  }
+
+  def traditionalRun(input: GenIterable[String]) {
+    traditionalAnswer = input.aggregate(Map[String, Int]())((x, line) =>
+      WC.countReduce(line, x), WC.mutableReduce)
   }
 
   def mapper(tbd: TBD, pair: (Int, String)) = (pair._1, WC.wordcount(pair._2))
 
-  def reducer(tbd: TBD, pair1: (Int, scala.collection.immutable.HashMap[String, Int]), pair2: (Int, scala.collection.immutable.HashMap[String, Int])) =
+  def reducer(tbd: TBD, pair1: (Int, HashMap[String, Int]), pair2: (Int, HashMap[String, Int])) =
     (pair1._1, WC.reduce(pair1._2, pair2._2))
 
-  def run(tbd: TBD): Mod[(Int, scala.collection.immutable.HashMap[String, Int])] = {
-    val pages = tbd.input.getAdjustableList[Int, String](partitions, chunkSize = chunkSize, chunkSizer = _ => 1)
+  def run(tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
+    val pages = tbd.input.getAdjustableList[Int, String](partitions,
+      chunkSize = chunkSize, chunkSizer = _ => 1, valueMod = valueMod)
     val counts = pages.map(tbd, mapper, parallel = parallel)
-    val initialValue = tbd.createMod((0, scala.collection.immutable.HashMap[String, Int]()))
+    val initialValue = tbd.createMod((0, HashMap[String, Int]()))
     counts.reduce(tbd, initialValue, reducer, parallel = parallel)
   }
 }
