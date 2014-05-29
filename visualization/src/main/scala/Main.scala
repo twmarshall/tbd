@@ -53,6 +53,9 @@ object Main {
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
 
+    visualizer.showDDG(mutator.getDDG().root)
+    readLine()
+
     mutator.shutdown()
   }
 }

@@ -121,8 +121,12 @@ class TbdVisualizer {
             System.identityHashCode(b).toString())
   }
 
-  private def removeEdge(a: Node, b: Node) = {
-    graph.removeEdge(System.identityHashCode(a).toString(),
+  private def removeEdge(a: Node, b: Node) {
+    removeEdge(a, b);
+  }
+
+  private def findEdge(a: Node, b: Node): org.graphstream.graph.Edge = {
+    graph.getEdge(System.identityHashCode(a).toString() + " -> " +
             System.identityHashCode(b).toString())
   }
 
@@ -138,12 +142,13 @@ class TbdVisualizer {
       addNode(node)
       setStyle(node, "stroke-mode: plain;")
 
-      if(parent != null) {
-        addEdge(parent, node)
-      }
 
     } else {
       setStyle(node, "stroke-mode: none;")
+    }
+
+    if(parent != null && findEdge(parent, node) == null) {
+      addEdge(parent, node)
     }
 
     val nodeType = node match {
@@ -237,7 +242,7 @@ class TbdVisualizer {
         markedForRemoval = pair._1 :: markedForRemoval
         nodes -= pair._1
         setStyle(pair._1, "stroke-mode: plain;")
-        setStyle(pair._1, "stroke-color: red;") 
+        setStyle(pair._1, "stroke-color: red;")
       }
     })
   }
