@@ -121,20 +121,24 @@ class DoubleModListNode[T, V] (
       tbd: TBD,
       dest: Dest[(DoubleModListNode[T, V], DoubleModListNode[T, V])],
       pred: (TBD, (T, V)) => Boolean,
+      lift: Lift[Mod[(DoubleModListNode[T, V], DoubleModListNode[T, V])]],
       parallel: Boolean = false,
       memoized: Boolean = false):
         Changeable[(DoubleModListNode[T, V], DoubleModListNode[T, V])] = {
 
-    tbd.read2(value, next)((v, next) => {
-
-      val newNext = tbd.mod((dest:  Dest[(DoubleModListNode[T, V], DoubleModListNode[T, V])]) => {
-        if(next != null) {
-          next.split(tbd, dest, pred, parallel, memoized)
-        } else {
-          tbd.write(dest, (null, null))
-        }
+    val newNext = lift.memo(List(next), () => {
+      tbd.mod((dest:  Dest[(DoubleModListNode[T, V], DoubleModListNode[T, V])]) => {
+        tbd.read(next)(next => {
+          if(next != null) {
+            next.split(tbd, dest, pred, lift, parallel, memoized)
+          } else {
+            tbd.write(dest, (null, null))
+          }
+        })
       })
+    })
 
+    tbd.read(value)((v) => {
       if(pred(tbd, (v._1, v._2))) {
         tbd.read(newNext)(newNext => {
           tbd.write(dest, (new DoubleModListNode(value, tbd.createMod(newNext._1)), newNext._2))
@@ -162,7 +166,8 @@ class DoubleModListNode[T, V] (
                                            DoubleModListNode[T, V])]) => {
 
             next.split(tbd, dest,
-              (tbd, cv) => { comperator(tbd, cv, v) },
+              (tbd, cv) => { comperator(tbd, cv, v) }, tbd.makeLift[Mod[(DoubleModListNode[T, V],
+                                                                          DoubleModListNode[T, V])]](true),
               parallel, memoized)
           })
           tbd.read(splitResult)(splitResult => {

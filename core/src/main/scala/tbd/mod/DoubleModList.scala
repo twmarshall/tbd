@@ -65,49 +65,53 @@ class DoubleModList[T, V](
     }
   }
 
-  def split(
+  def fastSplit(
       tbd: TBD,
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
        Mod[(AdjustableList[T, V], AdjustableList[T, V])] = {
 
-    val result = tbd.mod2((matches: Dest[DoubleModListNode[T, V]],
-                           diffs: Dest[DoubleModListNode[T, V]]) => {
+    tbd.mod((dest: Dest[(AdjustableList[T, V], AdjustableList[T, V])]) => {
+      val result = tbd.mod2((matches: Dest[DoubleModListNode[T, V]],
+                             diffs: Dest[DoubleModListNode[T, V]]) => {
 
-      val matchLift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
-      val diffLift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
+        val matchLift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
+        val diffLift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
 
-      tbd.read(head)(head => {
-        if(head == null) {
-          tbd.write(matches, null)
-          tbd.write(diffs, null)
-        } else {
-          head.fastSplit(tbd, matches, diffs, matchLift, diffLift, pred)
-        }
+        tbd.read(head)(head => {
+          if(head == null) {
+            tbd.write(matches, null)
+            tbd.write(diffs, null)
+          } else {
+            head.fastSplit(tbd, matches, diffs, matchLift, diffLift, pred)
+          }
+        })
       })
+      tbd.write(dest, (new DoubleModList(result._1), new DoubleModList(result._2)))
     })
-
-    tbd.createMod((new DoubleModList(result._1), new DoubleModList(result._2)))
   }
 
-  def slowSplit(
+  def split(
       tbd: TBD,
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
         Mod[(AdjustableList[T, V], AdjustableList[T, V])] = {
-    val result = tbd.mod((dest: Dest[(DoubleModListNode[T, V], DoubleModListNode[T, V])]) => {
-       tbd.read(head)(head => {
-        if(head == null) {
-          tbd.write(dest, (null, null))
-        } else {
-          head.split(tbd, dest, pred)
-        }
-      })
-    })
 
     tbd.mod((dest: Dest[(AdjustableList[T, V], AdjustableList[T, V])]) => {
+      val lift = tbd.makeLift[Mod[(DoubleModListNode[T, V], DoubleModListNode[T, V])]](!memoized)
+
+      val result = tbd.mod((dest: Dest[(DoubleModListNode[T, V], DoubleModListNode[T, V])]) => {
+        tbd.read(head)(head => {
+          if(head == null) {
+            tbd.write(dest, (null, null))
+          } else {
+            head.split(tbd, dest, pred, lift)
+          }
+        })
+      })
+
       tbd.read(result)(result => {
           tbd.write(dest, (new DoubleModList(tbd.createMod(result._1)),
                            new DoubleModList(tbd.createMod(result._2))))
