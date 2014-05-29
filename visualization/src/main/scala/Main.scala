@@ -54,6 +54,38 @@ object Main {
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
 
+    mutator.remove("56")
+    mutator.remove("12")
+    mutator.propagate()
+
+    println(output.read())
+    visualizer.showDDG(mutator.getDDG().root)
+    readLine()
+
+    mutator.remove("66")
+    mutator.remove("24")
+    mutator.propagate()
+
+    println(output.read())
+    visualizer.showDDG(mutator.getDDG().root)
+    readLine()
+
+    mutator.put("102", 33)
+    mutator.put("101", 22)
+    mutator.propagate()
+
+    println(output.read())
+    visualizer.showDDG(mutator.getDDG().root)
+    readLine()
+
+    mutator.put("103", 55)
+    mutator.put("104", 66)
+    mutator.propagate()
+
+    println(output.read())
+    visualizer.showDDG(mutator.getDDG().root)
+    readLine()
+
     mutator.shutdown()
   }
 }

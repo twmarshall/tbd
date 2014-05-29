@@ -40,7 +40,7 @@ class TbdVisualizer {
     node.memo{
       size: 20px;
       shape: diamond;
-      fill-color: green;
+      fill-color: LightGreen;
     }
     node.write {
       size: 10px;
