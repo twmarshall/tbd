@@ -72,7 +72,7 @@ class DoubleModListNode[T, V] (
     tbd.write(dest, new DoubleModListNode[U, Q](modTuple._1, modTuple._2))
   }
 
-  def fastSplit(
+  def split(
       tbd: TBD,
       destMatch: Dest[DoubleModListNode[T, V]],
       destNoMatch: Dest[DoubleModListNode[T, V]],
@@ -86,7 +86,7 @@ class DoubleModListNode[T, V] (
       tbd.mod2((newDestMatch: Dest[DoubleModListNode[T, V]], newDestNoMatch: Dest[DoubleModListNode[T, V]]) => {
         tbd.read(next)(next => {
            if(next != null) {
-             next.fastSplit(tbd, newDestMatch, newDestNoMatch, lift, pred)
+             next.split(tbd, newDestMatch, newDestNoMatch, lift, pred)
            } else {
              tbd.write(newDestMatch, null)
              tbd.write(newDestNoMatch, null)
@@ -110,40 +110,6 @@ class DoubleModListNode[T, V] (
     })
   }
 
-  def split(
-      tbd: TBD,
-      dest: Dest[(DoubleModListNode[T, V], DoubleModListNode[T, V])],
-      pred: (TBD, (T, V)) => Boolean,
-      lift: Lift[Mod[(DoubleModListNode[T, V], DoubleModListNode[T, V])]],
-      parallel: Boolean = false,
-      memoized: Boolean = false):
-        Changeable[(DoubleModListNode[T, V], DoubleModListNode[T, V])] = {
-
-    val newNext = lift.memo(List(next), () => {
-      tbd.mod((dest:  Dest[(DoubleModListNode[T, V], DoubleModListNode[T, V])]) => {
-        tbd.read(next)(next => {
-          if(next != null) {
-            next.split(tbd, dest, pred, lift, parallel, memoized)
-          } else {
-            tbd.write(dest, (null, null))
-          }
-        })
-      })
-    })
-
-    tbd.read(value)((v) => {
-      if(pred(tbd, (v._1, v._2))) {
-        tbd.read(newNext)(newNext => {
-          tbd.write(dest, (new DoubleModListNode(value, tbd.createMod(newNext._1)), newNext._2))
-        })
-      } else {
-        tbd.read(newNext)(newNext => {
-          tbd.write(dest, (newNext._1, new DoubleModListNode(value, tbd.createMod(newNext._2))))
-        })
-      }
-    })
-  }
-
   def quicksort(
         tbd: TBD,
         dest: Dest[DoubleModListNode[T, V]],
@@ -155,17 +121,19 @@ class DoubleModListNode[T, V] (
     tbd.read(next)(next => {
       if(next != null) {
         tbd.read(value)(v => {
-          val splitResult = tbd.mod((dest: Dest[(DoubleModListNode[T, V],
-                                           DoubleModListNode[T, V])]) => {
+          val (smaller, greater) = tbd.mod2((destSmaller: Dest[DoubleModListNode[T, V]],
+                                      destGreater: Dest[DoubleModListNode[T, V]]) => {
 
-            next.split(tbd, dest,
-              (tbd, cv) => { comperator(tbd, cv, v) }, tbd.makeLift[Mod[(DoubleModListNode[T, V],
-                                                                          DoubleModListNode[T, V])]](true),
+            val lift = tbd.makeLift[(Mod[DoubleModListNode[T, V]],
+                                     Mod[DoubleModListNode[T, V]])](!memoized)
+
+            next.split(tbd, destSmaller, destGreater, lift,
+              (tbd, cv) => { comperator(tbd, cv, v) },
               parallel, memoized)
           })
-          tbd.read(splitResult)(splitResult => {
-            val (smaller, greater) = splitResult
-            val greaterSorted = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
+
+          val greaterSorted = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
+            tbd.read(greater)(greater => {
               if(greater != null) {
                 greater.quicksort(tbd, dest, toAppend,
                                   comperator, parallel, memoized)
@@ -175,16 +143,17 @@ class DoubleModListNode[T, V] (
                 })
               }
             })
+          })
 
-            val mid = new DoubleModListNode(value, greaterSorted)
+          val mid = new DoubleModListNode(value, greaterSorted)
 
+          tbd.read(smaller)(smaller => {
             if(smaller != null) {
               smaller.quicksort(tbd, dest, tbd.createMod(mid),
                                 comperator, parallel, memoized)
             } else {
               tbd.write(dest, mid)
             }
-
           })
         })
       } else {

@@ -38,6 +38,7 @@ class SplitAdjust(
 
   def run(tbd: TBD): SplitResult = {
     val pages = tbd.input.getAdjustableList[Int, String](partitions)
+
     pages.split(tbd, (tbd: TBD, pair:(Int, String)) => SplitAdjust.predicate(pair),
                 parallel, memoized)
   }
@@ -57,7 +58,7 @@ class SplitAdjust(
     val sortedOutputB = output.read()._2.toBuffer().sortWith(_ < _)
 
     traditionalRun(input.values)
-    
+
     sortedOutputA == traditionalAnswer._1.toBuffer.sortWith(_ < _)
     sortedOutputB == traditionalAnswer._2.toBuffer.sortWith(_ < _)
   }

@@ -150,7 +150,7 @@ class TBD(id: String, _worker: Worker) {
       write(dest, value)
     })
   }
-  
+
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
     val d = new Dest[T](worker)
     initializer(d).mod
