@@ -76,43 +76,36 @@ class DoubleModListNode[T, V] (
       tbd: TBD,
       destMatch: Dest[DoubleModListNode[T, V]],
       destNoMatch: Dest[DoubleModListNode[T, V]],
-      matchLift: Lift[Mod[DoubleModListNode[T, V]]],
-      diffLift: Lift[Mod[DoubleModListNode[T, V]]],
+      lift: Lift[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])],
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
         Changeable[DoubleModListNode[T, V]] = {
-    tbd.read(value)((v) => {
-      if(pred(tbd, (v._1, v._2))) {
-        val newDestNext = matchLift.memo(List(next), () => {
-          tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
-            tbd.read(next)(next => {
-              if(next != null) {
-                next.fastSplit(tbd, newDest, destNoMatch, matchLift, diffLift, pred)
-              } else {
-                tbd.write(newDest, null)
-                tbd.write(destNoMatch, null)
-              }
-            })
-          })
-        })
 
-        tbd.write(destMatch, new DoubleModListNode(value, newDestNext))
+    val (matchNext, diffNext) = lift.memo(List(next), () => {
+      tbd.mod2((newDestMatch: Dest[DoubleModListNode[T, V]], newDestNoMatch: Dest[DoubleModListNode[T, V]]) => {
+        tbd.read(next)(next => {
+           if(next != null) {
+             next.fastSplit(tbd, newDestMatch, newDestNoMatch, lift, pred)
+           } else {
+             tbd.write(newDestMatch, null)
+             tbd.write(newDestNoMatch, null)
+           }
+         })
+       })
+     })
+
+    tbd.read(value)((value) => {
+      if(pred(tbd, (value._1, value._2))) {
+          tbd.write(destMatch, new DoubleModListNode(tbd.createMod(value), matchNext))
+          tbd.read(diffNext)(diffNext => {
+            tbd.write(destNoMatch, diffNext)
+          })
       } else {
-        val newDiffNext = diffLift.memo(List(next), () => {
-          tbd.mod((newDest: Dest[DoubleModListNode[T, V]]) => {
-            tbd.read(next)(next => {
-             if(next != null) {
-                next.fastSplit(tbd, destMatch, newDest, matchLift, diffLift, pred)
-              } else {
-                tbd.write(newDest, null)
-                tbd.write(destMatch, null)
-              }
-            })
+          tbd.write(destNoMatch, new DoubleModListNode(tbd.createMod(value), diffNext))
+          tbd.read(matchNext)(matchNext => {
+            tbd.write(destMatch, matchNext)
           })
-        })
-
-        tbd.write(destNoMatch, new DoubleModListNode(value, newDiffNext))
       }
     })
   }
