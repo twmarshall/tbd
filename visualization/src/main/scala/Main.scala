@@ -26,31 +26,29 @@ object Main {
     val visualizer = new TbdVisualizer()
 
     val mutator = new Mutator()
-    mutator.put("one", 0)
-    mutator.put("two", 3)
-    mutator.put("three", 2)
-    mutator.put("four", 4)
-    mutator.put("five", 1)
-    val output = mutator.run[Mod[(String, Int)]](new ListReduceSumTest())
+
+    mutator.put("A", 0)
+    mutator.put("B", 2)
+    val output = mutator.run[Mod[(String, Int)]](new ListSplitTest())
+
+    mutator.put("C", 1)
+    mutator.propagate()
 
     println(output.read())
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
 
-    mutator.put("six", 5)
+    mutator.update("B", 3)
+    mutator.put("D", 4)
     mutator.propagate()
+
     println(output.read())
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
 
-    mutator.put("seven", -1)
+    mutator.put("E", -1)
     mutator.propagate()
-    println(output.read())
-    visualizer.showDDG(mutator.getDDG().root)
-    readLine()
 
-    mutator.update("two", 5)
-    mutator.propagate()
     println(output.read())
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
@@ -65,6 +63,15 @@ class ListSortTest() extends Adjustable {
     list.sort(tbd, (tbd, a, b) => {
         a._2 < b._2
     })
+  }
+}
+
+class ListSplitTest() extends Adjustable {
+  def run(tbd: TBD): Mod[(AdjustableList[String, Int], AdjustableList[String, Int])] = {
+    val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
+    list.split(tbd, (tbd, a) => {
+        a._2 % 2 == 0
+    }, true, true)
   }
 }
 class ListReduceSumTest extends Adjustable {

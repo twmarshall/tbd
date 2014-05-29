@@ -56,7 +56,7 @@ class TbdVisualizer {
       text-padding: 2px;
       stroke-mode: none;
       stroke-width: 2;
-      stroke-color: red;
+      stroke-color: green;
     }
   """
 
@@ -110,8 +110,9 @@ class TbdVisualizer {
     graph.addNode(System.identityHashCode(node).toString())
   }
 
-  private def removeNode(node: Node) {
-    nodes -= node
+  private def removeNode(node: Node, removeFromSet:Boolean = true) {
+    if(removeFromSet)
+      nodes -= node
     graph.removeNode(System.identityHashCode(node).toString())
   }
 
@@ -135,36 +136,36 @@ class TbdVisualizer {
 
     if(existing == null) {
       addNode(node)
-
-      val nodeType = node match {
-        case x:WriteNode => "write"
-        case x:ReadNode => "read"
-        case x:MemoNode => "memo"
-        case x:ParNode => "par"
-        case x:RootNode => "root"
-      }
-
-      val parameterInfo = node match {
-        case x:WriteNode => x.mod.toString
-        case x:ReadNode => x.mod.toString
-        case x:MemoNode => x.signature.toString
-        case x:ParNode => ""
-        case x:RootNode => ""
-      }
-
-
-      val methodName = extractMethodName(node)
-
-      setClass(node, nodeType)
       setStyle(node, "stroke-mode: plain;")
-      setLabel(node, nodeType + " " + parameterInfo + " in " + methodName)
 
       if(parent != null) {
         addEdge(parent, node)
       }
+
     } else {
       setStyle(node, "stroke-mode: none;")
     }
+
+    val nodeType = node match {
+      case x:WriteNode => "write"
+      case x:ReadNode => "read"
+      case x:MemoNode => "memo"
+      case x:ParNode => "par"
+      case x:RootNode => "root"
+    }
+
+    val parameterInfo = node match {
+      case x:WriteNode => x.mod.toString
+      case x:ReadNode => x.mod.toString
+      case x:MemoNode => x.signature.toString
+      case x:ParNode => ""
+      case x:RootNode => ""
+    }
+
+    val methodName = extractMethodName(node)
+
+    setClass(node, nodeType)
+    setLabel(node, nodeType + " " + parameterInfo + " in " + methodName)
 
     node.children.foreach(x => {
         createTree(x, node)
@@ -215,6 +216,7 @@ class TbdVisualizer {
 
 
   var nodesToKeep: HashMap[Node, Boolean] = null
+  var markedForRemoval: List[Node] = null
 
   def showDDG(root: RootNode) = {
 
@@ -225,9 +227,17 @@ class TbdVisualizer {
     createTree(root, null)
     layoutTree(root, 0)
 
+    if(markedForRemoval != null)
+      markedForRemoval.foreach(x => removeNode(x, false))
+
+    markedForRemoval = List()
+
     nodesToKeep.foreach(pair => {
       if(!pair._2) {
-        removeNode(pair._1)
+        markedForRemoval = pair._1 :: markedForRemoval
+        nodes -= pair._1
+        setStyle(pair._1, "stroke-mode: plain;")
+        setStyle(pair._1, "stroke-color: red;") 
       }
     })
   }
