@@ -23,6 +23,7 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 class TbdVisualizer {
 
   var highlightRemoved = false
+  var showLabels = true
   val graphStyle = """
     node.root {
       size: 20px;
@@ -159,19 +160,20 @@ class TbdVisualizer {
       case x:ParNode => "par"
       case x:RootNode => "root"
     }
+    if(showLabels) {
+      val parameterInfo = node match {
+        case x:WriteNode => x.mod.toString
+        case x:ReadNode => x.mod.toString
+        case x:MemoNode => x.signature.toString
+        case x:ParNode => ""
+        case x:RootNode => ""
+      }
 
-    val parameterInfo = node match {
-      case x:WriteNode => x.mod.toString
-      case x:ReadNode => x.mod.toString
-      case x:MemoNode => x.signature.toString
-      case x:ParNode => ""
-      case x:RootNode => ""
+      val methodName = extractMethodName(node)
+
+      setLabel(node, nodeType + " " + parameterInfo + " in " + methodName)
     }
-
-    val methodName = extractMethodName(node)
-
     setClass(node, nodeType)
-    setLabel(node, nodeType + " " + parameterInfo + " in " + methodName)
 
     node.children.foreach(x => {
         createTree(x, node)

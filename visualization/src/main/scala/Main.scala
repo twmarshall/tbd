@@ -24,35 +24,33 @@ object Main {
   def main(args: Array[String]) {
 
     val visualizer = new TbdVisualizer()
+    visualizer.showLabels = false
 
     val mutator = new Mutator()
 
-    mutator.put("A", 0)
-    mutator.put("B", 2)
+    for(i <- 1 to 100)
+      mutator.put(i.toString(), i)
+
     val output = mutator.run[Mod[(String, Int)]](new ListSplitTest())
-
-    mutator.put("C", 1)
     mutator.propagate()
 
     println(output.read())
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
 
-    mutator.update("B", 3)
-    mutator.put("D", 4)
+    mutator.update("0", 99)
+    mutator.update("1", 2)
     mutator.propagate()
 
     println(output.read())
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
 
-    mutator.put("E", -1)
+    mutator.update("7", 4)
+    mutator.update("8", -1)
     mutator.propagate()
 
     println(output.read())
-    visualizer.showDDG(mutator.getDDG().root)
-    readLine()
-
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
 
