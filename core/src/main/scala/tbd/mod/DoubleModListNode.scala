@@ -97,12 +97,12 @@ class DoubleModListNode[T, V] (
 
     tbd.read(value)((v) => {
       if(pred(tbd, (v._1, v._2))) {
-          tbd.write(destMatch, new DoubleModListNode(v, matchNext))
+          tbd.write(destMatch, new DoubleModListNode(value, matchNext))
           tbd.read(diffNext)(diffNext => {
             tbd.write(destNoMatch, diffNext)
           })
       } else {
-          tbd.write(destNoMatch, new DoubleModListNode(v, diffNext))
+          tbd.write(destNoMatch, new DoubleModListNode(value, diffNext))
           tbd.read(matchNext)(matchNext => {
             tbd.write(destMatch, matchNext)
           })
