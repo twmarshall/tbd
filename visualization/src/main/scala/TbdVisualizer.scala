@@ -22,6 +22,7 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 
 class TbdVisualizer {
 
+  var highlightRemoved = false
   val graphStyle = """
     node.root {
       size: 20px;
@@ -239,10 +240,14 @@ class TbdVisualizer {
 
     nodesToKeep.foreach(pair => {
       if(!pair._2) {
-        markedForRemoval = pair._1 :: markedForRemoval
-        nodes -= pair._1
-        setStyle(pair._1, "stroke-mode: plain;")
-        setStyle(pair._1, "stroke-color: red;")
+        if(highlightRemoved) {
+          markedForRemoval = pair._1 :: markedForRemoval
+          nodes -= pair._1
+          setStyle(pair._1, "stroke-mode: plain;")
+          setStyle(pair._1, "stroke-color: red;")
+        } else {
+          removeNode(pair._1)
+        }
       }
     })
   }
