@@ -136,7 +136,14 @@ class AdjustableExperiment(aConf: Map[String, _])
     for (percent <- percents) {
       if (percent != "initial" && percent != "nontbd") {
         var i =  0
-        while (i < percent.toDouble * count) {
+
+	val updateCount =
+	  if (percent.toDouble < 1)
+	    percent.toDouble * count
+	  else
+	    percent.toDouble
+
+        while (i < updateCount) {
 	  i += 1
 	  update(mutator, table)
         }

@@ -48,8 +48,10 @@ Options:
   -p, --partitions n,n,...   Number of partitions for the input data.
   -r, --repeat n             Number of times to repeat each experiment.
   -s, --chunkSizes n,n,...   Size of each chunk in the list, in KB.
-  -%, --percents f,f,...     Percent of chunks to update before running
-                               change propagation, as a decimal.=
+  -%, --percents f,f,...     Chunks to update before running change propagation.
+                               If the number is less than 1, it will be
+                               interpreted as a percent of the count, otherwise
+                               it will be interpreted as a number of chunks.
   """
 
   var repeat = 3
@@ -162,7 +164,7 @@ Options:
           confs("partitions") = args(i + 1).split(",")
 	  i += 1
         case "--percents" | "-%" =>
-          confs("percents") = "initial" +: args(i + 1).split(",")
+          confs("percents") = "initial" +: "nontbd" +: args(i + 1).split(",")
 	  i += 1
         case "--repeat" | "-r" =>
           repeat = args(i + 1).toInt
