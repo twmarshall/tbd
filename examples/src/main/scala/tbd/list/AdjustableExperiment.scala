@@ -115,8 +115,8 @@ class AdjustableExperiment(aConf: Map[String, _])
       case "dpwc" => new WCAdjust(partition, chunkSize, true, true)
       // Split
       case "split" => new SplitAdjust(partition, false, false)
-      case "psplit" => new SplitAdjust(partition, false, true)
-      case "msplit" => new SplitAdjust(partition, true, false)
+      case "psplit" => new SplitAdjust(partition, true, false)
+      case "msplit" => new SplitAdjust(partition, false, true)
       case "mpsplit" => new SplitAdjust(partition, true, true)
     }
 
