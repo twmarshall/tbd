@@ -18,8 +18,8 @@ package tbd
 import akka.pattern.ask
 import akka.actor.ActorRef
 import akka.event.Logging
+import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map, Set}
 import scala.concurrent.{Await, Future, Promise}
-import scala.collection.mutable.{ArrayBuffer, Map, Set, ListBuffer}
 
 import tbd.Constants._
 import tbd.ddg.{Node, Timestamp}
@@ -150,13 +150,7 @@ class TBD(id: String, _worker: Worker) {
       write(dest, value)
     })
   }
-
-  def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
-    val d = new Dest[T](worker)
-    initializer(d).mod
-    d.mod
-  }
-
+  
   def mod2[T, V](initializer : (Dest[T], Dest[V]) => Changeable[V]):
         (Mod[T], Mod[V]) = {
     var first: Mod[T] = null
@@ -170,6 +164,12 @@ class TBD(id: String, _worker: Worker) {
     })
 
     (first, second)
+  }
+
+  def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
+    val d = new Dest[T](worker)
+    initializer(d).mod
+    d.mod
   }
 
   var workerId = 0

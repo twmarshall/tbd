@@ -24,14 +24,14 @@ object Main {
   def main(args: Array[String]) {
 
     val visualizer = new TbdVisualizer()
-    visualizer.showLabels = false
+    visualizer.showLabels = true
 
     val mutator = new Mutator()
 
-    for(i <- 1 to 100)
+    for(i <- 1 to 10)
       mutator.put(i.toString(), i)
 
-    val output = mutator.run[Mod[(String, Int)]](new ListSplitTest())
+    val output = mutator.run[Mod[(String, Int)]](new ListReduceSumTest())
     mutator.propagate()
 
     println(output.read())
@@ -54,32 +54,32 @@ object Main {
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
 
-    mutator.remove("56")
-    mutator.remove("12")
+    mutator.remove("1")
+    mutator.remove("3")
     mutator.propagate()
 
     println(output.read())
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
 
-    mutator.remove("66")
-    mutator.remove("24")
+    mutator.remove("2")
+    mutator.remove("7")
     mutator.propagate()
 
     println(output.read())
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
 
-    mutator.put("102", 33)
-    mutator.put("101", 22)
+    mutator.put("1", 33)
+    mutator.put("7", 22)
     mutator.propagate()
 
     println(output.read())
     visualizer.showDDG(mutator.getDDG().root)
     readLine()
 
-    mutator.put("103", 55)
-    mutator.put("104", 66)
+    mutator.put("11", 55)
+    mutator.put("12", 66)
     mutator.propagate()
 
     println(output.read())
@@ -90,23 +90,6 @@ object Main {
   }
 }
 
-class ListSortTest() extends Adjustable {
-  def run(tbd: TBD): (AdjustableList[String, Int]) = {
-    val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
-    list.sort(tbd, (tbd, a, b) => {
-        a._2 < b._2
-    })
-  }
-}
-
-class ListSplitTest() extends Adjustable {
-  def run(tbd: TBD): Mod[(AdjustableList[String, Int], AdjustableList[String, Int])] = {
-    val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
-    list.split(tbd, (tbd, a) => {
-        a._2 % 2 == 0
-    }, true, true)
-  }
-}
 class ListReduceSumTest extends Adjustable {
   def run(tbd: TBD): Mod[(String, Int)] = {
     val modList = tbd.input.getAdjustableList[String, Int](partitions = 1)
