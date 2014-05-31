@@ -203,12 +203,7 @@ Options:
                              ("percents" -> confs("percents")),
                              ("repeat" -> i))
 
-	      val experiment =
-		if (algorithm.startsWith("n")) {
-		  new ControlExperiment(conf)
-		} else {
-                  new AdjustableExperiment(conf)
-		}
+	      val experiment = new AdjustableExperiment(conf)
 
 	      val results = experiment.run()
 	      println(algorithm + "\t" + conf("counts") + " chunks - " +
