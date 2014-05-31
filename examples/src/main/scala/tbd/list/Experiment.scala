@@ -68,7 +68,7 @@ Options:
                   ("percents" -> Array("nontbd", "initial", ".01", ".05", ".1")),
                   ("output" -> Array("percents", "algorithms", "counts")))
 
-  val allResults = Map[Experiment, Map[String, Double]]()
+  val allResults = Map[Map[String, _], Map[String, Double]]()
 
   def round(value: Double): Double = {
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
@@ -111,22 +111,22 @@ Options:
           var total = 0.0
           var repeat = 0
 
-          for ((experiment, results) <- allResults) {
+          for ((conf, results) <- allResults) {
             if (charts == "percents") {
-              if (experiment.conf(lines) == line &&
-                  experiment.conf(x) == xValue) {
+              if (conf(lines) == line &&
+                  conf(x) == xValue) {
                 total += results(chart)
                 repeat += 1
               }
             } else if (lines == "percents") {
-              if (experiment.conf(x) == xValue &&
-                  experiment.conf(charts) == chart) {
+              if (conf(x) == xValue &&
+                  conf(charts) == chart) {
                 total += results(line)
                 repeat += 1
               }
             } else if (x == "percents") {
-              if (experiment.conf(charts) == chart &&
-                  experiment.conf(lines) == line) {
+              if (conf(charts) == chart &&
+                  conf(lines) == line) {
                 total += results(xValue)
                 repeat += 1
               }
@@ -214,7 +214,7 @@ Options:
 		      conf("chunkSizes") + " / chunk")
 	      println(results)
 	      if (i != 0) {
-		Experiment.allResults += (experiment -> results)
+		Experiment.allResults += (experiment.conf -> results)
 	      }
             }
           }
