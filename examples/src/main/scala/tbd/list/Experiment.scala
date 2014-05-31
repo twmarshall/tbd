@@ -200,7 +200,8 @@ Options:
                              ("counts" -> count),
                              ("mutations" -> confs("mutations")),
                              ("partitions" -> partition),
-                             ("percents" -> confs("percents")))
+                             ("percents" -> confs("percents")),
+                             ("repeat" -> i))
 
 	      val experiment =
 		if (algorithm.startsWith("n")) {
