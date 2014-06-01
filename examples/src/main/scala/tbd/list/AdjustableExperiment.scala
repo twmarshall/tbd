@@ -22,60 +22,7 @@ import tbd.Mutator
 
 class AdjustableExperiment(aConf: Map[String, _])
     extends Experiment(aConf) {
-  val chunks = ArrayBuffer[String]()
-
-  val rand = new scala.util.Random()
-  val maxKey = count * 10
-  def addValue(mutator: Mutator, table: Map[Int, String]) {
-    if (chunks.size == 0) {
-      chunks ++= Experiment.loadPages()
-    }
-
-    var key = rand.nextInt(maxKey)
-    val value = rand.nextInt(Int.MaxValue)
-    while (table.contains(key)) {
-      key = rand.nextInt(maxKey)
-    }
-    mutator.put(key, chunks.head)
-    table += (key -> chunks.head)
-    chunks -= chunks.head
-  }
-
-  def removeValue(mutator: Mutator, table: Map[Int, String]) {
-    if (table.size > 1) {
-      var key = rand.nextInt(maxKey)
-      while (!table.contains(key)) {
-        key = rand.nextInt(maxKey)
-      }
-      mutator.remove(key)
-      table -= key
-    } else {
-      addValue(mutator, table)
-    }
-  }
-
-  def updateValue(mutator: Mutator, table: Map[Int, String]) {
-    if (chunks.size == 0) {
-      chunks ++= Experiment.loadPages()
-    }
-
-    var key = rand.nextInt(maxKey)
-    val value = rand.nextInt(Int.MaxValue)
-    while (!table.contains(key)) {
-      key = rand.nextInt(maxKey)
-    }
-    mutator.update(key, chunks.head)
-    table(key) = chunks.head
-    chunks -= chunks.head
-  }
-
-  def update(mutator: Mutator, table: Map[Int, String]) {
-    mutations(rand.nextInt(mutations.size)) match {
-      case "insert" => addValue(mutator, table)
-      case "remove" => removeValue(mutator, table)
-      case "update" => updateValue(mutator, table)
-    }
-  }
+  val input = new WCInput(count * 10, mutations)
 
   def run(): Map[String, Double] = {
     val results = Map[String, Double]()
@@ -84,7 +31,7 @@ class AdjustableExperiment(aConf: Map[String, _])
     val table = Map[Int, String]()
 
     while (table.size < count) {
-      addValue(mutator, table)
+      input.addValue(mutator, table)
     }
 
     val alg = algorithm match {
@@ -145,7 +92,7 @@ class AdjustableExperiment(aConf: Map[String, _])
 
         while (i < updateCount) {
 	  i += 1
-	  update(mutator, table)
+	  input.update(mutator, table)
         }
 
         val before2 = System.currentTimeMillis()

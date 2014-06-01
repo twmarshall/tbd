@@ -17,6 +17,8 @@ package tbd.examples.list
 
 import scala.collection.mutable.{ArrayBuffer, Map}
 
+import tbd.Mutator
+
 abstract class Experiment(aConf: Map[String, _]) {
   val conf = aConf
   val algorithm = conf("algorithms")
