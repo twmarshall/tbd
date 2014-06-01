@@ -34,7 +34,13 @@ class WCInput(maxKey: Int, mutations: Array[String]) {
       key = rand.nextInt(maxKey)
     }
     mutator.put(key, chunks.head)
-    table += (key -> chunks.head)
+
+    if (Experiment.check) {
+      table += (key -> chunks.head)
+    } else {
+      table += (key -> "")
+    }
+
     chunks -= chunks.head
   }
 
@@ -62,7 +68,11 @@ class WCInput(maxKey: Int, mutations: Array[String]) {
       key = rand.nextInt(maxKey)
     }
     mutator.update(key, chunks.head)
-    table(key) = chunks.head
+
+    if (Experiment.check) {
+      table(key) = chunks.head
+    }
+
     chunks -= chunks.head
   }
 
