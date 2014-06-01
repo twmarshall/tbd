@@ -30,8 +30,15 @@ class AdjustableExperiment(aConf: Map[String, _])
     val mutator = new Mutator()
     val table = Map[Int, String]()
 
+    var i = 0
     while (table.size < count) {
-      input.addValue(mutator, table)
+      if (input.chunks.size == 0) {
+        input.chunks ++= Experiment.loadPages()
+      }
+
+      table += (i -> input.chunks.head)
+      input.chunks -= input.chunks.head
+      i += 1
     }
 
     val alg = algorithm match {
@@ -65,10 +72,18 @@ class AdjustableExperiment(aConf: Map[String, _])
     val tableForTraditionalRun = alg.prepareTraditionalRun(table)
 
     val beforeTraditional = System.currentTimeMillis()
-    alg.traditionalRun(tableForTraditionalRun);
+    alg.traditionalRun(tableForTraditionalRun)
     val traditionalElapsed = System.currentTimeMillis() - beforeTraditional
 
     results("nontbd") = traditionalElapsed
+
+    for (pair <- table) {
+      mutator.put(pair._1, pair._2)
+
+      if (!Experiment.check) {
+        table(pair._1) = ""
+      }
+    }
 
     val beforeInitial = System.currentTimeMillis()
     alg.initialRun(mutator)
