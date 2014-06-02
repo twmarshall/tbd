@@ -20,6 +20,7 @@ import scala.concurrent.Await
 
 import tbd.Constants._
 import tbd.TBD
+import tbd.master.Master
 import tbd.mod.Mod
 
 class Lift[T](tbd: TBD, memoId: Int) {
@@ -29,7 +30,6 @@ class Lift[T](tbd: TBD, memoId: Int) {
     val signature = memoId :: args
 
     var found = false
-    var toRemove: MemoEntry = null
     var ret = null.asInstanceOf[T]
     if (!tbd.initialRun) {
       if (!tbd.updated(args)) {
@@ -40,10 +40,12 @@ class Lift[T](tbd: TBD, memoId: Int) {
           for (memoEntry <- tbd.worker.memoTable(signature)) {
             val timestamp = memoEntry.node.timestamp
             if (!found && timestamp > tbd.reexecutionStart &&
-		timestamp < tbd.reexecutionEnd && memoEntry.node.matchable) {
+		timestamp < tbd.reexecutionEnd &&
+		memoEntry.node.matchableInEpoch <= Master.epoch) {
               found = true
               tbd.worker.ddg.attachSubtree(tbd.currentParent, memoEntry.node)
-              toRemove = memoEntry
+
+	      memoEntry.node.matchableInEpoch = Master.epoch + 1
               ret = memoEntry.value.asInstanceOf[T]
 
               val future = tbd.worker.propagate(timestamp,
@@ -72,8 +74,6 @@ class Lift[T](tbd: TBD, memoId: Int) {
       }
 
       ret = value
-    } else {
-      tbd.worker.memoTable(signature) -= toRemove
     }
 
     ret

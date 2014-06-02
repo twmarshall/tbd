@@ -40,9 +40,10 @@ abstract class Node(_parent: Node, _timestamp: Timestamp) {
 
   var updated = false
 
-  // Whether this node can be memo matched. Gets set to false if a descendant
-  // of this node is matched.
-  var matchable = true
+  // The earliest epoch in which this node may be matched, if it is a MemoNode.
+  // This is increased above the current epoch whenever the node is matched, so
+  // that it won't be matched again in this round of change propagation.
+  var matchableInEpoch = 0
 
   def addChild(child: Node) {
     children += child

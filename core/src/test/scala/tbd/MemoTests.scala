@@ -232,6 +232,27 @@ class PropagateThroughMemoTest extends Adjustable {
   }
 }
 
+// Tests that a single memo entry can be matched in multiple runs of change
+// propagation.
+class RepeatRunsTest extends Adjustable {
+  var count = 0
+
+  def run(tbd: TBD): Mod[Int] = {
+    val one = tbd.input.getMod[Int](1)
+    val two = tbd.input.getMod[Int](2)
+    val lift = tbd.makeLift[Changeable[Int]]()
+
+    tbd.mod((dest: Dest[Int]) => {
+      tbd.read(one)(oneValue => {
+	lift.memo(List(two), () => {
+	  count += 1
+	  tbd.write(dest, 0)
+	})
+      })
+    })
+  }
+}
+
 class MemoTests extends FlatSpec with Matchers {
   "MemoTest" should "do stuff" in {
     val mutator = new Mutator()
@@ -386,6 +407,29 @@ class MemoTests extends FlatSpec with Matchers {
     mutator.update(3, 5)
     mutator.propagate()
     test.count should be (2)
+
+    mutator.shutdown()
+  }
+
+  "RepeatRunsTest" should "memo match in multiple runs of propagation" in {
+    val mutator = new Mutator()
+    mutator.put(1, 1)
+    mutator.put(2, 2)
+    val test = new RepeatRunsTest()
+    mutator.run[Mod[Int]](test)
+    test.count should be (1)
+
+    mutator.update(1, 3)
+    mutator.propagate()
+    test.count should be (1)
+
+    mutator.update(1, 4)
+    mutator.propagate()
+    test.count should be (1)
+
+    mutator.update(1, 5)
+    mutator.propagate()
+    test.count should be (1)
 
     mutator.shutdown()
   }
