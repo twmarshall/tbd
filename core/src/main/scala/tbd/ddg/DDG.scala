@@ -188,6 +188,9 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
       }
 
       worker.memoTable(signature) -= toRemove
+      if (worker.memoTable(signature).size == 0) {
+	worker.memoTable -= signature
+      }
     }
 
     node.updated = false
