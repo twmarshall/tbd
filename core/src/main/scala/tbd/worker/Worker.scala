@@ -45,7 +45,6 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
   val memoTable = Map[List[Any], ArrayBuffer[MemoEntry]]()
   val adjustableLists = Set[AdjustableList[Any, Any]]()
 
-  private var task: Task = null
   private val tbd = new TBD(id, this)
 
   var nextModId = 0
@@ -112,11 +111,8 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
       parent ! PebbleMessage(self, modId, finished)
     }
 
-    case RunTaskMessage(_task: Task) => {
-      task = _task
-      val output = task.func(tbd)
-
-      sender ! output
+    case RunTaskMessage(task: Task) => {
+      sender ! task.func(tbd)
     }
 
     case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {
