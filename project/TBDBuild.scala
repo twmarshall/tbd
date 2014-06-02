@@ -69,6 +69,11 @@ object TBDBuild extends Build {
         IO.write(experimentOut, experiment)
         experimentOut.setExecutable(true)
 
+        val memory = template.format(classpath, "tbd.examples.list.MemoryExperiment")
+        val memoryOut = baseDirectory.value / "../bin/memory_experiment.sh"
+        IO.write(memoryOut, memory)
+        memoryOut.setExecutable(true)
+
         experimentOut
       }
     )
