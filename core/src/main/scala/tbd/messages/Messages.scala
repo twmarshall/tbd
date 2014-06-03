@@ -20,8 +20,9 @@ import scala.collection.mutable.Set
 import scala.concurrent.Promise
 
 import tbd.{Adjustable, Changeable, TBD}
+import tbd.Constants._
 import tbd.ddg.Node
-import tbd.mod.{AdjustableList, Mod, ModId}
+import tbd.mod.{AdjustableList, Mod}
 import tbd.worker.Task
 
 // DDG

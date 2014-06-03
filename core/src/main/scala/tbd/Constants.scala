@@ -21,4 +21,6 @@ import scala.concurrent.duration._
 object Constants {
   val DURATION = 10.seconds
   implicit val TIMEOUT = Timeout(DURATION)
+
+  type ModId = String
 }

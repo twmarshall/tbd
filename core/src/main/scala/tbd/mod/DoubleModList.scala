@@ -18,6 +18,7 @@ package tbd.mod
 import scala.collection.mutable.{ArrayBuffer, Buffer}
 
 import tbd.{Changeable, TBD}
+import tbd.Constants._
 import tbd.memo.Lift
 
 class DoubleModList[T, V](

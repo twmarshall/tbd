@@ -25,7 +25,7 @@ import tbd.master.Main
 import tbd.worker.Worker
 
 class Dest[T](_id: ModId)
-    extends Mod[T](new ModId(_id.value + "d"), null.asInstanceOf[T]) {
+    extends Mod[T](new ModId(_id + "d"), null.asInstanceOf[T]) {
   val mod = new Mod[T](_id, null.asInstanceOf[T])
 
   override def read(workerRef: ActorRef = null): T = ???

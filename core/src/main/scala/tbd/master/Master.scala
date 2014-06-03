@@ -25,7 +25,6 @@ import tbd.{Adjustable, TBD}
 import tbd.Constants._
 import tbd.datastore.Datastore
 import tbd.messages._
-import tbd.mod.ModId
 import tbd.worker.{Worker, Task}
 
 object Master {

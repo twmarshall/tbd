@@ -20,9 +20,10 @@ import akka.event.LoggingAdapter
 import scala.collection.mutable.{Map, MutableList, Set, TreeSet}
 
 import tbd.Changeable
+import tbd.Constants._
 import tbd.master.Master
 import tbd.memo.MemoEntry
-import tbd.mod.{Mod, ModId}
+import tbd.mod.Mod
 import tbd.worker.Worker
 
 class DDG(log: LoggingAdapter, id: String, worker: Worker) {
@@ -33,8 +34,6 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
   var updated = TreeSet[Node]()((new TimestampOrdering()).reverse)
 
   val ordering = new Ordering()
-
-  var lastRemovedMemo: MemoNode = null
 
   def addRead(
       mod: Mod[Any],
