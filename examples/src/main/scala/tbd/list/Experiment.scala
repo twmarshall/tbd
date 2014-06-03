@@ -15,9 +15,11 @@
  */
 package tbd.examples.list
 
+import akka.util.Timeout
 import scala.collection.mutable.{ArrayBuffer, Map}
+import scala.concurrent.duration._
 
-import tbd.Mutator
+import tbd.{Constants, Mutator}
 
 abstract class Experiment(aConf: Map[String, _]) {
   val conf = aConf
@@ -145,6 +147,9 @@ Options:
   }
 
   def main(args: Array[String]) {
+    Constants.DURATION = 1000.seconds
+    Constants.TIMEOUT = Timeout(1000.seconds)
+
     var i = 0
     while (i < args.size) {
       args(i) match {
