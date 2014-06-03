@@ -48,6 +48,11 @@ class Lift[T](tbd: TBD, memoId: Int) {
 	      memoEntry.node.matchableInEpoch = Master.epoch + 1
               ret = memoEntry.value.asInstanceOf[T]
 
+	      // This ensures that we won't match anything under the currently
+	      // reexecuting read that comes before this memo node, since then
+	      // the timestamps would be out of order.
+	      tbd.reexecutionStart = memoEntry.node.endTime
+
               val future = tbd.worker.propagate(timestamp,
                                                 memoEntry.node.endTime)
               Await.result(future, DURATION)
