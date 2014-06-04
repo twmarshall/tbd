@@ -36,6 +36,7 @@ class DoubleModList[T, V](
       f: (TBD, (T, V)) => (U, Q),
       parallel: Boolean = false,
       memoized: Boolean = true): DoubleModList[U, Q] = {
+
     if (parallel) {
       new DoubleModList(
         tbd.mod((dest: Dest[DoubleModListNode[U, Q]]) => {
@@ -65,6 +66,50 @@ class DoubleModList[T, V](
     }
   }
 
+  def split(
+      tbd: TBD,
+      pred: (TBD, (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+       (AdjustableList[T, V], AdjustableList[T, V]) = {
+
+    val lift = tbd.makeLift[(Mod[DoubleModListNode[T, V]],
+                             Mod[DoubleModListNode[T, V]])](!memoized)
+
+    val result = tbd.mod2((matches: Dest[DoubleModListNode[T, V]],
+                             diffs: Dest[DoubleModListNode[T, V]]) => {
+
+        tbd.read(head)(head => {
+          if(head == null) {
+            tbd.write(matches, null)
+            tbd.write(diffs, null)
+          } else {
+            head.split(tbd, matches, diffs, lift, pred)
+          }
+        })
+      })
+    (new DoubleModList(result._1), new DoubleModList(result._2))
+  }
+
+  def sort(
+      tbd: TBD,
+      comperator: (TBD, (T, V), (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): AdjustableList[T, V] = {
+    val sorted = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
+      tbd.read(head)(head => {
+        if(head == null) {
+          tbd.write(dest, null)
+        } else {
+          head.quicksort(tbd, dest, tbd.createMod(null),
+                         comperator, parallel, memoized)
+        }
+      })
+    })
+
+    new DoubleModList(sorted)
+  }
+
   def reduce(
       tbd: TBD,
       identityMod: Mod[(T, V)],
@@ -74,7 +119,7 @@ class DoubleModList[T, V](
 
     // Each round we need a hasher and a lift, and we need to guarantee that the
     // same hasher and lift are used for a given round during change propagation,
-    // even if the first mod of the list is deleted. 
+    // even if the first mod of the list is deleted.
     class RoundLift {
       val lift = tbd.makeLift[(Hasher,
                                Lift[Mod[DoubleModListNode[T, V]]],
@@ -159,7 +204,7 @@ class DoubleModList[T, V](
       tbd: TBD,
       pred: ((T, V)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = true): DoubleModList[T, V] = {
+      memoized: Boolean = false): DoubleModList[T, V] = {
     val lift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
 
     new DoubleModList(

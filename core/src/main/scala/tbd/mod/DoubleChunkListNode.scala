@@ -48,6 +48,19 @@ class DoubleChunkListNode[T, U](
     tbd.write(dest, new DoubleChunkListNode[V, Q](newChunkMod, newNextMod))
   }
 
+  def split(
+      tbd: TBD,
+      pred: (TBD, (T, U)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+       Mod[(AdjustableList[T, U], AdjustableList[T, U])] = ???
+
+  def sort(
+      tbd: TBD,
+      comperator: (TBD, (T, U), (T, U)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): AdjustableList[T, U] = ???
+
   def parMap[V, Q](
       tbd: TBD,
       dest: Dest[DoubleChunkListNode[V, Q]],

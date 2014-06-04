@@ -70,7 +70,7 @@ class PartitionedDoubleChunkList[T, U](
           parReduce(tbd, i + 1)
         })
 
-        tbd.mod((dest: Dest[(T, U)]) => {  
+        tbd.mod((dest: Dest[(T, U)]) => {
           tbd.read2(parTup._1, parTup._2)((a, b) => {
             tbd.write(dest, f(tbd, a, b))
           })
@@ -124,6 +124,19 @@ class PartitionedDoubleChunkList[T, U](
       )
     }
   }
+
+  def split(
+      tbd: TBD,
+      pred: (TBD, (T, U)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+       (AdjustableList[T, U], AdjustableList[T, U]) = ???
+
+  def sort(
+      tbd: TBD,
+      comperator: (TBD, (T, U), (T, U)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): AdjustableList[T, U] = ???
 
   /* Meta Operations */
   def toBuffer(): Buffer[U] = {
