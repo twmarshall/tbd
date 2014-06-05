@@ -66,23 +66,15 @@ class Master extends Actor with ActorLogging {
 
     case PropagateMessage => {
       log.info("Master actor initiating change propagation.")
-      //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-      //                                  DURATION).asInstanceOf[String])
 
       Master.epoch += 1
       val future = workerRef ? PropagateMessage
       val respondTo = sender
-      future.onComplete((_try: Try[Any]) =>
-        respondTo ! "done")
-    }
-
-    case FinishedPropagatingMessage => {
-      log.info("Master received FinishedPropagatingMessage.")
-
-      //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-      //                                  DURATION).asInstanceOf[String])
-
-      result.success("okay")
+      future.onComplete((_try: Try[Any]) => {
+	//log.debug("DDG: {}\n\n", Await.result(workerRef ? DDGToStringMessage(""),
+        //                                      DURATION).asInstanceOf[String])
+        respondTo ! "done"
+      })
     }
 
     case PutInputMessage(table: String, key: Any, value: Any) => {
