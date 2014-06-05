@@ -318,6 +318,11 @@ class TbdVisualizer extends ViewerListener {
   }
 
   private def extractMethodName(node: Node): String = {
+
+    if(node.stacktrace == null) {
+      return "<No stacktrace available. Set Main.debug = true to enable stacktraces>"
+    }
+
     val methodNames = node.stacktrace.map(y => y.getMethodName())
     var currentMethod = methodNames.filter(y => (!y.startsWith("<init>")
                                             && !y.startsWith("()")

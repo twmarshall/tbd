@@ -99,8 +99,7 @@ class ExhaustiveTest {
     for(i <- 0 to initialSize)
       addValue()
 
-    val output = mutator.run[(AdjustableList[String, Int],
-                              AdjustableList[String, Int])](new ListSplitTest())
+    val output = mutator.run[Mod[(Int, Int)]](new ListReduceSumTest())
     mutator.propagate()
 
     while(true) {
@@ -115,25 +114,21 @@ class ExhaustiveTest {
 
       mutationCounter += 1
 
-      val ca = table.values.filter(x => x % 2 == 0).toBuffer.sortWith(_ < _)
-      val cb = table.values.filter(x => x % 2 != 0).toBuffer.sortWith(_ < _)
+      val ca = table.values.fold(0)((x:Int, y:Int) => x + y)
 
-      val a = output._1.toBuffer.sortWith(_ < _)
-      val b = output._2.toBuffer.sortWith(_ < _)
+      val a = output.read()._2
 
-      if(!(ca == a && cb == b)) {
+      println("// Output: " + output.read())
+
+      if(a != ca) {
         println("Check error.")
-        println("ca: " + ca)
         println("a: " + a)
-        println("cb: " + cb)
-        println("b: " + b)
+        println("ca: " + ca)
 
         val visualizer = new TbdVisualizer()
         visualizer.showDDG(mutator.getDDG().root)
         readLine()
       }
-      //Thread.sleep(1000)
-      //readLine()
     }
 
     mutator.shutdown()
@@ -141,31 +136,12 @@ class ExhaustiveTest {
 }
 
 class ListReduceSumTest extends Adjustable {
-  def run(tbd: TBD): Mod[(String, Int)] = {
-    val modList = tbd.input.getAdjustableList[String, Int](partitions = 1)
-    val zero = tbd.mod((dest : Dest[(String, Int)]) => tbd.write(dest, ("", 0)))
+  def run(tbd: TBD): Mod[(Int, Int)] = {
+    val modList = tbd.input.getAdjustableList[Int, Int](partitions = 1)
+    val zero = tbd.mod((dest : Dest[(Int, Int)]) => tbd.write(dest, (0, 0)))
     modList.reduce(tbd, zero,
-      (tbd: TBD, pair1: (String, Int), pair2: (String, Int)) => {
+      (tbd: TBD, pair1: (Int, Int), pair2: (Int, Int)) => {
         (pair2._1, pair1._2 + pair2._2)
       })
-  }
-}
-
-
-class ListSplitTest extends Adjustable {
-  def run(tbd: TBD):
-        (AdjustableList[String, Int], AdjustableList[String, Int]) = {
-    val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
-    list.split(tbd, (tbd, v) => (v._2 % 2 == 0), true, true)
-  }
-}
-
-class ListSortTest extends Adjustable {
-  def run(tbd: TBD):
-        AdjustableList[String, Int] = {
-    val list = tbd.input.getAdjustableList[String, Int](partitions = 1)
-    list.sort(tbd, (tbd, a, b) => {
-      a._2 < b._2
-    })
   }
 }

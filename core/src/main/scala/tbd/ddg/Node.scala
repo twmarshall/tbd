@@ -30,15 +30,12 @@ abstract class Node(_parent: Node, _timestamp: Timestamp) {
   var parent = _parent
   val timestamp: Timestamp = _timestamp
   var endTime: Timestamp = null
-<<<<<<< HEAD
-  var stacktrace = Thread.currentThread().getStackTrace()
-=======
+  
   var stacktrace =
     if (Main.debug)
       Thread.currentThread().getStackTrace()
     else
       null
->>>>>>> upstream/master
 
   var children = MutableList[Node]()
 
