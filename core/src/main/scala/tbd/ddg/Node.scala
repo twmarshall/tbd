@@ -97,6 +97,21 @@ class WriteNode(_mod: Mod[Any], _parent: Node, _timestamp: Timestamp)
   }
 }
 
+class AsyncNode(
+    _asyncWorkerRef: ActorRef,
+    _parent: Node,
+    _timestamp: Timestamp) extends Node(_parent, _timestamp) {
+
+  val asyncWorkerRef = _asyncWorkerRef
+
+  override def toString(prefix: String) = {
+    val future = asyncWorkerRef ? DDGToStringMessage(prefix + "|")
+    val output = Await.result(future, DURATION).asInstanceOf[String]
+
+    prefix + "LazyNode time=" + timestamp + "\n" + output + super.toString(prefix)
+  }
+}
+
 class ParNode(
     _workerRef1: ActorRef,
     _workerRef2: ActorRef,

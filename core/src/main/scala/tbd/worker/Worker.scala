@@ -23,7 +23,7 @@ import scala.util.Try
 
 import tbd.Constants._
 import tbd.TBD
-import tbd.ddg.{DDG, Node, ParNode, ReadNode, Timestamp}
+import tbd.ddg.{DDG, Node, ParNode, ReadNode, Timestamp, AsyncNode}
 import tbd.memo.MemoEntry
 import tbd.messages._
 import tbd.mod.{AdjustableList}
@@ -59,36 +59,40 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
         ddg.updated -= node
 
         if (node.updated) {
-          if (node.isInstanceOf[ReadNode]) {
-            val readNode = node.asInstanceOf[ReadNode]
+          node match {
+            case readNode: ReadNode => {
+              val toCleanup = ddg.cleanupRead(readNode)
 
-            val toCleanup = ddg.cleanupRead(readNode)
+              val newValue = readNode.mod.read()
 
-            val newValue = readNode.mod.read()
+              tbd.currentParent = readNode
+              tbd.reexecutionStart = readNode.timestamp
+              tbd.reexecutionEnd = readNode.endTime
 
-            tbd.currentParent = readNode
-	    tbd.reexecutionStart = readNode.timestamp
-	    tbd.reexecutionEnd = readNode.endTime
+              readNode.updated = false
+              readNode.reader(newValue)
 
-            readNode.updated = false
-            readNode.reader(newValue)
-
-            for (node <- toCleanup) {
-              if (node.parent == null) {
-                ddg.cleanupSubtree(node)
+              for (node <- toCleanup) {
+                if (node.parent == null) {
+                  ddg.cleanupSubtree(node)
+                }
               }
             }
-          } else {
-            val parNode = node.asInstanceOf[ParNode]
+            case parNode: ParNode => {
+              val future1 = parNode.workerRef1 ? PropagateMessage
+              val future2 = parNode.workerRef2 ? PropagateMessage
 
-            val future1 = parNode.workerRef1 ? PropagateMessage
-            val future2 = parNode.workerRef2 ? PropagateMessage
+              parNode.pebble1 = false
+              parNode.pebble2 = false
 
-            parNode.pebble1 = false
-            parNode.pebble2 = false
+              Await.result(future1, DURATION)
+              Await.result(future2, DURATION)
+            }
+            case asyncNode: AsyncNode => {
+              val future = asyncNode.asyncWorkerRef ? PropagateMessage
 
-            Await.result(future1, DURATION)
-            Await.result(future2, DURATION)
+              Await.result(future, DURATION)
+            }
           }
         }
 
@@ -147,6 +151,11 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 
       val futures = Set[Future[Any]]()
       for ((actorRef, parNode) <- ddg.pars) {
+        futures += actorRef ? CleanupWorkerMessage
+        actorRef ! akka.actor.PoisonPill
+      }
+
+      for ((actorRef, asyncNode) <- ddg.asyncs) {
         futures += actorRef ? CleanupWorkerMessage
         actorRef ! akka.actor.PoisonPill
       }

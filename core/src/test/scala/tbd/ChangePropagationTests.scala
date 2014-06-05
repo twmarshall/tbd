@@ -90,6 +90,32 @@ class ParTest extends Adjustable {
   }
 }
 
+class AsyncTest extends Adjustable {
+  def run(tbd: TBD): Mod[Int] = {
+    val one = tbd.input.getMod[Int](1)
+
+    var isAsync = true
+
+    val two = tbd.asyncMod((tbd: TBD, dest: Dest[Int]) => {
+        tbd.read(one)(one => {
+          Thread.sleep(1000)
+          isAsync = false
+          tbd.write(dest, one + 1)
+        })
+    })
+
+    assert(isAsync)
+
+    val three = tbd.mod((dest: Dest[Int]) => {
+        tbd.read(two)(two => {
+           tbd.write(dest, two + 1)
+        })
+    })
+
+    three
+  }
+}
+
 class ChangePropagationTests extends FlatSpec with Matchers {
   "PropagationOrderTest" should "reexecute reads in the correct order" in {
     val mutator = new Mutator()
@@ -151,5 +177,17 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     mutator.propagate()
 
     output.read() should be (6)
+  }
+
+  "AsyncTest" should "Should add numbers asynchronously and safe" in {
+    val mutator = new Mutator()
+    mutator.put(1, 1)
+    val output = mutator.run[Mod[Int]](new AsyncTest())
+    output.read() should be (3)
+
+    mutator.update(1, 2)
+    mutator.propagate()
+
+    output.read() should be (4)
   }
 }

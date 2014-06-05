@@ -150,7 +150,7 @@ class TBD(id: String, _worker: Worker) {
       write(dest, value)
     })
   }
-  
+
   def mod2[T, V](initializer : (Dest[T], Dest[V]) => Changeable[V]):
         (Mod[T], Mod[V]) = {
     var first: Mod[T] = null
@@ -176,6 +176,32 @@ class TBD(id: String, _worker: Worker) {
   }
 
   var workerId = 0
+
+  def asyncMod[T](initializer: (TBD, Dest[T]) => Changeable[T]): Mod[T] = {
+    val modId = new ModId(worker.id + "." + worker.nextModId)
+    worker.nextModId += 1
+
+    val asyncDest = new Dest[T](modId, true)
+
+    val asyncTask = new Task((tbd: TBD) => {
+        initializer(tbd, asyncDest)
+    })
+
+    val asyncWorkerProps =
+      Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
+
+    val asyncWorkerRef =
+      worker.context.system.actorOf(asyncWorkerProps, id + "-" + workerId)
+
+    workerId += 1
+
+    asyncWorkerRef ? RunTaskMessage(asyncTask)
+
+    worker.ddg.addAsync(asyncWorkerRef, currentParent)
+
+    return asyncDest.mod
+  }
+
   def par[T, U](one: TBD => T, two: TBD => U): Tuple2[T, U] = {
     val task1 =  new Task(((tbd: TBD) => one(tbd)))
     val workerProps1 =
