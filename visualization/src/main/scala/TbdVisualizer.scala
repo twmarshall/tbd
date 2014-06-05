@@ -18,12 +18,16 @@ package tbd.visualization
 
 import tbd.ddg.{Node, RootNode, ReadNode, MemoNode, WriteNode, ParNode}
 import org.graphstream.graph.implementations.{SingleGraph}
+import org.graphstream.ui.swingViewer.Viewer
 import scala.collection.mutable.{HashMap, ListBuffer}
+import swing._
+import GridBagPanel._
+import org.graphstream.ui.swingViewer.ViewerListener
 
-class TbdVisualizer {
+class TbdVisualizer extends ViewerListener {
 
   var highlightRemoved = false
-  var showLabels = true
+  var showLabels = false
   val graphStyle = """
     node.root {
       size: 20px;
@@ -69,11 +73,59 @@ class TbdVisualizer {
   graph.addAttribute("ui.stylesheet", graphStyle)
   System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer")
 
-  var display = graph.display()
+  var display = new Viewer(graph, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD)
   display.disableAutoLayout()
+
+  var pipe = display.newViewerPipe()
+  pipe.addViewerListener(this)
+  pipe.addSink(graph)
+
+  val pumper = new Thread(
+    new Runnable() {
+      def run() {
+        while(true) {
+          pipe.pump()
+          Thread.sleep(50)
+        }
+      }
+    }
+  )
+
+  pumper.start()
+
+  var view = display.addDefaultView(false)
+
+  var label = new TextArea("Click node for info.\nScroll with arrow keys.\nZoom with PgDown and PgUp.")
+  label.editable = false
+  label.background = java.awt.Color.LIGHT_GRAY
+
+  var scrollPane = new ScrollPane()
+  scrollPane.viewportView = label
+
+  var frame = new MainFrame {
+    title = "DDG Debug"
+    contents = new GridBagPanel() {
+      val c = new Constraints()
+      c.gridx = 0
+      c.gridy = 0
+      c.weightx = 1
+      c.weighty = 1
+      c.fill = Fill.Both
+      layout(Component.wrap(view)) = c
+      c.gridx = 0
+      c.gridy = 1
+      c.weightx = 1
+      c.weighty = 0.2
+      c.fill = Fill.Both
+      layout(scrollPane) = c
+    }
+    size = new Dimension(800, 600)
+    visible = true
+  }
 
   val pos = new HashMap[Node, (Int, Int)]()
   val nodes = new ListBuffer[Node]()
+  val idToNodes = new HashMap[String, Node]()
 
   private def setPos(node: Node, x: Int, y: Int) {
     findNode(node).setAttribute("xyz", x.asInstanceOf[AnyRef],
@@ -109,12 +161,15 @@ class TbdVisualizer {
 
   private def addNode(node: Node): org.graphstream.graph.Node = {
     nodes += node
+    idToNodes += (System.identityHashCode(node).toString() -> node)
     graph.addNode(System.identityHashCode(node).toString())
   }
 
   private def removeNode(node: Node, removeFromSet:Boolean = true) {
-    if(removeFromSet)
+    if(removeFromSet) {
       nodes -= node
+    }
+    idToNodes -= System.identityHashCode(node).toString()
     graph.removeNode(System.identityHashCode(node).toString())
   }
 
@@ -153,21 +208,9 @@ class TbdVisualizer {
       addEdge(parent, node)
     }
 
-    val nodeType = node match {
-      case x:WriteNode => "write"
-      case x:ReadNode => "read"
-      case x:MemoNode => "memo"
-      case x:ParNode => "par"
-      case x:RootNode => "root"
-    }
+    val nodeType = getNodeType(node)
     if(showLabels) {
-      val parameterInfo = node match {
-        case x:WriteNode => x.mod.toString
-        case x:ReadNode => x.mod.toString
-        case x:MemoNode => x.signature.toString
-        case x:ParNode => ""
-        case x:RootNode => ""
-      }
+      val parameterInfo = getParameterInfo(node)
 
       val methodName = extractMethodName(node)
 
@@ -254,7 +297,32 @@ class TbdVisualizer {
     })
   }
 
+  private def getNodeType(node: Node): String = {
+    node match {
+      case x:WriteNode => "write"
+      case x:ReadNode => "read"
+      case x:MemoNode => "memo"
+      case x:ParNode => "par"
+      case x:RootNode => "root"
+    }
+  }
+
+  private def getParameterInfo(node: Node): String = {
+    node match {
+      case x:WriteNode => x.mod.toString
+      case x:ReadNode => x.mod.toString
+      case x:MemoNode => x.signature.toString
+      case x:ParNode => ""
+      case x:RootNode => ""
+    }
+  }
+
   private def extractMethodName(node: Node): String = {
+
+    if(node.stacktrace == null) {
+      return "<No stacktrace available. Set Main.debug = true to enable stacktraces>"
+    }
+
     val methodNames = node.stacktrace.map(y => y.getMethodName())
     var currentMethod = methodNames.filter(y => (!y.startsWith("<init>")
                                             && !y.startsWith("()")
@@ -280,6 +348,20 @@ class TbdVisualizer {
     }
 
     currentMethod
+  }
+
+  def viewClosed(id: String) {
+      println("View Closed")
+  }
+
+  def buttonPushed(id: String) {
+      val node = idToNodes(id)
+      label.text = getNodeType(node) + " " + getParameterInfo(node) + "\nIn " + extractMethodName(node)
+      println("Button pushed on node "+id)
+  }
+
+  def buttonReleased(id: String) {
+      println("Button released on node "+id)
   }
 }
 
