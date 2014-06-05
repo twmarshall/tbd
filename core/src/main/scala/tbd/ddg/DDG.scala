@@ -23,7 +23,7 @@ import tbd.Changeable
 import tbd.Constants._
 import tbd.master.Master
 import tbd.memo.MemoEntry
-import tbd.mod.Mod
+import tbd.mod.{Mod, AsyncMod}
 import tbd.worker.Worker
 
 class DDG(log: LoggingAdapter, id: String, worker: Worker) {
@@ -72,10 +72,10 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     pars(workerRef2) = parNode
   }
 
-  def addAsync(asyncWorkerRef: ActorRef, parent: Node) {
+  def addAsync(asyncWorkerRef: ActorRef, mod: AsyncMod[Any], parent: Node) {
     val timestamp = nextTimestamp(parent)
 
-    val asyncNode = new AsyncNode(asyncWorkerRef, parent, timestamp)
+    val asyncNode = new AsyncNode(asyncWorkerRef, parent, timestamp, mod)
     parent.addChild(asyncNode)
 
     asyncs(asyncWorkerRef) = asyncNode
@@ -157,8 +157,20 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
       }
     } else {
       val asyncNode = asyncs(workerRef)
-      //? :(
-      true
+
+      if(!asyncNode.pebble)
+      {
+        println("received pebble for async node")
+        updated += asyncNode
+        asyncNode.invalidate()
+        asyncNode.updated = true
+        asyncNode.pebble = true
+        true
+      }
+      else
+      {
+        false
+      }
     }
   }
 

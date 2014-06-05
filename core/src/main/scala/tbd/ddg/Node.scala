@@ -24,7 +24,7 @@ import tbd.Changeable
 import tbd.Constants._
 import tbd.master.Main
 import tbd.messages._
-import tbd.mod.Mod
+import tbd.mod.{Mod, AsyncMod}
 
 abstract class Node(_parent: Node, _timestamp: Timestamp) {
   var parent = _parent
@@ -100,9 +100,15 @@ class WriteNode(_mod: Mod[Any], _parent: Node, _timestamp: Timestamp)
 class AsyncNode(
     _asyncWorkerRef: ActorRef,
     _parent: Node,
-    _timestamp: Timestamp) extends Node(_parent, _timestamp) {
+    _timestamp: Timestamp,
+    _mod: AsyncMod[Any]) extends Node(_parent, _timestamp) {
 
   val asyncWorkerRef = _asyncWorkerRef
+  var pebble = false
+
+  def invalidate() {
+    _mod.invalidate()
+  }
 
   override def toString(prefix: String) = {
     val future = asyncWorkerRef ? DDGToStringMessage(prefix + "|")

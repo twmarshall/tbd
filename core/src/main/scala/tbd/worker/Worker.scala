@@ -69,8 +69,19 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
               tbd.reexecutionStart = readNode.timestamp
               tbd.reexecutionEnd = readNode.endTime
 
+              val oldCurrentParent = tbd.currentParent
+              tbd.currentParent = readNode
+              val oldStart = tbd.reexecutionStart
+              tbd.reexecutionStart = readNode.timestamp
+              val oldEnd = tbd.reexecutionEnd
+              tbd.reexecutionEnd = readNode.endTime
+
               readNode.updated = false
               readNode.reader(newValue)
+
+              tbd.currentParent = oldCurrentParent
+              tbd.reexecutionStart = oldStart
+              tbd.reexecutionEnd = oldEnd
 
               for (node <- toCleanup) {
                 if (node.parent == null) {
@@ -90,6 +101,7 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
             }
             case asyncNode: AsyncNode => {
               val future = asyncNode.asyncWorkerRef ? PropagateMessage
+              asyncNode.pebble = false
 
               Await.result(future, DURATION)
             }

@@ -26,7 +26,7 @@ import tbd.ddg.{Node, Timestamp}
 import tbd.master.Main
 import tbd.memo.{DummyLift, Lift, MemoEntry}
 import tbd.messages._
-import tbd.mod.{Dest, Mod}
+import tbd.mod.{Dest, Mod, AsyncMod}
 import tbd.worker.{Worker, Task}
 
 object TBD {
@@ -197,7 +197,7 @@ class TBD(id: String, _worker: Worker) {
 
     asyncWorkerRef ? RunTaskMessage(asyncTask)
 
-    worker.ddg.addAsync(asyncWorkerRef, currentParent)
+    worker.ddg.addAsync(asyncWorkerRef, asyncDest.mod.asInstanceOf[AsyncMod[Any]], currentParent)
 
     return asyncDest.mod
   }

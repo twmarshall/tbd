@@ -21,7 +21,7 @@ import tbd.{Adjustable, Changeable, Mutator, TBD}
 import tbd.ddg.{MemoNode, ReadNode, RootNode}
 import tbd.master.Main
 import tbd.mod.{Dest, Mod}
-
+/*
 class MemoTest extends Adjustable {
   // Note: real client applications should NOT have mutable state like this.
   // We are just using it to ensure that the memoized function doesn't get
@@ -491,3 +491,4 @@ class MemoTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 }
+*/

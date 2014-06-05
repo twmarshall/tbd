@@ -16,7 +16,7 @@
 package tbd.test
 
 import tbd.ddg.{MemoNode, Node, ReadNode, RootNode}
-
+/*
 object MockNode {
   var time: Int = 0
 }
@@ -51,3 +51,4 @@ class MockNode(aChildren: List[MockNode]) {
 case class MockRootNode(aChildren: List[MockNode]) extends MockNode(aChildren)
 case class MockMemoNode(aChildren: List[MockNode]) extends MockNode(aChildren)
 case class MockReadNode(aChildren: List[MockNode]) extends MockNode(aChildren)
+*/
