@@ -66,12 +66,19 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 
             val newValue = readNode.mod.read()
 
+	    val oldCurrentParent = tbd.currentParent
             tbd.currentParent = readNode
+	    val oldStart = tbd.reexecutionStart
 	    tbd.reexecutionStart = readNode.timestamp
+	    val oldEnd = tbd.reexecutionEnd
 	    tbd.reexecutionEnd = readNode.endTime
 
             readNode.updated = false
             readNode.reader(newValue)
+
+	    tbd.currentParent = oldCurrentParent
+	    tbd.reexecutionStart = oldStart
+	    tbd.reexecutionEnd = oldEnd
 
             for (node <- toCleanup) {
               if (node.parent == null) {
