@@ -30,7 +30,6 @@ abstract class Node(_parent: Node, _timestamp: Timestamp) {
   var parent = _parent
   val timestamp: Timestamp = _timestamp
   var endTime: Timestamp = null
-  
   var stacktrace =
     if (Main.debug)
       Thread.currentThread().getStackTrace()
