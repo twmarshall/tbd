@@ -351,17 +351,16 @@ class TbdVisualizer extends ViewerListener {
   }
 
   def viewClosed(id: String) {
-      println("View Closed")
+
   }
 
   def buttonPushed(id: String) {
       val node = idToNodes(id)
       label.text = getNodeType(node) + " " + getParameterInfo(node) + "\nIn " + extractMethodName(node)
-      println("Button pushed on node "+id)
   }
 
   def buttonReleased(id: String) {
-      println("Button released on node "+id)
+
   }
 }
 
