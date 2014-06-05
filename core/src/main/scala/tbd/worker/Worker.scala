@@ -26,7 +26,7 @@ import tbd.TBD
 import tbd.ddg.{DDG, Node, ParNode, ReadNode, Timestamp}
 import tbd.memo.MemoEntry
 import tbd.messages._
-import tbd.mod.{AdjustableList, ModId}
+import tbd.mod.{AdjustableList}
 
 object Worker {
   def props(id: String, datastoreRef: ActorRef, parent: ActorRef): Props =
@@ -45,7 +45,6 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
   val memoTable = Map[List[Any], ArrayBuffer[MemoEntry]]()
   val adjustableLists = Set[AdjustableList[Any, Any]]()
 
-  private var task: Task = null
   private val tbd = new TBD(id, this)
 
   var nextModId = 0
@@ -67,12 +66,19 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 
             val newValue = readNode.mod.read()
 
+	    val oldCurrentParent = tbd.currentParent
             tbd.currentParent = readNode
+	    val oldStart = tbd.reexecutionStart
 	    tbd.reexecutionStart = readNode.timestamp
+	    val oldEnd = tbd.reexecutionEnd
 	    tbd.reexecutionEnd = readNode.endTime
 
             readNode.updated = false
             readNode.reader(newValue)
+
+	    tbd.currentParent = oldCurrentParent
+	    tbd.reexecutionStart = oldStart
+	    tbd.reexecutionEnd = oldEnd
 
             for (node <- toCleanup) {
               if (node.parent == null) {
@@ -112,11 +118,8 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
       parent ! PebbleMessage(self, modId, finished)
     }
 
-    case RunTaskMessage(_task: Task) => {
-      task = _task
-      val output = task.func(tbd)
-
-      sender ! output
+    case RunTaskMessage(task: Task) => {
+      sender ! task.func(tbd)
     }
 
     case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {

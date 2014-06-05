@@ -20,8 +20,9 @@ import scala.collection.mutable.Set
 import scala.concurrent.Promise
 
 import tbd.{Adjustable, Changeable, TBD}
+import tbd.Constants._
 import tbd.ddg.Node
-import tbd.mod.{AdjustableList, Mod, ModId}
+import tbd.mod.{AdjustableList, Mod}
 import tbd.worker.Task
 
 // DDG
@@ -36,9 +37,6 @@ case class PutMessage(table: String, key: Any, value: Any)
 case class UpdateMessage(table: String, key: Any, value: Any)
 case class RemoveMessage(table: String, key: Any)
 
-case class CreateModMessage(value: Any)
-case class UpdateModMessage(modId: ModId, value: Any)
-case class ReadModMessage(modId: ModId, workerRef: ActorRef)
 case class CleanUpMessage(
     workerRef: ActorRef,
     adjustableLists: Set[AdjustableList[Any, Any]])

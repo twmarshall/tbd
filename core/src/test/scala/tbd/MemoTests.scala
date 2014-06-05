@@ -232,6 +232,66 @@ class PropagateThroughMemoTest extends Adjustable {
   }
 }
 
+// Tests that a single memo entry can be matched in multiple runs of change
+// propagation.
+class RepeatRunsTest extends Adjustable {
+  var count = 0
+
+  def run(tbd: TBD): Mod[Int] = {
+    val one = tbd.input.getMod[Int](1)
+    val two = tbd.input.getMod[Int](2)
+    val lift = tbd.makeLift[Changeable[Int]]()
+
+    tbd.mod((dest: Dest[Int]) => {
+      tbd.read(one)(oneValue => {
+	lift.memo(List(two), () => {
+	  count += 1
+	  tbd.write(dest, 0)
+	})
+      })
+    })
+  }
+}
+
+// Tests that if a memo match is made, a memo call that is in the current read's
+// subddg but came before the matched memo can't be matched. This is not a
+// fundamental aspect of memo, but just a limitation of our current
+// implementation, resulting from the fact that making such matches would
+// require renumbering timestamps. So, we may someday fix this problem.
+class OutOfOrderMatchTest extends Adjustable {
+  var count2 = 0
+  var count3 = 0
+
+  def run(tbd: TBD): Any = {
+    val one = tbd.input.getMod[Int](1)
+    val two = tbd.input.getMod[Int](2)
+    val three = tbd.input.getMod[Int](3)
+    val lift = tbd.makeLift[Unit]()
+
+    tbd.mod((dest: Dest[Int]) => {
+      tbd.read(one)(oneValue => {
+	if (oneValue == 1) {
+	  lift.memo(List(two), () => {
+	    count2 += 1
+	  })
+	  lift.memo(List(three), () => {
+	    count3 += 1
+	  })
+	} else {
+	  lift.memo(List(three), () => {
+	    count3 += 1
+	  })
+	  lift.memo(List(two), () => {
+	    count2 += 1
+	  })
+	}
+
+	tbd.write(dest, 0)
+      })
+    })
+  }
+}
+
 class MemoTests extends FlatSpec with Matchers {
   "MemoTest" should "do stuff" in {
     val mutator = new Mutator()
@@ -387,6 +447,47 @@ class MemoTests extends FlatSpec with Matchers {
     mutator.propagate()
     test.count should be (2)
 
+    mutator.shutdown()
+  }
+
+  "RepeatRunsTest" should "memo match in multiple runs of propagation" in {
+    val mutator = new Mutator()
+    mutator.put(1, 1)
+    mutator.put(2, 2)
+    val test = new RepeatRunsTest()
+    mutator.run[Mod[Int]](test)
+    test.count should be (1)
+
+    mutator.update(1, 3)
+    mutator.propagate()
+    test.count should be (1)
+
+    mutator.update(1, 4)
+    mutator.propagate()
+    test.count should be (1)
+
+    mutator.update(1, 5)
+    mutator.propagate()
+    test.count should be (1)
+
+    mutator.shutdown()
+  }
+
+  "OutOfOrderMatchTest" should "not memo match if a later match has been made" in {
+    val mutator = new Mutator()
+    mutator.put(1, 1)
+    mutator.put(2, 2)
+    mutator.put(3, 3)
+    val test = new OutOfOrderMatchTest()
+    mutator.run[Any](test)
+    test.count2 should be (1)
+    test.count3 should be (1)
+
+    mutator.update(1, 4)
+    mutator.propagate()
+
+    test.count2 should be (2)
+    test.count3 should be (1)
     mutator.shutdown()
   }
 }

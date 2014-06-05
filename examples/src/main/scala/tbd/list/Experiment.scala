@@ -15,7 +15,11 @@
  */
 package tbd.examples.list
 
+import akka.util.Timeout
 import scala.collection.mutable.{ArrayBuffer, Map}
+import scala.concurrent.duration._
+
+import tbd.{Constants, Mutator}
 
 abstract class Experiment(aConf: Map[String, _]) {
   val conf = aConf
@@ -48,8 +52,10 @@ Options:
   -p, --partitions n,n,...   Number of partitions for the input data.
   -r, --repeat n             Number of times to repeat each experiment.
   -s, --chunkSizes n,n,...   Size of each chunk in the list, in KB.
-  -%, --percents f,f,...     Percent of chunks to update before running
-                               change propagation, as a decimal.=
+  -%, --percents f,f,...     Chunks to update before running change propagation.
+                               If the number is less than 1, it will be
+                               interpreted as a percent of the count, otherwise
+                               it will be interpreted as a number of chunks.
   """
 
   var repeat = 3
@@ -66,7 +72,7 @@ Options:
                   ("percents" -> Array("nontbd", "initial", ".01", ".05", ".1")),
                   ("output" -> Array("percents", "algorithms", "counts")))
 
-  val allResults = Map[Experiment, Map[String, Double]]()
+  val allResults = Map[Map[String, _], Map[String, Double]]()
 
   def round(value: Double): Double = {
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
@@ -109,22 +115,22 @@ Options:
           var total = 0.0
           var repeat = 0
 
-          for ((experiment, results) <- allResults) {
+          for ((conf, results) <- allResults) {
             if (charts == "percents") {
-              if (experiment.conf(lines) == line &&
-                  experiment.conf(x) == xValue) {
+              if (conf(lines) == line &&
+                  conf(x) == xValue) {
                 total += results(chart)
                 repeat += 1
               }
             } else if (lines == "percents") {
-              if (experiment.conf(x) == xValue &&
-                  experiment.conf(charts) == chart) {
+              if (conf(x) == xValue &&
+                  conf(charts) == chart) {
                 total += results(line)
                 repeat += 1
               }
             } else if (x == "percents") {
-              if (experiment.conf(charts) == chart &&
-                  experiment.conf(lines) == line) {
+              if (conf(charts) == chart &&
+                  conf(lines) == line) {
                 total += results(xValue)
                 repeat += 1
               }
@@ -141,6 +147,9 @@ Options:
   }
 
   def main(args: Array[String]) {
+    Constants.DURATION = 1000.seconds
+    Constants.TIMEOUT = Timeout(1000.seconds)
+
     var i = 0
     while (i < args.size) {
       args(i) match {
@@ -162,7 +171,7 @@ Options:
           confs("partitions") = args(i + 1).split(",")
 	  i += 1
         case "--percents" | "-%" =>
-          confs("percents") = "initial" +: args(i + 1).split(",")
+          confs("percents") = "initial" +: "nontbd" +: args(i + 1).split(",")
 	  i += 1
         case "--repeat" | "-r" =>
           repeat = args(i + 1).toInt
@@ -198,21 +207,17 @@ Options:
                              ("counts" -> count),
                              ("mutations" -> confs("mutations")),
                              ("partitions" -> partition),
-                             ("percents" -> confs("percents")))
+                             ("percents" -> confs("percents")),
+                             ("repeat" -> i))
 
-	      val experiment =
-		if (algorithm.startsWith("n")) {
-		  new ControlExperiment(conf)
-		} else {
-                  new AdjustableExperiment(conf)
-		}
+	      val experiment = new AdjustableExperiment(conf)
 
 	      val results = experiment.run()
 	      println(algorithm + "\t" + conf("counts") + " chunks - " +
 		      conf("chunkSizes") + " / chunk")
 	      println(results)
 	      if (i != 0) {
-		Experiment.allResults += (experiment -> results)
+		Experiment.allResults += (experiment.conf -> results)
 	      }
             }
           }

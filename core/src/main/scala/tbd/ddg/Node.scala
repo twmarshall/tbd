@@ -30,15 +30,24 @@ abstract class Node(_parent: Node, _timestamp: Timestamp) {
   var parent = _parent
   val timestamp: Timestamp = _timestamp
   var endTime: Timestamp = null
+<<<<<<< HEAD
   var stacktrace = Thread.currentThread().getStackTrace()
+=======
+  var stacktrace =
+    if (Main.debug)
+      Thread.currentThread().getStackTrace()
+    else
+      null
+>>>>>>> upstream/master
 
   var children = MutableList[Node]()
 
   var updated = false
 
-  // Whether this node can be memo matched. Gets set to false if a descendant
-  // of this node is matched.
-  var matchable = true
+  // The earliest epoch in which this node may be matched, if it is a MemoNode.
+  // This is increased above the current epoch whenever the node is matched, so
+  // that it won't be matched again in this round of change propagation.
+  var matchableInEpoch = 0
 
   def addChild(child: Node) {
     children += child

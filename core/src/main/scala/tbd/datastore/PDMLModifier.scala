@@ -54,8 +54,10 @@ class PDMLModifier[T, U](
     new PartitionedDoubleModList[T, U](partitions)
   }
 
+  private var insertInto = 0
   def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
-    partitionModifiers(0).insert(key, value)
+    insertInto = (insertInto + 1) % numPartitions
+    partitionModifiers(insertInto).insert(key, value)
   }
 
   def update(key: T, value: U): ArrayBuffer[Future[String]] = {

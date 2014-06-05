@@ -29,12 +29,12 @@ class DoubleModListNode[T, V] (
       tbd: TBD,
       dest: Dest[DoubleModListNode[U, Q]],
       f: (TBD, (T, V)) => (U, Q),
-      lift: Lift[Mod[DoubleModListNode[U, Q]]]
+      lift: Lift[(Mod[(U, Q)], Mod[DoubleModListNode[U, Q]])]
       ): Changeable[DoubleModListNode[U, Q]] = {
-    val newValue = tbd.mod((dest: Dest[(U, Q)]) =>
-      tbd.read(value)(value => tbd.write(dest, f(tbd, value))))
-    val newNext = lift.memo(List(next), () => {
-      tbd.mod((dest: Dest[DoubleModListNode[U, Q]]) =>
+    val pair = lift.memo(List(next), () => {
+      (tbd.mod((dest: Dest[(U, Q)]) =>
+	tbd.read(value)(value => tbd.write(dest, f(tbd, value)))),
+       tbd.mod((dest: Dest[DoubleModListNode[U, Q]]) =>
         tbd.read(next)(next => {
           if (next != null) {
             next.map(tbd, dest, f, lift)
@@ -42,9 +42,9 @@ class DoubleModListNode[T, V] (
             tbd.write(dest, null)
           }
         })
-      )
+      ))
     })
-    tbd.write(dest, new DoubleModListNode[U, Q](newValue, newNext))
+    tbd.write(dest, new DoubleModListNode[U, Q](pair._1, pair._2))
   }
 
   def parMap[U, Q](

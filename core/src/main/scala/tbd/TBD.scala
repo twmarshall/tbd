@@ -26,7 +26,7 @@ import tbd.ddg.{Node, Timestamp}
 import tbd.master.Main
 import tbd.memo.{DummyLift, Lift, MemoEntry}
 import tbd.messages._
-import tbd.mod.{Dest, Mod, ModId}
+import tbd.mod.{Dest, Mod}
 import tbd.worker.{Worker, Task}
 
 object TBD {
@@ -167,7 +167,10 @@ class TBD(id: String, _worker: Worker) {
   }
 
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
-    val d = new Dest[T](worker)
+    val modId = new ModId(worker.id + "." + worker.nextModId)
+    worker.nextModId += 1
+
+    val d = new Dest[T](modId)
     initializer(d).mod
     d.mod
   }
@@ -184,7 +187,7 @@ class TBD(id: String, _worker: Worker) {
     val task2 =  new Task(((tbd: TBD) => two(tbd)))
     val workerProps2 =
       Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
-    val workerRef2 = worker.context.system.actorOf(workerProps2, id + "-" +workerId)
+    val workerRef2 = worker.context.system.actorOf(workerProps2, id + "-" + workerId)
     workerId += 1
     val twoFuture = workerRef2 ? RunTaskMessage(task2)
 

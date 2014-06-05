@@ -18,6 +18,7 @@ package tbd.mod
 import scala.collection.mutable.{ArrayBuffer, Buffer}
 
 import tbd.{Changeable, TBD}
+import tbd.Constants._
 import tbd.memo.Lift
 
 class DoubleModList[T, V](
@@ -48,7 +49,7 @@ class DoubleModList[T, V](
         })
       )
     } else {
-      val lift = tbd.makeLift[Mod[DoubleModListNode[U, Q]]](!memoized)
+      val lift = tbd.makeLift[(Mod[(U, Q)], Mod[DoubleModListNode[U, Q]])](!memoized)
 
       new DoubleModList(
         tbd.mod((dest: Dest[DoubleModListNode[U, Q]]) => {

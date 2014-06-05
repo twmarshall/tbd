@@ -17,39 +17,45 @@ package tbd.mod
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.{Await, Future, Promise}
+import scala.collection.mutable.{ArrayBuffer, Set}
+import scala.concurrent.{Await, Future, Lock, Promise}
 
 import tbd.Constants._
 import tbd.TBD
 import tbd.messages._
 
-class Mod[T](datastoreRef: ActorRef, _id: ModId) {
+class Mod[T](_id: ModId, _value: T) {
   val id = _id
+  var value = _value
+  val dependencies = Set[ActorRef]()
+  val lock = new Lock()
 
   def read(workerRef: ActorRef = null): T = {
-    val ret =
-      if (workerRef != null) {
-        val readPromise = datastoreRef ? ReadModMessage(id, workerRef)
-        Await.result(readPromise, DURATION)
-      } else {
-        val readPromise = datastoreRef ? GetMessage("mods", id)
-        Await.result(readPromise, DURATION)
-      }
-
-    ret match {
-      case NullMessage => null.asInstanceOf[T]
-      case _ => ret.asInstanceOf[T]
+    if (workerRef != null) {
+      lock.acquire()
+      dependencies += workerRef
+      lock.release()
     }
+
+    value
   }
 
-  def update(value: T): ArrayBuffer[Future[String]] = {
-    val future = datastoreRef ? UpdateModMessage(id, value)
-    Await.result(future, DURATION).asInstanceOf[ArrayBuffer[Future[String]]]
+  def update(_value: T): ArrayBuffer[Future[String]] = {
+    value = _value
+
+    val futures = ArrayBuffer[Future[String]]()
+    lock.acquire()
+    for (workerRef <- dependencies) {
+      val finished = Promise[String]()
+      workerRef ! ModUpdatedMessage(id, finished)
+      futures += finished.future
+    }
+    lock.release()
+
+    futures
   }
 
   override def toString = {
-    val value = read()
     if (value == null) {
       "null"
     } else {

@@ -25,11 +25,12 @@ import tbd.{Adjustable, TBD}
 import tbd.Constants._
 import tbd.datastore.Datastore
 import tbd.messages._
-import tbd.mod.ModId
 import tbd.worker.{Worker, Task}
 
 object Master {
   def props(): Props = Props(classOf[Master])
+
+  var epoch = 0
 }
 
 class Master extends Actor with ActorLogging {
@@ -68,6 +69,7 @@ class Master extends Actor with ActorLogging {
       //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
       //                                  DURATION).asInstanceOf[String])
 
+      Master.epoch += 1
       val future = workerRef ? PropagateMessage
       val respondTo = sender
       future.onComplete((_try: Try[Any]) =>
