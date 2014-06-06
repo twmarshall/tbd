@@ -18,7 +18,9 @@ package tbd.visualization
 
 object Main {
   def main(args: Array[String]) {
-    var test = new ExhaustiveTest()
+    println("Press any key to start.")
+    readLine()
+    var test = new AsyncModTest()
     test.run()
   }
 }

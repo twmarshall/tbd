@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 package tbd.test
-/*
+
 import org.scalatest._
 import scala.collection.mutable.Map
 
@@ -131,4 +131,3 @@ class MutatorTests extends FlatSpec with Matchers {
     }
   }
 }
-*/

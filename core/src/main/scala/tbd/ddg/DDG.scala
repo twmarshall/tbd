@@ -160,7 +160,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 
       if(!asyncNode.pebble)
       {
-        println("received pebble for async node")
+        println("received pebble for async node @" + Thread.currentThread().getId())
         updated += asyncNode
         asyncNode.invalidate()
         asyncNode.updated = true

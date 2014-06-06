@@ -16,13 +16,14 @@
 
 package tbd.visualization
 
-import tbd.ddg.{Node, RootNode, ReadNode, MemoNode, WriteNode, ParNode}
+import tbd.ddg._
 import org.graphstream.graph.implementations.{SingleGraph}
 import org.graphstream.ui.swingViewer.Viewer
 import scala.collection.mutable.{HashMap, ListBuffer}
 import swing._
 import GridBagPanel._
 import org.graphstream.ui.swingViewer.ViewerListener
+import tbd.messages._
 
 class TbdVisualizer extends ViewerListener {
 
@@ -53,6 +54,11 @@ class TbdVisualizer extends ViewerListener {
     node.par {
       size: 20px;
       fill-color: yellow;
+      shape: diamond;
+    }
+    node.async {
+      size: 20px;
+      fill-color: orange;
       shape: diamond;
     }
     node {
@@ -304,6 +310,7 @@ class TbdVisualizer extends ViewerListener {
       case x:MemoNode => "memo"
       case x:ParNode => "par"
       case x:RootNode => "root"
+      case x:AsyncNode => "async"
     }
   }
 
@@ -314,6 +321,7 @@ class TbdVisualizer extends ViewerListener {
       case x:MemoNode => x.signature.toString
       case x:ParNode => ""
       case x:RootNode => ""
+      case x:AsyncNode => ""
     }
   }
 

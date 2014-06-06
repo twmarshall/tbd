@@ -65,7 +65,7 @@ class ListReduceSumTest extends Adjustable {
       })
   }
 }
-/*
+
 class ListTests extends FlatSpec with Matchers {
   "ListMapTest" should "return the mapped list" in {
     val mutator = new Mutator()
@@ -342,4 +342,3 @@ class ListTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 }
-*/

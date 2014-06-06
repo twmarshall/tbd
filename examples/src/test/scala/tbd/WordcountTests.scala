@@ -21,7 +21,7 @@ import scala.collection.immutable.HashMap
 import tbd.Mutator
 import tbd.examples.list.WCAdjust
 import tbd.mod.Mod
-/*
+
 class WordcountTests extends FlatSpec with Matchers {
   "WCAdjust" should "return the corrent word count" in {
     val mutator = new Mutator()
@@ -59,4 +59,3 @@ class WordcountTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 }
-*/

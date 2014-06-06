@@ -65,7 +65,7 @@ object TBDBuild extends Build {
       mkvisualization := {
         val classpath = (fullClasspath in Runtime).value.files.absString
         val template = """#!/bin/sh
-        java -Xmx8g -Xss256m -classpath "%s" %s $@
+        java -Xmx8g -Xss256m -classpath -Dcom.sun.management.jmxremote -Dcom.sun.management.jmxremote.authenticate=false -Dcom.sun.management.jmxremote.port=8484 -Dcom.sun.management.jmxremote.ssl=false "%s" %s $@
         """
 
         val visualization = template.format(classpath, "tbd.visualization.Main")
