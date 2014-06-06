@@ -31,7 +31,7 @@ class AsyncModTest {
     val mutator = new Mutator()
     mutator.put(1, 1)
 
-    val output = mutator.run[Mod[Int]](new AsyncTest())
+    val output = mutator.run[Mod[Int]](new ParTest())
     println("Result 1: " + output.read())
 
 
@@ -44,6 +44,36 @@ class AsyncModTest {
   }
 }
 
+class ParTest extends Adjustable {
+  def run(tbd: TBD): Mod[Int] = {
+    val one = tbd.input.getMod[Int](1)
+
+    val (two, three) = tbd.par((tbd: TBD) => {
+      tbd.mod((dest: Dest[Int]) => {
+        tbd.read(one)(one => {
+          println("Par clause 1 execution @" + Thread.currentThread().getId())
+          tbd.write(dest, one + 1)
+        })
+      })
+    }, (tbd: TBD) => {
+      tbd.mod((dest: Dest[Int]) => {
+        println("Par clause 2 execution @" + Thread.currentThread().getId())
+        tbd.write(dest, 3)
+      })
+    })
+
+    val five = tbd.mod((dest: Dest[Int]) => {
+      tbd.read(two)(two => {
+        tbd.read(three)(three => {
+          println("Sync clause execution @" + Thread.currentThread().getId())
+          tbd.write(dest, two + three)
+        })
+      })
+    })
+
+    five
+  }
+}
 
 
 class AsyncTest extends Adjustable {
