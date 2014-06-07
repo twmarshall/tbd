@@ -22,7 +22,7 @@ import tbd.Constants._
 import tbd.memo.Lift
 
 class ChunkList[T, U](
-    _head: Mod[ChunkListNode[T, U]]) extends AdjustableList[T, U] {
+    _head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
   val head = _head
 
   def map[V, Q](

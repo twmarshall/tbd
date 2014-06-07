@@ -41,9 +41,9 @@ class ListMemoMapTest extends Adjustable {
 
 class ChunkListMapTest(partitions: Int) extends Adjustable {
   def run(tbd: TBD): AdjustableList[Int, Int] = {
-    val list = tbd.input.getAdjustableList[Int, Int](partitions = partitions,
-                                                     chunkSize = 2,
-                                                     chunkSizer = _ => 1)
+    val list = tbd.input.getChunkList[Int, Int](partitions = partitions,
+                                                chunkSize = 2,
+                                                chunkSizer = _ => 1)
     list.map(tbd, (tbd: TBD, pair: (Int, Int)) => (pair._1, pair._2 - 2))
   }
 }

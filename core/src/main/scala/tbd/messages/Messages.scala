@@ -25,11 +25,6 @@ import tbd.ddg.Node
 import tbd.mod.{AdjustableList, Mod}
 import tbd.worker.Task
 
-// DDG
-case class AddReadMessage(modId: ModId, parent: Node)
-case class AddWriteMessage(modId: ModId, parent: Node)
-case class ToStringMessage()
-
 // Datastore
 case class CreateTableMessage(table: String)
 case class GetMessage(table: String, key: Any)
@@ -37,18 +32,15 @@ case class PutMessage(table: String, key: Any, value: Any)
 case class UpdateMessage(table: String, key: Any, value: Any)
 case class RemoveMessage(table: String, key: Any)
 
-case class CleanUpMessage(
-    workerRef: ActorRef,
-    adjustableLists: Set[AdjustableList[Any, Any]])
-
 case class GetModMessage(table: String, key: Any)
-case class GetAdjustableListMessage(
-    table: String,
-    partitions: Int = 8,
-    chunkSize: Int = 0,
-    chunkSizer: Any => Int,
+case class GetAdjustableListMessage(table: String, partitions: Int,
     valueMod: Boolean)
+case class GetChunkListMessage(table: String, partitions: Int,
+    chunkSize: Int, chunkSizer: Any => Int, valueMod: Boolean)
 case class NullMessage()
+
+case class CleanUpMessage(workerRef: ActorRef,
+    adjustableLists: Set[AdjustableList[Any, Any]])
 
 // Master
 case class RunMessage(adjust: Adjustable, mutatorId: Int)

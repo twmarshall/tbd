@@ -33,7 +33,6 @@ object MapAdjust {
 
 class MapAdjust(
     partitions: Int,
-    chunkSize: Int,
     valueMod: Boolean,
     parallel: Boolean,
     memoized: Boolean) extends Algorithm(parallel, memoized) {
@@ -42,8 +41,7 @@ class MapAdjust(
   var traditionalAnswer: GenIterable[Int] = null
 
   def run(tbd: TBD): AdjustableList[Int, Int] = {
-    val pages = tbd.input.getAdjustableList[Int, String](
-      partitions, chunkSize, _ => 1, valueMod)
+    val pages = tbd.input.getAdjustableList[Int, String](partitions, valueMod)
     pages.map(tbd, MapAdjust.mapper, parallel = parallel, memoized = memoized)
   }
 
@@ -61,5 +59,18 @@ class MapAdjust(
     val sortedOutput = output.toBuffer().sortWith(_ < _)
     traditionalRun(input.values)
     sortedOutput == traditionalAnswer.toBuffer.sortWith(_ < _)
+  }
+}
+
+class ChunkMapAdjust(
+    partitions: Int,
+    chunkSize: Int,
+    valueMod: Boolean,
+    parallel: Boolean,
+    memoized: Boolean) extends MapAdjust(partitions, valueMod, parallel, memoized) {
+  override def run(tbd: TBD): AdjustableList[Int, Int] = {
+    val pages = tbd.input.getChunkList[Int, String](
+      partitions, chunkSize, _ => 1, valueMod)
+    pages.map(tbd, MapAdjust.mapper, parallel = parallel, memoized = memoized)
   }
 }

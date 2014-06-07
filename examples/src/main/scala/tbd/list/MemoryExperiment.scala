@@ -22,11 +22,9 @@ import tbd.mod.AdjustableList
 
 class MemoryExperiment extends Adjustable {
   val partitions = 4
-  val chunkSize = 0
   val valueMod = true
   def run(tbd: TBD): AdjustableList[Int, Int] = {
-    val list = tbd.input.getAdjustableList[Int, Int](
-      partitions, chunkSize, _ => 1, valueMod)
+    val list = tbd.input.getAdjustableList[Int, Int](partitions, valueMod)
     list.map(tbd, (tbd: TBD, pair: (Int, Int)) => pair)
   }
 }
