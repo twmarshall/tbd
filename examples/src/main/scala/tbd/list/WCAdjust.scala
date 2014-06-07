@@ -24,7 +24,6 @@ import tbd.mod.{AdjustableList, Mod}
 
 class WCAdjust(
     partitions: Int,
-    chunkSize: Int,
     valueMod: Boolean,
     parallel: Boolean) extends Algorithm(parallel, false) {
   var output: Mod[(Int, HashMap[String, Int])] = null
@@ -51,7 +50,20 @@ class WCAdjust(
     (pair1._1, WC.reduce(pair1._2, pair2._2))
 
   def run(tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
-    val pages = tbd.input.getAdjustableList[Int, String](partitions,
+    val pages = tbd.input.getAdjustableList[Int, String](partitions, valueMod)
+    val counts = pages.map(tbd, mapper, parallel = parallel)
+    val initialValue = tbd.createMod((0, HashMap[String, Int]()))
+    counts.reduce(tbd, initialValue, reducer, parallel = parallel)
+  }
+}
+
+class ChunkWCAdjust(
+    partitions: Int,
+    chunkSize: Int,
+    valueMod: Boolean,
+    parallel: Boolean) extends WCAdjust(partitions, valueMod, parallel) {
+  override def run(tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
+    val pages = tbd.input.getChunkList[Int, String](partitions,
       chunkSize = chunkSize, chunkSizer = _ => 1, valueMod = valueMod)
     val counts = pages.map(tbd, mapper, parallel = parallel)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))

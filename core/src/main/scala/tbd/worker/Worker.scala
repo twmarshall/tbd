@@ -116,8 +116,6 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
           node.timestamp > start && node.timestamp < end)
       }
 
-      tbd.updatedMods.clear()
-
       true
     }
 
@@ -150,6 +148,8 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
       val respondTo = sender
       val future = propagate()
       future.onComplete((t: Try[Boolean]) => {
+	tbd.updatedMods.clear()
+
         respondTo ! "done"
       })
     }

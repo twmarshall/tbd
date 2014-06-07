@@ -21,10 +21,17 @@ import scala.collection.mutable.Map
 import tbd.{Adjustable, Mutator, TBD}
 import tbd.mod.AdjustableList
 
-class ListTest(partitions: Int, chunkSize: Int, valueMod: Boolean)
+class ListTest(partitions: Int, valueMod: Boolean)
     extends Adjustable {
   def run(tbd: TBD): AdjustableList[Int, Int] = {
-    tbd.input.getAdjustableList[Int, Int](partitions, chunkSize, _ => 1, valueMod)
+    tbd.input.getAdjustableList[Int, Int](partitions, valueMod)
+  }
+}
+
+class ChunkListTest(partitions: Int, chunkSize: Int, valueMod: Boolean)
+    extends Adjustable {
+  def run(tbd: TBD): AdjustableList[Int, Int] = {
+    tbd.input.getChunkList[Int, Int](partitions, chunkSize, _ => 1, valueMod)
   }
 }
 
@@ -64,10 +71,10 @@ class MutatorTests extends FlatSpec with Matchers {
   }
 
   "AdjustableListTests" should "update the AdjustableList correctly" in {
-    for (adjustable <- List(new ListTest(1, 0, true), new ListTest(2, 0, true),
-                            new ListTest(1, 2, true), new ListTest(2, 2, true),
-                            new ListTest(1, 0, false), new ListTest(2, 0, false),
-                            new ListTest(1, 2, false), new ListTest(2, 2, false))) {
+    for (adjustable <- List(new ListTest(1, true), new ChunkListTest(1, 2, true),
+			    new ListTest(2, true), new ChunkListTest(2, 2, true),
+                            new ListTest(1, false), new ChunkListTest(1, 2, false),
+			    new ListTest(2, false), new ChunkListTest(2, 2, false))) {
       val mutator = new Mutator()
       val answer = Map[Int, Int]()
 

@@ -18,8 +18,8 @@ package tbd.master
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
 import scala.collection.mutable.{ArrayBuffer, Map}
-import scala.concurrent.{Await, Promise}
-import scala.util.Try
+import scala.concurrent.{Await, Future, Promise}
+import scala.util.{Failure, Success, Try}
 
 import tbd.{Adjustable, TBD}
 import tbd.Constants._
@@ -66,47 +66,63 @@ class Master extends Actor with ActorLogging {
 
     case PropagateMessage => {
       log.info("Master actor initiating change propagation.")
-      //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-      //                                  DURATION).asInstanceOf[String])
 
       Master.epoch += 1
       val future = workerRef ? PropagateMessage
       val respondTo = sender
-      future.onComplete((_try: Try[Any]) =>
-        respondTo ! "done")
-    }
-
-    case FinishedPropagatingMessage => {
-      log.info("Master received FinishedPropagatingMessage.")
-
-      //log.debug("DDG: {}", Await.result(workerRef ? DDGToStringMessage(""),
-      //                                  DURATION).asInstanceOf[String])
-
-      result.success("okay")
+      future.onComplete((_try: Try[Any]) => {
+	//log.debug("DDG: {}\n\n", Await.result(workerRef ? DDGToStringMessage(""),
+        //                                      DURATION).asInstanceOf[String])
+        respondTo ! "done"
+      })
     }
 
     case PutInputMessage(table: String, key: Any, value: Any) => {
       log.debug("PutInputMessage")
-      val future = datastoreRef ? PutMessage(table, key, value)
+      val future = (datastoreRef ? PutMessage(table, key, value))
+	.mapTo[Future[ArrayBuffer[String]]]
       val respondTo = sender
-      future.onComplete((_try: Try[Any]) =>
-        respondTo ! "done")
+      future.onComplete((_try: Try[Future[ArrayBuffer[String]]]) =>
+	_try match {
+	  case Success(future) => {
+	    future.onComplete((_try: Try[ArrayBuffer[String]]) =>
+              respondTo ! "done")
+	  }
+	  case Failure(error) =>
+	    log.warning("PutMessage failed.")
+	})
     }
 
     case UpdateInputMessage(table: String, key: Any, value: Any) => {
       log.debug("UpdateInputMessage")
-      val future = datastoreRef ? UpdateMessage(table, key, value)
+      val future = (datastoreRef ? UpdateMessage(table, key, value))
+	.mapTo[Future[ArrayBuffer[String]]]
       val respondTo = sender
-      future.onComplete((_try: Try[Any]) =>
-        respondTo ! "done")
+      future.onComplete((_try: Try[Future[ArrayBuffer[String]]]) =>
+	_try match {
+	  case Success(future) => {
+	    future.onComplete((_try: Try[ArrayBuffer[String]]) =>
+              respondTo ! "done")
+	  }
+	  case Failure(error) =>
+	    log.warning("UpdateMessage failed.")
+	})
     }
 
     case RemoveInputMessage(table: String, key: Any) => {
       log.debug("RemoveInputMessage")
-      val future = datastoreRef ? RemoveMessage(table, key)
+      val future = (datastoreRef ? RemoveMessage(table, key))
+	.mapTo[Future[ArrayBuffer[String]]]
       val respondTo = sender
-      future.onComplete((_try: Try[Any]) =>
-        respondTo ! "done")
+      future.onComplete((_try: Try[Future[ArrayBuffer[String]]]) =>
+	_try match {
+	  case Success(future) => {
+	    future.onComplete((_try: Try[ArrayBuffer[String]]) =>
+              respondTo ! "done")
+	  }
+	  case Failure(error) =>
+	    log.warning("RemoveMessage failed.")
+	})
     }
 
     case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {

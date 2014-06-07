@@ -43,30 +43,35 @@ class AdjustableExperiment(aConf: Map[String, _])
 
     val alg = algorithm match {
       // Map
-      case "map" => new MapAdjust(partition, 0, false, false, false)
-      case "pmap" => new MapAdjust(partition, 0, false, true, false)
-      case "mmap" => new MapAdjust(partition, 0, false, false, true)
-      case "mpmap" => new MapAdjust(partition, 0, false, true, true)
+      case "map" => new MapAdjust(partition, false, false, false)
+      case "pmap" => new MapAdjust(partition, false, true, false)
+      case "mmap" => new MapAdjust(partition, false, false, true)
+      case "mpmap" => new MapAdjust(partition, false, true, true)
 
-      case "dmap" => new MapAdjust(partition, 0, true, false, false)
-      case "dpmap" => new MapAdjust(partition, 0, true, true, false)
-      case "dmmap" => new MapAdjust(partition, 0, true, false, true)
-      case "dmpmap" => new MapAdjust(partition, 0, true, true, true)
+      case "dmap" => new MapAdjust(partition, true, false, false)
+      case "dpmap" => new MapAdjust(partition, true, true, false)
+      case "dmmap" => new MapAdjust(partition, true, false, true)
+      case "dmpmap" => new MapAdjust(partition, true, true, true)
 
-      case "cmap" => new MapAdjust(partition, chunkSize, true, false, false)
-      case "pcmap" => new MapAdjust(partition, chunkSize, true, true, false)
-      case "mcmap" => new MapAdjust(partition, chunkSize, true, false, true)
-      case "mpcmap" => new MapAdjust(partition, chunkSize, true, true, true)
+      case "cmap" => new ChunkMapAdjust(partition, chunkSize, true, false, false)
+      case "pcmap" => new ChunkMapAdjust(partition, chunkSize, true, true, false)
+      case "mcmap" => new ChunkMapAdjust(partition, chunkSize, true, false, true)
+      case "mpcmap" => new ChunkMapAdjust(partition, chunkSize, true, true, true)
       // Filter
       case "filter" => new FilterAdjust(partition, false, false)
       case "pfilter" => new FilterAdjust(partition, true, false)
       case "mfilter" => new FilterAdjust(partition, false, true)
       case "mpfilter" => new FilterAdjust(partition, true, true)
       // Wordcount
-      case "wc" => new WCAdjust(partition, chunkSize, false, false)
-      case "pwc" => new WCAdjust(partition, chunkSize, false, true)
-      case "dwc" => new WCAdjust(partition, chunkSize, true, false)
-      case "dpwc" => new WCAdjust(partition, chunkSize, true, true)
+      case "wc" => new WCAdjust(partition, false, false)
+      case "pwc" => new WCAdjust(partition, false, true)
+      case "dwc" => new WCAdjust(partition, true, false)
+      case "dpwc" => new WCAdjust(partition, true, true)
+
+      case "cwc" => new ChunkWCAdjust(partition, chunkSize, false, false)
+      case "cpwc" => new ChunkWCAdjust(partition, chunkSize, false, true)
+      case "dcwc" => new ChunkWCAdjust(partition, chunkSize, true, false)
+      case "dcpwc" => new ChunkWCAdjust(partition, chunkSize, true, true)
     }
 
     val tableForTraditionalRun = alg.prepareTraditionalRun(table)

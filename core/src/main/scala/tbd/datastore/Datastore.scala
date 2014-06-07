@@ -164,23 +164,14 @@ class Datastore extends Actor with ActorLogging {
       sender ! modifier.getModifiable()
     }
 
-    case GetAdjustableListMessage(
+    case GetChunkListMessage(
         table: String,
         partitions: Int,
         chunkSize: Int,
         chunkSizer: (Any => Int),
         valueMod: Boolean) => {
       val modifier =
-	if (!valueMod) {
-          if (chunkSize == 0) {
-	    if (partitions == 1) {
-	      log.info("Creating new ModList.")
-	      new ModListModifier[Any, Any](this, tables(table))
-	    } else {
-	      log.info("Creating new PartitionedModList.")
-	      new PartitionedModListModifier[Any, Any](this, tables(table), partitions)
-	    }
-          } else {
+        if (!valueMod) {
             if (partitions == 1) {
               log.info("Creating new ChunkList.")
               new ChunkListModifier[Any, Any](this, tables(table), chunkSize,
@@ -190,33 +181,54 @@ class Datastore extends Actor with ActorLogging {
               new PartitionedChunkListModifier[Any, Any](this, tables(table), partitions,
                                                          chunkSize, chunkSizer)
             }
-          }
+        } else {
+	  if (partitions == 1) {
+	    log.info("Creating new DoubleChunkList.")
+            new DoubleChunkListModifier[Any, Any](
+              this,
+              tables(table),
+              chunkSize,
+              chunkSizer)
+	  } else {
+	    log.info("Creating new PartitionedDoubleChunkList.")
+	    new PartitionedDoubleChunkListModifier[Any, Any](
+              this,
+              tables(table),
+	      partitions,
+              chunkSize,
+              chunkSizer)
+	  }
+        }
+
+      if (modifiers.contains(table)) {
+        modifiers(table) += modifier
+      } else {
+        modifiers(table) = Set(modifier)
+      }
+
+      sender ! modifier.getModifiable()
+    }
+
+    case GetAdjustableListMessage(
+        table: String,
+        partitions: Int,
+        valueMod: Boolean) => {
+      val modifier =
+	if (!valueMod) {
+	  if (partitions == 1) {
+	    log.info("Creating new ModList.")
+	    new ModListModifier[Any, Any](this, tables(table))
+	  } else {
+	    log.info("Creating new PartitionedModList.")
+	    new PartitionedModListModifier[Any, Any](this, tables(table), partitions)
+	  }
 	} else {
-          if (chunkSize == 0) {
-            if (partitions == 1) {
-	      log.info("Creating new DoubleModList.")
-              new DMLModifier[Any, Any](this, tables(table))
-            } else {
-	      log.info("Creating new PartitionedDoubleModList.")
-              new PDMLModifier[Any, Any](this, tables(table), partitions)
-            }
+          if (partitions == 1) {
+	    log.info("Creating new DoubleModList.")
+            new DMLModifier[Any, Any](this, tables(table))
           } else {
-	    if (partitions == 1) {
-	      log.info("Creating new DoubleChunkList.")
-              new DoubleChunkListModifier[Any, Any](
-                this,
-                tables(table),
-                chunkSize,
-                chunkSizer)
-	    } else {
-	      log.info("Creating new PartitionedDoubleChunkList.")
-	      new PartitionedDoubleChunkListModifier[Any, Any](
-                this,
-                tables(table),
-	        partitions,
-                chunkSize,
-                chunkSizer)
-	    }
+	    log.info("Creating new PartitionedDoubleModList.")
+            new PDMLModifier[Any, Any](this, tables(table), partitions)
           }
         }
 
