@@ -56,6 +56,7 @@ Options:
                                If the number is less than 1, it will be
                                interpreted as a percent of the count, otherwise
                                it will be interpreted as a number of chunks.
+  -v, --verbose              Turns on verbose output.
   """
 
   var repeat = 3
@@ -63,6 +64,8 @@ Options:
   var inputSize = 0
 
   var check = false
+
+  var verbose = false
 
   val confs = Map(("algorithms" -> Array("nmap", "mpmap")),
                   ("counts" -> Array("1000")),
@@ -183,6 +186,8 @@ Options:
 	case "--chunkSizes" | "-s" =>
 	  confs("chunkSizes") = args(i + 1).split(",")
 	  i += 1
+	case "--verbose" | "-v" =>
+	  verbose = true
         case _ =>
           println("Unknown option " + args(i * 2) + "\n" + usage)
           sys.exit()

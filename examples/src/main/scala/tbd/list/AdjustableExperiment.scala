@@ -100,6 +100,14 @@ class AdjustableExperiment(aConf: Map[String, _])
 
     results("initial") = initialElapsed
 
+    if (Experiment.verbose) {
+      println("map count = " + alg.mapCount)
+      println("reduce count = " + alg.reduceCount)
+      println("starting prop")
+      alg.mapCount = 0
+      alg.reduceCount = 0
+    }
+
     for (percent <- percents) {
       if (percent != "initial" && percent != "nontbd") {
         var i =  0
@@ -126,7 +134,10 @@ class AdjustableExperiment(aConf: Map[String, _])
         results(percent) = elapsed
       }
     }
-
+    if (Experiment.verbose) {
+      println("map count = " + alg.mapCount)
+      println("reduce count = " + alg.reduceCount)
+    }
     mutator.shutdown()
 
     results

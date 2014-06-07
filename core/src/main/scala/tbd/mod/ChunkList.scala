@@ -58,6 +58,12 @@ class ChunkList[T, U](
     }
   }*/
 
+  def chunkMap[V, Q](
+      tbd: TBD,
+      f: (TBD, Vector[(T, U)]) => (V, Q),
+      parallel: Boolean = false,
+      memoized: Boolean = true): DoubleModList[V, Q] = ???
+
   def filter(
       tbd: TBD,
       pred: ((T, U)) => Boolean,
