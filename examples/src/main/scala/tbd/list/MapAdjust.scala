@@ -40,7 +40,7 @@ class MapAdjust(
 
   var traditionalAnswer: GenIterable[Int] = null
 
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
+  def run(tbd: TBD) = {
     val pages = tbd.input.getAdjustableList[Int, String](partitions, valueMod)
     pages.map(tbd, MapAdjust.mapper, parallel = parallel, memoized = memoized)
   }
@@ -67,10 +67,47 @@ class ChunkMapAdjust(
     chunkSize: Int,
     valueMod: Boolean,
     parallel: Boolean,
-    memoized: Boolean) extends MapAdjust(partitions, valueMod, parallel, memoized) {
-  override def run(tbd: TBD): AdjustableList[Int, Int] = {
+    memoized: Boolean) extends Algorithm(parallel, memoized) {
+  var output: AdjustableList[Int, Int] = null
+
+  var traditionalAnswer: GenIterable[Int] = null
+
+  def chunkMapper(tbd: TBD, chunk: Vector[(Int, String)]) = {
+    mapCount += 1
+    val counts = Map[String, Int]()
+
+    for (page <- chunk) {
+      for (word <- page._2.split("\\W+")) {
+        if (counts.contains(word)) {
+          counts(word) += 1
+        } else {
+          counts(word) = 1
+        }
+      }
+    }
+
+    (0, counts)
+  }
+
+  def run(tbd: TBD) = {
     val pages = tbd.input.getChunkList[Int, String](
       partitions, chunkSize, _ => 1, valueMod)
-    pages.map(tbd, MapAdjust.mapper, parallel = parallel, memoized = memoized)
+    pages.chunkMap(tbd, chunkMapper, parallel = parallel, memoized = memoized)
+  }
+
+  def traditionalRun(input: GenIterable[String]) {
+    traditionalAnswer = input.map(s => {
+      MapAdjust.mapper(null, (0, s))._2
+    })
+  }
+
+  def initialRun(mutator: Mutator) {
+    output = mutator.run[AdjustableList[Int, Int]](this)
+  }
+
+  def checkOutput(input: GenMap[Int, String]): Boolean = {
+    val sortedOutput = output.toBuffer().sortWith(_ < _)
+    traditionalRun(input.values)
+    sortedOutput == traditionalAnswer.toBuffer.sortWith(_ < _)
   }
 }
