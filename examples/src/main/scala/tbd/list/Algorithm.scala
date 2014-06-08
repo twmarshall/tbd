@@ -21,6 +21,9 @@ import scala.collection.mutable.Map
 import tbd.{Adjustable, Mutator}
 
 abstract class Algorithm(parallel: Boolean, memoized: Boolean) extends Adjustable {
+  var mapCount = 0
+  var reduceCount = 0
+
   def initialRun(mutator: Mutator)
 
   def traditionalRun(input: GenIterable[String])

@@ -15,5 +15,12 @@
  */
 package tbd.mod
 
+import tbd.TBD
+
 trait AdjustableChunkList[T, U] extends AdjustableList[T, U] {
+  def chunkMap[V, Q](
+      tbd: TBD,
+      f: (TBD, Vector[(T, U)]) => (V, Q),
+      parallel: Boolean = false,
+      memoized: Boolean = true): AdjustableList[V, Q]
 }

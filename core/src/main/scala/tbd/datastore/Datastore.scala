@@ -170,6 +170,10 @@ class Datastore extends Actor with ActorLogging {
         chunkSize: Int,
         chunkSizer: (Any => Int),
         valueMod: Boolean) => {
+      if (chunkSize <= 0) {
+        log.warning("Chunk size must be greater than 0.")
+      }
+
       val modifier =
         if (!valueMod) {
             if (partitions == 1) {
