@@ -21,7 +21,7 @@ import scala.concurrent.Await
 
 import tbd.Constants._
 import tbd.messages._
-import tbd.mod.{Mod, AdjustableList}
+import tbd.mod.{Mod, AdjustableChunkList, AdjustableList}
 import tbd.worker.Worker
 
 class Reader(worker: Worker) {
@@ -33,16 +33,28 @@ class Reader(worker: Worker) {
 
   def getAdjustableList[T, V](
       partitions: Int = 8,
-      chunkSize: Int = 0,
-      chunkSizer: V => Int = (v: V) => 0,
       valueMod: Boolean = true): AdjustableList[T, V] = {
-    val anySizer = chunkSizer.asInstanceOf[Any => Int]
-    val message = GetAdjustableListMessage("input", partitions, chunkSize, anySizer, valueMod)
+    val message = GetAdjustableListMessage("input", partitions, valueMod)
 
     val adjustableListFuture = worker.datastoreRef ? message
 
     val adjustableList = Await.result(adjustableListFuture, DURATION)
     worker.adjustableLists += adjustableList.asInstanceOf[AdjustableList[Any, Any]]
     adjustableList.asInstanceOf[AdjustableList[T, V]]
+  }
+
+  def getChunkList[T, V](
+      partitions: Int = 8,
+      chunkSize: Int = 0,
+      chunkSizer: V => Int = (v: V) => 0,
+      valueMod: Boolean = true): AdjustableChunkList[T, V] = {
+    val anySizer = chunkSizer.asInstanceOf[Any => Int]
+    val message = GetChunkListMessage("input", partitions, chunkSize, anySizer, valueMod)
+
+    val chunkListFuture = worker.datastoreRef ? message
+
+    val chunkList = Await.result(chunkListFuture, DURATION)
+    worker.adjustableLists += chunkList.asInstanceOf[AdjustableChunkList[Any, Any]]
+    chunkList.asInstanceOf[AdjustableChunkList[T, V]]
   }
 }

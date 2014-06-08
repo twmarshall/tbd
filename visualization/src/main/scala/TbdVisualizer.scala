@@ -318,6 +318,11 @@ class TbdVisualizer extends ViewerListener {
   }
 
   private def extractMethodName(node: Node): String = {
+
+    if(node.stacktrace == null) {
+      return "<No stacktrace available. Set Main.debug = true to enable stacktraces>"
+    }
+
     val methodNames = node.stacktrace.map(y => y.getMethodName())
     var currentMethod = methodNames.filter(y => (!y.startsWith("<init>")
                                             && !y.startsWith("()")
@@ -346,17 +351,16 @@ class TbdVisualizer extends ViewerListener {
   }
 
   def viewClosed(id: String) {
-      println("View Closed")
+
   }
 
   def buttonPushed(id: String) {
       val node = idToNodes(id)
       label.text = getNodeType(node) + " " + getParameterInfo(node) + "\nIn " + extractMethodName(node)
-      println("Button pushed on node "+id)
   }
 
   def buttonReleased(id: String) {
-      println("Button released on node "+id)
+
   }
 }
 

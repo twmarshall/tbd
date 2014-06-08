@@ -22,7 +22,7 @@ import tbd.{Changeable, TBD}
 import tbd.datastore.Datastore
 
 class PartitionedChunkList[T, U](
-    aPartitions: ArrayBuffer[ChunkList[T, U]]) extends AdjustableList[T, U] {
+    aPartitions: ArrayBuffer[ChunkList[T, U]]) extends AdjustableChunkList[T, U] {
   val partitions = aPartitions
 
   def map[V, Q](
@@ -50,6 +50,36 @@ class PartitionedChunkList[T, U](
       new PartitionedChunkList(
         partitions.map((partition: ChunkList[T, U]) => {
           partition.map(tbd, f, memoized = memoized)
+        })
+      )
+    }
+  }
+
+  def chunkMap[V, Q](
+      tbd: TBD,
+      f: (TBD, Vector[(T, U)]) => (V, Q),
+      parallel: Boolean = false,
+      memoized: Boolean = true): PartitionedModList[V, Q] = {
+    if (parallel) {
+      def innerChunkMap(tbd: TBD, i: Int): ArrayBuffer[ModList[V, Q]] = {
+        if (i < partitions.size) {
+          val parTup = tbd.par((tbd: TBD) => {
+            partitions(i).chunkMap(tbd, f, memoized = memoized)
+          }, (tbd: TBD) => {
+            innerChunkMap(tbd, i + 1)
+          })
+
+          parTup._2 += parTup._1
+        } else {
+          ArrayBuffer[ModList[V, Q]]()
+        }
+      }
+
+      new PartitionedModList(innerChunkMap(tbd, 0))
+    } else {
+      new PartitionedModList(
+        partitions.map((partition: ChunkList[T, U]) => {
+          partition.chunkMap(tbd, f, memoized = memoized)
         })
       )
     }

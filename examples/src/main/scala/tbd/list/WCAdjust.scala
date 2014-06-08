@@ -24,15 +24,14 @@ import tbd.mod.{AdjustableList, Mod}
 
 class WCAdjust(
     partitions: Int,
-    chunkSize: Int,
     valueMod: Boolean,
-    parallel: Boolean) extends Algorithm(parallel, false) {
+    parallel: Boolean) extends Algorithm(parallel, true) {
   var output: Mod[(Int, HashMap[String, Int])] = null
 
   var traditionalAnswer: Map[String, Int] = null;
 
   def initialRun(mutator: Mutator) {
-    output = mutator.run[Mod[(Int, scala.collection.immutable.HashMap[String, Int])]](this)
+    output = mutator.run[Mod[(Int, HashMap[String, Int])]](this)
   }
 
   def checkOutput(chunks: GenMap[Int, String]): Boolean = {
@@ -45,16 +44,80 @@ class WCAdjust(
       WC.countReduce(line, x), WC.mutableReduce)
   }
 
-  def mapper(tbd: TBD, pair: (Int, String)) = (pair._1, WC.wordcount(pair._2))
+  def mapper(tbd: TBD, pair: (Int, String)) = {
+    mapCount += 1
+    (pair._1, WC.wordcount(pair._2))
+  }
 
-  def reducer(tbd: TBD, pair1: (Int, HashMap[String, Int]), pair2: (Int, HashMap[String, Int])) =
+  def reducer(
+      tbd: TBD,
+      pair1: (Int, HashMap[String, Int]),
+      pair2: (Int, HashMap[String, Int])) = {
+    reduceCount += 1
     (pair1._1, WC.reduce(pair1._2, pair2._2))
+   }
 
   def run(tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
-    val pages = tbd.input.getAdjustableList[Int, String](partitions,
-      chunkSize = chunkSize, chunkSizer = _ => 1, valueMod = valueMod)
+    val pages = tbd.input.getAdjustableList[Int, String](partitions, valueMod)
     val counts = pages.map(tbd, mapper, parallel = parallel)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))
     counts.reduce(tbd, initialValue, reducer, parallel = parallel)
+  }
+}
+
+class ChunkWCAdjust(
+    partitions: Int,
+    chunkSize: Int,
+    valueMod: Boolean,
+    parallel: Boolean) extends Algorithm(parallel, true) {
+  var output: Mod[(Int, Map[String, Int])] = null
+
+  var traditionalAnswer: Map[String, Int] = null;
+
+  def initialRun(mutator: Mutator) {
+    output = mutator.run[Mod[(Int, Map[String, Int])]](this)
+  }
+
+  def checkOutput(chunks: GenMap[Int, String]): Boolean = {
+    traditionalRun(chunks.values)
+    output.read()._2 == traditionalAnswer
+  }
+
+  def traditionalRun(input: GenIterable[String]) {
+    traditionalAnswer = input.aggregate(Map[String, Int]())((x, line) =>
+      WC.countReduce(line, x), WC.mutableReduce)
+  }
+
+  def chunkMapper(tbd: TBD, chunk: Vector[(Int, String)]) = {
+    mapCount += 1
+    val counts = Map[String, Int]()
+
+    for (page <- chunk) {
+      for (word <- page._2.split("\\W+")) {
+        if (counts.contains(word)) {
+          counts(word) += 1
+        } else {
+          counts(word) = 1
+        }
+      }
+    }
+
+    (0, HashMap(counts.toSeq: _*))
+  }
+
+  def chunkReducer(
+      tbd: TBD,
+      pair1: (Int, HashMap[String, Int]),
+      pair2: (Int, HashMap[String, Int])) = {
+    reduceCount += 1
+    (pair1._1, WC.reduce(pair1._2, pair2._2))
+  }
+
+  def run(tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
+    val pages = tbd.input.getChunkList[Int, String](partitions,
+      chunkSize = chunkSize, chunkSizer = _ => 1, valueMod = valueMod)
+    val counts = pages.chunkMap(tbd, chunkMapper, parallel = parallel)
+    val initialValue = tbd.createMod((0, HashMap[String, Int]()))
+    counts.reduce(tbd, initialValue, chunkReducer, parallel = parallel)
   }
 }

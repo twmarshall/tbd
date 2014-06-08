@@ -22,7 +22,7 @@ import tbd.Constants._
 import tbd.memo.Lift
 
 class ChunkList[T, U](
-    _head: Mod[ChunkListNode[T, U]]) extends AdjustableList[T, U] {
+    _head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
   val head = _head
 
   def map[V, Q](
@@ -57,6 +57,30 @@ class ChunkList[T, U](
       )
     }
   }*/
+
+  def chunkMap[V, Q](
+      tbd: TBD,
+      f: (TBD, Vector[(T, U)]) => (V, Q),
+      parallel: Boolean = false,
+      memoized: Boolean = true): ModList[V, Q] = {
+    if (parallel || !memoized) {
+      tbd.log.warning("ChunkList.chunkMap ignores the 'parallel' and " +
+		      "'memoized' parameters.")
+    }
+
+    val lift = tbd.makeLift[Mod[ModListNode[V, Q]]]()
+    new ModList(
+      tbd.mod((dest: Dest[ModListNode[V, Q]]) => {
+        tbd.read(head)(node => {
+          if (node != null) {
+            node.chunkMap(tbd, dest, f, lift)
+          } else {
+            tbd.write(dest, null)
+          }
+        })
+      })
+    )
+  }
 
   def filter(
       tbd: TBD,

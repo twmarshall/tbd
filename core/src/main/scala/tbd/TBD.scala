@@ -44,8 +44,6 @@ class TBD(id: String, _worker: Worker) {
 
   val log = Logging(worker.context.system, "TBD" + id)
 
-  val awaiting = ArrayBuffer[Future[String]]()
-
   // Contains a list of mods that have been updated since the last run of change
   // propagation, to determine when memo matches can be made.
   val updatedMods = Set[ModId]()
@@ -131,8 +129,7 @@ class TBD(id: String, _worker: Worker) {
   }
 
   def write[T](dest: Dest[T], value: T): Changeable[T] = {
-    awaiting ++= dest.mod.update(value)
-
+    val awaiting = dest.mod.update(value)
     Await.result(Future.sequence(awaiting), DURATION)
 
     val changeable = new Changeable(dest.mod)

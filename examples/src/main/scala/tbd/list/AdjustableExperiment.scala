@@ -102,32 +102,44 @@ class AdjustableExperiment(aConf: Map[String, _])
       i += 1
     }
 
+    // prefix order: double, chunk, memoized, parallel algorithm
     val alg = algorithm match {
       // Map
-      case "map" => new MapAdjust(partition, 0, false, false, false)
-      case "pmap" => new MapAdjust(partition, 0, false, true, false)
-      case "mmap" => new MapAdjust(partition, 0, false, false, true)
-      case "mpmap" => new MapAdjust(partition, 0, false, true, true)
+      case "map" => new MapAdjust(partition, false, false, false)
+      case "pmap" => new MapAdjust(partition, false, true, false)
+      case "mmap" => new MapAdjust(partition, false, false, true)
+      case "mpmap" => new MapAdjust(partition, false, true, true)
 
-      case "dmap" => new MapAdjust(partition, 0, true, false, false)
-      case "dpmap" => new MapAdjust(partition, 0, true, true, false)
-      case "dmmap" => new MapAdjust(partition, 0, true, false, true)
-      case "dmpmap" => new MapAdjust(partition, 0, true, true, true)
+      case "dmap" => new MapAdjust(partition, true, false, false)
+      case "dpmap" => new MapAdjust(partition, true, true, false)
+      case "dmmap" => new MapAdjust(partition, true, false, true)
+      case "dmpmap" => new MapAdjust(partition, true, true, true)
 
-      case "cmap" => new MapAdjust(partition, chunkSize, true, false, false)
-      case "pcmap" => new MapAdjust(partition, chunkSize, true, true, false)
-      case "mcmap" => new MapAdjust(partition, chunkSize, true, false, true)
-      case "mpcmap" => new MapAdjust(partition, chunkSize, true, true, true)
+      case "cmap" => new ChunkMapAdjust(partition, chunkSize, false, false, false)
+      case "cpmap" => new ChunkMapAdjust(partition, chunkSize, false, true, false)
+      case "cmmap" => new ChunkMapAdjust(partition, chunkSize, false, false, true)
+      case "cmpmap" => new ChunkMapAdjust(partition, chunkSize, false, true, true)
+
+      case "dcmap" => new ChunkMapAdjust(partition, chunkSize, true, false, false)
+      case "dcpmap" => new ChunkMapAdjust(partition, chunkSize, true, true, false)
+      case "dcmmap" => new ChunkMapAdjust(partition, chunkSize, true, false, true)
+      case "dcmpmap" => new ChunkMapAdjust(partition, chunkSize, true, true, true)
       // Filter
       case "filter" => new FilterAdjust(partition, false, false)
       case "pfilter" => new FilterAdjust(partition, true, false)
       case "mfilter" => new FilterAdjust(partition, false, true)
       case "mpfilter" => new FilterAdjust(partition, true, true)
       // Wordcount
-      case "wc" => new WCAdjust(partition, chunkSize, false, false)
-      case "pwc" => new WCAdjust(partition, chunkSize, false, true)
-      case "dwc" => new WCAdjust(partition, chunkSize, true, false)
-      case "dpwc" => new WCAdjust(partition, chunkSize, true, true)
+      case "wc" => new WCAdjust(partition, false, false)
+      case "pwc" => new WCAdjust(partition, false, true)
+      case "dwc" => new WCAdjust(partition, true, false)
+      case "dpwc" => new WCAdjust(partition, true, true)
+
+      case "cwc" => new ChunkWCAdjust(partition, chunkSize, false, false)
+      case "cpwc" => new ChunkWCAdjust(partition, chunkSize, false, true)
+      case "dcwc" => new ChunkWCAdjust(partition, chunkSize, true, false)
+      case "dcpwc" => new ChunkWCAdjust(partition, chunkSize, true, true)
+
       // Split
       case "split" => new SplitAdjust(partition, false, false)
       case "psplit" => new SplitAdjust(partition, true, false)
@@ -161,6 +173,14 @@ class AdjustableExperiment(aConf: Map[String, _])
 
     results("initial") = initialElapsed
 
+    if (Experiment.verbose) {
+      println("map count = " + alg.mapCount)
+      println("reduce count = " + alg.reduceCount)
+      println("starting prop")
+      alg.mapCount = 0
+      alg.reduceCount = 0
+    }
+
     for (percent <- percents) {
       if (percent != "initial" && percent != "nontbd") {
         var i =  0
@@ -192,7 +212,10 @@ class AdjustableExperiment(aConf: Map[String, _])
         results(percent) = elapsed
       }
     }
-
+    if (Experiment.verbose) {
+      println("map count = " + alg.mapCount)
+      println("reduce count = " + alg.reduceCount)
+    }
     mutator.shutdown()
 
     results

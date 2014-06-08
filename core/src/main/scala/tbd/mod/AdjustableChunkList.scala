@@ -13,24 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.examples.list
+package tbd.mod
 
-import scala.collection.{GenIterable, GenMap}
-import scala.collection.mutable.Map
+import tbd.TBD
 
-import tbd.{Adjustable, Mutator}
-
-abstract class Algorithm(parallel: Boolean, memoized: Boolean) extends Adjustable {
-  var mapCount = 0
-  var reduceCount = 0
-
-  def initialRun(mutator: Mutator)
-
-  def traditionalRun(input: GenIterable[String])
-
-  def checkOutput(answer: GenMap[Int, String]): Boolean
-
-  def prepareTraditionalRun(input: Map[Int, String]): GenIterable[String] = {
-    if(parallel) Vector[String](input.values.toSeq: _*).par else Vector[String](input.values.toSeq: _*)
-  }
+trait AdjustableChunkList[T, U] extends AdjustableList[T, U] {
+  def chunkMap[V, Q](
+      tbd: TBD,
+      f: (TBD, Vector[(T, U)]) => (V, Q),
+      parallel: Boolean = false,
+      memoized: Boolean = true): AdjustableList[V, Q]
 }

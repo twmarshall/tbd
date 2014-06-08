@@ -28,45 +28,23 @@ class ChunkListNode[T, U](
   val nextMod = _nextMod
   val size = _size
 
-  /*def map[V, Q](
+  def chunkMap[V, Q](
       tbd: TBD,
-      dest: Dest[ChunkListNode[V, Q]],
-      f: (TBD, (T, U)) => (V, Q),
-      lift: Lift[Mod[ChunkListNode[V, Q]]])
-        : Changeable[ChunkListNode[V, Q]] = {
-    val newChunkMod = tbd.mod((dest: Dest[Vector[(V, Q)]]) =>
-      tbd.read(chunkMod)(chunk =>
-        tbd.write(dest, chunk.map(pair => f(tbd, pair)))))
+      dest: Dest[ModListNode[V, Q]],
+      f: (TBD, Vector[(T, U)]) => (V, Q),
+      lift: Lift[Mod[ModListNode[V, Q]]])
+        : Changeable[ModListNode[V, Q]] = {
     val newNextMod = lift.memo(List(nextMod), () =>
-      tbd.mod((dest: Dest[ChunkListNode[V, Q]]) =>
-        tbd.read(nextMod)(next =>
-          if (next != null)
-            next.map(tbd, dest, f, lift)
+      tbd.mod((dest: Dest[ModListNode[V, Q]]) =>
+        tbd.read(nextMod)(next => {
+          if (next != null && next.chunk.size > 0)
+            next.chunkMap(tbd, dest, f, lift)
           else
-            tbd.write(dest, null))))
+            tbd.write(dest, null)
+        })))
 
-    tbd.write(dest, new ChunkListNode[V, Q](newChunkMod, newNextMod))
+    tbd.write(dest, new ModListNode[V, Q](f(tbd, chunk), newNextMod))
   }
-
-  def parMap[V, Q](
-      tbd: TBD,
-      dest: Dest[ChunkListNode[V, Q]],
-      f: (TBD, (T, U)) => (V, Q)): Changeable[ChunkListNode[V, Q]] = {
-    val parTuple = tbd.par(
-      (tbd: TBD) =>
-        tbd.mod((dest: Dest[Vector[(V, Q)]]) =>
-          tbd.read(chunkMod)(chunk =>
-            tbd.write(dest, chunk.map(pair => f(tbd, pair))))),
-      (tbd: TBD) =>
-        tbd.mod((dest: Dest[ChunkListNode[V, Q]]) =>
-          tbd.read(nextMod)(next =>
-            if (next != null)
-              next.parMap(tbd, dest, f)
-            else
-              tbd.write(dest, null))))
-
-    tbd.write(dest, new ChunkListNode[V, Q](parTuple._1, parTuple._2))
-  }*/
 
   def print = "ChunkListNode(" + chunk + ")"
 }
