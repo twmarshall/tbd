@@ -38,7 +38,7 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
   import context.dispatcher
 
   val id = _id
-  println("Worker " + id + " launched")
+  //println("Worker " + id + " launched")
 
   val datastoreRef = _datastoreRef
   val ddg = new DDG(log, id, this)
@@ -52,10 +52,8 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
   def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
                 end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
 
-      println("Propagate Call on worker " + id)
     Future {
 
-      println("Propagate Future on worker " + id)
       var option = ddg.updated.find((node: Node) =>
         node.timestamp > start && node.timestamp < end)
       while (!option.isEmpty) {
@@ -99,7 +97,7 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 
               parNode.pebble1 = false
               parNode.pebble2 = false
-              
+
               Await.result(future1, DURATION)
               Await.result(future2, DURATION)
             }

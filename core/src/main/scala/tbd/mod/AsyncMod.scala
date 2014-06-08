@@ -29,11 +29,10 @@ class AsyncMod[T](id: ModId) extends Mod[T](id, null.asInstanceOf[T]) {
 
   invalidate()
 
+  //Note: Should locking be done in the datastore?
   def invalidate() {
-    println("AsyncMod invalidating... @" + Thread.currentThread().getId())
     readyLock.acquire()
     dataReady = false
-    println("done. @" + Thread.currentThread().getId())
   }
 
   private def validate() {
@@ -43,23 +42,19 @@ class AsyncMod[T](id: ModId) extends Mod[T](id, null.asInstanceOf[T]) {
 
   override def read(workerRef: ActorRef = null): T = {
     //Note: Could get additional speedup with dirty locking
-    println("AsyncMod reading... @" + Thread.currentThread().getId())
     readyLock.acquire()
     readyLock.release()
-    println("done. @" + Thread.currentThread().getId())
 
     super.read(workerRef)
   }
 
   override def update(_value: T): ArrayBuffer[Future[String]] = {
-    println("AsyncMod updating... @" + Thread.currentThread().getId())
     if(dataReady) {
       throw new IllegalStateException("A lazy Mod has to be invalidated " +
                                       "before the update operation starts.")
     }
 
     validate()
-    println("done. @" + Thread.currentThread().getId())
 
     super.update(_value)
   }

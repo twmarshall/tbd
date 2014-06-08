@@ -129,9 +129,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     assert(reads.contains(modId))
     for (readNode <- reads(modId)) {
       if (!readNode.updated) {
-        println("Added readnode " + modId + " to updated " + worker.id)
         updated += readNode
-        println("Updated: " + updated)
       }
 
       readNode.updated = true
@@ -144,9 +142,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     if(pars.contains(workerRef)) {
       val parNode = pars(workerRef)
       if (!parNode.pebble1 && !parNode.pebble2) {
-        println("Added parnode to updated " + worker.id)
         updated += parNode
-        println("Updated: " + updated)
         parNode.updated = true
       }
 
@@ -164,10 +160,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 
       if(!asyncNode.pebble)
       {
-        println("received pebble for async node @" + Thread.currentThread().getId())
-        println("Added async node to updated " + worker.id)
         updated += asyncNode
-        println("Updated: " + updated)
         asyncNode.invalidate()
         asyncNode.updated = true
         asyncNode.pebble = true
