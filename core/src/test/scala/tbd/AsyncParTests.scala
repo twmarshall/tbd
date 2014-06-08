@@ -49,6 +49,33 @@ class AsyncRaceConditionTest extends Adjustable {
   }
 }
 
+class AsyncParallelTest extends Adjustable {
+  def run(tbd: TBD): Mod[Int] = {
+    val one = tbd.input.getMod[Int](1)
+
+    var isParallel = false
+
+    val two = tbd.asyncMod((tbd: TBD, dest: Dest[Int]) => {
+        tbd.read(one)(one => {
+          isParallel = true
+          tbd.write(dest, one + 1)
+        })
+    })
+
+    Thread.sleep(200)
+
+    assert(isParallel)
+
+    val three = tbd.mod((dest: Dest[Int]) => {
+        tbd.read(two)(two => {
+           tbd.write(dest, two + 1)
+        })
+    })
+
+    three
+  }
+}
+
 class ParRaceConditionTest extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {
     val one = tbd.input.getMod[Int](1)
@@ -84,6 +111,21 @@ class AsyncParTests extends FlatSpec with Matchers {
     mutator.put(1, 1)
 
     val output = mutator.run[Mod[Int]](new AsyncRaceConditionTest())
+    output.read() should be (3)
+
+    mutator.update(1, 2)
+    mutator.propagate()
+
+    output.read() should be (4)
+
+    mutator.shutdown()
+  }
+
+  "AsyncParallelTest" should "should execute in parallel" in {
+    val mutator = new Mutator()
+    mutator.put(1, 1)
+
+    val output = mutator.run[Mod[Int]](new AsyncParallelTest())
     output.read() should be (3)
 
     mutator.update(1, 2)

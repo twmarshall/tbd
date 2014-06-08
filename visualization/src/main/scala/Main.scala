@@ -18,7 +18,7 @@ package tbd.visualization
 
 object Main {
   def main(args: Array[String]) {
-    var test = new AsyncModTest()
+    var test = new ExhaustiveTest()
     test.run()
   }
 }
