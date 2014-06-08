@@ -102,22 +102,22 @@ class ChunkWCAdjust(
       }
     }
 
-    (0, counts)
+    (0, HashMap(counts.toSeq: _*))
   }
 
   def chunkReducer(
       tbd: TBD,
-      pair1: (Int, Map[String, Int]),
-      pair2: (Int, Map[String, Int])) = {
+      pair1: (Int, HashMap[String, Int]),
+      pair2: (Int, HashMap[String, Int])) = {
     reduceCount += 1
-    (pair1._1, WC.mutableReduce(pair1._2, pair2._2))
+    (pair1._1, WC.reduce(pair1._2, pair2._2))
   }
 
-  def run(tbd: TBD): Mod[(Int, Map[String, Int])] = {
+  def run(tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
     val pages = tbd.input.getChunkList[Int, String](partitions,
       chunkSize = chunkSize, chunkSizer = _ => 1, valueMod = valueMod)
     val counts = pages.chunkMap(tbd, chunkMapper, parallel = parallel)
-    val initialValue = tbd.createMod((0, Map[String, Int]()))
+    val initialValue = tbd.createMod((0, HashMap[String, Int]()))
     counts.reduce(tbd, initialValue, chunkReducer, parallel = parallel)
   }
 }
