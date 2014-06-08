@@ -67,13 +67,13 @@ Options:
 
   var verbose = false
 
-  val confs = Map(("algorithms" -> Array("nmap", "mpmap")),
+  val confs = Map(("algorithms" -> Array("pwc")),
                   ("counts" -> Array("1000")),
-		  ("chunkSizes" -> Array("2")),
+                  ("chunkSizes" -> Array("2")),
                   ("mutations" -> Array("insert", "update", "remove")),
                   ("partitions" -> Array("8")),
                   ("percents" -> Array("nontbd", "initial", ".01", ".05", ".1")),
-                  ("output" -> Array("percents", "algorithms", "counts")))
+                  ("output" -> Array("algorithms", "percents", "counts")))
 
   val allResults = Map[Map[String, _], Map[String, Double]]()
 
@@ -174,7 +174,7 @@ Options:
           confs("partitions") = args(i + 1).split(",")
 	  i += 1
         case "--percents" | "-%" =>
-          confs("percents") = "initial" +: "nontbd" +: args(i + 1).split(",")
+          confs("percents") = "nontbd" +: "initial" +: args(i + 1).split(",")
 	  i += 1
         case "--repeat" | "-r" =>
           repeat = args(i + 1).toInt
