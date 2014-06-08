@@ -74,19 +74,15 @@ class ChunkMapAdjust(
 
   def chunkMapper(tbd: TBD, chunk: Vector[(Int, String)]) = {
     mapCount += 1
-    val counts = Map[String, Int]()
+    var count = 0
 
     for (page <- chunk) {
       for (word <- page._2.split("\\W+")) {
-        if (counts.contains(word)) {
-          counts(word) += 1
-        } else {
-          counts(word) = 1
-        }
+        count += 1
       }
     }
 
-    (0, counts)
+    (0, count)
   }
 
   def run(tbd: TBD) = {
@@ -106,8 +102,7 @@ class ChunkMapAdjust(
   }
 
   def checkOutput(input: GenMap[Int, String]): Boolean = {
-    val sortedOutput = output.toBuffer().sortWith(_ < _)
     traditionalRun(input.values)
-    sortedOutput == traditionalAnswer.toBuffer.sortWith(_ < _)
+    output.toBuffer.reduce(_ + _) == traditionalAnswer.reduce(_ + _)
   }
 }

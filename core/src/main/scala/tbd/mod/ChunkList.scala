@@ -62,7 +62,26 @@ class ChunkList[T, U](
       tbd: TBD,
       f: (TBD, Vector[(T, U)]) => (V, Q),
       parallel: Boolean = false,
-      memoized: Boolean = true): DoubleModList[V, Q] = ???
+      memoized: Boolean = true): ModList[V, Q] = {
+    println("ChunkList.chunkMap")
+    if (parallel || !memoized) {
+      tbd.log.warning("ChunkList.chunkMap ignores the 'parallel' and " +
+		      "'memoized' parameters.")
+    }
+
+    val lift = tbd.makeLift[Mod[ModListNode[V, Q]]]()
+    new ModList(
+      tbd.mod((dest: Dest[ModListNode[V, Q]]) => {
+        tbd.read(head)(node => {
+          if (node != null) {
+            node.chunkMap(tbd, dest, f, lift)
+          } else {
+            tbd.write(dest, null)
+          }
+        })
+      })
+    )
+  }
 
   def filter(
       tbd: TBD,
