@@ -23,13 +23,14 @@ import tbd.Changeable
 import tbd.Constants._
 import tbd.master.Master
 import tbd.memo.MemoEntry
-import tbd.mod.Mod
+import tbd.mod.{Mod, AsyncMod}
 import tbd.worker.Worker
 
 class DDG(log: LoggingAdapter, id: String, worker: Worker) {
   var root = new RootNode(id)
   val reads = Map[ModId, Set[ReadNode]]()
   val pars = Map[ActorRef, ParNode]()
+  val asyncs = Map[ActorRef, AsyncNode]()
 
   var updated = TreeSet[Node]()((new TimestampOrdering()).reverse)
 
@@ -69,6 +70,15 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 
     pars(workerRef1) = parNode
     pars(workerRef2) = parNode
+  }
+
+  def addAsync(asyncWorkerRef: ActorRef, mod: AsyncMod[Any], parent: Node) {
+    val timestamp = nextTimestamp(parent)
+
+    val asyncNode = new AsyncNode(asyncWorkerRef, parent, timestamp, mod)
+    parent.addChild(asyncNode)
+
+    asyncs(asyncWorkerRef) = asyncNode
   }
 
   def addMemo(parent: Node, signature: List[Any]): MemoNode = {
@@ -128,20 +138,38 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 
   // Pebbles a par node. Returns true iff the pebble did not already exist.
   def parUpdated(workerRef: ActorRef): Boolean = {
-    val parNode = pars(workerRef)
-    if (!parNode.pebble1 && !parNode.pebble2) {
-      updated += parNode
-      parNode.updated = true
-    }
 
-    if (parNode.workerRef1 == workerRef) {
-      val ret = !parNode.pebble1
-      parNode.pebble1 = true
-      ret
+    if(pars.contains(workerRef)) {
+      val parNode = pars(workerRef)
+      if (!parNode.pebble1 && !parNode.pebble2) {
+        updated += parNode
+        parNode.updated = true
+      }
+
+      if (parNode.workerRef1 == workerRef) {
+        val ret = !parNode.pebble1
+        parNode.pebble1 = true
+        ret
+      } else {
+        val ret = !parNode.pebble2
+        parNode.pebble2 = true
+        ret
+      }
     } else {
-      val ret = !parNode.pebble2
-      parNode.pebble2 = true
-      ret
+      val asyncNode = asyncs(workerRef)
+
+      if(!asyncNode.pebble)
+      {
+        updated += asyncNode
+        asyncNode.invalidate()
+        asyncNode.updated = true
+        asyncNode.pebble = true
+        true
+      }
+      else
+      {
+        false
+      }
     }
   }
 
