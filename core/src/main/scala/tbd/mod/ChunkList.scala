@@ -63,7 +63,6 @@ class ChunkList[T, U](
       f: (TBD, Vector[(T, U)]) => (V, Q),
       parallel: Boolean = false,
       memoized: Boolean = true): ModList[V, Q] = {
-    println("ChunkList.chunkMap")
     if (parallel || !memoized) {
       tbd.log.warning("ChunkList.chunkMap ignores the 'parallel' and " +
 		      "'memoized' parameters.")
