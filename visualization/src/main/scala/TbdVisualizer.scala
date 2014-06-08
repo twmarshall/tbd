@@ -16,19 +16,14 @@
 
 package tbd.visualization
 
-import tbd.ddg._
+import tbd.ddg.{Node, RootNode, ReadNode, MemoNode, WriteNode, ParNode}
 import org.graphstream.graph.implementations.{SingleGraph}
-import org.graphstream.ui.swingViewer.Viewer
 import scala.collection.mutable.{HashMap, ListBuffer}
-import swing._
-import GridBagPanel._
-import org.graphstream.ui.swingViewer.ViewerListener
-import tbd.messages._
 
-class TbdVisualizer extends ViewerListener {
+class TbdVisualizer {
 
   var highlightRemoved = false
-  var showLabels = false
+  var showLabels = true
   val graphStyle = """
     node.root {
       size: 20px;
@@ -56,11 +51,6 @@ class TbdVisualizer extends ViewerListener {
       fill-color: yellow;
       shape: diamond;
     }
-    node.async {
-      size: 20px;
-      fill-color: orange;
-      shape: diamond;
-    }
     node {
       text-alignment: under;
       text-background-color: #EEEEEE;
@@ -79,59 +69,11 @@ class TbdVisualizer extends ViewerListener {
   graph.addAttribute("ui.stylesheet", graphStyle)
   System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer")
 
-  var display = new Viewer(graph, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD)
+  var display = graph.display()
   display.disableAutoLayout()
-
-  var pipe = display.newViewerPipe()
-  pipe.addViewerListener(this)
-  pipe.addSink(graph)
-
-  val pumper = new Thread(
-    new Runnable() {
-      def run() {
-        while(true) {
-          pipe.pump()
-          Thread.sleep(50)
-        }
-      }
-    }
-  )
-
-  pumper.start()
-
-  var view = display.addDefaultView(false)
-
-  var label = new TextArea("Click node for info.\nScroll with arrow keys.\nZoom with PgDown and PgUp.")
-  label.editable = false
-  label.background = java.awt.Color.LIGHT_GRAY
-
-  var scrollPane = new ScrollPane()
-  scrollPane.viewportView = label
-
-  var frame = new MainFrame {
-    title = "DDG Debug"
-    contents = new GridBagPanel() {
-      val c = new Constraints()
-      c.gridx = 0
-      c.gridy = 0
-      c.weightx = 1
-      c.weighty = 1
-      c.fill = Fill.Both
-      layout(Component.wrap(view)) = c
-      c.gridx = 0
-      c.gridy = 1
-      c.weightx = 1
-      c.weighty = 0.2
-      c.fill = Fill.Both
-      layout(scrollPane) = c
-    }
-    size = new Dimension(800, 600)
-    visible = true
-  }
 
   val pos = new HashMap[Node, (Int, Int)]()
   val nodes = new ListBuffer[Node]()
-  val idToNodes = new HashMap[String, Node]()
 
   private def setPos(node: Node, x: Int, y: Int) {
     findNode(node).setAttribute("xyz", x.asInstanceOf[AnyRef],
@@ -167,15 +109,12 @@ class TbdVisualizer extends ViewerListener {
 
   private def addNode(node: Node): org.graphstream.graph.Node = {
     nodes += node
-    idToNodes += (System.identityHashCode(node).toString() -> node)
     graph.addNode(System.identityHashCode(node).toString())
   }
 
   private def removeNode(node: Node, removeFromSet:Boolean = true) {
-    if(removeFromSet) {
+    if(removeFromSet)
       nodes -= node
-    }
-    idToNodes -= System.identityHashCode(node).toString()
     graph.removeNode(System.identityHashCode(node).toString())
   }
 
@@ -214,9 +153,21 @@ class TbdVisualizer extends ViewerListener {
       addEdge(parent, node)
     }
 
-    val nodeType = getNodeType(node)
+    val nodeType = node match {
+      case x:WriteNode => "write"
+      case x:ReadNode => "read"
+      case x:MemoNode => "memo"
+      case x:ParNode => "par"
+      case x:RootNode => "root"
+    }
     if(showLabels) {
-      val parameterInfo = getParameterInfo(node)
+      val parameterInfo = node match {
+        case x:WriteNode => x.mod.toString
+        case x:ReadNode => x.mod.toString
+        case x:MemoNode => x.signature.toString
+        case x:ParNode => ""
+        case x:RootNode => ""
+      }
 
       val methodName = extractMethodName(node)
 
@@ -303,34 +254,7 @@ class TbdVisualizer extends ViewerListener {
     })
   }
 
-  private def getNodeType(node: Node): String = {
-    node match {
-      case x:WriteNode => "write"
-      case x:ReadNode => "read"
-      case x:MemoNode => "memo"
-      case x:ParNode => "par"
-      case x:RootNode => "root"
-      case x:AsyncNode => "async"
-    }
-  }
-
-  private def getParameterInfo(node: Node): String = {
-    node match {
-      case x:WriteNode => x.mod.toString
-      case x:ReadNode => x.mod.toString
-      case x:MemoNode => x.signature.toString
-      case x:ParNode => ""
-      case x:RootNode => ""
-      case x:AsyncNode => ""
-    }
-  }
-
   private def extractMethodName(node: Node): String = {
-
-    if(node.stacktrace == null) {
-      return "<No stacktrace available. Set Main.debug = true to enable stacktraces>"
-    }
-
     val methodNames = node.stacktrace.map(y => y.getMethodName())
     var currentMethod = methodNames.filter(y => (!y.startsWith("<init>")
                                             && !y.startsWith("()")
@@ -356,19 +280,6 @@ class TbdVisualizer extends ViewerListener {
     }
 
     currentMethod
-  }
-
-  def viewClosed(id: String) {
-
-  }
-
-  def buttonPushed(id: String) {
-      val node = idToNodes(id)
-      label.text = getNodeType(node) + " " + getParameterInfo(node) + "\nIn " + extractMethodName(node)
-  }
-
-  def buttonReleased(id: String) {
-
   }
 }
 
