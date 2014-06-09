@@ -17,52 +17,52 @@ package tbd.examples.list
 
 import scala.collection.mutable.{ArrayBuffer, Map}
 
-import tbd.Mutator
+import tbd.Input
 
 class IntInput(maxKey: Int, mutations: Array[String]) {
 
   val rand = new scala.util.Random()
-  def addValue(mutator: Mutator, table: Map[Int, Int]) {
+  def addValue(input: Input[Int, Int], table: Map[Int, Int]) {
     var key = rand.nextInt(maxKey)
     val value = rand.nextInt(Int.MaxValue)
     while (table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-    mutator.put(key, value)
+    input.put(key, value)
 
     table += (key -> value)
   }
 
-  def removeValue(mutator: Mutator, table: Map[Int, Int]) {
+  def removeValue(input: Input[Int, Int], table: Map[Int, Int]) {
     if (table.size > 1) {
       var key = rand.nextInt(maxKey)
       while (!table.contains(key)) {
         key = rand.nextInt(maxKey)
       }
-      mutator.remove(key)
+      input.remove(key)
       table -= key
     } else {
-      addValue(mutator, table)
+      addValue(input, table)
     }
   }
 
-  def updateValue(mutator: Mutator, table: Map[Int, Int]) {
+  def updateValue(input: Input[Int, Int], table: Map[Int, Int]) {
     var key = rand.nextInt(maxKey)
     val value = rand.nextInt(Int.MaxValue)
     while (!table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
 
-    mutator.update(key, value)
+    input.update(key, value)
 
     table(key) = value
   }
 
-  def update(mutator: Mutator, table: Map[Int, Int]) {
+  def update(input: Input[Int, Int], table: Map[Int, Int]) {
     mutations(rand.nextInt(mutations.size)) match {
-      case "insert" => addValue(mutator, table)
-      case "remove" => removeValue(mutator, table)
-      case "update" => updateValue(mutator, table)
+      case "insert" => addValue(input, table)
+      case "remove" => removeValue(input, table)
+      case "update" => updateValue(input, table)
     }
   }
 }

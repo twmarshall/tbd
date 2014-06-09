@@ -20,6 +20,7 @@ import scala.collection.mutable.{ArrayBuffer, Map, Set}
 import scala.concurrent.Future
 
 import tbd.Constants._
+import tbd.{AdjustableConf, ListConf, TableConf}
 import tbd.messages._
 import tbd.mod._
 
@@ -29,112 +30,130 @@ object Datastore {
 
 class Datastore extends Actor with ActorLogging {
   import context.dispatcher
-  private val tables = Map[String, Map[Any, Any]]()
-  tables("mods") = Map[Any, Any]()
+  private val mods = Map[Any, Mod[Any]]()
 
   // Maps the name of an input table to a set containing the Modifiers that were
   // returned containing elements from this table, so that we can inform them
   // when the table is updated.
   private val modifiers = Map[String, Set[Modifier[Any, Any]]]()
 
-  private def get(table: String, key: Any): Any = {
-    if (!tables(table).contains(key)) {
-      log.warning("Trying to get nonexistent key = " + key + " from table = " +
-                  table)
-      NullMessage
-    } else {
-      val ret = tables(table)(key)
+  private val inputs = Map[InputId, Modifier[Any, Any]]()
 
-      if (ret == null) {
-	NullMessage
-      } else {
-	ret
-      }
-    }
-  }
+  private var nextInputId: InputId = 0
 
   private var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
     val mod = new Mod[T](new ModId("d." + nextModId), value)
     nextModId += 1
 
-    tables("mods")(mod.id) = mod
+    mods(mod.id) = mod.asInstanceOf[Mod[Any]]
     mod
   }
 
   def getMod(modId: ModId): Any = {
-    tables("mods")(modId).asInstanceOf[Mod[Any]].value
+    mods(modId).value
   }
 
   def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
-    if (!tables("mods").contains(modId)) {
+    if (!mods.contains(modId)) {
       log.warning("Trying to update non-existent mod " + modId)
     }
 
-    tables("mods")(modId).asInstanceOf[Mod[Any]].update(value)
+    mods(modId).update(value)
   }
 
   def removeMod(modId: ModId) {
-    if (!tables("mods").contains(modId)) {
+    if (!mods.contains(modId)) {
       log.warning("Trying to remove nonexistent mod " + modId)
     }
-    tables("mods") -= modId
+    mods -= modId
   }
 
   def receive = {
-    case CreateTableMessage(table: String) => {
-      tables(table) = Map[Any, Any]()
+    case CreateAdjustableMessage(conf: AdjustableConf) => {
+      val inputId = nextInputId
+      nextInputId += 1
+
+      val modifier =
+	conf match {
+	  case ListConf(file, partitions, chunkSize, chunkSizer, valueMod) =>
+	    if (chunkSize > 1) {
+              if (!valueMod) {
+		if (partitions == 1) {
+		  log.info("Creating new ChunkList.")
+		  new ChunkListModifier[Any, Any](this, Map(), chunkSize,
+						  chunkSizer)
+		} else {
+		  log.info("Creating new PartitionedChunkList.")
+		  new PartitionedChunkListModifier[Any, Any](this, Map(), partitions,
+                                                             chunkSize, chunkSizer)
+		}
+              } else {
+		if (partitions == 1) {
+		  log.info("Creating new DoubleChunkList.")
+		  new DoubleChunkListModifier[Any, Any](
+		    this,
+		    Map(),
+		    chunkSize,
+		    chunkSizer)
+		} else {
+		  log.info("Creating new PartitionedDoubleChunkList.")
+		  new PartitionedDoubleChunkListModifier[Any, Any](
+		    this,
+		    Map(),
+		    partitions,
+		    chunkSize,
+		    chunkSizer)
+		}
+              }
+	    } else {
+	      if (!valueMod) {
+		if (partitions == 1) {
+		  log.info("Creating new ModList.")
+		  new ModListModifier[Any, Any](this, Map())
+		} else {
+		  log.info("Creating new PartitionedModList.")
+		  new PartitionedModListModifier[Any, Any](this, Map(), partitions)
+		}
+	      } else {
+		if (partitions == 1) {
+		  log.info("Creating new DoubleModList.")
+		  new DMLModifier[Any, Any](this, Map())
+		} else {
+		  log.info("Creating new PartitionedDoubleModList.")
+		  new PDMLModifier[Any, Any](this, Map(), partitions)
+		}
+              }
+	    }
+	  case TableConf() => {
+	    new TableModifier(this)
+	  }
+	}
+      inputs(inputId) = modifier
+
+      sender ! inputId
     }
 
-    case GetMessage(table: String, key: Any) => {
-      sender ! get(table, key)
-    }
-
-    case PutMessage(table: String, key: Any, value: Any) => {
-      if (tables(table).contains(key)) {
-	log.warning("Putting input key that already exists.")
-      }
-
-      tables(table)(key) = value
-
-      val futures = ArrayBuffer[Future[String]]()
-      if (modifiers.contains(table)) {
-        for (modifier <- modifiers(table)) {
-          futures ++= modifier.insert(key, value)
-        }
-      }
+    case PutInputMessage(inputId: InputId, key: Any, value: Any) => {
+      val futures = inputs(inputId).insert(key, value)
 
       sender ! Future.sequence(futures)
     }
 
-    case UpdateMessage(table: String, key: Any, value: Any) => {
-      tables(table)(key) = value
-
-      val futures = ArrayBuffer[Future[String]]()
-      if (modifiers.contains(table)) {
-        for (modifier <- modifiers(table)) {
-          futures ++= modifier.update(key, value)
-        }
-      }
+    case UpdateInputMessage(inputId: InputId, key: Any, value: Any) => {
+      val futures = inputs(inputId).update(key, value)
 
       sender ! Future.sequence(futures)
     }
 
-    case RemoveMessage(table: String, key: Any) => {
-      if (!tables(table).contains(key)) {
-	log.warning("Trying to remove non-existent key from table.")
-      }
-
-      val futures = ArrayBuffer[Future[String]]()
-      if (modifiers.contains(table)) {
-        for (modifier <- modifiers(table)) {
-          futures ++= modifier.remove(key)
-        }
-      }
-
-      tables(table) -= key
+    case RemoveInputMessage(inputId: InputId, key: Any) => {
+      val futures = inputs(inputId).remove(key)
 
       sender ! Future.sequence(futures)
+    }
+
+    case GetInputMessage(inputId: InputId) => {
+      sender ! inputs(inputId).getModifiable()
     }
 
     case CleanUpMessage(
@@ -150,99 +169,6 @@ class Datastore extends Actor with ActorLogging {
       }
 
       sender ! "done"
-    }
-
-    case GetModMessage(table: String, key: Any) => {
-      val modifier = new ModModifier(this, key, tables(table)(key))
-
-      if (modifiers.contains(table)) {
-        modifiers(table) += modifier
-      } else {
-        modifiers(table) = Set(modifier)
-      }
-
-      sender ! modifier.getModifiable()
-    }
-
-    case GetChunkListMessage(
-        table: String,
-        partitions: Int,
-        chunkSize: Int,
-        chunkSizer: (Any => Int),
-        valueMod: Boolean) => {
-      if (chunkSize <= 0) {
-        log.warning("Chunk size must be greater than 0.")
-      }
-
-      val modifier =
-        if (!valueMod) {
-            if (partitions == 1) {
-              log.info("Creating new ChunkList.")
-              new ChunkListModifier[Any, Any](this, tables(table), chunkSize,
-                                              chunkSizer)
-            } else {
-              log.info("Creating new PartitionedChunkList.")
-              new PartitionedChunkListModifier[Any, Any](this, tables(table), partitions,
-                                                         chunkSize, chunkSizer)
-            }
-        } else {
-	  if (partitions == 1) {
-	    log.info("Creating new DoubleChunkList.")
-            new DoubleChunkListModifier[Any, Any](
-              this,
-              tables(table),
-              chunkSize,
-              chunkSizer)
-	  } else {
-	    log.info("Creating new PartitionedDoubleChunkList.")
-	    new PartitionedDoubleChunkListModifier[Any, Any](
-              this,
-              tables(table),
-	      partitions,
-              chunkSize,
-              chunkSizer)
-	  }
-        }
-
-      if (modifiers.contains(table)) {
-        modifiers(table) += modifier
-      } else {
-        modifiers(table) = Set(modifier)
-      }
-
-      sender ! modifier.getModifiable()
-    }
-
-    case GetAdjustableListMessage(
-        table: String,
-        partitions: Int,
-        valueMod: Boolean) => {
-      val modifier =
-	if (!valueMod) {
-	  if (partitions == 1) {
-	    log.info("Creating new ModList.")
-	    new ModListModifier[Any, Any](this, tables(table))
-	  } else {
-	    log.info("Creating new PartitionedModList.")
-	    new PartitionedModListModifier[Any, Any](this, tables(table), partitions)
-	  }
-	} else {
-          if (partitions == 1) {
-	    log.info("Creating new DoubleModList.")
-            new DMLModifier[Any, Any](this, tables(table))
-          } else {
-	    log.info("Creating new PartitionedDoubleModList.")
-            new PDMLModifier[Any, Any](this, tables(table), partitions)
-          }
-        }
-
-      if (modifiers.contains(table)) {
-        modifiers(table) += modifier
-      } else {
-        modifiers(table) = Set(modifier)
-      }
-
-      sender ! modifier.getModifiable()
     }
 
     case x => {

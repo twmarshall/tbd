@@ -103,7 +103,7 @@ class DoubleChunkList[T, U](
 
     // Each round we need a hasher and a lift, and we need to guarantee that the
     // same hasher and lift are used for a given round during change propagation,
-    // even if the first mod of the list is deleted. 
+    // even if the first mod of the list is deleted.
     class RoundLift {
       val lift = tbd.makeLift[(Hasher,
                                Lift[Mod[DoubleChunkListNode[T, U]]],
@@ -186,6 +186,20 @@ class DoubleChunkList[T, U](
         else
           randomReduceList(head, 0, dest, roundLift)))
   }
+
+
+  def split(
+      tbd: TBD,
+      pred: (TBD, (T, U)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+       (AdjustableList[T, U], AdjustableList[T, U]) = ???
+
+  def sort(
+      tbd: TBD,
+      comperator: (TBD, (T, U), (T, U)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): AdjustableList[T, U] = ???
 
   /*def randomReduce(
       tbd: TBD,
@@ -301,19 +315,6 @@ class DoubleChunkList[T, U](
       memoized: Boolean = true): Mod[(T, U)] = {
     randomReduce(tbd, initialValueMod, f, parallel, memoized)
   }*/
-
-  def split(
-      tbd: TBD,
-      pred: (TBD, (T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false):
-       (AdjustableList[T, U], AdjustableList[T, U]) = ???
-
-  def sort(
-      tbd: TBD,
-      comperator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false): AdjustableList[T, U] = ???
 
   /* Meta functions */
   def toBuffer(): Buffer[U] = {

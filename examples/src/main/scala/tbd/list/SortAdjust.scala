@@ -27,16 +27,15 @@ object SortAdjust {
   }
 }
 
-class SortAdjust(
-    partitions: Int,
-    parallel: Boolean,
-    memoized: Boolean) extends Algorithm(parallel, memoized) {
+class SortAdjust(mutator: Mutator, partitions: Int, parallel: Boolean,
+    memoized: Boolean) extends Algorithm(mutator, partitions, 1, true, parallel,
+      memoized) {
   var output: AdjustableList[Int, String] = null
 
   var traditionalAnswer: GenIterable[String] = null
 
   def run(tbd: TBD): AdjustableList[Int, String] = {
-    val pages = tbd.input.getAdjustableList[Int, String](partitions)
+    val pages = input.getAdjustableList()
 
     pages.sort(tbd, (tbd: TBD, a:(Int, String), b:(Int, String)) =>
       SortAdjust.predicate(a, b), parallel, memoized)

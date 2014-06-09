@@ -19,16 +19,15 @@ import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
 import scala.collection.immutable.HashMap
 
-import tbd.{Adjustable, Mutator, TBD}
+import tbd.{Adjustable, ChunkListInput, Mutator, TBD}
 import tbd.mod.{AdjustableList, Mod}
 
-class WCAdjust(
-    partitions: Int,
-    valueMod: Boolean,
-    parallel: Boolean) extends Algorithm(parallel, true) {
+class WCAdjust(mutator: Mutator, partitions: Int, valueMod: Boolean,
+    parallel: Boolean) extends Algorithm(mutator, partitions, 1, valueMod,
+      parallel, true) {
   var output: Mod[(Int, HashMap[String, Int])] = null
 
-  var traditionalAnswer: Map[String, Int] = null;
+  var traditionalAnswer: Map[String, Int] = null
 
   def initialRun(mutator: Mutator) {
     output = mutator.run[Mod[(Int, HashMap[String, Int])]](this)
@@ -58,18 +57,16 @@ class WCAdjust(
    }
 
   def run(tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
-    val pages = tbd.input.getAdjustableList[Int, String](partitions, valueMod)
+    val pages = input.getAdjustableList()
     val counts = pages.map(tbd, mapper, parallel = parallel)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))
     counts.reduce(tbd, initialValue, reducer, parallel = parallel)
   }
 }
 
-class ChunkWCAdjust(
-    partitions: Int,
-    chunkSize: Int,
-    valueMod: Boolean,
-    parallel: Boolean) extends Algorithm(parallel, true) {
+class ChunkWCAdjust(mutator: Mutator, partitions: Int, chunkSize: Int,
+    valueMod: Boolean, parallel: Boolean) extends Algorithm(mutator, partitions,
+      chunkSize, valueMod, parallel, true) {
   var output: Mod[(Int, Map[String, Int])] = null
 
   var traditionalAnswer: Map[String, Int] = null;
@@ -114,8 +111,7 @@ class ChunkWCAdjust(
   }
 
   def run(tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
-    val pages = tbd.input.getChunkList[Int, String](partitions,
-      chunkSize = chunkSize, chunkSizer = _ => 1, valueMod = valueMod)
+    val pages = input.asInstanceOf[ChunkListInput[Int, String]].getChunkList()
     val counts = pages.chunkMap(tbd, chunkMapper, parallel = parallel)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))
     counts.reduce(tbd, initialValue, chunkReducer, parallel = parallel)

@@ -31,16 +31,15 @@ object FilterAdjust {
   }
 }
 
-class FilterAdjust(
-    partitions: Int,
-    parallel: Boolean,
-    memoized: Boolean) extends Algorithm(parallel, memoized) {
+class FilterAdjust(mutator: Mutator, partitions: Int, parallel: Boolean,
+    memoized: Boolean) extends Algorithm(mutator, partitions, 1, true, parallel,
+      memoized) {
   var output: AdjustableList[Int, String] = null
 
   var traditionalAnswer: GenIterable[String] = null
 
   def run(tbd: TBD): AdjustableList[Int, String] = {
-    val pages = tbd.input.getAdjustableList[Int, String](partitions)
+    val pages = input.getAdjustableList()
     pages.filter(tbd, (pair:(Int, String)) => FilterAdjust.predicate(pair), parallel, memoized)
   }
 

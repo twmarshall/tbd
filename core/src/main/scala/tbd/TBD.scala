@@ -40,7 +40,6 @@ class TBD(id: String, _worker: Worker) {
 
   // The Node representing the currently executing reader.
   var currentParent: Node = worker.ddg.root
-  val input = new Reader(worker)
 
   val log = Logging(worker.context.system, "TBD" + id)
 

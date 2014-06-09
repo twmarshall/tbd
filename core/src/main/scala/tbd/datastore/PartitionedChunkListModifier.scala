@@ -32,29 +32,15 @@ class PartitionedChunkListModifier[T, U](
 
   private def initialize(): PartitionedChunkList[T, U] = {
     val partitions = new ArrayBuffer[ChunkList[T, U]]()
-    var chunkListModifier =
-      new ChunkListModifier[T, U](datastore, Map[Any, Any](), chunkSize, chunkSizer)
-
-    val partitionSize = math.max(1, table.size / numPartitions)
-    var i = 1
-    for (elem <- table) {
-      chunkListModifier.insert(elem._1.asInstanceOf[T],
-			       elem._2.asInstanceOf[U])
-
-      if (i % partitionSize == 0) {
-        partitionModifiers += chunkListModifier
-        partitions += chunkListModifier.list
-        chunkListModifier = new ChunkListModifier[T, U](datastore,
-							Map[Any, Any](),
-							chunkSize,
-							chunkSizer)
-      }
-      i += 1
-    }
-
-    if ((i - 1) % partitionSize != 0) {
+    for (i <- 1 to numPartitions) {
+      val chunkListModifier = new ChunkListModifier[T, U](datastore, Map[Any, Any](), chunkSize, chunkSizer)
       partitionModifiers += chunkListModifier
       partitions += chunkListModifier.list
+    }
+
+    var insertInto = 0
+    for ((key, value) <- table) {
+      insert(key.asInstanceOf[T], value.asInstanceOf[U])
     }
 
     new PartitionedChunkList[T, U](partitions)

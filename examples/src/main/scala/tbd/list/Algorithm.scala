@@ -18,11 +18,16 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, Mutator}
+import tbd.{Adjustable, ListConf, Mutator}
 
-abstract class Algorithm(parallel: Boolean, memoized: Boolean) extends Adjustable {
+abstract class Algorithm(mutator: Mutator, partitions: Int, chunkSize: Int,
+    valueMod: Boolean, parallel: Boolean, memoized: Boolean) extends Adjustable {
   var mapCount = 0
   var reduceCount = 0
+
+  val conf = new ListConf(partitions = partitions, chunkSize = chunkSize,
+			  valueMod = valueMod)
+  val input = mutator.createList[Int, String](conf)
 
   def initialRun(mutator: Mutator)
 
@@ -31,6 +36,9 @@ abstract class Algorithm(parallel: Boolean, memoized: Boolean) extends Adjustabl
   def checkOutput(answer: GenMap[Int, String]): Boolean
 
   def prepareTraditionalRun(input: Map[Int, String]): GenIterable[String] = {
-    if(parallel) Vector[String](input.values.toSeq: _*).par else Vector[String](input.values.toSeq: _*)
+    if(parallel)
+      Vector[String](input.values.toSeq: _*).par
+    else
+      Vector[String](input.values.toSeq: _*)
   }
 }

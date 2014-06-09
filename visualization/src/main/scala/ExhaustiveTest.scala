@@ -17,13 +17,14 @@
 package tbd.visualization
 
 import scala.collection.mutable.ArrayBuffer
-import tbd.{Adjustable, Changeable, Mutator, TBD}
+import tbd.{Adjustable, Changeable, ListConf, ListInput, Mutator, TBD}
 import tbd.mod.{AdjustableList, Dest, Mod}
 import collection.mutable.HashMap
 import scala.util.Random
 
 class ExhaustiveTest {
   val mutator = new Mutator()
+  val input = mutator.createList[Int, Int](new ListConf(partitions = 1))
 
   val table = new HashMap[Int, Int]
   val rand = new Random()
@@ -46,7 +47,7 @@ class ExhaustiveTest {
 
     println("m.put(" + newKey + ", " + newValue + ")")
 
-    mutator.put(newKey, newValue)
+    input.put(newKey, newValue)
     table += (newKey -> newValue)
   }
 
@@ -60,7 +61,7 @@ class ExhaustiveTest {
       println("m.remove(" + toRemove + ") // Was " + table(toRemove))
 
       table -= toRemove
-      mutator.remove(toRemove)
+      input.remove(toRemove)
       freeList = (freeList :+ toRemove)
     }
   }
@@ -77,7 +78,7 @@ class ExhaustiveTest {
               "// was (" + toUpdate + ", " + table(toUpdate) + ") ")
 
       table(toUpdate) = newValue
-      mutator.update(toUpdate, newValue)
+      input.update(toUpdate, newValue)
     }
   }
 
@@ -89,18 +90,17 @@ class ExhaustiveTest {
     }
   }
 
-  val initialSize = 4
-  val maximalMutationsPerPropagation = 1
+  val initialSize = 5
+  val maximalMutationsPerPropagation = 5
 
   def run() {
 
-    val visualizer = new TbdVisualizer()
     var mutationCounter = 1
 
     for(i <- 0 to initialSize)
       addValue()
 
-    val output = mutator.run[AdjustableList[Int, Int]](new ListQuicksortTest())
+    val output = mutator.run[Mod[(Int, Int)]](new ListReduceSumTest(input))
     mutator.propagate()
 
     while(true) {
@@ -115,12 +115,21 @@ class ExhaustiveTest {
 
       mutationCounter += 1
 
-      //val ca = table.values.fold(0)((x:Int, y:Int) => x + y)
+      val ca = table.values.fold(0)((x:Int, y:Int) => x + y)
 
-      println("// Output: " + output)
+      val a = output.read()._2
 
-      visualizer.showDDG(mutator.getDDG().root)
-      readLine()
+      println("// Output: " + output.read())
+
+      if(a != ca) {
+        println("Check error.")
+        println("a: " + a)
+        println("ca: " + ca)
+
+        val visualizer = new TbdVisualizer()
+        visualizer.showDDG(mutator.getDDG().root)
+        readLine()
+      }
     }
 
     mutator.shutdown()

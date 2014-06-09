@@ -17,20 +17,21 @@ package tbd.test
 
 import org.scalatest._
 
-import tbd.{Adjustable, Changeable, Mutator, TBD}
+import tbd.{Adjustable, Changeable, Mutator, TableInput, TBD}
 import tbd.ddg.{MemoNode, ReadNode, RootNode}
 import tbd.master.Main
 import tbd.mod.{Dest, Mod}
 
-class MemoTest extends Adjustable {
+class MemoTest(input: TableInput[Int, Int]) extends Adjustable {
   // Note: real client applications should NOT have mutable state like this.
   // We are just using it to ensure that the memoized function doesn't get
   // reexecuted as appropriate.
   var count = 0
 
   def run(tbd: TBD): Mod[Int] = {
-    val one = tbd.input.getMod[Int](1)
-    val two = tbd.input.getMod[Int](2)
+    val table = input.getTable()
+    val one = table.get(1)
+    val two = table.get(2)
     val lift = tbd.makeLift[Mod[Int]]()
 
     tbd.mod((dest: Dest[Int]) => {
@@ -59,7 +60,7 @@ class MemoTest extends Adjustable {
   }
 }
 
-class AlreadyMatchedTest extends Adjustable {
+class AlreadyMatchedTest(input: TableInput[Int, Int]) extends Adjustable {
   var count1 = 0
   var count2 = 0
 
@@ -74,8 +75,9 @@ class AlreadyMatchedTest extends Adjustable {
    * different parameters for the memoized function.
    */
   def run(tbd: TBD): Mod[Int] = {
-    val one = tbd.input.getMod[Int](1)
-    val two = tbd.input.getMod[Int](2)
+    val table = input.getTable()
+    val one = table.get(1)
+    val two = table.get(2)
     val lift = tbd.makeLift[Changeable[Int]]()
 
     tbd.mod((dest: Dest[Int]) => {
@@ -102,12 +104,13 @@ class AlreadyMatchedTest extends Adjustable {
   }
 }
 
-class OutOfScopeTest extends Adjustable {
+class OutOfScopeTest(input: TableInput[Int, Int]) extends Adjustable {
   var num = 0
 
   def run(tbd: TBD): Int = {
-    val one = tbd.input.getMod[Int](1)
-    val two = tbd.input.getMod[Int](2)
+    val table = input.getTable()
+    val one = table.get(1)
+    val two = table.get(2)
     val lift = tbd.makeLift[Changeable[Int]]()
 
     tbd.mod((dest: Dest[Int]) => {
@@ -135,13 +138,14 @@ class OutOfScopeTest extends Adjustable {
 
 // Checks that if two calls to memo occur with the same signature, they both get
 // matched during propagation.
-class MatchingSignaturesTest extends Adjustable {
+class MatchingSignaturesTest(input: TableInput[Int, Int]) extends Adjustable {
   var count1 = 0
   var count2 = 0
 
   def run(tbd: TBD): Int = {
-    val one = tbd.input.getMod[Int](1)
-    val two = tbd.input.getMod[Int](2)
+    val table = input.getTable()
+    val one = table.get(1)
+    val two = table.get(2)
     val lift = tbd.makeLift[Changeable[Int]]()
 
     tbd.mod((dest: Dest[Int]) => {
@@ -169,16 +173,17 @@ class MatchingSignaturesTest extends Adjustable {
 // Checks that if a call to memo gets matched, a call that is also within the
 // same reexecuting read but a parent of the already matched memo can't be
 // matched (since part of its ddg has been cannabilized by the first match).
-class MatchParentTest extends Adjustable {
+class MatchParentTest(input: TableInput[Int, Int]) extends Adjustable {
   var count1 = 0
   var count2 = 0
   var count3 = 0
   var count4 = 0
 
   def run(tbd: TBD): Mod[Int] = {
-    val one = tbd.input.getMod[Int](1)
-    val two = tbd.input.getMod[Int](2)
-    val three = tbd.input.getMod[Int](3)
+    val table = input.getTable()
+    val one = table.get(1)
+    val two = table.get(2)
+    val three = table.get(3)
     val lift = tbd.makeLift[Unit]()
 
     tbd.mod((dest: Dest[Int]) => {
@@ -207,13 +212,14 @@ class MatchParentTest extends Adjustable {
 
 // Tests that change propagation is done through a memoized subddg before
 // moving on.
-class PropagateThroughMemoTest extends Adjustable {
+class PropagateThroughMemoTest(input: TableInput[Int, Int]) extends Adjustable {
   var count = 0
 
   def run(tbd: TBD): Mod[Int] = {
-    val one = tbd.input.getMod[Int](1)
-    val two = tbd.input.getMod[Int](2)
-    val three = tbd.input.getMod[Int](3)
+    val table = input.getTable()
+    val one = table.get(1)
+    val two = table.get(2)
+    val three = table.get(3)
     val lift = tbd.makeLift[Mod[Int]]()
 
     tbd.mod((dest: Dest[Int]) =>
@@ -234,12 +240,13 @@ class PropagateThroughMemoTest extends Adjustable {
 
 // Tests that a single memo entry can be matched in multiple runs of change
 // propagation.
-class RepeatRunsTest extends Adjustable {
+class RepeatRunsTest(input: TableInput[Int, Int]) extends Adjustable {
   var count = 0
 
   def run(tbd: TBD): Mod[Int] = {
-    val one = tbd.input.getMod[Int](1)
-    val two = tbd.input.getMod[Int](2)
+    val table = input.getTable()
+    val one = table.get(1)
+    val two = table.get(2)
     val lift = tbd.makeLift[Changeable[Int]]()
 
     tbd.mod((dest: Dest[Int]) => {
@@ -258,14 +265,15 @@ class RepeatRunsTest extends Adjustable {
 // fundamental aspect of memo, but just a limitation of our current
 // implementation, resulting from the fact that making such matches would
 // require renumbering timestamps. So, we may someday fix this problem.
-class OutOfOrderMatchTest extends Adjustable {
+class OutOfOrderMatchTest(input: TableInput[Int, Int]) extends Adjustable {
   var count2 = 0
   var count3 = 0
 
   def run(tbd: TBD): Any = {
-    val one = tbd.input.getMod[Int](1)
-    val two = tbd.input.getMod[Int](2)
-    val three = tbd.input.getMod[Int](3)
+    val table = input.getTable()
+    val one = table.get(1)
+    val two = table.get(2)
+    val three = table.get(3)
     val lift = tbd.makeLift[Unit]()
 
     tbd.mod((dest: Dest[Int]) => {
@@ -293,11 +301,12 @@ class OutOfOrderMatchTest extends Adjustable {
 }
 
 class MemoTests extends FlatSpec with Matchers {
-  "MemoTest" should "do stuff" in {
+  "MemoTest" should "find the memo match" in {
     val mutator = new Mutator()
-    mutator.put(1, 1)
-    mutator.put(2, 10)
-    val test = new MemoTest()
+    val input = mutator.createTable[Int, Int]()
+    input.put(1, 1)
+    input.put(2, 10)
+    val test = new MemoTest(input)
     val output = mutator.run[Mod[Int]](test)
     output.read() should be (12)
     test.count should be (1)
@@ -319,7 +328,7 @@ class MemoTests extends FlatSpec with Matchers {
 
     // Change the mod not read by the memoized function,
     // check that it isn't called.
-    mutator.update(1, 3)
+    input.update(1, 3)
     mutator.propagate()
     output.read() should be (14)
     test.count should be (1)
@@ -341,8 +350,8 @@ class MemoTests extends FlatSpec with Matchers {
 
     // Change the other mod, the memoized function should
     // be called.
-    mutator.update(1, 2)
-    mutator.update(2, 8)
+    input.update(1, 2)
+    input.update(2, 8)
     mutator.propagate()
     output.read() should be (11)
     test.count should be (2)
@@ -357,15 +366,16 @@ class MemoTests extends FlatSpec with Matchers {
 
   "AlreadyMatchedTest" should "only reuse the memo entry once" in {
     val mutator = new Mutator()
-    mutator.put(1, 1)
-    mutator.put(2, 10)
-    val test = new AlreadyMatchedTest()
+    val input = mutator.createTable[Int, Int]()
+    input.put(1, 1)
+    input.put(2, 10)
+    val test = new AlreadyMatchedTest(input)
     val output = mutator.run[Mod[Int]](test)
     output.read() should be (11)
     test.count1 should be (0)
     test.count2 should be (1)
 
-    mutator.update(1, 3)
+    input.update(1, 3)
     mutator.propagate()
     output.read() should be (11)
     test.count1 should be (0)
@@ -376,14 +386,15 @@ class MemoTests extends FlatSpec with Matchers {
 
   "OutOfScopeTest" should "not memo match outside of the reexecuted read" in {
     val mutator = new Mutator()
-    mutator.put(1, 1)
-    mutator.put(2, 2)
-    val test = new OutOfScopeTest()
+    val input = mutator.createTable[Int, Int]()
+    input.put(1, 1)
+    input.put(2, 2)
+    val test = new OutOfScopeTest(input)
     mutator.run[Int](test)
 
     test.num should be (0)
 
-    mutator.update(1, 3)
+    input.update(1, 3)
     mutator.propagate()
 
     test.num should be (1)
@@ -393,15 +404,16 @@ class MemoTests extends FlatSpec with Matchers {
 
   "MatchingSignaturesTest" should "find both memo matches" in {
     val mutator = new Mutator()
-    mutator.put(1, 1)
-    mutator.put(2, 2)
-    val test = new MatchingSignaturesTest()
+    val input = mutator.createTable[Int, Int]()
+    input.put(1, 1)
+    input.put(2, 2)
+    val test = new MatchingSignaturesTest(input)
 
     mutator.run[Int](test)
     test.count1 should be (1)
     test.count2 should be (1)
 
-    mutator.update(1, 2)
+    input.update(1, 2)
     mutator.propagate()
     test.count1 should be (1)
     test.count2 should be (1)
@@ -411,10 +423,11 @@ class MemoTests extends FlatSpec with Matchers {
 
   "MatchParentTest" should "not match the parent" in {
     val mutator = new Mutator()
-    mutator.put(1, 1)
-    mutator.put(2, 2)
-    mutator.put(3, 3)
-    val test = new MatchParentTest()
+    val input = mutator.createTable[Int, Int]()
+    input.put(1, 1)
+    input.put(2, 2)
+    input.put(3, 3)
+    val test = new MatchParentTest(input)
 
     mutator.run[Mod[Int]](test)
     test.count1 should be (1)
@@ -422,7 +435,7 @@ class MemoTests extends FlatSpec with Matchers {
     test.count3 should be (0)
     test.count4 should be (0)
 
-    mutator.update(1, 4)
+    input.update(1, 4)
     mutator.propagate()
 
     test.count1 should be (1)
@@ -435,15 +448,16 @@ class MemoTests extends FlatSpec with Matchers {
 
   "PropagateThroughMemoTest" should "only reexecute the read once" in {
     val mutator = new Mutator()
-    mutator.put(1, 1)
-    mutator.put(2, 2)
-    mutator.put(3, 3)
-    val test = new PropagateThroughMemoTest()
+    val input = mutator.createTable[Int, Int]()
+    input.put(1, 1)
+    input.put(2, 2)
+    input.put(3, 3)
+    val test = new PropagateThroughMemoTest(input)
     mutator.run[Mod[Int]](test)
     test.count should be (1)
 
-    mutator.update(1, 4)
-    mutator.update(3, 5)
+    input.update(1, 4)
+    input.update(3, 5)
     mutator.propagate()
     test.count should be (2)
 
@@ -452,21 +466,22 @@ class MemoTests extends FlatSpec with Matchers {
 
   "RepeatRunsTest" should "memo match in multiple runs of propagation" in {
     val mutator = new Mutator()
-    mutator.put(1, 1)
-    mutator.put(2, 2)
-    val test = new RepeatRunsTest()
+    val input = mutator.createTable[Int, Int]()
+    input.put(1, 1)
+    input.put(2, 2)
+    val test = new RepeatRunsTest(input)
     mutator.run[Mod[Int]](test)
     test.count should be (1)
 
-    mutator.update(1, 3)
+    input.update(1, 3)
     mutator.propagate()
     test.count should be (1)
 
-    mutator.update(1, 4)
+    input.update(1, 4)
     mutator.propagate()
     test.count should be (1)
 
-    mutator.update(1, 5)
+    input.update(1, 5)
     mutator.propagate()
     test.count should be (1)
 
@@ -475,15 +490,16 @@ class MemoTests extends FlatSpec with Matchers {
 
   "OutOfOrderMatchTest" should "not memo match if a later match has been made" in {
     val mutator = new Mutator()
-    mutator.put(1, 1)
-    mutator.put(2, 2)
-    mutator.put(3, 3)
-    val test = new OutOfOrderMatchTest()
+    val input = mutator.createTable[Int, Int]()
+    input.put(1, 1)
+    input.put(2, 2)
+    input.put(3, 3)
+    val test = new OutOfOrderMatchTest(input)
     mutator.run[Any](test)
     test.count2 should be (1)
     test.count3 should be (1)
 
-    mutator.update(1, 4)
+    input.update(1, 4)
     mutator.propagate()
 
     test.count2 should be (2)

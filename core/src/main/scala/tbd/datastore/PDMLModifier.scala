@@ -30,25 +30,15 @@ class PDMLModifier[T, U](
 
   private def initialize(): PartitionedDoubleModList[T, U] = {
     val partitions = new ArrayBuffer[DoubleModList[T, U]]()
-    var dmlModifier = new DMLModifier[T, U](datastore)
-
-    val partitionSize = math.max(1, table.size / numPartitions)
-    var i = 1
-    for (elem <- table) {
-      dmlModifier.insert(elem._1.asInstanceOf[T],
-			 elem._2.asInstanceOf[U])
-
-      if (i % partitionSize == 0) {
-        partitionModifiers += dmlModifier
-        partitions += dmlModifier.doubleModList
-        dmlModifier = new DMLModifier[T, U](datastore)
-      }
-      i += 1
-    }
-
-    if ((i - 1) % partitionSize != 0) {
+    for (i <- 1 to numPartitions) {
+      val dmlModifier = new DMLModifier[T, U](datastore)
       partitionModifiers += dmlModifier
       partitions += dmlModifier.doubleModList
+    }
+
+    var insertInto = 0
+    for ((key, value) <- table) {
+      insert(key.asInstanceOf[T], value.asInstanceOf[U])
     }
 
     new PartitionedDoubleModList[T, U](partitions)

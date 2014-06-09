@@ -51,19 +51,17 @@ class Mutator(aMain: Main = null) {
     Await.result(future, DURATION)
   }
 
-  def put(key: Any, value: Any) {
-    val future = main.masterRef ? PutInputMessage("input", key, value)
-    Await.result(future, DURATION)
+  def createList[T, U](conf: ListConf = new ListConf()): ListInput[T, U] = {
+    new ListInput[T, U](main.masterRef, conf)
   }
 
-  def update(key: Any, value: Any) {
-    val future = main.masterRef ? UpdateInputMessage("input", key, value)
-    Await.result(future, DURATION)
+  def createChunkList[T, U](conf: ListConf = new ListConf())
+      : ChunkListInput[T, U] = {
+    new ChunkListInput[T, U](main.masterRef, conf)
   }
 
-  def remove(key: Any) {
-    val future = main.masterRef ? RemoveInputMessage("input", key)
-    Await.result(future, DURATION)
+  def createTable[T, U](conf: TableConf = new TableConf()): TableInput[T, U] = {
+    new TableInput[T, U](main.masterRef, conf)
   }
 
   def getDDG(): DDG  = {

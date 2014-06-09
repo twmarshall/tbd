@@ -27,17 +27,16 @@ object SplitAdjust {
   }
 }
 
-class SplitAdjust(
-    partitions: Int,
-    parallel: Boolean,
-    memoized: Boolean) extends Algorithm(parallel, memoized) {
+class SplitAdjust(mutator: Mutator, partitions: Int, parallel: Boolean,
+    memoized: Boolean) extends Algorithm(mutator, partitions, 1, true, parallel,
+memoized) {
   var output: SplitResult = null
 
   var traditionalAnswer: (GenIterable[String], GenIterable[String]) = null
   type SplitResult = (AdjustableList[Int, String], AdjustableList[Int, String])
 
   def run(tbd: TBD): SplitResult = {
-    val pages = tbd.input.getAdjustableList[Int, String](partitions)
+    val pages = input.getAdjustableList()
 
     pages.split(tbd, (tbd: TBD, pair:(Int, String)) => SplitAdjust.predicate(pair),
                 parallel, memoized)

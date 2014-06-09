@@ -13,15 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd
+package tbd.datastore
 
-import akka.util.Timeout
-import scala.concurrent.duration._
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.Future
 
-object Constants {
-  var DURATION = 10.seconds
-  implicit var TIMEOUT = Timeout(DURATION)
+import tbd.mod.ModTable
 
-  type ModId = String
-  type InputId = Int
+class TableModifier(_datastore: Datastore) extends Modifier[Any, Any](_datastore) {
+  val table = new ModTable[Any, Any]()
+
+  def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
+    table.table(key) = datastore.createMod(value)
+    ArrayBuffer[Future[String]]()
+  }
+
+  def update(key: Any, value: Any): ArrayBuffer[Future[String]] = {
+    datastore.updateMod(table.table(key).id, value)
+  }
+
+  def remove(key: Any): ArrayBuffer[Future[String]] = ???
+
+  def getModifiable(): Any = table
 }

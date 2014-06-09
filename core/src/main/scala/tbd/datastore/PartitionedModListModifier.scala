@@ -30,25 +30,15 @@ class PartitionedModListModifier[T, U](
 
   private def initialize(): PartitionedModList[T, U] = {
     val partitions = new ArrayBuffer[ModList[T, U]]()
-    var dmlModifier = new ModListModifier[T, U](datastore)
-
-    val partitionSize = math.max(1, table.size / numPartitions)
-    var i = 1
-    for (elem <- table) {
-      dmlModifier.insert(elem._1.asInstanceOf[T],
-			 elem._2.asInstanceOf[U])
-
-      if (i % partitionSize == 0) {
-        partitionModifiers += dmlModifier
-        partitions += dmlModifier.modList
-        dmlModifier = new ModListModifier[T, U](datastore)
-      }
-      i += 1
+    for (i <- 1 to numPartitions) {
+      val modListModifier = new ModListModifier[T, U](datastore)
+      partitionModifiers += modListModifier
+      partitions += modListModifier.modList
     }
 
-    if ((i - 1) % partitionSize != 0) {
-      partitionModifiers += dmlModifier
-      partitions += dmlModifier.modList
+    var insertInto = 0
+    for ((key, value) <- table) {
+      insert(key.asInstanceOf[T], value.asInstanceOf[U])
     }
 
     new PartitionedModList[T, U](partitions)
