@@ -15,13 +15,10 @@
  */
 package tbd
 
-import akka.util.Timeout
-import scala.concurrent.duration._
+trait AdjustableConf
 
-object Constants {
-  var DURATION = 10.seconds
-  implicit var TIMEOUT = Timeout(DURATION)
+case class ListConf(file: String = "", partitions: Int = 8, chunkSize: Int = 1,
+  chunkSizer: Any => Int = _ => 1, valueMod: Boolean = true)
+    extends AdjustableConf
 
-  type ModId = String
-  type InputId = Int
-}
+case class TableConf() extends AdjustableConf

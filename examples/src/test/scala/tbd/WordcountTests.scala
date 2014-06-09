@@ -25,31 +25,33 @@ import tbd.mod.Mod
 class WordcountTests extends FlatSpec with Matchers {
   "WCAdjust" should "return the corrent word count" in {
     val mutator = new Mutator()
-    mutator.put(1, "apple boy apple cat cat cat")
-    mutator.put(2, "cat boy boy ear cat dog")
-    mutator.put(3, "ear cat apple")
+    val alg = new WCAdjust(mutator, 2, false, false)
+
+    alg.input.put(1, "apple boy apple cat cat cat")
+    alg.input.put(2, "cat boy boy ear cat dog")
+    alg.input.put(3, "ear cat apple")
 
     val output =
-      mutator.run[Mod[(Int, HashMap[String, Int])]](new WCAdjust(2, false, false))
+      mutator.run[Mod[(Int, HashMap[String, Int])]](alg)
     val answer = HashMap[String, Int]("apple" -> 3, "boy" -> 3, "cat" -> 6,
                                       "dog" -> 1, "ear" -> 2)
     assert(output.read()._2 == answer)
 
 
-    mutator.update(1, "apple dog dog dog face")
+    alg.input.update(1, "apple dog dog dog face")
     mutator.propagate()
     val answer2 = HashMap[String, Int]("apple" -> 2, "boy" -> 2, "cat" -> 3,
                                        "dog" -> 4, "ear" -> 2, "face" -> 1)
     assert(output.read()._2 == answer2)
 
-    mutator.put(4, "cat apple")
+    alg.input.put(4, "cat apple")
     mutator.propagate()
     val answer3 = HashMap[String, Int]("apple" -> 3, "boy" -> 2, "cat" -> 4,
                                        "dog" -> 4, "ear" -> 2, "face" -> 1)
     assert(output.read()._2 == answer3)
 
-    mutator.update(4, "boy dog")
-    mutator.put(5, "girl girl girl apple")
+    alg.input.update(4, "boy dog")
+    alg.input.put(5, "girl girl girl apple")
     mutator.propagate()
     val answer4 = HashMap[String, Int]("apple" -> 3, "boy" -> 3, "cat" -> 3,
                                        "dog" -> 5, "ear" -> 2, "face" -> 1,

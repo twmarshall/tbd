@@ -15,13 +15,18 @@
  */
 package tbd
 
-import akka.util.Timeout
-import scala.concurrent.duration._
+import akka.actor.ActorRef
+import akka.pattern.ask
+import scala.concurrent.Await
 
-object Constants {
-  var DURATION = 10.seconds
-  implicit var TIMEOUT = Timeout(DURATION)
+import tbd.Constants._
+import tbd.messages._
+import tbd.mod.AdjustableList
 
-  type ModId = String
-  type InputId = Int
+class ListInput[T, U](masterRef: ActorRef, conf: ListConf)
+    extends Input[T, U](masterRef, conf) {
+  def getAdjustableList(): AdjustableList[T, U] = {
+    val future = masterRef ? GetInputMessage(inputId)
+    Await.result(future.mapTo[AdjustableList[T, U]], DURATION)
+  }
 }

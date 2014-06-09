@@ -19,35 +19,26 @@ import akka.actor.ActorRef
 import scala.collection.mutable.Set
 import scala.concurrent.Promise
 
-import tbd.{Adjustable, Changeable, TBD}
+import tbd.{Adjustable, AdjustableConf, Changeable, TBD}
 import tbd.Constants._
 import tbd.ddg.Node
 import tbd.mod.{AdjustableList, Mod}
 import tbd.worker.Task
 
 // Datastore
-case class CreateTableMessage(table: String)
-case class GetMessage(table: String, key: Any)
-case class PutMessage(table: String, key: Any, value: Any)
-case class UpdateMessage(table: String, key: Any, value: Any)
-case class RemoveMessage(table: String, key: Any)
+case class CreateAdjustableMessage(conf: AdjustableConf)
+case class PutInputMessage(inputId: InputId, key: Any, value: Any)
+case class UpdateInputMessage(inputId: InputId, key: Any, value: Any)
+case class RemoveInputMessage(inputId: InputId, key: Any)
+case class GetInputMessage(inputId: InputId)
 
-case class GetModMessage(table: String, key: Any)
-case class GetAdjustableListMessage(table: String, partitions: Int,
-    valueMod: Boolean)
-case class GetChunkListMessage(table: String, partitions: Int,
-    chunkSize: Int, chunkSizer: Any => Int, valueMod: Boolean)
 case class NullMessage()
-
 case class CleanUpMessage(workerRef: ActorRef,
     adjustableLists: Set[AdjustableList[Any, Any]])
 
 // Master
-case class RunMessage(adjust: Adjustable, mutatorId: Int)
-case class PutInputMessage(table: String, key: Any, value: Any)
-case class UpdateInputMessage(table: String, key: Any, value: Any)
-case class RemoveInputMessage(table: String, key: Any)
 case class RegisterMutatorMessage()
+case class RunMessage(adjust: Adjustable, mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
 case class ShutdownMutatorMessage(mutatorId: Int)
 

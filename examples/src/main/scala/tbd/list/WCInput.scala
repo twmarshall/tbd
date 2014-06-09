@@ -17,13 +17,13 @@ package tbd.examples.list
 
 import scala.collection.mutable.{ArrayBuffer, Map}
 
-import tbd.Mutator
+import tbd.{Input, Mutator}
 
 class WCInput(maxKey: Int, mutations: Array[String]) {
   val chunks = ArrayBuffer[String]()
 
   val rand = new scala.util.Random()
-  def addValue(mutator: Mutator, table: Map[Int, String]) {
+  def addValue(input: Input[Int, String], table: Map[Int, String]) {
     if (chunks.size == 0) {
       chunks ++= Experiment.loadPages()
     }
@@ -33,7 +33,7 @@ class WCInput(maxKey: Int, mutations: Array[String]) {
     while (table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-    mutator.put(key, chunks.head)
+    input.put(key, chunks.head)
 
     if (Experiment.check) {
       table += (key -> chunks.head)
@@ -44,20 +44,20 @@ class WCInput(maxKey: Int, mutations: Array[String]) {
     chunks -= chunks.head
   }
 
-  def removeValue(mutator: Mutator, table: Map[Int, String]) {
+  def removeValue(input: Input[Int, String], table: Map[Int, String]) {
     if (table.size > 1) {
       var key = rand.nextInt(maxKey)
       while (!table.contains(key)) {
         key = rand.nextInt(maxKey)
       }
-      mutator.remove(key)
+      input.remove(key)
       table -= key
     } else {
-      addValue(mutator, table)
+      addValue(input, table)
     }
   }
 
-  def updateValue(mutator: Mutator, table: Map[Int, String]) {
+  def updateValue(input: Input[Int, String], table: Map[Int, String]) {
     if (chunks.size == 0) {
       chunks ++= Experiment.loadPages()
     }
@@ -67,7 +67,7 @@ class WCInput(maxKey: Int, mutations: Array[String]) {
     while (!table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-    mutator.update(key, chunks.head)
+    input.update(key, chunks.head)
 
     if (Experiment.check) {
       table(key) = chunks.head
@@ -76,11 +76,11 @@ class WCInput(maxKey: Int, mutations: Array[String]) {
     chunks -= chunks.head
   }
 
-  def update(mutator: Mutator, table: Map[Int, String]) {
+  def update(input: Input[Int, String], table: Map[Int, String]) {
     mutations(rand.nextInt(mutations.size)) match {
-      case "insert" => addValue(mutator, table)
-      case "remove" => removeValue(mutator, table)
-      case "update" => updateValue(mutator, table)
+      case "insert" => addValue(input, table)
+      case "remove" => removeValue(input, table)
+      case "update" => updateValue(input, table)
     }
   }
 }

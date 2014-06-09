@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd
+package tbd.mod
 
-import akka.util.Timeout
-import scala.concurrent.duration._
+import scala.collection.mutable.Map
 
-object Constants {
-  var DURATION = 10.seconds
-  implicit var TIMEOUT = Timeout(DURATION)
+class ModTable[T, U] {
+  val table = Map[T, Mod[U]]()
 
-  type ModId = String
-  type InputId = Int
+  def get(key: T): Mod[U] = table(key)
 }

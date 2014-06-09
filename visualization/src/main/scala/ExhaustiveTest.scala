@@ -17,13 +17,14 @@
 package tbd.visualization
 
 import scala.collection.mutable.ArrayBuffer
-import tbd.{Adjustable, Changeable, Mutator, TBD}
+import tbd.{Adjustable, Changeable, ListConf, ListInput, Mutator, TBD}
 import tbd.mod.{AdjustableList, Dest, Mod}
 import collection.mutable.HashMap
 import scala.util.Random
 
 class ExhaustiveTest {
   val mutator = new Mutator()
+  val input = mutator.createList[Int, Int](new ListConf(partitions = 1))
 
   val table = new HashMap[Int, Int]
   val rand = new Random()
@@ -46,7 +47,7 @@ class ExhaustiveTest {
 
     println("m.put(" + newKey + ", " + newValue + ")")
 
-    mutator.put(newKey, newValue)
+    input.put(newKey, newValue)
     table += (newKey -> newValue)
   }
 
@@ -60,7 +61,7 @@ class ExhaustiveTest {
       println("m.remove(" + toRemove + ") // Was " + table(toRemove))
 
       table -= toRemove
-      mutator.remove(toRemove)
+      input.remove(toRemove)
       freeList = (freeList :+ toRemove)
     }
   }
@@ -77,7 +78,7 @@ class ExhaustiveTest {
               "// was (" + toUpdate + ", " + table(toUpdate) + ") ")
 
       table(toUpdate) = newValue
-      mutator.update(toUpdate, newValue)
+      input.update(toUpdate, newValue)
     }
   }
 
@@ -99,7 +100,7 @@ class ExhaustiveTest {
     for(i <- 0 to initialSize)
       addValue()
 
-    val output = mutator.run[Mod[(Int, Int)]](new ListReduceSumTest())
+    val output = mutator.run[Mod[(Int, Int)]](new ListReduceSumTest(input))
     mutator.propagate()
 
     while(true) {
@@ -135,9 +136,9 @@ class ExhaustiveTest {
   }
 }
 
-class ListReduceSumTest extends Adjustable {
+class ListReduceSumTest(input: ListInput[Int, Int]) extends Adjustable {
   def run(tbd: TBD): Mod[(Int, Int)] = {
-    val modList = tbd.input.getAdjustableList[Int, Int](partitions = 1)
+    val modList = input.getAdjustableList()
     val zero = tbd.mod((dest : Dest[(Int, Int)]) => tbd.write(dest, (0, 0)))
     modList.reduce(tbd, zero,
       (tbd: TBD, pair1: (Int, Int), pair2: (Int, Int)) => {

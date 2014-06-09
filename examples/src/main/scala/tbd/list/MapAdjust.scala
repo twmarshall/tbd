@@ -18,7 +18,7 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, Mutator, TBD}
+import tbd.{Adjustable, ChunkListInput, Mutator, TBD}
 import tbd.mod.AdjustableList
 
 object MapAdjust {
@@ -31,17 +31,15 @@ object MapAdjust {
   }
 }
 
-class MapAdjust(
-    partitions: Int,
-    valueMod: Boolean,
-    parallel: Boolean,
-    memoized: Boolean) extends Algorithm(parallel, memoized) {
+class MapAdjust(mutator: Mutator, partitions: Int, valueMod: Boolean,
+    parallel: Boolean, memoized: Boolean) extends Algorithm(mutator, partitions,
+      1, valueMod, parallel, memoized) {
   var output: AdjustableList[Int, Int] = null
 
   var traditionalAnswer: GenIterable[Int] = null
 
   def run(tbd: TBD) = {
-    val pages = tbd.input.getAdjustableList[Int, String](partitions, valueMod)
+    val pages = input.getAdjustableList()
     pages.map(tbd, MapAdjust.mapper, parallel = parallel, memoized = memoized)
   }
 
@@ -62,12 +60,10 @@ class MapAdjust(
   }
 }
 
-class ChunkMapAdjust(
-    partitions: Int,
-    chunkSize: Int,
-    valueMod: Boolean,
-    parallel: Boolean,
-    memoized: Boolean) extends Algorithm(parallel, memoized) {
+class ChunkMapAdjust(mutator: Mutator, partitions: Int, chunkSize: Int,
+    valueMod: Boolean, parallel: Boolean, memoized: Boolean)
+      extends Algorithm(mutator, partitions, chunkSize, valueMod, parallel,
+	memoized) {
   var output: AdjustableList[Int, Int] = null
 
   var traditionalAnswer: GenIterable[Int] = null
@@ -86,8 +82,7 @@ class ChunkMapAdjust(
   }
 
   def run(tbd: TBD) = {
-    val pages = tbd.input.getChunkList[Int, String](
-      partitions, chunkSize, _ => 1, valueMod)
+    val pages = input.asInstanceOf[ChunkListInput[Int, String]].getChunkList()
     pages.chunkMap(tbd, chunkMapper, parallel = parallel, memoized = memoized)
   }
 
