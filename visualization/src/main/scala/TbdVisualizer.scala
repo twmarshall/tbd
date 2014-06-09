@@ -168,9 +168,12 @@ class TbdVisualizer extends ViewerListener {
   private def removeNode(node: Node, removeFromSet:Boolean = true) {
     if(removeFromSet) {
       nodes -= node
+
     }
     idToNodes -= System.identityHashCode(node).toString()
-    graph.removeNode(System.identityHashCode(node).toString())
+    if(findNode(node) != null) {
+      graph.removeNode(System.identityHashCode(node).toString())
+    }
   }
 
   private def addEdge(a: Node, b: Node): org.graphstream.graph.Edge = {
@@ -278,7 +281,7 @@ class TbdVisualizer extends ViewerListener {
     createTree(root, null)
     layoutTree(root, 0)
 
-    if(markedForRemoval != null)
+    if(markedForRemoval != null && highlightRemoved)
       markedForRemoval.foreach(x => removeNode(x, false))
 
     markedForRemoval = List()

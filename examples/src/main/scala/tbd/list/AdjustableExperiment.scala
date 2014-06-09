@@ -145,6 +145,12 @@ class AdjustableExperiment(aConf: Map[String, _])
       case "psplit" => new SplitAdjust(partition, true, false)
       case "msplit" => new SplitAdjust(partition, false, true)
       case "mpsplit" => new SplitAdjust(partition, true, true)
+
+      // Sort
+      case "sort" => new SortAdjust(partition, false, false)
+      case "psort" => new SortAdjust(partition, true, false)
+      case "msort" => new SortAdjust(partition, false, true)
+      case "mpsort" => new SortAdjust(partition, true, true)
     }
 
     val tableForTraditionalRun = alg.prepareTraditionalRun(table)

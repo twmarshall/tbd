@@ -89,17 +89,18 @@ class ExhaustiveTest {
     }
   }
 
-  val initialSize = 5
-  val maximalMutationsPerPropagation = 5
+  val initialSize = 4
+  val maximalMutationsPerPropagation = 1
 
   def run() {
 
+    val visualizer = new TbdVisualizer()
     var mutationCounter = 1
 
     for(i <- 0 to initialSize)
       addValue()
 
-    val output = mutator.run[Mod[(Int, Int)]](new ListReduceSumTest())
+    val output = mutator.run[AdjustableList[Int, Int]](new ListQuicksortTest())
     mutator.propagate()
 
     while(true) {
@@ -114,21 +115,12 @@ class ExhaustiveTest {
 
       mutationCounter += 1
 
-      val ca = table.values.fold(0)((x:Int, y:Int) => x + y)
+      //val ca = table.values.fold(0)((x:Int, y:Int) => x + y)
 
-      val a = output.read()._2
+      println("// Output: " + output)
 
-      println("// Output: " + output.read())
-
-      if(a != ca) {
-        println("Check error.")
-        println("a: " + a)
-        println("ca: " + ca)
-
-        val visualizer = new TbdVisualizer()
-        visualizer.showDDG(mutator.getDDG().root)
-        readLine()
-      }
+      visualizer.showDDG(mutator.getDDG().root)
+      readLine()
     }
 
     mutator.shutdown()

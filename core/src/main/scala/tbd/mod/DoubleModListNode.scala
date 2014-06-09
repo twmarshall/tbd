@@ -95,7 +95,7 @@ class DoubleModListNode[T, V] (
       })
     })
 
-    tbd.read(value)((v) => { 
+    tbd.read(value)((v) => {
       if(pred(tbd, (v._1, v._2))) {
         tbd.write(destMatch, new DoubleModListNode(tbd.createMod(v), matchNext))
         tbd.read(diffNext)(diffNext => {
@@ -115,6 +115,7 @@ class DoubleModListNode[T, V] (
         dest: Dest[DoubleModListNode[T, V]],
         toAppend: Mod[DoubleModListNode[T, V]],
         comperator: (TBD, (T, V), (T, V)) => Boolean,
+        lift: Lift[Mod[DoubleModListNode[T, V]]],
         parallel: Boolean = false,
         memoized: Boolean = false):
           Changeable[DoubleModListNode[T, V]] = {
@@ -132,16 +133,18 @@ class DoubleModListNode[T, V] (
               parallel, memoized)
           })
 
-          val greaterSorted = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
-            tbd.read(greater)(greater => {
-              if(greater != null) {
-                greater.quicksort(tbd, dest, toAppend,
-                                  comperator, parallel, memoized)
-              } else {
-                tbd.read(toAppend)(toAppend => {
-                  tbd.write(dest, toAppend)
-                })
-              }
+          val greaterSorted = lift.memo(List(greater), () => {
+            tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
+              tbd.read(greater)(greater => {
+                if(greater != null) {
+                  greater.quicksort(tbd, dest, toAppend,
+                                    comperator, lift, parallel, memoized)
+                } else {
+                  tbd.read(toAppend)(toAppend => {
+                    tbd.write(dest, toAppend)
+                  })
+                }
+              })
             })
           })
 
@@ -150,7 +153,7 @@ class DoubleModListNode[T, V] (
           tbd.read(smaller)(smaller => {
             if(smaller != null) {
               smaller.quicksort(tbd, dest, tbd.createMod(mid),
-                                comperator, parallel, memoized)
+                                comperator, lift, parallel, memoized)
             } else {
               tbd.write(dest, mid)
             }
