@@ -19,13 +19,12 @@ import akka.actor.ActorRef
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.Future
 
+import tbd.ListConf
 import tbd.mod.{ChunkList, ChunkListNode, Mod}
 
 class ChunkListModifier[T, U](
     _datastore: Datastore,
-    table: Map[Any, Any],
-    chunkSize: Int,
-    chunkSizer: U => Int) extends Modifier[T, U](_datastore) {
+    conf: ListConf) extends Modifier[T, U](_datastore) {
   private var tailMod: Mod[ChunkListNode[T, U]] = null
 
   // Contains the last ChunkListNode before the tail node.
@@ -42,7 +41,7 @@ class ChunkListModifier[T, U](
 
     var chunk = Vector[(T, U)]()
     var size = 0
-    for (elem <- table) {
+    /*for (elem <- table) {
       if (size >= chunkSize) {
 	tail = datastore.createMod(new ChunkListNode(chunk, tail, size))
 
@@ -52,7 +51,7 @@ class ChunkListModifier[T, U](
 
       chunk = chunk :+ (elem._1.asInstanceOf[T] -> elem._2.asInstanceOf[U])
       size += chunkSizer(elem._2.asInstanceOf[U])
-    }
+    }*/
 
     if (size > 0) {
       tail = datastore.createMod(new ChunkListNode(chunk, tail, size))
@@ -68,14 +67,14 @@ class ChunkListModifier[T, U](
     var futures = ArrayBuffer[Future[String]]()
     if (lastNode == null) {
       val chunk = Vector[(T, U)]((key -> value))
-      val size = chunkSizer(value)
+      val size = conf.chunkSizer(value)
 
       val newNode = new ChunkListNode(chunk, tailMod, size)
       futures = datastore.updateMod(lastNodeMod.id, newNode)
-    } else if (lastNode.size >= chunkSize) {
+    } else if (lastNode.size >= conf.chunkSize) {
       val newTailMod = datastore.createMod[ChunkListNode[T, U]](null)
       val chunk = Vector[(T, U)]((key -> value))
-      val newNode = new ChunkListNode(chunk, newTailMod, chunkSizer(value))
+      val newNode = new ChunkListNode(chunk, newTailMod, conf.chunkSizer(value))
 
       futures = datastore.updateMod(tailMod.id, newNode)
 
@@ -83,7 +82,7 @@ class ChunkListModifier[T, U](
       tailMod = newTailMod
     } else {
       val chunk = lastNode.chunk :+ (key -> value)
-      val size = lastNode.size + chunkSizer(value)
+      val size = lastNode.size + conf.chunkSizer(value)
 
       val newNode = new ChunkListNode(chunk, tailMod, size)
       futures = datastore.updateMod(lastNodeMod.id, newNode)
@@ -112,7 +111,7 @@ class ChunkListModifier[T, U](
       }}
 
       if (found) {
-        val newSize = node.size + chunkSizer(value) - chunkSizer(oldValue)
+        val newSize = node.size + conf.chunkSizer(value) - conf.chunkSizer(oldValue)
         val newNode = new ChunkListNode(newChunk, node.nextMod, newSize)
 
         if (previousNode != null) {
@@ -170,7 +169,7 @@ class ChunkListModifier[T, U](
                                           nextNode)
           }
         } else {
-          val newSize = node.size - chunkSizer(oldValue)
+          val newSize = node.size - conf.chunkSizer(oldValue)
           val newNode = new ChunkListNode(newChunk, node.nextMod, newSize)
 
           if (previousNode == null) {

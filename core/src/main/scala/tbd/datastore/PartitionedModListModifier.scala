@@ -18,27 +18,22 @@ package tbd.datastore
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.Future
 
+import tbd.ListConf
 import tbd.mod._
 
 class PartitionedModListModifier[T, U](
-    aDatastore: Datastore,
-    table: Map[Any, Any],
-    numPartitions: Int) extends Modifier[T, U](aDatastore) {
+    _datastore: Datastore,
+    conf: ListConf) extends Modifier[T, U](_datastore) {
 
   val partitionModifiers = ArrayBuffer[ModListModifier[T, U]]()
   val modList = initialize()
 
   private def initialize(): PartitionedModList[T, U] = {
     val partitions = new ArrayBuffer[ModList[T, U]]()
-    for (i <- 1 to numPartitions) {
-      val modListModifier = new ModListModifier[T, U](datastore)
+    for (i <- 1 to conf.partitions) {
+      val modListModifier = new ModListModifier[T, U](datastore, conf)
       partitionModifiers += modListModifier
       partitions += modListModifier.modList
-    }
-
-    var insertInto = 0
-    for ((key, value) <- table) {
-      insert(key.asInstanceOf[T], value.asInstanceOf[U])
     }
 
     new PartitionedModList[T, U](partitions)
@@ -46,7 +41,7 @@ class PartitionedModListModifier[T, U](
 
   private var insertInto = 0
   def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
-    insertInto = (insertInto + 1) % numPartitions
+    insertInto = (insertInto + 1) % conf.partitions
     partitionModifiers(insertInto).insert(key, value)
   }
 

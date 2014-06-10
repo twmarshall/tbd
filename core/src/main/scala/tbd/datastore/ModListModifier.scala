@@ -18,25 +18,13 @@ package tbd.datastore
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.{Future, Promise}
 
+import tbd.ListConf
 import tbd.mod._
 
 class ModListModifier[T, U](
     _datastore: Datastore,
-    table: Map[Any, Any] = Map[Any, Any]()) extends Modifier[T, U](_datastore) {
-  val modList = initialize()
-
-  private def initialize(): ModList[T, U] = {
-    var tail = datastore.createMod[ModListNode[T, U]](null)
-
-    for (elem <- table) {
-    //for (elem <- scala.collection.immutable.TreeMap(table.asInstanceOf[Map[Int, U]].toSeq: _*)) {
-      //println("creating node " + elem._1)
-      val newNode = new ModListNode[T, U](elem.asInstanceOf[(T, U)], tail)
-      tail = datastore.createMod(newNode)
-    }
-
-    new ModList[T, U](tail)
-  }
+    conf: ListConf) extends Modifier[T, U](_datastore) {
+  val modList = new ModList[T, U](datastore.createMod[ModListNode[T, U]](null))
 
   def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
     var innerNode = datastore.getMod(modList.head.id)

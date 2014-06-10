@@ -76,52 +76,41 @@ class Datastore extends Actor with ActorLogging {
 
       val modifier =
 	conf match {
-	  case ListConf(file, partitions, chunkSize, chunkSizer, valueMod) =>
-	    if (chunkSize > 1) {
-              if (!valueMod) {
-		if (partitions == 1) {
+	  case conf: ListConf =>
+	    if (conf.chunkSize > 1) {
+              if (!conf.valueMod) {
+		if (conf.partitions == 1) {
 		  log.info("Creating new ChunkList.")
-		  new ChunkListModifier[Any, Any](this, Map(), chunkSize,
-						  chunkSizer)
+		  new ChunkListModifier[Any, Any](this, conf)
 		} else {
 		  log.info("Creating new PartitionedChunkList.")
-		  new PartitionedChunkListModifier[Any, Any](this, Map(), partitions,
-                                                             chunkSize, chunkSizer)
+		  new PartitionedChunkListModifier[Any, Any](this, conf)
 		}
               } else {
-		if (partitions == 1) {
+		if (conf.partitions == 1) {
 		  log.info("Creating new DoubleChunkList.")
-		  new DoubleChunkListModifier[Any, Any](
-		    this,
-		    Map(),
-		    chunkSize,
-		    chunkSizer)
+		  new DoubleChunkListModifier[Any, Any](this, conf)
 		} else {
 		  log.info("Creating new PartitionedDoubleChunkList.")
-		  new PartitionedDoubleChunkListModifier[Any, Any](
-		    this,
-		    Map(),
-		    partitions,
-		    chunkSize,
-		    chunkSizer)
+		  new PartitionedDoubleChunkListModifier[Any, Any](this, conf)
 		}
               }
 	    } else {
-	      if (!valueMod) {
-		if (partitions == 1) {
+	      if (!conf.valueMod) {
+		if (conf.partitions == 1) {
 		  log.info("Creating new ModList.")
-		  new ModListModifier[Any, Any](this, Map())
+		  new ModListModifier[Any, Any](this, conf)
 		} else {
 		  log.info("Creating new PartitionedModList.")
-		  new PartitionedModListModifier[Any, Any](this, Map(), partitions)
+		  new PartitionedModListModifier[Any, Any](this, conf)
 		}
 	      } else {
-		if (partitions == 1) {
+		if (conf.partitions == 1) {
 		  log.info("Creating new DoubleModList.")
-		  new DMLModifier[Any, Any](this, Map())
+		  new DMLModifier[Any, Any](this, conf)
 		} else {
 		  log.info("Creating new PartitionedDoubleModList.")
-		  new PDMLModifier[Any, Any](this, Map(), partitions)
+		  new PDMLModifier[Any, Any](this, conf)
 		}
               }
 	    }

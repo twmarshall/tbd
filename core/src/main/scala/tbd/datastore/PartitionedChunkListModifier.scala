@@ -18,29 +18,22 @@ package tbd.datastore
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.Future
 
+import tbd.ListConf
 import tbd.mod._
 
 class PartitionedChunkListModifier[T, U](
     _datastore: Datastore,
-    table: Map[Any, Any],
-    numPartitions: Int,
-    chunkSize: Int,
-    chunkSizer: U => Int) extends Modifier[T, U](_datastore) {
+    conf: ListConf) extends Modifier[T, U](_datastore) {
 
   val partitionModifiers = ArrayBuffer[ChunkListModifier[T, U]]()
   val list = initialize()
 
   private def initialize(): PartitionedChunkList[T, U] = {
     val partitions = new ArrayBuffer[ChunkList[T, U]]()
-    for (i <- 1 to numPartitions) {
-      val chunkListModifier = new ChunkListModifier[T, U](datastore, Map[Any, Any](), chunkSize, chunkSizer)
+    for (i <- 1 to conf.partitions) {
+      val chunkListModifier = new ChunkListModifier[T, U](datastore, conf)
       partitionModifiers += chunkListModifier
       partitions += chunkListModifier.list
-    }
-
-    var insertInto = 0
-    for ((key, value) <- table) {
-      insert(key.asInstanceOf[T], value.asInstanceOf[U])
     }
 
     new PartitionedChunkList[T, U](partitions)
@@ -48,7 +41,7 @@ class PartitionedChunkListModifier[T, U](
 
   private var insertInto = 0
   def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
-    insertInto = (insertInto + 1) % numPartitions
+    insertInto = (insertInto + 1) % conf.partitions
     partitionModifiers(insertInto).insert(key, value)
   }
 
