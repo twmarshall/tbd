@@ -108,7 +108,7 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
   }
 
   def receive = {
-    case ModUpdatedMessage(modId: ModId, finished: Future[String]) => {
+    case ModUpdatedMessage(modId: ModId, finished: Future[_]) => {
       ddg.modUpdated(modId)
       tbd.updatedMods += modId
 

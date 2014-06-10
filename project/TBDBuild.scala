@@ -12,7 +12,7 @@ object TBDBuild extends Build {
     scalaVersion := buildScalaVersion,
     fork         := true,
     autoScalaLibrary := true,
-    scalacOptions ++= Seq("-feature")
+    scalacOptions ++= Seq("-feature", "-deprecation")
   )
 
   val commonDeps = Seq (
