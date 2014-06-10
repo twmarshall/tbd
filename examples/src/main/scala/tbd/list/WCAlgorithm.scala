@@ -75,7 +75,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
   val input = mutator.createList[Int, String](listConf)
 
-  def data = new WCData(input, count, mutations)
+  data = new WCData(input, count, mutations)
 
   def runNaive(list: GenIterable[String]) = {
     list.aggregate(Map[String, Int]())((x, line) =>
@@ -112,7 +112,7 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, Map[String, Int])]](_conf, _listConf) {
   val input = mutator.createChunkList[Int, String](listConf)
 
-  def data = new WCData(input, count, mutations)
+  data = new WCData(input, count, mutations)
 
   def runNaive(list: GenIterable[String]) = {
     list.aggregate(Map[String, Int]())((x, line) =>

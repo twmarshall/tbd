@@ -39,7 +39,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   var mapCount = 0
   var reduceCount = 0
 
-  def data: Data[Input]
+  var data: Data[Input] = null.asInstanceOf[Data[Input]]
 
   def naive(): Long = {
     val naiveTable = data.prepareNaive(parallel)

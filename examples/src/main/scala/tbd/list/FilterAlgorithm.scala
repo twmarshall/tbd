@@ -31,7 +31,7 @@ class FilterAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = mutator.createList[Int, Int](listConf)
 
-  def data = new IntData(input, count, mutations)
+  data = new IntData(input, count, mutations)
 
   def runNaive(list: GenIterable[Int]) = {
     list.filter(FilterAlgorithm.predicate(0, _))

@@ -35,7 +35,7 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = mutator.createList[Int, String](listConf)
 
-  def data = new WCData(input, count, mutations)
+  data = new WCData(input, count, mutations)
 
   def runNaive(list: GenIterable[String]) = {
     list.map(MapAlgorithm.mapper(0, _)._2)
@@ -63,7 +63,7 @@ class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = mutator.createChunkList[Int, String](listConf)
 
-  def data = new WCData(input, count, mutations)
+  data = new WCData(input, count, mutations)
 
   def runNaive(list: GenIterable[String]) = {
     list.map(MapAlgorithm.mapper(0, _)._2)
