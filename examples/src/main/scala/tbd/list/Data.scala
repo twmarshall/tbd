@@ -15,6 +15,15 @@
  */
 package tbd.examples.list
 
-import scala.collection.immutable.HashMap
+import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
+trait Data[Input] {
+  def prepareNaive(parallel: Boolean): GenIterable[Input]
+
+  def loadInitial()
+
+  def prepareCheck(): GenIterable[Input]
+
+  def update()
+}

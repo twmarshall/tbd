@@ -15,17 +15,76 @@
  */
 package tbd.examples.list
 
+import scala.collection.GenIterable
 import scala.collection.mutable.{ArrayBuffer, Map}
 
 import tbd.{Input, Mutator}
 
-class WCInput(maxKey: Int, mutations: Array[String]) {
+class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
+    extends Data[String] {
+  val maxKey = count * 10
+
   val chunks = ArrayBuffer[String]()
+  val table = Map[Int, String]()
 
   val rand = new scala.util.Random()
-  def addValue(input: Input[Int, String], table: Map[Int, String]) {
+
+  {
+    var i = 0
+    while (table.size < count) {
+      if (chunks.size == 0) {
+        chunks ++= loadPages()
+      }
+
+      table += (i -> chunks.head)
+      chunks -= chunks.head
+      i += 1
+    }
+  }
+
+  private def loadPages(): ArrayBuffer[String] = {
+    val chunks = ArrayBuffer[String]()
+    val elems = scala.xml.XML.loadFile("wiki.xml")
+
+    (elems \\ "elem").map(elem => {
+      (elem \\ "value").map(value => {
+	chunks += value.text
+      })
+    })
+
+    chunks
+  }
+
+  def prepareNaive(parallel: Boolean): GenIterable[String] =
+    if(parallel)
+      Vector[String](table.values.toSeq: _*).par
+    else
+      Vector[String](table.values.toSeq: _*)
+
+  def loadInitial() {
+    for (pair <- table) {
+      input.put(pair._1, pair._2)
+
+      if (!Experiment.check) {
+        table(pair._1) = ""
+      }
+    }
+  }
+
+  def prepareCheck(): GenIterable[String] =
+    table.values.par
+
+  def update() {
+    mutations(rand.nextInt(mutations.size)) match {
+      case "insert" => addValue()
+      case "remove" => removeValue()
+      case "update" => updateValue()
+    }
+  }
+
+  def addValue() {
     if (chunks.size == 0) {
-      chunks ++= Experiment.loadPages()
+      chunks ++= loadPages()
     }
 
     var key = rand.nextInt(maxKey)
@@ -44,7 +103,7 @@ class WCInput(maxKey: Int, mutations: Array[String]) {
     chunks -= chunks.head
   }
 
-  def removeValue(input: Input[Int, String], table: Map[Int, String]) {
+  def removeValue() {
     if (table.size > 1) {
       var key = rand.nextInt(maxKey)
       while (!table.contains(key)) {
@@ -53,13 +112,13 @@ class WCInput(maxKey: Int, mutations: Array[String]) {
       input.remove(key)
       table -= key
     } else {
-      addValue(input, table)
+      addValue()
     }
   }
 
-  def updateValue(input: Input[Int, String], table: Map[Int, String]) {
+  def updateValue() {
     if (chunks.size == 0) {
-      chunks ++= Experiment.loadPages()
+      chunks ++= loadPages()
     }
 
     var key = rand.nextInt(maxKey)
@@ -74,13 +133,5 @@ class WCInput(maxKey: Int, mutations: Array[String]) {
     }
 
     chunks -= chunks.head
-  }
-
-  def update(input: Input[Int, String], table: Map[Int, String]) {
-    mutations(rand.nextInt(mutations.size)) match {
-      case "insert" => addValue(input, table)
-      case "remove" => removeValue(input, table)
-      case "update" => updateValue(input, table)
-    }
   }
 }

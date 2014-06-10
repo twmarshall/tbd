@@ -32,13 +32,12 @@ class MemoryExperiment(input: ListInput[Int, String]) extends Adjustable {
 object MemoryExperiment {
   def main(args: Array[String]) {
     val max = 1000
-    val input = new WCInput(max * 10, Array("insert", "remove", "update"))
-    val table = Map[Int, String]()
-
     val mutator = new Mutator()
     val list = mutator.createList[Int, String](new ListConf(partitions = 4, valueMod = true))
+    val input = new WCData(list, max, Array("insert", "remove", "update"))
+
     for (i <- 0 to max) {
-      input.addValue(list, table)
+      input.addValue()
     }
 
     val output = mutator.run[AdjustableList[Int, Int]](new MemoryExperiment(list))
@@ -47,7 +46,7 @@ object MemoryExperiment {
     var i = 0
     while (i < 1000) {
       for (i <- 0 to 100) {
-        input.update(list, table)
+        input.update()
       }
 
       println("starting propagating")

@@ -15,14 +15,53 @@
  */
 package tbd.examples.list
 
+
+import scala.collection.GenIterable
 import scala.collection.mutable.{ArrayBuffer, Map}
 
-import tbd.Input
+import tbd.{Input, Mutator}
 
-class IntInput(maxKey: Int, mutations: Array[String]) {
+class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
+    extends Data[Int] {
+  val maxKey = count * 10
+
+  val table = Map[Int, Int]()
 
   val rand = new scala.util.Random()
-  def addValue(input: Input[Int, Int], table: Map[Int, Int]) {
+
+  {
+    var i = 0
+    while (table.size < count) {
+      val value = rand.nextInt(Int.MaxValue)
+      table += (i -> value)
+      i += 1
+    }
+  }
+
+  def prepareNaive(parallel: Boolean): GenIterable[Int] =
+    if(parallel)
+      Vector[Int](table.values.toSeq: _*).par
+    else
+      Vector[Int](table.values.toSeq: _*)
+
+  def loadInitial() {
+    for (pair <- table) {
+      input.put(pair._1, pair._2)
+    }
+  }
+
+  def prepareCheck(): GenIterable[Int] =
+    table.values.par
+
+  def update() {
+    mutations(rand.nextInt(mutations.size)) match {
+      case "insert" => addValue()
+      case "remove" => removeValue()
+      case "update" => updateValue()
+    }
+  }
+
+  def addValue() {
     var key = rand.nextInt(maxKey)
     val value = rand.nextInt(Int.MaxValue)
     while (table.contains(key)) {
@@ -33,7 +72,7 @@ class IntInput(maxKey: Int, mutations: Array[String]) {
     table += (key -> value)
   }
 
-  def removeValue(input: Input[Int, Int], table: Map[Int, Int]) {
+  def removeValue() {
     if (table.size > 1) {
       var key = rand.nextInt(maxKey)
       while (!table.contains(key)) {
@@ -42,27 +81,18 @@ class IntInput(maxKey: Int, mutations: Array[String]) {
       input.remove(key)
       table -= key
     } else {
-      addValue(input, table)
+      addValue()
     }
   }
 
-  def updateValue(input: Input[Int, Int], table: Map[Int, Int]) {
+  def updateValue() {
     var key = rand.nextInt(maxKey)
     val value = rand.nextInt(Int.MaxValue)
     while (!table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-
     input.update(key, value)
 
     table(key) = value
-  }
-
-  def update(input: Input[Int, Int], table: Map[Int, Int]) {
-    mutations(rand.nextInt(mutations.size)) match {
-      case "insert" => addValue(input, table)
-      case "remove" => removeValue(input, table)
-      case "update" => updateValue(input, table)
-    }
   }
 }
