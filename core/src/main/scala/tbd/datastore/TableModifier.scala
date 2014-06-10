@@ -20,7 +20,7 @@ import scala.concurrent.Future
 
 import tbd.mod.ModTable
 
-class TableModifier(_datastore: Datastore) extends Modifier[Any, Any](_datastore) {
+class TableModifier(_datastore: Datastore) extends Modifier(_datastore) {
   val table = new ModTable[Any, Any]()
 
   def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {

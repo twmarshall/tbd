@@ -21,23 +21,23 @@ import scala.concurrent.{Future, Promise}
 import tbd.ListConf
 import tbd.mod._
 
-class DMLModifier[T, U](
-    aDatastore: Datastore,
-    conf: ListConf) extends Modifier[T, U](aDatastore) {
+class DoubleModListModifier(
+    _datastore: Datastore,
+    conf: ListConf) extends Modifier(_datastore) {
   val doubleModList =
-    new DoubleModList[T, U](datastore.createMod[DoubleModListNode[T, U]](null))
+    new DoubleModList[Any, Any](datastore.createMod[DoubleModListNode[Any, Any]](null))
 
-  def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
+  def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     var innerNode = datastore.getMod(doubleModList.head.id)
-      .asInstanceOf[DoubleModListNode[T, U]]
-    var previousNode: DoubleModListNode[T, U] = null
+      .asInstanceOf[DoubleModListNode[Any, Any]]
+    var previousNode: DoubleModListNode[Any, Any] = null
     while (innerNode != null) {
       previousNode = innerNode
       innerNode = datastore.getMod(innerNode.next.id)
-        .asInstanceOf[DoubleModListNode[T, U]]
+        .asInstanceOf[DoubleModListNode[Any, Any]]
     }
 
-    val newTail = datastore.createMod[DoubleModListNode[T, U]](null)
+    val newTail = datastore.createMod[DoubleModListNode[Any, Any]](null)
     val newNode = new DoubleModListNode(datastore.createMod((key, value)), newTail)
 
     if (previousNode != null) {
@@ -47,21 +47,21 @@ class DMLModifier[T, U](
     }
   }
 
-  def update(key: T, value: U): ArrayBuffer[Future[String]] = {
+  def update(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
     var found = false
     var innerNode = datastore.getMod(doubleModList.head.id)
-      .asInstanceOf[DoubleModListNode[T, U]]
+      .asInstanceOf[DoubleModListNode[Any, Any]]
 
     while (innerNode != null && !found) {
       val oldValue = datastore.getMod(innerNode.value.id)
-	.asInstanceOf[(T, U)]
+	.asInstanceOf[(Any, Any)]
       if (oldValue._1 == key) {
 	futures = datastore.updateMod(innerNode.value.id, (key, value))
 	found = true
       } else {
         innerNode = datastore.getMod(innerNode.next.id)
-          .asInstanceOf[DoubleModListNode[T, U]]
+          .asInstanceOf[DoubleModListNode[Any, Any]]
       }
     }
 
@@ -72,16 +72,16 @@ class DMLModifier[T, U](
     futures
   }
 
-  def remove(key: T): ArrayBuffer[Future[String]] = {
+  def remove(key: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
     var found = false
     var innerNode = datastore.getMod(doubleModList.head.id)
-      .asInstanceOf[DoubleModListNode[T, U]]
+      .asInstanceOf[DoubleModListNode[Any, Any]]
 
-    var previousNode: DoubleModListNode[T, U] = null
+    var previousNode: DoubleModListNode[Any, Any] = null
     while (innerNode != null && !found) {
       val oldValue = datastore.getMod(innerNode.value.id)
-	.asInstanceOf[(T, U)]
+	.asInstanceOf[(Any, Any)]
       if (oldValue._1 == key) {
         if (previousNode != null) {
           futures = datastore.updateMod(previousNode.next.id,
@@ -98,7 +98,7 @@ class DMLModifier[T, U](
       } else {
         previousNode = innerNode
         innerNode = datastore.getMod(innerNode.next.id)
-          .asInstanceOf[DoubleModListNode[T, U]]
+          .asInstanceOf[DoubleModListNode[Any, Any]]
       }
     }
 
@@ -109,26 +109,26 @@ class DMLModifier[T, U](
     futures
   }
 
-  def contains(key: T): Boolean = {
+  def contains(key: Any): Boolean = {
     var found = false
     var innerNode = datastore.getMod(doubleModList.head.id)
-      .asInstanceOf[DoubleModListNode[T, U]]
+      .asInstanceOf[DoubleModListNode[Any, Any]]
 
     while (innerNode != null && !found) {
       val oldValue = datastore.getMod(innerNode.value.id)
-	.asInstanceOf[(T, U)]
+	.asInstanceOf[(Any, Any)]
       if (oldValue._1 == key) {
 	found = true
       } else {
         innerNode = datastore.getMod(innerNode.next.id)
-          .asInstanceOf[DoubleModListNode[T, U]]
+          .asInstanceOf[DoubleModListNode[Any, Any]]
       }
     }
 
     found
   }
 
-  def getModifiable(): AdjustableList[T, U] = {
+  def getModifiable(): AdjustableList[Any, Any] = {
     doubleModList
   }
 }

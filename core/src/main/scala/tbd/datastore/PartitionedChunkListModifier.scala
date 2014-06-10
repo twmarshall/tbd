@@ -21,31 +21,31 @@ import scala.concurrent.Future
 import tbd.ListConf
 import tbd.mod._
 
-class PartitionedChunkListModifier[T, U](
+class PartitionedChunkListModifier(
     _datastore: Datastore,
-    conf: ListConf) extends Modifier[T, U](_datastore) {
+    conf: ListConf) extends Modifier(_datastore) {
 
-  val partitionModifiers = ArrayBuffer[ChunkListModifier[T, U]]()
+  val partitionModifiers = ArrayBuffer[ChunkListModifier]()
   val list = initialize()
 
-  private def initialize(): PartitionedChunkList[T, U] = {
-    val partitions = new ArrayBuffer[ChunkList[T, U]]()
+  private def initialize(): PartitionedChunkList[Any, Any] = {
+    val partitions = new ArrayBuffer[ChunkList[Any, Any]]()
     for (i <- 1 to conf.partitions) {
-      val chunkListModifier = new ChunkListModifier[T, U](datastore, conf)
+      val chunkListModifier = new ChunkListModifier(datastore, conf)
       partitionModifiers += chunkListModifier
       partitions += chunkListModifier.list
     }
 
-    new PartitionedChunkList[T, U](partitions)
+    new PartitionedChunkList[Any, Any](partitions)
   }
 
   private var insertInto = 0
-  def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
+  def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     insertInto = (insertInto + 1) % conf.partitions
     partitionModifiers(insertInto).insert(key, value)
   }
 
-  def update(key: T, value: U): ArrayBuffer[Future[String]] = {
+  def update(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
 
     var found = false
@@ -63,7 +63,7 @@ class PartitionedChunkListModifier[T, U](
     futures
   }
 
-  def remove(key: T): ArrayBuffer[Future[String]] = {
+  def remove(key: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
 
     var found = false
@@ -81,6 +81,6 @@ class PartitionedChunkListModifier[T, U](
     futures
   }
 
-  def getModifiable(): AdjustableList[T, U] = list
+  def getModifiable(): AdjustableList[Any, Any] = list
 }
 

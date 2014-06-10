@@ -21,31 +21,31 @@ import scala.concurrent.Future
 import tbd.ListConf
 import tbd.mod._
 
-class PartitionedDoubleChunkListModifier[T, U](
+class PartitionedDoubleChunkListModifier(
     _datastore: Datastore,
-    conf: ListConf) extends Modifier[T, U](_datastore) {
+    conf: ListConf) extends Modifier(_datastore) {
 
-  val partitionModifiers = ArrayBuffer[DoubleChunkListModifier[T, U]]()
+  val partitionModifiers = ArrayBuffer[DoubleChunkListModifier]()
   val list = initialize()
 
-  private def initialize(): PartitionedDoubleChunkList[T, U] = {
-    val partitions = new ArrayBuffer[DoubleChunkList[T, U]]()
+  private def initialize(): PartitionedDoubleChunkList[Any, Any] = {
+    val partitions = new ArrayBuffer[DoubleChunkList[Any, Any]]()
     for (i <- 1 to conf.partitions) {
-      val chunkListModifier = new DoubleChunkListModifier[T, U](datastore, conf)
+      val chunkListModifier = new DoubleChunkListModifier(datastore, conf)
       partitionModifiers += chunkListModifier
       partitions += chunkListModifier.list
     }
 
-    new PartitionedDoubleChunkList[T, U](partitions)
+    new PartitionedDoubleChunkList[Any, Any](partitions)
   }
 
   private var insertInto = 0
-  def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
+  def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     insertInto = (insertInto + 1) % conf.partitions
     partitionModifiers(insertInto).insert(key, value)
   }
 
-  def update(key: T, value: U): ArrayBuffer[Future[String]] = {
+  def update(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
 
     var found = false
@@ -63,7 +63,7 @@ class PartitionedDoubleChunkListModifier[T, U](
     futures
   }
 
-  def remove(key: T): ArrayBuffer[Future[String]] = {
+  def remove(key: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
 
     var found = false
@@ -81,6 +81,6 @@ class PartitionedDoubleChunkListModifier[T, U](
     futures
   }
 
-  def getModifiable(): AdjustableList[T, U] = list
+  def getModifiable(): AdjustableList[Any, Any] = list
 }
 

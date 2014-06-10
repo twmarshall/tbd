@@ -35,9 +35,7 @@ class Datastore extends Actor with ActorLogging {
   // Maps the name of an input table to a set containing the Modifiers that were
   // returned containing elements from this table, so that we can inform them
   // when the table is updated.
-  private val modifiers = Map[String, Set[Modifier[Any, Any]]]()
-
-  private val inputs = Map[InputId, Modifier[Any, Any]]()
+  private val inputs = Map[InputId, Modifier]()
 
   private var nextInputId: InputId = 0
 
@@ -78,41 +76,41 @@ class Datastore extends Actor with ActorLogging {
 	conf match {
 	  case conf: ListConf =>
 	    if (conf.chunkSize > 1) {
-              if (!conf.valueMod) {
+	      if (!conf.valueMod) {
 		if (conf.partitions == 1) {
 		  log.info("Creating new ChunkList.")
-		  new ChunkListModifier[Any, Any](this, conf)
+		  new ChunkListModifier(this, conf)
 		} else {
 		  log.info("Creating new PartitionedChunkList.")
-		  new PartitionedChunkListModifier[Any, Any](this, conf)
+		  new PartitionedChunkListModifier(this, conf)
 		}
-              } else {
+	      } else {
 		if (conf.partitions == 1) {
 		  log.info("Creating new DoubleChunkList.")
-		  new DoubleChunkListModifier[Any, Any](this, conf)
+		  new DoubleChunkListModifier(this, conf)
 		} else {
 		  log.info("Creating new PartitionedDoubleChunkList.")
-		  new PartitionedDoubleChunkListModifier[Any, Any](this, conf)
+		  new PartitionedDoubleChunkListModifier(this, conf)
 		}
-              }
+	      }
 	    } else {
 	      if (!conf.valueMod) {
 		if (conf.partitions == 1) {
 		  log.info("Creating new ModList.")
-		  new ModListModifier[Any, Any](this, conf)
+		  new ModListModifier(this, conf)
 		} else {
 		  log.info("Creating new PartitionedModList.")
-		  new PartitionedModListModifier[Any, Any](this, conf)
+		  new PartitionedModListModifier(this, conf)
 		}
 	      } else {
 		if (conf.partitions == 1) {
 		  log.info("Creating new DoubleModList.")
-		  new DMLModifier[Any, Any](this, conf)
+		  new DoubleModListModifier(this, conf)
 		} else {
 		  log.info("Creating new PartitionedDoubleModList.")
-		  new PDMLModifier[Any, Any](this, conf)
+		  new PartitionedDoubleModListModifier(this, conf)
 		}
-              }
+	      }
 	    }
 	  case TableConf() => {
 	    new TableModifier(this)
@@ -143,21 +141,6 @@ class Datastore extends Actor with ActorLogging {
 
     case GetInputMessage(inputId: InputId) => {
       sender ! inputs(inputId).getModifiable()
-    }
-
-    case CleanUpMessage(
-        workerRef: ActorRef,
-        removeLists: Set[AdjustableList[Any, Any]]) => {
-      for (table <- modifiers.keys) {
-        for (removeList <- removeLists) {
-          modifiers(table) = modifiers(table)
-                             .filter((modifier: Modifier[Any, Any]) => {
-            removeList != modifier.getModifiable()
-          })
-        }
-      }
-
-      sender ! "done"
     }
 
     case x => {

@@ -21,22 +21,22 @@ import scala.concurrent.{Future, Promise}
 import tbd.ListConf
 import tbd.mod._
 
-class ModListModifier[T, U](
+class ModListModifier(
     _datastore: Datastore,
-    conf: ListConf) extends Modifier[T, U](_datastore) {
-  val modList = new ModList[T, U](datastore.createMod[ModListNode[T, U]](null))
+    conf: ListConf) extends Modifier(_datastore) {
+  val modList = new ModList[Any, Any](datastore.createMod[ModListNode[Any, Any]](null))
 
-  def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
+  def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     var innerNode = datastore.getMod(modList.head.id)
-      .asInstanceOf[ModListNode[T, U]]
-    var previousNode: ModListNode[T, U] = null
+      .asInstanceOf[ModListNode[Any, Any]]
+    var previousNode: ModListNode[Any, Any] = null
     while (innerNode != null) {
       previousNode = innerNode
       innerNode = datastore.getMod(innerNode.next.id)
-        .asInstanceOf[ModListNode[T, U]]
+        .asInstanceOf[ModListNode[Any, Any]]
     }
 
-    val newTail = datastore.createMod[ModListNode[T, U]](null)
+    val newTail = datastore.createMod[ModListNode[Any, Any]](null)
     val newNode = new ModListNode((key, value), newTail)
 
     if (previousNode != null) {
@@ -46,12 +46,12 @@ class ModListModifier[T, U](
     }
   }
 
-  def update(key: T, value: U): ArrayBuffer[Future[String]] = {
+  def update(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
     var found = false
     var innerNode = datastore.getMod(modList.head.id)
-      .asInstanceOf[ModListNode[T, U]]
-    var previousNode: ModListNode[T, U] = null
+      .asInstanceOf[ModListNode[Any, Any]]
+    var previousNode: ModListNode[Any, Any] = null
 
     while (innerNode != null && !found) {
       if (innerNode.value._1 == key) {
@@ -66,7 +66,7 @@ class ModListModifier[T, U](
       } else {
 	previousNode = innerNode
         innerNode = datastore.getMod(innerNode.next.id)
-          .asInstanceOf[ModListNode[T, U]]
+          .asInstanceOf[ModListNode[Any, Any]]
       }
     }
 
@@ -77,13 +77,13 @@ class ModListModifier[T, U](
     futures
   }
 
-  def remove(key: T): ArrayBuffer[Future[String]] = {
+  def remove(key: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
     var found = false
     var innerNode = datastore.getMod(modList.head.id)
-      .asInstanceOf[ModListNode[T, U]]
+      .asInstanceOf[ModListNode[Any, Any]]
 
-    var previousNode: ModListNode[T, U] = null
+    var previousNode: ModListNode[Any, Any] = null
     while (innerNode != null && !found) {
       if (innerNode.value._1 == key) {
         if (previousNode != null) {
@@ -100,7 +100,7 @@ class ModListModifier[T, U](
       } else {
         previousNode = innerNode
         innerNode = datastore.getMod(innerNode.next.id)
-          .asInstanceOf[ModListNode[T, U]]
+          .asInstanceOf[ModListNode[Any, Any]]
       }
     }
 
@@ -111,24 +111,24 @@ class ModListModifier[T, U](
     futures
   }
 
-  def contains(key: T): Boolean = {
+  def contains(key: Any): Boolean = {
     var found = false
     var innerNode = datastore.getMod(modList.head.id)
-      .asInstanceOf[ModListNode[T, U]]
+      .asInstanceOf[ModListNode[Any, Any]]
 
     while (innerNode != null && !found) {
       if (innerNode.value._1 == key) {
 	found = true
       } else {
         innerNode = datastore.getMod(innerNode.next.id)
-          .asInstanceOf[ModListNode[T, U]]
+          .asInstanceOf[ModListNode[Any, Any]]
       }
     }
 
     found
   }
 
-  def getModifiable(): AdjustableList[T, U] = {
+  def getModifiable(): AdjustableList[Any, Any] = {
     modList
   }
 }

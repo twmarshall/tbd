@@ -21,31 +21,31 @@ import scala.concurrent.Future
 import tbd.ListConf
 import tbd.mod._
 
-class PartitionedModListModifier[T, U](
+class PartitionedModListModifier(
     _datastore: Datastore,
-    conf: ListConf) extends Modifier[T, U](_datastore) {
+    conf: ListConf) extends Modifier(_datastore) {
 
-  val partitionModifiers = ArrayBuffer[ModListModifier[T, U]]()
+  val partitionModifiers = ArrayBuffer[ModListModifier]()
   val modList = initialize()
 
-  private def initialize(): PartitionedModList[T, U] = {
-    val partitions = new ArrayBuffer[ModList[T, U]]()
+  private def initialize(): PartitionedModList[Any, Any] = {
+    val partitions = new ArrayBuffer[ModList[Any, Any]]()
     for (i <- 1 to conf.partitions) {
-      val modListModifier = new ModListModifier[T, U](datastore, conf)
+      val modListModifier = new ModListModifier(datastore, conf)
       partitionModifiers += modListModifier
       partitions += modListModifier.modList
     }
 
-    new PartitionedModList[T, U](partitions)
+    new PartitionedModList[Any, Any](partitions)
   }
 
   private var insertInto = 0
-  def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
+  def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     insertInto = (insertInto + 1) % conf.partitions
     partitionModifiers(insertInto).insert(key, value)
   }
 
-  def update(key: T, value: U): ArrayBuffer[Future[String]] = {
+  def update(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
 
     var found = false
@@ -63,7 +63,7 @@ class PartitionedModListModifier[T, U](
     futures
   }
 
-  def remove(key: T): ArrayBuffer[Future[String]] = {
+  def remove(key: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
 
     var found = false
@@ -77,7 +77,7 @@ class PartitionedModListModifier[T, U](
     futures
   }
 
-  def getModifiable(): AdjustableList[T, U] = {
+  def getModifiable(): AdjustableList[Any, Any] = {
     modList
   }
 }
