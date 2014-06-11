@@ -13,32 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.master
+package tbd.memo
 
-import akka.actor.{ActorRef, ActorSystem, Props}
-import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
-import scala.concurrent.duration._
+import scala.collection.mutable.ArrayBuffer
 
-object Main {
-  val debug = true
+import tbd.TBD
+import tbd.mod.Mod
 
-  var id = 0
+class CurriedLift[T](baseLift: Lift[T], curry: List[Mod[_]]) extends Lift[T](null, 0) {
 
-  def main(args: Array[String]) {
-    val main = new Main()
-    println("New master started at: akka.tcp://" + main.system.name + "@127.0.0.1:2552")
-  }
-}
-
-class Main {
-  val system = ActorSystem("masterSystem" + Main.id,
-                           ConfigFactory.load.getConfig("master"))
-  Main.id += 1
-
-  val masterRef = system.actorOf(Master.props(), "master")
-
-  def shutdown() {
-    system.shutdown()
+  override def memo(aArgs: List[Mod[_]], func: () => T): T = {
+    baseLift.memo(curry ++ aArgs, func)
   }
 }

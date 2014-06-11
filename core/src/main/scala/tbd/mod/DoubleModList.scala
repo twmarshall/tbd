@@ -97,7 +97,9 @@ class DoubleModList[T, V](
       parallel: Boolean = false,
       memoized: Boolean = false): AdjustableList[T, V] = {
 
-    val lift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
+    val lift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](true)
+
+    val creationLift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
 
     val sorted = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
       tbd.read(head)(head => {
@@ -105,7 +107,7 @@ class DoubleModList[T, V](
           tbd.write(dest, null)
         } else {
           head.quicksort(tbd, dest, tbd.createMod(null),
-                         comperator, lift, parallel, memoized)
+                         comperator, lift, creationLift, parallel, memoized)
         }
       })
     })

@@ -21,11 +21,17 @@ import tbd.{Adjustable, Changeable, ListConf, ListInput, Mutator, TBD}
 import tbd.mod.{AdjustableList, Dest, Mod}
 import collection.mutable.HashMap
 import scala.util.Random
+import scala.util.matching.Regex
 
-class ExhaustiveTest extends TestBase {
+class ManualTest extends TestBase {
 
   val initialSize = 10
-  val maximalMutationsPerPropagation = 2
+  var propagate = true
+
+  val putm = "(a) (\\d+) (\\d+)".r
+  val updatem = "(u) (\\d+) (\\d+)".r
+  val remm = "(r) (\\d+)".r
+  val propagatem = "(p)".r
 
   def run() {
 
@@ -36,13 +42,28 @@ class ExhaustiveTest extends TestBase {
       addValue()
 
     val output = mutator.run[AdjustableList[Int, Int]](new ListQuicksortTest(input))
-    mutator.propagate()
+
+    println("// Commands: ")
+    println("// a KEY VALUE adds a key and value ")
+    println("// u KEY VALUE updates a value ")
+    println("// r KEY removes a key and value ")
+    println("// p propagates ")
+    println("")
+    println("// KEY and VALUE have to be integers ")
+
 
     while(true) {
 
-      for(i <- 0 to rand.nextInt(maximalMutationsPerPropagation)) {
-        randomMutation()
+      while(!propagate) {
+        readLine() match {
+          case putm(_, key, value) => addValue(key.toInt, value.toInt)
+          case updatem(_, key, value) => updateValue(key.toInt, value.toInt)
+          case remm(_, key) => removeValue(key.toInt)
+          case propagatem(_) => propagate = true
+          case _ =>
+        }
       }
+      propagate = false
       mutator.propagate()
 
       println("m.propagate() // Mutation Cycle " + mutationCounter)
@@ -66,7 +87,6 @@ class ExhaustiveTest extends TestBase {
       }
 
       visualizer.showDDG(mutator.getDDG().root)
-      readLine()
     }
 
     mutator.shutdown()
