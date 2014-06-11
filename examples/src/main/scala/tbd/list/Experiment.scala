@@ -49,9 +49,13 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
 
     for (run <- runs) {
       if (run == "naive") {
-	results("naive") = alg.naive()
+	val pair = alg.naive()
+	results("naive") = pair._1
+	results("naive-load") = pair._2
       } else if (run == "initial") {
-	results("initial") = alg.initial()
+	val pair = alg.initial()
+	results("initial") = pair._1
+	results("initial-load") = pair._2
 
 	if (Experiment.verbose) {
 	  if (alg.mapCount != 0) {
@@ -73,7 +77,9 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
 	  else
 	    run.toDouble
 
-        results(run) = alg.update(updateCount)
+	val pair = alg.update(updateCount)
+        results(run) = pair._1
+	results(run + "-load") = pair._2
       }
     }
 
@@ -129,6 +135,8 @@ Options:
 
   var verbose = false
 
+  var displayLoad = false
+
   val confs = Map(("algorithms" -> Array("pwc")),
                   ("counts" -> Array("1000")),
                   ("chunkSizes" -> Array("2")),
@@ -160,6 +168,10 @@ Options:
       print(chart + "\t")
       for (line <- confs(lines)) {
         print(line + "\t")
+
+	if (displayLoad) {
+	  print("load\t")
+	}
       }
       print("\n")
 
@@ -168,6 +180,7 @@ Options:
 
         for (line <- confs(lines)) {
           var total = 0.0
+	  var loadTotal = 0.0
           var repeat = 0
 
           for ((conf, results) <- allResults) {
@@ -175,18 +188,21 @@ Options:
               if (conf(lines) == line &&
                   conf(x) == xValue) {
                 total += results(chart)
+		loadTotal += results(chart + "-load")
                 repeat += 1
               }
             } else if (lines == "runs") {
               if (conf(x) == xValue &&
                   conf(charts) == chart) {
                 total += results(line)
+		loadTotal += results(line + "-load")
                 repeat += 1
               }
             } else if (x == "runs") {
               if (conf(charts) == chart &&
                   conf(lines) == line) {
                 total += results(xValue)
+		loadTotal += results(xValue + "-load")
                 repeat += 1
               }
             } else {
@@ -195,6 +211,9 @@ Options:
           }
 
           print("\t" + round(total / repeat))
+	  if (displayLoad) {
+	    print("\t" + round(loadTotal / repeat))
+	  }
         }
         print("\n")
       }
@@ -249,6 +268,8 @@ Options:
         case "--memoized" =>
           confs("memoized") = args(i + 1).split(",")
 	  i += 1
+	case "--load" =>
+	  displayLoad = true
         case _ =>
           println("Unknown option " + args(i * 2) + "\n" + usage)
           sys.exit()

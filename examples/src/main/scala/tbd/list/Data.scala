@@ -19,11 +19,16 @@ import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
 trait Data[Input] {
-  def prepareNaive(parallel: Boolean): GenIterable[Input]
+  val naiveTable = Map[Int, Input]()
+  val table = Map[Int, Input]()
+
+  def loadNaive()
 
   def loadInitial()
 
-  def prepareCheck(): GenIterable[Input]
+  def clearValues()
+
+  def updateNaive()
 
   def update()
 }

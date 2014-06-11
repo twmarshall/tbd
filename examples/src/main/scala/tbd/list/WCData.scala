@@ -24,55 +24,46 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
     extends Data[String] {
   val maxKey = count * 10
 
-  val chunks = ArrayBuffer[String]()
-  val table = Map[Int, String]()
-
   val rand = new scala.util.Random()
 
-  {
-    var i = 0
-    while (table.size < count) {
-      if (chunks.size == 0) {
-        chunks ++= loadPages()
-      }
-
-      table += (i -> chunks.head)
-      chunks -= chunks.head
-      i += 1
-    }
-  }
-
-  private def loadPages(): ArrayBuffer[String] = {
-    val chunks = ArrayBuffer[String]()
+  private def loadPages(
+      table: Map[Int, String],
+      chunks: ArrayBuffer[String],
+      count: Int) {
     val elems = scala.xml.XML.loadFile("wiki.xml")
 
+    var i = 0
     (elems \\ "elem").map(elem => {
       (elem \\ "value").map(value => {
-	chunks += value.text
+        if (table.size < count) {
+          table += (i -> value.text)
+          i += 1
+        } else {
+	  chunks += value.text
+        }
       })
     })
-
-    chunks
   }
 
-  def prepareNaive(parallel: Boolean): GenIterable[String] =
-    if(parallel)
-      Vector[String](table.values.toSeq: _*).par
-    else
-      Vector[String](table.values.toSeq: _*)
+  val naiveChunks = ArrayBuffer[String]()
+  def loadNaive() {
+    loadPages(naiveTable, naiveChunks, count)
+  }
 
+  val chunks = new ArrayBuffer[String]()
   def loadInitial() {
+    loadPages(table, chunks, count)
+
     for (pair <- table) {
       input.put(pair._1, pair._2)
-
-      if (!Experiment.check) {
-        table(pair._1) = ""
-      }
     }
   }
 
-  def prepareCheck(): GenIterable[String] =
-    table.values.par
+  def clearValues() {
+    for ((key, value) <- table) {
+      table(key) = ""
+    }
+  }
 
   def update() {
     mutations(rand.nextInt(mutations.size)) match {
@@ -84,7 +75,7 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
 
   def addValue() {
     if (chunks.size == 0) {
-      chunks ++= loadPages()
+      loadPages(table, chunks, 0)
     }
 
     var key = rand.nextInt(maxKey)
@@ -118,7 +109,7 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
 
   def updateValue() {
     if (chunks.size == 0) {
-      chunks ++= loadPages()
+      loadPages(table, chunks, 0)
     }
 
     var key = rand.nextInt(maxKey)
@@ -133,5 +124,66 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
     }
 
     chunks -= chunks.head
+  }
+
+  def updateNaive() {
+    mutations(rand.nextInt(mutations.size)) match {
+      case "insert" => addValueNaive()
+      case "remove" => removeValueNaive()
+      case "update" => updateValueNaive()
+    }
+  }
+
+  def addValueNaive() {
+    if (naiveChunks.size == 0) {
+      loadPages(naiveTable, naiveChunks, 0)
+    }
+
+    var key = rand.nextInt(maxKey)
+    val value = rand.nextInt(Int.MaxValue)
+    while (naiveTable.contains(key)) {
+      key = rand.nextInt(maxKey)
+    }
+
+    if (Experiment.check) {
+      naiveTable += (key -> naiveChunks.head)
+    } else {
+      naiveTable += (key -> "")
+    }
+
+    naiveChunks -= naiveChunks.head
+  }
+
+  def removeValueNaive() {
+    if (naiveTable.size > 1) {
+      var key = rand.nextInt(maxKey)
+      while (!naiveTable.contains(key)) {
+        key = rand.nextInt(maxKey)
+      }
+
+      naiveTable -= key
+    } else {
+      addValueNaive()
+    }
+  }
+
+  def updateValueNaive() {
+    if (naiveChunks.size == 0) {
+      loadPages(naiveTable, naiveChunks, 0)
+    }
+
+    var key = rand.nextInt(maxKey)
+    val value = rand.nextInt(Int.MaxValue)
+    while (!naiveTable.contains(key)) {
+      key = rand.nextInt(maxKey)
+    }
+
+    if (Experiment.check) {
+      naiveTable(key) = naiveChunks.head
+    } else {
+      naiveTable(key) = ""
+    }
+
+    naiveChunks -= naiveChunks.head
   }
 }

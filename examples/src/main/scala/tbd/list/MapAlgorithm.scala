@@ -41,11 +41,11 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     list.map(MapAlgorithm.mapper(0, _)._2)
   }
 
-  def checkOutput(output: AdjustableList[Int, Int]) = {
+  def checkOutput(table: Map[Int, String], output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val answer = runNaive(data.prepareCheck())
+    val answer = runNaive(table.values)
 
-    sortedOutput == answer.asInstanceOf[GenIterable[Int]].toBuffer.sortWith(_ < _)
+    sortedOutput == answer.asInstanceOf[GenMap[Int, Int]].values.toBuffer.sortWith(_ < _)
   }
 
   def mapper(tbd: TBD, pair: (Int, String)) = {
@@ -69,8 +69,8 @@ class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     list.map(MapAlgorithm.mapper(0, _)._2)
   }
 
-  def checkOutput(output: AdjustableList[Int, Int]) = {
-    val answer = runNaive(data.prepareCheck())
+  def checkOutput(table: Map[Int, String], output: AdjustableList[Int, Int]) = {
+    val answer = runNaive(table.values)
 
     output.toBuffer.reduce(_ + _) == answer.asInstanceOf[GenIterable[Int]].reduce(_ + _)
   }

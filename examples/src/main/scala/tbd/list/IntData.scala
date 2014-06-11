@@ -25,11 +25,9 @@ class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
     extends Data[Int] {
   val maxKey = count * 10
 
-  val table = Map[Int, Int]()
-
   val rand = new scala.util.Random()
 
-  {
+  private def loadPages(table: Map[Int, Int]) {
     var i = 0
     while (table.size < count) {
       val value = rand.nextInt(Int.MaxValue)
@@ -38,17 +36,19 @@ class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
     }
   }
 
-  def prepareNaive(parallel: Boolean): GenIterable[Int] =
-    if(parallel)
-      Vector[Int](table.values.toSeq: _*).par
-    else
-      Vector[Int](table.values.toSeq: _*)
+  def loadNaive() {
+    loadPages(naiveTable)
+  }
 
   def loadInitial() {
+    loadPages(table)
+
     for (pair <- table) {
       input.put(pair._1, pair._2)
     }
   }
+
+  def clearValues() {}
 
   def prepareCheck(): GenIterable[Int] =
     table.values.par
@@ -94,5 +94,46 @@ class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
     input.update(key, value)
 
     table(key) = value
+  }
+
+  def updateNaive() {
+    mutations(rand.nextInt(mutations.size)) match {
+      case "insert" => addValueNaive()
+      case "remove" => removeValueNaive()
+      case "update" => updateValueNaive()
+    }
+  }
+
+  def addValueNaive() {
+    var key = rand.nextInt(maxKey)
+    val value = rand.nextInt(Int.MaxValue)
+    while (naiveTable.contains(key)) {
+      key = rand.nextInt(maxKey)
+    }
+
+    naiveTable += (key -> value)
+  }
+
+  def removeValueNaive() {
+    if (naiveTable.size > 1) {
+      var key = rand.nextInt(maxKey)
+      while (!naiveTable.contains(key)) {
+        key = rand.nextInt(maxKey)
+      }
+
+      naiveTable -= key
+    } else {
+      addValueNaive()
+    }
+  }
+
+  def updateValueNaive() {
+    var key = rand.nextInt(maxKey)
+    val value = rand.nextInt(Int.MaxValue)
+    while (!naiveTable.contains(key)) {
+      key = rand.nextInt(maxKey)
+    }
+
+    naiveTable(key) = value
   }
 }

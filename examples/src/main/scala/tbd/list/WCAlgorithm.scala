@@ -15,7 +15,7 @@
  */
 package tbd.examples.list
 
-import scala.collection.GenIterable
+import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
 import scala.collection.immutable.HashMap
 
@@ -82,8 +82,10 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
       WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
   }
 
-  def checkOutput(output: Mod[(Int, HashMap[String, Int])]) = {
-    val answer = runNaive(data.prepareCheck())
+  def checkOutput(
+      table: Map[Int, String],
+      output: Mod[(Int, HashMap[String, Int])]) = {
+    val answer = runNaive(table.values)
     output.read()._2 == answer
   }
 
@@ -119,8 +121,10 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
       WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
   }
 
-  def checkOutput(output: Mod[(Int, Map[String, Int])]) = {
-    val answer = runNaive(data.prepareCheck())
+  def checkOutput(
+      table: Map[Int, String],
+      output: Mod[(Int, Map[String, Int])]) = {
+    val answer = runNaive(table.values)
     output.read()._2 == answer
   }
 

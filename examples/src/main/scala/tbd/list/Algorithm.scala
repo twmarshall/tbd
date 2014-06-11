@@ -41,48 +41,65 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
 
   var data: Data[Input] = null.asInstanceOf[Data[Input]]
 
-  def naive(): Long = {
-    val naiveTable = data.prepareNaive(parallel)
+  def naive(): (Long, Long) = {
+    val beforeLoad = System.currentTimeMillis()
+    data.loadNaive()
+    val naiveTable =
+      if (parallel)
+	Vector(data.naiveTable.values.toSeq: _*).par
+      else
+	Vector(data.naiveTable.values.toSeq: _*)
+    val loadElapsed = System.currentTimeMillis() - beforeLoad
 
     val before = System.currentTimeMillis()
     runNaive(naiveTable)
-    System.currentTimeMillis() - before
+    val elapsed = System.currentTimeMillis() - before
+
+    (elapsed, loadElapsed)
   }
 
   protected def runNaive(table: GenIterable[Input]): Any
 
-  def initial(): Long = {
+  def initial(): (Long, Long) = {
+    val beforeLoad = System.currentTimeMillis()
     data.loadInitial()
+    val loadElapsed = System.currentTimeMillis() - beforeLoad
+
+    if (!Experiment.check) {
+      data.clearValues()
+    }
 
     val before = System.currentTimeMillis()
     output = mutator.run[Output](this)
     val elapsed = System.currentTimeMillis() - before
 
     if (Experiment.check) {
-      assert(checkOutput(output))
+      assert(checkOutput(data.table, output))
     }
 
-    elapsed
+    (elapsed, loadElapsed)
   }
 
-  protected def checkOutput(output: Output): Boolean
+  protected def checkOutput(table: Map[Int, Input], output: Output): Boolean
 
-  def update(count: Double): Long = {
+  def update(count: Double): (Long, Long) = {
     var i = 0
+    val beforeLoad = System.currentTimeMillis()
     while (i < count) {
       i += 1
       data.update()
     }
+    val loadElapsed = System.currentTimeMillis() - beforeLoad
 
     val before = System.currentTimeMillis()
     mutator.propagate()
     val elapsed = System.currentTimeMillis() - before
 
     if (Experiment.check) {
-      assert(checkOutput(output))
+      assert(checkOutput(data.table, output))
     }
 
-    elapsed
+    (elapsed, loadElapsed)
   }
 
   def shutdown() {

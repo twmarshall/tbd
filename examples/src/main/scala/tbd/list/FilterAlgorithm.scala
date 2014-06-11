@@ -37,9 +37,9 @@ class FilterAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     list.filter(FilterAlgorithm.predicate(0, _))
   }
 
-  def checkOutput(output: AdjustableList[Int, Int]) = {
+  def checkOutput(table: Map[Int, Int], output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val answer = runNaive(data.prepareCheck())
+    val answer = runNaive(table.values)
 
     sortedOutput == answer.toBuffer.sortWith(_ < _)
   }
