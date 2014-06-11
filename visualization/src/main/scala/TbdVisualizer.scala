@@ -278,7 +278,7 @@ class TbdVisualizer extends ViewerListener {
     createTree(root, null)
     layoutTree(root, 0)
 
-    if(markedForRemoval != null)
+    if(markedForRemoval != null && highlightRemoved)
       markedForRemoval.foreach(x => removeNode(x, false))
 
     markedForRemoval = List()

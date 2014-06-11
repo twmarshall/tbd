@@ -45,6 +45,12 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
 	  new ChunkWCAlgorithm(conf, listConf)
 	else
 	  new WCAlgorithm(conf, listConf)
+
+      case "split" =>
+        new SplitAlgorithm(conf, listConf)
+
+      case "sort" =>
+        new SortAlgorithm(conf, listConf)
     }
 
     for (run <- runs) {

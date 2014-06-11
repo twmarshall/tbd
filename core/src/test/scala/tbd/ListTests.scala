@@ -15,7 +15,7 @@
  */
 package tbd.test
 
-import scala.collection.mutable.{Buffer, Map}
+import scala.collection.mutable.{ArrayBuffer, Buffer, Map}
 import org.scalatest._
 
 import tbd._
@@ -30,6 +30,21 @@ class ListMapTest(
     list.map(tbd, f, parallel = parallel)
   }
 }
+
+class ListSplitTest(input: ListInput[String, Int])  extends Adjustable {
+  def run(tbd: TBD): (AdjustableList[String, Int], AdjustableList[String, Int]) = {
+    val modList = input.getAdjustableList()
+    modList.split(tbd, (tbd, a) => a._2 % 2 == 0, true, true)
+  }
+}
+
+class ListSortTest(input: ListInput[String, Int])  extends Adjustable {
+  def run(tbd: TBD): AdjustableList[String, Int] = {
+    val modList = input.getAdjustableList()
+    modList.sort(tbd, (tbd, a, b) => a._2 < b._2, true, true)
+  }
+}
+
 
 class ListMemoMapTest(input: ListInput[String, Int]) extends Adjustable {
   def run(tbd: TBD): AdjustableList[String, Int] = {
@@ -101,7 +116,7 @@ class ListTests extends FlatSpec with Matchers {
     input.put("seven", 5)
     mutator.propagate()
     // (-2 * 2), (2 * 2), (3 * 2), (3 * 2), (8 * 2), (10 * 2), (5 * 2)
-    output.toBuffer().sortWith(_ < _) should be 
+    output.toBuffer().sortWith(_ < _) should be
                                       (Buffer(-4, 4, 6, 6, 10, 16, 20))
 
     mutator.shutdown()
@@ -292,7 +307,7 @@ class ListTests extends FlatSpec with Matchers {
     }
   }
 
-  "ListReduceSumTest" should "return the reduced list" in {    
+  "ListReduceSumTest" should "return the reduced list" in {
     val mutator = new Mutator()
     val input = mutator.createList[String, Int]()
     input.put("one", 1)
@@ -333,7 +348,7 @@ class ListTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 
-  "BigListReduceSumTest" should "return the reduced big list" in {    
+  it should "return the reduced big list" in {
     val mutator = new Mutator()
     val input = mutator.createList[String, Int]()
     var sum = 0
@@ -346,6 +361,196 @@ class ListTests extends FlatSpec with Matchers {
 
     val output = mutator.run[Mod[(String, Int)]](new ListReduceSumTest(input))
     output.read()._2 should be (sum)
+
+    mutator.shutdown()
+  }
+
+  "ListSplitTest" should "return the list, split in two" in {
+    val mutator = new Mutator()
+    val input = mutator.createList[String, Int](ListConf(partitions = 1))
+    input.put("one", 0)
+    input.put("two", 2)
+    val output = mutator.run[(AdjustableList[String, Int], AdjustableList[String, Int])](
+      new ListSplitTest(input))
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer())
+
+    input.put("three", 1)
+    mutator.propagate()
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer(1))
+
+    input.update("two", 3)
+    input.put("four", 4)
+    mutator.propagate()
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer(1, 3))
+
+    input.put("seven", -1)
+    mutator.propagate()
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 3))
+
+    input.update("two", 5)
+    mutator.propagate()
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 5))
+
+
+    input.update("four", 7)
+    mutator.propagate()
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer(-1, 1, 5, 7))
+
+
+    input.update("two", 4)
+    input.update("four", 2)
+    input.update("seven", 8)
+    mutator.propagate()
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2, 4, 8))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer(1))
+
+
+    input.remove("four")
+    input.remove("three")
+    mutator.propagate()
+
+    output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4, 8))
+    output._2.toBuffer().sortWith(_ < _) should be (Buffer())
+
+
+    mutator.shutdown()
+  }
+
+  it should "return the big list, split in two" in {
+    val mutator = new Mutator()
+    val input = mutator.createList[String, Int](ListConf(partitions = 1))
+
+    var data = new ArrayBuffer[Int]()
+
+    for(i <- 0 to 1000) {
+      val r = rand.nextInt(1000)
+      input.put(i.toString, r)
+      data += r
+    }
+
+    val output = mutator.run[(AdjustableList[String, Int],
+                              AdjustableList[String, Int])](
+      new ListSplitTest(input))
+
+    var answer = (data.filter(x => x % 2 == 0), data.filter(x => x % 2 != 0))
+
+    output._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
+    output._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
+
+    for(i <- 0 to 500) {
+      if(rand.nextInt(10) > 8) {
+        val r = rand.nextInt(1000)
+        input.update(i.toString, r)
+        data(i) = r
+      }
+    }
+
+    mutator.propagate()
+
+    answer = (data.filter(x => x % 2 == 0), data.filter(x => x % 2 != 0))
+
+    output._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
+    output._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
+
+    for(i <- 0 to 100) {
+      if(i < data.size && rand.nextInt(10) > 8) {
+        input.remove(i.toString)
+        data(i) = -1
+      }
+    }
+
+    data = data.filter(x => x != -1)
+
+    mutator.propagate()
+
+    answer = (data.filter(x => x % 2 == 0), data.filter(x => x % 2 != 0))
+
+    output._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
+    output._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
+
+    mutator.shutdown()
+  }
+
+  "ListSortTest" should "return the sorted list" in {
+    val mutator = new Mutator()
+    val input = mutator.createList[String, Int](ListConf(partitions = 1))
+    input.put("one", 0)
+    input.put("two", 3)
+    input.put("three", 2)
+    input.put("four", 4)
+    input.put("five", 1)
+    val output = mutator.run[AdjustableList[String, Int]](new ListSortTest(input))
+
+    output.toBuffer() should be (Buffer(0, 1, 2, 3, 4))
+
+    input.put("six", 5)
+    mutator.propagate()
+    output.toBuffer() should be (Buffer(0, 1, 2, 3, 4, 5))
+
+    input.put("seven", -1)
+    mutator.propagate()
+    output.toBuffer() should be (Buffer(-1, 0, 1, 2, 3, 4, 5))
+
+    input.update("two", 5)
+    mutator.propagate()
+    output.toBuffer() should be (Buffer(-1, 0, 1, 2, 4, 5, 5))
+
+    mutator.shutdown()
+  }
+
+   it should "return the sorted big list" in {
+    val mutator = new Mutator()
+    val input = mutator.createList[String, Int](ListConf(partitions = 1))
+
+    var data = new ArrayBuffer[Int]()
+
+    for(i <- 0 to 100) {
+      val r = rand.nextInt(1000)
+      input.put(i.toString, r)
+      data += r
+    }
+
+    val output = mutator.run[AdjustableList[String, Int]](new ListSortTest(input))
+
+    output.toBuffer() should be (data.sortWith(_ < _))
+
+    for(i <- 0 to 100) {
+      if(rand.nextInt(10) > 8) {
+        val r = rand.nextInt(1000)
+        input.update(i.toString, r)
+        data(i) = r
+      }
+    }
+
+    mutator.propagate()
+
+    output.toBuffer() should be (data.sortWith(_ < _))
+
+    for(i <- 0 to 100) {
+      if(i < data.size && rand.nextInt(10) > 8) {
+        input.remove(i.toString)
+        data(i) = -1
+      }
+    }
+
+    data = data.filter(x => x != -1)
+
+    mutator.propagate()
+
+    output.toBuffer() should be (data.sortWith(_ < _))
 
     mutator.shutdown()
   }

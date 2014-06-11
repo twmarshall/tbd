@@ -135,14 +135,3 @@ class ExhaustiveTest {
     mutator.shutdown()
   }
 }
-
-class ListReduceSumTest(input: ListInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): Mod[(Int, Int)] = {
-    val modList = input.getAdjustableList()
-    val zero = tbd.mod((dest : Dest[(Int, Int)]) => tbd.write(dest, (0, 0)))
-    modList.reduce(tbd, zero,
-      (tbd: TBD, pair1: (Int, Int), pair2: (Int, Int)) => {
-        (pair2._1, pair1._2 + pair2._2)
-      })
-  }
-}
