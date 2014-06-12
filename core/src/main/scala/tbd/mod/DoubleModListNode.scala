@@ -112,18 +112,18 @@ class DoubleModListNode[T, V] (
       tbd.read(value)((v) => {
         if(pred(tbd, (v._1, v._2))) {
           val newMatch = creationLift.memo(List(matchNext, value), () => {
-            tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
-              tbd.write(dest, new DoubleModListNode(value, matchNext))
+            tbd.mod((matchDest: Dest[DoubleModListNode[T, V]]) => {
+              tbd.write(dest, (newMatch, diffNext))
+              tbd.write(matchDest, new DoubleModListNode(value, matchNext))
             })
           })
-          tbd.write(dest, (newMatch, diffNext))
         } else {
           val newDiff = creationLift.memo(List(diffNext, value), () => {
-            tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
-              tbd.write(dest, new DoubleModListNode(value, diffNext))
+            tbd.mod((diffDest: Dest[DoubleModListNode[T, V]]) => {
+              tbd.write(dest, (matchNext, newDiff))
+              tbd.write(diffDest, new DoubleModListNode(value, diffNext))
             })
           })
-          tbd.write(dest, (matchNext, newDiff))
         }
       })
     })
