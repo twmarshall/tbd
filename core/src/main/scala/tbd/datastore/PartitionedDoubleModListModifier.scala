@@ -18,39 +18,34 @@ package tbd.datastore
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.Future
 
+import tbd.ListConf
 import tbd.mod._
 
-class PDMLModifier[T, U](
-    aDatastore: Datastore,
-    table: Map[Any, Any],
-    numPartitions: Int) extends Modifier[T, U](aDatastore) {
+class PartitionedDoubleModListModifier(
+    _datastore: Datastore,
+    conf: ListConf) extends Modifier(_datastore) {
 
-  val partitionModifiers = ArrayBuffer[DMLModifier[T, U]]()
+  val partitionModifiers = ArrayBuffer[DoubleModListModifier]()
   val modList = initialize()
 
-  private def initialize(): PartitionedDoubleModList[T, U] = {
-    val partitions = new ArrayBuffer[DoubleModList[T, U]]()
-    for (i <- 1 to numPartitions) {
-      val dmlModifier = new DMLModifier[T, U](datastore)
+  private def initialize(): PartitionedDoubleModList[Any, Any] = {
+    val partitions = new ArrayBuffer[DoubleModList[Any, Any]]()
+    for (i <- 1 to conf.partitions) {
+      val dmlModifier = new DoubleModListModifier(datastore, conf)
       partitionModifiers += dmlModifier
       partitions += dmlModifier.doubleModList
     }
 
-    var insertInto = 0
-    for ((key, value) <- table) {
-      insert(key.asInstanceOf[T], value.asInstanceOf[U])
-    }
-
-    new PartitionedDoubleModList[T, U](partitions)
+    new PartitionedDoubleModList[Any, Any](partitions)
   }
 
   private var insertInto = 0
-  def insert(key: T, value: U): ArrayBuffer[Future[String]] = {
-    insertInto = (insertInto + 1) % numPartitions
+  def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
+    insertInto = (insertInto + 1) % conf.partitions
     partitionModifiers(insertInto).insert(key, value)
   }
 
-  def update(key: T, value: U): ArrayBuffer[Future[String]] = {
+  def update(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
 
     var found = false
@@ -68,7 +63,7 @@ class PDMLModifier[T, U](
     futures
   }
 
-  def remove(key: T): ArrayBuffer[Future[String]] = {
+  def remove(key: Any): ArrayBuffer[Future[String]] = {
     var futures = ArrayBuffer[Future[String]]()
 
     var found = false
@@ -82,7 +77,7 @@ class PDMLModifier[T, U](
     futures
   }
 
-  def getModifiable(): AdjustableList[T, U] = {
+  def getModifiable(): AdjustableList[Any, Any] = {
     modList
   }
 }

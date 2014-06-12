@@ -113,17 +113,17 @@ class DoubleModListNode[T, V] (
         if(pred(tbd, (v._1, v._2))) {
           val newMatch = creationLift.memo(List(matchNext, value), () => {
             tbd.mod((matchDest: Dest[DoubleModListNode[T, V]]) => {
-              tbd.write(dest, (newMatch, diffNext))
               tbd.write(matchDest, new DoubleModListNode(value, matchNext))
             })
           })
+          tbd.write(dest, (newMatch, diffNext))
         } else {
           val newDiff = creationLift.memo(List(diffNext, value), () => {
             tbd.mod((diffDest: Dest[DoubleModListNode[T, V]]) => {
-              tbd.write(dest, (matchNext, newDiff))
               tbd.write(diffDest, new DoubleModListNode(value, diffNext))
             })
           })
+          tbd.write(dest, (matchNext, newDiff))
         }
       })
     })
@@ -186,6 +186,7 @@ class DoubleModListNode[T, V] (
                                   Mod[DoubleModListNode[T, V]])]](!memoized)
 
             next.qsplit(tbd, dest, splitLift, creationLift,
+
               (tbd, cv) => { comperator(tbd, cv, v) },
               parallel, memoized)
           })

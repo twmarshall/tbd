@@ -108,6 +108,7 @@ class DoubleModList[T, V](
         } else {
           head.quicksort(tbd, dest, tbd.createMod(null),
                          comperator, lift, creationLift, parallel, memoized)
+
         }
       })
     })

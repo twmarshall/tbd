@@ -43,7 +43,6 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
   val datastoreRef = _datastoreRef
   val ddg = new DDG(log, id, this)
   val memoTable = Map[List[Any], ArrayBuffer[MemoEntry]]()
-  val adjustableLists = Set[AdjustableList[Any, Any]]()
 
   private val tbd = new TBD(id, this)
 
@@ -109,7 +108,7 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
   }
 
   def receive = {
-    case ModUpdatedMessage(modId: ModId, finished: Future[String]) => {
+    case ModUpdatedMessage(modId: ModId, finished: Future[_]) => {
       ddg.modUpdated(modId)
       tbd.updatedMods += modId
 
@@ -150,8 +149,6 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case CleanupWorkerMessage => {
-      val datastoreFuture = datastoreRef ? CleanUpMessage(self, adjustableLists)
-
       val futures = Set[Future[Any]]()
       for ((actorRef, parNode) <- ddg.pars) {
         futures += actorRef ? CleanupWorkerMessage
@@ -161,8 +158,6 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
       for (future <- futures) {
         Await.result(future, DURATION)
       }
-
-      Await.result(datastoreFuture, DURATION)
 
       sender ! "done"
     }

@@ -19,18 +19,87 @@ import akka.util.Timeout
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.duration._
 
-import tbd.{Constants, Mutator}
+import tbd.{Constants, ListConf, Mutator}
 
-abstract class Experiment(aConf: Map[String, _]) {
-  val conf = aConf
+
+class Experiment(conf: Map[String, _], listConf: ListConf) {
   val algorithm = conf("algorithms")
   val count = conf("counts").asInstanceOf[String].toInt
   val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
-  val mutations = conf("mutations").asInstanceOf[Array[String]]
-  val partition = conf("partitions").asInstanceOf[String].toInt
-  val percents = conf("percents").asInstanceOf[Array[String]]
+  val runs = conf("runs").asInstanceOf[Array[String]]
 
-  def run(): Map[String, Double]
+  def run(): Map[String, Double] = {
+    val results = Map[String, Double]()
+
+    val alg = algorithm match {
+      case "map" =>
+	if (listConf.chunkSize > 1)
+	  new ChunkMapAlgorithm(conf, listConf)
+	else
+	  new MapAlgorithm(conf, listConf)
+
+      case "filter" => new FilterAlgorithm(conf, listConf)
+
+      case "wc" =>
+	if (listConf.chunkSize > 1)
+	  new ChunkWCAlgorithm(conf, listConf)
+	else
+	  new WCAlgorithm(conf, listConf)
+
+      case "split" =>
+        new SplitAlgorithm(conf, listConf)
+
+      case "sort" =>
+        new SortAlgorithm(conf, listConf)
+    }
+
+    for (run <- runs) {
+      if (run == "naive") {
+	val pair = alg.naive()
+	results("naive") = pair._1
+	results("naive-load") = pair._2
+      } else if (run == "initial") {
+	val pair = alg.initial()
+	results("initial") = pair._1
+	results("initial-load") = pair._2
+
+	if (Experiment.verbose) {
+	  if (alg.mapCount != 0) {
+	    println("map count = " + alg.mapCount)
+	    alg.mapCount = 0
+	  }
+	  if (alg.reduceCount != 0) {
+	    println("reduce count = " + alg.reduceCount)
+	    alg.reduceCount = 0
+	  }
+	  println("starting prop")
+	}
+      } else {
+        var i =  0
+
+	val updateCount =
+	  if (run.toDouble < 1)
+	    run.toDouble * count
+	  else
+	    run.toDouble
+
+	val pair = alg.update(updateCount)
+        results(run) = pair._1
+	results(run + "-load") = pair._2
+      }
+    }
+
+    if (Experiment.verbose) {
+      if (alg.mapCount != 0)
+	println("map count = " + alg.mapCount)
+      if (alg.reduceCount != 0)
+	println("reduce count = " + alg.reduceCount)
+    }
+
+    alg.shutdown()
+
+    results
+  }
 }
 
 object Experiment {
@@ -47,16 +116,21 @@ Options:
   -o, --output chart,line,x  How to format the printed results - each of
                                'chart', 'line', and 'x' must be one of
                                'algorithms', 'chunkSizes', 'counts',
-                               'partitons', or 'percents', with one required
-                               to be 'percents'.
+                               'partitons', or 'runs', with one required
+                               to be 'runs'.
   -p, --partitions n,n,...   Number of partitions for the input data.
-  -r, --repeat n             Number of times to repeat each experiment.
   -s, --chunkSizes n,n,...   Size of each chunk in the list, in KB.
-  -%, --percents f,f,...     Chunks to update before running change propagation.
-                               If the number is less than 1, it will be
-                               interpreted as a percent of the count, otherwise
-                               it will be interpreted as a number of chunks.
+  -r, --runs f,f,...         What test runs to execute. 'naive' and 'initial'
+                               are included automatically, so this is a list
+                               of update sizes (f >= 1) or update percentages
+                               (0 < f < 1).
   -v, --verbose              Turns on verbose output.
+
+  --repeat n                 Number of times to repeat each experiment.
+  --valueMod true,false      Should the list values be contained within their
+                               own modifiables.
+  --memoized true,false      Should memoization be used?
+  --parallel true,false      Should the experiments be run in parallel?
   """
 
   var repeat = 3
@@ -67,13 +141,18 @@ Options:
 
   var verbose = false
 
+  var displayLoad = false
+
   val confs = Map(("algorithms" -> Array("pwc")),
                   ("counts" -> Array("1000")),
                   ("chunkSizes" -> Array("2")),
                   ("mutations" -> Array("insert", "update", "remove")),
                   ("partitions" -> Array("8")),
-                  ("percents" -> Array("nontbd", "initial", ".01", ".05", ".1")),
-                  ("output" -> Array("algorithms", "percents", "counts")))
+                  ("runs" -> Array("naive", "initial", ".01", ".05", ".1")),
+                  ("output" -> Array("algorithms", "runs", "counts")),
+		  ("valueMod" -> Array("true")),
+		  ("parallel" -> Array("true")),
+		  ("memoized" -> Array("true")))
 
   val allResults = Map[Map[String, _], Map[String, Double]]()
 
@@ -81,25 +160,12 @@ Options:
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
   }
 
-  def loadPages(): ArrayBuffer[String] = {
-    val chunks = ArrayBuffer[String]()
-    val elems = scala.xml.XML.loadFile("wiki.xml")
-
-    (elems \\ "elem").map(elem => {
-      (elem \\ "value").map(value => {
-	chunks += value.text
-      })
-    })
-
-    chunks
-  }
-
   /**
    * Prints out results formatted for copy-paste into spreadsheets. The output
    * will be divided into blocks differing along the 'charts' dimension, with
    * each block varying 'lines' along one dimension and 'x' along another.
    *
-   * Either 'charts', 'lines', or 'x' must be 'percents', since the results
+   * Either 'charts', 'lines', or 'x' must be 'runs', since the results
    * don't make any sense unless you vary initial vs. propagation. They must
    * also be three distinct values.
    */
@@ -108,6 +174,10 @@ Options:
       print(chart + "\t")
       for (line <- confs(lines)) {
         print(line + "\t")
+
+	if (displayLoad) {
+	  print("load\t")
+	}
       }
       print("\n")
 
@@ -116,33 +186,40 @@ Options:
 
         for (line <- confs(lines)) {
           var total = 0.0
+	  var loadTotal = 0.0
           var repeat = 0
 
           for ((conf, results) <- allResults) {
-            if (charts == "percents") {
+            if (charts == "runs") {
               if (conf(lines) == line &&
                   conf(x) == xValue) {
                 total += results(chart)
+		loadTotal += results(chart + "-load")
                 repeat += 1
               }
-            } else if (lines == "percents") {
+            } else if (lines == "runs") {
               if (conf(x) == xValue &&
                   conf(charts) == chart) {
                 total += results(line)
+		loadTotal += results(line + "-load")
                 repeat += 1
               }
-            } else if (x == "percents") {
+            } else if (x == "runs") {
               if (conf(charts) == chart &&
                   conf(lines) == line) {
                 total += results(xValue)
+		loadTotal += results(xValue + "-load")
                 repeat += 1
               }
             } else {
-              println("Warning: print must vary 'percents'")
+              println("Warning: print must vary 'runs'")
             }
           }
 
           print("\t" + round(total / repeat))
+	  if (displayLoad) {
+	    print("\t" + round(loadTotal / repeat))
+	  }
         }
         print("\n")
       }
@@ -173,11 +250,8 @@ Options:
         case "--partitions" | "-p" =>
           confs("partitions") = args(i + 1).split(",")
 	  i += 1
-        case "--percents" | "-%" =>
-          confs("percents") = "nontbd" +: "initial" +: args(i + 1).split(",")
-	  i += 1
-        case "--repeat" | "-r" =>
-          repeat = args(i + 1).toInt
+        case "--runs" | "-r" =>
+          confs("runs") = "naive" +: "initial" +: args(i + 1).split(",")
 	  i += 1
         case "--output" | "-o" =>
           confs("output") = args(i + 1).split(",")
@@ -188,6 +262,20 @@ Options:
 	  i += 1
 	case "--verbose" | "-v" =>
 	  verbose = true
+        case "--repeat" =>
+          repeat = args(i + 1).toInt
+	  i += 1
+        case "--valueMod" =>
+          confs("valueMod") = args(i + 1).split(",")
+	  i += 1
+        case "--parallel" =>
+          confs("parallel") = args(i + 1).split(",")
+	  i += 1
+        case "--memoized" =>
+          confs("memoized") = args(i + 1).split(",")
+	  i += 1
+	case "--load" =>
+	  displayLoad = true
         case _ =>
           println("Unknown option " + args(i * 2) + "\n" + usage)
           sys.exit()
@@ -206,23 +294,32 @@ Options:
       for (algorithm <- confs("algorithms")) {
 	for (chunkSize <- confs("chunkSizes")) {
           for (count <- confs("counts")) {
-            for (partition <- confs("partitions")) {
-	      val conf = Map(("algorithms" -> algorithm),
-			     ("chunkSizes" -> chunkSize),
-                             ("counts" -> count),
-                             ("mutations" -> confs("mutations")),
-                             ("partitions" -> partition),
-                             ("percents" -> confs("percents")),
-                             ("repeat" -> i))
+            for (partitions <- confs("partitions")) {
+	      for (valueMod <- confs("valueMod")) {
+		for (parallel <- confs("parallel")) {
+		  for (memoized <- confs("memoized")) {
+		    val conf = Map(("algorithms" -> algorithm),
+				   ("chunkSizes" -> chunkSize),
+				   ("counts" -> count),
+				   ("mutations" -> confs("mutations")),
+				   ("partitions" -> partitions),
+				   ("runs" -> confs("runs")),
+				   ("repeat" -> i),
+				   ("parallel" -> parallel),
+				   ("memoized" -> memoized))
 
-	      val experiment = new AdjustableExperiment(conf)
+		    val listConf = new ListConf("", partitions.toInt,
+	              chunkSize.toInt, _ => 1, valueMod == "true")
 
-	      val results = experiment.run()
-	      println(algorithm + "\t" + conf("counts") + " chunks - " +
-		      conf("chunkSizes") + " / chunk")
-	      println(results)
-	      if (i != 0) {
-		Experiment.allResults += (experiment.conf -> results)
+		    val experiment = new Experiment(conf, listConf)
+
+		    val results = experiment.run()
+		    println(results)
+		    if (i != 0) {
+		      Experiment.allResults += (conf -> results)
+		    }
+		  }
+		}
 	      }
             }
           }

@@ -18,47 +18,45 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, Mutator, TBD}
+import tbd.{Adjustable, ListConf, Mutator, TBD}
 import tbd.mod.{AdjustableList, Mod}
 
-object SplitAdjust {
+object SplitAlgorithm {
   def predicate(pair: (Int, String)): Boolean = {
     pair._2.length % 2 == 0
   }
+
+  type SplitResult = (AdjustableList[Int, String], AdjustableList[Int, String])
 }
 
-class SplitAdjust(mutator: Mutator, partitions: Int, parallel: Boolean,
-    memoized: Boolean) extends Algorithm(mutator, partitions, 1, true, parallel,
-memoized) {
-  var output: SplitResult = null
+class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
+    extends Algorithm[String, SplitAlgorithm.SplitResult](_conf, _listConf) {
+  import SplitAlgorithm._
 
-  var traditionalAnswer: (GenIterable[String], GenIterable[String]) = null
-  type SplitResult = (AdjustableList[Int, String], AdjustableList[Int, String])
+  val input = mutator.createList[Int, String](listConf)
+
+  data = new WCData(input, count, mutations)
+
+  def runNaive(input: GenIterable[String]) = {
+    input.partition(value => {
+      SplitAlgorithm.predicate((0, value))
+    })
+  }
+
+  def checkOutput(input: Map[Int, String], output: SplitResult): Boolean = {
+    val sortedOutputA = output._1.toBuffer.sortWith(_ < _)
+    val sortedOutputB = output._2.toBuffer.sortWith(_ < _)
+
+    val answer = runNaive(input.values)
+
+    sortedOutputA == answer._1.toBuffer.sortWith(_ < _)
+    sortedOutputB == answer._2.toBuffer.sortWith(_ < _)
+  }
 
   def run(tbd: TBD): SplitResult = {
     val pages = input.getAdjustableList()
 
-    pages.split(tbd, (tbd: TBD, pair:(Int, String)) => SplitAdjust.predicate(pair),
+    pages.split(tbd, (tbd: TBD, pair:(Int, String)) => SplitAlgorithm.predicate(pair),
                 parallel, memoized)
-  }
-
-  def traditionalRun(input: GenIterable[String]) {
-     traditionalAnswer = input.partition(value => {
-      SplitAdjust.predicate((0, value))
-    })
-  }
-
-  def initialRun(mutator: Mutator) {
-    output = mutator.run[SplitResult](this)
-  }
-
-  def checkOutput(input: GenMap[Int, String]): Boolean = {
-    val sortedOutputA = output._1.toBuffer.sortWith(_ < _)
-    val sortedOutputB = output._2.toBuffer.sortWith(_ < _)
-
-    traditionalRun(input.values)
-
-    sortedOutputA == traditionalAnswer._1.toBuffer.sortWith(_ < _)
-    sortedOutputB == traditionalAnswer._2.toBuffer.sortWith(_ < _)
   }
 }
