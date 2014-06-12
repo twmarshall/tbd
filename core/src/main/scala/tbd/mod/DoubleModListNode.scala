@@ -152,6 +152,9 @@ class DoubleModListNode[T, V] (
       })
     })
 
+    //Note: Split behavior in this implementation is input dependant -
+    //Change propagation continues until two predecessors are in different result lists.
+    //This is due to the copying of values here. 
     tbd.read(value)((v) => {
       if(pred(tbd, (v._1, v._2))) {
         tbd.write(destMatch, new DoubleModListNode(value, matchNext))

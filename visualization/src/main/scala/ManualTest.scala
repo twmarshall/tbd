@@ -41,7 +41,7 @@ class ManualTest extends TestBase {
     for(i <- 0 to initialSize)
       addValue()
 
-    val output = mutator.run[AdjustableList[Int, Int]](new ListQuicksortTest(input))
+    val output = mutator.run[(AdjustableList[Int, Int], AdjustableList[Int, Int])](new ListSplitTest(input))
 
     println("// Commands: ")
     println("// a KEY VALUE adds a key and value ")
@@ -70,21 +70,21 @@ class ManualTest extends TestBase {
       println("// Current Buffer: " + table.values.toBuffer)
 
       mutationCounter += 1
-
-      val ca = table.values.toBuffer.sortWith(_ < _)
-
-      val a = output.toBuffer()
+//
+//      val ca = table.values.toBuffer.sortWith(_ < _)
+//
+//      val a = output.toBuffer()
 
       println("// Output: " + output)
-
-      if(a != ca) {
-        println("Check error.")
-        println("a: " + a)
-        println("ca: " + ca)
-
-        visualizer.showDDG(mutator.getDDG().root)
-        readLine()
-      }
+//
+//      if(a != ca) {
+//        println("Check error.")
+//        println("a: " + a)
+//        println("ca: " + ca)
+//
+//        visualizer.showDDG(mutator.getDDG().root)
+//        readLine()
+//      }
 
       visualizer.showDDG(mutator.getDDG().root)
     }
