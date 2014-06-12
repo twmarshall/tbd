@@ -35,7 +35,7 @@ class ExhaustiveTest extends TestBase {
     for(i <- 0 to initialSize)
       addValue()
 
-    val output = mutator.run[AdjustableList[Int, Int]](new ListQuicksortTest(input))
+    val output = mutator.run[(AdjustableList[Int, Int], AdjustableList[Int, Int])](new ListSplitTest(input))
     mutator.propagate()
 
     while(true) {
@@ -50,16 +50,20 @@ class ExhaustiveTest extends TestBase {
 
       mutationCounter += 1
 
-      val ca = table.values.toBuffer.sortWith(_ < _)
+      val ca = table.values.filter(x => x % 2 == 0).toBuffer.sortWith(_ < _)
+      val cb = table.values.filter(x => x % 2 != 0).toBuffer.sortWith(_ < _)
 
-      val a = output.toBuffer()
+      val a = output._1.toBuffer().sortWith(_ < _)
+      val b = output._2.toBuffer().sortWith(_ < _)
 
       println("// Output: " + output)
 
-      if(a != ca) {
+      if(a != ca || b != cb) {
         println("Check error.")
         println("a: " + a)
         println("ca: " + ca)
+        println("b: " + b)
+        println("cb: " + cb)
 
         visualizer.showDDG(mutator.getDDG().root)
         readLine()
