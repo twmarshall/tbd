@@ -44,15 +44,15 @@ class ModList[T, V](
         })
       )
     } else {
-      val lift = tbd.makeLift[Mod[ModListNode[U, Q]]](!memoized)
+      val lift = tbd.makeLift[Changeable[ModListNode[U, Q]]](!memoized)
 
       new ModList(
-        tbd.mod((dest: Dest[ModListNode[U, Q]]) => {
+        tbd.modNoDest(() => {
           tbd.read(head)(node => {
             if (node != null) {
-              node.map(tbd, dest, f, lift)
+              node.map(tbd, f, lift)
             } else {
-              tbd.write(dest, null)
+              tbd.writeNoDest(null)
             }
           })
         })

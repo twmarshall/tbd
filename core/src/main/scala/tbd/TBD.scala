@@ -123,6 +123,7 @@ class TBD(id: String, _worker: Worker) {
     currentParent = outerReader
 
     readNode.endTime = worker.ddg.nextTimestamp(readNode)
+    readNode.currentDest = currentDest
 
     changeable
   }
@@ -139,6 +140,20 @@ class TBD(id: String, _worker: Worker) {
     }
 
     changeable
+  }
+
+  def writeNoDest[T](value: T): Changeable[T] = {
+    val awaiting = currentDest.mod.update(value)
+    Await.result(Future.sequence(awaiting), DURATION)
+
+    val changeable = new Changeable(currentDest.mod)
+    if (Main.debug) {
+      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+                                          currentParent)
+      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
+    }
+
+    changeable.asInstanceOf[Changeable[T]]
   }
 
   def createMod[T](value: T): Mod[T] = {
@@ -167,8 +182,22 @@ class TBD(id: String, _worker: Worker) {
     worker.nextModId += 1
 
     val d = new Dest[T](modId)
-    initializer(d).mod
+    initializer(d)
     d.mod
+  }
+
+  var currentDest: Dest[Any] = null
+  def modNoDest[T](initializer: () => Changeable[T]): Mod[T] = {
+    val modId = new ModId(worker.id + "." + worker.nextModId)
+    worker.nextModId += 1
+
+    val oldCurrentDest = currentDest
+    currentDest = new Dest[T](modId).asInstanceOf[Dest[Any]]
+    initializer()
+    val mod = currentDest.mod
+    currentDest = oldCurrentDest
+
+    mod.asInstanceOf[Mod[T]]
   }
 
   var workerId = 0
@@ -194,12 +223,14 @@ class TBD(id: String, _worker: Worker) {
     new Tuple2(oneRet, twoRet)
   }
 
-  def updated(args: List[ModId]): Boolean = {
+  def updated(args: List[_]): Boolean = {
     var updated = false
 
     for (arg <- args) {
-      if (updatedMods.contains(arg)) {
-	updated = true
+      if (arg.isInstanceOf[Mod[_]]) {
+        if (updatedMods.contains(arg.asInstanceOf[Mod[_]].id)) {
+	  updated = true
+        }
       }
     }
 

@@ -24,7 +24,7 @@ import tbd.Changeable
 import tbd.Constants._
 import tbd.master.Main
 import tbd.messages._
-import tbd.mod.Mod
+import tbd.mod.{Dest, Mod}
 
 abstract class Node(_parent: Node, _timestamp: Timestamp) {
   var parent = _parent
@@ -44,6 +44,8 @@ abstract class Node(_parent: Node, _timestamp: Timestamp) {
   // This is increased above the current epoch whenever the node is matched, so
   // that it won't be matched again in this round of change propagation.
   var matchableInEpoch = 0
+
+  var currentDest: Dest[Any] = null
 
   def addChild(child: Node) {
     children += child
