@@ -121,14 +121,17 @@ class DoubleModListNode[T, V] (
       comperator: (TBD, (T, V), (T, V)) => Boolean,
       akkuLift: Lift[Changeable[DoubleModListNode[T, V]]],
       stdLift: Lift[Mod[DoubleModListNode[T, V]]],
-      splitLift: Lift[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])],
+      splitLift: Lift[(Mod[DoubleModListNode[T, V]],
+                       Mod[DoubleModListNode[T, V]])],
       thisMod: Mod[DoubleModListNode[T, V]],
       parallel: Boolean = false,
       memoized: Boolean = false):
         Changeable[DoubleModListNode[T, V]] = {
     tbd.read(next)(n => {
       if(n != null) {
-        val (smaller, greater) = tbd.mod2((destGreater: Dest[DoubleModListNode[T, V]], destSmaller: Dest[DoubleModListNode[T, V]]) => {
+        val (smaller, greater) =
+          tbd.mod2((destGreater: Dest[DoubleModListNode[T, V]],
+                    destSmaller: Dest[DoubleModListNode[T, V]]) => {
           tbd.read(value)(v => {
             val curriedLift = new CurriedLift(splitLift, List(value)) //Depends on value, must be initialized here.
             n.split(tbd, destGreater, destSmaller, curriedLift,
