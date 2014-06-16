@@ -76,8 +76,6 @@ class DoubleModList[T, V](
     val lift = tbd.makeLift[(Mod[DoubleModListNode[T, V]],
                              Mod[DoubleModListNode[T, V]])](!memoized)
 
-    val createLift = tbd.makeLift[Changeable[DoubleModListNode[T, V]]](true)
-
     val result = tbd.mod2((matches: Dest[DoubleModListNode[T, V]],
                              diffs: Dest[DoubleModListNode[T, V]]) => {
 
@@ -87,7 +85,7 @@ class DoubleModList[T, V](
             tbd.write(matches, null)
             tbd.write(diffs, null)
           } else {
-            head.split(tbd, matches, diffs, lift, createLift, pred, parallel, memoized)
+            head.split(tbd, matches, diffs, lift, pred, parallel, memoized)
           }
         })
       })
@@ -100,20 +98,20 @@ class DoubleModList[T, V](
       parallel: Boolean = false,
       memoized: Boolean = false): AdjustableList[T, V] = {
 
-    val lift = tbd.makeLift[Changeable[DoubleModListNode[T, V]]](!memoized)
+    val akkuLift = tbd.makeLift[Changeable[DoubleModListNode[T, V]]](!memoized)
+    val stdLift = tbd.makeLift[Mod[DoubleModListNode[T, V]]](!memoized)
 
-    val splitLift = tbd.makeLift[(Mod[DoubleModListNode[T, V]],
-                           Mod[DoubleModListNode[T, V]])](!memoized)
+    val splitLift = tbd.makeLift[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])](!memoized)
 
-    val createLift = tbd.makeLift[Changeable[DoubleModListNode[T, V]]](!memoized)
+    val nullMod = tbd.createMod[DoubleModListNode[T, V]](null)
 
     val sorted = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
       tbd.read(head)(h => {
         if(h == null) {
           tbd.write(dest, null)
         } else {
-          h.quicksort(tbd, dest, tbd.createMod(null),
-                         comperator, lift, splitLift, createLift, head, parallel, memoized)
+          h.quicksort(tbd, dest, nullMod, comperator, akkuLift, stdLift,
+                      splitLift, head, parallel, memoized)
 
         }
       })
