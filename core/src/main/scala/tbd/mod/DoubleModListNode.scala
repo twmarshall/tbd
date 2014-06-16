@@ -27,24 +27,24 @@ class DoubleModListNode[T, V] (
 
   def map[U, Q](
       tbd: TBD,
-      dest: Dest[DoubleModListNode[U, Q]],
       f: (TBD, (T, V)) => (U, Q),
-      lift: Lift[(Mod[(U, Q)], Mod[DoubleModListNode[U, Q]])]
-      ): Changeable[DoubleModListNode[U, Q]] = {
+      lift: Lift[(Mod[(U, Q)], Mod[DoubleModListNode[U, Q]])])
+        : Changeable[DoubleModListNode[U, Q]] = {
     val pair = lift.memo(List(next), () => {
-      (tbd.mod((dest: Dest[(U, Q)]) =>
-	tbd.read(value)(value => tbd.write(dest, f(tbd, value)))),
-       tbd.mod((dest: Dest[DoubleModListNode[U, Q]]) =>
-        tbd.read(next)(next => {
-          if (next != null) {
-            next.map(tbd, dest, f, lift)
-          } else {
-            tbd.write(dest, null)
-          }
-        })
+      (tbd.modNoDest(() =>
+	tbd.read(value)(value => tbd.writeNoDest(f(tbd, value)))),
+       tbd.modNoDest(() =>
+         tbd.read(next)(next => {
+           if (next != null) {
+               next.map(tbd, f, lift)
+           } else {
+             tbd.writeNoDest[DoubleModListNode[U, Q]](null)
+           }
+         })
       ))
     })
-    tbd.write(dest, new DoubleModListNode[U, Q](pair._1, pair._2))
+
+    tbd.writeNoDest(new DoubleModListNode[U, Q](pair._1, pair._2))
   }
 
   def parMap[U, Q](
@@ -178,10 +178,6 @@ class DoubleModListNode[T, V] (
         tbd.write(dest, new DoubleModListNode(value, toAppend))
       }
     })
-  }
-
-  def binaryHash(id: T, round: Int, hasher: Hasher) = {
-    hasher.hash(id.hashCode() ^ round) == 0
   }
 
   def filter(

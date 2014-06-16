@@ -30,19 +30,21 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
       table: Map[Int, String],
       chunks: ArrayBuffer[String],
       count: Int) {
-    val elems = scala.xml.XML.loadFile("wiki.xml")
+    while (table.size < count) {
+      val elems = scala.xml.XML.loadFile("wiki.xml")
 
-    var i = 0
-    (elems \\ "elem").map(elem => {
-      (elem \\ "value").map(value => {
-        if (table.size < count) {
-          table += (i -> value.text)
-          i += 1
-        } else {
-	  chunks += value.text
-        }
+      var i = 0
+      (elems \\ "elem").map(elem => {
+        (elem \\ "value").map(value => {
+          if (table.size < count) {
+            table += (i -> value.text)
+            i += 1
+          } else {
+	    chunks += value.text
+          }
+        })
       })
-    })
+    }
   }
 
   val naiveChunks = ArrayBuffer[String]()

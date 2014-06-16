@@ -16,17 +16,17 @@
 package tbd.memo
 
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.TBD
+import tbd.{Changeable, TBD}
 import tbd.master.Master
 import tbd.mod.Mod
 
 class Lift[T](tbd: TBD, memoId: Int) {
+  import tbd.worker.context.dispatcher
 
-  def memo(aArgs: List[Mod[_]], func: () => T): T = {
-    val args = aArgs.map(_.id)
+  def memo(args: List[_], func: () => T): T = {
     val signature = memoId :: args
 
     var found = false

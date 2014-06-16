@@ -55,6 +55,12 @@ class TBD(id: String, _worker: Worker) {
   // reexecuted.
   var reexecutionEnd: Timestamp = null
 
+  // True if this computation uses the NoDest forms of mod and write. This is
+  // a kludge for now while we decide which form we want to use - any computation
+  // that uses any NoDest functions will be marked noDest, so don't mix dests
+  // with NoDests.
+  var noDest = false
+
   def read2[T, V, U](a: Mod[T], b: Mod[V])
                     (reader: (T, V) => (Changeable[U])): Changeable[U] = {
     read(a)((a) => {
@@ -123,6 +129,7 @@ class TBD(id: String, _worker: Worker) {
     currentParent = outerReader
 
     readNode.endTime = worker.ddg.nextTimestamp(readNode)
+    readNode.changeable = changeable.asInstanceOf[Changeable[Any]]
 
     changeable
   }
@@ -141,6 +148,23 @@ class TBD(id: String, _worker: Worker) {
     changeable
   }
 
+  def writeNoDest[T](value: T): Changeable[T] = {
+    noDest = true
+
+    val modId = new ModId(worker.id + "." + worker.nextModId)
+    worker.nextModId += 1
+    val mod = new Mod[T](modId, value)
+    val changeable = new Changeable(mod)
+
+    if (Main.debug) {
+      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+                                          currentParent)
+      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
+    }
+
+    changeable.asInstanceOf[Changeable[T]]
+  }
+
   def createMod[T](value: T): Mod[T] = {
     this.mod((dest: Dest[T]) => {
       write(dest, value)
@@ -153,10 +177,9 @@ class TBD(id: String, _worker: Worker) {
     var second: Mod[V] = null
     first = this.mod((first: Dest[T]) => {
       second = this.mod((second: Dest[V]) => {
-        initializer(first, second);
-        new Changeable[V](null)
+        initializer(first, second)
       })
-      new Changeable[T](null)
+      new Changeable(first)
     })
 
     (first, second)
@@ -167,8 +190,19 @@ class TBD(id: String, _worker: Worker) {
     worker.nextModId += 1
 
     val d = new Dest[T](modId)
-    initializer(d).mod
+    initializer(d)
     d.mod
+  }
+
+  def modNoDest[T](initializer: () => Changeable[T]): Mod[T] = {
+    noDest = true
+
+    val modId = new ModId(worker.id + "." + worker.nextModId)
+    worker.nextModId += 1
+
+    val changeable = initializer()
+
+    changeable.mod
   }
 
   var workerId = 0
@@ -194,12 +228,14 @@ class TBD(id: String, _worker: Worker) {
     new Tuple2(oneRet, twoRet)
   }
 
-  def updated(args: List[ModId]): Boolean = {
+  def updated(args: List[_]): Boolean = {
     var updated = false
 
     for (arg <- args) {
-      if (updatedMods.contains(arg)) {
-	updated = true
+      if (arg.isInstanceOf[Mod[_]]) {
+        if (updatedMods.contains(arg.asInstanceOf[Mod[_]].id)) {
+	  updated = true
+        }
       }
     }
 

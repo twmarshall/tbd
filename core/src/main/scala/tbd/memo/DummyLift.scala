@@ -22,7 +22,7 @@ import tbd.mod.Mod
 
 class DummyLift[T](tbd: TBD, memoId: Int) extends Lift[T](tbd, memoId) {
 
-  override def memo(aArgs: List[Mod[_]], func: () => T): T = {
+  override def memo(args: List[_], func: () => T): T = {
     func()
   }
 }

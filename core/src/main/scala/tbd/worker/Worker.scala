@@ -73,11 +73,17 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 	    tbd.reexecutionEnd = readNode.endTime
 
             readNode.updated = false
-            readNode.reader(newValue)
+            val changeable = readNode.reader(newValue)
 
 	    tbd.currentParent = oldCurrentParent
 	    tbd.reexecutionStart = oldStart
 	    tbd.reexecutionEnd = oldEnd
+
+	    if (tbd.noDest && changeable != readNode.changeable) {
+	      val awaiting = readNode.changeable.mod.update(changeable.mod.read())
+              Await.result(Future.sequence(awaiting), DURATION)
+	      changeable.mod = readNode.changeable.mod
+	    }
 
             for (node <- toCleanup) {
               if (node.parent == null) {
