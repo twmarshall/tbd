@@ -72,81 +72,31 @@ class DoubleModListNode[T, V] (
     tbd.write(dest, new DoubleModListNode[U, Q](modTuple._1, modTuple._2))
   }
 
-  /*
-   * Splecial split implementation for quicksort - not optimal for a single split
-   * execution but can exploit memorization accross mutliple calls.
-   */
-  def qsplit(
-      tbd: TBD,
-      dest: Dest[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])],
-      lift: Lift[Mod[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])]],
-      creationLift: Lift[Mod[DoubleModListNode[T, V]]],
-      pred: (TBD, (T, V)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false):
-        Changeable[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])] = {
-
-    val res = lift.memo(List(next), () => {
-      tbd.mod((dest: Dest[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])]) => {
-        tbd.read(next)(n => {
-          if(n != null) {
-            n.qsplit(tbd, dest, lift, creationLift, pred, parallel, memoized)
-          } else {
-            val endTuple =
-              (creationLift.memo(List(next), () => {
-                tbd.createMod(null)
-              }),
-              creationLift.memo(List(next), () => {
-                tbd.createMod(null)
-              }))
-            tbd.write(dest, endTuple)
-          }
-        })
-      })
-    })
-
-    tbd.read(res)(res => {
-
-      val (matchNext, diffNext) = res
-
-      tbd.read(value)((v) => {
-        if(pred(tbd, (v._1, v._2))) {
-          val newMatch = creationLift.memo(List(matchNext, value), () => {
-            tbd.mod((matchDest: Dest[DoubleModListNode[T, V]]) => {
-              tbd.write(matchDest, new DoubleModListNode(value, matchNext))
-            })
-          })
-          tbd.write(dest, (newMatch, diffNext))
-        } else {
-          val newDiff = creationLift.memo(List(diffNext, value), () => {
-            tbd.mod((diffDest: Dest[DoubleModListNode[T, V]]) => {
-              tbd.write(diffDest, new DoubleModListNode(value, diffNext))
-            })
-          })
-          tbd.write(dest, (matchNext, newDiff))
-        }
-      })
-    })
-  }
-
   def split(
       tbd: TBD,
       destMatch: Dest[DoubleModListNode[T, V]],
       destNoMatch: Dest[DoubleModListNode[T, V]],
       lift: Lift[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])],
+      createLift: Lift[Changeable[DoubleModListNode[T, V]]],
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
         Changeable[DoubleModListNode[T, V]] = {
 
+
+
     val (matchNext, diffNext) = lift.memo(List(next), () => {
       tbd.mod2((newDestMatch: Dest[DoubleModListNode[T, V]], newDestNoMatch: Dest[DoubleModListNode[T, V]]) => {
         tbd.read(next)(next => {
           if(next != null) {
-            next.split(tbd, newDestMatch, newDestNoMatch, lift, pred, parallel, memoized)
+            next.split(tbd, newDestMatch, newDestNoMatch, lift, createLift, pred, parallel, memoized)
           } else {
-            tbd.write(newDestMatch, null)
-            tbd.write(newDestNoMatch, null)
+            createLift.memo(List(newDestMatch), () => {
+              tbd.write(newDestMatch, null)
+            })
+            createLift.memo(List(newDestMatch), () => {
+              tbd.write(newDestNoMatch, null)
+            })
           }
         })
       })
@@ -157,15 +107,25 @@ class DoubleModListNode[T, V] (
     //This is due to the copying of values here.
     tbd.read(value)((v) => {
       if(pred(tbd, (v._1, v._2))) {
-        tbd.write(destMatch, new DoubleModListNode(value, matchNext))
-        tbd.read(diffNext)(diffNext => { //The problem is here
-          tbd.write(destNoMatch, diffNext)
+        createLift.memo(List(value, matchNext, destMatch), () => {
+          tbd.write(destMatch, new DoubleModListNode(value, matchNext))
+        })
+        tbd.read(diffNext)(diffNext => { //Cascading updates caused here.
+          createLift.memo(List(destNoMatch, diffNext.value, diffNext.next), () => {
+            tbd.write(destNoMatch, diffNext)
+          })
         })
       } else {
-        tbd.write(destNoMatch, new DoubleModListNode(value, diffNext))
-        tbd.read(matchNext)(matchNext => { //The problem is here
-          tbd.write(destMatch, matchNext)
+        createLift.memo(List(value, diffNext, destNoMatch), () => {
+          tbd.write(destNoMatch, new DoubleModListNode(value, diffNext))
         })
+        tbd.read(matchNext)(matchNext => {
+          createLift.memo(List(destNoMatch, matchNext.value, matchNext.next), () => {//Don't know if this is a good idea...
+            tbd.write(destMatch, matchNext)
+          })
+        })
+
+        //Implement akku split using the tail trick. Then try to tune quicksort based on the new knowledge.
       }
     })
   }
@@ -175,51 +135,55 @@ class DoubleModListNode[T, V] (
       dest: Dest[DoubleModListNode[T, V]],
       toAppend: Mod[DoubleModListNode[T, V]],
       comperator: (TBD, (T, V), (T, V)) => Boolean,
-      lift: Lift[Mod[DoubleModListNode[T, V]]],
-      creationLift: Lift[Mod[DoubleModListNode[T, V]]],
+      lift: Lift[Changeable[DoubleModListNode[T, V]]],
+      splitLift: Lift[(Mod[DoubleModListNode[T, V]],
+                       Mod[DoubleModListNode[T, V]])],
+      createLift: Lift[Changeable[DoubleModListNode[T, V]]],
+      thisMod: Mod[DoubleModListNode[T, V]],
       parallel: Boolean = false,
       memoized: Boolean = false):
         Changeable[DoubleModListNode[T, V]] = {
-    tbd.read(next)(next => {
-      if(next != null) {
+    tbd.read(next)(n => {
+      if(n != null) {
         tbd.read(value)(v => {
-          val res = tbd.mod((dest: Dest[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])]) => {
+          val (smaller, greater) = tbd.mod2((destGreater: Dest[DoubleModListNode[T, V]],
+                                             destSmaller: Dest[DoubleModListNode[T, V]]) => {
 
-            val splitLift = tbd.makeLift[Mod[(Mod[DoubleModListNode[T, V]],
-                                  Mod[DoubleModListNode[T, V]])]](!memoized)
-
-            next.qsplit(tbd, dest, splitLift, creationLift,
-
+            n.split(tbd, destGreater, destSmaller, new CurriedLift(splitLift, List(value)),
+              createLift,
               (tbd, cv) => { comperator(tbd, cv, v) },
               parallel, memoized)
           })
 
-          tbd.read(res)(res => {
-            val (smaller, greater) = res
-            val greaterSorted = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
-              tbd.read(greater)(greater => {
-                if(greater != null) {
-                  greater.quicksort(tbd, dest, toAppend,
-                                    comperator, lift, creationLift, parallel, memoized)
-                } else {
-                  tbd.read(toAppend)(toAppend => {
-                    tbd.write(dest, toAppend)
-                  })
-                }
-              })
-            })
-
-            val mid = new DoubleModListNode(value, greaterSorted)
-            //Maybe introduce a memo here (need new dest)?
-            //Test if better perf if memo omitted for split?
-            tbd.read(smaller)(smaller => {
-              if(smaller != null) {
-                smaller.quicksort(tbd, dest, tbd.createMod(mid),
-                                  comperator, lift, creationLift, parallel, memoized)
+          val greaterSorted = tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
+            tbd.read(greater)(g => {
+              if(g != null) {
+                lift.memo(List(g.value, g.next, dest), () => {
+                  g.quicksort(tbd, dest, toAppend,
+                                    comperator, lift, splitLift, createLift, greater, parallel, memoized)
+                })
               } else {
-                tbd.write(dest, mid)
+                tbd.read(toAppend)(toAppend => {
+                  tbd.write(dest, toAppend)
+                })
               }
             })
+          })
+
+          val mid = new DoubleModListNode(value, greaterSorted)
+          //Maybe introduce a memo here (need new dest)?
+          //Test if better perf if memo omitted for split?
+
+          tbd.read(smaller)(s => {
+            if(s != null) {
+              val midMod = tbd.createMod(mid)
+              lift.memo(List(s.value, s.next, dest, midMod), () => {
+              s.quicksort(tbd, dest, midMod,
+                                comperator, lift, splitLift, createLift, smaller, parallel, memoized)
+              })
+            } else {
+              tbd.write(dest, mid)
+            }
           })
         })
       } else {
