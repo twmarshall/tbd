@@ -165,6 +165,10 @@ class DoubleModListNode[T, V] (
     })
   }
 
+  def binaryHash(id: T, round: Int, hasher: Hasher) = {
+    hasher.hash(id.hashCode() ^ round) == 0
+  }
+
   def filter(
       tbd: TBD,
       dest: Dest[DoubleModListNode[T, V]],

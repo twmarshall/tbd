@@ -42,6 +42,18 @@ class Lift[T](tbd: TBD, memoId: Int) {
             if (!found && timestamp > tbd.reexecutionStart &&
 		timestamp < tbd.reexecutionEnd &&
 		memoEntry.node.matchableInEpoch <= Master.epoch) {
+              if (memoEntry.node.currentDest != tbd.currentDest &&
+                  memoEntry.value.isInstanceOf[Changeable[_]]) {
+                val changeable = memoEntry.value.asInstanceOf[Changeable[Any]]
+
+                val awaiting = tbd.currentDest.mod.update(changeable.mod.read())
+                Await.result(Future.sequence(awaiting), DURATION)
+
+		tbd.worker.ddg.replaceDests(memoEntry.node,
+					    memoEntry.node.currentDest,
+					    tbd.currentDest)
+              }
+
               found = true
               tbd.worker.ddg.attachSubtree(tbd.currentParent, memoEntry.node)
 
@@ -69,6 +81,7 @@ class Lift[T](tbd: TBD, memoId: Int) {
       val value = func()
       tbd.currentParent = outerParent
       memoNode.endTime = tbd.worker.ddg.nextTimestamp(memoNode)
+      memoNode.currentDest = tbd.currentDest
 
       val memoEntry = new MemoEntry(value, memoNode)
 
