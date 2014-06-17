@@ -20,9 +20,9 @@ import scala.collection.mutable.ArrayBuffer
 import tbd.TBD
 import tbd.mod.Mod
 
-class CurriedLift[T](baseLift: Lift[T], curry: List[Mod[_]]) extends Lift[T](null, 0) {
+class CurriedLift[T](baseLift: Lift[T], curry: List[_]) extends Lift[T](null, 0) {
 
-  override def memo(aArgs: List[Mod[_]], func: () => T): T = {
+  override def memo(aArgs: List[_], func: () => T): T = {
     baseLift.memo(curry ++ aArgs, func)
   }
 }
