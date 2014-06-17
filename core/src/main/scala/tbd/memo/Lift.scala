@@ -19,7 +19,7 @@ import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.{Changeable, TBD}
+import tbd.{Changeable, Changeable2, TBD}
 import tbd.master.Master
 import tbd.mod.Mod
 
@@ -53,6 +53,18 @@ class Lift[T](tbd: TBD, memoId: Int) {
 					    memoEntry.node.currentDest,
 					    tbd.currentDest)
               }
+
+	      if (memoEntry.node.currentDest2 != tbd.currentDest2 &&
+		  memoEntry.value.isInstanceOf[Changeable2[_, _]]) {
+		val changeable2 = memoEntry.value.asInstanceOf[Changeable2[Any, Any]]
+
+		val awaiting = tbd.currentDest2.mod.update(changeable2.mod2.read())
+		Await.result(Future.sequence(awaiting), DURATION)
+
+		tbd.worker.ddg.replaceDests(memoEntry.node,
+					    memoEntry.node.currentDest2,
+					    tbd.currentDest2)
+	      }
 
               found = true
               tbd.worker.ddg.attachSubtree(tbd.currentParent, memoEntry.node)

@@ -47,6 +47,8 @@ abstract class Node(_parent: Node, _timestamp: Timestamp) {
 
   var currentDest: Dest[Any] = null
 
+  var currentDest2: Dest[Any] = null
+
   def addChild(child: Node) {
     children += child
   }

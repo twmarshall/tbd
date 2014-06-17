@@ -228,6 +228,12 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
       for (child <- node.children) {
 	replaceDests(child, dest1, dest2)
       }
+    } else if(node.currentDest2 == dest1) {
+      node.currentDest2 = dest2
+
+      for (child <- node.children) {
+	replaceDests(child, dest1, dest2)
+      }
     }
   }
 
