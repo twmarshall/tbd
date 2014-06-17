@@ -133,7 +133,8 @@ class DoubleModListNode[T, V] (
           tbd.mod2((destGreater: Dest[DoubleModListNode[T, V]],
                     destSmaller: Dest[DoubleModListNode[T, V]]) => {
           tbd.read(value)(v => {
-            val curriedLift = new CurriedLift(splitLift, List(value)) //Depends on value, must be initialized here.
+            //CurryLiftDepends on value, must be initialized here.
+            val curriedLift = new CurriedLift(splitLift, List(v))
             n.split(tbd, destGreater, destSmaller, curriedLift,
               (tbd, cv) => { comperator(tbd, cv, v) },
               parallel, memoized)
