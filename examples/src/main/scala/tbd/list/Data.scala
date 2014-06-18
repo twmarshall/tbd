@@ -13,19 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package tbd.examples.list
 
-package tbd.visualization
+import scala.collection.GenIterable
+import scala.collection.mutable.Map
 
-object Main {
-  def main(args: Array[String]) {
-    val test = new ExhaustiveTest(new ListReduceSumTest())
-    //val test = new ManualTest(new ListReduceSumTest())
+trait Data[Input] {
+  val naiveTable = Map[Int, Input]()
+  val table = Map[Int, Input]()
 
-    //Possible Options:
-    test.showDDGEachStep = true
-    //test.initialSize = 150
-    //test.maximalMutationsPerPropagation = 20
+  def loadNaive()
 
-    test.run()
-  }
+  def loadInitial()
+
+  def clearValues()
+
+  def updateNaive()
+
+  def update()
 }

@@ -15,7 +15,7 @@
  */
 package tbd.mod
 
-import tbd.{Changeable, TBD}
+import tbd.{Changeable, Changeable2, TBD}
 import tbd.memo.Lift
 
 class DoubleModListNode[T, V] (
@@ -27,24 +27,24 @@ class DoubleModListNode[T, V] (
 
   def map[U, Q](
       tbd: TBD,
-      dest: Dest[DoubleModListNode[U, Q]],
       f: (TBD, (T, V)) => (U, Q),
-      lift: Lift[(Mod[(U, Q)], Mod[DoubleModListNode[U, Q]])]
-      ): Changeable[DoubleModListNode[U, Q]] = {
+      lift: Lift[(Mod[(U, Q)], Mod[DoubleModListNode[U, Q]])])
+        : Changeable[DoubleModListNode[U, Q]] = {
     val pair = lift.memo(List(next), () => {
-      (tbd.mod((dest: Dest[(U, Q)]) =>
-	tbd.read(value)(value => tbd.write(dest, f(tbd, value)))),
-       tbd.mod((dest: Dest[DoubleModListNode[U, Q]]) =>
-        tbd.read(next)(next => {
-          if (next != null) {
-            next.map(tbd, dest, f, lift)
-          } else {
-            tbd.write(dest, null)
-          }
-        })
+      (tbd.modNoDest(() =>
+	tbd.read(value)(value => tbd.writeNoDest(f(tbd, value)))),
+       tbd.modNoDest(() =>
+         tbd.read(next)(next => {
+           if (next != null) {
+               next.map(tbd, f, lift)
+           } else {
+             tbd.writeNoDest[DoubleModListNode[U, Q]](null)
+           }
+         })
       ))
     })
-    tbd.write(dest, new DoubleModListNode[U, Q](pair._1, pair._2))
+
+    tbd.writeNoDest(new DoubleModListNode[U, Q](pair._1, pair._2))
   }
 
   def parMap[U, Q](
@@ -70,6 +70,136 @@ class DoubleModListNode[T, V] (
         })
       })
     tbd.write(dest, new DoubleModListNode[U, Q](modTuple._1, modTuple._2))
+  }
+
+  def split(
+      tbd: TBD,
+      destMatch: Dest[DoubleModListNode[T, V]],
+      destNoMatch: Dest[DoubleModListNode[T, V]],
+      lift: Lift[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])],
+      pred: (TBD, (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+        Changeable[DoubleModListNode[T, V]] = {
+
+    val (matchNext, diffNext) = lift.memo(List(next), () => {
+      tbd.mod2((newDestMatch: Dest[DoubleModListNode[T, V]], newDestNoMatch: Dest[DoubleModListNode[T, V]]) => {
+        tbd.read(next)(next => {
+          if(next != null) {
+            next.split(tbd, newDestMatch, newDestNoMatch, lift, pred)
+          } else {
+            tbd.write(newDestMatch, null)
+            tbd.write(newDestNoMatch, null)
+          }
+        })
+      })
+    })
+
+    tbd.read(value)((v) => {
+      if(pred(tbd, (v._1, v._2))) {
+        tbd.write(destMatch, new DoubleModListNode(tbd.createMod(v), matchNext))
+        tbd.read(diffNext)(diffNext => {
+          tbd.write(destNoMatch, diffNext)
+        })
+      } else {
+        tbd.write(destNoMatch, new DoubleModListNode(tbd.createMod(v), diffNext))
+        tbd.read(matchNext)(matchNext => {
+          tbd.write(destMatch, matchNext)
+        })
+      }
+    })
+  }
+
+  def splitNoDest(
+      tbd: TBD,
+      lift: Lift[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])],
+      pred: (TBD, (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+        Changeable2[DoubleModListNode[T, V], DoubleModListNode[T, V]] = {
+    val (matchNext, diffNext) = lift.memo(List(next), () => {
+      tbd.modNoDest2(() => {
+        tbd.read(next)(next => {
+          if(next != null) {
+            next.splitNoDest(tbd, lift, pred)
+          } else {
+	    tbd.writeNoDest2(null.asInstanceOf[DoubleModListNode[T, V]],
+			     null.asInstanceOf[DoubleModListNode[T, V]])
+          }
+        })
+      })
+    })
+
+    tbd.read(value)((v) => {
+      if(pred(tbd, (v._1, v._2))) {
+        tbd.read(diffNext)(diffNext => {
+	  tbd.writeNoDest2(new DoubleModListNode(value, matchNext), diffNext)
+        })
+      } else {
+        tbd.read(matchNext)(matchNext => {
+	  tbd.writeNoDest2(matchNext, new DoubleModListNode(value, diffNext))
+        })
+      }
+    })
+  }
+
+  def quicksort(
+        tbd: TBD,
+        dest: Dest[DoubleModListNode[T, V]],
+        toAppend: Mod[DoubleModListNode[T, V]],
+        comperator: (TBD, (T, V), (T, V)) => Boolean,
+        lift: Lift[Mod[DoubleModListNode[T, V]]],
+        parallel: Boolean = false,
+        memoized: Boolean = false):
+          Changeable[DoubleModListNode[T, V]] = {
+    tbd.read(next)(next => {
+      if(next != null) {
+        tbd.read(value)(v => {
+          val (smaller, greater) = tbd.mod2((destSmaller: Dest[DoubleModListNode[T, V]],
+                                      destGreater: Dest[DoubleModListNode[T, V]]) => {
+
+            val lift = tbd.makeLift[(Mod[DoubleModListNode[T, V]],
+                                     Mod[DoubleModListNode[T, V]])](!memoized)
+
+            next.split(tbd, destSmaller, destGreater, lift,
+              (tbd, cv) => { comperator(tbd, cv, v) },
+              parallel, memoized)
+          })
+
+          val greaterSorted = lift.memo(List(greater), () => {
+            tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
+              tbd.read(greater)(greater => {
+                if(greater != null) {
+                  greater.quicksort(tbd, dest, toAppend,
+                                    comperator, lift, parallel, memoized)
+                } else {
+                  tbd.read(toAppend)(toAppend => {
+                    tbd.write(dest, toAppend)
+                  })
+                }
+              })
+            })
+          })
+
+          val mid = new DoubleModListNode(value, greaterSorted)
+
+          tbd.read(smaller)(smaller => {
+            if(smaller != null) {
+              smaller.quicksort(tbd, dest, tbd.createMod(mid),
+                                comperator, lift, parallel, memoized)
+            } else {
+              tbd.write(dest, mid)
+            }
+          })
+        })
+      } else {
+        tbd.write(dest, new DoubleModListNode(value, toAppend))
+      }
+    })
+  }
+
+  def binaryHash(id: T, round: Int, hasher: Hasher) = {
+    hasher.hash(id.hashCode() ^ round) == 0
   }
 
   def filter(

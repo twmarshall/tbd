@@ -16,17 +16,17 @@
 package tbd.memo
 
 import scala.collection.mutable.ArrayBuffer
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.TBD
+import tbd.{Changeable, Changeable2, TBD}
 import tbd.master.Master
 import tbd.mod.Mod
 
 class Lift[T](tbd: TBD, memoId: Int) {
+  import tbd.worker.context.dispatcher
 
-  def memo(aArgs: List[Mod[_]], func: () => T): T = {
-    val args = aArgs.map(_.id)
+  def memo(args: List[_], func: () => T): T = {
     val signature = memoId :: args
 
     var found = false
@@ -42,6 +42,30 @@ class Lift[T](tbd: TBD, memoId: Int) {
             if (!found && timestamp > tbd.reexecutionStart &&
 		timestamp < tbd.reexecutionEnd &&
 		memoEntry.node.matchableInEpoch <= Master.epoch) {
+              if (memoEntry.node.currentDest != tbd.currentDest &&
+                  memoEntry.value.isInstanceOf[Changeable[_]]) {
+                val changeable = memoEntry.value.asInstanceOf[Changeable[Any]]
+
+                val awaiting = tbd.currentDest.mod.update(changeable.mod.read())
+                Await.result(Future.sequence(awaiting), DURATION)
+
+		tbd.worker.ddg.replaceDests(memoEntry.node,
+					    memoEntry.node.currentDest,
+					    tbd.currentDest)
+              }
+
+	      if (memoEntry.node.currentDest2 != tbd.currentDest2 &&
+		  memoEntry.value.isInstanceOf[Changeable2[_, _]]) {
+		val changeable2 = memoEntry.value.asInstanceOf[Changeable2[Any, Any]]
+
+		val awaiting = tbd.currentDest2.mod.update(changeable2.mod2.read())
+		Await.result(Future.sequence(awaiting), DURATION)
+
+		tbd.worker.ddg.replaceDests(memoEntry.node,
+					    memoEntry.node.currentDest2,
+					    tbd.currentDest2)
+	      }
+
               found = true
               tbd.worker.ddg.attachSubtree(tbd.currentParent, memoEntry.node)
 
@@ -69,6 +93,7 @@ class Lift[T](tbd: TBD, memoId: Int) {
       val value = func()
       tbd.currentParent = outerParent
       memoNode.endTime = tbd.worker.ddg.nextTimestamp(memoNode)
+      memoNode.currentDest = tbd.currentDest
 
       val memoEntry = new MemoEntry(value, memoNode)
 

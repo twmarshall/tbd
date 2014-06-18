@@ -26,22 +26,22 @@ class ModListNode[T, V] (
 
   def map[U, Q](
       tbd: TBD,
-      dest: Dest[ModListNode[U, Q]],
       f: (TBD, (T, V)) => (U, Q),
-      lift: Lift[Mod[ModListNode[U, Q]]]
-      ): Changeable[ModListNode[U, Q]] = {
-    val newNext = lift.memo(List(next), () => {
-      tbd.mod((dest: Dest[ModListNode[U, Q]]) =>
-        tbd.read(next)(next => {
-          if (next != null) {
-            next.map(tbd, dest, f, lift)
-          } else {
-            tbd.write(dest, null)
-          }
-        })
-      )
+      lift: Lift[Changeable[ModListNode[U, Q]]])
+        : Changeable[ModListNode[U, Q]] = {
+    val newNext = tbd.modNoDest(() => {
+      tbd.read(next)(next => {
+        if (next != null) {
+          lift.memo(List(next), () => {
+            next.map(tbd, f, lift)
+          })
+        } else {
+          tbd.writeNoDest[ModListNode[U, Q]](null)
+        }
+      })
     })
-    tbd.write(dest, new ModListNode[U, Q](f(tbd, value), newNext))
+
+    tbd.writeNoDest(new ModListNode[U, Q](f(tbd, value), newNext))
   }
 
   def parMap[U, Q](

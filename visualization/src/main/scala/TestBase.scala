@@ -50,10 +50,14 @@ class TestBase {
 
   def addValue(key: Int, value: Int) {
 
-    println("m.put(" + key + ", " + value + ")")
+    if(table.contains(key)) {
+      println("//Element already exists!")
+    } else {
+      println("m.put(" + key + ", " + value + ")")
 
-    input.put(key, value)
-    table += (key -> value)
+      input.put(key, value)
+      table += (key -> value)
+    }
   }
 
   def removeValue() {

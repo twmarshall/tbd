@@ -17,6 +17,10 @@ package tbd
 
 import tbd.mod.Mod
 
-class Changeable[T](aMod: Mod[T]) {
-  val mod = aMod
+class Changeable[T](_mod: Mod[T]) {
+  val mod = _mod
+}
+
+class Changeable2[T, U](_mod: Mod[T], _mod2: Mod[U]) extends Changeable[T](_mod) {
+  val mod2 = _mod2
 }

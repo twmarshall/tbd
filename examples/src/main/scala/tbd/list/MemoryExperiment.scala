@@ -17,38 +17,36 @@ package tbd.examples.list
 
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, Mutator, TBD}
+import tbd.{Adjustable, ListConf, ListInput, Mutator, TBD}
 import tbd.mod.AdjustableList
 
-class MemoryExperiment extends Adjustable {
+class MemoryExperiment(input: ListInput[Int, String]) extends Adjustable {
   val partitions = 4
-  val chunkSize = 0
   val valueMod = true
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
-    val list = tbd.input.getAdjustableList[Int, Int](
-      partitions, chunkSize, _ => 1, valueMod)
-    list.map(tbd, (tbd: TBD, pair: (Int, Int)) => pair)
+  def run(tbd: TBD): AdjustableList[Int, String] = {
+    val list = input.getAdjustableList()
+    list.map(tbd, (tbd: TBD, pair: (Int, String)) => pair)
   }
 }
 
 object MemoryExperiment {
   def main(args: Array[String]) {
     val max = 1000
-    val input = new WCInput(max * 10, Array("insert", "remove", "update"))
-    val table = Map[Int, String]()
-
     val mutator = new Mutator()
+    val list = mutator.createList[Int, String](new ListConf(partitions = 4, valueMod = true))
+    val input = new WCData(list, max, Array("insert", "remove", "update"))
+
     for (i <- 0 to max) {
-      input.addValue(mutator, table)
+      input.addValue()
     }
 
-    val output = mutator.run[AdjustableList[Int, Int]](new MemoryExperiment)
+    val output = mutator.run[AdjustableList[Int, Int]](new MemoryExperiment(list))
 
     val rand = new scala.util.Random()
     var i = 0
     while (i < 1000) {
       for (i <- 0 to 100) {
-        input.update(mutator, table)
+        input.update()
       }
 
       println("starting propagating")

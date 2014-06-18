@@ -18,21 +18,21 @@ package tbd.datastore
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.Future
 
-class ModModifier[T, U](_datastore: Datastore, _key: T, value: U)
-    extends Modifier[T, U](_datastore) {
-  val mod = datastore.createMod(value)
+import tbd.mod.ModTable
 
-  def insert(key: T, value: U): ArrayBuffer[Future[String]] = ???
+class TableModifier(_datastore: Datastore) extends Modifier(_datastore) {
+  val table = new ModTable[Any, Any]()
 
-  def update(key: T, value: U): ArrayBuffer[Future[String]] = {
-    if (key == _key) {
-      datastore.updateMod(mod.id, value)
-    } else {
-      ArrayBuffer[Future[String]]()
-    }
+  def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
+    table.table(key) = datastore.createMod(value)
+    ArrayBuffer[Future[String]]()
   }
 
-  def remove(key: T): ArrayBuffer[Future[String]] = ???
+  def update(key: Any, value: Any): ArrayBuffer[Future[String]] = {
+    datastore.updateMod(table.table(key).id, value)
+  }
 
-  def getModifiable(): Any = mod
+  def remove(key: Any): ArrayBuffer[Future[String]] = ???
+
+  def getModifiable(): Any = table
 }

@@ -13,19 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package tbd
 
-package tbd.visualization
+trait AdjustableConf
 
-object Main {
-  def main(args: Array[String]) {
-    val test = new ExhaustiveTest(new ListReduceSumTest())
-    //val test = new ManualTest(new ListReduceSumTest())
+case class ListConf(file: String = "", partitions: Int = 8, chunkSize: Int = 1,
+  chunkSizer: Any => Int = _ => 1, valueMod: Boolean = true)
+    extends AdjustableConf
 
-    //Possible Options:
-    test.showDDGEachStep = true
-    //test.initialSize = 150
-    //test.maximalMutationsPerPropagation = 20
-
-    test.run()
-  }
-}
+case class TableConf() extends AdjustableConf

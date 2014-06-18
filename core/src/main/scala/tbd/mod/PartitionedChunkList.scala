@@ -22,7 +22,7 @@ import tbd.{Changeable, TBD}
 import tbd.datastore.Datastore
 
 class PartitionedChunkList[T, U](
-    aPartitions: ArrayBuffer[ChunkList[T, U]]) extends AdjustableList[T, U] {
+    aPartitions: ArrayBuffer[ChunkList[T, U]]) extends AdjustableChunkList[T, U] {
   val partitions = aPartitions
 
   def map[V, Q](
@@ -55,6 +55,36 @@ class PartitionedChunkList[T, U](
     }
   }
 
+  def chunkMap[V, Q](
+      tbd: TBD,
+      f: (TBD, Vector[(T, U)]) => (V, Q),
+      parallel: Boolean = false,
+      memoized: Boolean = true): PartitionedModList[V, Q] = {
+    if (parallel) {
+      def innerChunkMap(tbd: TBD, i: Int): ArrayBuffer[ModList[V, Q]] = {
+        if (i < partitions.size) {
+          val parTup = tbd.par((tbd: TBD) => {
+            partitions(i).chunkMap(tbd, f, memoized = memoized)
+          }, (tbd: TBD) => {
+            innerChunkMap(tbd, i + 1)
+          })
+
+          parTup._2 += parTup._1
+        } else {
+          ArrayBuffer[ModList[V, Q]]()
+        }
+      }
+
+      new PartitionedModList(innerChunkMap(tbd, 0))
+    } else {
+      new PartitionedModList(
+        partitions.map((partition: ChunkList[T, U]) => {
+          partition.chunkMap(tbd, f, memoized = memoized)
+        })
+      )
+    }
+  }
+
   def reduce(
       tbd: TBD,
       initialValueMod: Mod[(T, U)],
@@ -70,7 +100,7 @@ class PartitionedChunkList[T, U](
           parReduce(tbd, i + 1)
         })
 
-        tbd.mod((dest: Dest[(T, U)]) => {  
+        tbd.mod((dest: Dest[(T, U)]) => {
           tbd.read2(parTup._1, parTup._2)((a, b) => {
             tbd.write(dest, f(tbd, a, b))
           })
@@ -124,6 +154,19 @@ class PartitionedChunkList[T, U](
       )
     }
   }
+
+  def split(
+      tbd: TBD,
+      pred: (TBD, (T, U)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+       (AdjustableList[T, U], AdjustableList[T, U]) = ???
+
+  def sort(
+      tbd: TBD,
+      comperator: (TBD, (T, U), (T, U)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): AdjustableList[T, U] = ???
 
   /* Meta Operations */
   def toBuffer(): Buffer[U] = {

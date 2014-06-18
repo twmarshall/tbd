@@ -48,6 +48,26 @@ class DoubleChunkListNode[T, U](
     tbd.write(dest, new DoubleChunkListNode[V, Q](newChunkMod, newNextMod))
   }
 
+  def chunkMap[V, Q](
+      tbd: TBD,
+      dest: Dest[DoubleModListNode[V, Q]],
+      f: (TBD, Vector[(T, U)]) => (V, Q),
+      lift: Lift[Mod[DoubleModListNode[V, Q]]])
+        : Changeable[DoubleModListNode[V, Q]] = {
+    val newChunkMod = tbd.mod((dest: Dest[(V, Q)]) =>
+      tbd.read(chunkMod)(chunk =>
+        tbd.write(dest, f(tbd, chunk))))
+    val newNextMod = lift.memo(List(nextMod), () =>
+      tbd.mod((dest: Dest[DoubleModListNode[V, Q]]) =>
+        tbd.read(nextMod)(next =>
+          if (next != null)
+            next.chunkMap(tbd, dest, f, lift)
+          else
+            tbd.write(dest, null))))
+
+    tbd.write(dest, new DoubleModListNode[V, Q](newChunkMod, newNextMod))
+  }
+
   def parMap[V, Q](
       tbd: TBD,
       dest: Dest[DoubleChunkListNode[V, Q]],

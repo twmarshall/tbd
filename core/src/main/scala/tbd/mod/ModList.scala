@@ -44,15 +44,15 @@ class ModList[T, V](
         })
       )
     } else {
-      val lift = tbd.makeLift[Mod[ModListNode[U, Q]]](!memoized)
+      val lift = tbd.makeLift[Changeable[ModListNode[U, Q]]](!memoized)
 
       new ModList(
-        tbd.mod((dest: Dest[ModListNode[U, Q]]) => {
+        tbd.modNoDest(() => {
           tbd.read(head)(node => {
             if (node != null) {
-              node.map(tbd, dest, f, lift)
+              node.map(tbd, f, lift)
             } else {
-              tbd.write(dest, null)
+              tbd.writeNoDest(null)
             }
           })
         })
@@ -69,7 +69,7 @@ class ModList[T, V](
 
     // Each round we need a hasher and a lift, and we need to guarantee that the
     // same hasher and lift are used for a given round during change propagation,
-    // even if the first mod of the list is deleted. 
+    // even if the first mod of the list is deleted.
     class RoundLift {
       val lift = tbd.makeLift[(Hasher,
                                Lift[Mod[ModListNode[T, V]]],
@@ -170,6 +170,20 @@ class ModList[T, V](
       })
     )
   }*/
+
+
+  def split(
+      tbd: TBD,
+      pred: (TBD, (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+       (AdjustableList[T, V], AdjustableList[T, V]) = ???
+
+  def sort(
+      tbd: TBD,
+      comperator: (TBD, (T, V), (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false): AdjustableList[T, V] = ???
 
   def toBuffer(): Buffer[V] = {
     val buf = ArrayBuffer[V]()

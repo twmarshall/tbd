@@ -18,16 +18,91 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, Mutator}
+import tbd.{Adjustable, ListConf, Mutator}
 
-abstract class Algorithm(parallel: Boolean, memoized: Boolean) extends Adjustable {
-  def initialRun(mutator: Mutator)
+abstract class Algorithm[Input, Output](_conf: Map[String, _],
+    _listConf: ListConf) extends Adjustable {
+  val conf = _conf
+  val listConf = _listConf
 
-  def traditionalRun(input: GenIterable[String])
+  val count = conf("counts").asInstanceOf[String].toInt
+  val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
+  val mutations = conf("mutations").asInstanceOf[Array[String]]
+  val partition = conf("partitions").asInstanceOf[String].toInt
+  val parallel = conf("parallel") == "true"
+  val memoized = conf("memoized") == "true"
 
-  def checkOutput(answer: GenMap[Int, String]): Boolean
+  val mutator = new Mutator()
 
-  def prepareTraditionalRun(input: Map[Int, String]): GenIterable[String] = {
-    if(parallel) Vector[String](input.values.toSeq: _*).par else Vector[String](input.values.toSeq: _*)
+  var output: Output = null.asInstanceOf[Output]
+
+  var mapCount = 0
+  var reduceCount = 0
+
+  var data: Data[Input] = null.asInstanceOf[Data[Input]]
+
+  def naive(): (Long, Long) = {
+    val beforeLoad = System.currentTimeMillis()
+    data.loadNaive()
+    val naiveTable =
+      if (parallel)
+	Vector(data.naiveTable.values.toSeq: _*).par
+      else
+	Vector(data.naiveTable.values.toSeq: _*)
+    val loadElapsed = System.currentTimeMillis() - beforeLoad
+
+    val before = System.currentTimeMillis()
+    runNaive(naiveTable)
+    val elapsed = System.currentTimeMillis() - before
+
+    (elapsed, loadElapsed)
+  }
+
+  protected def runNaive(table: GenIterable[Input]): Any
+
+  def initial(): (Long, Long) = {
+    val beforeLoad = System.currentTimeMillis()
+    data.loadInitial()
+    val loadElapsed = System.currentTimeMillis() - beforeLoad
+
+    if (!Experiment.check) {
+      data.clearValues()
+    }
+
+    val before = System.currentTimeMillis()
+    output = mutator.run[Output](this)
+    val elapsed = System.currentTimeMillis() - before
+
+    if (Experiment.check) {
+      assert(checkOutput(data.table, output))
+    }
+
+    (elapsed, loadElapsed)
+  }
+
+  protected def checkOutput(table: Map[Int, Input], output: Output): Boolean
+
+  def update(count: Double): (Long, Long) = {
+    var i = 0
+    val beforeLoad = System.currentTimeMillis()
+    while (i < count) {
+      i += 1
+      data.update()
+    }
+    val loadElapsed = System.currentTimeMillis() - beforeLoad
+
+    val before = System.currentTimeMillis()
+    mutator.propagate()
+    val elapsed = System.currentTimeMillis() - before
+
+    if (Experiment.check) {
+      assert(checkOutput(data.table, output))
+    }
+
+    (elapsed, loadElapsed)
+  }
+
+  def shutdown() {
+    mutator.shutdown()
   }
 }

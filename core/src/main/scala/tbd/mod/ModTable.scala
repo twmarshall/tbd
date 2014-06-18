@@ -13,19 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package tbd.mod
 
-package tbd.visualization
+import scala.collection.mutable.Map
 
-object Main {
-  def main(args: Array[String]) {
-    val test = new ExhaustiveTest(new ListReduceSumTest())
-    //val test = new ManualTest(new ListReduceSumTest())
+class ModTable[T, U] {
+  val table = Map[T, Mod[U]]()
 
-    //Possible Options:
-    test.showDDGEachStep = true
-    //test.initialSize = 150
-    //test.maximalMutationsPerPropagation = 20
-
-    test.run()
-  }
+  def get(key: T): Mod[U] = table(key)
 }

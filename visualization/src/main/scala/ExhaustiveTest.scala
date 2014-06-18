@@ -21,11 +21,13 @@ import tbd.{Adjustable, Changeable, ListConf, ListInput, Mutator, TBD}
 import tbd.mod.{AdjustableList, Dest, Mod}
 import collection.mutable.HashMap
 import scala.util.Random
+import scala.io.StdIn
 
-class ExhaustiveTest extends TestBase {
+class ExhaustiveTest[T](algorithm: TestAlgorithm[T]) extends TestBase {
 
-  val initialSize = 10
-  val maximalMutationsPerPropagation = 2
+  var initialSize = 10
+  var maximalMutationsPerPropagation = 2
+  var showDDGEachStep = false
 
   def run() {
 
@@ -35,7 +37,8 @@ class ExhaustiveTest extends TestBase {
     for(i <- 0 to initialSize)
       addValue()
 
-    val output = mutator.run[AdjustableList[Int, Int]](new ListQuicksortTest(input))
+    algorithm.input = input
+    val output = mutator.run[T](algorithm)
     mutator.propagate()
 
     while(true) {
@@ -50,22 +53,19 @@ class ExhaustiveTest extends TestBase {
 
       mutationCounter += 1
 
-      val ca = table.values.toBuffer.sortWith(_ < _)
-      val a = output.toBuffer()
-
       println("// Output: " + output)
 
-      if(a != ca ) {
-        println("Check error.")
-        println("a: " + a)
-        println("ca: " + ca)
+      if(!algorithm.checkOutput(output, table)) {
+        println("Check error, execution halted.")
 
         visualizer.showDDG(mutator.getDDG().root)
-        while(true) { readLine() }
+        while(true) { StdIn.readLine() }
       }
 
-      visualizer.showDDG(mutator.getDDG().root)
-      readLine()
+      if(showDDGEachStep) {
+        visualizer.showDDG(mutator.getDDG().root)
+        StdIn.readLine()
+      }
     }
 
     mutator.shutdown()

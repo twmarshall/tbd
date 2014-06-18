@@ -13,19 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package tbd
 
-package tbd.visualization
+import akka.actor.ActorRef
+import akka.pattern.ask
+import scala.concurrent.Await
 
-object Main {
-  def main(args: Array[String]) {
-    val test = new ExhaustiveTest(new ListReduceSumTest())
-    //val test = new ManualTest(new ListReduceSumTest())
+import tbd.Constants._
+import tbd.messages._
+import tbd.mod.ModTable
 
-    //Possible Options:
-    test.showDDGEachStep = true
-    //test.initialSize = 150
-    //test.maximalMutationsPerPropagation = 20
-
-    test.run()
+class TableInput[T, U](masterRef: ActorRef, conf: TableConf)
+    extends Input[T, U](masterRef, conf) {
+  def getTable(): ModTable[T, U] = {
+    val future = masterRef ? GetInputMessage(inputId)
+    Await.result(future.mapTo[ModTable[T, U]], DURATION)
   }
 }

@@ -43,7 +43,6 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
   val datastoreRef = _datastoreRef
   val ddg = new DDG(log, id, this)
   val memoTable = Map[List[Any], ArrayBuffer[MemoEntry]]()
-  val adjustableLists = Set[AdjustableList[Any, Any]]()
 
   private val tbd = new TBD(id, this)
 
@@ -72,6 +71,10 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 	    tbd.reexecutionStart = readNode.timestamp
 	    val oldEnd = tbd.reexecutionEnd
 	    tbd.reexecutionEnd = readNode.endTime
+            val oldCurrentDest = tbd.currentDest
+            tbd.currentDest = readNode.currentDest
+	    val oldCurrentDest2 = tbd.currentDest2
+	    tbd.currentDest2 = readNode.currentDest2
 
             readNode.updated = false
             readNode.reader(newValue)
@@ -79,6 +82,8 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 	    tbd.currentParent = oldCurrentParent
 	    tbd.reexecutionStart = oldStart
 	    tbd.reexecutionEnd = oldEnd
+            tbd.currentDest = oldCurrentDest
+	    tbd.currentDest2 = oldCurrentDest2
 
             for (node <- toCleanup) {
               if (node.parent == null) {
@@ -103,15 +108,13 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
           node.timestamp > start && node.timestamp < end)
       }
 
-      tbd.updatedMods.clear()
-
       true
     }
 
   }
 
   def receive = {
-    case ModUpdatedMessage(modId: ModId, finished: Future[String]) => {
+    case ModUpdatedMessage(modId: ModId, finished: Future[_]) => {
       ddg.modUpdated(modId)
       tbd.updatedMods += modId
 
@@ -137,6 +140,8 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
       val respondTo = sender
       val future = propagate()
       future.onComplete((t: Try[Boolean]) => {
+	tbd.updatedMods.clear()
+
         respondTo ! "done"
       })
     }
@@ -150,8 +155,6 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case CleanupWorkerMessage => {
-      val datastoreFuture = datastoreRef ? CleanUpMessage(self, adjustableLists)
-
       val futures = Set[Future[Any]]()
       for ((actorRef, parNode) <- ddg.pars) {
         futures += actorRef ? CleanupWorkerMessage
@@ -161,8 +164,6 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
       for (future <- futures) {
         Await.result(future, DURATION)
       }
-
-      Await.result(datastoreFuture, DURATION)
 
       sender ! "done"
     }

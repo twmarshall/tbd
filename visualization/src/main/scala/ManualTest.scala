@@ -22,16 +22,18 @@ import tbd.mod.{AdjustableList, Dest, Mod}
 import collection.mutable.HashMap
 import scala.util.Random
 import scala.util.matching.Regex
+import scala.io.StdIn
 
-class ManualTest extends TestBase {
+class ManualTest[T](algorithm: TestAlgorithm[T]) extends TestBase {
 
-  val initialSize = 10
-  var propagate = true
+  private var propagate = true
+  var showDDGEachStep = true
+  var initialSize = 10
 
-  val putm = "(a) (\\d+) (\\d+)".r
-  val updatem = "(u) (\\d+) (\\d+)".r
-  val remm = "(r) (\\d+)".r
-  val propagatem = "(p)".r
+  private val putm = "(a) (\\d+) (\\d+)".r
+  private val updatem = "(u) (\\d+) (\\d+)".r
+  private val remm = "(r) (\\d+)".r
+  private val propagatem = "(p)".r
 
   def run() {
 
@@ -41,7 +43,8 @@ class ManualTest extends TestBase {
     for(i <- 0 to initialSize)
       addValue()
 
-    val output = mutator.run[AdjustableList[Int, Int]](new ListQuicksortTest(input))
+    algorithm.input = input
+    val output = mutator.run[T](algorithm)
 
     println("// Commands: ")
     println("// a KEY VALUE adds a key and value ")
@@ -55,7 +58,7 @@ class ManualTest extends TestBase {
     while(true) {
 
       while(!propagate) {
-        readLine() match {
+        StdIn.readLine() match {
           case putm(_, key, value) => addValue(key.toInt, value.toInt)
           case updatem(_, key, value) => updateValue(key.toInt, value.toInt)
           case remm(_, key) => removeValue(key.toInt)
@@ -71,22 +74,18 @@ class ManualTest extends TestBase {
 
       mutationCounter += 1
 
-      val ca = table.values.toBuffer.sortWith(_ < _)
-
-      val a = output.toBuffer()
-
       println("// Output: " + output)
 
-      if(a != ca) {
-        println("Check error.")
-        println("a: " + a)
-        println("ca: " + ca)
+      if(!algorithm.checkOutput(output, table)) {
+        println("Check error, execution halted.")
 
         visualizer.showDDG(mutator.getDDG().root)
-        while(true) { readLine() }
+        while(true) { StdIn.readLine() }
       }
 
-      visualizer.showDDG(mutator.getDDG().root)
+      if(showDDGEachStep) {
+        visualizer.showDDG(mutator.getDDG().root)
+      }
     }
 
     mutator.shutdown()

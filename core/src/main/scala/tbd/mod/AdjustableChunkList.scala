@@ -13,19 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package tbd.mod
 
-package tbd.visualization
+import tbd.TBD
 
-object Main {
-  def main(args: Array[String]) {
-    val test = new ExhaustiveTest(new ListReduceSumTest())
-    //val test = new ManualTest(new ListReduceSumTest())
-
-    //Possible Options:
-    test.showDDGEachStep = true
-    //test.initialSize = 150
-    //test.maximalMutationsPerPropagation = 20
-
-    test.run()
-  }
+trait AdjustableChunkList[T, U] extends AdjustableList[T, U] {
+  def chunkMap[V, Q](
+      tbd: TBD,
+      f: (TBD, Vector[(T, U)]) => (V, Q),
+      parallel: Boolean = false,
+      memoized: Boolean = true): AdjustableList[V, Q]
 }
