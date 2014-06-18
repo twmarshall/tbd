@@ -23,6 +23,7 @@ import tbd.mod.{AdjustableList, Dest, Mod}
 
 trait TestAlgorithm[T] extends Adjustable {
   def checkOutput(output: T, table: Map[Int, Int]): Boolean
+  def getListConf() = { new ListConf(partitions = 1) }
 
   var input: ListInput[Int, Int] = null
 }
@@ -51,6 +52,7 @@ class ListReduceSumTest()
     true
   }
 }
+
 class ListQuicksortTest()
     extends TestAlgorithm[AdjustableList[Int, Int]] {
   def run(tbd: TBD): AdjustableList[Int, Int] = {

@@ -24,7 +24,7 @@ import scala.util.Random
 import scala.util.matching.Regex
 import scala.io.StdIn
 
-class ManualTest[T](algorithm: TestAlgorithm[T]) extends TestBase {
+class ManualTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.getListConf()) {
 
   private var propagate = true
   var showDDGEachStep = true
