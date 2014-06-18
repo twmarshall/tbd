@@ -223,38 +223,36 @@ class DoubleChunkList[T, U](
 
     def reducer(tbd: TBD, a: (SChunk, U), b: (SChunk, U)): (SChunk, U) = {
 
-      if(a == null)
+      if(a._1 == null)
         return b
-      if(b == null)
+      if(b._1 == null)
         return a
 
       val (next, value) = tbd.mod2((nextDest: Dest[SChunk], valDest: Dest[SVec]) => {
         tbd.read2(a._1.chunkMod, b._1.chunkMod)((avec, bvec) => {
           //Could we create a global constant for chunk size?
-          val chunkSize =
-            if(avec.length < bvec.length)
-              avec.length * 1.5
-            else
-              bvec.length * 1.5
+          //Or should we do some randomization here?
+          val chunkSize = 8
 
           var result = Vector[(T, U)]()
 
           var ac = 0
           var bc = 0
 
-          while(result.length < chunkSize) {
+          while(result.length < chunkSize &&
+                avec.length > ac &&
+                bvec.length > bc) {
             if(comperator(tbd, avec(ac), bvec(bc))) {
-              if(avec.length <= ac) scala.util.control.Breaks.break
               result = result :+ avec(ac)
               ac += 1
             } else {
-              if(bvec.length <= bc) scala.util.control.Breaks.break
               result = result :+ bvec(bc)
               bc += 1
             }
           }
 
           //Could we clean this up?
+          //Could we handle this better (especially towards the end?)
           if(ac == avec.length && bc == bvec.length) {
             tbd.read2(a._1.nextMod, b._1.nextMod)((anext, bnext) => {
               tbd.write(nextDest, reducer(tbd, (anext, a._2), (bnext, b._2))._1)
@@ -422,5 +420,9 @@ class DoubleChunkList[T, U](
     }
 
     buf
+  }
+
+  override def toString: String = {
+    head.toString
   }
 }

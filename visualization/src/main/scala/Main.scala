@@ -18,7 +18,7 @@ package tbd.visualization
 
 object Main {
   def main(args: Array[String]) {
-    val test = new ExhaustiveTest(new ListReduceSumTest())
+    val test = new ExhaustiveTest(new ChunkListSortTest())
     //val test = new ManualTest(new ListReduceSumTest())
 
     //Possible Options:

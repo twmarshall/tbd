@@ -74,6 +74,29 @@ class ListQuicksortTest()
   }
 }
 
+class ChunkListSortTest()
+    extends TestAlgorithm[AdjustableList[Int, Int]] {
+  def run(tbd: TBD): AdjustableList[Int, Int] = {
+    val modList = input.getAdjustableList()
+    modList.sort(tbd, (tbd, a, b) => a._2 < b._2, true, true)
+  }
+
+  override def getListConf() = { new ListConf(partitions = 1, chunkSize = 8) }
+
+  def checkOutput(output: AdjustableList[Int, Int], table: Map[Int, Int]): Boolean = {
+    val ca = table.values.toBuffer.sortWith(_ < _)
+    val a = output.toBuffer()
+
+    if(a != ca ) {
+      println("Output: " + a)
+      println("Expected: " + ca)
+
+      false
+    }
+    true
+  }
+}
+
 class ListSplitTest()
     extends TestAlgorithm[(AdjustableList[Int, Int], AdjustableList[Int, Int])] {
   def run(tbd: TBD): (AdjustableList[Int, Int], AdjustableList[Int, Int]) = {
