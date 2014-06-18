@@ -23,7 +23,7 @@ import collection.mutable.HashMap
 import scala.util.Random
 import scala.io.StdIn
 
-class ExhaustiveTest[T](algorithm: TestAlgorithm[T]) extends TestBase {
+class ExhaustiveTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.getListConf()) {
 
   var initialSize = 10
   var maximalMutationsPerPropagation = 2

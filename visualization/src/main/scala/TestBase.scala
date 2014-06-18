@@ -22,9 +22,9 @@ import tbd.mod.{AdjustableList, Dest, Mod}
 import collection.mutable.HashMap
 import scala.util.Random
 
-class TestBase {
+class TestBase(conf: ListConf) {
   val mutator = new Mutator()
-  val input = mutator.createList[Int, Int](new ListConf(partitions = 1))
+  val input = mutator.createList[Int, Int](conf)
 
   val table = new HashMap[Int, Int]
   val rand = new Random()
