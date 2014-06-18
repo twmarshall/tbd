@@ -23,7 +23,7 @@ import tbd.Changeable
 import tbd.Constants._
 import tbd.master.Master
 import tbd.memo.MemoEntry
-import tbd.mod.Mod
+import tbd.mod.{Dest, Mod}
 import tbd.worker.Worker
 
 class DDG(log: LoggingAdapter, id: String, worker: Worker) {
@@ -211,6 +211,30 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 
     parent.addChild(subtree)
     subtree.parent = parent
+  }
+
+  /**
+   * Replaces all of the dests equal to dest1 with dest2 in the subtree rooted
+   * at node. This is called when a memo match is made where the memo node
+   * has a dest that's different from the currentDest.
+   */
+  def replaceDests(node: Node, dest1: Dest[Any], dest2: Dest[Any]) {
+    if (node.currentDest == dest1) {
+      node.currentDest = dest2
+
+      // Because reads and memos must have as their currentDest the modNoDest
+      // that is closest in enclosing scope, a node that doesn't have dest1 as
+      // its dest can't have any children that have dest1 either.
+      for (child <- node.children) {
+	replaceDests(child, dest1, dest2)
+      }
+    } else if(node.currentDest2 == dest1) {
+      node.currentDest2 = dest2
+
+      for (child <- node.children) {
+	replaceDests(child, dest1, dest2)
+      }
+    }
   }
 
   override def toString = {

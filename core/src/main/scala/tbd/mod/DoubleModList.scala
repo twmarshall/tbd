@@ -76,7 +76,7 @@ class DoubleModList[T, V](
     val lift = tbd.makeLift[(Mod[DoubleModListNode[T, V]],
                              Mod[DoubleModListNode[T, V]])](!memoized)
 
-    val result = tbd.mod2((matches: Dest[DoubleModListNode[T, V]],
+    /*val result = tbd.mod2((matches: Dest[DoubleModListNode[T, V]],
                              diffs: Dest[DoubleModListNode[T, V]]) => {
 
         tbd.read(head)(head => {
@@ -87,7 +87,19 @@ class DoubleModList[T, V](
             head.split(tbd, matches, diffs, lift, pred)
           }
         })
+      })*/
+
+    val result = tbd.modNoDest2(() => {
+      tbd.read(head)(head => {
+	if (head == null) {
+	  tbd.writeNoDest2(null.asInstanceOf[DoubleModListNode[T, V]],
+			   null.asInstanceOf[DoubleModListNode[T, V]])
+	} else {
+	  head.splitNoDest(tbd, lift, pred)
+	}
       })
+    })
+
     (new DoubleModList(result._1), new DoubleModList(result._2))
   }
 

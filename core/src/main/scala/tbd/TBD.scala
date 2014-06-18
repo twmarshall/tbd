@@ -55,12 +55,6 @@ class TBD(id: String, _worker: Worker) {
   // reexecuted.
   var reexecutionEnd: Timestamp = null
 
-  // True if this computation uses the NoDest forms of mod and write. This is
-  // a kludge for now while we decide which form we want to use - any computation
-  // that uses any NoDest functions will be marked noDest, so don't mix dests
-  // with NoDests.
-  var noDest = false
-
   def read2[T, V, U](a: Mod[T], b: Mod[V])
                     (reader: (T, V) => (Changeable[U])): Changeable[U] = {
     read(a)((a) => {
@@ -115,7 +109,7 @@ class TBD(id: String, _worker: Worker) {
         write(dest, mod + 1)))
   }
 
-  def read[T, U](mod: Mod[T])(reader: T => (Changeable[U])): Changeable[U] = {
+  def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = {
     val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],
                                       currentParent,
                                       reader.asInstanceOf[Any => Changeable[Any]])
@@ -129,7 +123,8 @@ class TBD(id: String, _worker: Worker) {
     currentParent = outerReader
 
     readNode.endTime = worker.ddg.nextTimestamp(readNode)
-    readNode.changeable = changeable.asInstanceOf[Changeable[Any]]
+    readNode.currentDest = currentDest
+    readNode.currentDest2 = currentDest2
 
     changeable
   }
@@ -149,13 +144,10 @@ class TBD(id: String, _worker: Worker) {
   }
 
   def writeNoDest[T](value: T): Changeable[T] = {
-    noDest = true
+    val awaiting = currentDest.mod.update(value)
+    Await.result(Future.sequence(awaiting), DURATION)
 
-    val modId = new ModId(worker.id + "." + worker.nextModId)
-    worker.nextModId += 1
-    val mod = new Mod[T](modId, value)
-    val changeable = new Changeable(mod)
-
+    val changeable = new Changeable(currentDest.mod)
     if (Main.debug) {
       val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
                                           currentParent)
@@ -163,6 +155,22 @@ class TBD(id: String, _worker: Worker) {
     }
 
     changeable.asInstanceOf[Changeable[T]]
+  }
+
+  def writeNoDest2[T, U](value: T, value2: U): Changeable2[T, U] = {
+    val awaiting = currentDest.mod.update(value)
+    val awaiting2 = currentDest2.mod.update(value2)
+    Await.result(Future.sequence(awaiting), DURATION)
+    Await.result(Future.sequence(awaiting2), DURATION)
+
+    val changeable = new Changeable2(currentDest.mod, currentDest2.mod)
+    if (Main.debug) {
+      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+                                          currentParent)
+      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
+    }
+
+    changeable.asInstanceOf[Changeable2[T, U]]
   }
 
   def createMod[T](value: T): Mod[T] = {
@@ -177,9 +185,10 @@ class TBD(id: String, _worker: Worker) {
     var second: Mod[V] = null
     first = this.mod((first: Dest[T]) => {
       second = this.mod((second: Dest[V]) => {
-        initializer(first, second)
+        initializer(first, second);
+        new Changeable[V](null)
       })
-      new Changeable(first)
+      new Changeable[T](null)
     })
 
     (first, second)
@@ -194,15 +203,40 @@ class TBD(id: String, _worker: Worker) {
     d.mod
   }
 
+  var currentDest: Dest[Any] = null
   def modNoDest[T](initializer: () => Changeable[T]): Mod[T] = {
-    noDest = true
-
     val modId = new ModId(worker.id + "." + worker.nextModId)
     worker.nextModId += 1
 
-    val changeable = initializer()
+    val oldCurrentDest = currentDest
+    currentDest = new Dest[T](modId).asInstanceOf[Dest[Any]]
+    initializer()
+    val mod = currentDest.mod
+    currentDest = oldCurrentDest
 
-    changeable.mod
+    mod.asInstanceOf[Mod[T]]
+  }
+
+  var currentDest2: Dest[Any] = null
+  def modNoDest2[T, U](initializer: () => Changeable2[T, U]): (Mod[T], Mod[U]) = {
+    val modId = new ModId(worker.id + "." + worker.nextModId)
+    worker.nextModId += 1
+    val oldCurrentDest = currentDest
+    currentDest = new Dest[T](modId).asInstanceOf[Dest[Any]]
+
+    val modId2 = new ModId(worker.id + "." + worker.nextModId)
+    worker.nextModId += 1
+    val oldCurrentDest2 = currentDest2
+    currentDest2 = new Dest[T](modId2).asInstanceOf[Dest[Any]]
+
+    initializer()
+    val mod = currentDest.mod
+    currentDest = oldCurrentDest
+
+    val mod2 = currentDest2.mod
+    currentDest2 = oldCurrentDest2
+
+    (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
   }
 
   var workerId = 0
