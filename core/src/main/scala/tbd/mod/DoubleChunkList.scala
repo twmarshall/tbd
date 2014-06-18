@@ -199,7 +199,103 @@ class DoubleChunkList[T, U](
       tbd: TBD,
       comperator: (TBD, (T, U), (T, U)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = false): AdjustableList[T, U] = ???
+      memoized: Boolean = false): AdjustableList[T, U] = {
+
+    type SVec = Vector[(T, U)]
+    type SChunk = DoubleChunkListNode[T, U]
+
+    val nullNode: Mod[SChunk] = tbd.createMod(null)
+    val reuceInitial: Mod[(SChunk, U)] = tbd.createMod((null, null.asInstanceOf[U]))
+
+    def sortMapper(tbd: TBD, values: SVec): (SChunk, U) = {
+        def sortComperator(a: (T, U), b: (T, U)): Boolean = {
+          comperator(tbd, a, b)
+        }
+        val sortedVector = values.sortWith(sortComperator)
+
+        (new DoubleChunkListNode(
+          tbd.createMod(sortedVector),
+          nullNode),
+        values(0)._2)
+      }
+
+    val listOfSortedChunks = this.chunkMap(tbd, sortMapper, parallel, memoized)
+
+    def reducer(tbd: TBD, a: (SChunk, U), b: (SChunk, U)): (SChunk, U) = {
+
+      if(a == null)
+        return b
+      if(b == null)
+        return a
+
+      val (next, value) = tbd.mod2((nextDest: Dest[SChunk], valDest: Dest[SVec]) => {
+        tbd.read2(a._1.chunkMod, b._1.chunkMod)((avec, bvec) => {
+          //Could we create a global constant for chunk size?
+          val chunkSize =
+            if(avec.length < bvec.length)
+              avec.length * 1.5
+            else
+              bvec.length * 1.5
+
+          var result = Vector[(T, U)]()
+
+          var ac = 0
+          var bc = 0
+
+          while(result.length < chunkSize) {
+            if(comperator(tbd, avec(ac), bvec(bc))) {
+              if(avec.length <= ac) scala.util.control.Breaks.break
+              result = result :+ avec(ac)
+              ac += 1
+            } else {
+              if(bvec.length <= bc) scala.util.control.Breaks.break
+              result = result :+ bvec(bc)
+              bc += 1
+            }
+          }
+
+          //Could we clean this up?
+          if(ac == avec.length && bc == bvec.length) {
+            tbd.read2(a._1.nextMod, b._1.nextMod)((anext, bnext) => {
+              tbd.write(nextDest, reducer(tbd, (anext, a._2), (bnext, b._2))._1)
+            })
+          } else if(ac == avec.length) {
+            tbd.read(a._1.nextMod)((anext) => {
+              val newBNext = new DoubleChunkListNode(
+                tbd.createMod(bvec.drop(bc)), b._1.nextMod)
+              tbd.write(nextDest, reducer(tbd, (anext, a._2), (newBNext, b._2))._1)
+            })
+          } else if(bc == bvec.length) {
+            tbd.read(b._1.nextMod)((bnext) => {
+              val newANext = new DoubleChunkListNode(
+                tbd.createMod(avec.drop(ac)), a._1.nextMod)
+              tbd.write(nextDest, reducer(tbd, (newANext, a._2), (bnext, b._2))._1)
+            })
+          } else {
+            val newBNext = new DoubleChunkListNode(
+              tbd.createMod(bvec.drop(bc)), b._1.nextMod)
+            val newANext = new DoubleChunkListNode(
+              tbd.createMod(avec.drop(ac)), a._1.nextMod)
+            tbd.write(nextDest, reducer(tbd, (newANext, a._2), (newBNext, b._2))._1)
+          }
+
+          tbd.write(valDest, result)
+        })
+      })
+
+      (new DoubleChunkListNode(value, next), a._2)
+    }
+
+    val reductionResult = listOfSortedChunks.reduce(tbd, reuceInitial, reducer, parallel, memoized)
+
+    val sHead = tbd.mod((dest: Dest[SChunk]) => {
+      tbd.read(reductionResult)(reductionResult => {
+        tbd.write(dest, reductionResult._1)
+      })
+    })
+
+    new DoubleChunkList(sHead)
+  }
 
   /*def randomReduce(
       tbd: TBD,
