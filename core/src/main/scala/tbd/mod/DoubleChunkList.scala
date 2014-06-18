@@ -228,7 +228,8 @@ class DoubleChunkList[T, U](
       if(b._1 == null)
         return a
 
-      val (next, value) = tbd.mod2((nextDest: Dest[SChunk], valDest: Dest[SVec]) => {
+      val (next, value) = tbd.mod2((nextDest: Dest[SChunk],
+                                    valDest: Dest[SVec]) => {
         tbd.read2(a._1.chunkMod, b._1.chunkMod)((avec, bvec) => {
           //Could we create a global constant for chunk size?
           //Or should we do some randomization here?
@@ -251,7 +252,6 @@ class DoubleChunkList[T, U](
             }
           }
 
-          //Could we clean this up?
           //Could we handle this better (especially towards the end?)
           if(ac == avec.length && bc == bvec.length) {
             tbd.read2(a._1.nextMod, b._1.nextMod)((anext, bnext) => {
@@ -261,20 +261,23 @@ class DoubleChunkList[T, U](
             tbd.read(a._1.nextMod)((anext) => {
               val newBNext = new DoubleChunkListNode(
                 tbd.createMod(bvec.drop(bc)), b._1.nextMod)
-              tbd.write(nextDest, reducer(tbd, (anext, a._2), (newBNext, b._2))._1)
+              tbd.write(nextDest,
+                        reducer(tbd, (anext, a._2), (newBNext, b._2))._1)
             })
           } else if(bc == bvec.length) {
             tbd.read(b._1.nextMod)((bnext) => {
               val newANext = new DoubleChunkListNode(
                 tbd.createMod(avec.drop(ac)), a._1.nextMod)
-              tbd.write(nextDest, reducer(tbd, (newANext, a._2), (bnext, b._2))._1)
+              tbd.write(nextDest,
+                        reducer(tbd, (newANext, a._2), (bnext, b._2))._1)
             })
           } else {
             val newBNext = new DoubleChunkListNode(
               tbd.createMod(bvec.drop(bc)), b._1.nextMod)
             val newANext = new DoubleChunkListNode(
               tbd.createMod(avec.drop(ac)), a._1.nextMod)
-            tbd.write(nextDest, reducer(tbd, (newANext, a._2), (newBNext, b._2))._1)
+            tbd.write(nextDest,
+                      reducer(tbd, (newANext, a._2), (newBNext, b._2))._1)
           }
 
           tbd.write(valDest, result)
@@ -284,7 +287,8 @@ class DoubleChunkList[T, U](
       (new DoubleChunkListNode(value, next), a._2)
     }
 
-    val reductionResult = listOfSortedChunks.reduce(tbd, reuceInitial, reducer, parallel, memoized)
+    val reductionResult = listOfSortedChunks.reduce(tbd, reuceInitial,
+                                                    reducer, parallel, memoized)
 
     val sHead = tbd.mod((dest: Dest[SChunk]) => {
       tbd.read(reductionResult)(reductionResult => {
