@@ -81,7 +81,7 @@ class ChunkListSortTest()
     modList.sort(tbd, (tbd, a, b) => a._2 < b._2, true, true)
   }
 
-  override def getListConf() = { new ListConf(partitions = 1, chunkSize = 8) }
+  override def getListConf() = { new ListConf(partitions = 1, chunkSize = 16) }
 
   def checkOutput(output: AdjustableList[Int, Int], table: Map[Int, Int]): Boolean = {
     val ca = table.values.toBuffer.sortWith(_ < _)

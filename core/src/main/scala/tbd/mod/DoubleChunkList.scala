@@ -195,6 +195,7 @@ class DoubleChunkList[T, U](
       memoized: Boolean = false):
        (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
+  ///Weeeeelll, ther we go with sort.
   def sort(
       tbd: TBD,
       comperator: (TBD, (T, U), (T, U)) => Boolean,
@@ -205,44 +206,78 @@ class DoubleChunkList[T, U](
     type SChunk = DoubleChunkListNode[T, U]
 
     val nullNode: Mod[SChunk] = tbd.createMod(null)
-    val reuceInitial: Mod[(SChunk, U)] = tbd.createMod((null, null.asInstanceOf[U]))
+    val reuceInitial: Mod[(Int, SChunk)] = tbd.createMod((0, null))
 
-    def sortMapper(tbd: TBD, values: SVec): (SChunk, U) = {
-        def sortComperator(a: (T, U), b: (T, U)): Boolean = {
-          comperator(tbd, a, b)
-        }
-        val sortedVector = values.sortWith(sortComperator)
-
-        (new DoubleChunkListNode(
-          tbd.createMod(sortedVector),
-          nullNode),
-        values(0)._2)
+    def sortMapper(tbd: TBD, values: SVec): (SVec) = {
+      def sortComperator(a: (T, U), b: (T, U)): Boolean = {
+        comperator(tbd, a, b)
       }
 
-    val listOfSortedChunks = this.chunkMap(tbd, sortMapper, parallel, memoized)
+      values.sortWith(sortComperator)
+    }
 
-    def reducer(tbd: TBD, a: (SChunk, U), b: (SChunk, U)): (SChunk, U) = {
+    val rand = new scala.util.Random()
 
-      if(a._1 == null)
-        return b
-      if(b._1 == null)
-        return a
+    def customChunkMap (
+        node: SChunk,
+        tbd: TBD,
+        dest: Dest[DoubleModListNode[Int, SChunk]],
+        lift: Lift[Mod[DoubleModListNode[Int, SChunk]]])
+          : Changeable[DoubleModListNode[Int, SChunk]] = {
+      val newChunkMod = tbd.mod((destNode: Dest[(Int, SChunk)]) => {
+        val newContent = tbd.mod((destContent: Dest[SVec]) => {
+          tbd.read(node.chunkMod)(chunk => {
+            tbd.write(destContent, sortMapper(tbd, chunk))
+          })
+        })
+        //It should be safe to use random keys here -
+        //if we re-create a DML node, we got a major structure
+        //change anyway.
+        tbd.write(destNode, (rand.nextInt, new DoubleChunkListNode(newContent, nullNode))) //Create meaningfull key here.
+      })
+      val newNextMod = lift.memo(List(node.nextMod), () =>
+        tbd.mod((dest: Dest[DoubleModListNode[Int, SChunk]]) =>
+          tbd.read(node.nextMod)(next =>
+            if (next != null)
+              customChunkMap(next, tbd, dest, lift)
+            else
+              tbd.write(dest, null))))
+      tbd.write(dest, new DoubleModListNode[Int, SChunk](newChunkMod, newNextMod))
+    }
 
-      val (next, value) = tbd.mod2((nextDest: Dest[SChunk],
-                                    valDest: Dest[SVec]) => {
-        tbd.read2(a._1.chunkMod, b._1.chunkMod)((avec, bvec) => {
+    val chunkMapLift = tbd.makeLift[Mod[DoubleModListNode[Int, SChunk]]](!memoized)
+
+    val listOfSortedChunks = new DoubleModList(tbd.mod((dest: Dest[DoubleModListNode[Int, SChunk]]) => {
+      tbd.read(head)(head => {
+        customChunkMap(head, tbd, dest, chunkMapLift)
+      })
+    }))
+
+    val lift = tbd.makeLift[SChunk](!memoized)
+
+    def reducer(nextDest: Dest[SChunk], valDest: Dest[SVec], tbd: TBD, a: (Int, SChunk), b: (Int, SChunk), akku: SVec): Changeable[SVec] = {
+      if(a._2 == null || b._2 == null) {
+        tbd.write(nextDest, if(a._2 == null) b._2 else a._2)
+        tbd.write(valDest, akku)
+      } else {
+        tbd.read2(a._2.chunkMod, b._2.chunkMod)((avec, bvec) => {
           //Could we create a global constant for chunk size?
           //Or should we do some randomization here?
-          val chunkSize = 8
+          //Or does the mutator tell us the size magically?
+          val expectedChunkSize = 16
 
-          var result = Vector[(T, U)]()
+          var result = akku
 
           var ac = 0
           var bc = 0
 
-          while(result.length < chunkSize &&
-                avec.length > ac &&
-                bvec.length > bc) {
+          var endOfAReached = avec.length == 0
+          var endOfBReached = bvec.length == 0
+          var shouldCutResult = false
+
+          while(!endOfAReached &&
+                !endOfBReached &&
+                !shouldCutResult) { // 1
             if(comperator(tbd, avec(ac), bvec(bc))) {
               result = result :+ avec(ac)
               ac += 1
@@ -250,49 +285,69 @@ class DoubleChunkList[T, U](
               result = result :+ bvec(bc)
               bc += 1
             }
+
+            endOfAReached = avec.length <= ac
+            endOfBReached = bvec.length <= bc
+            shouldCutResult = result.last._1.hashCode % expectedChunkSize == 0
           }
 
-          //Could we handle this better (especially towards the end?)
-          if(ac == avec.length && bc == bvec.length) {
-            tbd.read2(a._1.nextMod, b._1.nextMod)((anext, bnext) => {
-              tbd.write(nextDest, reducer(tbd, (anext, a._2), (bnext, b._2))._1)
-            })
-          } else if(ac == avec.length) {
-            tbd.read(a._1.nextMod)((anext) => {
+          if(shouldCutResult) {
+            val newb = bvec.drop(bc)
+            val newa = avec.drop(ac)
+            tbd.write(nextDest, //Where does nextDest come from? We want to omit a write...
+              lift.memo(List(b._2.nextMod, newb, a._2.nextMod, //Repro a similar memo issue.
+                           newa, a._1, b._1), () => {
               val newBNext = new DoubleChunkListNode(
-                tbd.createMod(bvec.drop(bc)), b._1.nextMod)
-              tbd.write(nextDest,
-                        reducer(tbd, (anext, a._2), (newBNext, b._2))._1)
-            })
-          } else if(bc == bvec.length) {
-            tbd.read(b._1.nextMod)((bnext) => {
+                tbd.createMod(newb), b._2.nextMod)
               val newANext = new DoubleChunkListNode(
-                tbd.createMod(avec.drop(ac)), a._1.nextMod)
-              tbd.write(nextDest,
-                        reducer(tbd, (newANext, a._2), (bnext, b._2))._1)
-            })
+                tbd.createMod(newa), a._2.nextMod)
+              reduceWrapper(tbd, (a._1, newANext), (b._1, newBNext))._2
+            }))
+            tbd.write(valDest, result)
           } else {
-            val newBNext = new DoubleChunkListNode(
-              tbd.createMod(bvec.drop(bc)), b._1.nextMod)
-            val newANext = new DoubleChunkListNode(
-              tbd.createMod(avec.drop(ac)), a._1.nextMod)
-            tbd.write(nextDest,
-                      reducer(tbd, (newANext, a._2), (newBNext, b._2))._1)
+            if(endOfAReached && endOfBReached) {
+              tbd.read2(a._2.nextMod, b._2.nextMod)((anext, bnext) => {
+                reducer(nextDest, valDest, tbd, (a._1, anext), (b._1, bnext), result)
+              })
+            } else if(endOfAReached) {
+              tbd.read(a._2.nextMod)((anext) => {
+                val newBNext = new DoubleChunkListNode(
+                  tbd.createMod(bvec.drop(bc)), b._2.nextMod)
+                  reducer(nextDest, valDest, tbd, (a._1, anext), (b._1, newBNext), result)
+              })
+            } else { //endOfBReached
+              tbd.read(b._2.nextMod)((bnext) => {
+                val newANext = new DoubleChunkListNode(
+                  tbd.createMod(avec.drop(ac)), a._2.nextMod)
+                  reducer(nextDest, valDest, tbd, (a._1, newANext), (b._1, bnext), result)
+              })
+            }
           }
-
-          tbd.write(valDest, result)
         })
+      }
+    }
+
+    def reduceWrapper (tbd: TBD, a: (Int, SChunk), b: (Int, SChunk)): (Int, SChunk) = {
+      if(a._2 == null)
+        return b
+      if(b._2 == null)
+        return a
+
+      val (next, value) = tbd.mod2((nextDest: Dest[SChunk],
+                valDest: Dest[SVec]) => {
+        reducer(nextDest, valDest, tbd, a, b, Vector[(T, U)]())
       })
 
-      (new DoubleChunkListNode(value, next), a._2)
+      //Well, here is my problem...
+      (a._1, new DoubleChunkListNode(value, next))
     }
 
     val reductionResult = listOfSortedChunks.reduce(tbd, reuceInitial,
-                                                    reducer, parallel, memoized)
+                                                    reduceWrapper, parallel, memoized)
 
     val sHead = tbd.mod((dest: Dest[SChunk]) => {
       tbd.read(reductionResult)(reductionResult => {
-        tbd.write(dest, reductionResult._1)
+        tbd.write(dest, reductionResult._2)
       })
     })
 

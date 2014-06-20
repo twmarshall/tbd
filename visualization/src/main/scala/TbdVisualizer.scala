@@ -324,6 +324,10 @@ class TbdVisualizer extends ViewerListener {
     }
 
     val methodNames = node.stacktrace.map(y => y.getMethodName())
+    val fileNames = node.stacktrace.map(y => (y.getMethodName(), y.getFileName(), y.getLineNumber()))
+
+    var (_, fileName, lineNumber) = fileNames.filter(y => (y._1.contains("apply")))(0)
+
     var currentMethod = methodNames.filter(y => (!y.startsWith("<init>")
                                             && !y.startsWith("()")
                                             && !y.startsWith("addRead")
@@ -347,7 +351,7 @@ class TbdVisualizer extends ViewerListener {
       currentMethod += " (createMod)"
     }
 
-    currentMethod
+    currentMethod + " " + fileName + ":" + lineNumber.toString
   }
 
   def viewClosed(id: String) {

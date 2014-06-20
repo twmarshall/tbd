@@ -23,8 +23,8 @@ object Main {
 
     //Possible Options:
     test.showDDGEachStep = true
-    //test.initialSize = 150
-    //test.maximalMutationsPerPropagation = 20
+    test.initialSize = 100
+    //test.maximalMutationsPerPropagation = 2
 
     test.run()
   }
