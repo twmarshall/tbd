@@ -100,6 +100,6 @@ class DoubleChunkListNode[T, U](
       lst.chunkMod + next
     }
 
-    "DoubleModListNode(" + toString(this)
+    "DoubleChunkListNode(" + toString(this)
   }
 }

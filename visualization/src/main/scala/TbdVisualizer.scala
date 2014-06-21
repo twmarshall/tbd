@@ -44,7 +44,7 @@ class TbdVisualizer extends ViewerListener {
     node.memo{
       size: 20px;
       shape: diamond;
-      fill-color: LightGreen;
+      fill-color: LightBlue;
     }
     node.write {
       size: 10px;
@@ -62,7 +62,7 @@ class TbdVisualizer extends ViewerListener {
       text-padding: 2px;
       stroke-mode: none;
       stroke-width: 2;
-      stroke-color: green;
+      stroke-color: Green;
     }
   """
 
@@ -323,35 +323,36 @@ class TbdVisualizer extends ViewerListener {
       return "<No stacktrace available. Set Main.debug = true to enable stacktraces>"
     }
 
-    val methodNames = node.stacktrace.map(y => y.getMethodName())
+    val methodNames = node.stacktrace.map(y => (y.getMethodName(), y.getClassName()))
     val fileNames = node.stacktrace.map(y => (y.getMethodName(), y.getFileName(), y.getLineNumber()))
 
     var (_, fileName, lineNumber) = fileNames.filter(y => (y._1.contains("apply")))(0)
 
-    var currentMethod = methodNames.filter(y => (!y.startsWith("<init>")
-                                            && !y.startsWith("()")
-                                            && !y.startsWith("addRead")
-                                            && !y.startsWith("addWrite")
-                                            && !y.startsWith("addMemo")
-                                            && !y.startsWith("createMod")
-                                            && !y.startsWith("getStackTrace")
-                                            && !y.startsWith("apply")
-                                            && !y.startsWith("read")
-                                            && !y.startsWith("memo")
-                                            && !y.startsWith("par")
-                                            && !y.startsWith("write")
-                                            && !y.startsWith("mod")))(0)
+    var (currentMethod, className) = methodNames.filter(y => (!y._1.startsWith("<init>")
+                                            && !y._1.startsWith("()")
+                                            && !y._1.startsWith("addRead")
+                                            && !y._1.startsWith("addWrite")
+                                            && !y._1.startsWith("addMemo")
+                                            && !y._1.startsWith("createMod")
+                                            && !y._1.startsWith("getStackTrace")
+                                            && !y._1.startsWith("apply")
+                                            && !y._1.startsWith("read")
+                                            && !y._1.startsWith("memo")
+                                            && !y._1.startsWith("par")
+                                            && !y._1.startsWith("write")
+                                            && !y._1.startsWith("mod")))(0)
 
     if(currentMethod.contains("$")) {
       currentMethod = currentMethod.substring(0, currentMethod.lastIndexOf("$"))
       currentMethod = currentMethod.substring(currentMethod.lastIndexOf("$") + 1)
     }
 
-    if(methodNames.find(x => x == "createMod").isDefined) {
+    if(methodNames.find(x => x._1 == "createMod").isDefined) {
       currentMethod += " (createMod)"
     }
 
-    currentMethod + " " + fileName + ":" + lineNumber.toString
+    className + "." + currentMethod + " (" +
+    fileName + ":" + lineNumber.toString + ")"
   }
 
   def viewClosed(id: String) {
