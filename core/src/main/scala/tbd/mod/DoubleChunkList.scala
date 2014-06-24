@@ -196,7 +196,7 @@ class DoubleChunkList[T, U](
        (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   //This implementation takes care to return the result as a chunked list, where
-  //the chunks have approximately the same size as in the input list. 
+  //the chunks have approximately the same size as in the input list.
   def sort(
       tbd: TBD,
       comperator: (TBD, (T, U), (T, U)) => Boolean,
@@ -260,8 +260,7 @@ class DoubleChunkList[T, U](
                 new DoubleModListNode[Int, SChunk](newChunkMod, newNextMod))
     }
 
-    val chunkMapLift = tbd.makeLift[Mod[DoubleModListNode[Int, SChunk]]]
-                         (!memoized)
+    val chunkMapLift = tbd.makeLift[Mod[DoubleModListNode[Int, SChunk]]](!memoized)
 
     //Here, we create a DoubleModList[Int, DoubleChunkListNode[T, U]] from our
     //double chunked list, where each node contains exactly one

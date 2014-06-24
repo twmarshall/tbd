@@ -158,6 +158,8 @@ class DoubleModListNode[T, V] (
           val (smaller, greater) = tbd.mod2((destSmaller: Dest[DoubleModListNode[T, V]],
                                       destGreater: Dest[DoubleModListNode[T, V]]) => {
 
+            //Just an idea -> Keep the pivot as mod, decapsulate in split.
+            //So we move dependency inside splitting function -> Better memo. 
             val lift = tbd.makeLift[(Mod[DoubleModListNode[T, V]],
                                      Mod[DoubleModListNode[T, V]])](!memoized)
 
