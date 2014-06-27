@@ -13,11 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.memo
+package tbd
 
-import tbd.ddg.MemoNode
+import scala.collection.mutable.ArrayBuffer
 
-class MemoEntry(_value: Any, _node: MemoNode) {
-  val value = _value
-  val node = _node
+import tbd.mod.Mod
+
+class DummyLift[T](tbd: TBD, memoId: Int) extends Lift[T](tbd, memoId) {
+
+  override def memo(args: List[_], func: () => T): T = {
+    func()
+  }
 }

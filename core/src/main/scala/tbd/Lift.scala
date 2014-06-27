@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.memo
+package tbd
 
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.{Changeable, Changeable2, TBD}
+import tbd.ddg.MemoNode
 import tbd.master.Master
 import tbd.mod.Mod
 
@@ -37,48 +37,49 @@ class Lift[T](tbd: TBD, memoId: Int) {
 
           // Search through the memo entries matching this signature to see if
           // there's one in the right time range.
-          for (memoEntry <- tbd.worker.memoTable(signature)) {
-            val timestamp = memoEntry.node.timestamp
+          for (memoNode <- tbd.worker.memoTable(signature)) {
+            val timestamp = memoNode.timestamp
             if (!found && timestamp > tbd.reexecutionStart &&
 		timestamp < tbd.reexecutionEnd &&
-		memoEntry.node.matchableInEpoch <= Master.epoch) {
-              if (memoEntry.node.currentDest != tbd.currentDest &&
-                  memoEntry.value.isInstanceOf[Changeable[_]]) {
-                val changeable = memoEntry.value.asInstanceOf[Changeable[Any]]
+		memoNode.matchableInEpoch <= Master.epoch) {
+
+	      if (memoNode.currentDest != tbd.currentDest &&
+		  memoNode.value.isInstanceOf[Changeable[_]]) {
+                val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
 
                 val awaiting = tbd.currentDest.mod.update(changeable.mod.read())
                 Await.result(Future.sequence(awaiting), DURATION)
 
-		tbd.worker.ddg.replaceDests(memoEntry.node,
-					    memoEntry.node.currentDest,
+		tbd.worker.ddg.replaceDests(memoNode,
+					    memoNode.currentDest,
 					    tbd.currentDest)
               }
 
-	      if (memoEntry.node.currentDest2 != tbd.currentDest2 &&
-		  memoEntry.value.isInstanceOf[Changeable2[_, _]]) {
-		val changeable2 = memoEntry.value.asInstanceOf[Changeable2[Any, Any]]
+	      if (memoNode.value.isInstanceOf[Changeable2[_, _]] &&
+		  memoNode.currentDest2 != tbd.currentDest2) {
+		val changeable2 = memoNode.value.asInstanceOf[Changeable2[Any, Any]]
 
 		val awaiting = tbd.currentDest2.mod.update(changeable2.mod2.read())
 		Await.result(Future.sequence(awaiting), DURATION)
 
-		tbd.worker.ddg.replaceDests(memoEntry.node,
-					    memoEntry.node.currentDest2,
+		tbd.worker.ddg.replaceDests(memoNode,
+					    memoNode.currentDest2,
 					    tbd.currentDest2)
 	      }
 
               found = true
-              tbd.worker.ddg.attachSubtree(tbd.currentParent, memoEntry.node)
+              tbd.worker.ddg.attachSubtree(tbd.currentParent, memoNode)
 
-	      memoEntry.node.matchableInEpoch = Master.epoch + 1
-              ret = memoEntry.value.asInstanceOf[T]
+	      memoNode.matchableInEpoch = Master.epoch + 1
+              ret = memoNode.value.asInstanceOf[T]
 
 	      // This ensures that we won't match anything under the currently
 	      // reexecuting read that comes before this memo node, since then
 	      // the timestamps would be out of order.
-	      tbd.reexecutionStart = memoEntry.node.endTime
+	      tbd.reexecutionStart = memoNode.endTime
 
               val future = tbd.worker.propagate(timestamp,
-                                                memoEntry.node.endTime)
+                                                memoNode.endTime)
               Await.result(future, DURATION)
             }
           }
@@ -94,13 +95,13 @@ class Lift[T](tbd: TBD, memoId: Int) {
       tbd.currentParent = outerParent
       memoNode.endTime = tbd.worker.ddg.nextTimestamp(memoNode)
       memoNode.currentDest = tbd.currentDest
-
-      val memoEntry = new MemoEntry(value, memoNode)
+      memoNode.currentDest2 = tbd.currentDest2
+      memoNode.value = value
 
       if (tbd.worker.memoTable.contains(signature)) {
-        tbd.worker.memoTable(signature) += memoEntry
+        tbd.worker.memoTable(signature) += memoNode
       } else {
-        tbd.worker.memoTable += (signature -> ArrayBuffer(memoEntry))
+        tbd.worker.memoTable += (signature -> ArrayBuffer(memoNode))
       }
 
       ret = value

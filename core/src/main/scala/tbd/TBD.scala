@@ -24,7 +24,6 @@ import scala.concurrent.{Await, Future, Promise}
 import tbd.Constants._
 import tbd.ddg.{Node, Timestamp}
 import tbd.master.Main
-import tbd.memo.{DummyLift, Lift, MemoEntry}
 import tbd.messages._
 import tbd.mod.{Dest, Mod}
 import tbd.worker.{Worker, Task}
@@ -167,6 +166,47 @@ class TBD(id: String, _worker: Worker) {
     if (Main.debug) {
       val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
                                           currentParent)
+      writeNode.mod2 = changeable.mod2
+      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
+    }
+
+    changeable.asInstanceOf[Changeable2[T, U]]
+  }
+
+  def writeNoDestLeft[T, U](value: T, mod2: Mod[U]): Changeable2[T, U] = {
+    if (mod2 != currentDest2.mod) {
+      println("WARNING - mod parameter to writeNoDestLeft doesn't match " +
+	      "currentDest2" + mod2 + " " + currentDest2.mod)
+    }
+
+    val awaiting = currentDest.mod.update(value)
+    Await.result(Future.sequence(awaiting), DURATION)
+
+    val changeable = new Changeable2(currentDest.mod, mod2)
+    if (Main.debug) {
+      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+                                          currentParent)
+      writeNode.mod2 = mod2.asInstanceOf[Mod[Any]]
+      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
+    }
+
+    changeable.asInstanceOf[Changeable2[T, U]]
+  }
+
+  def writeNoDestRight[T, U](mod: Mod[T], value2: U): Changeable2[T, U] = {
+    if (mod != currentDest.mod) {
+      println("WARNING - mod parameter to writeNoDestRight doesn't match " +
+	      "currentDest " + mod + " " + currentDest.mod)
+    }
+
+    val awaiting = currentDest2.mod.update(value2)
+    Await.result(Future.sequence(awaiting), DURATION)
+
+    val changeable = new Changeable2(mod, currentDest2.mod)
+    if (Main.debug) {
+      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+                                          currentParent)
+      writeNode.mod2 = currentDest2.mod
       writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
     }
 
@@ -230,9 +270,39 @@ class TBD(id: String, _worker: Worker) {
     currentDest2 = new Dest[T](modId2).asInstanceOf[Dest[Any]]
 
     initializer()
+
     val mod = currentDest.mod
     currentDest = oldCurrentDest
+    val mod2 = currentDest2.mod
+    currentDest2 = oldCurrentDest2
 
+    (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
+  }
+
+  def modNoDestLeft[T, U](initializer: () => Changeable2[T, U]): (Mod[T], Mod[U]) = {
+    val modId = new ModId(worker.id + "." + worker.nextModId)
+    worker.nextModId += 1
+    val oldCurrentDest = currentDest
+    currentDest = new Dest[T](modId).asInstanceOf[Dest[Any]]
+
+    initializer()
+
+    val mod = currentDest.mod
+    currentDest = oldCurrentDest
+    val mod2 = currentDest2.mod
+
+    (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
+  }
+
+  def modNoDestRight[T, U](initializer: () => Changeable2[T, U]): (Mod[T], Mod[U]) = {
+    val modId2 = new ModId(worker.id + "." + worker.nextModId)
+    worker.nextModId += 1
+    val oldCurrentDest2 = currentDest2
+    currentDest2 = new Dest[T](modId2).asInstanceOf[Dest[Any]]
+
+    initializer()
+
+    val mod = currentDest.mod
     val mod2 = currentDest2.mod
     currentDest2 = oldCurrentDest2
 

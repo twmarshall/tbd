@@ -19,7 +19,6 @@ import org.scalatest._
 import scala.collection.mutable.ArrayBuffer
 
 import tbd._
-import tbd.memo.Lift
 import tbd.mod._
 
 class PropagationOrderTest(input: TableInput[Int, Int]) extends Adjustable {
