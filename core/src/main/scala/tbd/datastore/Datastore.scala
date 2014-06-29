@@ -35,9 +35,9 @@ class Datastore extends Actor with ActorLogging {
   // when the table is updated.
   private val inputs = Map[InputId, Modifier]()
 
-  private val dependencies = Map[ModId, Set[ActorRef]]()
+  private val store = new MapStore()
 
-  private val values = Map[ModId, Any]()
+  private val dependencies = Map[ModId, Set[ActorRef]]()
 
   private var nextInputId: InputId = 0
 
@@ -46,7 +46,7 @@ class Datastore extends Actor with ActorLogging {
     val mod = new Mod[T](new ModId("d." + nextModId), self)
     nextModId += 1
 
-    values(mod.id) = value
+    store.put(mod.id, value)
     mod
   }
 
@@ -59,15 +59,15 @@ class Datastore extends Actor with ActorLogging {
       }
     }
 
-    values(modId)
+    store.get(modId)
   }
 
   def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
-    if (!values.contains(modId)) {
+    if (!store.contains(modId)) {
       log.warning("Trying to update non-existent mod " + modId)
     }
 
-    values(modId) = value
+    store.put(modId, value)
 
     val futures = ArrayBuffer[Future[String]]()
     if (dependencies.contains(modId)) {
@@ -82,11 +82,11 @@ class Datastore extends Actor with ActorLogging {
   }
 
   def removeMod(modId: ModId) {
-    if (!values.contains(modId)) {
+    if (!store.contains(modId)) {
       log.warning("Trying to remove nonexistent mod " + modId)
     }
 
-    values -= modId
+    store.remove(modId)
   }
 
   def receive = {
