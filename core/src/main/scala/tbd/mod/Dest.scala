@@ -24,11 +24,6 @@ import tbd.TBD
 import tbd.master.Main
 import tbd.worker.Worker
 
-class Dest[T](_id: ModId)
-    extends Mod[T](new ModId(_id + "d"), null.asInstanceOf[T]) {
+class Dest[T](_id: ModId) {
   var mod = new Mod[T](_id, null.asInstanceOf[T])
-
-  override def read(workerRef: ActorRef = null): T = ???
-
-  override def update(value: T): ArrayBuffer[Future[String]] = ???
 }
