@@ -17,7 +17,7 @@ package tbd.datastore
 
 import akka.actor.{Actor, ActorRef, ActorLogging, Props}
 import scala.collection.mutable.{ArrayBuffer, Map, Set}
-import scala.concurrent.Future
+import scala.concurrent.{Future, Promise}
 
 import tbd.Constants._
 import tbd.{AdjustableConf, ListConf, TableConf}
@@ -30,41 +30,63 @@ object Datastore {
 
 class Datastore extends Actor with ActorLogging {
   import context.dispatcher
-  private val mods = Map[Any, Mod[Any]]()
-
   // Maps the name of an input table to a set containing the Modifiers that were
   // returned containing elements from this table, so that we can inform them
   // when the table is updated.
   private val inputs = Map[InputId, Modifier]()
 
+  private val dependencies = Map[ModId, Set[ActorRef]]()
+
+  private val values = Map[ModId, Any]()
+
   private var nextInputId: InputId = 0
 
   private var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
-    val mod = new Mod[T](new ModId("d." + nextModId), value)
+    val mod = new Mod[T](new ModId("d." + nextModId), self)
     nextModId += 1
 
-    mods(mod.id) = mod.asInstanceOf[Mod[Any]]
+    values(mod.id) = value
     mod
   }
 
-  def getMod(modId: ModId): Any = {
-    mods(modId).value
+  def getMod(modId: ModId, workerRef: ActorRef = null): Any = {
+    if (workerRef != null) {
+      if (dependencies.contains(modId)) {
+	dependencies(modId) += workerRef
+      } else {
+	dependencies(modId) = Set(workerRef)
+      }
+    }
+
+    values(modId)
   }
 
   def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
-    if (!mods.contains(modId)) {
+    if (!values.contains(modId)) {
       log.warning("Trying to update non-existent mod " + modId)
     }
 
-    mods(modId).update(value)
+    values(modId) = value
+
+    val futures = ArrayBuffer[Future[String]]()
+    if (dependencies.contains(modId)) {
+      for (workerRef <- dependencies(modId)) {
+	val finished = Promise[String]()
+	workerRef ! ModUpdatedMessage(modId, finished)
+	futures += finished.future
+      }
+    }
+
+    futures
   }
 
   def removeMod(modId: ModId) {
-    if (!mods.contains(modId)) {
+    if (!values.contains(modId)) {
       log.warning("Trying to remove nonexistent mod " + modId)
     }
-    mods -= modId
+
+    values -= modId
   }
 
   def receive = {
@@ -145,6 +167,34 @@ class Datastore extends Actor with ActorLogging {
 
     case CreateModMessage() => {
       sender ! createMod(null)
+    }
+
+    case GetModMessage(modId: ModId, workerRef: ActorRef) => {
+      val ret = getMod(modId, workerRef)
+
+      if (ret == null) {
+	sender ! NullMessage
+      } else {
+	sender ! ret
+      }
+    }
+
+    case GetModMessage(modId: ModId, null) => {
+      val ret = getMod(modId, null)
+
+      if (ret == null) {
+	sender ! NullMessage
+      } else {
+	sender ! ret
+      }
+    }
+
+    case UpdateModMessage(modId: ModId, value: Any) => {
+      sender ! updateMod(modId, value)
+    }
+
+    case UpdateModMessage(modId: ModId, null) => {
+      sender ! updateMod(modId, null)
     }
 
     case x => {
