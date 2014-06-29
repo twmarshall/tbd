@@ -235,21 +235,15 @@ class TBD(id: String, _worker: Worker) {
   }
 
   def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
-    val modId = new ModId(worker.id + "." + worker.nextModId)
-    worker.nextModId += 1
-
-    val d = new Dest[T](modId)
+    val d = new Dest[T](worker.datastoreRef)
     initializer(d)
     d.mod
   }
 
   var currentDest: Dest[Any] = null
   def modNoDest[T](initializer: () => Changeable[T]): Mod[T] = {
-    val modId = new ModId(worker.id + "." + worker.nextModId)
-    worker.nextModId += 1
-
     val oldCurrentDest = currentDest
-    currentDest = new Dest[T](modId).asInstanceOf[Dest[Any]]
+    currentDest = new Dest[T](worker.datastoreRef).asInstanceOf[Dest[Any]]
     initializer()
     val mod = currentDest.mod
     currentDest = oldCurrentDest
@@ -259,15 +253,11 @@ class TBD(id: String, _worker: Worker) {
 
   var currentDest2: Dest[Any] = null
   def modNoDest2[T, U](initializer: () => Changeable2[T, U]): (Mod[T], Mod[U]) = {
-    val modId = new ModId(worker.id + "." + worker.nextModId)
-    worker.nextModId += 1
     val oldCurrentDest = currentDest
-    currentDest = new Dest[T](modId).asInstanceOf[Dest[Any]]
+    currentDest = new Dest[T](worker.datastoreRef).asInstanceOf[Dest[Any]]
 
-    val modId2 = new ModId(worker.id + "." + worker.nextModId)
-    worker.nextModId += 1
     val oldCurrentDest2 = currentDest2
-    currentDest2 = new Dest[T](modId2).asInstanceOf[Dest[Any]]
+    currentDest2 = new Dest[T](worker.datastoreRef).asInstanceOf[Dest[Any]]
 
     initializer()
 
@@ -280,10 +270,8 @@ class TBD(id: String, _worker: Worker) {
   }
 
   def modNoDestLeft[T, U](initializer: () => Changeable2[T, U]): (Mod[T], Mod[U]) = {
-    val modId = new ModId(worker.id + "." + worker.nextModId)
-    worker.nextModId += 1
     val oldCurrentDest = currentDest
-    currentDest = new Dest[T](modId).asInstanceOf[Dest[Any]]
+    currentDest = new Dest[T](worker.datastoreRef).asInstanceOf[Dest[Any]]
 
     initializer()
 
@@ -295,10 +283,8 @@ class TBD(id: String, _worker: Worker) {
   }
 
   def modNoDestRight[T, U](initializer: () => Changeable2[T, U]): (Mod[T], Mod[U]) = {
-    val modId2 = new ModId(worker.id + "." + worker.nextModId)
-    worker.nextModId += 1
     val oldCurrentDest2 = currentDest2
-    currentDest2 = new Dest[T](modId2).asInstanceOf[Dest[Any]]
+    currentDest2 = new Dest[T](worker.datastoreRef).asInstanceOf[Dest[Any]]
 
     initializer()
 

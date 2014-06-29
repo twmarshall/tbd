@@ -32,6 +32,8 @@ case class UpdateInputMessage(inputId: InputId, key: Any, value: Any)
 case class RemoveInputMessage(inputId: InputId, key: Any)
 case class GetInputMessage(inputId: InputId)
 
+case class CreateModMessage()
+
 // Master
 case class RegisterMutatorMessage()
 case class RunMessage(adjust: Adjustable, mutatorId: Int)

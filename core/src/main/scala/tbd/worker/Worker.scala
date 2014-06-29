@@ -45,8 +45,6 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 
   private val tbd = new TBD(id, this)
 
-  var nextModId = 0
-
   def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
                 end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
     Future {

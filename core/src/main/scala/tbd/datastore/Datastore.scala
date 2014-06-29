@@ -143,6 +143,10 @@ class Datastore extends Actor with ActorLogging {
       sender ! inputs(inputId).getModifiable()
     }
 
+    case CreateModMessage() => {
+      sender ! createMod(null)
+    }
+
     case x => {
       log.warning("Datastore actor received unhandled message " +
                   x + " from " + sender)
