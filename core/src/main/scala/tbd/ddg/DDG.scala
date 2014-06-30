@@ -19,10 +19,9 @@ import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import scala.collection.mutable.{Map, MutableList, Set, TreeSet}
 
-import tbd.Changeable
+import tbd.{Changeable, Changeable2}
 import tbd.Constants._
 import tbd.master.Master
-import tbd.memo.MemoEntry
 import tbd.mod.{Dest, Mod}
 import tbd.worker.Worker
 
@@ -52,7 +51,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     readNode
   }
 
-  def addWrite(mod: Mod[Any], parent: Node): Node = {
+  def addWrite(mod: Mod[Any], parent: Node): WriteNode = {
     val timestamp = nextTimestamp(parent)
     val writeNode = new WriteNode(mod, parent, timestamp)
 
@@ -179,10 +178,10 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     } else if (node.isInstanceOf[MemoNode]) {
       val signature = node.asInstanceOf[MemoNode].signature
 
-      var toRemove: MemoEntry = null
-      for (memoEntry <- worker.memoTable(signature)) {
-        if (toRemove == null && memoEntry.node.timestamp == node.timestamp) {
-          toRemove = memoEntry
+      var toRemove: MemoNode = null
+      for (memoNode <- worker.memoTable(signature)) {
+        if (toRemove == null && memoNode.timestamp == node.timestamp) {
+          toRemove = memoNode
         }
       }
 
@@ -214,11 +213,29 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
   }
 
   /**
-   * Replaces all of the dests equal to dest1 with dest2 in the subtree rooted
-   * at node. This is called when a memo match is made where the memo node
-   * has a dest that's different from the currentDest.
+   * Replaces all of the dests equal to dest1 with dest2 and all mods equal to
+   * dest1.mod with dest2.mod in the subtree rooted at node. This is called when
+   * a memo match is made where the memo node has a dest that's different from
+   * the currentDest.
    */
   def replaceDests(node: Node, dest1: Dest[Any], dest2: Dest[Any]) {
+    if (node.isInstanceOf[MemoNode]) {
+      val memoNode = node.asInstanceOf[MemoNode]
+      if (memoNode.value.isInstanceOf[Changeable[_]]) {
+	val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
+	if (changeable.mod == dest1.mod) {
+	  changeable.mod = dest2.mod
+	}
+      }
+
+      if (memoNode.value.isInstanceOf[Changeable2[_, _]]) {
+	val changeable2 = memoNode.value.asInstanceOf[Changeable2[Any, Any]]
+	if (changeable2.mod2 == dest1.mod) {
+	  changeable2.mod2 = dest2.mod
+	}
+      }
+    }
+
     if (node.currentDest == dest1) {
       node.currentDest = dest2
 

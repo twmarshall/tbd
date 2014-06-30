@@ -17,9 +17,8 @@ package tbd.mod
 
 import scala.collection.mutable.Buffer
 
-import tbd.{Changeable, TBD}
+import tbd.{Changeable, Lift, TBD}
 import tbd.Constants._
-import tbd.memo.Lift
 
 class ChunkList[T, U](
     _head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {

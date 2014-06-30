@@ -24,42 +24,23 @@ import tbd.Constants._
 import tbd.TBD
 import tbd.messages._
 
-class Mod[T](_id: ModId, _value: T) {
+class Mod[T](_id: ModId, datastoreRef: ActorRef) {
   val id = _id
-  var value = _value
-  val dependencies = Set[ActorRef]()
-  val lock = new Lock()
 
   def read(workerRef: ActorRef = null): T = {
-    if (workerRef != null) {
-      lock.acquire()
-      dependencies += workerRef
-      lock.release()
-    }
+    val valueFuture = datastoreRef ? GetModMessage(id, workerRef)
+    val ret = Await.result(valueFuture, DURATION)
 
-    value
+    ret match {
+      case NullMessage => null.asInstanceOf[T]
+      case _ => ret.asInstanceOf[T]
+    }
   }
 
   def update(_value: T): ArrayBuffer[Future[String]] = {
-    value = _value
-
-    val futures = ArrayBuffer[Future[String]]()
-    lock.acquire()
-    for (workerRef <- dependencies) {
-      val finished = Promise[String]()
-      workerRef ! ModUpdatedMessage(id, finished)
-      futures += finished.future
-    }
-    lock.release()
-
-    futures
+    val futuresFuture = datastoreRef ? UpdateModMessage(id, _value)
+    Await.result(futuresFuture.mapTo[ArrayBuffer[Future[String]]], DURATION)
   }
 
-  override def toString = {
-    if (value == null) {
-      "null"
-    } else {
-      value.toString
-    }
-  }
+  override def toString = "Mod(" + id + ")"
 }

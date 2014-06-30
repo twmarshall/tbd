@@ -13,14 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd
+package tbd.datastore
 
-import tbd.mod.Mod
+import tbd.Constants._
 
-class Changeable[T](_mod: Mod[T]) {
-  var mod = _mod
-}
+trait KVStore {
+  def put(key: ModId, value: Any)
 
-class Changeable2[T, U](_mod: Mod[T], _mod2: Mod[U]) extends Changeable[T](_mod) {
-  var mod2 = _mod2
+  def get(key: ModId): Any
+
+  def remove(key: ModId)
+
+  def contains(key: ModId): Boolean
 }

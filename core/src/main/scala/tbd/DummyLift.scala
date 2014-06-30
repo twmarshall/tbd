@@ -13,11 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.memo
+package tbd
 
 import scala.collection.mutable.ArrayBuffer
 
-import tbd.TBD
 import tbd.mod.Mod
 
 class DummyLift[T](tbd: TBD, memoId: Int) extends Lift[T](tbd, memoId) {

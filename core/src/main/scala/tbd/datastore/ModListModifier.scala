@@ -58,9 +58,9 @@ class ModListModifier(
 	innerNode.value  = (key, value)
 
 	if (previousNode != null) {
-	  futures = datastore.updateMod(previousNode.next.id, previousNode.next.value)
+	  futures = datastore.updateMod(previousNode.next.id, datastore.getMod(previousNode.next.id))
 	} else {
-	  futures = datastore.updateMod(modList.head.id, modList.head.value)
+	  futures = datastore.updateMod(modList.head.id, datastore.getMod(modList.head.id))
 	}
 	found = true
       } else {

@@ -13,11 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.memo
+package tbd.datastore
 
-import tbd.ddg.MemoNode
+import scala.collection.mutable.Map
 
-class MemoEntry(_value: Any, _node: MemoNode) {
-  val value = _value
-  val node = _node
+import tbd.Constants._
+
+class MapStore extends KVStore {
+  private val values = Map[ModId, Any]()
+
+  def put(key: ModId, value: Any) {
+    values(key) = value
+  }
+
+  def get(key: ModId): Any = {
+    values(key)
+  }
+
+  def remove(key: ModId) {
+    values -= key
+  }
+
+  def contains(key: ModId): Boolean = {
+    values.contains(key)
+  }
 }

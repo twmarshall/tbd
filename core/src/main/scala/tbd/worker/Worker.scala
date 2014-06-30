@@ -23,8 +23,7 @@ import scala.util.Try
 
 import tbd.Constants._
 import tbd.TBD
-import tbd.ddg.{DDG, Node, ParNode, ReadNode, Timestamp}
-import tbd.memo.MemoEntry
+import tbd.ddg.{DDG, Node, MemoNode, ParNode, ReadNode, Timestamp}
 import tbd.messages._
 import tbd.mod.{AdjustableList}
 
@@ -42,11 +41,9 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 
   val datastoreRef = _datastoreRef
   val ddg = new DDG(log, id, this)
-  val memoTable = Map[List[Any], ArrayBuffer[MemoEntry]]()
+  val memoTable = Map[List[Any], ArrayBuffer[MemoNode]]()
 
   private val tbd = new TBD(id, this)
-
-  var nextModId = 0
 
   def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
                 end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {

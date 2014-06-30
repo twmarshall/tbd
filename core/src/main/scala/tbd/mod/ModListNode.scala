@@ -15,8 +15,7 @@
  */
 package tbd.mod
 
-import tbd.{Changeable, TBD}
-import tbd.memo.Lift
+import tbd.{Changeable, Lift, TBD}
 
 class ModListNode[T, V] (
     _value: (T, V),

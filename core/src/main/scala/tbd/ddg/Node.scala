@@ -94,6 +94,7 @@ class ReadNode(
 class WriteNode(_mod: Mod[Any], _parent: Node, _timestamp: Timestamp)
     extends Node(_parent, _timestamp) {
   val mod: Mod[Any] = _mod
+  var mod2: Mod[Any] = null
 
   override def toString(prefix: String) = {
     prefix + "WriteNode modId=(" + mod.id + ") " +
@@ -129,6 +130,7 @@ class MemoNode(
     _timestamp: Timestamp,
     _signature: List[Any]) extends Node(_parent, _timestamp) {
   val signature = _signature
+  var value: Any = null
 
   override def toString(prefix: String) = {
     prefix + "MemoNode time=" + timestamp + " to " + endTime + " signature=" + signature +

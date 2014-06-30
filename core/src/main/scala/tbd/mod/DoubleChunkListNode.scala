@@ -15,8 +15,7 @@
  */
 package tbd.mod
 
-import tbd.{Changeable, TBD}
-import tbd.memo.Lift
+import tbd.{Changeable, Lift, TBD}
 
 // The default value of zero for size works because size is only ever
 // accessed by the Modifier, which will set it appropriately.
