@@ -15,7 +15,11 @@ object TBDBuild extends Build {
     scalacOptions ++= Seq("-feature", "-deprecation")
   )
 
+  val mavenResolver = "Maven Central Server" at "http://central.maven.org/maven2"
+
   val commonDeps = Seq (
+    "berkeleydb"                  % "je"                   % "3.2.76",
+
     "com.typesafe.akka"          %% "akka-actor"           % "2.3.2",
     "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
 
@@ -37,6 +41,7 @@ object TBDBuild extends Build {
     file("core"),
     settings = buildSettings ++ Seq (
       libraryDependencies ++= commonDeps,
+      resolvers += mavenResolver,
       javaOptions += "-Xss128M",
       mkrun := {
         val classpath = (fullClasspath in Runtime).value.files.absString
