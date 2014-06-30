@@ -37,6 +37,11 @@ class TbdVisualizer extends ViewerListener {
     edge {
       arrow-shape: arrow;
     }
+    edge.dependency {
+      fill-color: gray;
+      arrow-shape: diamond;
+      arrow-size: 25, 25;
+    }
     node.read{
       size: 10px;
       fill-color: blue;
@@ -124,6 +129,7 @@ class TbdVisualizer extends ViewerListener {
   }
 
   val pos = new HashMap[Node, (Int, Int)]()
+  val writeNodes = new HashMap[String, Node]()
   val nodes = new ListBuffer[Node]()
   val idToNodes = new HashMap[String, Node]()
 
@@ -217,6 +223,12 @@ class TbdVisualizer extends ViewerListener {
       setLabel(node, nodeType + " " + parameterInfo + " in " + methodName)
     }
     setClass(node, nodeType)
+
+    node match {
+      case x:WriteNode => writeNodes(x.mod.id.toString()) = node
+      case x:ReadNode => if(writeNodes.contains(x.mod.id.toString) && findEdge(writeNodes(x.mod.id.toString), x) == null) { addEdge(writeNodes(x.mod.id.toString), x).addAttribute("ui.class", "dependency") }
+      case _ => ()
+    }
 
     node.children.foreach(x => {
         createTree(x, node)

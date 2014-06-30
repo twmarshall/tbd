@@ -18,13 +18,13 @@ package tbd.visualization
 
 object Main {
   def main(args: Array[String]) {
-    val test = new ExhaustiveTest(new ListReduceSumTest())
+    val test = new ManualTest(new ListDescisionTest())
     //val test = new ManualTest(new ListReduceSumTest())
 
     //Possible Options:
     test.showDDGEachStep = true
-    //test.initialSize = 150
-    //test.maximalMutationsPerPropagation = 20
+    test.initialSize = 2
+    //test.maximalMutationsPerPropagation = 1
 
     test.run()
   }

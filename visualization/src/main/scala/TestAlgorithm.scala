@@ -19,7 +19,7 @@ package tbd.visualization
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
 import tbd._
-import tbd.mod.{AdjustableList, Dest, Mod}
+import tbd.mod.{AdjustableList, Dest, Mod, DoubleModList}
 
 trait TestAlgorithm[T] extends Adjustable {
   def checkOutput(output: T, table: Map[Int, Int]): Boolean
@@ -29,7 +29,7 @@ trait TestAlgorithm[T] extends Adjustable {
 }
 
 class ListReduceSumTest()
-    extends TestAlgorithm[Mod[(Int, Int)]]  {
+    extends TestAlgorithm[Mod[(Int, Int)]] {
   def run(tbd: TBD): Mod[(Int, Int)] = {
     val modList = input.getAdjustableList()
     val zero = tbd.mod((dest : Dest[(Int, Int)]) => tbd.write(dest, (0, 0)))
@@ -81,7 +81,7 @@ class ListSplitTest()
     modList.split(tbd, (tbd, a) => a._2 % 2 == 0, true, true)
   }
 
- def checkOutput(output: (AdjustableList[Int, Int], AdjustableList[Int, Int]), table: Map[Int, Int]): Boolean = {
+  def checkOutput(output: (AdjustableList[Int, Int], AdjustableList[Int, Int]), table: Map[Int, Int]): Boolean = {
     val ca = table.values.toBuffer.filter(x => x % 2 == 0)
     val a = output._1.toBuffer()
     val cb = table.values.toBuffer.filter(x => x % 2 != 0)
@@ -92,6 +92,53 @@ class ListSplitTest()
       println("ExpectedA: " + ca)
       println("OutputB: " + b)
       println("ExpectedB: " + cb)
+
+      false
+    }
+    true
+  }
+}
+
+class ListDescisionTest()
+  extends TestAlgorithm[Mod[String]] {
+  def run(tbd: TBD): Mod[String] = {
+    val modList = input.getAdjustableList().asInstanceOf[DoubleModList[Int, Int]]
+
+    tbd.mod((dest: Dest[String]) => {
+      tbd.read(modList.head)(head => {
+        tbd.read(head.value)(value => {
+          if(value._2 % 2 == 0) {
+            tbd.read(head.next)(next => {
+                tbd.write(dest, "This is a string");
+            })
+          } else {
+            tbd.read(head.next)(next => {
+                tbd.write(dest, "This is another string");
+            })
+          }
+        })
+      })
+    })
+  }
+  def checkOutput(output: Mod[String], table: Map[Int, Int]): Boolean = {
+    true
+  }
+}
+
+class ListMapTest()
+  extends TestAlgorithm[AdjustableList[Int, Int]] {
+  def run(tbd: TBD): AdjustableList[Int, Int] = {
+    val modList = input.getAdjustableList()
+    modList.map(tbd, (tbd, a) => (a._1, a._2 / 2), false, false)
+  }
+
+  def checkOutput(output: AdjustableList[Int, Int], table: Map[Int, Int]): Boolean = {
+    val ca = table.values.toBuffer.map((x:Int) => x / 2).sortWith(_ < _)
+    val a = output.toBuffer().sortWith(_ < _)
+
+    if(a != ca) {
+      println("OutputA: " + a)
+      println("ExpectedA: " + ca)
 
       false
     }

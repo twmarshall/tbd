@@ -29,6 +29,9 @@ class ExhaustiveTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.
   var maximalMutationsPerPropagation = 2
   var showDDGEachStep = false
 
+  var previousDdg: graph.DDG = null
+  var currentDdg: graph.DDG = null
+
   def run() {
 
     val visualizer = new TbdVisualizer()
@@ -63,6 +66,23 @@ class ExhaustiveTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.
       }
 
       if(showDDGEachStep) {
+
+        // DDG diff part
+        currentDdg = graph.DDG.create(mutator.getDDG().root)
+
+        if(previousDdg != null) {
+          var result = analysis.TraceComparison.MonotoneTraceDistance(previousDdg, currentDdg)
+
+          println("Removed: ")
+          result.removed.foreach(x => println(x))
+
+          println("Added: ")
+          result.added.foreach(x => println(x))
+        }
+
+        previousDdg = currentDdg
+        // End DDG diff part.
+
         visualizer.showDDG(mutator.getDDG().root)
         StdIn.readLine()
       }

@@ -30,6 +30,9 @@ class ManualTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.getL
   var showDDGEachStep = true
   var initialSize = 10
 
+  var previousDdg: graph.DDG = null
+  var currentDdg: graph.DDG = null
+
   private val putm = "(a) (\\d+) (\\d+)".r
   private val updatem = "(u) (\\d+) (\\d+)".r
   private val remm = "(r) (\\d+)".r
@@ -84,6 +87,23 @@ class ManualTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.getL
       }
 
       if(showDDGEachStep) {
+
+        // DDG diff part
+        currentDdg = graph.DDG.create(mutator.getDDG().root)
+
+        if(previousDdg != null) {
+          var result = analysis.TraceComparison.MonotoneTraceDistance(previousDdg, currentDdg)
+
+          println("Removed: ")
+          result.removed.foreach(x => println(x))
+
+          println("Added: ")
+          result.added.foreach(x => println(x))
+        }
+
+        previousDdg = currentDdg
+        // End DDG diff part.
+
         visualizer.showDDG(mutator.getDDG().root)
       }
     }
