@@ -36,6 +36,17 @@ object TBD {
   var id = 0
 }
 
+object macrodef {
+  def readMacro[T, U <: Changeable[_]]
+      (c: Context)(mod: c.Expr[Mod[T]])(reader: c.Expr[(T => U)]): c.Expr[U] = {
+    import c.universe._
+    import compat._
+    val readFunc = c.Expr[U](Select(c.prefix.tree, TermName("readInternal")))
+
+    c.Expr[U](Function(List(ValDef(mod.tree.symbol), ValDef(reader.tree.symbol)), readFunc.tree))
+  }
+}
+
 class TBD(id: String, _worker: Worker) {
   import worker.context.dispatcher
   val worker = _worker
@@ -112,12 +123,7 @@ class TBD(id: String, _worker: Worker) {
         write(dest, mod + 1)))
   }
 
-  def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = macro readMacro[T, U]
-
-  def readMacro[T, U <: Changeable[_]]
-      (c: Context)(mod: c.Expr[Mod[T]])(reader: c.Expr[(T => U)]): c.Expr[U] = {
-    c.universe reify{ readInternal(mod.splice)(reader.splice) }
-  }
+  def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = macro macrodef.readMacro[T, U]
 
   def readInternal[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = {
     val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],

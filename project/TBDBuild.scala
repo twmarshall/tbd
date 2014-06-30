@@ -20,6 +20,7 @@ object TBDBuild extends Build {
     "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
 
     "org.scalatest"              %% "scalatest"            % "2.1.3" % "test",
+    "org.scala-lang"             % "scala-reflect"        % "2.11.1",
     "org.scalaz"                 %% "scalaz-core"          % "7.0.6"
   )
 

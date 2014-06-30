@@ -15,8 +15,7 @@
  */
 package tbd.mod
 
-import tbd.{Changeable, Changeable2, TBD}
-import tbd.memo.Lift
+import tbd.{Changeable, Changeable2, Lift, TBD}
 
 class DoubleModListNode[T, V] (
     _value: Mod[(T, V)],
@@ -112,33 +111,44 @@ class DoubleModListNode[T, V] (
 
   def splitNoDest(
       tbd: TBD,
-      lift: Lift[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])],
+      lift: Lift[Changeable2[DoubleModListNode[T, V], DoubleModListNode[T, V]]],
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
         Changeable2[DoubleModListNode[T, V], DoubleModListNode[T, V]] = {
-    val (matchNext, diffNext) = lift.memo(List(next), () => {
-      tbd.modNoDest2(() => {
-        tbd.read(next)(next => {
-          if(next != null) {
-            next.splitNoDest(tbd, lift, pred)
-          } else {
-	    tbd.writeNoDest2(null.asInstanceOf[DoubleModListNode[T, V]],
-			     null.asInstanceOf[DoubleModListNode[T, V]])
-          }
-        })
-      })
-    })
-
     tbd.read(value)((v) => {
-      if(pred(tbd, (v._1, v._2))) {
-        tbd.read(diffNext)(diffNext => {
-	  tbd.writeNoDest2(new DoubleModListNode(value, matchNext), diffNext)
-        })
+      if(pred(tbd, v)) {
+	val (matchNext, diffNext) =
+	  tbd.modNoDestLeft(() => {
+	    lift.memo(List(next), () => {
+	      tbd.read(next)(next => {
+		if(next != null) {
+		  next.splitNoDest(tbd, lift, pred)
+		} else {
+		  tbd.writeNoDest2(null.asInstanceOf[DoubleModListNode[T, V]],
+				   null.asInstanceOf[DoubleModListNode[T, V]])
+		}
+              })
+	    })
+	  })
+
+	tbd.writeNoDestLeft(new DoubleModListNode(value, matchNext), diffNext)
       } else {
-        tbd.read(matchNext)(matchNext => {
-	  tbd.writeNoDest2(matchNext, new DoubleModListNode(value, diffNext))
-        })
+	val (matchNext, diffNext) =
+	  tbd.modNoDestRight(() => {
+	    lift.memo(List(next), () => {
+	      tbd.read(next)(next => {
+		if(next != null) {
+		  next.splitNoDest(tbd, lift, pred)
+		} else {
+		  tbd.writeNoDest2(null.asInstanceOf[DoubleModListNode[T, V]],
+				   null.asInstanceOf[DoubleModListNode[T, V]])
+		}
+	      })
+	    })
+	  })
+
+	tbd.writeNoDestRight(matchNext, new DoubleModListNode(value, diffNext))
       }
     })
   }
