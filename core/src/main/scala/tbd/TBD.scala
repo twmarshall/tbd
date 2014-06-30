@@ -21,6 +21,9 @@ import akka.event.Logging
 import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map, Set}
 import scala.concurrent.{Await, Future, Promise}
 
+import language.experimental.macros
+import reflect.macros.Context
+
 import tbd.Constants._
 import tbd.ddg.{Node, Timestamp}
 import tbd.master.Main
@@ -109,7 +112,14 @@ class TBD(id: String, _worker: Worker) {
         write(dest, mod + 1)))
   }
 
-  def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = {
+  def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = macro readMacro[T, U]
+
+  def readMacro[T, U <: Changeable[_]]
+      (c: Context)(mod: c.Expr[Mod[T]])(reader: c.Expr[(T => U)]): c.Expr[U] = {
+    c.universe reify{ readInternal(mod.splice)(reader.splice) }
+  }
+
+  def readInternal[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = {
     val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],
                                       currentParent,
                                       reader.asInstanceOf[Any => Changeable[Any]])
@@ -178,7 +188,7 @@ class TBD(id: String, _worker: Worker) {
       write(dest, value)
     })
   }
-  
+
   def mod2[T, V](initializer : (Dest[T], Dest[V]) => Changeable[V]):
         (Mod[T], Mod[V]) = {
     var first: Mod[T] = null
