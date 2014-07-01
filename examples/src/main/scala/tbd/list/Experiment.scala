@@ -131,6 +131,8 @@ Options:
                                own modifiables.
   --memoized true,false      Should memoization be used?
   --parallel true,false      Should the experiments be run in parallel?
+  --load                     If specified, loading times will be included in
+                               formatted output.
   """
 
   var repeat = 3
