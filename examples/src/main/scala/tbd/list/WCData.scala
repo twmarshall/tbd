@@ -33,7 +33,7 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
     while (table.size < count) {
       val elems = scala.xml.XML.loadFile("wiki.xml")
 
-      var i = 0
+      var i = table.size
       (elems \\ "elem").map(elem => {
         (elem \\ "value").map(value => {
           if (table.size < count) {
