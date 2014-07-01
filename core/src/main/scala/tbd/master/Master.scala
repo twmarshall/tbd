@@ -29,17 +29,15 @@ import tbd.mod.{AdjustableChunkList, AdjustableList}
 import tbd.worker.{Worker, Task}
 
 object Master {
-  def props(): Props = Props(classOf[Master])
+  def props(datastoreRef: ActorRef): Props =
+    Props(classOf[Master], datastoreRef)
 
   var epoch = 0
 }
 
-class Master extends Actor with ActorLogging {
+class Master(datastoreRef: ActorRef) extends Actor with ActorLogging {
   import context.dispatcher
   log.info("Master launced.")
-
-  private val datastoreRef = context.actorOf(Datastore.props(), "datastore")
-  Main.datastoreRef = datastoreRef
 
   private var workerRef: ActorRef = null
 
