@@ -15,14 +15,25 @@
  */
 package tbd.mod
 
+import java.io.Serializable
+
 import tbd.{Changeable, Changeable2, Lift, TBD}
 
 class DoubleModListNode[T, V] (
     _value: Mod[(T, V)],
     _next: Mod[DoubleModListNode[T, V]])
-    extends Iterator[T, V, DoubleModListNode[T, V]] {
+    extends Iterator[T, V, DoubleModListNode[T, V]] with Serializable {
   def value = _value
   def next = _next
+
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[DoubleModListNode[T, V]]) {
+      false
+    } else {
+      val that = obj.asInstanceOf[DoubleModListNode[T, V]]
+      that.value == value && that.next == next
+    }
+  }
 
   def map[U, Q](
       tbd: TBD,

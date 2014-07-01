@@ -37,4 +37,8 @@ class MapStore extends KVStore {
   def contains(key: ModId): Boolean = {
     values.contains(key)
   }
+
+  def shutdown() {
+    values.clear()
+  }
 }

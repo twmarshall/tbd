@@ -35,7 +35,7 @@ class Datastore extends Actor with ActorLogging {
   // when the table is updated.
   private val inputs = Map[InputId, Modifier]()
 
-  private val store = new MapStore()
+  private val store = new BerkeleyDBStore()
 
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
@@ -43,10 +43,11 @@ class Datastore extends Actor with ActorLogging {
 
   private var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
-    val mod = new Mod[T](new ModId("d." + nextModId), self)
+    val mod = new Mod[T](new ModId("d." + nextModId))
     nextModId += 1
 
     store.put(mod.id, value)
+
     mod
   }
 
@@ -195,6 +196,11 @@ class Datastore extends Actor with ActorLogging {
 
     case UpdateModMessage(modId: ModId, null) => {
       sender ! updateMod(modId, null)
+    }
+
+    case CleanupMessage => {
+      store.shutdown()
+      sender ! "done"
     }
 
     case x => {

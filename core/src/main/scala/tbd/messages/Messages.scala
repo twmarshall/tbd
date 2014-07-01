@@ -42,6 +42,7 @@ case class RegisterMutatorMessage()
 case class RunMessage(adjust: Adjustable, mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
 case class ShutdownMutatorMessage(mutatorId: Int)
+case class CleanupMessage()
 
 // Worker
 case class ModUpdatedMessage(modId: ModId, finished: Promise[String])

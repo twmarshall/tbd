@@ -15,13 +15,24 @@
  */
 package tbd.mod
 
+import java.io.Serializable
+
 import tbd.{Changeable, Lift, TBD}
 
 class ModListNode[T, V] (
     _value: (T, V),
-    _next: Mod[ModListNode[T, V]]) {
+    _next: Mod[ModListNode[T, V]]) extends Serializable {
   var value = _value
   def next = _next
+
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[ModListNode[T, V]]) {
+      false
+    } else {
+      val that = obj.asInstanceOf[ModListNode[T, V]]
+      that.value == value && that.next == next
+    }
+  }
 
   def map[U, Q](
       tbd: TBD,

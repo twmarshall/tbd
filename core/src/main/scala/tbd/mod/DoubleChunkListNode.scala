@@ -15,6 +15,8 @@
  */
 package tbd.mod
 
+import java.io.Serializable
+
 import tbd.{Changeable, Lift, TBD}
 
 // The default value of zero for size works because size is only ever
@@ -22,10 +24,19 @@ import tbd.{Changeable, Lift, TBD}
 class DoubleChunkListNode[T, U](
     _chunkMod: Mod[Vector[(T, U)]],
     _nextMod: Mod[DoubleChunkListNode[T, U]],
-    _size: Int = 0) {
+    _size: Int = 0) extends Serializable {
   val chunkMod = _chunkMod
   val nextMod = _nextMod
   val size = _size
+
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[DoubleChunkListNode[T, U]]) {
+      false
+    } else {
+      val that = obj.asInstanceOf[DoubleChunkListNode[T, U]]
+      that.chunkMod == chunkMod && that.nextMod == nextMod
+    }
+  }
 
   def map[V, Q](
       tbd: TBD,

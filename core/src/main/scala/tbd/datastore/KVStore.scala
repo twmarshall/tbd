@@ -25,4 +25,6 @@ trait KVStore {
   def remove(key: ModId)
 
   def contains(key: ModId): Boolean
+
+  def shutdown()
 }

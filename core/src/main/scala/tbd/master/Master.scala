@@ -37,7 +37,9 @@ object Master {
 class Master extends Actor with ActorLogging {
   import context.dispatcher
   log.info("Master launced.")
+
   private val datastoreRef = context.actorOf(Datastore.props(), "datastore")
+  Main.datastoreRef = datastoreRef
 
   private var workerRef: ActorRef = null
 
@@ -177,9 +179,14 @@ class Master extends Actor with ActorLogging {
       sender ! "done"
     }
 
+    case CleanupMessage => {
+      Await.result((datastoreRef ? CleanupMessage), DURATION)
+      sender ! "done"
+    }
+
     case x => {
       log.warning("Master actor received unhandled message " +
-			            x + " from " + sender + " " + x.getClass)
+		  x + " from " + sender + " " + x.getClass)
     }
   }
 }

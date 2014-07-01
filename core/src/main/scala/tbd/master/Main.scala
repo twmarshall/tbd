@@ -16,14 +16,21 @@
 package tbd.master
 
 import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.pattern.ask
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import tbd.Constants._
+import tbd.messages._
 
 object Main {
   val debug = false
 
   var id = 0
+
+  var datastoreRef: ActorRef = null
 
   def main(args: Array[String]) {
     val main = new Main()
@@ -39,6 +46,7 @@ class Main {
   val masterRef = system.actorOf(Master.props(), "master")
 
   def shutdown() {
+    Await.result((masterRef ? CleanupMessage), DURATION)
     system.shutdown()
   }
 }

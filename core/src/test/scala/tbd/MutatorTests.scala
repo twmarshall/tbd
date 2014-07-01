@@ -77,6 +77,7 @@ class MutatorTests extends FlatSpec with Matchers {
       input.put(i, i)
       i += 1
     }
+
     val output = mutator.run[AdjustableList[Int, Int]](adjustable)
     var sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
     output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
@@ -133,6 +134,8 @@ class MutatorTests extends FlatSpec with Matchers {
 	    val input = mutator.createChunkList[Int, Int](conf)
 	    runTest(mutator, new ChunkListTest(input), input)
 	  }
+
+	  mutator.shutdown()
 	}
       }
     }
