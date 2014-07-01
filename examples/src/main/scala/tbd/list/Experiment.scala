@@ -143,7 +143,7 @@ Options:
 
   var displayLoad = false
 
-  val confs = Map(("algorithms" -> Array("pwc")),
+  val confs = Map(("algorithms" -> Array("map")),
                   ("counts" -> Array("1000")),
                   ("chunkSizes" -> Array("2")),
                   ("mutations" -> Array("insert", "update", "remove")),
