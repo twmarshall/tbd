@@ -154,7 +154,8 @@ Options:
                   ("output" -> Array("algorithms", "runs", "counts")),
 		  ("valueMod" -> Array("true")),
 		  ("parallel" -> Array("true")),
-		  ("memoized" -> Array("true")))
+		  ("memoized" -> Array("true")),
+		  ("store" -> Array("memory")))
 
   val allResults = Map[Map[String, _], Map[String, Double]]()
 
@@ -278,6 +279,9 @@ Options:
 	  i += 1
 	case "--load" =>
 	  displayLoad = true
+	case "--store" =>
+	  confs("store") = Array(args(i + 1))
+	  i += 1
         case _ =>
           println("Unknown option " + args(i * 2) + "\n" + usage)
           sys.exit()
@@ -308,7 +312,8 @@ Options:
 				   ("runs" -> confs("runs")),
 				   ("repeat" -> i),
 				   ("parallel" -> parallel),
-				   ("memoized" -> memoized))
+				   ("memoized" -> memoized),
+				   ("store" -> confs("store")(0)))
 
 		    val listConf = new ListConf("", partitions.toInt,
 	              chunkSize.toInt, _ => 1, valueMod == "true")
