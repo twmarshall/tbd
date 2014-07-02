@@ -21,13 +21,19 @@ import tbd.{Adjustable, Changeable, ListConf, ListInput, Mutator, TBD}
 import tbd.mod.{AdjustableList, Dest, Mod}
 import collection.mutable.HashMap
 import scala.util.Random
+import scala.util.matching.Regex
 import scala.io.StdIn
 
-class ExhaustiveTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.getListConf()) {
+class ManualTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.getListConf()) {
 
+  private var propagate = true
+  var showDDGEachStep = true
   var initialSize = 10
-  var maximalMutationsPerPropagation = 2
-  var showDDGEachStep = false
+
+  private val putm = "(a) (\\d+) (\\d+)".r
+  private val updatem = "(u) (\\d+) (\\d+)".r
+  private val remm = "(r) (\\d+)".r
+  private val propagatem = "(p)".r
 
   def run() {
 
@@ -39,13 +45,28 @@ class ExhaustiveTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.
 
     algorithm.input = input
     val output = mutator.run[T](algorithm)
-    mutator.propagate()
+
+    println("// Commands: ")
+    println("// a KEY VALUE adds a key and value ")
+    println("// u KEY VALUE updates a value ")
+    println("// r KEY removes a key and value ")
+    println("// p propagates ")
+    println("")
+    println("// KEY and VALUE have to be integers ")
+
 
     while(true) {
 
-      for(i <- 0 to rand.nextInt(maximalMutationsPerPropagation)) {
-        randomMutation()
+      while(!propagate) {
+        StdIn.readLine() match {
+          case putm(_, key, value) => addValue(key.toInt, value.toInt)
+          case updatem(_, key, value) => updateValue(key.toInt, value.toInt)
+          case remm(_, key) => removeValue(key.toInt)
+          case propagatem(_) => propagate = true
+          case _ =>
+        }
       }
+      propagate = false
       mutator.propagate()
 
       println("m.propagate() // Mutation Cycle " + mutationCounter)
@@ -64,7 +85,6 @@ class ExhaustiveTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.
 
       if(showDDGEachStep) {
         visualizer.showDDG(mutator.getDDG().root)
-        StdIn.readLine()
       }
     }
 
