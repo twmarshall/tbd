@@ -168,6 +168,11 @@ class PartitionedChunkList[T, U](
       parallel: Boolean = false,
       memoized: Boolean = false): AdjustableList[T, U] = ???
 
+  def chunkSort(
+      tbd: TBD,
+      comparator: (TBD, (T, U), (T, U)) => Boolean,
+      parallel: Boolean = false): Mod[(Int, Vector[(T, U)])] = ???
+
   /* Meta Operations */
   def toBuffer(): Buffer[U] = {
     val buf = ArrayBuffer[U]()
