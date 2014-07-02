@@ -132,6 +132,24 @@ class DoubleModList[T, V](
       f: (TBD, (T, V), (T, V)) => (T, V),
       parallel: Boolean = false,
       memoized: Boolean = true): Mod[(T, V)] = {
+
+      def modReducer(tbd: TBD, acc: Mod[(T, V)], value: Mod[(T, V)]) = {
+        tbd.read(acc)((acc) =>
+	  tbd.read(value)(value =>
+            tbd.writeNoDest(f(tbd, acc, value))))
+      }
+
+      reduceMod(tbd, identityMod, modReducer, parallel, memoized)
+  }
+
+  //This overload is useful, because we have better control of memozation
+  //in case we have a more complex reduce operation. 
+  def reduceMod(
+      tbd: TBD,
+      identityMod: Mod[(T, V)],
+      f: (TBD, Mod[(T, V)], Mod[(T, V)]) => Changeable[(T, V)],
+      parallel: Boolean = false,
+      memoized: Boolean = true): Mod[(T, V)] = {
     // Each round we need a hasher and a lift, and we need to guarantee that the
     // same hasher and lift are used for a given round during change propagation,
     // even if the first mod of the list is deleted.
@@ -178,9 +196,7 @@ class DoubleModList[T, V](
         lift: Lift[Mod[DoubleModListNode[T, V]]])
           : Changeable[DoubleModListNode[T, V]] = {
       val newAcc = tbd.modNoDest(() =>
-        tbd.read(acc)((acc) =>
-	  tbd.read(head.value)(value =>
-            tbd.writeNoDest(f(tbd, acc, value)))))
+        f(tbd, acc, head.value))
 
       if(binaryHash(head.value.id, round, hasher)) {
         val newNext = lift.memo(List(head.next, identityMod), () =>

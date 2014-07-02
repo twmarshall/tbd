@@ -18,7 +18,15 @@ package tbd.visualization
 
 object Main {
   def main(args: Array[String]) {
-    var test = new ExhaustiveTest()
+    //val test = new ManualTest(new ChunkListSortTest())
+    val test = new ExhaustiveTest(new ChunkListSortTest())
+    //val test = new ManualTest(new ListReduceSumTest())
+
+    //Possible Options:
+    test.showDDGEachStep = true
+    test.initialSize = 100
+    test.maximalMutationsPerPropagation = 2
+
     test.run()
   }
 }

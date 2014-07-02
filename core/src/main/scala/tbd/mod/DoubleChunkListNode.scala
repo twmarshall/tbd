@@ -97,4 +97,19 @@ class DoubleChunkListNode[T, U](
 
     tbd.write(dest, new DoubleChunkListNode[V, Q](parTuple._1, parTuple._2))
   }
+
+  override def toString: String = {
+    def toString(lst: DoubleChunkListNode[T, U]): String = {
+      val nextRead = lst.nextMod.read()
+      val next =
+	if (nextRead != null)
+	  ", " + toString(nextRead)
+	else
+	  ")"
+
+      lst.chunkMod + next
+    }
+
+    "DoubleChunkListNode(" + toString(this)
+  }
 }
