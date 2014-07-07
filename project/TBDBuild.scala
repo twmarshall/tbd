@@ -12,7 +12,7 @@ object TBDBuild extends Build {
     scalaVersion := buildScalaVersion,
     fork         := true,
     autoScalaLibrary := true,
-    scalacOptions ++= Seq("-feature", "-deprecation")
+    scalacOptions ++= Seq("-feature", "-deprecation", "-Ymacro-debug-lite")
   )
 
   val commonDeps = Seq (
@@ -20,7 +20,6 @@ object TBDBuild extends Build {
     "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
 
     "org.scalatest"              %% "scalatest"            % "2.1.3" % "test",
-    "org.scala-lang"             % "scala-reflect"        % "2.11.1",
     "org.scalaz"                 %% "scalaz-core"          % "7.0.6"
   )
 
@@ -31,7 +30,7 @@ object TBDBuild extends Build {
   lazy val root = Project (
     "root",
     file(".")
-  ) aggregate(core, examples, visualization)
+  ) aggregate(macros, core, examples, visualization)
 
   lazy val core = Project (
     "core",
@@ -53,7 +52,7 @@ object TBDBuild extends Build {
         masterOut
       }
     )
-  )
+  ) dependsOn(macros)
 
   lazy val visualization = Project(
     "visualization",
@@ -78,6 +77,19 @@ object TBDBuild extends Build {
       }
     )
   ) dependsOn(core)
+
+  lazy val macros = Project(
+    "macros",
+    file("macros"),
+    settings = buildSettings ++ Seq (
+      libraryDependencies ++= (commonDeps
+                          ++ Seq("org.graphstream" % "gs-core" % "1.2",
+                                 "org.graphstream" % "gs-ui" % "1.2",
+                                 "org.scala-lang" % "scala-compiler" % "2.11.1",
+                                 "org.scala-lang" % "scala-reflect" % "2.11.1",
+                                 "org.scala-lang" % "scala-swing" % "2.11.0-M7"))
+    )
+  )
 
   lazy val examples = Project(
     "examples",

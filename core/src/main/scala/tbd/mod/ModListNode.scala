@@ -28,7 +28,7 @@ class ModListNode[T, V] (
       f: (TBD, (T, V)) => (U, Q),
       lift: Lift[Changeable[ModListNode[U, Q]]])
         : Changeable[ModListNode[U, Q]] = {
-    val newNext = tbd.modNoDest(() => {
+    val newNext = tbd.modNoDest[ModListNode[U, Q]](() => {
       tbd.read(next)(next => {
         if (next != null) {
           lift.memo(List(next), () => {

@@ -21,8 +21,7 @@ import akka.event.Logging
 import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map, Set}
 import scala.concurrent.{Await, Future, Promise}
 
-import language.experimental.macros
-import reflect.macros.Context
+import tbd.macros.TbdMacros
 
 import tbd.Constants._
 import tbd.ddg.{Node, Timestamp}
@@ -33,17 +32,6 @@ import tbd.worker.{Worker, Task}
 
 object TBD {
   var id = 0
-}
-
-object macrodef {
-  def readMacro[T, U <: Changeable[_]]
-      (c: Context)(mod: c.Expr[Mod[T]])(reader: c.Expr[(T => U)]): c.Expr[U] = {
-    import c.universe._
-    import compat._
-    val readFunc = c.Expr[U](Select(c.prefix.tree, TermName("readInternal")))
-
-    c.Expr[U](Function(List(ValDef(mod.tree.symbol), ValDef(reader.tree.symbol)), readFunc.tree))
-  }
 }
 
 class TBD(id: String, _worker: Worker) {
@@ -122,12 +110,16 @@ class TBD(id: String, _worker: Worker) {
         write(dest, mod + 1)))
   }
 
-  def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = macro macrodef.readMacro[T, U]
+  import scala.language.experimental.macros
+  def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = macro TbdMacros.readMacro[T, U]
 
-  def readInternal[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = {
+  def readInternal[T, U <: Changeable[_]](
+      mod: Mod[T], reader: T => U, idents: List[(String, Any)]): U = {
     val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],
                                       currentParent,
                                       reader.asInstanceOf[Any => Changeable[Any]])
+
+    idents.foreach((x) => println(x._1 + ": " + x._2))
 
     val outerReader = currentParent
     currentParent = readNode

@@ -90,7 +90,7 @@ class DoubleModList[T, V](
 
     val lift = tbd.makeLift[Changeable2[DoubleModListNode[T, V], DoubleModListNode[T, V]]](!memoized)
 
-    val result = tbd.modNoDest2(() => {
+    val result = tbd.modNoDest2[DoubleModListNode[T, V], DoubleModListNode[T, V]](() => {
       tbd.read(head)(head => {
 	if (head == null) {
 	  tbd.writeNoDest2(null.asInstanceOf[DoubleModListNode[T, V]],
@@ -177,14 +177,14 @@ class DoubleModList[T, V](
         hasher: Hasher,
         lift: Lift[Mod[DoubleModListNode[T, V]]])
           : Changeable[DoubleModListNode[T, V]] = {
-      val newAcc = tbd.modNoDest(() =>
+      val newAcc = tbd.modNoDest[(T, V)](() =>
         tbd.read(acc)((acc) =>
 	  tbd.read(head.value)(value =>
             tbd.writeNoDest(f(tbd, acc, value)))))
 
       if(binaryHash(head.value.id, round, hasher)) {
         val newNext = lift.memo(List(head.next, identityMod), () =>
-	  tbd.modNoDest(() =>
+	  tbd.modNoDest[DoubleModListNode[T, V]](() =>
 	    tbd.read(head.next)(next =>
 	      if (next == null)
 	        tbd.writeNoDest(null)
