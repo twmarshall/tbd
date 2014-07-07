@@ -22,11 +22,18 @@ import tbd.Constants._
 import tbd.ddg.MemoNode
 import tbd.master.Master
 import tbd.mod.Mod
+import tbd.macros.TbdMacros
 
 class Lift[T](tbd: TBD, memoId: Int) {
   import tbd.worker.context.dispatcher
 
-  def memo(args: List[_], func: () => T): T = {
+  import scala.language.experimental.macros
+  def memo[T](args: List[_], func: () => T): T = macro TbdMacros.memoMacro[T]
+
+  def memoInternal(
+      args: List[_],
+      func: () => T,
+      freeTerms: List[(String, Any)]): T = {
     val signature = memoId :: args
 
     var found = false
@@ -88,7 +95,8 @@ class Lift[T](tbd: TBD, memoId: Int) {
     }
 
     if (!found) {
-      val memoNode = tbd.worker.ddg.addMemo(tbd.currentParent, signature)
+      val memoNode = tbd.worker.ddg.addMemo(tbd.currentParent, signature,
+                                            freeTerms)
       val outerParent = tbd.currentParent
       tbd.currentParent = memoNode
       val value = func()

@@ -21,7 +21,7 @@ import tbd.mod.Mod
 
 class DummyLift[T](tbd: TBD, memoId: Int) extends Lift[T](tbd, memoId) {
 
-  override def memo(args: List[_], func: () => T): T = {
+  override def memoInternal(args: List[_], func: () => T, freeVars: List[(String, Any)]): T = {
     func()
   }
 }

@@ -125,6 +125,33 @@ class ListDescisionTest()
   }
 }
 
+class ClosureTest()
+  extends TestAlgorithm[Mod[String]] {
+  def run(tbd: TBD): Mod[String] = {
+    val modList = input.getAdjustableList().asInstanceOf[DoubleModList[Int, Int]]
+
+    val a = 1
+    val b = 2
+    val c = 3
+
+    tbd.mod((dest: Dest[String]) => {
+      tbd.read(modList.head)(head => {
+        val b = 4
+
+        if(a + b > 0) {
+          tbd.write(dest, "This is a string");
+        } else {
+          tbd.write(dest, "This is another string");
+        }
+      })
+    })
+  }
+
+  def checkOutput(output: Mod[String], table: Map[Int, Int]): Boolean = {
+    true
+  }
+}
+
 class ListMapTest()
   extends TestAlgorithm[AdjustableList[Int, Int]] {
   def run(tbd: TBD): AdjustableList[Int, Int] = {

@@ -42,5 +42,5 @@ class Mod[T](_id: ModId, datastoreRef: ActorRef) {
     Await.result(futuresFuture.mapTo[ArrayBuffer[Future[String]]], DURATION)
   }
 
-  override def toString = "Mod(" + id + ")"
+  override def toString = "Mod(" + id + ", " + read() + ")"
 }

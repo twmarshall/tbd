@@ -114,12 +114,13 @@ class TBD(id: String, _worker: Worker) {
   def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = macro TbdMacros.readMacro[T, U]
 
   def readInternal[T, U <: Changeable[_]](
-      mod: Mod[T], reader: T => U, idents: List[(String, Any)]): U = {
+      mod: Mod[T], reader: T => U, freeTerms: List[(String, Any)]): U = {
     val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],
                                       currentParent,
-                                      reader.asInstanceOf[Any => Changeable[Any]])
+                                      reader.asInstanceOf[Any => Changeable[Any]],
+                                      freeTerms)
 
-    idents.foreach((x) => println(x._1 + ": " + x._2))
+    //idents.foreach((x) => println(x._1 + ": " + x._2))
 
     val outerReader = currentParent
     currentParent = readNode

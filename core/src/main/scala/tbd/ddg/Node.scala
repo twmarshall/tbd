@@ -80,10 +80,12 @@ class ReadNode(
     _mod: Mod[Any],
     _parent: Node,
     _timestamp: Timestamp,
-    _reader: Any => Changeable[Any])
+    _reader: Any => Changeable[Any],
+    _freeVars: List[(String, Any)])
       extends Node(_parent, _timestamp) {
   val mod: Mod[Any] = _mod
   val reader = _reader
+  var freeVars = _freeVars
 
   override def toString(prefix: String) = {
     prefix + this + " modId=(" + mod.id + ") " + " time=" + timestamp + " to " + endTime +
@@ -128,9 +130,11 @@ class ParNode(
 class MemoNode(
     _parent: Node,
     _timestamp: Timestamp,
-    _signature: List[Any]) extends Node(_parent, _timestamp) {
+    _signature: List[Any],
+    _freeVars: List[(String, Any)]) extends Node(_parent, _timestamp) {
   val signature = _signature
   var value: Any = null
+  val freeVars = _freeVars
 
   override def toString(prefix: String) = {
     prefix + "MemoNode time=" + timestamp + " to " + endTime + " signature=" + signature +

@@ -329,6 +329,21 @@ class TbdVisualizer extends ViewerListener {
     }
   }
 
+  private def getCloseureInfo(node: Node): String = {
+    val vars = node match {
+      case x:ReadNode => x.freeVars
+      case x:MemoNode => x.freeVars
+      case _ => List[(String, Any)]()
+    }
+
+    val desc = vars.foldLeft("")((a, x) => a + ", " + x._1 + " = " + x._2)
+
+    if(desc.length > 2)
+      desc.drop(2)
+    else
+      desc
+  }
+
   private def extractMethodName(node: Node): String = {
 
     if(node.stacktrace == null) {
@@ -372,7 +387,9 @@ class TbdVisualizer extends ViewerListener {
 
   def buttonPushed(id: String) {
       val node = idToNodes(id)
-      label.text = getNodeType(node) + " " + getParameterInfo(node) + "\nIn " + extractMethodName(node)
+      label.text = getNodeType(node) + " " + getParameterInfo(node) +
+                    "\nIn " + extractMethodName(node) +
+                    "\nFree variables: " + getCloseureInfo(node)
   }
 
   def buttonReleased(id: String) {

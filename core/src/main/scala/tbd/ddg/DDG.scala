@@ -37,9 +37,10 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
   def addRead(
       mod: Mod[Any],
       parent: Node,
-      reader: Any => Changeable[Any]): ReadNode = {
+      reader: Any => Changeable[Any],
+      freeVars: List[(String, Any)]): ReadNode = {
     val timestamp = nextTimestamp(parent)
-    val readNode = new ReadNode(mod, parent, timestamp, reader)
+    val readNode = new ReadNode(mod, parent, timestamp, reader, freeVars)
     parent.addChild(readNode)
 
     if (reads.contains(mod.id)) {
@@ -70,9 +71,12 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     pars(workerRef2) = parNode
   }
 
-  def addMemo(parent: Node, signature: List[Any]): MemoNode = {
+  def addMemo(
+      parent: Node,
+      signature: List[Any],
+      freeVars: List[(String, Any)]): MemoNode = {
     val timestamp = nextTimestamp(parent)
-    val memoNode = new MemoNode(parent, timestamp, signature)
+    val memoNode = new MemoNode(parent, timestamp, signature, freeVars)
     parent.addChild(memoNode)
     memoNode
   }

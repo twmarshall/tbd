@@ -12,7 +12,7 @@ object TBDBuild extends Build {
     scalaVersion := buildScalaVersion,
     fork         := true,
     autoScalaLibrary := true,
-    scalacOptions ++= Seq("-feature", "-deprecation", "-Ymacro-debug-lite")
+    scalacOptions ++= Seq("-feature", "-deprecation"/*, "-Ymacro-debug-lite"*/)
   )
 
   val commonDeps = Seq (
