@@ -23,11 +23,11 @@ import tbd.ddg.MemoNode
 import tbd.master.Master
 import tbd.mod.Mod
 
-class Lift[T](tbd: TBD, memoId: Int) {
+class Memoizer[T](tbd: TBD, memoId: Int) {
   import tbd.worker.context.dispatcher
 
-  def memo(args: List[_], func: () => T): T = {
-    val signature = memoId :: args
+  def apply(args: Any*)(func: => T): T = {
+    val signature = memoId +: args
 
     var found = false
     var ret = null.asInstanceOf[T]
@@ -91,7 +91,7 @@ class Lift[T](tbd: TBD, memoId: Int) {
       val memoNode = tbd.worker.ddg.addMemo(tbd.currentParent, signature)
       val outerParent = tbd.currentParent
       tbd.currentParent = memoNode
-      val value = func()
+      val value = func
       tbd.currentParent = outerParent
       memoNode.endTime = tbd.worker.ddg.nextTimestamp(memoNode)
       memoNode.currentDest = tbd.currentDest
@@ -108,5 +108,11 @@ class Lift[T](tbd: TBD, memoId: Int) {
     }
 
     ret
+  }
+}
+
+class DummyMemoizer[T](tbd: TBD, memoId: Int) extends Memoizer[T](tbd, memoId) {
+  override def apply(args: Any*)(func: => T): T = {
+    func
   }
 }

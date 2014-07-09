@@ -17,7 +17,7 @@ package tbd.mod
 
 import java.io.Serializable
 
-import tbd.{Changeable, Changeable2, Lift, TBD}
+import tbd.{Changeable, Changeable2, Memoizer, TBD}
 
 class DoubleModListNode[T, V] (
     _value: Mod[(T, V)],
@@ -38,21 +38,21 @@ class DoubleModListNode[T, V] (
   def map[U, Q](
       tbd: TBD,
       f: (TBD, (T, V)) => (U, Q),
-      lift: Lift[(Mod[(U, Q)], Mod[DoubleModListNode[U, Q]])])
+      memo: Memoizer[(Mod[(U, Q)], Mod[DoubleModListNode[U, Q]])])
         : Changeable[DoubleModListNode[U, Q]] = {
-    val pair = lift.memo(List(next), () => {
+    val pair = memo(List(next)) {
       (tbd.modNoDest(() =>
 	tbd.read(value)(value => tbd.writeNoDest(f(tbd, value)))),
        tbd.modNoDest(() =>
          tbd.read(next)(next => {
            if (next != null) {
-               next.map(tbd, f, lift)
+               next.map(tbd, f, memo)
            } else {
              tbd.writeNoDest[DoubleModListNode[U, Q]](null)
            }
          })
       ))
-    })
+    }
 
     tbd.writeNoDest(new DoubleModListNode[U, Q](pair._1, pair._2))
   }
@@ -86,24 +86,24 @@ class DoubleModListNode[T, V] (
       tbd: TBD,
       destMatch: Dest[DoubleModListNode[T, V]],
       destNoMatch: Dest[DoubleModListNode[T, V]],
-      lift: Lift[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])],
+      memo: Memoizer[(Mod[DoubleModListNode[T, V]], Mod[DoubleModListNode[T, V]])],
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
         Changeable[DoubleModListNode[T, V]] = {
 
-    val (matchNext, diffNext) = lift.memo(List(next), () => {
+    val (matchNext, diffNext) = memo(List(next)) {
       tbd.mod2((newDestMatch: Dest[DoubleModListNode[T, V]], newDestNoMatch: Dest[DoubleModListNode[T, V]]) => {
         tbd.read(next)(next => {
           if(next != null) {
-            next.split(tbd, newDestMatch, newDestNoMatch, lift, pred)
+            next.split(tbd, newDestMatch, newDestNoMatch, memo, pred)
           } else {
             tbd.write(newDestMatch, null)
             tbd.write(newDestNoMatch, null)
           }
         })
       })
-    })
+    }
 
     tbd.read(value)((v) => {
       if(pred(tbd, (v._1, v._2))) {
@@ -122,7 +122,7 @@ class DoubleModListNode[T, V] (
 
   def splitNoDest(
       tbd: TBD,
-      lift: Lift[Changeable2[DoubleModListNode[T, V], DoubleModListNode[T, V]]],
+      memo: Memoizer[Changeable2[DoubleModListNode[T, V], DoubleModListNode[T, V]]],
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
@@ -131,32 +131,32 @@ class DoubleModListNode[T, V] (
       if(pred(tbd, v)) {
 	val (matchNext, diffNext) =
 	  tbd.modNoDestLeft(() => {
-	    lift.memo(List(next), () => {
+	    memo(List(next)) {
 	      tbd.read(next)(next => {
 		if(next != null) {
-		  next.splitNoDest(tbd, lift, pred)
+		  next.splitNoDest(tbd, memo, pred)
 		} else {
 		  tbd.writeNoDest2(null.asInstanceOf[DoubleModListNode[T, V]],
 				   null.asInstanceOf[DoubleModListNode[T, V]])
 		}
               })
-	    })
+	    }
 	  })
 
 	tbd.writeNoDestLeft(new DoubleModListNode(value, matchNext), diffNext)
       } else {
 	val (matchNext, diffNext) =
 	  tbd.modNoDestRight(() => {
-	    lift.memo(List(next), () => {
+	    memo(List(next)) {
 	      tbd.read(next)(next => {
 		if(next != null) {
-		  next.splitNoDest(tbd, lift, pred)
+		  next.splitNoDest(tbd, memo, pred)
 		} else {
 		  tbd.writeNoDest2(null.asInstanceOf[DoubleModListNode[T, V]],
 				   null.asInstanceOf[DoubleModListNode[T, V]])
 		}
 	      })
-	    })
+	    }
 	  })
 
 	tbd.writeNoDestRight(matchNext, new DoubleModListNode(value, diffNext))
@@ -169,7 +169,7 @@ class DoubleModListNode[T, V] (
         dest: Dest[DoubleModListNode[T, V]],
         toAppend: Mod[DoubleModListNode[T, V]],
         comperator: (TBD, (T, V), (T, V)) => Boolean,
-        lift: Lift[Mod[DoubleModListNode[T, V]]],
+        memo: Memoizer[Mod[DoubleModListNode[T, V]]],
         parallel: Boolean = false,
         memoized: Boolean = false):
           Changeable[DoubleModListNode[T, V]] = {
@@ -179,20 +179,20 @@ class DoubleModListNode[T, V] (
           val (smaller, greater) = tbd.mod2((destSmaller: Dest[DoubleModListNode[T, V]],
                                       destGreater: Dest[DoubleModListNode[T, V]]) => {
 
-            val lift = tbd.makeLift[(Mod[DoubleModListNode[T, V]],
+            val memo = tbd.makeMemoizer[(Mod[DoubleModListNode[T, V]],
                                      Mod[DoubleModListNode[T, V]])](!memoized)
 
-            next.split(tbd, destSmaller, destGreater, lift,
+            next.split(tbd, destSmaller, destGreater, memo,
               (tbd, cv) => { comperator(tbd, cv, v) },
               parallel, memoized)
           })
 
-          val greaterSorted = lift.memo(List(greater), () => {
+          val greaterSorted = memo(List(greater)) {
             tbd.mod((dest: Dest[DoubleModListNode[T, V]]) => {
               tbd.read(greater)(greater => {
                 if(greater != null) {
                   greater.quicksort(tbd, dest, toAppend,
-                                    comperator, lift, parallel, memoized)
+                                    comperator, memo, parallel, memoized)
                 } else {
                   tbd.read(toAppend)(toAppend => {
                     tbd.write(dest, toAppend)
@@ -200,14 +200,14 @@ class DoubleModListNode[T, V] (
                 }
               })
             })
-          })
+          }
 
           val mid = new DoubleModListNode(value, greaterSorted)
 
           tbd.read(smaller)(smaller => {
             if(smaller != null) {
               smaller.quicksort(tbd, dest, tbd.createMod(mid),
-                                comperator, lift, parallel, memoized)
+                                comperator, memo, parallel, memoized)
             } else {
               tbd.write(dest, mid)
             }
@@ -227,28 +227,28 @@ class DoubleModListNode[T, V] (
       tbd: TBD,
       dest: Dest[DoubleModListNode[T, V]],
       pred: ((T, V)) => Boolean,
-      lift: Lift[Mod[DoubleModListNode[T, V]]])
+      memo: Memoizer[Mod[DoubleModListNode[T, V]]])
         : Changeable[DoubleModListNode[T, V]] = {
     tbd.read(value)(value => {
       if (pred(value)) {
-        val newNext = lift.memo(List(next), () => {
+        val newNext = memo(List(next)) {
           tbd.mod((nextDest: Dest[DoubleModListNode[T, V]]) => {
             tbd.read(next)(nextValue => {
                 if (nextValue == null) {
                   tbd.write(nextDest, null)
                 } else {
-                  nextValue.filter(tbd, nextDest, pred, lift)
+                  nextValue.filter(tbd, nextDest, pred, memo)
                 }
               })
             })
-          })
+        }
         tbd.write(dest, new DoubleModListNode(tbd.createMod(value), newNext))
       } else {
         tbd.read(next)(nextValue => {
           if (nextValue == null) {
             tbd.write(dest, null)
           } else {
-            nextValue.filter(tbd, dest, pred, lift)
+            nextValue.filter(tbd, dest, pred, memo)
           }
         })
       }

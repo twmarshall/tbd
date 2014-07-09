@@ -70,7 +70,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     pars(workerRef2) = parNode
   }
 
-  def addMemo(parent: Node, signature: List[Any]): MemoNode = {
+  def addMemo(parent: Node, signature: Seq[Any]): MemoNode = {
     val timestamp = nextTimestamp(parent)
     val memoNode = new MemoNode(parent, timestamp, signature)
     parent.addChild(memoNode)

@@ -17,7 +17,7 @@ package tbd.mod
 
 import scala.collection.mutable.Buffer
 
-import tbd.{Changeable, Lift, TBD}
+import tbd.{Changeable, Memoizer, TBD}
 import tbd.Constants._
 
 class DoubleChunkList[T, U](
@@ -42,12 +42,12 @@ class DoubleChunkList[T, U](
         })
       )
     } else {
-      val lift = tbd.makeLift[Mod[DoubleChunkListNode[V, Q]]](!memoized)
+      val memo = tbd.makeMemoizer[Mod[DoubleChunkListNode[V, Q]]](!memoized)
       new DoubleChunkList(
         tbd.mod((dest: Dest[DoubleChunkListNode[V, Q]]) => {
           tbd.read(head)(node => {
             if (node != null) {
-              node.map(tbd, dest, f, lift)
+              node.map(tbd, dest, f, memo)
             } else {
               tbd.write(dest, null)
             }
@@ -67,12 +67,12 @@ class DoubleChunkList[T, U](
 		      "'memoized' parameters.")
     }
 
-    val lift = tbd.makeLift[Mod[DoubleModListNode[V, Q]]]()
+    val memo = tbd.makeMemoizer[Mod[DoubleModListNode[V, Q]]]()
     new DoubleModList(
       tbd.mod((dest: Dest[DoubleModListNode[V, Q]]) => {
         tbd.read(head)(node => {
           if (node != null) {
-            node.chunkMap(tbd, dest, f, lift)
+            node.chunkMap(tbd, dest, f, memo)
           } else {
             tbd.write(dest, null)
           }
@@ -100,27 +100,28 @@ class DoubleChunkList[T, U](
       })
     })
 
-    // Each round we need a hasher and a lift, and we need to guarantee that the
-    // same hasher and lift are used for a given round during change propagation,
+    // Each round we need a hasher and a memo, and we need to guarantee that the
+    // same hasher and memo are used for a given round during change propagation,
     // even if the first mod of the list is deleted.
-    class RoundLift {
-      val lift = tbd.makeLift[(Hasher,
-                               Lift[Mod[DoubleChunkListNode[T, U]]],
-                               RoundLift)](!memoized)
+    class RoundMemoizer {
+      val memo = tbd.makeMemoizer[(Hasher,
+                               Memoizer[Mod[DoubleChunkListNode[T, U]]],
+                               RoundMemoizer)](!memoized)
 
       def getTuple() =
-        lift.memo(List(), () =>
-                  (new Hasher(2, 4),
-                   tbd.makeLift[Mod[DoubleChunkListNode[T, U]]](!memoized),
-                   new RoundLift()))
+        memo() {
+          (new Hasher(2, 4),
+           tbd.makeMemoizer[Mod[DoubleChunkListNode[T, U]]](!memoized),
+           new RoundMemoizer())
+	}
     }
 
     def randomReduceList(
         head: DoubleChunkListNode[T, U],
         round: Int,
         dest: Dest[(T, U)],
-        roundLift: RoundLift): Changeable[(T, U)] = {
-      val tuple = roundLift.getTuple()
+        roundMemoizer: RoundMemoizer): Changeable[(T, U)] = {
+      val tuple = roundMemoizer.getTuple()
 
       val halfListMod =
         tbd.mod((dest: Dest[DoubleChunkListNode[T, U]]) =>
@@ -144,7 +145,7 @@ class DoubleChunkList[T, U](
         head: DoubleChunkListNode[T, U],
         round: Int,
         hasher: Hasher,
-        lift: Lift[Mod[DoubleChunkListNode[T, U]]],
+        memo: Memoizer[Mod[DoubleChunkListNode[T, U]]],
         dest: Dest[DoubleChunkListNode[T, U]])
           : Changeable[DoubleChunkListNode[T, U]] = {
       val newAcc = tbd.mod((dest: Dest[Vector[(T, U)]]) =>
@@ -156,13 +157,14 @@ class DoubleChunkList[T, U](
 	      tbd.write(dest, Vector(acc(0))))))
 
       if(binaryHash(head.chunkMod.id, round, hasher)) {
-        val newNext = lift.memo(List(head.nextMod, identityMod), () =>
+        val newNext = memo(head.nextMod, identityMod) {
 	  tbd.mod((dest: Dest[DoubleChunkListNode[T, U]]) =>
 	    tbd.read(head.nextMod)(next =>
 	      if (next == null)
 	        tbd.write(dest, null)
 	      else
-	        halfList(identityMod, next, round, hasher, lift, dest))))
+	        halfList(identityMod, next, round, hasher, memo, dest)))
+	}
         tbd.write(dest, new DoubleChunkListNode(newAcc, newNext))
       } else {
         tbd.read(head.nextMod)(next =>
@@ -170,20 +172,20 @@ class DoubleChunkList[T, U](
 	    val newNext = tbd.createMod[DoubleChunkListNode[T, U]](null)
             tbd.write(dest, new DoubleChunkListNode(newAcc, newNext))
 	  } else {
-	    halfList(newAcc, next, round, hasher, lift, dest)
+	    halfList(newAcc, next, round, hasher, memo, dest)
 	  }
         )
       }
     }
 
-    val roundLift = new RoundLift()
+    val roundMemoizer = new RoundMemoizer()
     tbd.mod((dest: Dest[(T, U)]) =>
       tbd.read(head)(head =>
         if(head == null)
           tbd.read(identityMod)(identity =>
             tbd.write(dest, identity(0)))
         else
-          randomReduceList(head, 0, dest, roundLift)))
+          randomReduceList(head, 0, dest, roundMemoizer)))
   }
 
 

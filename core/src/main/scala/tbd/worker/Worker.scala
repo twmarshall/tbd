@@ -41,7 +41,7 @@ class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
 
   val datastoreRef = _datastoreRef
   val ddg = new DDG(log, id, this)
-  val memoTable = Map[List[Any], ArrayBuffer[MemoNode]]()
+  val memoTable = Map[Seq[Any], ArrayBuffer[MemoNode]]()
 
   private val tbd = new TBD(id, this)
 

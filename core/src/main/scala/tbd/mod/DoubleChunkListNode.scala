@@ -17,7 +17,7 @@ package tbd.mod
 
 import java.io.Serializable
 
-import tbd.{Changeable, Lift, TBD}
+import tbd.{Changeable, Memoizer, TBD}
 
 // The default value of zero for size works because size is only ever
 // accessed by the Modifier, which will set it appropriately.
@@ -42,18 +42,19 @@ class DoubleChunkListNode[T, U](
       tbd: TBD,
       dest: Dest[DoubleChunkListNode[V, Q]],
       f: (TBD, (T, U)) => (V, Q),
-      lift: Lift[Mod[DoubleChunkListNode[V, Q]]])
+      memo: Memoizer[Mod[DoubleChunkListNode[V, Q]]])
         : Changeable[DoubleChunkListNode[V, Q]] = {
     val newChunkMod = tbd.mod((dest: Dest[Vector[(V, Q)]]) =>
       tbd.read(chunkMod)(chunk =>
         tbd.write(dest, chunk.map(pair => f(tbd, pair)))))
-    val newNextMod = lift.memo(List(nextMod), () =>
+    val newNextMod = memo(nextMod) {
       tbd.mod((dest: Dest[DoubleChunkListNode[V, Q]]) =>
         tbd.read(nextMod)(next =>
           if (next != null)
-            next.map(tbd, dest, f, lift)
+            next.map(tbd, dest, f, memo)
           else
-            tbd.write(dest, null))))
+            tbd.write(dest, null)))
+    }
 
     tbd.write(dest, new DoubleChunkListNode[V, Q](newChunkMod, newNextMod))
   }
@@ -62,18 +63,19 @@ class DoubleChunkListNode[T, U](
       tbd: TBD,
       dest: Dest[DoubleModListNode[V, Q]],
       f: (TBD, Vector[(T, U)]) => (V, Q),
-      lift: Lift[Mod[DoubleModListNode[V, Q]]])
+      memo: Memoizer[Mod[DoubleModListNode[V, Q]]])
         : Changeable[DoubleModListNode[V, Q]] = {
     val newChunkMod = tbd.mod((dest: Dest[(V, Q)]) =>
       tbd.read(chunkMod)(chunk =>
         tbd.write(dest, f(tbd, chunk))))
-    val newNextMod = lift.memo(List(nextMod), () =>
+    val newNextMod = memo(nextMod) {
       tbd.mod((dest: Dest[DoubleModListNode[V, Q]]) =>
         tbd.read(nextMod)(next =>
           if (next != null)
-            next.chunkMap(tbd, dest, f, lift)
+            next.chunkMap(tbd, dest, f, memo)
           else
-            tbd.write(dest, null))))
+            tbd.write(dest, null)))
+    }
 
     tbd.write(dest, new DoubleModListNode[V, Q](newChunkMod, newNextMod))
   }

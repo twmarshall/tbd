@@ -22,8 +22,8 @@ import scala.collection.mutable.{ArrayBuffer, ListBuffer, Map, Set}
 import scala.concurrent.{Await, Future, Promise}
 
 import tbd.Constants._
-import tbd.ddg.{Node, Timestamp}
-import tbd.master.Main
+import tbd.ddg.{MemoNode, Node, Timestamp}
+import tbd.master.{Main, Master}
 import tbd.messages._
 import tbd.mod.{Dest, Mod}
 import tbd.worker.{Worker, Task}
@@ -318,7 +318,7 @@ class TBD(id: String, _worker: Worker) {
     new Tuple2(oneRet, twoRet)
   }
 
-  def updated(args: List[_]): Boolean = {
+  def updated(args: Seq[_]): Boolean = {
     var updated = false
 
     for (arg <- args) {
@@ -332,13 +332,13 @@ class TBD(id: String, _worker: Worker) {
     updated
   }
 
-  var liftId = 0
-  def makeLift[T](dummy:Boolean = false) = {
+  var memoId = 0
+  def makeMemoizer[T](dummy:Boolean = false) = {
     if(dummy) {
-      new DummyLift[T](this, 0)
+      new DummyMemoizer[T](this, 0)
     } else {
-      liftId += 1
-      new Lift[T](this, liftId)
+      memoId += 1
+      new Memoizer[T](this, memoId)
     }
   }
 }

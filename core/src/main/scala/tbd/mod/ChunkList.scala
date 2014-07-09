@@ -17,8 +17,8 @@ package tbd.mod
 
 import scala.collection.mutable.Buffer
 
-import tbd.{Changeable, Lift, TBD}
-import tbd.Constants._
+import tbd.{Changeable, Memoizer, TBD}
+import tbd.Constants.ModId
 
 class ChunkList[T, U](
     _head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
@@ -40,12 +40,12 @@ class ChunkList[T, U](
 		      "'memoized' parameters.")
     }
 
-    val lift = tbd.makeLift[Mod[ModListNode[V, Q]]]()
+    val memo = tbd.makeMemoizer[Mod[ModListNode[V, Q]]]()
     new ModList(
       tbd.mod((dest: Dest[ModListNode[V, Q]]) => {
         tbd.read(head)(node => {
           if (node != null) {
-            node.chunkMap(tbd, dest, f, lift)
+            node.chunkMap(tbd, dest, f, memo)
           } else {
             tbd.write(dest, null)
           }

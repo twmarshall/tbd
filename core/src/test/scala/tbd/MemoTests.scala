@@ -32,7 +32,7 @@ class MemoTest(input: TableInput[Int, Int]) extends Adjustable {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
-    val lift = tbd.makeLift[Mod[Int]]()
+    val memo = tbd.makeMemoizer[Mod[Int]]()
 
     tbd.mod((dest: Dest[Int]) => {
       tbd.read(one)(oneValue => {
@@ -43,14 +43,14 @@ class MemoTest(input: TableInput[Int, Int]) extends Adjustable {
             })
           })
         }
-        val memoMod = lift.memo(List(two), () => {
+        val memoMod = memo(two) {
           tbd.mod((memoDest: Dest[Int]) => {
 	    count += 1
 	    tbd.read(two)(valueTwo => {
 	      tbd.write(memoDest, valueTwo + 1)
 	    })
           })
-        })
+        }
 
         tbd.read(memoMod)(memoValue => {
           tbd.write(dest, oneValue + memoValue)
@@ -65,40 +65,41 @@ class AlreadyMatchedTest(input: TableInput[Int, Int]) extends Adjustable {
   var count2 = 0
 
   /**
-   * In the first run, one = 1, so the first call to lift doesn't get
+   * In the first run, one = 1, so the first call to memo doesn't get
    * executed, so count1 = 0, count2 = 1. In the second run, one = 3, so the
    * read of one is reexecuted, a memo match is found for the first call to
    * memo, but a memo match should not be found for the second call since we
    * can only match a memo entry once, so count1 = 0, count2 = 2.
    *
-   * Note: it is generally not advisable to call memo on the same lift object with
-   * different parameters for the memoized function.
+   * Note: it is generally not advisable to use a memo function in multiple
+   * places in the code, as you can get weird results if the memoized block
+   * isn't always the same.
    */
   def run(tbd: TBD): Mod[Int] = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
-    val lift = tbd.makeLift[Changeable[Int]]()
+    val memo = tbd.makeMemoizer[Changeable[Int]]()
 
     tbd.mod((dest: Dest[Int]) => {
       tbd.read(one)(oneValue => {
         if (oneValue == 3) {
           tbd.mod((dest: Dest[Int]) => {
-            lift.memo(List(two), () => {
+            memo(two) {
 	      count1 += 1
 	      tbd.read(two)(twoValue => {
 	        tbd.write(dest, twoValue + 2)
 	      })
-            })
+            }
           })
         }
 
-        lift.memo(List(two), () => {
-	    count2 += 1
-	    tbd.read(two)(twoValue => {
-	      tbd.write(dest, twoValue + 1)
+        memo(two) {
+	  count2 += 1
+	  tbd.read(two)(twoValue => {
+	    tbd.write(dest, twoValue + 1)
           })
-        })
+        }
       })
     })
   }
@@ -111,15 +112,15 @@ class OutOfScopeTest(input: TableInput[Int, Int]) extends Adjustable {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
-    val lift = tbd.makeLift[Changeable[Int]]()
+    val memo = tbd.makeMemoizer[Changeable[Int]]()
 
     tbd.mod((dest: Dest[Int]) => {
       tbd.read(one)(oneValue => {
 	if (oneValue != 1) {
-	  lift.memo(List(two, dest), () => {
+	  memo(two, dest) {
 	    num += 1
 	    tbd.write(dest, 0)
-	  })
+	  }
 	} else {
 	  tbd.write(dest, 1)
 	}
@@ -127,9 +128,9 @@ class OutOfScopeTest(input: TableInput[Int, Int]) extends Adjustable {
     })
 
     tbd.mod((dest: Dest[Int]) => {
-      lift.memo(List(two, dest), () => {
+      memo(two, dest) {
 	tbd.write(dest, 2)
-      })
+      }
     })
 
     0
@@ -146,23 +147,23 @@ class MatchingSignaturesTest(input: TableInput[Int, Int]) extends Adjustable {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
-    val lift = tbd.makeLift[Changeable[Int]]()
+    val memo = tbd.makeMemoizer[Changeable[Int]]()
 
     tbd.mod((dest: Dest[Int]) => {
       tbd.read(one)(oneValue => {
-        lift.memo(List(two, dest), () => {
+        memo(two, dest) {
           count1 += 1
           tbd.write(dest, 0)
-        })
+        }
       })
     })
 
     tbd.mod((dest: Dest[Int]) => {
       tbd.read(one)(oneValue => {
-        lift.memo(List(two, dest), () => {
+        memo(two, dest) {
           count2 += 1
           tbd.write(dest, 0)
-        })
+        }
       })
     })
 
@@ -184,24 +185,24 @@ class MatchParentTest(input: TableInput[Int, Int]) extends Adjustable {
     val one = table.get(1)
     val two = table.get(2)
     val three = table.get(3)
-    val lift = tbd.makeLift[Unit]()
+    val memo = tbd.makeMemoizer[Unit]()
 
     tbd.mod((dest: Dest[Int]) => {
       tbd.read(one)(oneValue => {
         if (oneValue == 1) {
-          lift.memo(List(two), () => {
+          memo(two) {
             count1 += 1
-            lift.memo(List(three), () => {
+            memo(three) {
               count2 += 1
-            })
-          })
+            }
+          }
         } else {
-          lift.memo(List(three), () => {
+          memo(three) {
             count3 += 1
-          })
-          lift.memo(List(two), () => {
+          }
+          memo(two) {
             count4 += 1
-          })
+          }
         }
 
         tbd.write(dest, 0)
@@ -220,15 +221,16 @@ class PropagateThroughMemoTest(input: TableInput[Int, Int]) extends Adjustable {
     val one = table.get(1)
     val two = table.get(2)
     val three = table.get(3)
-    val lift = tbd.makeLift[Mod[Int]]()
+    val memo = tbd.makeMemoizer[Mod[Int]]()
 
     tbd.mod((dest: Dest[Int]) =>
       tbd.read(one)(oneValue => {
-        val mod = lift.memo(List(two), () =>
+        val mod = memo(two) {
           tbd.mod((dest: Dest[Int]) =>
             tbd.read(three)(threeValue => {
               tbd.write(dest, threeValue)
-            })))
+            }))
+	}
 
         tbd.read(mod)(modValue => {
           count += 1
@@ -247,14 +249,14 @@ class RepeatRunsTest(input: TableInput[Int, Int]) extends Adjustable {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
-    val lift = tbd.makeLift[Changeable[Int]]()
+    val memo = tbd.makeMemoizer[Changeable[Int]]()
 
     tbd.mod((dest: Dest[Int]) => {
       tbd.read(one)(oneValue => {
-	lift.memo(List(two), () => {
+	memo(two) {
 	  count += 1
 	  tbd.write(dest, 0)
-	})
+	}
       })
     })
   }
@@ -274,24 +276,24 @@ class OutOfOrderMatchTest(input: TableInput[Int, Int]) extends Adjustable {
     val one = table.get(1)
     val two = table.get(2)
     val three = table.get(3)
-    val lift = tbd.makeLift[Unit]()
+    val memo = tbd.makeMemoizer[Unit]()
 
     tbd.mod((dest: Dest[Int]) => {
       tbd.read(one)(oneValue => {
 	if (oneValue == 1) {
-	  lift.memo(List(two), () => {
+	  memo(two) {
 	    count2 += 1
-	  })
-	  lift.memo(List(three), () => {
+	  }
+	  memo(three) {
 	    count3 += 1
-	  })
+	  }
 	} else {
-	  lift.memo(List(three), () => {
+	  memo(three) {
 	    count3 += 1
-	  })
-	  lift.memo(List(two), () => {
+	  }
+	  memo(two) {
 	    count2 += 1
-	  })
+	  }
 	}
 
 	tbd.write(dest, 0)
@@ -307,25 +309,25 @@ class NoDestTest(input: TableInput[Int, Int]) extends Adjustable {
     val two = table.get(2)
     val three = table.get(3)
     val four = table.get(4)
-    val lift = tbd.makeLift[Changeable[Int]]()
+    val memo = tbd.makeMemoizer[Changeable[Int]]()
 
     tbd.modNoDest(() => {
       tbd.read(one)(oneValue => {
         if (oneValue == 1) {
           tbd.modNoDest(() => {
-            lift.memo(List(two), () => {
+            memo(two) {
               tbd.read(four)(fourValue =>
                 tbd.writeNoDest(fourValue))
-            })
+            }
           })
-          lift.memo(List(three), () => {
+          memo(three) {
             tbd.writeNoDest(3)
-          })
+          }
         } else {
-          lift.memo(List(two), () => {
+          memo(two) {
             tbd.read(four)(fourValue =>
               tbd.writeNoDest(fourValue))
-          })
+          }
         }
       })
     })
@@ -339,26 +341,26 @@ class NoDestTest2(input: TableInput[Int, Int]) extends Adjustable {
     val two = table.get(2)
     val three = table.get(3)
     val five = table.get(5)
-    val lift = tbd.makeLift[Changeable[Int]]()
+    val memo = tbd.makeMemoizer[Changeable[Int]]()
 
     val six = tbd.modNoDest(() => {
       tbd.read(one)(one => {
         val four = tbd.modNoDest(() => {
           if (one == 1) {
             tbd.modNoDest(() => {
-              lift.memo(List(two), () => {
+              memo(two) {
                 tbd.read(five)(five =>
                   tbd.writeNoDest(five))
-              })
+              }
             })
-            lift.memo(List(three), () => {
+            memo(three) {
               tbd.writeNoDest(3)
-            })
+            }
           } else {
-            lift.memo(List(two), () => {
+            memo(two) {
               tbd.read(five)(five =>
                 tbd.writeNoDest(five))
-            })
+            }
           }
         })
 
