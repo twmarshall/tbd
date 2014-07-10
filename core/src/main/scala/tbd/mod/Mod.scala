@@ -26,8 +26,7 @@ import tbd.TBD
 import tbd.master.Main
 import tbd.messages._
 
-class Mod[T](_id: ModId) extends Serializable {
-  val id = _id
+class Mod[T](val id: ModId) extends Serializable {
 
   def read(workerRef: ActorRef = null): T = {
     val valueFuture = Main.datastoreRef ? GetModMessage(id, workerRef)

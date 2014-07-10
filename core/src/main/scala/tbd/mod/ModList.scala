@@ -21,9 +21,8 @@ import tbd.{Changeable, Memoizer, TBD}
 import tbd.Constants.ModId
 
 class ModList[T, V](
-    aHead: Mod[ModListNode[T, V]])
-    extends AdjustableList[T, V] {
-  val head = aHead
+    val head: Mod[ModListNode[T, V]]
+  ) extends AdjustableList[T, V] {
 
   def map[U, Q](
       tbd: TBD,

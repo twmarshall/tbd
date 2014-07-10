@@ -20,10 +20,9 @@ import java.io.Serializable
 import tbd.{Changeable, Memoizer, TBD}
 
 class ModListNode[T, V] (
-    _value: (T, V),
-    _next: Mod[ModListNode[T, V]]) extends Serializable {
-  var value = _value
-  def next = _next
+    var value: (T, V),
+    val next: Mod[ModListNode[T, V]]
+  ) extends Serializable {
 
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[ModListNode[T, V]]) {

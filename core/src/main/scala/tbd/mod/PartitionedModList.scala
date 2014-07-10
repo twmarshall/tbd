@@ -22,9 +22,8 @@ import tbd.{Changeable, TBD}
 import tbd.datastore.Datastore
 
 class PartitionedModList[T, V](
-    aPartitions: ArrayBuffer[ModList[T, V]])
-    extends AdjustableList[T, V] {
-  val partitions = aPartitions
+    val partitions: ArrayBuffer[ModList[T, V]]
+  ) extends AdjustableList[T, V] {
 
   def map[U, Q](
       tbd: TBD,

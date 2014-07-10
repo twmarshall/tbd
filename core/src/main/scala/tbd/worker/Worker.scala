@@ -32,14 +32,10 @@ object Worker {
     Props(classOf[Worker], id, datastoreRef, parent)
 }
 
-class Worker(_id: String, _datastoreRef: ActorRef, parent: ActorRef)
+class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  //log.info("Worker " + id + " launched")
-  val id = _id
-
-  val datastoreRef = _datastoreRef
   val ddg = new DDG(log, id, this)
   val memoTable = Map[Seq[Any], ArrayBuffer[MemoNode]]()
 

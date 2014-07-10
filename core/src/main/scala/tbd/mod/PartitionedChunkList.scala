@@ -22,8 +22,8 @@ import tbd.{Changeable, TBD}
 import tbd.datastore.Datastore
 
 class PartitionedChunkList[T, U](
-    aPartitions: ArrayBuffer[ChunkList[T, U]]) extends AdjustableChunkList[T, U] {
-  val partitions = aPartitions
+    val partitions: ArrayBuffer[ChunkList[T, U]]
+  ) extends AdjustableChunkList[T, U] {
 
   def map[V, Q](
       tbd: TBD,

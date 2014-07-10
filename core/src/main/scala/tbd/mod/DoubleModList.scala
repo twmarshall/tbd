@@ -21,10 +21,9 @@ import tbd.{Changeable, Changeable2, Memoizer, TBD}
 import tbd.Constants.ModId
 
 class DoubleModList[T, V](
-    aHead: Mod[DoubleModListNode[T, V]])
-    extends AdjustableList[T, V]
+    val head: Mod[DoubleModListNode[T, V]]
+  ) extends AdjustableList[T, V]
     with Iterable[T, V, DoubleModListNode[T, V]] {
-  val head = aHead
 
   def iterators(tbd: TBD) = {
     List(head)

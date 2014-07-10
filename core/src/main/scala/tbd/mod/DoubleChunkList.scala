@@ -21,8 +21,8 @@ import tbd.{Changeable, Memoizer, TBD}
 import tbd.Constants._
 
 class DoubleChunkList[T, U](
-    _head: Mod[DoubleChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
-  val head = _head
+    val head: Mod[DoubleChunkListNode[T, U]]
+  ) extends AdjustableChunkList[T, U] {
 
   def map[V, Q](
       tbd: TBD,

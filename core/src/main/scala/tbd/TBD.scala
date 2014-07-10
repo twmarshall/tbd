@@ -32,9 +32,8 @@ object TBD {
   var id = 0
 }
 
-class TBD(id: String, _worker: Worker) {
+class TBD(id: String, val worker: Worker) {
   import worker.context.dispatcher
-  val worker = _worker
   var initialRun = true
 
   // The Node representing the currently executing reader.

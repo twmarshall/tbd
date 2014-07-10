@@ -22,12 +22,9 @@ import tbd.{Changeable, Memoizer, TBD}
 // The default value of zero for size works because size is only ever
 // accessed by the Modifier, which will set it appropriately.
 class DoubleChunkListNode[T, U](
-    _chunkMod: Mod[Vector[(T, U)]],
-    _nextMod: Mod[DoubleChunkListNode[T, U]],
-    _size: Int = 0) extends Serializable {
-  val chunkMod = _chunkMod
-  val nextMod = _nextMod
-  val size = _size
+    val chunkMod: Mod[Vector[(T, U)]],
+    val nextMod: Mod[DoubleChunkListNode[T, U]],
+    val size: Int = 0) extends Serializable {
 
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[DoubleChunkListNode[T, U]]) {

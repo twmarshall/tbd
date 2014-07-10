@@ -17,6 +17,4 @@ package tbd.worker
 
 import tbd.{Changeable, TBD}
 
-class Task(aFunc: TBD => Any) {
-  val func = aFunc
-}
+class Task(val func: TBD => Any)
