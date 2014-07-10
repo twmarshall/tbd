@@ -114,8 +114,8 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
       parent ! PebbleMessage(self, modId, finished)
     }
 
-    case RunTaskMessage(task: Task) => {
-      sender ! task.func(tbd)
+    case RunTaskMessage(func: (TBD => Any)) => {
+      sender ! func(tbd)
     }
 
     case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {

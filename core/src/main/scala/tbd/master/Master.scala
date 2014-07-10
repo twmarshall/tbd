@@ -26,7 +26,7 @@ import tbd.Constants._
 import tbd.datastore.Datastore
 import tbd.messages._
 import tbd.mod.{AdjustableChunkList, AdjustableList}
-import tbd.worker.{Worker, Task}
+import tbd.worker.Worker
 
 object Master {
   def props(datastoreRef: ActorRef): Props =
@@ -54,7 +54,7 @@ class Master(datastoreRef: ActorRef) extends Actor with ActorLogging {
       workerRef = context.actorOf(workerProps, "worker" + mutatorId)
       workers(mutatorId) = workerRef
 
-      val resultFuture = workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(tbd)))
+      val resultFuture = workerRef ? RunTaskMessage(adjust.run)
 
       sender ! resultFuture
     }

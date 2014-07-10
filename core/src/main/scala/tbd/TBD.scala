@@ -26,11 +26,7 @@ import tbd.ddg.{MemoNode, Node, Timestamp}
 import tbd.master.{Main, Master}
 import tbd.messages._
 import tbd.mod.{Dest, Mod}
-import tbd.worker.{Worker, Task}
-
-object TBD {
-  var id = 0
-}
+import tbd.worker.Worker
 
 class TBD(id: String, val worker: Worker) {
   import worker.context.dispatcher
@@ -296,19 +292,17 @@ class TBD(id: String, val worker: Worker) {
 
   var workerId = 0
   def par[T, U](one: TBD => T, two: TBD => U): Tuple2[T, U] = {
-    val task1 =  new Task(((tbd: TBD) => one(tbd)))
     val workerProps1 =
       Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
     val workerRef1 = worker.context.system.actorOf(workerProps1, id + "-" + workerId)
     workerId += 1
-    val oneFuture = workerRef1 ? RunTaskMessage(task1)
+    val oneFuture = workerRef1 ? RunTaskMessage(one)
 
-    val task2 =  new Task(((tbd: TBD) => two(tbd)))
     val workerProps2 =
       Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
     val workerRef2 = worker.context.system.actorOf(workerProps2, id + "-" + workerId)
     workerId += 1
-    val twoFuture = workerRef2 ? RunTaskMessage(task2)
+    val twoFuture = workerRef2 ? RunTaskMessage(two)
 
     worker.ddg.addPar(workerRef1, workerRef2, currentParent)
 
