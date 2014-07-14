@@ -131,7 +131,7 @@ object TbdMacros {
     val distincFreeTerms = freeTerms.groupBy(x => x._2).map(x => x._2.head).toList
 
     var valDefExtractor = new ParentValDefExtractor(readerSymbol)
-    valDefExtractor.traverse(c.enclosingImpl) //TODO: Find the right scope
+    valDefExtractor.traverse(c.enclosingPackage) //TODO: Find the right scope
 
     if(!valDefExtractor.found) {
       c.abort(null, "Did not find closed function in enclosing tree.")
