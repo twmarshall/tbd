@@ -23,6 +23,7 @@ object TBDBuild extends Build {
     "com.typesafe.akka"          %% "akka-actor"           % "2.3.2",
     "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
 
+    "org.scala-lang"             %% "scala-pickling"       % "0.8.0",
     "org.scalatest"              %% "scalatest"            % "2.1.3" % "test",
     "org.scalaz"                 %% "scalaz-core"          % "7.0.6"
   )
@@ -98,6 +99,11 @@ object TBDBuild extends Build {
         val experimentOut = baseDirectory.value / "../bin/experiment.sh"
         IO.write(experimentOut, experiment)
         experimentOut.setExecutable(true)
+
+        val test = template.format(classpath, "tbd.examples.Test")
+        val testOut = baseDirectory.value / "../bin/test.sh"
+        IO.write(testOut, test)
+        testOut.setExecutable(true)
 
         experimentOut
       }
