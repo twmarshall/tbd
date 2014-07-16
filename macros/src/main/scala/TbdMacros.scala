@@ -108,7 +108,8 @@ object TbdMacros {
       var idents = List[(Tree, String)]()
 
       override def traverse(tree: Tree): Unit = tree match {
-        case ident @ Ident(name) if !ident.symbol.isMethod => idents = (tree, name.toString) :: idents
+        case ident @ Ident(name) if !ident.symbol.isMethod =>
+          idents = (tree, name.toString) :: idents
         case _ => super.traverse(tree)
       }
     }
@@ -123,7 +124,8 @@ object TbdMacros {
       defExtractor.traverse(func)
 
       if(!defExtractor.found) {
-        c.warning(c.enclosingPosition, "Macro Bug: Did not find variable symbol in enclosing tree. Symbol was: " + x._1.symbol)
+        c.warning(c.enclosingPosition, "Macro Bug: Did not find variable symbol"
+                  + " in enclosing tree. Symbol was: " + x._1.symbol)
       }
 
       defExtractor.defs.find(y => x._2 == y._1).isEmpty
@@ -132,14 +134,17 @@ object TbdMacros {
     //println("Inner free terms")
     //freeTerms.foreach(println(_))
 
-    val distincFreeTerms = freeTerms.groupBy(x => x._2).map(x => x._2.head).toList
+    val distincFreeTerms = freeTerms.groupBy(x => x._2)
+                            .map(x => x._2.head).toList
 
     var valDefExtractor = new ParentValDefExtractor(readerSymbol)
     //valDefExtractor.traverse(c.enclosingUnit.body) //TODO: Find the right scope
     valDefExtractor.traverse(c.enclosingUnit.body) //TODO: Find the right scope
 
     if(!valDefExtractor.found) {
-      c.warning(c.enclosingPosition, "Macro Bug: Did not find closed function in enclosing tree. Symbol was: " + c.universe.showRaw(readerSymbol))
+      c.warning(c.enclosingPosition, "Macro Bug: Did not find closed function"
+                + " in enclosing tree. Symbol was: "
+                + c.universe.showRaw(readerSymbol))
     }
     //println("Outer defs")
     //valDefExtractor.defs.foreach(println(_))
