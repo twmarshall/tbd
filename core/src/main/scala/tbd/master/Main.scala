@@ -39,12 +39,13 @@ object Main {
   }
 }
 
-class Main(storeType: String = "memory") {
+class Main(storeType: String = "memory", cacheSize: Int = 10000) {
   val system = ActorSystem("masterSystem" + Main.id,
                            ConfigFactory.load.getConfig("master"))
   Main.id += 1
 
-  val datastoreRef = system.actorOf(Datastore.props(storeType), "datastore")
+  val datastoreRef = system.actorOf(Datastore.props(storeType, cacheSize),
+				    "datastore")
   Main.datastoreRef = datastoreRef
 
   val masterRef = system.actorOf(Master.props(datastoreRef), "master")

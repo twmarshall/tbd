@@ -25,12 +25,12 @@ import tbd.messages._
 import tbd.mod._
 
 object Datastore {
-  def props(storeType: String): Props = {
+  def props(storeType: String, cacheSize: Int): Props = {
     val store =
       if (storeType == "memory") {
         new MemoryStore()
       } else if (storeType == "berkeleydb") {
-        new BerkeleyDBStore()
+        new BerkeleyDBStore(cacheSize)
       } else {
         println("WARNING: storeType '" + storeType + "' is invalid. Using " +
                 "'memory' instead")

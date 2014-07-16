@@ -136,6 +136,10 @@ Options:
   --parallel true,false      Should the experiments be run in parallel?
   --load                     If specified, loading times will be included in
                                formatted output.
+  --store type               The type of datastore to use, either 'memory' or
+                               'berkeleydb' (default: 'memory').
+  --cacheSizes n,n,...       The number of mods to store in the in-memory cache
+                               when using the 'berkeleydb' store.
   """
 
   var repeat = 3
@@ -149,6 +153,7 @@ Options:
   var displayLoad = false
 
   val confs = Map(("algorithms" -> Array("map")),
+                  ("cacheSizes" -> Array("100000")),
                   ("counts" -> Array("1000")),
                   ("chunkSizes" -> Array("2")),
                   ("mutations" -> Array("insert", "update", "remove")),
@@ -285,6 +290,9 @@ Options:
 	case "--store" =>
 	  confs("store") = Array(args(i + 1))
 	  i += 1
+	case "--cacheSizes" =>
+	  confs("cacheSizes") = args(i + 1).split(",")
+	  i += 1
         case _ =>
           println("Unknown option " + args(i * 2) + "\n" + usage)
           sys.exit()
@@ -301,32 +309,35 @@ Options:
       }
 
       for (algorithm <- confs("algorithms")) {
-	for (chunkSize <- confs("chunkSizes")) {
-          for (count <- confs("counts")) {
-            for (partitions <- confs("partitions")) {
-	      for (valueMod <- confs("valueMod")) {
-		for (parallel <- confs("parallel")) {
-		  for (memoized <- confs("memoized")) {
-		    val conf = Map(("algorithms" -> algorithm),
-				   ("chunkSizes" -> chunkSize),
-				   ("counts" -> count),
-				   ("mutations" -> confs("mutations")),
-				   ("partitions" -> partitions),
-				   ("runs" -> confs("runs")),
-				   ("repeat" -> i),
-				   ("parallel" -> parallel),
-				   ("memoized" -> memoized),
-				   ("store" -> confs("store")(0)))
+	for (cacheSize <- confs("cacheSizes")) {
+	  for (chunkSize <- confs("chunkSizes")) {
+            for (count <- confs("counts")) {
+              for (partitions <- confs("partitions")) {
+		for (valueMod <- confs("valueMod")) {
+		  for (parallel <- confs("parallel")) {
+		    for (memoized <- confs("memoized")) {
+		      val conf = Map(("algorithms" -> algorithm),
+				     ("cacheSizes" -> cacheSize),
+				     ("chunkSizes" -> chunkSize),
+				     ("counts" -> count),
+				     ("mutations" -> confs("mutations")),
+				     ("partitions" -> partitions),
+				     ("runs" -> confs("runs")),
+				     ("repeat" -> i),
+				     ("parallel" -> parallel),
+				     ("memoized" -> memoized),
+				     ("store" -> confs("store")(0)))
 
-		    val listConf = new ListConf("", partitions.toInt,
-	              chunkSize.toInt, _ => 1, valueMod == "true")
+		      val listConf = new ListConf("", partitions.toInt,
+						  chunkSize.toInt, _ => 1, valueMod == "true")
 
-		    val experiment = new Experiment(conf, listConf)
+		      val experiment = new Experiment(conf, listConf)
 
-		    val results = experiment.run()
-		    println(results)
-		    if (i != 0) {
-		      Experiment.allResults += (conf -> results)
+		      val results = experiment.run()
+		      println(results)
+		      if (i != 0) {
+			Experiment.allResults += (conf -> results)
+		      }
 		    }
 		  }
 		}

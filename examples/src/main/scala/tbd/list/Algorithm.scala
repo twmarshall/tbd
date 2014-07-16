@@ -27,6 +27,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   val listConf = _listConf
 
   val count = conf("counts").asInstanceOf[String].toInt
+  val cacheSize = conf("cacheSizes").asInstanceOf[String].toInt
   val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
   val mutations = conf("mutations").asInstanceOf[Array[String]]
   val partition = conf("partitions").asInstanceOf[String].toInt
@@ -34,7 +35,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   val memoized = conf("memoized") == "true"
   val store = conf("store").asInstanceOf[String]
 
-  val main = new Main(store)
+  val main = new Main(store, cacheSize)
   val mutator = new Mutator(main)
 
   var output: Output = null.asInstanceOf[Output]
