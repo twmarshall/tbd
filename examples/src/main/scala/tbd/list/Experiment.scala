@@ -153,6 +153,7 @@ Options:
   var displayLoad = false
 
   val confs = Map(("algorithms" -> Array("map")),
+                  ("cacheSizes" -> Array("100000")),
                   ("counts" -> Array("1000")),
                   ("chunkSizes" -> Array("2")),
                   ("mutations" -> Array("insert", "update", "remove")),
