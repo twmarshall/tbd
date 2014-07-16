@@ -25,17 +25,27 @@ import tbd.messages._
 import tbd.mod._
 
 object Datastore {
-  def props(): Props = Props(classOf[Datastore])
+  def props(storeType: String): Props = {
+    val store =
+      if (storeType == "memory") {
+        new MemoryStore()
+      } else if (storeType == "berkeleydb") {
+        new BerkeleyDBStore()
+      } else {
+        println("WARNING: storeType '" + storeType + "' is invalid. Using " +
+                "'memory' instead")
+        new MemoryStore()
+      }
+    Props(classOf[Datastore], store)
+  }
 }
 
-class Datastore extends Actor with ActorLogging {
+class Datastore(store: KVStore) extends Actor with ActorLogging {
   import context.dispatcher
   // Maps the name of an input table to a set containing the Modifiers that were
   // returned containing elements from this table, so that we can inform them
   // when the table is updated.
   private val inputs = Map[InputId, Modifier]()
-
-  private val store = new MapStore()
 
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
@@ -43,10 +53,11 @@ class Datastore extends Actor with ActorLogging {
 
   private var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
-    val mod = new Mod[T](new ModId("d." + nextModId), self)
+    val mod = new Mod[T](new ModId("d." + nextModId))
     nextModId += 1
 
     store.put(mod.id, value)
+
     mod
   }
 
@@ -195,6 +206,11 @@ class Datastore extends Actor with ActorLogging {
 
     case UpdateModMessage(modId: ModId, null) => {
       sender ! updateMod(modId, null)
+    }
+
+    case CleanupMessage => {
+      store.shutdown()
+      sender ! "done"
     }
 
     case x => {

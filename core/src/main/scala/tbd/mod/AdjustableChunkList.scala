@@ -23,4 +23,9 @@ trait AdjustableChunkList[T, U] extends AdjustableList[T, U] {
       f: (TBD, Vector[(T, U)]) => (V, Q),
       parallel: Boolean = false,
       memoized: Boolean = true): AdjustableList[V, Q]
+
+  def chunkSort(
+      tbd: TBD,
+      comparator: (TBD, (T, U), (T, U)) => Boolean,
+      parallel: Boolean = false): Mod[(Int, Vector[(T, U)])]
 }

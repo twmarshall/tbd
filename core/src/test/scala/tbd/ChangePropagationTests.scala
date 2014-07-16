@@ -105,49 +105,49 @@ class ModNoDestTest(input: TableInput[Int, Int]) extends Adjustable {
   val seven = table.get(7)
 
   // If four == 4, twoMemo returns 6, otherwise it returns sevenValue.
-  def twoMemo(tbd: TBD, lift: Lift[Changeable[Int]]) = {
+  def twoMemo(tbd: TBD, memo: Memoizer[Changeable[Int]]) = {
     tbd.read(four)(fourValue => {
       if (fourValue == 4) {
 	tbd.modNoDest(() => {
-	  lift.memo(List(five), () => {
+	  memo(five) {
 	    tbd.read(seven)(sevenValue => {
 	      tbd.writeNoDest(sevenValue)
 	    })
-	  })
+	  }
 	})
 
-	lift.memo(List(six), () => {
+	memo(six) {
 	  tbd.writeNoDest(6)
-	})
+	}
       } else {
-	lift.memo(List(five), () => {
+	memo(five) {
 	  tbd.read(seven)(sevenValue => {
 	    tbd.writeNoDest(sevenValue)
 	  })
-	})
+	}
       }
     })
   }
 
   def run(tbd: TBD): Mod[Int] = {
-    val lift = tbd.makeLift[Changeable[Int]]()
+    val memo = tbd.makeMemoizer[Changeable[Int]]()
 
     tbd.modNoDest(() => {
       tbd.read(one)(oneValue => {
 	if (oneValue == 1) {
 	  val mod1 = tbd.modNoDest(() => {
-	    lift.memo(List(two), () => {
-	      twoMemo(tbd, lift)
-	    })
+	    memo(two) {
+	      twoMemo(tbd, memo)
+	    }
 	  })
 
 	  tbd.read(mod1)(value1 => {
 	    tbd.writeNoDest(value1)
 	  })
 	} else {
-	  lift.memo(List(two), () => {
-	    twoMemo(tbd, lift)
-	  })
+	  memo(two) {
+	    twoMemo(tbd, memo)
+	  }
 	}
       })
     })

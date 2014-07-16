@@ -24,17 +24,17 @@ import tbd.master.Master
 import tbd.mod.Mod
 import tbd.macros.TbdMacros
 
-class Lift[T](tbd: TBD, memoId: Int) {
+class Memoizer[T](tbd: TBD, memoId: Int) {
   import tbd.worker.context.dispatcher
 
   import scala.language.experimental.macros
-  def memo[T](args: List[_], func: () => T): T = macro TbdMacros.memoMacro[T]
+  def apply(args: Any*)(func: => T): T = macro TbdMacros.memoMacro[T]
 
   def memoInternal(
-      args: List[_],
-      func: () => T,
+      args: Seq[_],
+      func: => T,
       freeTerms: List[(String, Any)]): T = {
-    val signature = memoId :: args
+    val signature = memoId :: args.toList
 
     var found = false
     var ret = null.asInstanceOf[T]
@@ -99,7 +99,7 @@ class Lift[T](tbd: TBD, memoId: Int) {
                                             freeTerms)
       val outerParent = tbd.currentParent
       tbd.currentParent = memoNode
-      val value = func()
+      val value = func
       tbd.currentParent = outerParent
       memoNode.endTime = tbd.worker.ddg.nextTimestamp(memoNode)
       memoNode.currentDest = tbd.currentDest
@@ -116,5 +116,14 @@ class Lift[T](tbd: TBD, memoId: Int) {
     }
 
     ret
+  }
+}
+
+class DummyMemoizer[T](tbd: TBD, memoId: Int) extends Memoizer[T](tbd, memoId) {
+  override def memoInternal(
+      args: Seq[_],
+      func: => T,
+      freeTerms: List[(String, Any)]): T = {
+    func
   }
 }

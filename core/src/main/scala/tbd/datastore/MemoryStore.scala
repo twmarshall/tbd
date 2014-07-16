@@ -19,7 +19,7 @@ import scala.collection.mutable.Map
 
 import tbd.Constants._
 
-class MapStore extends KVStore {
+class MemoryStore extends KVStore {
   private val values = Map[ModId, Any]()
 
   def put(key: ModId, value: Any) {
@@ -36,5 +36,9 @@ class MapStore extends KVStore {
 
   def contains(key: ModId): Boolean = {
     values.contains(key)
+  }
+
+  def shutdown() {
+    values.clear()
   }
 }

@@ -50,7 +50,10 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
         new SplitAlgorithm(conf, listConf)
 
       case "sort" =>
-        new SortAlgorithm(conf, listConf)
+	if (listConf.chunkSize > 1)
+	  new ChunkSortAlgorithm(conf, listConf)
+	else
+          new SortAlgorithm(conf, listConf)
     }
 
     for (run <- runs) {
@@ -131,6 +134,8 @@ Options:
                                own modifiables.
   --memoized true,false      Should memoization be used?
   --parallel true,false      Should the experiments be run in parallel?
+  --load                     If specified, loading times will be included in
+                               formatted output.
   """
 
   var repeat = 3
@@ -143,7 +148,7 @@ Options:
 
   var displayLoad = false
 
-  val confs = Map(("algorithms" -> Array("pwc")),
+  val confs = Map(("algorithms" -> Array("map")),
                   ("counts" -> Array("1000")),
                   ("chunkSizes" -> Array("2")),
                   ("mutations" -> Array("insert", "update", "remove")),
@@ -152,7 +157,8 @@ Options:
                   ("output" -> Array("algorithms", "runs", "counts")),
 		  ("valueMod" -> Array("true")),
 		  ("parallel" -> Array("true")),
-		  ("memoized" -> Array("true")))
+		  ("memoized" -> Array("true")),
+		  ("store" -> Array("memory")))
 
   val allResults = Map[Map[String, _], Map[String, Double]]()
 
@@ -276,6 +282,9 @@ Options:
 	  i += 1
 	case "--load" =>
 	  displayLoad = true
+	case "--store" =>
+	  confs("store") = Array(args(i + 1))
+	  i += 1
         case _ =>
           println("Unknown option " + args(i * 2) + "\n" + usage)
           sys.exit()
@@ -306,7 +315,8 @@ Options:
 				   ("runs" -> confs("runs")),
 				   ("repeat" -> i),
 				   ("parallel" -> parallel),
-				   ("memoized" -> memoized))
+				   ("memoized" -> memoized),
+				   ("store" -> confs("store")(0)))
 
 		    val listConf = new ListConf("", partitions.toInt,
 	              chunkSize.toInt, _ => 1, valueMod == "true")

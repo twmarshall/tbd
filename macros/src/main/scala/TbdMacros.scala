@@ -16,23 +16,23 @@
 
 package tbd.macros
 
-import reflect.macros.Context
+import reflect.macros.whitebox.Context
 import language.experimental.macros
 import scala.tools.reflect.ToolBox
 
 object TbdMacros {
 
   def memoMacro[T]
-      (c: Context)(args: c.Expr[List[_]], func: c.Expr[(() => T)]): c.Expr[T] = {
+      (c: Context)(args: c.Tree*)(func: c.Tree): c.Expr[T] = {
     import c.universe._
 
     val closedVars = createFreeVariableList(c)(func)
     val memo = Select(c.prefix.tree, TermName("memoInternal"))
-    c.Expr[T](q"$memo($args, $func, $closedVars)")
+    c.Expr[T](q"$memo(List(..$args), $func, $closedVars)")
   }
 
   def readMacro[T, U]
-      (c: Context)(mod: c.Expr[_])(reader: c.Expr[(T => U)]): c.Expr[U] = {
+      (c: Context)(mod: c.Tree)(reader: c.Tree): c.Expr[U] = {
     import c.universe._
 
     val closedVars = createFreeVariableList(c)(reader)
@@ -40,7 +40,7 @@ object TbdMacros {
     c.Expr[U](q"$readFunc($mod, $reader, $closedVars)")
   }
 
-  private def createFreeVariableList(c: Context)(func: c.Expr[_]) = {
+  private def createFreeVariableList(c: Context)(func: c.Tree) = {
     import c.universe._
 
     findFreeVariabels(c)(func).map(x => {
@@ -50,11 +50,11 @@ object TbdMacros {
     })
   }
 
-  private def findFreeVariabels(c: Context)(func: c.Expr[_]) = {
+  private def findFreeVariabels(c: Context)(func: c.Tree) = {
     import c.universe._
 
     //Pre-fetch the symbol of our reader func.
-    val readerSymbol = func.tree.symbol;
+    val readerSymbol = func.symbol
 
     class ParentValDefExtractor(targetSymbol: Symbol) extends Traverser {
       var defs = List[(String, ValDef)]()
@@ -114,13 +114,17 @@ object TbdMacros {
     }
 
     var termExtractor = new IdentTermExtractor()
-    termExtractor.traverse(func.tree)
+    termExtractor.traverse(func)
 
     //Check if term is really free
     var freeTerms = termExtractor.idents.filter((x) => {
       //For each ident, look for a parent val def in our own function.
       val defExtractor = new ParentValDefExtractor(x._1.symbol)
-      defExtractor.traverse(func.tree)
+      defExtractor.traverse(func)
+
+      if(!defExtractor.found) {
+        c.warning(c.enclosingPosition, "Macro Bug: Did not find variable symbol in enclosing tree. Symbol was: " + x._1.symbol)
+      }
 
       defExtractor.defs.find(y => x._2 == y._1).isEmpty
     })
@@ -131,10 +135,11 @@ object TbdMacros {
     val distincFreeTerms = freeTerms.groupBy(x => x._2).map(x => x._2.head).toList
 
     var valDefExtractor = new ParentValDefExtractor(readerSymbol)
-    valDefExtractor.traverse(c.enclosingPackage) //TODO: Find the right scope
+    //valDefExtractor.traverse(c.enclosingUnit.body) //TODO: Find the right scope
+    valDefExtractor.traverse(c.enclosingUnit.body) //TODO: Find the right scope
 
     if(!valDefExtractor.found) {
-      c.abort(null, "Did not find closed function in enclosing tree.")
+      c.warning(c.enclosingPosition, "Macro Bug: Did not find closed function in enclosing tree. Symbol was: " + c.universe.showRaw(readerSymbol))
     }
     //println("Outer defs")
     //valDefExtractor.defs.foreach(println(_))

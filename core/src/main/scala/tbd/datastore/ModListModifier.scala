@@ -21,10 +21,12 @@ import scala.concurrent.{Future, Promise}
 import tbd.ListConf
 import tbd.mod._
 
+
 class ModListModifier(
     _datastore: Datastore,
     conf: ListConf) extends Modifier(_datastore) {
-  val modList = new ModList[Any, Any](datastore.createMod[ModListNode[Any, Any]](null))
+  val modList =
+    new ModList[Any, Any](datastore.createMod[ModListNode[Any, Any]](null))
 
   def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
     var innerNode = datastore.getMod(modList.head.id)
@@ -55,12 +57,12 @@ class ModListModifier(
 
     while (innerNode != null && !found) {
       if (innerNode.value._1 == key) {
-	innerNode.value  = (key, value)
+	innerNode.value = (key, value)
 
 	if (previousNode != null) {
-	  futures = datastore.updateMod(previousNode.next.id, datastore.getMod(previousNode.next.id))
+	  futures = datastore.updateMod(previousNode.next.id, innerNode)
 	} else {
-	  futures = datastore.updateMod(modList.head.id, datastore.getMod(modList.head.id))
+	  futures = datastore.updateMod(modList.head.id, innerNode)
 	}
 	found = true
       } else {

@@ -33,7 +33,7 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
     while (table.size < count) {
       val elems = scala.xml.XML.loadFile("wiki.xml")
 
-      var i = 0
+      var i = table.size
       (elems \\ "elem").map(elem => {
         (elem \\ "value").map(value => {
           if (table.size < count) {
@@ -45,6 +45,18 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
         })
       })
     }
+  }
+
+  private def loadChunks(
+      chunks: ArrayBuffer[String]) {
+    val elems = scala.xml.XML.loadFile("wiki.xml")
+
+    var i = 0
+    (elems \\ "elem").map(elem => {
+      (elem \\ "value").map(value => {
+	chunks += value.text
+      })
+    })
   }
 
   val naiveChunks = ArrayBuffer[String]()
@@ -77,7 +89,7 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
 
   def addValue() {
     if (chunks.size == 0) {
-      loadPages(table, chunks, 0)
+      loadChunks(chunks)
     }
 
     var key = rand.nextInt(maxKey)
@@ -111,7 +123,7 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
 
   def updateValue() {
     if (chunks.size == 0) {
-      loadPages(table, chunks, 0)
+      loadChunks(chunks)
     }
 
     var key = rand.nextInt(maxKey)
@@ -138,7 +150,7 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
 
   def addValueNaive() {
     if (naiveChunks.size == 0) {
-      loadPages(naiveTable, naiveChunks, 0)
+      loadChunks(naiveChunks)
     }
 
     var key = rand.nextInt(maxKey)
@@ -171,7 +183,7 @@ class WCData(input: Input[Int, String], count: Int, mutations: Array[String])
 
   def updateValueNaive() {
     if (naiveChunks.size == 0) {
-      loadPages(naiveTable, naiveChunks, 0)
+      loadChunks(naiveChunks)
     }
 
     var key = rand.nextInt(maxKey)

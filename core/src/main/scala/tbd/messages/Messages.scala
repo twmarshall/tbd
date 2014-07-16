@@ -23,7 +23,6 @@ import tbd.{Adjustable, AdjustableConf, Changeable, TBD}
 import tbd.Constants._
 import tbd.ddg.Node
 import tbd.mod.{AdjustableList, Mod}
-import tbd.worker.Task
 
 // Datastore
 case class CreateAdjustableMessage(conf: AdjustableConf)
@@ -42,12 +41,13 @@ case class RegisterMutatorMessage()
 case class RunMessage(adjust: Adjustable, mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
 case class ShutdownMutatorMessage(mutatorId: Int)
+case class CleanupMessage()
 
 // Worker
 case class ModUpdatedMessage(modId: ModId, finished: Promise[String])
 case class PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String])
 case class PropagateMessage()
-case class RunTaskMessage(func: Task)
+case class RunTaskMessage(func: TBD => Any)
 case class GetDDGMessage()
 case class DDGToStringMessage(prefix: String)
 case class CleanupWorkerMessage()

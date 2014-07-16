@@ -17,18 +17,19 @@ package tbd.mod
 
 import akka.actor.ActorRef
 import akka.pattern.ask
+import java.io.Serializable
 import scala.collection.mutable.{ArrayBuffer, Set}
 import scala.concurrent.{Await, Future, Lock, Promise}
 
 import tbd.Constants._
 import tbd.TBD
+import tbd.master.Main
 import tbd.messages._
 
-class Mod[T](_id: ModId, datastoreRef: ActorRef) {
-  val id = _id
+class Mod[T](val id: ModId) extends Serializable {
 
   def read(workerRef: ActorRef = null): T = {
-    val valueFuture = datastoreRef ? GetModMessage(id, workerRef)
+    val valueFuture = Main.datastoreRef ? GetModMessage(id, workerRef)
     val ret = Await.result(valueFuture, DURATION)
 
     ret match {
@@ -38,9 +39,18 @@ class Mod[T](_id: ModId, datastoreRef: ActorRef) {
   }
 
   def update(_value: T): ArrayBuffer[Future[String]] = {
-    val futuresFuture = datastoreRef ? UpdateModMessage(id, _value)
+    val futuresFuture = Main.datastoreRef ? UpdateModMessage(id, _value)
     Await.result(futuresFuture.mapTo[ArrayBuffer[Future[String]]], DURATION)
   }
 
   override def toString = "Mod(" + id + ", " + read() + ")"
+
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[Mod[T]]) {
+      false
+    } else {
+      val that = obj.asInstanceOf[Mod[T]]
+      that.id == id
+    }
+  }
 }

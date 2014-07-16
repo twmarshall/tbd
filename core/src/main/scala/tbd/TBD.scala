@@ -24,19 +24,14 @@ import scala.concurrent.{Await, Future, Promise}
 import tbd.macros.TbdMacros
 
 import tbd.Constants._
-import tbd.ddg.{Node, Timestamp}
-import tbd.master.Main
+import tbd.ddg.{MemoNode, Node, Timestamp}
+import tbd.master.{Main, Master}
 import tbd.messages._
 import tbd.mod.{Dest, Mod}
-import tbd.worker.{Worker, Task}
+import tbd.worker.Worker
 
-object TBD {
-  var id = 0
-}
-
-class TBD(id: String, _worker: Worker) {
+class TBD(id: String, val worker: Worker) {
   import worker.context.dispatcher
-  val worker = _worker
   var initialRun = true
 
   // The Node representing the currently executing reader.
@@ -306,19 +301,17 @@ class TBD(id: String, _worker: Worker) {
 
   var workerId = 0
   def par[T, U](one: TBD => T, two: TBD => U): Tuple2[T, U] = {
-    val task1 =  new Task(((tbd: TBD) => one(tbd)))
     val workerProps1 =
       Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
     val workerRef1 = worker.context.system.actorOf(workerProps1, id + "-" + workerId)
     workerId += 1
-    val oneFuture = workerRef1 ? RunTaskMessage(task1)
+    val oneFuture = workerRef1 ? RunTaskMessage(one)
 
-    val task2 =  new Task(((tbd: TBD) => two(tbd)))
     val workerProps2 =
       Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
     val workerRef2 = worker.context.system.actorOf(workerProps2, id + "-" + workerId)
     workerId += 1
-    val twoFuture = workerRef2 ? RunTaskMessage(task2)
+    val twoFuture = workerRef2 ? RunTaskMessage(two)
 
     worker.ddg.addPar(workerRef1, workerRef2, currentParent)
 
@@ -327,7 +320,7 @@ class TBD(id: String, _worker: Worker) {
     new Tuple2(oneRet, twoRet)
   }
 
-  def updated(args: List[_]): Boolean = {
+  def updated(args: Seq[_]): Boolean = {
     var updated = false
 
     for (arg <- args) {
@@ -341,13 +334,13 @@ class TBD(id: String, _worker: Worker) {
     updated
   }
 
-  var liftId = 0
-  def makeLift[T](dummy:Boolean = false) = {
+  var memoId = 0
+  def makeMemoizer[T](dummy:Boolean = false) = {
     if(dummy) {
-      new DummyLift[T](this, 0)
+      new DummyMemoizer[T](this, 0)
     } else {
-      liftId += 1
-      new Lift[T](this, liftId)
+      memoId += 1
+      new Memoizer[T](this, memoId)
     }
   }
 }

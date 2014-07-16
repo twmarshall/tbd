@@ -54,3 +54,29 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
       SortAlgorithm.predicate(a, b), parallel, memoized)
   }
 }
+
+class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
+    extends Algorithm[Int, Mod[(Int, Vector[(Int, Int)])]](_conf, _listConf) {
+  val input = mutator.createChunkList[Int, Int](listConf)
+
+  data = new IntData(input, count, mutations)
+
+  def runNaive(input: GenIterable[Int]) = {
+     input.toBuffer.sortWith(_ < _)
+  }
+
+  def checkOutput(
+      input: Map[Int, Int],
+      output: Mod[(Int, Vector[(Int, Int)])]) = {
+    val answer = runNaive(input.values)
+
+    output.read()._2.map(_._2) == answer.toBuffer
+  }
+
+  def run(tbd: TBD): Mod[(Int, Vector[(Int, Int)])] = {
+    val list = input.getChunkList()
+
+    list.chunkSort(tbd, (tbd: TBD, a: (Int, Int), b: (Int, Int)) =>
+      a._2 < b._2, parallel)
+  }
+}

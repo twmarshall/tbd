@@ -26,18 +26,18 @@ import tbd.Constants._
 import tbd.datastore.Datastore
 import tbd.messages._
 import tbd.mod.{AdjustableChunkList, AdjustableList}
-import tbd.worker.{Worker, Task}
+import tbd.worker.Worker
 
 object Master {
-  def props(): Props = Props(classOf[Master])
+  def props(datastoreRef: ActorRef): Props =
+    Props(classOf[Master], datastoreRef)
 
   var epoch = 0
 }
 
-class Master extends Actor with ActorLogging {
+class Master(datastoreRef: ActorRef) extends Actor with ActorLogging {
   import context.dispatcher
   log.info("Master launced.")
-  private val datastoreRef = context.actorOf(Datastore.props(), "datastore")
 
   private var workerRef: ActorRef = null
 
@@ -54,7 +54,7 @@ class Master extends Actor with ActorLogging {
       workerRef = context.actorOf(workerProps, "worker" + mutatorId)
       workers(mutatorId) = workerRef
 
-      val resultFuture = workerRef ? RunTaskMessage(new Task((tbd: TBD) => adjust.run(tbd)))
+      val resultFuture = workerRef ? RunTaskMessage(adjust.run)
 
       sender ! resultFuture
     }
@@ -177,9 +177,14 @@ class Master extends Actor with ActorLogging {
       sender ! "done"
     }
 
+    case CleanupMessage => {
+      Await.result((datastoreRef ? CleanupMessage), DURATION)
+      sender ! "done"
+    }
+
     case x => {
       log.warning("Master actor received unhandled message " +
-			            x + " from " + sender + " " + x.getClass)
+		  x + " from " + sender + " " + x.getClass)
     }
   }
 }

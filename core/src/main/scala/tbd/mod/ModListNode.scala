@@ -15,25 +15,35 @@
  */
 package tbd.mod
 
-import tbd.{Changeable, Lift, TBD}
+import java.io.Serializable
+
+import tbd.{Changeable, Memoizer, TBD}
 
 class ModListNode[T, V] (
-    _value: (T, V),
-    _next: Mod[ModListNode[T, V]]) {
-  var value = _value
-  def next = _next
+    var value: (T, V),
+    val next: Mod[ModListNode[T, V]]
+  ) extends Serializable {
+
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[ModListNode[T, V]]) {
+      false
+    } else {
+      val that = obj.asInstanceOf[ModListNode[T, V]]
+      that.value == value && that.next == next
+    }
+  }
 
   def map[U, Q](
       tbd: TBD,
       f: (TBD, (T, V)) => (U, Q),
-      lift: Lift[Changeable[ModListNode[U, Q]]])
+      memo: Memoizer[Changeable[ModListNode[U, Q]]])
         : Changeable[ModListNode[U, Q]] = {
     val newNext = tbd.modNoDest[ModListNode[U, Q]](() => {
       tbd.read(next)(next => {
         if (next != null) {
-          lift.memo(List(next), () => {
-            next.map(tbd, f, lift)
-          })
+          memo(next) {
+            next.map(tbd, f, memo)
+          }
         } else {
           tbd.writeNoDest[ModListNode[U, Q]](null)
         }
@@ -63,51 +73,4 @@ class ModListNode[T, V] (
       })
     tbd.write(dest, new ModListNode[U, Q](modTuple._1, modTuple._2))
   }
-
-  /*def filter(
-      tbd: TBD,
-      dest: Dest[ModListNode[T, V]],
-      pred: ((T, V)) => Boolean,
-      lift: Lift[Mod[ModListNode[T, V]]])
-        : Changeable[ModListNode[T, V]] = {
-    tbd.read(value)(value => {
-      if (pred(value)) {
-        val newNext = lift.memo(List(next), () => {
-          tbd.mod((nextDest: Dest[ModListNode[T, V]]) => {
-            tbd.read(next)(nextValue => {
-                if (nextValue == null) {
-                  tbd.write(nextDest, null)
-                } else {
-                  nextValue.filter(tbd, nextDest, pred, lift)
-                }
-              })
-            })
-          })
-        tbd.write(dest, new ModListNode(tbd.createMod(value), newNext))
-      } else {
-        tbd.read(next)(nextValue => {
-          if (nextValue == null) {
-            tbd.write(dest, null)
-          } else {
-            nextValue.filter(tbd, dest, pred, lift)
-          }
-        })
-      }
-    })
-  }
-
-  override def toString: String = {
-    def toString(lst: ModListNode[T, V]):String = {
-      val nextRead = lst.next.read()
-      val next =
-	if (nextRead != null)
-	  ", " + toString(nextRead)
-	else
-	  ")"
-
-      lst.value + next
-    }
-
-    "ModListNode(" + toString(this)
-  }*/
 }

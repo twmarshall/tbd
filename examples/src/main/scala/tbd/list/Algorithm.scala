@@ -19,6 +19,7 @@ import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, ListConf, Mutator}
+import tbd.master.Main
 
 abstract class Algorithm[Input, Output](_conf: Map[String, _],
     _listConf: ListConf) extends Adjustable {
@@ -31,8 +32,10 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   val partition = conf("partitions").asInstanceOf[String].toInt
   val parallel = conf("parallel") == "true"
   val memoized = conf("memoized") == "true"
+  val store = conf("store").asInstanceOf[String]
 
-  val mutator = new Mutator()
+  val main = new Main(store)
+  val mutator = new Mutator(main)
 
   var output: Output = null.asInstanceOf[Output]
 
@@ -104,5 +107,6 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
 
   def shutdown() {
     mutator.shutdown()
+    main.shutdown()
   }
 }

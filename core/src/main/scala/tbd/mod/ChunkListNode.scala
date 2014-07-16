@@ -15,32 +15,41 @@
  */
 package tbd.mod
 
-import tbd.{Changeable, Lift, TBD}
+import java.io.Serializable
+
+import tbd.{Changeable, Memoizer, TBD}
 
 // The default value of zero for size works because size is only ever
 // accessed by the Modifier, which will set it appropriately.
 class ChunkListNode[T, U](
-    _chunk: Vector[(T, U)],
-    _nextMod: Mod[ChunkListNode[T, U]],
-    _size: Int = 0) {
-  val chunk = _chunk
-  val nextMod = _nextMod
-  val size = _size
+    val chunk: Vector[(T, U)],
+    val nextMod: Mod[ChunkListNode[T, U]],
+    val size: Int = 0) extends Serializable {
+
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[ChunkListNode[T, U]]) {
+      false
+    } else {
+      val that = obj.asInstanceOf[ChunkListNode[T, U]]
+      that.chunk == chunk && that.nextMod == nextMod
+    }
+  }
 
   def chunkMap[V, Q](
       tbd: TBD,
       dest: Dest[ModListNode[V, Q]],
       f: (TBD, Vector[(T, U)]) => (V, Q),
-      lift: Lift[Mod[ModListNode[V, Q]]])
+      memo: Memoizer[Mod[ModListNode[V, Q]]])
         : Changeable[ModListNode[V, Q]] = {
-    val newNextMod = lift.memo(List(nextMod), () =>
+    val newNextMod = memo(nextMod) {
       tbd.mod((dest: Dest[ModListNode[V, Q]]) =>
         tbd.read(nextMod)(next => {
           if (next != null && next.chunk.size > 0)
-            next.chunkMap(tbd, dest, f, lift)
+            next.chunkMap(tbd, dest, f, memo)
           else
             tbd.write(dest, null)
-        })))
+        }))
+    }
 
     tbd.write(dest, new ModListNode[V, Q](f(tbd, chunk), newNextMod))
   }
