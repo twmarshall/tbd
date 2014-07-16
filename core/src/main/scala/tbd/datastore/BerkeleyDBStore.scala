@@ -20,11 +20,24 @@ import com.sleepycat.persist.{EntityStore, StoreConfig}
 import com.sleepycat.persist.model.{Entity, PrimaryKey, SecondaryKey}
 import com.sleepycat.persist.model.Relationship._
 import java.io._
+import scala.collection.mutable.Map
 
 import tbd.Constants._
 import tbd.mod.Mod
 
-class BerkeleyDBStore extends KVStore {
+class LRUNode(
+  val key: ModId,
+  var value: Any,
+  var previous: LRUNode,
+  var next: LRUNode
+)
+
+class BerkeleyDBStore(cacheSize: Int) extends KVStore {
+  private val values = Map[ModId, LRUNode]()
+  println(cacheSize)
+  private val tail = new LRUNode(null, null, null, null)
+  private var head = tail
+
   private var environment: Environment = null
   private var store: EntityStore = null
 
@@ -51,6 +64,33 @@ class BerkeleyDBStore extends KVStore {
   val pIdx = store.getPrimaryIndex(classOf[ModId], classOf[ModEntity])
 
   def put(key: ModId, value: Any) {
+    if (values.contains(key)) {
+      values(key).value = value
+    } else {
+      val newNode = new LRUNode(key, value, null, head)
+      values(key) = newNode
+
+      head.previous = newNode
+      head = newNode
+
+      if (values.size > cacheSize) {
+	evict()
+      }
+    }
+  }
+
+  private def evict() {
+    while (values.size > cacheSize) {
+      val toEvict = tail.previous
+      putDB(toEvict.key, toEvict.value)
+      values -= toEvict.key
+
+      tail.previous = toEvict.previous
+      toEvict.previous.next = tail
+    }
+  }
+
+  private def putDB(key: ModId, value: Any) {
     val entity = new ModEntity()
     entity.key = key
 
@@ -63,6 +103,15 @@ class BerkeleyDBStore extends KVStore {
   }
 
   def get(key: ModId): Any = {
+    if (values.contains(key)) {
+      values(key).value
+    } else {
+      assert(pIdx.contains(key))
+      getDB(key)
+    }
+  }
+
+  private def getDB(key: ModId): Any = {
     val byteArray = pIdx.get(key).value
 
     val byteInput = new ByteArrayInputStream(byteArray)
@@ -78,11 +127,15 @@ class BerkeleyDBStore extends KVStore {
   }
 
   def remove(key: ModId) {
+    if (values.contains(key)) {
+      values -= key
+    }
+
     pIdx.delete(key)
   }
 
   def contains(key: ModId): Boolean = {
-    pIdx.contains(key)
+    values.contains(key) || pIdx.contains(key)
   }
 
   def shutdown() {
