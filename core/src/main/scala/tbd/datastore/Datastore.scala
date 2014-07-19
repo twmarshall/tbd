@@ -109,40 +109,20 @@ class Datastore(store: KVStore) extends Actor with ActorLogging {
 	conf match {
 	  case conf: ListConf =>
 	    if (conf.chunkSize > 1) {
-	      if (!conf.valueMod) {
-		if (conf.partitions == 1) {
-		  log.info("Creating new ChunkList.")
-		  new ChunkListModifier(this, conf)
-		} else {
-		  log.info("Creating new PartitionedChunkList.")
-		  new PartitionedChunkListModifier(this, conf)
-		}
+	      if (conf.partitions == 1) {
+		log.info("Creating new ChunkList.")
+		new ChunkListModifier(this, conf)
 	      } else {
-		if (conf.partitions == 1) {
-		  log.info("Creating new DoubleChunkList.")
-		  new DoubleChunkListModifier(this, conf)
-		} else {
-		  log.info("Creating new PartitionedDoubleChunkList.")
-		  new PartitionedDoubleChunkListModifier(this, conf)
-		}
+		log.info("Creating new PartitionedChunkList.")
+		new PartitionedChunkListModifier(this, conf)
 	      }
 	    } else {
-	      if (!conf.valueMod) {
-		if (conf.partitions == 1) {
-		  log.info("Creating new ModList.")
-		  new ModListModifier(this, conf)
-		} else {
-		  log.info("Creating new PartitionedModList.")
-		  new PartitionedModListModifier(this, conf)
-		}
+	      if (conf.partitions == 1) {
+		log.info("Creating new ModList.")
+		new ModListModifier(this, conf)
 	      } else {
-		if (conf.partitions == 1) {
-		  log.info("Creating new DoubleModList.")
-		  new DoubleModListModifier(this, conf)
-		} else {
-		  log.info("Creating new PartitionedDoubleModList.")
-		  new PartitionedDoubleModListModifier(this, conf)
-		}
+		log.info("Creating new PartitionedModList.")
+		new PartitionedModListModifier(this, conf)
 	      }
 	    }
 	  case TableConf() => {

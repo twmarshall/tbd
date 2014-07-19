@@ -23,11 +23,29 @@ import tbd.Constants.ModId
 class ChunkList[T, U](
     val head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
 
-  def map[V, Q](
+  def map[V, W](
       tbd: TBD,
-      f: (TBD, (T, U)) => (V, Q),
+      f: (TBD, (T, U)) => (V, W),
       parallel: Boolean = false,
-      memoized: Boolean = true): ChunkList[V, Q] = ???
+      memoized: Boolean = true): ChunkList[V, W] = {
+    if (parallel || !memoized) {
+      tbd.log.warning("ChunkList.map ignores the 'parallel' and " +
+		      "'memoized' parameters.")
+    }
+
+    val memo = tbd.makeMemoizer[Changeable[ChunkListNode[V, W]]]()
+    new ChunkList(
+      tbd.modNoDest(() => {
+        tbd.read(head)(node => {
+          if (node != null) {
+            node.map(tbd, f, memo)
+          } else {
+            tbd.writeNoDest[ChunkListNode[V, W]](null)
+          }
+        })
+      })
+    )
+  }
 
   def chunkMap[V, Q](
       tbd: TBD,

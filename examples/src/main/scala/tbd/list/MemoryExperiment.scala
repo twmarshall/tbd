@@ -22,7 +22,6 @@ import tbd.mod.AdjustableList
 
 class MemoryExperiment(input: ListInput[Int, String]) extends Adjustable {
   val partitions = 4
-  val valueMod = true
   def run(tbd: TBD): AdjustableList[Int, String] = {
     val list = input.getAdjustableList()
     list.map(tbd, (tbd: TBD, pair: (Int, String)) => pair)
@@ -33,7 +32,7 @@ object MemoryExperiment {
   def main(args: Array[String]) {
     val max = 1000
     val mutator = new Mutator()
-    val list = mutator.createList[Int, String](new ListConf(partitions = 4, valueMod = true))
+    val list = mutator.createList[Int, String](new ListConf(partitions = 4))
     val input = new WCData(list, max, Array("insert", "remove", "update"))
 
     for (i <- 0 to max) {

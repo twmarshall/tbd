@@ -17,7 +17,7 @@ package tbd.mod
 
 import scala.collection.mutable.{ArrayBuffer, Buffer}
 
-import tbd.{Changeable, Memoizer, TBD}
+import tbd.{Changeable, Changeable2, Memoizer, TBD}
 import tbd.Constants.ModId
 
 class ModList[T, V](
@@ -155,7 +155,7 @@ class ModList[T, V](
       tbd: TBD,
       pred: ((T, V)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = true): ModList[T, V] = ???/*{
+      memoized: Boolean = true): ModList[T, V] = {
     val memo = tbd.makeMemoizer[Mod[ModListNode[T, V]]](!memoized)
 
     new ModList(
@@ -169,21 +169,68 @@ class ModList[T, V](
         })
       })
     )
-  }*/
-
+  }
 
   def split(
       tbd: TBD,
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
       memoized: Boolean = false):
-       (AdjustableList[T, V], AdjustableList[T, V]) = ???
+       (AdjustableList[T, V], AdjustableList[T, V]) = {
+
+    //val memo = tbd.makeMemoizer[(Mod[ModListNode[T, V]],
+    //                         Mod[ModListNode[T, V]])](!memoized)
+
+    /*val result = tbd.mod2((matches: Dest[ModListNode[T, V]],
+                             diffs: Dest[ModListNode[T, V]]) => {
+
+        tbd.read(head)(head => {
+          if(head == null) {
+            tbd.write(matches, null)
+            tbd.write(diffs, null)
+          } else {
+            head.split(tbd, matches, diffs, memo, pred)
+          }
+        })
+      })*/
+
+    val memo = tbd.makeMemoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]](!memoized)
+
+    val result = tbd.modNoDest2(() => {
+      tbd.read(head)(head => {
+	if (head == null) {
+	  tbd.writeNoDest2(null.asInstanceOf[ModListNode[T, V]],
+			   null.asInstanceOf[ModListNode[T, V]])
+	} else {
+	  head.splitNoDest(tbd, memo, pred)
+	}
+      })
+    })
+
+    (new ModList(result._1), new ModList(result._2))
+  }
 
   def sort(
       tbd: TBD,
       comperator: (TBD, (T, V), (T, V)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = false): AdjustableList[T, V] = ???
+      memoized: Boolean = false): AdjustableList[T, V] = {
+
+    val memo = tbd.makeMemoizer[Mod[ModListNode[T, V]]](!memoized)
+
+    val sorted = tbd.mod((dest: Dest[ModListNode[T, V]]) => {
+      tbd.read(head)(head => {
+        if(head == null) {
+          tbd.write(dest, null)
+        } else {
+          head.quicksort(tbd, dest, tbd.createMod(null),
+                         comperator, memo, parallel, memoized)
+        }
+      })
+    })
+
+    new ModList(sorted)
+  }
 
   def toBuffer(): Buffer[V] = {
     val buf = ArrayBuffer[V]()

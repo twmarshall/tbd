@@ -17,7 +17,7 @@ package tbd.mod
 
 import java.io.Serializable
 
-import tbd.{Changeable, Memoizer, TBD}
+import tbd.{Changeable, Changeable2, Memoizer, TBD}
 
 class ModListNode[T, V] (
     var value: (T, V),
@@ -72,5 +72,166 @@ class ModListNode[T, V] (
         })
       })
     tbd.write(dest, new ModListNode[U, Q](modTuple._1, modTuple._2))
+  }
+
+  def filter(
+      tbd: TBD,
+      dest: Dest[ModListNode[T, V]],
+      pred: ((T, V)) => Boolean,
+      memo: Memoizer[Mod[ModListNode[T, V]]])
+        : Changeable[ModListNode[T, V]] = {
+    if (pred(value)) {
+      val newNext = memo(List(next)) {
+        tbd.mod((nextDest: Dest[ModListNode[T, V]]) => {
+          tbd.read(next)(nextValue => {
+            if (nextValue == null) {
+              tbd.write(nextDest, null)
+            } else {
+              nextValue.filter(tbd, nextDest, pred, memo)
+            }
+          })
+        })
+      }
+      tbd.write(dest, new ModListNode(value, newNext))
+    } else {
+      tbd.read(next)(nextValue => {
+        if (nextValue == null) {
+          tbd.write(dest, null)
+        } else {
+          nextValue.filter(tbd, dest, pred, memo)
+        }
+      })
+    }
+  }
+
+  def split(
+      tbd: TBD,
+      destMatch: Dest[ModListNode[T, V]],
+      destNoMatch: Dest[ModListNode[T, V]],
+      memo: Memoizer[(Mod[ModListNode[T, V]], Mod[ModListNode[T, V]])],
+      pred: (TBD, (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+        Changeable[ModListNode[T, V]] = {
+
+    val (matchNext, diffNext) = memo(List(next)) {
+      tbd.mod2((newDestMatch: Dest[ModListNode[T, V]], newDestNoMatch: Dest[ModListNode[T, V]]) => {
+        tbd.read(next)(next => {
+          if(next != null) {
+            next.split(tbd, newDestMatch, newDestNoMatch, memo, pred)
+          } else {
+            tbd.write(newDestMatch, null)
+            tbd.write(newDestNoMatch, null)
+          }
+        })
+      })
+    }
+
+    if(pred(tbd, (value._1, value._2))) {
+      tbd.write(destMatch, new ModListNode(value, matchNext))
+      tbd.read(diffNext)(diffNext => {
+        tbd.write(destNoMatch, diffNext)
+      })
+    } else {
+      tbd.write(destNoMatch, new ModListNode(value, diffNext))
+      tbd.read(matchNext)(matchNext => {
+        tbd.write(destMatch, matchNext)
+      })
+    }
+  }
+
+  def splitNoDest(
+      tbd: TBD,
+      memo: Memoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]],
+      pred: (TBD, (T, V)) => Boolean,
+      parallel: Boolean = false,
+      memoized: Boolean = false):
+        Changeable2[ModListNode[T, V], ModListNode[T, V]] = {
+    if(pred(tbd, value)) {
+      val (matchNext, diffNext) =
+	tbd.modNoDestLeft(() => {
+	  memo(List(next)) {
+	    tbd.read(next)(next => {
+	      if(next != null) {
+		next.splitNoDest(tbd, memo, pred)
+	      } else {
+		tbd.writeNoDest2(null.asInstanceOf[ModListNode[T, V]],
+				 null.asInstanceOf[ModListNode[T, V]])
+	      }
+            })
+	  }
+	})
+
+      tbd.writeNoDestLeft(new ModListNode(value, matchNext), diffNext)
+    } else {
+      val (matchNext, diffNext) =
+	tbd.modNoDestRight(() => {
+	  memo(List(next)) {
+	    tbd.read(next)(next => {
+	      if(next != null) {
+		next.splitNoDest(tbd, memo, pred)
+	      } else {
+		tbd.writeNoDest2(null.asInstanceOf[ModListNode[T, V]],
+				 null.asInstanceOf[ModListNode[T, V]])
+	      }
+	    })
+	  }
+	})
+
+      tbd.writeNoDestRight(matchNext, new ModListNode(value, diffNext))
+    }
+  }
+
+  def quicksort(
+        tbd: TBD,
+        dest: Dest[ModListNode[T, V]],
+        toAppend: Mod[ModListNode[T, V]],
+        comperator: (TBD, (T, V), (T, V)) => Boolean,
+        memo: Memoizer[Mod[ModListNode[T, V]]],
+        parallel: Boolean = false,
+        memoized: Boolean = false):
+          Changeable[ModListNode[T, V]] = {
+    tbd.read(next)(next => {
+      if(next != null) {
+        val (smaller, greater) = tbd.mod2((destSmaller: Dest[ModListNode[T, V]],
+                                           destGreater: Dest[ModListNode[T, V]]) => {
+
+          val memo = tbd.makeMemoizer[(Mod[ModListNode[T, V]],
+                                       Mod[ModListNode[T, V]])](!memoized)
+
+          next.split(tbd, destSmaller, destGreater, memo,
+                     (tbd, cv) => { comperator(tbd, cv, value) },
+                     parallel, memoized)
+        })
+
+        val greaterSorted = memo(List(greater)) {
+          tbd.mod((dest: Dest[ModListNode[T, V]]) => {
+            tbd.read(greater)(greater => {
+              if(greater != null) {
+                greater.quicksort(tbd, dest, toAppend,
+                                  comperator, memo, parallel, memoized)
+              } else {
+                tbd.read(toAppend)(toAppend => {
+                  tbd.write(dest, toAppend)
+                })
+              }
+            })
+          })
+        }
+
+        val mid = new ModListNode(value, greaterSorted)
+
+        tbd.read(smaller)(smaller => {
+          if(smaller != null) {
+            smaller.quicksort(tbd, dest, tbd.createMod(mid),
+                              comperator, memo, parallel, memoized)
+          } else {
+            tbd.write(dest, mid)
+          }
+        })
+      } else {
+        tbd.write(dest, new ModListNode(value, toAppend))
+      }
+    })
   }
 }

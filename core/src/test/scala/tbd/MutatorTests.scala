@@ -121,22 +121,19 @@ class MutatorTests extends FlatSpec with Matchers {
 
   "AdjustableListTests" should "update the AdjustableList correctly" in {
     for (partitions <- 1 to 2) {
-      for (valueMod <- List(true, false)) {
-	for (chunkSize <- 1 to 2) {
-	  val mutator = new Mutator()
+      for (chunkSize <- 1 to 2) {
+	val mutator = new Mutator()
 
-	  val conf = new ListConf(partitions = partitions, chunkSize = chunkSize,
-				  valueMod = valueMod)
-	  if (chunkSize == 1) {
-	    val input = mutator.createList[Int, Int](conf)
-	    runTest(mutator, new ListTest(input), input)
-	  } else {
-	    val input = mutator.createChunkList[Int, Int](conf)
-	    runTest(mutator, new ChunkListTest(input), input)
-	  }
-
-	  mutator.shutdown()
+	val conf = new ListConf(partitions = partitions, chunkSize = chunkSize)
+	if (chunkSize == 1) {
+	  val input = mutator.createList[Int, Int](conf)
+	  runTest(mutator, new ListTest(input), input)
+	} else {
+	  val input = mutator.createChunkList[Int, Int](conf)
+	  runTest(mutator, new ChunkListTest(input), input)
 	}
+
+	mutator.shutdown()
       }
     }
   }
