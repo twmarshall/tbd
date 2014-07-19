@@ -57,12 +57,12 @@ class ModListModifier(
 
     while (innerNode != null && !found) {
       if (innerNode.value._1 == key) {
-	innerNode.value = (key, value)
+        val newNode = new ModListNode((key, value), innerNode.next)
 
 	if (previousNode != null) {
-	  futures = datastore.updateMod(previousNode.next.id, innerNode)
+	  futures = datastore.updateMod(previousNode.next.id, newNode)
 	} else {
-	  futures = datastore.updateMod(modList.head.id, innerNode)
+	  futures = datastore.updateMod(modList.head.id, newNode)
 	}
 	found = true
       } else {
