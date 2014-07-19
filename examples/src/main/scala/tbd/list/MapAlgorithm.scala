@@ -45,7 +45,7 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val sortedOutput = output.toBuffer().sortWith(_ < _)
     val answer = runNaive(table.values)
 
-    sortedOutput == answer.asInstanceOf[GenMap[Int, Int]].values.toBuffer.sortWith(_ < _)
+    sortedOutput == answer.asInstanceOf[GenIterable[Int]].toBuffer.sortWith(_ < _)
   }
 
   def mapper(tbd: TBD, pair: (Int, String)) = {
