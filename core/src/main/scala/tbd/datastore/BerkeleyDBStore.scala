@@ -34,7 +34,6 @@ class LRUNode(
 
 class BerkeleyDBStore(cacheSize: Int) extends KVStore {
   private val values = Map[ModId, LRUNode]()
-  println(cacheSize)
   private val tail = new LRUNode(null, null, null, null)
   private var head = tail
 
