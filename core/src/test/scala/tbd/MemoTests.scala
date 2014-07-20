@@ -302,82 +302,6 @@ class OutOfOrderMatchTest(input: TableInput[Int, Int]) extends Adjustable {
   }
 }
 
-class NoDestTest(input: TableInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): Mod[Int] = {
-    val table = input.getTable()
-    val one = table.get(1)
-    val two = table.get(2)
-    val three = table.get(3)
-    val four = table.get(4)
-    val memo = tbd.makeMemoizer[Changeable[Int]]()
-
-    tbd.modNoDest(() => {
-      tbd.read(one)(oneValue => {
-        if (oneValue == 1) {
-          tbd.modNoDest(() => {
-            memo(two) {
-              tbd.read(four)(fourValue =>
-                tbd.writeNoDest(fourValue))
-            }
-          })
-          memo(three) {
-            tbd.writeNoDest(3)
-          }
-        } else {
-          memo(two) {
-            tbd.read(four)(fourValue =>
-              tbd.writeNoDest(fourValue))
-          }
-        }
-      })
-    })
-  }
-}
-
-class NoDestTest2(input: TableInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): Mod[Int] = {
-    val table = input.getTable()
-    val one = table.get(1)
-    val two = table.get(2)
-    val three = table.get(3)
-    val five = table.get(5)
-    val memo = tbd.makeMemoizer[Changeable[Int]]()
-
-    val six = tbd.modNoDest(() => {
-      tbd.read(one)(one => {
-        val four = tbd.modNoDest(() => {
-          if (one == 1) {
-            tbd.modNoDest(() => {
-              memo(two) {
-                tbd.read(five)(five =>
-                  tbd.writeNoDest(five))
-              }
-            })
-            memo(three) {
-              tbd.writeNoDest(3)
-            }
-          } else {
-            memo(two) {
-              tbd.read(five)(five =>
-                tbd.writeNoDest(five))
-            }
-          }
-        })
-
-        tbd.read(four)(four => {
-          tbd.writeNoDest(four)
-        })
-      })
-    })
-
-    tbd.modNoDest(() => {
-      tbd.read(six)(six => {
-        tbd.writeNoDest(six)
-      })
-    })
-  }
-}
-
 class MemoTests extends FlatSpec with Matchers {
   "MemoTest" should "find the memo match" in {
     val mutator = new Mutator()
@@ -583,41 +507,5 @@ class MemoTests extends FlatSpec with Matchers {
     test.count2 should be (2)
     test.count3 should be (1)
     mutator.shutdown()
-  }
-
-  "NoDestTest" should "update the mod when making the memo match" in {
-    val mutator = new Mutator()
-    val input = mutator.createTable[Int, Int]()
-    input.put(1, 1)
-    input.put(2, 2)
-    input.put(3, 3)
-    input.put(4, 4)
-    val test = new NoDestTest(input)
-    val output = mutator.run[Mod[Int]](test)
-    output.read() should be (3)
-
-    input.update(1, 2)
-    input.update(4, 5)
-    mutator.propagate()
-    output.read() should be (5)
-
-    mutator.shutdown()
-  }
-
-  "NoDestTest2" should "write the matched value into the mod" in {
-    val mutator = new Mutator()
-    val input = mutator.createTable[Int, Int]()
-    input.put(1, 1)
-    input.put(2, 2)
-    input.put(3, 3)
-    input.put(5, 5)
-    val test = new NoDestTest2(input)
-    val output = mutator.run[Mod[Int]](test)
-    output.read() should be (3)
-
-    input.update(1, 2)
-    input.update(5, 10)
-    mutator.propagate()
-    output.read() should be (10)
   }
 }
