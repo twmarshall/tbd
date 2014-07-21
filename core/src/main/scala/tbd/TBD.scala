@@ -44,6 +44,10 @@ object TBD {
   def par[T, U](one: TBD => T, two: TBD => U)(implicit tbd: TBD): Tuple2[T, U] = {
     tbd.par(one, two)
   }
+
+  def makeMemoizer[T](dummy: Boolean = false)(implicit tbd: TBD): Memoizer[T] = {
+    tbd.makeMemoizer[T](dummy)
+  }
 }
 
 class TBD(id: String, val worker: Worker) {
