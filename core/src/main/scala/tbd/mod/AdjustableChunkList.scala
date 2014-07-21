@@ -20,8 +20,7 @@ import tbd.TBD
 trait AdjustableChunkList[T, U] extends AdjustableList[T, U] {
   def chunkMap[V, Q](
       f: (TBD, Vector[(T, U)]) => (V, Q),
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): AdjustableList[V, Q]
 
   def chunkSort(

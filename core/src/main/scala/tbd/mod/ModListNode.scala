@@ -132,8 +132,7 @@ class ModListNode[T, V] (
         toAppend: Mod[ModListNode[T, V]],
         comperator: (TBD, (T, V), (T, V)) => Boolean,
         memo: Memoizer[Mod[ModListNode[T, V]]],
-        parallel: Boolean = false,
-        memoized: Boolean = false)
+        parallel: Boolean = false)
        (implicit tbd: TBD): Changeable[ModListNode[T, V]] = {
     read(next)(next => {
       if(next != null) {
@@ -150,7 +149,7 @@ class ModListNode[T, V] (
           mod {
             read(greater)(greater => {
               if(greater != null) {
-                greater.quicksort(toAppend, comperator, memo, parallel, memoized)
+                greater.quicksort(toAppend, comperator, memo, parallel)
               } else {
                 read(toAppend)(toAppend => {
                   write(toAppend)
@@ -164,8 +163,7 @@ class ModListNode[T, V] (
 
         read(smaller)(smaller => {
           if(smaller != null) {
-            smaller.quicksort(createMod(mid),
-                              comperator, memo, parallel, memoized)
+            smaller.quicksort(createMod(mid), comperator, memo, parallel)
           } else {
             write(mid)
           }

@@ -51,7 +51,7 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val pages = input.getAdjustableList()
 
     pages.sort((tbd: TBD, a:(Int, String), b:(Int, String)) =>
-      SortAlgorithm.predicate(a, b), parallel, memoized)
+      SortAlgorithm.predicate(a, b), parallel)
   }
 }
 

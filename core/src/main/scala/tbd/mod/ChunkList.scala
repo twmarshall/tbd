@@ -26,10 +26,9 @@ class ChunkList[T, U](
 
   def map[V, W](
       f: (TBD, (T, U)) => (V, W),
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): ChunkList[V, W] = {
-    if (parallel || !memoized) {
+    if (parallel) {
       tbd.log.warning("ChunkList.map ignores the 'parallel' and " +
 		      "'memoized' parameters.")
     }
@@ -47,10 +46,9 @@ class ChunkList[T, U](
 
   def chunkMap[V, Q](
       f: (TBD, Vector[(T, U)]) => (V, Q),
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): ModList[V, Q] = {
-    if (parallel || !memoized) {
+    if (parallel) {
       tbd.log.warning("ChunkList.chunkMap ignores the 'parallel' and " +
 		      "'memoized' parameters.")
     }
@@ -68,27 +66,23 @@ class ChunkList[T, U](
 
   def filter(
       pred: ((T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): ChunkList[T, U] = ???
 
   def reduce(
       initialValueMod: Mod[(T, U)],
       f: (TBD, (T, U), (T, U)) => (T, U),
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): Mod[(T, U)] = ???
 
   def split(
       pred: (TBD, (T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false)
+      parallel: Boolean = false)
      (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   def sort(
       comperator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false)
+      parallel: Boolean = false)
      (implicit tbd: TBD): AdjustableList[T, U] = ???
 
   def chunkSort(

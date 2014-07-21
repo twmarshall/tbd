@@ -34,23 +34,14 @@ class ListMapTest(
 class ListSplitTest(input: ListInput[String, Int])  extends Adjustable {
   def run(implicit tbd: TBD): (AdjustableList[String, Int], AdjustableList[String, Int]) = {
     val modList = input.getAdjustableList()
-    modList.split((tbd, a) => a._2 % 2 == 0, true, true)
+    modList.split((tbd, a) => a._2 % 2 == 0, true)
   }
 }
 
 class ListSortTest(input: ListInput[String, Int])  extends Adjustable {
   def run(implicit tbd: TBD): AdjustableList[String, Int] = {
     val modList = input.getAdjustableList()
-    modList.sort((tbd, a, b) => a._2 < b._2, true, true)
-  }
-}
-
-
-class ListMemoMapTest(input: ListInput[String, Int]) extends Adjustable {
-  def run(implicit tbd: TBD): AdjustableList[String, Int] = {
-    val list = input.getAdjustableList()
-    list.map((tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 + 3),
-             memoized = true)
+    modList.sort((tbd, a, b) => a._2 < b._2, true)
   }
 }
 
@@ -161,45 +152,6 @@ class ListTests extends FlatSpec with Matchers {
     output.toBuffer().sortWith(_ < _) should be (Buffer(-2, 3, 4, 6, 8, 11))
 
     mutator.shutdown()
-  }
-
-  "ListMemoMapTest" should "return the mapped AdjustableList" in {
-    val mutator = new Mutator()
-    val input = mutator.createList[String, Int]()
-    input.put("one", 1)
-    input.put("two", 2)
-    input.put("three", 3)
-    input.put("four", 4)
-    val output = mutator.run[AdjustableList[String, Int]](new ListMemoMapTest(input))
-    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 5, 6, 7))
-
-    input.remove("two")
-    mutator.propagate()
-    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 6, 7))
-
-    input.put("five", 5)
-    input.remove("three")
-    mutator.propagate()
-    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 7, 8))
-
-    input.put("six", 6)
-    input.put("seven", 7)
-    input.put("eight", 8)
-    input.remove("six")
-    mutator.propagate()
-    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 7, 8, 10, 11))
-
-    input.remove("one")
-    input.remove("five")
-    input.remove("eight")
-    mutator.propagate()
-    output.toBuffer().sortWith(_ < _) should be (Buffer(7, 10))
-
-    input.update("four", -4)
-    input.put("nine", 9)
-    input.remove("seven")
-    mutator.propagate()
-    output.toBuffer().sortWith(_ < _) should be (Buffer(-1, 12))
   }
 
   val maxKey = 1000

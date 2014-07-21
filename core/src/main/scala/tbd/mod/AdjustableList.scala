@@ -39,8 +39,7 @@ trait AdjustableList[T, U] {
    */
   def map[V, Q](
       f: (TBD, (T, U)) => (V, Q),
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): AdjustableList[V, Q]
 
   /**
@@ -49,8 +48,7 @@ trait AdjustableList[T, U] {
    */
   def filter(
       pred: ((T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): AdjustableList[T, U]
 
   /**
@@ -60,8 +58,7 @@ trait AdjustableList[T, U] {
   def reduce(
       initialValueMod: Mod[(T, U)],
       f: (TBD, (T, U), (T, U)) => (T, U),
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): Mod[(T, U)]
 
   /**
@@ -69,8 +66,7 @@ trait AdjustableList[T, U] {
    */
   def sort(
       comperator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false)
+      parallel: Boolean = false)
      (implicit tbd: TBD): AdjustableList[T, U]
 
   /**
@@ -80,8 +76,7 @@ trait AdjustableList[T, U] {
    */
   def split(
       pred: (TBD, (T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false)
+      parallel: Boolean = false)
      (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U])
 
   /* Meta functions */

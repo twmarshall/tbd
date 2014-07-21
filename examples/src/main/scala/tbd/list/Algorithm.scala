@@ -32,7 +32,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   val mutations = conf("mutations").asInstanceOf[Array[String]]
   val partition = conf("partitions").asInstanceOf[String].toInt
   val parallel = conf("parallel") == "true"
-  val memoized = conf("memoized") == "true"
+  //val memoized = conf("memoized") == "true"
   val store = conf("store").asInstanceOf[String]
 
   val main = new Main(store, cacheSize)

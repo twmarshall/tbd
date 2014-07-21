@@ -28,13 +28,13 @@ class PartitionedChunkList[T, U](
 
   def map[V, Q](
       f: (TBD, (T, U)) => (V, Q),
-      parallel: Boolean = true,
-      memoized: Boolean = false)(implicit tbd: TBD): PartitionedChunkList[V, Q] = {
+      parallel: Boolean = true)
+     (implicit tbd: TBD): PartitionedChunkList[V, Q] = {
     if (parallel) {
       def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[V, Q]] = {
         if (i < partitions.size) {
           val parTup = par((tbd: TBD) => {
-            partitions(i).map(f, memoized = memoized)(tbd)
+            partitions(i).map(f)(tbd)
           }, (tbd: TBD) => {
             innerMap(i + 1)(tbd)
           })
@@ -49,7 +49,7 @@ class PartitionedChunkList[T, U](
     } else {
       new PartitionedChunkList(
         partitions.map((partition: ChunkList[T, U]) => {
-          partition.map(f, memoized = memoized)
+          partition.map(f)
         })
       )
     }
@@ -57,14 +57,13 @@ class PartitionedChunkList[T, U](
 
   def chunkMap[V, Q](
       f: (TBD, Vector[(T, U)]) => (V, Q),
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): PartitionedModList[V, Q] = {
     if (parallel) {
       def innerChunkMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[V, Q]] = {
         if (i < partitions.size) {
           val parTup = par((tbd: TBD) => {
-            partitions(i).chunkMap(f, memoized = memoized)(tbd)
+            partitions(i).chunkMap(f)(tbd)
           }, (tbd: TBD) => {
             innerChunkMap(i + 1)(tbd)
           })
@@ -79,7 +78,7 @@ class PartitionedChunkList[T, U](
     } else {
       new PartitionedModList(
         partitions.map((partition: ChunkList[T, U]) => {
-          partition.chunkMap(f, memoized = memoized)
+          partition.chunkMap(f)
         })
       )
     }
@@ -88,14 +87,13 @@ class PartitionedChunkList[T, U](
   def reduce(
       initialValueMod: Mod[(T, U)],
       f: (TBD, (T, U), (T, U)) => (T, U),
-      parallel: Boolean = true,
-      memoized: Boolean = true)
+      parallel: Boolean = true)
      (implicit tbd: TBD): Mod[(T, U)] = {
 
     def parReduce(i: Int)(implicit tbd: TBD): Mod[(T, U)] = {
       if (i < partitions.size) {
         val parTup = par((tbd: TBD) => {
-          partitions(i).reduce(initialValueMod, f, parallel, memoized)(tbd)
+          partitions(i).reduce(initialValueMod, f, parallel)(tbd)
         }, (tbd: TBD) => {
           parReduce(i + 1)(tbd)
         })
@@ -114,7 +112,7 @@ class PartitionedChunkList[T, U](
       parReduce(0)
     } else {
       partitions.map((partition: ChunkList[T, U]) => {
-        partition.reduce(initialValueMod, f, parallel, memoized)
+        partition.reduce(initialValueMod, f, parallel)
       }).reduce((a, b) => {
         mod {
           read2(a, b) {
@@ -127,13 +125,12 @@ class PartitionedChunkList[T, U](
 
   def filter(
       pred: ((T, U)) => Boolean,
-      parallel: Boolean = true,
-      memoized: Boolean = true)
+      parallel: Boolean = true)
      (implicit tbd: TBD): PartitionedChunkList[T, U] = {
     def parFilter(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[T, U]] = {
       if (i < partitions.size) {
         val parTup = par((tbd: TBD) => {
-          partitions(i).filter(pred, parallel, memoized)(tbd)
+          partitions(i).filter(pred, parallel)(tbd)
         }, (tbd: TBD) => {
           parFilter(i + 1)(tbd)
         })
@@ -149,7 +146,7 @@ class PartitionedChunkList[T, U](
     } else {
       new PartitionedChunkList(
         partitions.map((partition: ChunkList[T, U]) => {
-          partition.filter(pred, parallel, memoized)
+          partition.filter(pred, parallel)
         })
       )
     }
@@ -157,14 +154,12 @@ class PartitionedChunkList[T, U](
 
   def split(
       pred: (TBD, (T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false)
+      parallel: Boolean = false)
      (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   def sort(
       comperator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false)
+      parallel: Boolean = false)
      (implicit tbd: TBD): AdjustableList[T, U] = ???
 
   def chunkSort(

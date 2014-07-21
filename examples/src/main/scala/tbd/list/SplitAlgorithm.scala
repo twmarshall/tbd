@@ -57,6 +57,6 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val pages = input.getAdjustableList()
 
     pages.split((tbd: TBD, pair:(Int, String)) => SplitAlgorithm.predicate(pair),
-                parallel, memoized)
+                parallel)
   }
 }

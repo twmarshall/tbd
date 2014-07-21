@@ -57,7 +57,7 @@ class ListQuicksortTest()
     extends TestAlgorithm[AdjustableList[Int, Int]] {
   def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
     val modList = input.getAdjustableList()
-    modList.sort((tbd, a, b) => a._2 < b._2, true, true)
+    modList.sort((tbd, a, b) => a._2 < b._2, true)
   }
 
   def checkOutput(output: AdjustableList[Int, Int], table: Map[Int, Int]): Boolean = {
@@ -78,7 +78,7 @@ class ListSplitTest()
     extends TestAlgorithm[(AdjustableList[Int, Int], AdjustableList[Int, Int])] {
   def run(implicit tbd: TBD): (AdjustableList[Int, Int], AdjustableList[Int, Int]) = {
     val modList = input.getAdjustableList()
-    modList.split((tbd, a) => a._2 % 2 == 0, true, true)
+    modList.split((tbd, a) => a._2 % 2 == 0, true)
   }
 
  def checkOutput(output: (AdjustableList[Int, Int], AdjustableList[Int, Int]), table: Map[Int, Int]): Boolean = {

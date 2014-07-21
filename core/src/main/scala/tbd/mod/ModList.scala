@@ -27,8 +27,7 @@ class ModList[T, V](
 
   def map[U, Q](
       f: (TBD, (T, V)) => (U, Q),
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): ModList[U, Q] = {
     if (parallel) {
       new ModList(
@@ -40,7 +39,7 @@ class ModList[T, V](
         }
       )
     } else {
-      val memo = makeMemoizer[Changeable[ModListNode[U, Q]]](!memoized)
+      val memo = makeMemoizer[Changeable[ModListNode[U, Q]]]()
 
       new ModList(
         mod {
@@ -56,8 +55,7 @@ class ModList[T, V](
   def reduce(
       identityMod: Mod[(T, V)],
       f: (TBD, (T, V), (T, V)) => (T, V),
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): Mod[(T, V)] = {
 
     // Each round we need a hasher and a memo, and we need to guarantee that the
@@ -66,12 +64,12 @@ class ModList[T, V](
     class RoundMemoizer {
       val memo = makeMemoizer[(Hasher,
                                Memoizer[Mod[ModListNode[T, V]]],
-                               RoundMemoizer)](!memoized)
+                               RoundMemoizer)]()
 
       def getTuple() =
         memo() {
           (new Hasher(2, 4),
-           makeMemoizer[Mod[ModListNode[T, V]]](!memoized),
+           makeMemoizer[Mod[ModListNode[T, V]]](),
            new RoundMemoizer())
 	}
     }
@@ -150,10 +148,9 @@ class ModList[T, V](
 
   def filter(
       pred: ((T, V)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = true)
+      parallel: Boolean = false)
      (implicit tbd: TBD): ModList[T, V] = {
-    val memo = makeMemoizer[Mod[ModListNode[T, V]]](!memoized)
+    val memo = makeMemoizer[Mod[ModListNode[T, V]]]()
 
     new ModList(
       mod {
@@ -167,8 +164,7 @@ class ModList[T, V](
 
   def split(
       pred: (TBD, (T, V)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false)
+      parallel: Boolean = false)
      (implicit tbd: TBD): (AdjustableList[T, V], AdjustableList[T, V]) = {
     val memo = makeMemoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]]()
 
@@ -189,16 +185,15 @@ class ModList[T, V](
 
   def sort(
       comperator: (TBD, (T, V), (T, V)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false)
+      parallel: Boolean = false)
      (implicit tbd: TBD): AdjustableList[T, V] = {
-    val memo = makeMemoizer[Mod[ModListNode[T, V]]](!memoized)
+    val memo = makeMemoizer[Mod[ModListNode[T, V]]]()
 
     val sorted = mod {
       read(head) {
         case null => write[ModListNode[T, V]](null)
         case node =>
-	  node.quicksort(createMod(null), comperator, memo, parallel, memoized)
+	  node.quicksort(createMod(null), comperator, memo, parallel)
       }
     }
 
