@@ -31,20 +31,20 @@ import tbd.datastore.Datastore
  */
 trait AdjustableList[T, U] {
   /**
-   * Returns a AdjustableList containing the results of applying the given
-   * function to each of the elements of this AdjustableList.
-   */
-  def map[V, Q](
-      f: (TBD, (T, U)) => (V, Q))
-     (implicit tbd: TBD): AdjustableList[V, Q]
-
-  /**
    * Returns a AdjustableList containing all of the elements from this
    * AdjustableList that satisfy the given predicate.
    */
   def filter(
       pred: ((T, U)) => Boolean)
      (implicit tbd: TBD): AdjustableList[T, U]
+
+  /**
+   * Returns a AdjustableList containing the results of applying the given
+   * function to each of the elements of this AdjustableList.
+   */
+  def map[V, Q](
+      f: (TBD, (T, U)) => (V, Q))
+     (implicit tbd: TBD): AdjustableList[V, Q]
 
   /**
    * Reduces all elements in the list using f, in an unspecified order,

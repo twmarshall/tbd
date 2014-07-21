@@ -22,14 +22,34 @@ import tbd.{Changeable, TBD}
 import tbd.datastore.Datastore
 import tbd.TBD._
 
-class PartitionedModList[T, V](
-    val partitions: ArrayBuffer[ModList[T, V]]
-  ) extends AdjustableList[T, V] {
+class PartitionedModList[T, U](
+    val partitions: ArrayBuffer[ModList[T, U]]
+  ) extends AdjustableList[T, U] {
 
-  def map[U, Q](
-      f: (TBD, (T, V)) => (U, Q))
-     (implicit tbd: TBD): PartitionedModList[U, Q] = {
-    def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[U, Q]] = {
+  def filter(
+      pred: ((T, U)) => Boolean)
+     (implicit tbd: TBD): PartitionedModList[T, U] = {
+    def parFilter(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[T, U]] = {
+      if (i < partitions.size) {
+        val parTup = par((tbd: TBD) => {
+          partitions(i).filter(pred)(tbd)
+        }, (tbd: TBD) => {
+          parFilter(i + 1)(tbd)
+        })
+
+        parTup._2 += parTup._1
+      } else {
+        ArrayBuffer[ModList[T, U]]()
+      }
+    }
+
+    new PartitionedModList(parFilter(0))
+  }
+
+  def map[V, W](
+      f: (TBD, (T, U)) => (V, W))
+     (implicit tbd: TBD): PartitionedModList[V, W] = {
+    def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[V, W]] = {
       if (i < partitions.size) {
         val parTup = par((tbd: TBD) => {
           partitions(i).map(f)(tbd)
@@ -39,7 +59,7 @@ class PartitionedModList[T, V](
 
         parTup._2 += parTup._1
       } else {
-        ArrayBuffer[ModList[U, Q]]()
+        ArrayBuffer[ModList[V, W]]()
       }
     }
 
@@ -47,11 +67,11 @@ class PartitionedModList[T, V](
   }
 
   def reduce(
-      initialValueMod: Mod[(T, V)],
-      f: (TBD, (T, V), (T, V)) => (T, V))
-     (implicit tbd: TBD): Mod[(T, V)] = {
+      initialValueMod: Mod[(T, U)],
+      f: (TBD, (T, U), (T, U)) => (T, U))
+     (implicit tbd: TBD): Mod[(T, U)] = {
 
-    def parReduce(i: Int)(implicit tbd: TBD): Mod[(T, V)] = {
+    def parReduce(i: Int)(implicit tbd: TBD): Mod[(T, U)] = {
       if (i < partitions.size) {
         val parTup = par((tbd: TBD) => {
           partitions(i).reduce(initialValueMod, f)(tbd)
@@ -73,38 +93,17 @@ class PartitionedModList[T, V](
     parReduce(0)
   }
 
-  def filter(
-      pred: ((T, V)) => Boolean)
-     (implicit tbd: TBD): PartitionedModList[T, V] = {
-    def parFilter(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[T, V]] = {
-      if (i < partitions.size) {
-        val parTup = par((tbd: TBD) => {
-          partitions(i).filter(pred)(tbd)
-        }, (tbd: TBD) => {
-          parFilter(i + 1)(tbd)
-        })
-
-        parTup._2 += parTup._1
-      } else {
-        ArrayBuffer[ModList[T, V]]()
-      }
-    }
-
-    new PartitionedModList(parFilter(0))
-  }
+  def sort(
+      comperator: (TBD, (T, U), (T, U)) => Boolean)
+     (implicit tbd: TBD): AdjustableList[T, U] = ???
 
   def split(
-      pred: (TBD, (T, V)) => Boolean)
-     (implicit tbd: TBD): (AdjustableList[T, V], AdjustableList[T, V]) = ???
-
-  def sort(
-      comperator: (TBD, (T, V), (T, V)) => Boolean)
-     (implicit tbd: TBD): AdjustableList[T, V] = ???
-
+      pred: (TBD, (T, U)) => Boolean)
+     (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   /* Meta Operations */
-  def toBuffer(): Buffer[V] = {
-    val buf = ArrayBuffer[V]()
+  def toBuffer(): Buffer[U] = {
+    val buf = ArrayBuffer[U]()
 
     for (partition <- partitions) {
       var innerNode = partition.head.read()

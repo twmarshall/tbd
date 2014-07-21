@@ -26,30 +26,10 @@ class PartitionedChunkList[T, U](
     val partitions: ArrayBuffer[ChunkList[T, U]]
   ) extends AdjustableChunkList[T, U] {
 
-  def map[V, Q](
-      f: (TBD, (T, U)) => (V, Q))
-     (implicit tbd: TBD): PartitionedChunkList[V, Q] = {
-    def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[V, Q]] = {
-      if (i < partitions.size) {
-        val parTup = par((tbd: TBD) => {
-          partitions(i).map(f)(tbd)
-        }, (tbd: TBD) => {
-          innerMap(i + 1)(tbd)
-        })
-
-        parTup._2 += parTup._1
-      } else {
-        ArrayBuffer[ChunkList[V, Q]]()
-      }
-    }
-
-    new PartitionedChunkList(innerMap(0))
-  }
-
-  def chunkMap[V, Q](
-      f: (TBD, Vector[(T, U)]) => (V, Q))
-     (implicit tbd: TBD): PartitionedModList[V, Q] = {
-    def innerChunkMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[V, Q]] = {
+  def chunkMap[V, W](
+      f: (TBD, Vector[(T, U)]) => (V, W))
+     (implicit tbd: TBD): PartitionedModList[V, W] = {
+    def innerChunkMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[V, W]] = {
       if (i < partitions.size) {
         val parTup = par((tbd: TBD) => {
           partitions(i).chunkMap(f)(tbd)
@@ -59,11 +39,55 @@ class PartitionedChunkList[T, U](
 
         parTup._2 += parTup._1
       } else {
-        ArrayBuffer[ModList[V, Q]]()
+        ArrayBuffer[ModList[V, W]]()
       }
     }
 
     new PartitionedModList(innerChunkMap(0))
+  }
+
+  def chunkSort(
+      comparator: (TBD, (T, U), (T, U)) => Boolean)
+     (implicit tbd: TBD): Mod[(Int, Vector[(T, U)])] = ???
+
+  def filter(
+      pred: ((T, U)) => Boolean)
+     (implicit tbd: TBD): PartitionedChunkList[T, U] = {
+    def parFilter(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[T, U]] = {
+      if (i < partitions.size) {
+        val parTup = par((tbd: TBD) => {
+          partitions(i).filter(pred)(tbd)
+        }, (tbd: TBD) => {
+          parFilter(i + 1)(tbd)
+        })
+
+        parTup._2 += parTup._1
+      } else {
+        ArrayBuffer[ChunkList[T, U]]()
+      }
+    }
+
+    new PartitionedChunkList(parFilter(0))
+  }
+
+  def map[V, W](
+      f: (TBD, (T, U)) => (V, W))
+     (implicit tbd: TBD): PartitionedChunkList[V, W] = {
+    def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[V, W]] = {
+      if (i < partitions.size) {
+        val parTup = par((tbd: TBD) => {
+          partitions(i).map(f)(tbd)
+        }, (tbd: TBD) => {
+          innerMap(i + 1)(tbd)
+        })
+
+        parTup._2 += parTup._1
+      } else {
+        ArrayBuffer[ChunkList[V, W]]()
+      }
+    }
+
+    new PartitionedChunkList(innerMap(0))
   }
 
   def reduce(
@@ -92,37 +116,13 @@ class PartitionedChunkList[T, U](
     parReduce(0)
   }
 
-  def filter(
-      pred: ((T, U)) => Boolean)
-     (implicit tbd: TBD): PartitionedChunkList[T, U] = {
-    def parFilter(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[T, U]] = {
-      if (i < partitions.size) {
-        val parTup = par((tbd: TBD) => {
-          partitions(i).filter(pred)(tbd)
-        }, (tbd: TBD) => {
-          parFilter(i + 1)(tbd)
-        })
-
-        parTup._2 += parTup._1
-      } else {
-        ArrayBuffer[ChunkList[T, U]]()
-      }
-    }
-
-    new PartitionedChunkList(parFilter(0))
-  }
-
-  def split(
-      pred: (TBD, (T, U)) => Boolean)
-     (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U]) = ???
-
   def sort(
       comperator: (TBD, (T, U), (T, U)) => Boolean)
      (implicit tbd: TBD): AdjustableList[T, U] = ???
 
-  def chunkSort(
-      comparator: (TBD, (T, U), (T, U)) => Boolean)
-     (implicit tbd: TBD): Mod[(Int, Vector[(T, U)])] = ???
+  def split(
+      pred: (TBD, (T, U)) => Boolean)
+     (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   /* Meta Operations */
   def toBuffer(): Buffer[U] = {

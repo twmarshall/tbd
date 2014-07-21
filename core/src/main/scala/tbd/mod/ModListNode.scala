@@ -20,65 +20,27 @@ import java.io.Serializable
 import tbd.{Changeable, Changeable2, Memoizer, TBD}
 import tbd.TBD._
 
-class ModListNode[T, V] (
-    var value: (T, V),
-    val next: Mod[ModListNode[T, V]]
+class ModListNode[T, U] (
+    var value: (T, U),
+    val next: Mod[ModListNode[T, U]]
   ) extends Serializable {
 
   override def equals(obj: Any): Boolean = {
-    if (!obj.isInstanceOf[ModListNode[T, V]]) {
+    if (!obj.isInstanceOf[ModListNode[T, U]]) {
       false
     } else {
-      val that = obj.asInstanceOf[ModListNode[T, V]]
+      val that = obj.asInstanceOf[ModListNode[T, U]]
       that.value == value && that.next == next
     }
   }
 
-  def map[U, Q](
-      f: (TBD, (T, V)) => (U, Q),
-      memo: Memoizer[Changeable[ModListNode[U, Q]]])
-     (implicit tbd: TBD): Changeable[ModListNode[U, Q]] = {
-    val newNext = mod {
-      read(next) {
-	case null =>
-	  write[ModListNode[U, Q]](null)
-	case next =>
-          memo(next) {
-            next.map(f, memo)
-          }
-      }
-    }
-
-    write(new ModListNode[U, Q](f(tbd, value), newNext))
-  }
-
-  def parMap[U, Q](
-      tbd: TBD,
-      f: (TBD, (T, V)) => (U, Q)): Changeable[ModListNode[U, Q]] = {
-    val modTuple =
-      tbd.par((tbd: TBD) => {
-	f(tbd, value)
-      }, (tbd: TBD) => {
-        tbd.mod {
-	  tbd.read(next)(next => {
-            if (next != null) {
-              next.parMap(tbd, f)
-            } else {
-              tbd.write[ModListNode[U, Q]](null)
-            }
-          })
-        }
-      })
-    tbd.write(new ModListNode[U, Q](modTuple._1, modTuple._2))
-  }
-
   def filter(
-      pred: ((T, V)) => Boolean,
-      memo: Memoizer[Mod[ModListNode[T, V]]])
-     (implicit tbd: TBD): Changeable[ModListNode[T, V]] = {
+      pred: ((T, U)) => Boolean,
+      memo: Memoizer[Mod[ModListNode[T, U]]])
+     (implicit tbd: TBD): Changeable[ModListNode[T, U]] = {
     def readNext = {
       read(next) {
-	case null => write[ModListNode[T, V]](null)
+	case null => write[ModListNode[T, U]](null)
 	case next => next.filter(pred, memo)
       }
     }
@@ -95,17 +57,78 @@ class ModListNode[T, V] (
     }
   }
 
+  def map[V, W](
+      f: (TBD, (T, U)) => (V, W),
+      memo: Memoizer[Changeable[ModListNode[V, W]]])
+     (implicit tbd: TBD): Changeable[ModListNode[V, W]] = {
+    val newNext = mod {
+      read(next) {
+	case null =>
+	  write[ModListNode[V, W]](null)
+	case next =>
+          memo(next) {
+            next.map(f, memo)
+          }
+      }
+    }
+
+    write(new ModListNode[V, W](f(tbd, value), newNext))
+  }
+
+  def sort(
+      toAppend: Mod[ModListNode[T, U]],
+      comperator: (TBD, (T, U), (T, U)) => Boolean,
+      memo: Memoizer[Mod[ModListNode[T, U]]])
+     (implicit tbd: TBD): Changeable[ModListNode[T, U]] = {
+    read(next)(next => {
+      if(next != null) {
+        val (smaller, greater) = mod2(2) {
+
+          val memo = makeMemoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]]()
+
+          next.split(memo, (tbd, cv) => { comperator(tbd, cv, value) })
+        }
+
+        val greaterSorted = memo(List(greater)) {
+          mod {
+            read(greater)(greater => {
+              if(greater != null) {
+                greater.sort(toAppend, comperator, memo)
+              } else {
+                read(toAppend)(toAppend => {
+                  write(toAppend)
+                })
+              }
+            })
+          }
+        }
+
+        val mid = new ModListNode(value, greaterSorted)
+
+        read(smaller)(smaller => {
+          if(smaller != null) {
+            smaller.sort(createMod(mid), comperator, memo)
+          } else {
+            write(mid)
+          }
+        })
+      } else {
+        write(new ModListNode(value, toAppend))
+      }
+    })
+  }
+
   def split(
-      memo: Memoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]],
-      pred: (TBD, (T, V)) => Boolean)
-     (implicit tbd: TBD): Changeable2[ModListNode[T, V], ModListNode[T, V]] = {
-    def readNext(next: ModListNode[T, V]) = {
+      memo: Memoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]],
+      pred: (TBD, (T, U)) => Boolean)
+     (implicit tbd: TBD): Changeable2[ModListNode[T, U], ModListNode[T, U]] = {
+    def readNext(next: ModListNode[T, U]) = {
       memo(next) {
 	if (next != null) {
 	  next.split(memo, pred)
 	} else {
-	  write2(null.asInstanceOf[ModListNode[T, V]],
-		 null.asInstanceOf[ModListNode[T, V]])
+	  write2(null.asInstanceOf[ModListNode[T, U]],
+		 null.asInstanceOf[ModListNode[T, U]])
 	}
       }
     }
@@ -125,48 +148,5 @@ class ModListNode[T, V] (
 
       tbd.writeNoDestRight(matchNext, new ModListNode(value, diffNext))
     }
-  }
-
-  def quicksort(
-        toAppend: Mod[ModListNode[T, V]],
-        comperator: (TBD, (T, V), (T, V)) => Boolean,
-        memo: Memoizer[Mod[ModListNode[T, V]]])
-       (implicit tbd: TBD): Changeable[ModListNode[T, V]] = {
-    read(next)(next => {
-      if(next != null) {
-        val (smaller, greater) = mod2(2) {
-
-          val memo = makeMemoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]]()
-
-          next.split(memo, (tbd, cv) => { comperator(tbd, cv, value) })
-        }
-
-        val greaterSorted = memo(List(greater)) {
-          mod {
-            read(greater)(greater => {
-              if(greater != null) {
-                greater.quicksort(toAppend, comperator, memo)
-              } else {
-                read(toAppend)(toAppend => {
-                  write(toAppend)
-                })
-              }
-            })
-          }
-        }
-
-        val mid = new ModListNode(value, greaterSorted)
-
-        read(smaller)(smaller => {
-          if(smaller != null) {
-            smaller.quicksort(createMod(mid), comperator, memo)
-          } else {
-            write(mid)
-          }
-        })
-      } else {
-        write(new ModListNode(value, toAppend))
-      }
-    })
   }
 }

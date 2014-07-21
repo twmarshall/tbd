@@ -36,6 +36,24 @@ class ChunkListNode[T, U](
     }
   }
 
+  def chunkMap[V, W](
+      f: (TBD, Vector[(T, U)]) => (V, W),
+      memo: Memoizer[Mod[ModListNode[V, W]]])
+     (implicit tbd: TBD): Changeable[ModListNode[V, W]] = {
+    val newNextMod = memo(nextMod) {
+      mod {
+        read(nextMod)(next => {
+          if (next != null && next.chunk.size > 0)
+            next.chunkMap(f, memo)
+          else
+            write[ModListNode[V, W]](null)
+        })
+      }
+    }
+
+    write(new ModListNode[V, W](f(tbd, chunk), newNextMod))
+  }
+
   def map[V, W](
       f: (TBD, (T, U)) => (V, W),
       memo: Memoizer[Changeable[ChunkListNode[V, W]]])
@@ -53,24 +71,4 @@ class ChunkListNode[T, U](
 
     write(new ChunkListNode[V, W](newChunk, newNext))
   }
-
-  def chunkMap[V, Q](
-      f: (TBD, Vector[(T, U)]) => (V, Q),
-      memo: Memoizer[Mod[ModListNode[V, Q]]])
-     (implicit tbd: TBD): Changeable[ModListNode[V, Q]] = {
-    val newNextMod = memo(nextMod) {
-      mod {
-        read(nextMod)(next => {
-          if (next != null && next.chunk.size > 0)
-            next.chunkMap(f, memo)
-          else
-            write[ModListNode[V, Q]](null)
-        })
-      }
-    }
-
-    write(new ModListNode[V, Q](f(tbd, chunk), newNextMod))
-  }
-
-  def print = "ChunkListNode(" + chunk + ")"
 }
