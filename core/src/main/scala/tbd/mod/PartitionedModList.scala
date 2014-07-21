@@ -20,6 +20,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, Set}
 
 import tbd.{Changeable, TBD}
 import tbd.datastore.Datastore
+import tbd.TBD._
 
 class PartitionedModList[T, V](
     val partitions: ArrayBuffer[ModList[T, V]]
@@ -32,7 +33,7 @@ class PartitionedModList[T, V](
     if (parallel) {
       def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[U, Q]] = {
         if (i < partitions.size) {
-          val parTup = tbd.par((tbd: TBD) => {
+          val parTup = par((tbd: TBD) => {
             partitions(i).map(f, memoized = memoized)(tbd)
           }, (tbd: TBD) => {
             innerMap(i + 1)(tbd)
@@ -97,16 +98,16 @@ class PartitionedModList[T, V](
   }
 
   def filter(
-      tbd: TBD,
       pred: ((T, V)) => Boolean,
       parallel: Boolean = true,
-      memoized: Boolean = true): PartitionedModList[T, V] = {
-    def parFilter(tbd: TBD, i: Int): ArrayBuffer[ModList[T, V]] = {
+      memoized: Boolean = true)
+     (implicit tbd: TBD): PartitionedModList[T, V] = {
+    def parFilter(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[T, V]] = {
       if (i < partitions.size) {
-        val parTup = tbd.par((tbd: TBD) => {
-          partitions(i).filter(tbd, pred, parallel, memoized)
+        val parTup = par((tbd: TBD) => {
+          partitions(i).filter(pred, parallel, memoized)(tbd)
         }, (tbd: TBD) => {
-          parFilter(tbd, i + 1)
+          parFilter(i + 1)(tbd)
         })
 
         parTup._2 += parTup._1
@@ -116,11 +117,11 @@ class PartitionedModList[T, V](
     }
 
     if (parallel) {
-      new PartitionedModList(parFilter(tbd, 0))
+      new PartitionedModList(parFilter(0))
     } else {
       new PartitionedModList(
         partitions.map((partition: ModList[T, V]) => {
-          partition.filter(tbd, pred, parallel, memoized)
+          partition.filter(pred, parallel, memoized)
         })
       )
     }

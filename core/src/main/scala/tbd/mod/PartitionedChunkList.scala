@@ -20,6 +20,7 @@ import scala.collection.mutable.{ArrayBuffer, Buffer, Set}
 
 import tbd.{Changeable, TBD}
 import tbd.datastore.Datastore
+import tbd.TBD._
 
 class PartitionedChunkList[T, U](
     val partitions: ArrayBuffer[ChunkList[T, U]]
@@ -32,7 +33,7 @@ class PartitionedChunkList[T, U](
     if (parallel) {
       def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[V, Q]] = {
         if (i < partitions.size) {
-          val parTup = tbd.par((tbd: TBD) => {
+          val parTup = par((tbd: TBD) => {
             partitions(i).map(f, memoized = memoized)(tbd)
           }, (tbd: TBD) => {
             innerMap(i + 1)(tbd)
@@ -125,16 +126,16 @@ class PartitionedChunkList[T, U](
   }
 
   def filter(
-      tbd: TBD,
       pred: ((T, U)) => Boolean,
       parallel: Boolean = true,
-      memoized: Boolean = true): PartitionedChunkList[T, U] = {
-    def parFilter(tbd: TBD, i: Int): ArrayBuffer[ChunkList[T, U]] = {
+      memoized: Boolean = true)
+     (implicit tbd: TBD): PartitionedChunkList[T, U] = {
+    def parFilter(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[T, U]] = {
       if (i < partitions.size) {
-        val parTup = tbd.par((tbd: TBD) => {
-          partitions(i).filter(tbd, pred, parallel, memoized)
+        val parTup = par((tbd: TBD) => {
+          partitions(i).filter(pred, parallel, memoized)(tbd)
         }, (tbd: TBD) => {
-          parFilter(tbd, i + 1)
+          parFilter(i + 1)(tbd)
         })
 
         parTup._2 += parTup._1
@@ -144,11 +145,11 @@ class PartitionedChunkList[T, U](
     }
 
     if (parallel) {
-      new PartitionedChunkList(parFilter(tbd, 0))
+      new PartitionedChunkList(parFilter(0))
     } else {
       new PartitionedChunkList(
         partitions.map((partition: ChunkList[T, U]) => {
-          partition.filter(tbd, pred, parallel, memoized)
+          partition.filter(pred, parallel, memoized)
         })
       )
     }

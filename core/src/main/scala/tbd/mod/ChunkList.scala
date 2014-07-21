@@ -70,10 +70,10 @@ class ChunkList[T, U](
   }
 
   def filter(
-      tbd: TBD,
       pred: ((T, U)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = true): ChunkList[T, U] = ???
+      memoized: Boolean = true)
+     (implicit tbd: TBD): ChunkList[T, U] = ???
 
   def reduce(
       tbd: TBD,

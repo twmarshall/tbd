@@ -40,17 +40,18 @@ trait AdjustableList[T, U] {
   def map[V, Q](
       f: (TBD, (T, U)) => (V, Q),
       parallel: Boolean = false,
-      memoized: Boolean = true)(implicit tbd: TBD): AdjustableList[V, Q]
+      memoized: Boolean = true)
+     (implicit tbd: TBD): AdjustableList[V, Q]
 
   /**
    * Returns a AdjustableList containing all of the elements from this
    * AdjustableList that satisfy the given predicate.
    */
   def filter(
-      tbd: TBD,
       pred: ((T, U)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = true): AdjustableList[T, U]
+      memoized: Boolean = true)
+     (implicit tbd: TBD): AdjustableList[T, U]
 
   /**
    * Reduces all elements in the list using f, in an unspecified order,

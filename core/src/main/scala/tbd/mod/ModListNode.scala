@@ -73,31 +73,25 @@ class ModListNode[T, V] (
   }
 
   def filter(
-      tbd: TBD,
       pred: ((T, V)) => Boolean,
       memo: Memoizer[Mod[ModListNode[T, V]]])
-        : Changeable[ModListNode[T, V]] = {
+     (implicit tbd: TBD): Changeable[ModListNode[T, V]] = {
+    def readNext = {
+      read(next) {
+	case null => write[ModListNode[T, V]](null)
+	case next => next.filter(pred, memo)
+      }
+    }
+
     if (pred(value)) {
       val newNext = memo(List(next)) {
-        tbd.mod {
-          tbd.read(next)(nextValue => {
-            if (nextValue == null) {
-              tbd.write[ModListNode[T, V]](null)
-            } else {
-              nextValue.filter(tbd, pred, memo)
-            }
-          })
+        mod {
+	  readNext
         }
       }
-      tbd.write(new ModListNode(value, newNext))
+      write(new ModListNode(value, newNext))
     } else {
-      tbd.read(next)(nextValue => {
-        if (nextValue == null) {
-          tbd.write[ModListNode[T, V]](null)
-        } else {
-          nextValue.filter(tbd, pred, memo)
-        }
-      })
+      readNext
     }
   }
 

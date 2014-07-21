@@ -64,7 +64,7 @@ class ChunkListMapTest(input: ListInput[Int, Int]) extends Adjustable {
 class ListFilterTest(input: ListInput[Int, Int]) extends Adjustable {
   def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
     val list = input.getAdjustableList()
-    list.filter(tbd, (pair: (Int, Int)) => pair._2 % 2 == 0)
+    list.filter((pair: (Int, Int)) => pair._2 % 2 == 0)
   }
 }
 

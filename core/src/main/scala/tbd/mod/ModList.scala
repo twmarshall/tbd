@@ -148,21 +148,18 @@ class ModList[T, V](
   }
 
   def filter(
-      tbd: TBD,
       pred: ((T, V)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = true): ModList[T, V] = {
-    val memo = tbd.makeMemoizer[Mod[ModListNode[T, V]]](!memoized)
+      memoized: Boolean = true)
+     (implicit tbd: TBD): ModList[T, V] = {
+    val memo = makeMemoizer[Mod[ModListNode[T, V]]](!memoized)
 
     new ModList(
-      tbd.mod {
-        tbd.read(head)(node => {
-          if (node != null) {
-            node.filter(tbd, pred, memo)
-          } else {
-            tbd.write[ModListNode[T, V]](null)
-          }
-        })
+      mod {
+        read(head) {
+	  case null => write[ModListNode[T, V]](null)
+	  case node => node.filter(pred, memo)
+        }
       }
     )
   }
