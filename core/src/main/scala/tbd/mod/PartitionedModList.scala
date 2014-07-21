@@ -72,11 +72,11 @@ class PartitionedModList[T, V](
         })
 
 
-        tbd.mod((dest: Dest[(T, V)]) => {
+        tbd.mod {
           tbd.read2(parTup._1, parTup._2)((a, b) => {
-            tbd.write(dest, f(tbd, a, b))
+            tbd.write(f(tbd, a, b))
           })
-        })
+        }
       } else {
         initialValueMod
       }
@@ -88,11 +88,11 @@ class PartitionedModList[T, V](
       partitions.map((partition: ModList[T, V]) => {
         partition.reduce(tbd, initialValueMod, f, parallel, memoized)
       }).reduce((a, b) => {
-        tbd.mod((dest: Dest[(T, V)]) => {
+        tbd.mod {
           tbd.read2(a, b)((a, b) => {
-            tbd.write(dest, f(tbd, a, b))
+            tbd.write(f(tbd, a, b))
           })
-        })
+        }
       })
     }
   }

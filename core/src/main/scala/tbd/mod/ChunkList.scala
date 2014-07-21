@@ -59,15 +59,15 @@ class ChunkList[T, U](
 
     val memo = tbd.makeMemoizer[Mod[ModListNode[V, Q]]]()
     new ModList(
-      tbd.mod((dest: Dest[ModListNode[V, Q]]) => {
+      tbd.mod {
         tbd.read(head)(node => {
           if (node != null) {
-            node.chunkMap(tbd, dest, f, memo)
+            node.chunkMap(tbd, f, memo)
           } else {
-            tbd.write(dest, null)
+            tbd.write[ModListNode[V, Q]](null)
           }
         })
-      })
+      }
     )
   }
 

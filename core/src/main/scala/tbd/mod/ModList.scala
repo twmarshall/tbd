@@ -31,15 +31,15 @@ class ModList[T, V](
       memoized: Boolean = true): ModList[U, Q] = {
     if (parallel) {
       new ModList(
-        tbd.mod((dest: Dest[ModListNode[U, Q]]) => {
+        tbd.mod {
           tbd.read(head)(node => {
             if (node != null) {
-              node.parMap(tbd, dest, f)
+              node.parMap(tbd, f)
             } else {
-              tbd.write(dest, null)
+              tbd.write[ModListNode[U, Q]](null)
             }
           })
-        })
+        }
       )
     } else {
       val memo = tbd.makeMemoizer[Changeable[ModListNode[U, Q]]](!memoized)
@@ -85,21 +85,21 @@ class ModList[T, V](
         head: ModListNode[T, V],
         identity: (T, V),
         round: Int,
-        dest: Dest[(T, V)],
         roundMemoizer: RoundMemoizer): Changeable[(T, V)] = {
       val tuple = roundMemoizer.getTuple()
 
       val halfListMod =
-        tbd.mod((dest: Dest[ModListNode[T, V]]) =>
+        tbd.mod {
           tbd.read(identityMod)(identity =>
-            halfList(identity, identity, head, round, tuple._1, tuple._2, dest)))
+            halfList(identity, identity, head, round, tuple._1, tuple._2))
+	}
 
       tbd.read(halfListMod)(halfList =>
         tbd.read(halfList.next)(next =>
           if(next == null)
-            tbd.write(dest, halfList.value)
+            tbd.write(halfList.value)
           else
-            randomReduceList(halfList, identity, round + 1, dest, tuple._3)))
+            randomReduceList(halfList, identity, round + 1, tuple._3)))
     }
 
     def binaryHash(id: ModId, round: Int, hasher: Hasher) = {
@@ -112,43 +112,44 @@ class ModList[T, V](
         head: ModListNode[T, V],
         round: Int,
         hasher: Hasher,
-        memo: Memoizer[Mod[ModListNode[T, V]]],
-        dest: Dest[ModListNode[T, V]])
-          : Changeable[ModListNode[T, V]] = {
+        memo: Memoizer[Mod[ModListNode[T, V]]]
+      ): Changeable[ModListNode[T, V]] = {
       val newAcc = f(tbd, acc, head.value)
 
       if(binaryHash(head.next.id, round, hasher)) {
         val newNext = memo(head.next, identityMod) {
-	  tbd.mod((dest: Dest[ModListNode[T, V]]) =>
+	  tbd.mod {
 	    tbd.read(head.next)(next =>
 	      if (next == null)
-	        tbd.write(dest, null)
+	        tbd.write[ModListNode[T, V]](null)
 	      else
 	          halfList(identity, identity, next, round,
-                           hasher, memo, dest)))
+                           hasher, memo))
+	  }
 	}
-        tbd.write(dest, new ModListNode(newAcc, newNext))
+        tbd.write(new ModListNode(newAcc, newNext))
       } else {
         tbd.read(head.next)(next =>
 	  if (next == null) {
 	    val newNext = tbd.createMod[ModListNode[T, V]](null)
-            tbd.write(dest, new ModListNode(newAcc, newNext))
+            tbd.write(new ModListNode(newAcc, newNext))
 	  } else {
-	    halfList(newAcc, identity, next, round, hasher, memo, dest)
+	    halfList(newAcc, identity, next, round, hasher, memo)
 	  }
         )
       }
     }
 
     val roundMemoizer = new RoundMemoizer()
-    tbd.mod((dest: Dest[(T, V)]) =>
+    tbd.mod {
       tbd.read(identityMod)(identity =>
         tbd.read(head)(head =>
           if(head == null)
             tbd.read(identityMod)(identity =>
-              tbd.write(dest, identity))
+              tbd.write(identity))
           else
-            randomReduceList(head, identity, 0, dest, roundMemoizer))))
+            randomReduceList(head, identity, 0, roundMemoizer)))
+    }
   }
 
   def filter(
@@ -159,15 +160,15 @@ class ModList[T, V](
     val memo = tbd.makeMemoizer[Mod[ModListNode[T, V]]](!memoized)
 
     new ModList(
-      tbd.mod((dest: Dest[ModListNode[T, V]]) => {
+      tbd.mod {
         tbd.read(head)(node => {
           if (node != null) {
-            node.filter(tbd, dest, pred, memo)
+            node.filter(tbd, pred, memo)
           } else {
-            tbd.write(dest, null)
+            tbd.write[ModListNode[T, V]](null)
           }
         })
-      })
+      }
     )
   }
 
@@ -203,16 +204,16 @@ class ModList[T, V](
 
     val memo = tbd.makeMemoizer[Mod[ModListNode[T, V]]](!memoized)
 
-    val sorted = tbd.mod((dest: Dest[ModListNode[T, V]]) => {
+    val sorted = tbd.mod {
       tbd.read(head)(head => {
         if(head == null) {
-          tbd.write(dest, null)
+          tbd.write[ModListNode[T, V]](null)
         } else {
-          head.quicksort(tbd, dest, tbd.createMod(null),
+          head.quicksort(tbd, tbd.createMod(null),
                          comperator, memo, parallel, memoized)
         }
       })
-    })
+    }
 
     new ModList(sorted)
   }

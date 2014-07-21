@@ -18,8 +18,9 @@ package tbd.test
 import org.scalatest._
 import scala.collection.mutable.ArrayBuffer
 
-import tbd._
-import tbd.mod._
+import tbd.{Adjustable, Changeable, ListConf, ListInput, Memoizer, Mutator, TableInput, TBD}
+import tbd.mod.{AdjustableList, Mod}
+import tbd.TBD._
 
 class PropagationOrderTest(input: TableInput[Int, Int]) extends Adjustable {
   var num = 0
@@ -28,22 +29,25 @@ class PropagationOrderTest(input: TableInput[Int, Int]) extends Adjustable {
     val table = input.getTable()
     val one = table.get(1)
 
-    tbd.mod((dest: Dest[Int]) => {
-      tbd.read(one)(v1 => {
-        assert(num == 0)
-        num += 1
-        tbd.read(one)(v2 => {
-          assert(num == 1)
+    mod {
+      read(one) {
+	case v1 =>
+          assert(num == 0)
           num += 1
-          tbd.write(dest, v2)
-        })
-      })
+          read(one) {
+	    case v2 =>
+              assert(num == 1)
+              num += 1
+              write(v2)
+          }
+      }
 
-      tbd.read(one)(v3 => {
-        assert(num == 2)
-        tbd.write(dest, v3)
-      })
-    })
+      read(one) {
+	  case v3 =>
+          assert(num == 2)
+          write(v3)
+      }
+    }
   }
 }
 
@@ -81,14 +85,15 @@ class ParTest(input: TableInput[Int, Int]) extends Adjustable {
     val one = table.get(1)
 
     val pair = tbd.par((tbd: TBD) =>
-      tbd.mod((dest: Dest[Int]) =>
+      tbd.mod {
         tbd.read(one)(oneValue =>
-          tbd.write(dest, oneValue + 1))),
-      (tbd: TBD) => 0)
+          tbd.write(oneValue + 1))
+      }, (tbd: TBD) => 0)
 
-    tbd.mod((dest: Dest[Int]) =>
+    tbd.mod {
       tbd.read(pair._1)(value =>
-        tbd.write(dest, value * 2)))
+        tbd.write(value * 2))
+    }
   }
 }
 

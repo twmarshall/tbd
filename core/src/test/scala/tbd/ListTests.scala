@@ -72,7 +72,7 @@ class ListFilterTest(input: ListInput[Int, Int]) extends Adjustable {
 class ListReduceSumTest(input: ListInput[String, Int]) extends Adjustable {
   def run(implicit tbd: TBD): Mod[(String, Int)] = {
     val modList = input.getAdjustableList()
-    val zero = tbd.mod((dest : Dest[(String, Int)]) => tbd.write(dest, ("", 0)))
+    val zero = tbd.mod{ tbd.write(("", 0)) }
     modList.reduce(tbd, zero,
       (tbd: TBD, pair1: (String, Int), pair2: (String, Int)) => {
         (pair2._1, pair1._2 + pair2._2)

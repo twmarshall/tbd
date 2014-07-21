@@ -118,13 +118,6 @@ class TBD(id: String, val worker: Worker) {
     })
   }
 
-
-  def increment(mod: Mod[Int]): Mod[Int] = {
-    this.mod((dest: Dest[Int]) =>
-      read(mod)(mod =>
-        write(dest, mod + 1)))
-  }
-
   def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = {
     val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],
                                       currentParent,
@@ -141,20 +134,6 @@ class TBD(id: String, val worker: Worker) {
     readNode.endTime = worker.ddg.nextTimestamp(readNode)
     readNode.currentDest = currentDest
     readNode.currentDest2 = currentDest2
-
-    changeable
-  }
-
-  def write[T](dest: Dest[T], value: T): Changeable[T] = {
-    val awaiting = dest.mod.update(value)
-    Await.result(Future.sequence(awaiting), DURATION)
-
-    val changeable = new Changeable(dest.mod)
-    if (Main.debug) {
-      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
-                                          currentParent)
-      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
-    }
 
     changeable
   }
@@ -231,32 +210,11 @@ class TBD(id: String, val worker: Worker) {
   }
 
   def createMod[T](value: T): Mod[T] = {
-    this.mod((dest: Dest[T]) => {
-      write(dest, value)
-    })
+    this.mod {
+      write(value)
+    }
   }
   
-  def mod2[T, V](initializer : (Dest[T], Dest[V]) => Changeable[V]):
-        (Mod[T], Mod[V]) = {
-    var first: Mod[T] = null
-    var second: Mod[V] = null
-    first = this.mod((first: Dest[T]) => {
-      second = this.mod((second: Dest[V]) => {
-        initializer(first, second);
-        new Changeable[V](null)
-      })
-      new Changeable[T](null)
-    })
-
-    (first, second)
-  }
-
-  def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
-    val d = new Dest[T](worker.datastoreRef)
-    initializer(d)
-    d.mod
-  }
-
   var currentDest: Dest[Any] = null
   def mod[T](initializer: => Changeable[T]): Mod[T] = {
     val oldCurrentDest = currentDest

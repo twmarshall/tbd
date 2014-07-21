@@ -100,11 +100,11 @@ class PartitionedChunkList[T, U](
           parReduce(tbd, i + 1)
         })
 
-        tbd.mod((dest: Dest[(T, U)]) => {
+        tbd.mod {
           tbd.read2(parTup._1, parTup._2)((a, b) => {
-            tbd.write(dest, f(tbd, a, b))
+            tbd.write(f(tbd, a, b))
           })
-        })
+        }
       } else {
         initialValueMod
       }
@@ -116,11 +116,11 @@ class PartitionedChunkList[T, U](
       partitions.map((partition: ChunkList[T, U]) => {
         partition.reduce(tbd, initialValueMod, f, parallel, memoized)
       }).reduce((a, b) => {
-        tbd.mod((dest: Dest[(T, U)]) => {
+        tbd.mod {
           tbd.read2(a, b)((a, b) => {
-            tbd.write(dest, f(tbd, a, b))
+            tbd.write(f(tbd, a, b))
           })
-        })
+        }
       })
     }
   }
