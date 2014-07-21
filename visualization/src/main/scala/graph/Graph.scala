@@ -1,7 +1,17 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (C) 2013 Carnegie Mellon University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package tbd.visualization.graph
@@ -15,6 +25,12 @@ class Graph() {
 
 class DDG(_root: Node) extends Graph {
   val root = _root
+
+  def getCallChildren(node: Node): Seq[Node] = {
+    adj(node).filter((e: Edge) => {
+      (e.edgeType == EdgeType.Call)
+    }).map(e => e.destination)
+  }
 }
 
 object DDG {
@@ -26,11 +42,20 @@ object DDG {
     result.nodes += newNode
     result.adj += (newNode -> new ArrayBuffer[Edge]())
 
-    root.children.foreach(x => {
+    getChildren(root).foreach(x => {
       append(newNode, x, result)
     })
 
     result
+  }
+
+  private def getChildren(node: tbd.ddg.Node): Seq[tbd.ddg.Node] = {
+    node match {
+      case parNode: tbd.ddg.ParNode =>
+        Seq(parNode.getFirstSubtree().root.children(0),
+        parNode.getSecondSubtree().root.children(0))
+      case _ => node.children
+    }
   }
 
   private def append(node: Node, ddgNode: tbd.ddg.Node, result: DDG): Unit = {
@@ -40,7 +65,7 @@ object DDG {
     result.adj += (newNode -> new ArrayBuffer[Edge]())
     result.adj(node) += new Edge(EdgeType.Call, node, newNode)
 
-    ddgNode.children.foreach(x => {
+    getChildren(ddgNode).foreach(x => {
       append(newNode, x, result)
     })
   }

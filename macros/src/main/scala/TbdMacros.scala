@@ -22,14 +22,36 @@ import scala.tools.reflect.ToolBox
 
 object TbdMacros {
 
+  var funcId = 0
+  def getFuncId(): Int = {
+    //Well, this is dirty - we always have to do a clean build to get
+    //unique ids.
+    funcId = funcId + 1
+    funcId
+  }
+
   def memoMacro[T]
       (c: Context)(args: c.Tree*)(func: c.Tree): c.Expr[T] = {
     import c.universe._
 
     val closedVars = createFreeVariableList(c)(func)
     val memo = Select(c.prefix.tree, TermName("memoInternal"))
-    c.Expr[T](q"$memo(List(..$args), $func, $closedVars)")
+    val id = Literal(Constant(getFuncId()))
+    c.Expr[T](q"$memo(List(..$args), $func, $id, $closedVars)")
   }
+
+  def parMacro[T, U]
+      (c: Context)(one: c.Tree, two: c.Tree): c.Expr[(T, U)] = {
+    import c.universe._
+
+    val closedVars1 = createFreeVariableList(c)(one)
+    val closedVars2 = createFreeVariableList(c)(two)
+    val par = Select(c.prefix.tree, TermName("parInternal"))
+    val id1 = Literal(Constant(getFuncId()))
+    val id2 = Literal(Constant(getFuncId()))
+    c.Expr[(T, U)](q"$par($one, $two, $id1, $id2, $closedVars1, $closedVars2)")
+  }
+
 
   def readMacro[T, U]
       (c: Context)(mod: c.Tree)(reader: c.Tree): c.Expr[U] = {
@@ -37,9 +59,35 @@ object TbdMacros {
 
     val closedVars = createFreeVariableList(c)(reader)
     val readFunc = Select(c.prefix.tree, TermName("readInternal"))
-    c.Expr[U](q"$readFunc($mod, $reader, $closedVars)")
+    val id = Literal(Constant(getFuncId()))
+    c.Expr[U](q"$readFunc($mod, $reader, $id, $closedVars)")
   }
 
+  def modMacro[T, U]
+      (c: Context)(initializer: c.Tree): c.Expr[U] = {
+    import c.universe._
+
+    val closedVars = createFreeVariableList(c)(initializer)
+    val modFunc = Select(c.prefix.tree, TermName("modInternal"))
+    val id = Literal(Constant(getFuncId()))
+    c.Expr[U](q"$modFunc($initializer, $id, $closedVars)")
+  }
+
+  def modNoDestMacro[T, U]
+      (c: Context)(initializer: c.Tree): c.Expr[U] = {
+    import c.universe._
+
+    val closedVars = createFreeVariableList(c)(initializer)
+    val modFunc = Select(c.prefix.tree, TermName("modNoDestInternal"))
+    val id = Literal(Constant(getFuncId()))
+    c.Expr[U](q"$modFunc($initializer, $id, $closedVars)")
+  }
+
+
+  /**
+   * Generates a list using quasiquotes from free variables from
+   * within a tree
+   */
   private def createFreeVariableList(c: Context)(func: c.Tree) = {
     import c.universe._
 
@@ -50,16 +98,28 @@ object TbdMacros {
     })
   }
 
+  /**
+   * Finds free variables within an anonymous function, which
+   * are bound from an outer scope.
+   *
+   * Static or class variables are not found.
+   */
   private def findFreeVariabels(c: Context)(func: c.Tree) = {
     import c.universe._
 
-    //Pre-fetch the symbol of our reader func.
-    val readerSymbol = func.symbol
+    //Symbol of our function.
+    def targetSymbol = func.symbol
 
-    class ParentValDefExtractor(targetSymbol: Symbol) extends Traverser {
+    /**
+     * A traverser which extracts all ValDef nodes from the AST,
+     * which are ancestors of the node which hast the symbol targetSymbol.
+     */
+    class ParentValDefExtractor(targetSymbol: c.Symbol) extends Traverser {
       var defs = List[(String, ValDef)]()
       var found = false
 
+      //Traverse each child tree, remember wheter we already found
+      //our target symbol.
       def traverseChildTrees(trees: List[Tree], include: Boolean): Boolean = {
 
         var found = false;
@@ -71,6 +131,9 @@ object TbdMacros {
         found
       }
 
+      //Traverse a single child tree.
+      //If the child tree, contains our target, we remember all
+      //ValDefs from the child tree and mark this node as ancestor too.
       def traverseChildTree(tree: Tree, include: Boolean): Boolean = {
         val recursiveTraverser = new ParentValDefExtractor(targetSymbol)
         recursiveTraverser.traverse(tree)
@@ -85,9 +148,12 @@ object TbdMacros {
         recursiveTraverser.found
       }
 
+      //Traverse the current tree.
+      //Check whether we found the target. If so, stop traversion.
+      //If not, extract all relevant child trees.
       override def traverse(tree: Tree): Unit = {
 
-        if(targetSymbol.equals(tree.symbol)) {
+        if(targetSymbol == tree.symbol) {
           found = true
         }
 
@@ -97,6 +163,9 @@ object TbdMacros {
             super.traverse(subtree)
           case Block(trees, tree) => traverseChildTrees(tree :: trees, true)
           case Function(params, subtree) => {
+              //Special case: If our target is in the subtree
+              //of a function call, we also have to include the
+              //params of our function in the case.
               traverseChildTrees(params, traverseChildTree(subtree, false))
           }
           case _ => super.traverse(tree)
@@ -104,6 +173,10 @@ object TbdMacros {
       }
     }
 
+    /**
+     * Traverser which simply extracts all Ident nodes
+     * from a tree.
+     */
     class IdentTermExtractor() extends Traverser {
       var idents = List[(Tree, String)]()
 
@@ -114,41 +187,41 @@ object TbdMacros {
       }
     }
 
+    //Extract all Idents from our function
     var termExtractor = new IdentTermExtractor()
     termExtractor.traverse(func)
 
     //Check if term is really free
     var freeTerms = termExtractor.idents.filter((x) => {
-      //For each ident, look for a parent val def in our own function.
+      //For each ident, look for a parent ValDef in our own function.
       val defExtractor = new ParentValDefExtractor(x._1.symbol)
       defExtractor.traverse(func)
 
-      if(!defExtractor.found) {
-        c.warning(c.enclosingPosition, "Macro Bug: Did not find variable symbol"
-                  + " in enclosing tree. Symbol was: " + x._1.symbol)
-      }
-
+      //If we define this val ourself, drop it.
       defExtractor.defs.find(y => x._2 == y._1).isEmpty
     })
 
-    //println("Inner free terms")
-    //freeTerms.foreach(println(_))
-
+    //Only keep each symbol once.
     val distincFreeTerms = freeTerms.groupBy(x => x._2)
                             .map(x => x._2.head).toList
 
-    var valDefExtractor = new ParentValDefExtractor(readerSymbol)
-    //valDefExtractor.traverse(c.enclosingUnit.body) //TODO: Find the right scope
-    valDefExtractor.traverse(c.enclosingUnit.body) //TODO: Find the right scope
+    //Now, find all ValDefs which are ancestors of our function in
+    //the AST.
+    var valDefExtractor = new ParentValDefExtractor(targetSymbol)
 
+    valDefExtractor.traverse(c.enclosingUnit.body)
+
+    //If we did not find ourselfs, this macro is broken. Yay.
     if(!valDefExtractor.found) {
       c.warning(c.enclosingPosition, "Macro Bug: Did not find closed function"
                 + " in enclosing tree. Symbol was: "
-                + c.universe.showRaw(readerSymbol))
-    }
-    //println("Outer defs")
-    //valDefExtractor.defs.foreach(println(_))
+                + targetSymbol)
 
+    }
+
+    //New return all Idents from our function which are also defined as
+    //Vals in the outer scope. This is necassary to filter out methods,
+    //which can be referenced via Ident, too.
     distincFreeTerms.filter(x => {
         !valDefExtractor.defs.find(y => (y._1 == x._2)).isEmpty
     })

@@ -36,11 +36,13 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 
   def addRead(
       mod: Mod[Any],
+      value: Any,
       parent: Node,
       reader: Any => Changeable[Any],
-      freeVars: List[(String, Any)]): ReadNode = {
+      funcTag: FunctionTag): ReadNode = {
     val timestamp = nextTimestamp(parent)
-    val readNode = new ReadNode(mod, parent, timestamp, reader, freeVars)
+    val readNode = new ReadNode(mod, parent, timestamp,
+                                reader, Tag.Read(value, funcTag))
     parent.addChild(readNode)
 
     if (reads.contains(mod.id)) {
@@ -52,19 +54,35 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     readNode
   }
 
-  def addWrite(mod: Mod[Any], parent: Node): WriteNode = {
+  def addMod[T](mod: Mod[T], parent: Node, funcTag: FunctionTag): ModNode = {
     val timestamp = nextTimestamp(parent)
-    val writeNode = new WriteNode(mod, parent, timestamp)
+    val modNode = new ModNode(parent, timestamp,
+                                  Tag.Mod(mod.id, funcTag))
+
+    parent.addChild(modNode)
+
+    modNode
+  }
+
+  def addWrite[T](mod: Mod[Any], parent: Node): WriteNode = {
+    val timestamp = nextTimestamp(parent)
+    val writeNode = new WriteNode(mod, parent, timestamp,
+                                  Tag.Write(mod.read(), mod.id))
 
     parent.addChild(writeNode)
 
     writeNode
   }
 
-  def addPar(workerRef1: ActorRef, workerRef2: ActorRef, parent: Node) {
+  def addPar(workerRef1: ActorRef,
+             workerRef2: ActorRef,
+             parent: Node,
+             fun1: FunctionTag,
+             fun2: FunctionTag) {
     val timestamp = nextTimestamp(parent)
 
-    val parNode = new ParNode(workerRef1, workerRef2, parent, timestamp)
+    val parNode = new ParNode(workerRef1, workerRef2, parent, timestamp,
+                              Tag.Par(fun1, fun2))
     parent.addChild(parNode)
 
     pars(workerRef1) = parNode
@@ -74,9 +92,10 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
   def addMemo(
       parent: Node,
       signature: List[Any],
-      freeVars: List[(String, Any)]): MemoNode = {
+      funcTag: FunctionTag): MemoNode = {
     val timestamp = nextTimestamp(parent)
-    val memoNode = new MemoNode(parent, timestamp, signature, freeVars)
+    val memoNode = new MemoNode(parent, timestamp, signature,
+                                Tag.Memo(funcTag, signature))
     parent.addChild(memoNode)
     memoNode
   }

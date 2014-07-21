@@ -21,15 +21,18 @@ import scala.collection.mutable.Map
 import tbd._
 import tbd.mod.{AdjustableList, Dest, Mod, DoubleModList}
 
-trait TestAlgorithm[T] extends Adjustable {
-  def checkOutput(output: T, table: Map[Int, Int]): Boolean
+//TODO: Remove TestAlgorithm and make visualizer work with Examples.
+trait TestAlgorithm[T, V] extends Adjustable {
+  def getResult(output: T): V
+  def getExpectedResult(input: Map[Int, Int]): V
   def getListConf() = { new ListConf(partitions = 1) }
 
   var input: ListInput[Int, Int] = null
 }
 
 class ListReduceSumTest()
-    extends TestAlgorithm[Mod[(Int, Int)]] {
+    extends TestAlgorithm[Mod[(Int, Int)], Int] {
+
   def run(tbd: TBD): Mod[(Int, Int)] = {
     val modList = input.getAdjustableList()
     val zero = tbd.mod((dest : Dest[(Int, Int)]) => tbd.write(dest, (0, 0)))
@@ -39,136 +42,59 @@ class ListReduceSumTest()
       })
   }
 
-  def checkOutput(output: Mod[(Int, Int)], table: Map[Int, Int]): Boolean = {
-    val ca: Int = table.values.foldLeft(0)(_ + _)
-    val a: Int = output.read()._2
+  def getResult(output: Mod[(Int, Int)]): Int = {
+    output.read()._2
+  }
 
-    if(a != ca ) {
-      println("Output: " + a)
-      println("Expected: " + ca)
-
-      false
-    }
-    true
+  def getExpectedResult(input: Map[Int, Int]): Int = {
+    input.values.foldLeft(0)(_ + _)
   }
 }
 
 class ListQuicksortTest()
-    extends TestAlgorithm[AdjustableList[Int, Int]] {
+    extends TestAlgorithm[AdjustableList[Int, Int], Seq[Int]] {
   def run(tbd: TBD): AdjustableList[Int, Int] = {
     val modList = input.getAdjustableList()
     modList.sort(tbd, (tbd, a, b) => a._2 < b._2, true, true)
   }
 
-  def checkOutput(output: AdjustableList[Int, Int], table: Map[Int, Int]): Boolean = {
-    val ca = table.values.toBuffer.sortWith(_ < _)
-    val a = output.toBuffer()
+  def getResult(output:  AdjustableList[Int, Int]): Seq[Int] = {
+    output.toBuffer()
+  }
 
-    if(a != ca ) {
-      println("Output: " + a)
-      println("Expected: " + ca)
-
-      false
-    }
-    true
+  def getExpectedResult(input: Map[Int, Int]): Seq[Int] = {
+    input.values.toBuffer.sortWith(_ < _)
   }
 }
 
 class ListSplitTest()
-    extends TestAlgorithm[(AdjustableList[Int, Int], AdjustableList[Int, Int])] {
+    extends TestAlgorithm[(AdjustableList[Int, Int], AdjustableList[Int, Int]), (Seq[Int], Seq[Int])] {
   def run(tbd: TBD): (AdjustableList[Int, Int], AdjustableList[Int, Int]) = {
     val modList = input.getAdjustableList()
-    modList.split(tbd, (tbd, a) => a._2 % 2 == 0, true, true)
+    modList.split(tbd, (tbd, a) => a._2 % 2 == 0, false, false)
   }
 
-  def checkOutput(output: (AdjustableList[Int, Int], AdjustableList[Int, Int]), table: Map[Int, Int]): Boolean = {
-    val ca = table.values.toBuffer.filter(x => x % 2 == 0)
-    val a = output._1.toBuffer()
-    val cb = table.values.toBuffer.filter(x => x % 2 != 0)
-    val b = output._2.toBuffer()
-
-    if(a != ca || b != cb) {
-      println("OutputA: " + a)
-      println("ExpectedA: " + ca)
-      println("OutputB: " + b)
-      println("ExpectedB: " + cb)
-
-      false
-    }
-    true
-  }
-}
-
-class ListDescisionTest()
-  extends TestAlgorithm[Mod[String]] {
-  def run(tbd: TBD): Mod[String] = {
-    val modList = input.getAdjustableList().asInstanceOf[DoubleModList[Int, Int]]
-
-    tbd.mod((dest: Dest[String]) => {
-      tbd.read(modList.head)(head => {
-        tbd.read(head.value)(value => {
-          if(value._2 % 2 == 0) {
-            tbd.read(head.next)(next => {
-                tbd.write(dest, "This is a string");
-            })
-          } else {
-            tbd.read(head.next)(next => {
-                tbd.write(dest, "This is another string");
-            })
-          }
-        })
-      })
-    })
-  }
-  def checkOutput(output: Mod[String], table: Map[Int, Int]): Boolean = {
-    true
-  }
-}
-
-class ClosureTest()
-  extends TestAlgorithm[Mod[String]] {
-  def run(tbd: TBD): Mod[String] = {
-    val modList = input.getAdjustableList().asInstanceOf[DoubleModList[Int, Int]]
-
-    val a = 1
-    val b = 2
-    val c = 3
-
-    tbd.mod((dest: Dest[String]) => {
-      tbd.read(modList.head)(head => {
-        val b = 4
-
-        if(a + b > 0) {
-          tbd.write(dest, "This is a string");
-        } else {
-          tbd.write(dest, "This is another string");
-        }
-      })
-    })
+  def getResult(output:  (AdjustableList[Int, Int], AdjustableList[Int, Int])): (Seq[Int], Seq[Int]) = {
+    (output._1.toBuffer(), output._2.toBuffer())
   }
 
-  def checkOutput(output: Mod[String], table: Map[Int, Int]): Boolean = {
-    true
+  def getExpectedResult(input: Map[Int, Int]): (Seq[Int], Seq[Int]) = {
+    (input.values.toBuffer.filter(x => x % 2 == 0), input.values.toBuffer.filter(x => x % 2 != 0))
   }
 }
 
 class ListMapTest()
-  extends TestAlgorithm[AdjustableList[Int, Int]] {
+    extends TestAlgorithm[AdjustableList[Int, Int], Seq[Int]] {
   def run(tbd: TBD): AdjustableList[Int, Int] = {
     val modList = input.getAdjustableList()
-    modList.map(tbd, (tbd, a) => (a._1, a._2 / 2), false, false)
+    modList.map(tbd, (tbd, a) => (a._1, a._2 * 2), false, true)
   }
 
-  def checkOutput(output: AdjustableList[Int, Int], table: Map[Int, Int]): Boolean = {
-    val ca = table.values.toBuffer.map((x:Int) => x / 2).sortWith(_ < _)
-    val a = output.toBuffer().sortWith(_ < _)
+  def getResult(output: AdjustableList[Int, Int]): Seq[Int] = {
+    output.toBuffer().sortWith(_ < _)
+  }
 
-    if(a != ca) {
-      println("OutputA: " + a)
-      println("ExpectedA: " + ca)
-
-      false
-    }
-    true
+  def getExpectedResult(input: Map[Int, Int]): Seq[Int] = {
+    input.values.map(x => x * 2).toBuffer.sortWith(_ < _)
   }
 }

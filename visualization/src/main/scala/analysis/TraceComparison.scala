@@ -1,17 +1,27 @@
-/*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+/**
+ * Copyright (C) 2013 Carnegie Mellon University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 
 package tbd.visualization.analysis
 
 import scala.math.{min, max}
 import tbd.visualization.graph._
-import scala.collection.mutable.Buffer
+import scala.collection.mutable.{Buffer, HashSet}
 
 object TraceComparison {
-  def MonotoneTraceDistance(before: DDG, after: DDG): ComparisonResult = {
+  def orderSensitiveTraceDistance(before: DDG, after: DDG): ComparisonResult = {
     val a = new TopoSortIterator(
               before.root,
               before,
@@ -23,7 +33,7 @@ object TraceComparison {
               (e: Edge) => (e.edgeType == EdgeType.Call)).toBuffer
     //Theoretically, the toposort has the wrong order,
     //however we concat the result in reverse order when backtracking, too
-    //so the result is correct. 
+    //so the result is correct.
 
     val m = new Array[Array[Int]](a.length + 1)
 
@@ -67,6 +77,27 @@ object TraceComparison {
       new ComparisonResult(removed, added, unchanged)
     }
 
+  }
+
+  def greedyTraceDistance(before: DDG, after: DDG): ComparisonResult = {
+
+    var set = after.nodes.clone()
+
+    var removed = List[Node]()
+    var added = List[Node]()
+    var unchanged = List[Node]()
+
+    before.nodes.foreach(x => {
+      if(set.remove(x)) {
+        unchanged = x :: unchanged
+      } else {
+        added = x :: added
+      }
+    })
+
+    set.foreach(x => removed = x :: removed)
+
+    new ComparisonResult(removed, added, unchanged)
   }
 }
 

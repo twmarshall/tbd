@@ -14,16 +14,31 @@
  * limitations under the License.
  */
 
-package tbd.visualization.graph
+package tbd.visualization
 
-object EdgeType extends Enumeration {
-  type EdgeType = Value
-  val Call, Dependency = Value
-}
-import EdgeType._
+trait ExperimentSource[T, V] {
 
-class Edge(tp: EdgeType, src: Node, dst: Node) {
-  val destination = dst
-  val source = src
-  val edgeType = tp
+  var listener: ExperimentSink[T, V]
+
+  def setDDGListener(listener: ExperimentSink[T, V]) = {
+    this.listener = listener
+  }
+
+  def pushResult(result: ExperimentResult[T, V]) = {
+    if(listener != null) {
+      listener.resultReceived(result, this)
+    }
+  }
 }
+
+
+trait ExperimentSink[T, V] {
+  def resultReceived(result: ExperimentResult[T, V], sender: ExperimentSource[T, V])
+}
+
+case class ExperimentResult[+T, +V](
+  val runId: Int,
+  val input: V,
+  val result: T,
+  val expectedResult: T,
+  val ddg: graph.DDG) { }

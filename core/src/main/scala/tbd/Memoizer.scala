@@ -23,6 +23,7 @@ import tbd.ddg.MemoNode
 import tbd.master.Master
 import tbd.mod.Mod
 import tbd.macros.TbdMacros
+import tbd.ddg.FunctionTag
 
 class Memoizer[T](tbd: TBD, memoId: Int) {
   import tbd.worker.context.dispatcher
@@ -33,6 +34,7 @@ class Memoizer[T](tbd: TBD, memoId: Int) {
   def memoInternal(
       args: Seq[_],
       func: => T,
+      funcId: Int,
       freeTerms: List[(String, Any)]): T = {
     val signature = memoId :: args.toList
 
@@ -96,7 +98,7 @@ class Memoizer[T](tbd: TBD, memoId: Int) {
 
     if (!found) {
       val memoNode = tbd.worker.ddg.addMemo(tbd.currentParent, signature,
-                                            freeTerms)
+                                            FunctionTag(funcId, freeTerms))
       val outerParent = tbd.currentParent
       tbd.currentParent = memoNode
       val value = func
@@ -123,6 +125,7 @@ class DummyMemoizer[T](tbd: TBD, memoId: Int) extends Memoizer[T](tbd, memoId) {
   override def memoInternal(
       args: Seq[_],
       func: => T,
+      fundId: Int,
       freeTerms: List[(String, Any)]): T = {
     func
   }

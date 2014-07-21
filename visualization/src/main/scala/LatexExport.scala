@@ -16,26 +16,35 @@
 
 package tbd.visualization
 
-import scala.collection.mutable.ArrayBuffer
-import tbd.{Adjustable, Changeable, ListConf, ListInput, Mutator, TBD}
-import tbd.mod.{AdjustableList, Dest, Mod}
-import collection.mutable.HashMap
-import scala.util.Random
-import scala.io.StdIn
+import graph._
 
-class ExhaustiveTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
+class LatexExport{
 
-  var maximalMutationsPerPropagation = 2
+  def export(ddg: DDG): String = {
+    val out = new StringBuilder()
 
-  def initialize() = { }
+    writeNode(out, ddg.root, ddg, "")
 
-  def step() = {
-    for(i <- 0 to rand.nextInt(maximalMutationsPerPropagation)) {
-      randomMutation()
-    }
-
-    true
+    out.toString
   }
 
-  def dispose() = { }
+  private def writeNode(
+      out: StringBuilder,
+      node: Node,
+      ddg: DDG,
+      pre: String): Unit = {
+    out.append(pre)
+    out.append("node [")
+    out.append(node.getTypeString())
+    out.append(", label={180:"+node.getShortLabel()+"}")
+    out.append("]{}\n")
+
+    val childs = ddg.getCallChildren(node)
+
+    childs.foreach(child => {
+      out.append(pre + "child {\n")
+      writeNode(out, child, ddg, pre + "  ")
+      out.append(pre + "}\n")
+    })
+  }
 }

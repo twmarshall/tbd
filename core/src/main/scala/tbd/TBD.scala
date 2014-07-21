@@ -29,6 +29,7 @@ import tbd.master.{Main, Master}
 import tbd.messages._
 import tbd.mod.{Dest, Mod}
 import tbd.worker.Worker
+import tbd.ddg.FunctionTag
 
 class TBD(id: String, val worker: Worker) {
   import worker.context.dispatcher
@@ -109,18 +110,19 @@ class TBD(id: String, val worker: Worker) {
   def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U): U = macro TbdMacros.readMacro[T, U]
 
   def readInternal[T, U <: Changeable[_]](
-      mod: Mod[T], reader: T => U, freeTerms: List[(String, Any)]): U = {
-    val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],
+      mod: Mod[T], reader: T => U, readerId: Int, freeTerms: List[(String, Any)]): U = {
+
+    val value = mod.read(worker.self)
+
+    val readNode = worker.ddg.addRead(mod.asInstanceOf[Mod[Any]], value,
                                       currentParent,
                                       reader.asInstanceOf[Any => Changeable[Any]],
-                                      freeTerms)
+                                      FunctionTag(readerId, freeTerms))
 
     //idents.foreach((x) => println(x._1 + ": " + x._2))
 
     val outerReader = currentParent
     currentParent = readNode
-
-    val value = mod.read(worker.self)
 
     val changeable = reader(value)
     currentParent = outerReader
@@ -238,17 +240,57 @@ class TBD(id: String, val worker: Worker) {
     (first, second)
   }
 
-  def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = {
+  def mod[T](initializer: Dest[T] => Changeable[T]): Mod[T] = macro TbdMacros.modMacro[T, Mod[T]]
+
+  def modInternal[T](
+      initializer: Dest[T] => Changeable[T],
+      readerId: Int,
+      freeTerms: List[(String, Any)]): Mod[T] = {
     val d = new Dest[T](worker.datastoreRef)
-    initializer(d)
+
+    if(Main.debug) {
+      val modNode = worker.ddg.addMod[T](d.mod, currentParent,
+                                      FunctionTag(readerId, freeTerms))
+
+      val outerReader = currentParent
+      currentParent = modNode
+
+      initializer(d)
+      currentParent = outerReader
+
+      modNode.endTime = worker.ddg.nextTimestamp(modNode)
+    } else {
+      initializer(d)
+    }
     d.mod
   }
 
+  def modNoDest[T](initializer: () => Changeable[T]): Mod[T] = macro TbdMacros.modNoDestMacro[T, Mod[T]]
+
   var currentDest: Dest[Any] = null
-  def modNoDest[T](initializer: () => Changeable[T]): Mod[T] = {
+
+  def modNoDestInternal[T](
+      initializer: () => Changeable[T],
+      readerId: Int,
+      freeTerms: List[(String, Any)]): Mod[T] = {
     val oldCurrentDest = currentDest
     currentDest = new Dest[T](worker.datastoreRef).asInstanceOf[Dest[Any]]
-    initializer()
+
+     if(Main.debug) {
+      val modNode = worker.ddg.addMod[T](currentDest.mod.asInstanceOf[Mod[T]], currentParent,
+                                      FunctionTag(readerId, freeTerms))
+
+      val outerReader = currentParent
+      currentParent = modNode
+
+      initializer()
+      currentParent = outerReader
+
+      modNode.endTime = worker.ddg.nextTimestamp(modNode)
+    } else {
+      initializer()
+    }
+
     val mod = currentDest.mod
     currentDest = oldCurrentDest
 
@@ -300,7 +342,13 @@ class TBD(id: String, val worker: Worker) {
   }
 
   var workerId = 0
-  def par[T, U](one: TBD => T, two: TBD => U): Tuple2[T, U] = {
+
+  def par[T, U](one: TBD => T, two: TBD => U): (T, U) = macro TbdMacros.parMacro[T, U]
+
+  def parInternal[T, U](one: TBD => T, two: TBD => U,
+                        id1: Int, id2: Int,
+                        closedTerms1: List[(String, Any)],
+                        closedTerms2: List[(String, Any)]): (T, U) = {
     val workerProps1 =
       Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
     val workerRef1 = worker.context.system.actorOf(workerProps1, id + "-" + workerId)
@@ -313,7 +361,9 @@ class TBD(id: String, val worker: Worker) {
     workerId += 1
     val twoFuture = workerRef2 ? RunTaskMessage(two)
 
-    worker.ddg.addPar(workerRef1, workerRef2, currentParent)
+    worker.ddg.addPar(workerRef1, workerRef2, currentParent,
+                      FunctionTag(id1, closedTerms1),
+                      FunctionTag(id2, closedTerms2))
 
     val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]

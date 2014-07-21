@@ -16,222 +16,209 @@
 
 package tbd.visualization
 
-import tbd.ddg.{Node, RootNode, ReadNode, MemoNode, WriteNode, ParNode}
-import org.graphstream.graph.implementations.{SingleGraph}
-import org.graphstream.ui.swingViewer.Viewer
+import tbd.visualization.graph._
+import tbd.ddg.{Tag, FunctionTag}
 import scala.collection.mutable.{HashMap, ListBuffer}
 import swing._
-import GridBagPanel._
-import org.graphstream.ui.swingViewer.ViewerListener
+import swing.event._
+import java.awt.{Color, Graphics2D}
 
-class TbdVisualizer extends ViewerListener {
+class TbdVisualizer extends Panel with Publisher {
 
-  var highlightRemoved = false
-  var showLabels = false
-  val graphStyle = """
-    node.root {
-      size: 20px;
-      fill-color: grey;
-      shape: box;
-    }
-    edge {
-      arrow-shape: arrow;
-    }
-    edge.dependency {
-      fill-color: gray;
-      arrow-shape: diamond;
-      arrow-size: 25, 25;
-    }
-    node.read{
-      size: 10px;
-      fill-color: blue;
-    }
-    node.memo{
-      size: 20px;
-      shape: diamond;
-      fill-color: LightGreen;
-    }
-    node.write {
-      size: 10px;
-      fill-color: orange;
-    }
-    node.par {
-      size: 20px;
-      fill-color: yellow;
-      shape: diamond;
-    }
-    node {
-      text-alignment: under;
-      text-background-color: #EEEEEE;
-      text-background-mode: rounded-box;
-      text-padding: 2px;
-      stroke-mode: none;
-      stroke-width: 2;
-      stroke-color: green;
-    }
-  """
-
-  val vSpacing = -50
+  val vSpacing = 50
   val hSpacing = 50
 
-  val graph = new SingleGraph("DDG")
-  graph.addAttribute("ui.stylesheet", graphStyle)
-  System.setProperty("org.graphstream.ui.renderer", "org.graphstream.ui.j2dviewer.J2DGraphRenderer")
+  var dx: Float = 20
+  var dy: Float = 20
 
-  var display = new Viewer(graph, Viewer.ThreadingModel.GRAPH_IN_ANOTHER_THREAD)
-  display.disableAutoLayout()
+  var sx: Float = 1
+  var sy: Float = 1
 
-  var pipe = display.newViewerPipe()
-  pipe.addViewerListener(this)
-  pipe.addSink(graph)
-
-  val pumper = new Thread(
-    new Runnable() {
-      def run() {
-        while(true) {
-          pipe.pump()
-          Thread.sleep(50)
-        }
-      }
-    }
-  )
-
-  pumper.start()
-
-  var view = display.addDefaultView(false)
-
-  var label = new TextArea("Click node for info.\nScroll with arrow keys.\nZoom with PgDown and PgUp.")
-  label.editable = false
-  label.background = java.awt.Color.LIGHT_GRAY
-
-  var scrollPane = new ScrollPane()
-  scrollPane.viewportView = label
-
-  var frame = new MainFrame {
-    title = "DDG Debug"
-    contents = new GridBagPanel() {
-      val c = new Constraints()
-      c.gridx = 0
-      c.gridy = 0
-      c.weightx = 1
-      c.weighty = 1
-      c.fill = Fill.Both
-      layout(Component.wrap(view)) = c
-      c.gridx = 0
-      c.gridy = 1
-      c.weightx = 1
-      c.weighty = 0.2
-      c.fill = Fill.Both
-      layout(scrollPane) = c
-    }
-    size = new Dimension(800, 600)
-    visible = true
-  }
+  var lx = -1
+  var ly = -1
 
   val pos = new HashMap[Node, (Int, Int)]()
-  val writeNodes = new HashMap[String, Node]()
   val nodes = new ListBuffer[Node]()
-  val idToNodes = new HashMap[String, Node]()
+  val edges = new ListBuffer[(Node, Node)]()
+
+  listenTo(this.mouse.moves)
+  listenTo(this.mouse.clicks)
+  listenTo(this.mouse.wheel)
+  listenTo(this.keys)
+  focusable = true
 
   private def setPos(node: Node, x: Int, y: Int) {
-    findNode(node).setAttribute("xyz", x.asInstanceOf[AnyRef],
-                             y.asInstanceOf[AnyRef],
-                             0.asInstanceOf[AnyRef])
-
     pos(node) = (x, y)
   }
 
   private def getPos(node: Node): (Int, Int) = {
-    pos(node)
-  }
-
-  private def setLabel(node: Node, label: String) {
-    findNode(node).addAttribute("ui.label", label)
-  }
-
-  private def setClass(node: Node, cssClass: String) {
-    findNode(node).addAttribute("ui.class", cssClass)
-  }
-
-  private def setStyle(node: Node, style: String) {
-    findNode(node).addAttribute("ui.style", style)
-  }
-
-  private def addEdge(id1: String, id2: String): org.graphstream.graph.Edge = {
-    graph.addEdge(id1 + " -> " + id2, id1, id2)
-  }
-
-  private def removeEdge(id1: String, id2: String) = {
-    graph.removeEdge(id1 + " -> " + id2)
-  }
-
-  private def addNode(node: Node): org.graphstream.graph.Node = {
-    nodes += node
-    idToNodes += (System.identityHashCode(node).toString() -> node)
-    graph.addNode(System.identityHashCode(node).toString())
-  }
-
-  private def removeNode(node: Node, removeFromSet:Boolean = true) {
-    if(removeFromSet) {
-      nodes -= node
+    if(pos.contains(node)) {
+      pos(node)
+    } else {
+      (0, 0)
     }
-    idToNodes -= System.identityHashCode(node).toString()
-    graph.removeNode(System.identityHashCode(node).toString())
   }
 
-  private def addEdge(a: Node, b: Node): org.graphstream.graph.Edge = {
-    addEdge(System.identityHashCode(a).toString(),
-            System.identityHashCode(b).toString())
+  private def clear() {
+    edges.clear()
+    nodes.clear()
+    pos.clear()
+  }
+
+  private def transform(pos: (Int, Int)): (Int, Int) = {
+    val (x, y) = pos
+
+    (((x + dx) * sx).toInt, ((y + dy) * sy).toInt)
+  }
+
+  override def paintComponent(g: Graphics2D) = {
+
+    g.setColor(Color.WHITE)
+    g.fillRect(0, 0, g.getClipBounds().width , g.getClipBounds().height)
+
+    for(edge <- edges) {
+      val (x1, y1) = transform(getPos(edge._1))
+      val (x2, y2) = transform(getPos(edge._2))
+
+      g.setColor(Color.BLACK)
+      g.drawLine(x1, y1, x2, y2)
+    }
+
+    for(node <- nodes) {
+      val (x, y) = transform(getPos(node))
+
+      node.tag match {
+        case q:Tag.Read => drawRead(x, y, g)
+        case q:Tag.Write => drawWrite(x, y, g)
+        case q:Tag.Memo => drawMemo(x, y, g)
+        case q:Tag.Par => drawPar(x, y, g)
+        case q:Tag.Root => drawRoot(x, y, g)
+        case q:Tag.Mod => drawMod(x, y, g)
+      }
+    }
+  }
+
+  private def drawRead(x: Int, y: Int, g: Graphics2D) {
+    val radius = 5
+
+    g.setColor(Color.BLUE)
+    g.fillOval(x - radius, y - radius, radius * 2, radius * 2)
+  }
+
+  private def drawWrite(x: Int, y: Int, g: Graphics2D) {
+    val radius = 5
+
+    g.setColor(Color.ORANGE)
+    g.fillOval(x - radius, y - radius, radius * 2, radius * 2)
+  }
+
+  private def drawMod(x: Int, y: Int, g: Graphics2D) {
+    val radius = 5
+
+    g.setColor(Color.MAGENTA)
+    g.fillOval(x - radius, y - radius, radius * 2, radius * 2)
+  }
+
+  private def drawRoot(x: Int, y: Int, g: Graphics2D) {
+    val size = 5
+
+    g.setColor(Color.GRAY)
+    g.fillRect(x - size, y - size, size * 2, size * 2)
+  }
+
+  private def drawMemo(x: Int, y: Int, g: Graphics2D) {
+    val size = 5
+
+    val transform = g.getTransform()
+    g.translate(x, y)
+    g.rotate(Math.PI / 4)
+    g.setColor(Color.GREEN)
+    g.fillRect(-size, -size, size * 2, size * 2)
+    g.setTransform(transform)
+  }
+
+  private def drawPar(x: Int, y: Int, g: Graphics2D) {
+    val size = 5
+
+    val transform = g.getTransform()
+    g.translate(x, y)
+    g.rotate(Math.PI / 4)
+    g.setColor(Color.YELLOW)
+    g.fillRect(-size, -size, size * 2, size * 2)
+    g.setTransform(transform)
+  }
+
+  reactions += {
+    case e: KeyPressed => println("Key pressed" + e)
+    case e: MousePressed => null
+    case MouseDragged(_, point, _) => {
+        if(lx != -1 && ly != -1) {
+          dx -= (lx - point.x) / sx
+          dy -= (ly - point.y) / sy
+          println("Drag")
+        }
+        lx = point.x
+        ly = point.y
+
+        repaint()
+    }
+    case e: MouseReleased => {
+      lx = -1
+      ly = -1
+    }
+    case MouseWheelMoved(_, _, _, dir) => {
+
+      val scaleSpeed = 1.3f
+
+      if(dir < 0) {
+        sx *= scaleSpeed
+        sy *= scaleSpeed
+      } else {
+        sx /= scaleSpeed
+        sy /= scaleSpeed
+      }
+
+      repaint()
+    }
+    case _ => println ("Unreacted event")
+  }
+
+  private def addNode(node: Node) = {
+    nodes += node
+  }
+
+  private def removeNode(node: Node) {
+    nodes -= node
+  }
+
+  private def addEdge(a: Node, b: Node) = {
+    edges += Tuple2(a, b)
   }
 
   private def removeEdge(a: Node, b: Node) {
-    removeEdge(a, b);
+    edges -= Tuple2(a, b)
   }
 
-  private def findEdge(a: Node, b: Node): org.graphstream.graph.Edge = {
-    graph.getEdge(System.identityHashCode(a).toString() + " -> " +
-            System.identityHashCode(b).toString())
-  }
-
-  private def findNode(node: Node): org.graphstream.graph.Node = {
-    graph.getNode(System.identityHashCode(node).toString())
+  private def getNodeType(node: Node): String = {
+    node.tag match {
+      case x:Tag.Write => "write"
+      case x:Tag.Read => "read"
+      case x:Tag.Memo => "memo"
+      case x:Tag.Par => "par"
+      case x:Tag.Root => "root"
+    }
   }
 
   def createTree(node: Node, parent: Node) {
-    val existing = findNode(node)
-    nodesToKeep(node) = true
 
-    if(existing == null) {
-      addNode(node)
-      setStyle(node, "stroke-mode: plain;")
+    addNode(node)
 
-
-    } else {
-      setStyle(node, "stroke-mode: none;")
-    }
-
-    if(parent != null && findEdge(parent, node) == null) {
+    if(parent != null) {
       addEdge(parent, node)
     }
 
-    val nodeType = getNodeType(node)
-    if(showLabels) {
-      val parameterInfo = getParameterInfo(node)
-
-      val methodName = extractMethodName(node)
-
-      setLabel(node, nodeType + " " + parameterInfo + " in " + methodName)
-    }
-    setClass(node, nodeType)
-
-    node match {
-      case x:WriteNode => writeNodes(x.mod.id.toString()) = node
-      case x:ReadNode => if(writeNodes.contains(x.mod.id.toString) && findEdge(writeNodes(x.mod.id.toString), x) == null) { addEdge(writeNodes(x.mod.id.toString), x).addAttribute("ui.class", "dependency") }
-      case _ => ()
-    }
-
-    node.children.foreach(x => {
-        createTree(x, node)
+    ddg.getCallChildren(node).foreach(x => {
+      createTree(x, node)
     })
   }
 
@@ -240,15 +227,15 @@ class TbdVisualizer extends ViewerListener {
 
     setPos(parent, 0, depth * vSpacing)
 
-    if(parent.children.length == 0) {
+    if(ddg.getCallChildren(parent).length == 0) {
       return 0
     }
     else {
       var sum = 0;
-      parent.children.foreach(children => {
-          val width = layoutTree(children, depth + 1)
+      ddg.getCallChildren(parent).foreach(child => {
+          val width = layoutTree(child, depth + 1)
           if(sum != 0)
-            translateTree(children, sum)
+            translateTree(child, sum)
 
           sum += (width + hSpacing)
       })
@@ -267,81 +254,30 @@ class TbdVisualizer extends ViewerListener {
     setPos(parent, x + dx, y)
 
     if(((x + dx) / vSpacing) % 2 == 0) {
-      setStyle(parent, "text-offset: 0, 3;")
+      //setStyle(parent, "text-offset: 0, 3;")
     } else {
-      setStyle(parent, "text-offset: 0, -27;")
+      //setStyle(parent, "text-offset: 0, -27;")
     }
 
-    parent.children.foreach(child => {
-        translateTree(child, dx)
+    ddg.getCallChildren(parent).foreach(child => {
+      translateTree(child, dx)
     })
   }
 
+  var ddg: DDG = null
 
-  var nodesToKeep: HashMap[Node, Boolean] = null
-  var markedForRemoval: List[Node] = null
+  def showDDG(ddg: DDG) = {
 
-  def showDDG(root: RootNode) = {
+    clear()
 
-    nodesToKeep = new HashMap[Node, Boolean]()
+    val root = ddg.root
+    this.ddg = ddg
 
-    nodes.foreach(x => nodesToKeep(x) = false)
 
     createTree(root, null)
     layoutTree(root, 0)
 
-    if(markedForRemoval != null && highlightRemoved)
-      markedForRemoval.foreach(x => removeNode(x, false))
-
-    markedForRemoval = List()
-
-    nodesToKeep.foreach(pair => {
-      if(!pair._2) {
-        if(highlightRemoved) {
-          markedForRemoval = pair._1 :: markedForRemoval
-          nodes -= pair._1
-          setStyle(pair._1, "stroke-mode: plain;")
-          setStyle(pair._1, "stroke-color: red;")
-        } else {
-          removeNode(pair._1)
-        }
-      }
-    })
-  }
-
-  private def getNodeType(node: Node): String = {
-    node match {
-      case x:WriteNode => "write"
-      case x:ReadNode => "read"
-      case x:MemoNode => "memo"
-      case x:ParNode => "par"
-      case x:RootNode => "root"
-    }
-  }
-
-  private def getParameterInfo(node: Node): String = {
-    node match {
-      case x:WriteNode => x.mod.toString
-      case x:ReadNode => x.mod.toString
-      case x:MemoNode => x.signature.toString
-      case x:ParNode => ""
-      case x:RootNode => ""
-    }
-  }
-
-  private def getCloseureInfo(node: Node): String = {
-    val vars = node match {
-      case x:ReadNode => x.freeVars
-      case x:MemoNode => x.freeVars
-      case _ => List[(String, Any)]()
-    }
-
-    val desc = vars.foldLeft("")((a, x) => a + ", " + x._1 + " = " + x._2)
-
-    if(desc.length > 2)
-      desc.drop(2)
-    else
-      desc
+    this.repaint()
   }
 
   private def extractMethodName(node: Node): String = {
@@ -385,11 +321,43 @@ class TbdVisualizer extends ViewerListener {
 
   }
 
-  def buttonPushed(id: String) {
-      val node = idToNodes(id)
-      label.text = getNodeType(node) + " " + getParameterInfo(node) +
-                    "\nIn " + extractMethodName(node) +
-                    "\nFree variables: " + getCloseureInfo(node)
+  def buttonPushed(id: String) { //:(
+      //val node = idToNodes(id)
+
+      //publish(new NodeClickedEvent(node))
+  }
+
+  def formatTag(tag: Tag): String = {
+    tag match{
+      case Tag.Read(value, funcTag) => {
+          "Read " + value +
+          "\nReader " + formatFunctionTag(funcTag)
+      }
+      case Tag.Write(value, dest) => {
+          "Write " + value + " to " + dest
+      }
+      case Tag.Memo(funcTag, signature) => {
+          "Memo" +
+          "\n" + formatFunctionTag(funcTag) +
+          "\nSignature:" + signature.foldLeft("")(_ + "\n   " + _)
+      }
+      case Tag.Mod(dest, initializer) => {
+          "Mod id " + dest
+          "\nInitializer " + formatFunctionTag(initializer)
+      }
+      case Tag.Par(fun1, fun2) => {
+          "Par" +
+          "\nFirst " + formatFunctionTag(fun1) +
+          "\nSecond " + formatFunctionTag(fun2)
+      }
+      case _ => ""
+    }
+  }
+
+  def formatFunctionTag(tag: FunctionTag): String = {
+    "Function: " + tag.funcId +
+    "\nBound free vars:" +
+    tag.freeVars.map(x => x._1 + " = " + x._2).foldLeft("")(_ + "\n   " + _)
   }
 
   def buttonReleased(id: String) {
@@ -397,3 +365,4 @@ class TbdVisualizer extends ViewerListener {
   }
 }
 
+ class NodeClickedEvent(val node: Node) extends event.Event {}

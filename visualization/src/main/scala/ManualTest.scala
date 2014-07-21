@@ -24,31 +24,15 @@ import scala.util.Random
 import scala.util.matching.Regex
 import scala.io.StdIn
 
-class ManualTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.getListConf()) {
+class ManualTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
 
-  private var propagate = true
-  var showDDGEachStep = true
-  var initialSize = 10
-
-  var previousDdg: graph.DDG = null
-  var currentDdg: graph.DDG = null
 
   private val putm = "(a) (\\d+) (\\d+)".r
   private val updatem = "(u) (\\d+) (\\d+)".r
   private val remm = "(r) (\\d+)".r
   private val propagatem = "(p)".r
 
-  def run() {
-
-    val visualizer = new TbdVisualizer()
-    var mutationCounter = 1
-
-    for(i <- 0 to initialSize)
-      addValue()
-
-    algorithm.input = input
-    val output = mutator.run[T](algorithm)
-
+  def initialize() {
     println("// Commands: ")
     println("// a KEY VALUE adds a key and value ")
     println("// u KEY VALUE updates a value ")
@@ -56,58 +40,21 @@ class ManualTest[T](algorithm: TestAlgorithm[T]) extends TestBase(algorithm.getL
     println("// p propagates ")
     println("")
     println("// KEY and VALUE have to be integers ")
+  }
 
-
-    while(true) {
-
-      while(!propagate) {
-        StdIn.readLine() match {
-          case putm(_, key, value) => addValue(key.toInt, value.toInt)
-          case updatem(_, key, value) => updateValue(key.toInt, value.toInt)
-          case remm(_, key) => removeValue(key.toInt)
-          case propagatem(_) => propagate = true
-          case _ =>
-        }
-      }
-      propagate = false
-      mutator.propagate()
-
-      println("m.propagate() // Mutation Cycle " + mutationCounter)
-      println("// Current Buffer: " + table.values.toBuffer)
-
-      mutationCounter += 1
-
-      println("// Output: " + output)
-
-      if(!algorithm.checkOutput(output, table)) {
-        println("Check error, execution halted.")
-
-        visualizer.showDDG(mutator.getDDG().root)
-        while(true) { StdIn.readLine() }
-      }
-
-      if(showDDGEachStep) {
-
-        // DDG diff part
-        currentDdg = graph.DDG.create(mutator.getDDG().root)
-
-        if(previousDdg != null) {
-          var result = analysis.TraceComparison.MonotoneTraceDistance(previousDdg, currentDdg)
-
-          println("Removed: ")
-          result.removed.foreach(x => println(x))
-
-          println("Added: ")
-          result.added.foreach(x => println(x))
-        }
-
-        previousDdg = currentDdg
-        // End DDG diff part.
-
-        visualizer.showDDG(mutator.getDDG().root)
+  def step(): Boolean = {
+    var propagate = false
+    while(!propagate) {
+      StdIn.readLine() match {
+        case putm(_, key, value) => addValue(key.toInt, value.toInt)
+        case updatem(_, key, value) => updateValue(key.toInt, value.toInt)
+        case remm(_, key) => removeValue(key.toInt)
+        case propagatem(_) => propagate = true
+        case _ => println("Invalid Command.")
       }
     }
-
-    mutator.shutdown()
+    true
   }
+
+  def dispose() = { }
 }

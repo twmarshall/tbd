@@ -18,14 +18,42 @@ package tbd.visualization
 
 object Main {
   def main(args: Array[String]) {
-    val test = new ExhaustiveTest(new ListQuicksortTest())
-    //val test = new ManualTest(new ListReduceSumTest())
 
+    val main = new Main(new ExhaustiveTest(new MinimapAlgorithm()))
+    main.run()
+
+    //val test = new ExhaustiveTest(new ListMapTest())
+    //test.setDDGListener() //Get that shit to work.
+    //val test = new ManualTest(new ListReduceSumTest())
     //Possible Options:
-    test.showDDGEachStep = true
-    test.initialSize = 10
+    //test.showDDGEachStep = true
+    //test.initialSize = 2
     //test.maximalMutationsPerPropagation = 1
 
-    test.run()
+    //test.run()
   }
+}
+
+class Main[T, V](val test: TestBase[T, V]) extends ExperimentSink[V, Seq[Int]] {
+
+    test.setDDGListener(this)
+
+    val mainView = new MainView()
+    mainView.visible = true
+
+    val export = new LatexExport()
+
+    def resultReceived(
+      result: ExperimentResult[V, Seq[Int]],
+      sender: ExperimentSource[V, Seq[Int]]) = {
+      mainView.addResult(result)
+
+      println(export.export(result.ddg))
+
+      readLine()
+    }
+
+    def run() {
+      test.run()
+    }
 }
