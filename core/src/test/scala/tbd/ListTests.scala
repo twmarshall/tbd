@@ -23,25 +23,24 @@ import tbd.mod.{AdjustableList, Dest, Mod}
 
 class ListMapTest(
     f: (TBD, (String, Int)) => (String, Int),
-    parallel: Boolean,
     input: ListInput[String, Int]) extends Adjustable {
   def run(implicit tbd: TBD): AdjustableList[String, Int] = {
     val list = input.getAdjustableList()
-    list.map(f, parallel = parallel)
+    list.map(f)
   }
 }
 
 class ListSplitTest(input: ListInput[String, Int])  extends Adjustable {
   def run(implicit tbd: TBD): (AdjustableList[String, Int], AdjustableList[String, Int]) = {
     val modList = input.getAdjustableList()
-    modList.split((tbd, a) => a._2 % 2 == 0, true)
+    modList.split((tbd, a) => a._2 % 2 == 0)
   }
 }
 
 class ListSortTest(input: ListInput[String, Int])  extends Adjustable {
   def run(implicit tbd: TBD): AdjustableList[String, Int] = {
     val modList = input.getAdjustableList()
-    modList.sort((tbd, a, b) => a._2 < b._2, true)
+    modList.sort((tbd, a, b) => a._2 < b._2)
   }
 }
 
@@ -78,7 +77,7 @@ class ListTests extends FlatSpec with Matchers {
     input.put("two", 2)
     val f = (tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 * 2)
     val output =
-      mutator.run[AdjustableList[String, Int]](new ListMapTest(f, false, input))
+      mutator.run[AdjustableList[String, Int]](new ListMapTest(f, input))
     // (1 * 2), (2 * 2)
     output.toBuffer().sortWith(_ < _) should be (Buffer(2, 4))
 
@@ -108,48 +107,6 @@ class ListTests extends FlatSpec with Matchers {
     // (-2 * 2), (2 * 2), (3 * 2), (3 * 2), (8 * 2), (10 * 2), (5 * 2)
     output.toBuffer().sortWith(_ < _) should be
                                       (Buffer(-4, 4, 6, 6, 10, 16, 20))
-
-    mutator.shutdown()
-  }
-
-  "ListParMapTest" should "return the mapped list" in {
-    val mutator = new Mutator()
-    val input = mutator.createList[String, Int]()
-    input.put("one", 1)
-    input.put("two", 2)
-    val f = (tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 + 1)
-    val output = mutator.run[AdjustableList[String, Int]](new ListMapTest(f, true, input))
-    // (1 + 1), (2 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(2, 3))
-
-    input.put("three", 3)
-    mutator.propagate()
-    // (1 + 1), (2 + 1), (3 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(2, 3, 4))
-
-    input.update("one", 4)
-    mutator.propagate()
-    // (4 + 1), (2 + 1), (3 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(3, 4, 5))
-
-    input.update("three", 2)
-    input.update("one", 7)
-    mutator.propagate()
-    // (7 + 1), (2 + 1), (2 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(3, 3, 8))
-
-    input.put("four", -1)
-    input.put("five", 10)
-    mutator.propagate()
-    // (7 + 1), (2 + 1), (2 + 1), (-1 + 1), (10 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(0, 3, 3, 8, 11))
-
-    input.put("six", -3)
-    input.update("four", 3)
-    input.update("three", 5)
-    mutator.propagate()
-    // (7 + 1), (2 + 1), (5 + 1), (3 + 1), (10 + 1), (-3 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(-2, 3, 4, 6, 8, 11))
 
     mutator.shutdown()
   }

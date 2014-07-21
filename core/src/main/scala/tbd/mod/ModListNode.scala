@@ -97,8 +97,7 @@ class ModListNode[T, V] (
 
   def split(
       memo: Memoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]],
-      pred: (TBD, (T, V)) => Boolean,
-      parallel: Boolean = false)
+      pred: (TBD, (T, V)) => Boolean)
      (implicit tbd: TBD): Changeable2[ModListNode[T, V], ModListNode[T, V]] = {
     def readNext(next: ModListNode[T, V]) = {
       memo(next) {
@@ -131,8 +130,7 @@ class ModListNode[T, V] (
   def quicksort(
         toAppend: Mod[ModListNode[T, V]],
         comperator: (TBD, (T, V), (T, V)) => Boolean,
-        memo: Memoizer[Mod[ModListNode[T, V]]],
-        parallel: Boolean = false)
+        memo: Memoizer[Mod[ModListNode[T, V]]])
        (implicit tbd: TBD): Changeable[ModListNode[T, V]] = {
     read(next)(next => {
       if(next != null) {
@@ -140,16 +138,14 @@ class ModListNode[T, V] (
 
           val memo = makeMemoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]]()
 
-          next.split(memo,
-                     (tbd, cv) => { comperator(tbd, cv, value) },
-                     parallel)
+          next.split(memo, (tbd, cv) => { comperator(tbd, cv, value) })
         }
 
         val greaterSorted = memo(List(greater)) {
           mod {
             read(greater)(greater => {
               if(greater != null) {
-                greater.quicksort(toAppend, comperator, memo, parallel)
+                greater.quicksort(toAppend, comperator, memo)
               } else {
                 read(toAppend)(toAppend => {
                   write(toAppend)
@@ -163,7 +159,7 @@ class ModListNode[T, V] (
 
         read(smaller)(smaller => {
           if(smaller != null) {
-            smaller.quicksort(createMod(mid), comperator, memo, parallel)
+            smaller.quicksort(createMod(mid), comperator, memo)
           } else {
             write(mid)
           }

@@ -51,7 +51,7 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val pages = input.getAdjustableList()
 
     pages.sort((tbd: TBD, a:(Int, String), b:(Int, String)) =>
-      SortAlgorithm.predicate(a, b), parallel)
+      SortAlgorithm.predicate(a, b))
   }
 }
 
@@ -76,7 +76,6 @@ class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def run(implicit tbd: TBD): Mod[(Int, Vector[(Int, Int)])] = {
     val list = input.getChunkList()
 
-    list.chunkSort((tbd: TBD, a: (Int, Int), b: (Int, Int)) =>
-      a._2 < b._2, parallel)
+    list.chunkSort((tbd: TBD, a: (Int, Int), b: (Int, Int)) => a._2 < b._2)
   }
 }

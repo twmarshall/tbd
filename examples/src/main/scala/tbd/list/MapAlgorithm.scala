@@ -55,7 +55,7 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   def run(implicit tbd: TBD) = {
     val pages = input.getAdjustableList()
-    pages.map(mapper, parallel)
+    pages.map(mapper)
   }
 }
 
@@ -89,6 +89,6 @@ class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   def run(implicit tbd: TBD) = {
     val pages = input.getChunkList()
-    pages.chunkMap(chunkMapper, parallel)
+    pages.chunkMap(chunkMapper)
   }
 }

@@ -31,7 +31,6 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
   val mutations = conf("mutations").asInstanceOf[Array[String]]
   val partition = conf("partitions").asInstanceOf[String].toInt
-  val parallel = conf("parallel") == "true"
   //val memoized = conf("memoized") == "true"
   val store = conf("store").asInstanceOf[String]
 
@@ -48,11 +47,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   def naive(): (Long, Long) = {
     val beforeLoad = System.currentTimeMillis()
     data.loadNaive()
-    val naiveTable =
-      if (parallel)
-	Vector(data.naiveTable.values.toSeq: _*).par
-      else
-	Vector(data.naiveTable.values.toSeq: _*)
+    val naiveTable = Vector(data.naiveTable.values.toSeq: _*).par
     val loadElapsed = System.currentTimeMillis() - beforeLoad
 
     val before = System.currentTimeMillis()

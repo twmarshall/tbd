@@ -25,14 +25,8 @@ class ChunkList[T, U](
     val head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
 
   def map[V, W](
-      f: (TBD, (T, U)) => (V, W),
-      parallel: Boolean = false)
+      f: (TBD, (T, U)) => (V, W))
      (implicit tbd: TBD): ChunkList[V, W] = {
-    if (parallel) {
-      tbd.log.warning("ChunkList.map ignores the 'parallel' and " +
-		      "'memoized' parameters.")
-    }
-
     val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
     new ChunkList(
       mod {
@@ -45,14 +39,8 @@ class ChunkList[T, U](
   }
 
   def chunkMap[V, Q](
-      f: (TBD, Vector[(T, U)]) => (V, Q),
-      parallel: Boolean = false)
+      f: (TBD, Vector[(T, U)]) => (V, Q))
      (implicit tbd: TBD): ModList[V, Q] = {
-    if (parallel) {
-      tbd.log.warning("ChunkList.chunkMap ignores the 'parallel' and " +
-		      "'memoized' parameters.")
-    }
-
     val memo = makeMemoizer[Mod[ModListNode[V, Q]]]()
     new ModList(
       mod {
@@ -65,29 +53,24 @@ class ChunkList[T, U](
   }
 
   def filter(
-      pred: ((T, U)) => Boolean,
-      parallel: Boolean = false)
+      pred: ((T, U)) => Boolean)
      (implicit tbd: TBD): ChunkList[T, U] = ???
 
   def reduce(
       initialValueMod: Mod[(T, U)],
-      f: (TBD, (T, U), (T, U)) => (T, U),
-      parallel: Boolean = false)
+      f: (TBD, (T, U), (T, U)) => (T, U))
      (implicit tbd: TBD): Mod[(T, U)] = ???
 
   def split(
-      pred: (TBD, (T, U)) => Boolean,
-      parallel: Boolean = false)
+      pred: (TBD, (T, U)) => Boolean)
      (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   def sort(
-      comperator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false)
+      comperator: (TBD, (T, U), (T, U)) => Boolean)
      (implicit tbd: TBD): AdjustableList[T, U] = ???
 
   def chunkSort(
-      comparator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false)
+      comparator: (TBD, (T, U), (T, U)) => Boolean)
      (implicit tbd: TBD): Mod[(Int, Vector[(T, U)])] = {
     def mapper(tbd: TBD, chunk: Vector[(T, U)]): (Int, Vector[(T, U)]) = {
       (0, chunk.sortWith((pair1: (T, U), pair2: (T, U)) => {

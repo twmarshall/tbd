@@ -49,6 +49,6 @@ class FilterAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
     val pages = input.getAdjustableList()
-    pages.filter(filterer, parallel)
+    pages.filter(filterer)
   }
 }

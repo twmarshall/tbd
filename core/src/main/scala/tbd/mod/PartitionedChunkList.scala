@@ -27,73 +27,54 @@ class PartitionedChunkList[T, U](
   ) extends AdjustableChunkList[T, U] {
 
   def map[V, Q](
-      f: (TBD, (T, U)) => (V, Q),
-      parallel: Boolean = true)
+      f: (TBD, (T, U)) => (V, Q))
      (implicit tbd: TBD): PartitionedChunkList[V, Q] = {
-    if (parallel) {
-      def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[V, Q]] = {
-        if (i < partitions.size) {
-          val parTup = par((tbd: TBD) => {
-            partitions(i).map(f)(tbd)
-          }, (tbd: TBD) => {
-            innerMap(i + 1)(tbd)
-          })
-
-          parTup._2 += parTup._1
-        } else {
-          ArrayBuffer[ChunkList[V, Q]]()
-        }
-      }
-
-      new PartitionedChunkList(innerMap(0))
-    } else {
-      new PartitionedChunkList(
-        partitions.map((partition: ChunkList[T, U]) => {
-          partition.map(f)
+    def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[V, Q]] = {
+      if (i < partitions.size) {
+        val parTup = par((tbd: TBD) => {
+          partitions(i).map(f)(tbd)
+        }, (tbd: TBD) => {
+          innerMap(i + 1)(tbd)
         })
-      )
+
+        parTup._2 += parTup._1
+      } else {
+        ArrayBuffer[ChunkList[V, Q]]()
+      }
     }
+
+    new PartitionedChunkList(innerMap(0))
   }
 
   def chunkMap[V, Q](
-      f: (TBD, Vector[(T, U)]) => (V, Q),
-      parallel: Boolean = false)
+      f: (TBD, Vector[(T, U)]) => (V, Q))
      (implicit tbd: TBD): PartitionedModList[V, Q] = {
-    if (parallel) {
-      def innerChunkMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[V, Q]] = {
-        if (i < partitions.size) {
-          val parTup = par((tbd: TBD) => {
-            partitions(i).chunkMap(f)(tbd)
-          }, (tbd: TBD) => {
-            innerChunkMap(i + 1)(tbd)
-          })
-
-          parTup._2 += parTup._1
-        } else {
-          ArrayBuffer[ModList[V, Q]]()
-        }
-      }
-
-      new PartitionedModList(innerChunkMap(0))
-    } else {
-      new PartitionedModList(
-        partitions.map((partition: ChunkList[T, U]) => {
-          partition.chunkMap(f)
+    def innerChunkMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[V, Q]] = {
+      if (i < partitions.size) {
+        val parTup = par((tbd: TBD) => {
+          partitions(i).chunkMap(f)(tbd)
+        }, (tbd: TBD) => {
+          innerChunkMap(i + 1)(tbd)
         })
-      )
+
+        parTup._2 += parTup._1
+      } else {
+        ArrayBuffer[ModList[V, Q]]()
+      }
     }
+
+    new PartitionedModList(innerChunkMap(0))
   }
 
   def reduce(
       initialValueMod: Mod[(T, U)],
-      f: (TBD, (T, U), (T, U)) => (T, U),
-      parallel: Boolean = true)
+      f: (TBD, (T, U), (T, U)) => (T, U))
      (implicit tbd: TBD): Mod[(T, U)] = {
 
     def parReduce(i: Int)(implicit tbd: TBD): Mod[(T, U)] = {
       if (i < partitions.size) {
         val parTup = par((tbd: TBD) => {
-          partitions(i).reduce(initialValueMod, f, parallel)(tbd)
+          partitions(i).reduce(initialValueMod, f)(tbd)
         }, (tbd: TBD) => {
           parReduce(i + 1)(tbd)
         })
@@ -108,29 +89,16 @@ class PartitionedChunkList[T, U](
       }
     }
 
-    if(parallel) {
-      parReduce(0)
-    } else {
-      partitions.map((partition: ChunkList[T, U]) => {
-        partition.reduce(initialValueMod, f, parallel)
-      }).reduce((a, b) => {
-        mod {
-          read2(a, b) {
-	    case (a, b) => tbd.write(f(tbd, a, b))
-          }
-        }
-      })
-    }
+    parReduce(0)
   }
 
   def filter(
-      pred: ((T, U)) => Boolean,
-      parallel: Boolean = true)
+      pred: ((T, U)) => Boolean)
      (implicit tbd: TBD): PartitionedChunkList[T, U] = {
     def parFilter(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[T, U]] = {
       if (i < partitions.size) {
         val parTup = par((tbd: TBD) => {
-          partitions(i).filter(pred, parallel)(tbd)
+          partitions(i).filter(pred)(tbd)
         }, (tbd: TBD) => {
           parFilter(i + 1)(tbd)
         })
@@ -141,30 +109,19 @@ class PartitionedChunkList[T, U](
       }
     }
 
-    if (parallel) {
-      new PartitionedChunkList(parFilter(0))
-    } else {
-      new PartitionedChunkList(
-        partitions.map((partition: ChunkList[T, U]) => {
-          partition.filter(pred, parallel)
-        })
-      )
-    }
+    new PartitionedChunkList(parFilter(0))
   }
 
   def split(
-      pred: (TBD, (T, U)) => Boolean,
-      parallel: Boolean = false)
+      pred: (TBD, (T, U)) => Boolean)
      (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   def sort(
-      comperator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false)
+      comperator: (TBD, (T, U), (T, U)) => Boolean)
      (implicit tbd: TBD): AdjustableList[T, U] = ???
 
   def chunkSort(
-      comparator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false)
+      comparator: (TBD, (T, U), (T, U)) => Boolean)
      (implicit tbd: TBD): Mod[(Int, Vector[(T, U)])] = ???
 
   /* Meta Operations */

@@ -28,9 +28,6 @@ import tbd.datastore.Datastore
  *
  * The functions of this class are various list operations, implemented in an
  * self-adjustabling way, so they can be called by an Adjustable.
- *
- * The 'parallel' and 'memo' parameters to these functions are performance hints
- * and may be ignored by some subclasses.
  */
 trait AdjustableList[T, U] {
   /**
@@ -38,8 +35,7 @@ trait AdjustableList[T, U] {
    * function to each of the elements of this AdjustableList.
    */
   def map[V, Q](
-      f: (TBD, (T, U)) => (V, Q),
-      parallel: Boolean = false)
+      f: (TBD, (T, U)) => (V, Q))
      (implicit tbd: TBD): AdjustableList[V, Q]
 
   /**
@@ -47,8 +43,7 @@ trait AdjustableList[T, U] {
    * AdjustableList that satisfy the given predicate.
    */
   def filter(
-      pred: ((T, U)) => Boolean,
-      parallel: Boolean = false)
+      pred: ((T, U)) => Boolean)
      (implicit tbd: TBD): AdjustableList[T, U]
 
   /**
@@ -57,16 +52,14 @@ trait AdjustableList[T, U] {
    */
   def reduce(
       initialValueMod: Mod[(T, U)],
-      f: (TBD, (T, U), (T, U)) => (T, U),
-      parallel: Boolean = false)
+      f: (TBD, (T, U), (T, U)) => (T, U))
      (implicit tbd: TBD): Mod[(T, U)]
 
   /**
    * Returns a sorted copy of this list.
    */
   def sort(
-      comperator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false)
+      comperator: (TBD, (T, U), (T, U)) => Boolean)
      (implicit tbd: TBD): AdjustableList[T, U]
 
   /**
@@ -75,8 +68,7 @@ trait AdjustableList[T, U] {
    * given predicate, and the second AdjustableList contains all other elements.
    */
   def split(
-      pred: (TBD, (T, U)) => Boolean,
-      parallel: Boolean = false)
+      pred: (TBD, (T, U)) => Boolean)
      (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U])
 
   /* Meta functions */
