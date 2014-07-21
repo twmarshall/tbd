@@ -43,6 +43,30 @@ class Memoizer[T](tbd: TBD, memoId: Int) {
 		timestamp < tbd.reexecutionEnd &&
 		memoNode.matchableInEpoch <= Master.epoch) {
 
+	      if (memoNode.currentDest != tbd.currentDest &&
+		  memoNode.value.isInstanceOf[Changeable[_]]) {
+                val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
+
+                val awaiting = tbd.currentDest.mod.update(changeable.mod.read())
+                Await.result(Future.sequence(awaiting), DURATION)
+
+		tbd.worker.ddg.replaceDests(memoNode,
+					    memoNode.currentDest,
+					    tbd.currentDest)
+              }
+
+	      if (memoNode.value.isInstanceOf[Changeable2[_, _]] &&
+		  memoNode.currentDest2 != tbd.currentDest2) {
+		val changeable2 = memoNode.value.asInstanceOf[Changeable2[Any, Any]]
+
+		val awaiting = tbd.currentDest2.mod.update(changeable2.mod2.read())
+		Await.result(Future.sequence(awaiting), DURATION)
+
+		tbd.worker.ddg.replaceDests(memoNode,
+					    memoNode.currentDest2,
+					    tbd.currentDest2)
+	      }
+
               found = true
               tbd.worker.ddg.attachSubtree(tbd.currentParent, memoNode)
 
@@ -70,6 +94,8 @@ class Memoizer[T](tbd: TBD, memoId: Int) {
       val value = func
       tbd.currentParent = outerParent
       memoNode.endTime = tbd.worker.ddg.nextTimestamp(memoNode)
+      memoNode.currentDest = tbd.currentDest
+      memoNode.currentDest2 = tbd.currentDest2
       memoNode.value = value
 
       if (tbd.worker.memoTable.contains(signature)) {

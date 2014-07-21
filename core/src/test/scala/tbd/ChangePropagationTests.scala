@@ -92,12 +92,64 @@ class ParTest(input: TableInput[Int, Int]) extends Adjustable {
   }
 }
 
-class MapTest(input: ListInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
-    val list = input.getAdjustableList()
-    list.map(tbd, (tbd: TBD, pair: (Int, Int)) => {
-      //println("mapping " + pair)
-      pair
+// Checks that modNoDest returns the correct values even after a convuloted
+// series of memo matches.
+class ModNoDestTest(input: TableInput[Int, Int]) extends Adjustable {
+  val table = input.getTable()
+  val one = table.get(1)
+  val two = table.get(2)
+  val three = table.get(3)
+  val four = table.get(4)
+  val five = table.get(5)
+  val six = table.get(6)
+  val seven = table.get(7)
+
+  // If four == 4, twoMemo returns 6, otherwise it returns sevenValue.
+  def twoMemo(tbd: TBD, memo: Memoizer[Changeable[Int]]) = {
+    tbd.read(four)(fourValue => {
+      if (fourValue == 4) {
+	tbd.modNoDest(() => {
+	  memo(five) {
+	    tbd.read(seven)(sevenValue => {
+	      tbd.writeNoDest(sevenValue)
+	    })
+	  }
+	})
+
+	memo(six) {
+	  tbd.writeNoDest(6)
+	}
+      } else {
+	memo(five) {
+	  tbd.read(seven)(sevenValue => {
+	    tbd.writeNoDest(sevenValue)
+	  })
+	}
+      }
+    })
+  }
+
+  def run(tbd: TBD): Mod[Int] = {
+    val memo = tbd.makeMemoizer[Changeable[Int]]()
+
+    tbd.modNoDest(() => {
+      tbd.read(one)(oneValue => {
+	if (oneValue == 1) {
+	  val mod1 = tbd.modNoDest(() => {
+	    memo(two) {
+	      twoMemo(tbd, memo)
+	    }
+	  })
+
+	  tbd.read(mod1)(value1 => {
+	    tbd.writeNoDest(value1)
+	  })
+	} else {
+	  memo(two) {
+	    twoMemo(tbd, memo)
+	  }
+	}
+      })
     })
   }
 }
@@ -169,17 +221,29 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 
-  "MapTest" should "do something" in {
+  "ModNoDestTest" should "update the dests for the memo matches" in {
     val mutator = new Mutator()
-    val input = mutator.createList[Int, Int](new ListConf(partitions = 1))
-    for (i <- 1 to 5) {
-      input.put(i, i)
-    }
+    val input = mutator.createTable[Int, Int]()
+    input.put(1, 1)
+    input.put(2, 2)
+    input.put(3, 3)
+    input.put(4, 4)
+    input.put(5, 5)
+    input.put(6, 6)
+    input.put(7, 7)
+    val output = mutator.run[Mod[Int]](new ModNoDestTest(input))
+    output.read() should be (6)
 
-    val output = mutator.run[AdjustableList[Int, Int]](new MapTest(input))
-
-    //println("propagating")
-    input.remove(2)
+    input.update(1, 2)
+    input.update(4, 5)
     mutator.propagate()
+    output.read() should be (7)
+
+    input.update(1, 1)
+    input.update(7, 8)
+    mutator.propagate()
+    output.read() should be (8)
+
+    mutator.shutdown()
   }
 }

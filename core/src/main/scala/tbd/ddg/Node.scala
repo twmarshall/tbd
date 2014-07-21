@@ -43,6 +43,10 @@ abstract class Node(var parent: Node, val timestamp: Timestamp) {
   // that it won't be matched again in this round of change propagation.
   var matchableInEpoch = 0
 
+  var currentDest: Dest[Any] = null
+
+  var currentDest2: Dest[Any] = null
+
   def addChild(child: Node) {
     children += child
   }

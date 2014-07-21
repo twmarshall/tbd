@@ -33,48 +33,24 @@ class ModListNode[T, V] (
     }
   }
 
-  def mapDest[U, Q](
+  def map[U, Q](
       tbd: TBD,
       f: (TBD, (T, V)) => (U, Q),
-      dest: Dest[ModListNode[U, Q]],
-      memo: Memoizer[Changeable[ModListNode[U, Q]]],
-      memo2: Memoizer[Dest[ModListNode[U, Q]]]
-    ) : Changeable[ModListNode[U, Q]] = {
-    val newDest = memo2(value._1) {
-      tbd.createDest[ModListNode[U, Q]]()
-    }
-    tbd.read(next)(next => {
-      if (next != null) {
-        memo(next, newDest) {
-          next.mapDest(tbd, f, newDest, memo, memo2)
+      memo: Memoizer[Changeable[ModListNode[U, Q]]])
+        : Changeable[ModListNode[U, Q]] = {
+    val newNext = tbd.modNoDest(() => {
+      tbd.read(next)(next => {
+        if (next != null) {
+          memo(next) {
+            next.map(tbd, f, memo)
+          }
+        } else {
+          tbd.writeNoDest[ModListNode[U, Q]](null)
         }
-      } else {
-        tbd.write(newDest, null)
-      }
+      })
     })
 
-    tbd.write(dest, new ModListNode[U, Q](f(tbd, value), newDest.mod))
-  }
-
-  def mapDest2[U, Q](
-      tbd: TBD,
-      f: (TBD, (T, V)) => (U, Q),
-      dest: Dest[ModListNode[U, Q]],
-      memo: Memoizer[Mod[ModListNode[U, Q]]]
-    ) : Changeable[ModListNode[U, Q]] = {
-    val newNext = memo(next) {
-      tbd.mod((newDest: Dest[ModListNode[U, Q]]) => {
-        tbd.read(next)(next => {
-          if (next != null) {
-            next.mapDest2(tbd, f, newDest, memo)
-          } else {
-            tbd.write(newDest, null)
-          }
-        })
-      })
-    }
-
-    tbd.write(dest, new ModListNode[U, Q](f(tbd, value), newNext))
+    tbd.writeNoDest(new ModListNode[U, Q](f(tbd, value), newNext))
   }
 
   def parMap[U, Q](
@@ -130,82 +106,35 @@ class ModListNode[T, V] (
 
   def split(
       tbd: TBD,
-      destMatch: Dest[ModListNode[T, V]],
-      destNoMatch: Dest[ModListNode[T, V]],
-      memo: Memoizer[(Mod[ModListNode[T, V]], Mod[ModListNode[T, V]])],
+      memo: Memoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]],
       pred: (TBD, (T, V)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false):
-        Changeable[ModListNode[T, V]] = {
-
-    val (matchNext, diffNext) = memo(List(next)) {
-      tbd.mod2((newDestMatch: Dest[ModListNode[T, V]], newDestNoMatch: Dest[ModListNode[T, V]]) => {
-        tbd.read(next)(next => {
-          if(next != null) {
-            next.split(tbd, newDestMatch, newDestNoMatch, memo, pred)
-          } else {
-            tbd.write(newDestMatch, null)
-            tbd.write(newDestNoMatch, null)
-          }
-        })
-      })
+      parallel: Boolean = false
+    ): Changeable2[ModListNode[T, V], ModListNode[T, V]] = {
+    def readNext(next: ModListNode[T, V]) = {
+      memo(next) {
+	if (next != null) {
+	  next.split(tbd, memo, pred)
+	} else {
+	  tbd.write2(null.asInstanceOf[ModListNode[T, V]],
+		     null.asInstanceOf[ModListNode[T, V]])
+	}
+      }
     }
 
-    if(pred(tbd, (value._1, value._2))) {
-      tbd.write(destMatch, new ModListNode(value, matchNext))
-      tbd.read(diffNext)(diffNext => {
-        tbd.write(destNoMatch, diffNext)
-      })
-    } else {
-      tbd.write(destNoMatch, new ModListNode(value, diffNext))
-      tbd.read(matchNext)(matchNext => {
-        tbd.write(destMatch, matchNext)
-      })
-    }
-  }
-
-  def splitDest(
-      tbd: TBD,
-      memo: Memoizer[Changeable[ModListNode[T, V]]],
-      memo2: Memoizer[Dest[ModListNode[T, V]]],
-      pred: (TBD, (T, V)) => Boolean,
-      dest1: Dest[ModListNode[T, V]],
-      dest2: Dest[ModListNode[T, V]],
-      parallel: Boolean = false,
-      memoized: Boolean = false):
-        Changeable[ModListNode[T, V]] = {
     if(pred(tbd, value)) {
-      val newDest = memo2(value._1) {
-        tbd.createDest[ModListNode[T, V]]()
-      }
-      memo(List(next, newDest, dest2)) {
-	tbd.read(next)(next => {
-	  if(next != null) {
-	    next.splitDest(tbd, memo, memo2, pred, newDest, dest2)
-	  } else {
-            tbd.write(newDest, null)
-            tbd.write(dest2, null)
-	  }
-        })
-      }
+      val (matchNext, diffNext) =
+	tbd.mod_2(0) {
+	  tbd.read(next)(readNext)
+	}
 
-      tbd.write(dest1, new ModListNode(value, newDest.mod))
+      tbd.writeNoDestLeft(new ModListNode(value, matchNext), diffNext)
     } else {
-      val newDest = memo2(value._1) {
-        tbd.createDest[ModListNode[T, V]]()
-      }
-      memo(List(next, dest1, newDest)) {
-	tbd.read(next)(next => {
-	  if(next != null) {
-	    next.splitDest(tbd, memo, memo2, pred, dest1, newDest)
-	  } else {
-            tbd.write(dest1, null)
-            tbd.write(newDest, null)
-	  }
-	})
-      }
+      val (matchNext, diffNext) =
+	tbd.mod_2(1) {
+	  tbd.read(next)(readNext)
+	}
 
-      tbd.write(dest2, new ModListNode(value, newDest.mod))
+      tbd.writeNoDestRight(matchNext, new ModListNode(value, diffNext))
     }
   }
 
@@ -220,16 +149,14 @@ class ModListNode[T, V] (
           Changeable[ModListNode[T, V]] = {
     tbd.read(next)(next => {
       if(next != null) {
-        val (smaller, greater) = tbd.mod2((destSmaller: Dest[ModListNode[T, V]],
-                                           destGreater: Dest[ModListNode[T, V]]) => {
+        val (smaller, greater) = tbd.mod_2(2) {
 
-          val memo = tbd.makeMemoizer[(Mod[ModListNode[T, V]],
-                                       Mod[ModListNode[T, V]])](!memoized)
+          val memo = tbd.makeMemoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]]()
 
-          next.split(tbd, destSmaller, destGreater, memo,
+          next.split(tbd, memo,
                      (tbd, cv) => { comperator(tbd, cv, value) },
-                     parallel, memoized)
-        })
+                     parallel)
+        }
 
         val greaterSorted = memo(List(greater)) {
           tbd.mod((dest: Dest[ModListNode[T, V]]) => {

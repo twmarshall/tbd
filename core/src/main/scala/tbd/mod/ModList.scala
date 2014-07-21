@@ -43,16 +43,14 @@ class ModList[T, V](
       )
     } else {
       val memo = tbd.makeMemoizer[Changeable[ModListNode[U, Q]]](!memoized)
-      val memo2 = tbd.makeMemoizer[Dest[ModListNode[U, Q]]](!memoized)
-      val memo3 = tbd.makeMemoizer[Mod[ModListNode[U, Q]]](!memoized)
 
       new ModList(
-        tbd.mod((dest: Dest[ModListNode[U, Q]]) => {
+        tbd.modNoDest(() => {
           tbd.read(head)(node => {
             if (node != null) {
-              node.mapDest2(tbd, f, dest, memo3)
+              node.map(tbd, f, memo)
             } else {
-              tbd.write(dest, null)
+              tbd.writeNoDest(null)
             }
           })
         })
@@ -177,40 +175,24 @@ class ModList[T, V](
       tbd: TBD,
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = false):
-       (AdjustableList[T, V], AdjustableList[T, V]) = {
+      memoized: Boolean = false
+    ): (AdjustableList[T, V], AdjustableList[T, V]) = {
+    val memo = tbd.makeMemoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]]()
 
-    //val memo = tbd.makeMemoizer[(Mod[ModListNode[T, V]],
-    //                         Mod[ModListNode[T, V]])](!memoized)
+    val result = tbd.mod_2(2) {
+      tbd.read(head)(head => {
+	memo(head) {
+	  if (head == null) {
+	    tbd.write2(null.asInstanceOf[ModListNode[T, V]],
+		       null.asInstanceOf[ModListNode[T, V]])
+	  } else {
+	    head.split(tbd, memo, pred)
+	  }
+	}
+      })
+    }
 
-    /*val result = tbd.mod2((matches: Dest[ModListNode[T, V]],
-                             diffs: Dest[ModListNode[T, V]]) => {
-
-        tbd.read(head)(head => {
-          if(head == null) {
-            tbd.write(matches, null)
-            tbd.write(diffs, null)
-          } else {
-            head.split(tbd, matches, diffs, memo, pred)
-          }
-        })
-      })*/
-
-    val memo = tbd.makeMemoizer[Changeable[ModListNode[T, V]]](!memoized)
-    val memo2 = tbd.makeMemoizer[Dest[ModListNode[T, V]]](!memoized)
-    val dest1 = tbd.createDest[ModListNode[T, V]]()
-    val dest2 = tbd.createDest[ModListNode[T, V]]()
-
-    tbd.read(head)(head => {
-      if (head == null) {
-        tbd.write(dest1, null)
-        tbd.write(dest2, null)
-      } else {
-	head.splitDest(tbd, memo, memo2, pred, dest1, dest2)
-      }
-    })
-
-    (new ModList(dest1.mod), new ModList(dest2.mod))
+    (new ModList(result._1), new ModList(result._2))
   }
 
   def sort(

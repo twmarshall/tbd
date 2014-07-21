@@ -117,6 +117,8 @@ class TBD(id: String, val worker: Worker) {
     currentParent = outerReader
 
     readNode.endTime = worker.ddg.nextTimestamp(readNode)
+    readNode.currentDest = currentDest
+    readNode.currentDest2 = currentDest2
 
     changeable
   }
@@ -133,6 +135,77 @@ class TBD(id: String, val worker: Worker) {
     }
 
     changeable
+  }
+
+  def writeNoDest[T](value: T): Changeable[T] = {
+    val awaiting = currentDest.mod.update(value)
+    Await.result(Future.sequence(awaiting), DURATION)
+
+    val changeable = new Changeable(currentDest.mod)
+    if (Main.debug) {
+      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+                                          currentParent)
+      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
+    }
+
+    changeable.asInstanceOf[Changeable[T]]
+  }
+
+  def write2[T, U](value: T, value2: U): Changeable2[T, U] = {
+    val awaiting = currentDest.mod.update(value)
+    val awaiting2 = currentDest2.mod.update(value2)
+    Await.result(Future.sequence(awaiting), DURATION)
+    Await.result(Future.sequence(awaiting2), DURATION)
+
+    val changeable = new Changeable2(currentDest.mod, currentDest2.mod)
+    if (Main.debug) {
+      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+                                          currentParent)
+      writeNode.mod2 = changeable.mod2
+      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
+    }
+
+    changeable.asInstanceOf[Changeable2[T, U]]
+  }
+
+  def writeNoDestLeft[T, U](value: T, mod: Mod[U]): Changeable2[T, U] = {
+    if (mod != currentDest2.mod) {
+      println("WARNING - mod parameter to write2(0) doesn't match " +
+	      "currentDest2")
+    }
+
+    val awaiting = currentDest.mod.update(value)
+    Await.result(Future.sequence(awaiting), DURATION)
+
+    val changeable = new Changeable2(currentDest.mod, currentDest2.mod)
+    if (Main.debug) {
+      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+                                          currentParent)
+      writeNode.mod2 = currentDest2.mod
+      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
+    }
+
+    changeable.asInstanceOf[Changeable2[T, U]]
+  }
+
+  def writeNoDestRight[T, U](mod: Mod[T], value2: U): Changeable2[T, U] = {
+    if (mod != currentDest.mod) {
+      println("WARNING - mod parameter to writeNoDestRight doesn't match " +
+	      "currentDest " + mod + " " + currentDest.mod)
+    }
+
+    val awaiting = currentDest2.mod.update(value2)
+    Await.result(Future.sequence(awaiting), DURATION)
+
+    val changeable = new Changeable2(currentDest.mod, currentDest2.mod)
+    if (Main.debug) {
+      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+                                          currentParent)
+      writeNode.mod2 = currentDest2.mod
+      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
+    }
+
+    changeable.asInstanceOf[Changeable2[T, U]]
   }
 
   def createMod[T](value: T): Mod[T] = {
@@ -162,8 +235,41 @@ class TBD(id: String, val worker: Worker) {
     d.mod
   }
 
-  def createDest[T](): Dest[T] = {
-    new Dest[T](worker.datastoreRef)
+  var currentDest: Dest[Any] = null
+  def modNoDest[T](initializer: () => Changeable[T]): Mod[T] = {
+    val oldCurrentDest = currentDest
+    currentDest = new Dest[T](worker.datastoreRef).asInstanceOf[Dest[Any]]
+    initializer()
+    val mod = currentDest.mod
+    currentDest = oldCurrentDest
+
+    mod.asInstanceOf[Mod[T]]
+  }
+
+  var currentDest2: Dest[Any] = null
+  def mod_2[T, U](write: Int)(initializer: => Changeable2[T, U]): (Mod[T], Mod[U]) = {
+    val oldCurrentDest = currentDest
+    currentDest =
+      if (write == 0 || write == 2)
+	new Dest[T](worker.datastoreRef).asInstanceOf[Dest[Any]]
+      else
+	currentDest
+
+    val oldCurrentDest2 = currentDest2
+    currentDest2 =
+      if (write == 1 || write == 2)
+	new Dest[T](worker.datastoreRef).asInstanceOf[Dest[Any]]
+      else
+	currentDest2
+
+    initializer
+
+    val mod = currentDest.mod
+    currentDest = oldCurrentDest
+    val mod2 = currentDest2.mod
+    currentDest2 = oldCurrentDest2
+
+    (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
   }
 
   var workerId = 0

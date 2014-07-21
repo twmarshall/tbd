@@ -212,6 +212,48 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     subtree.parent = parent
   }
 
+  /**
+   * Replaces all of the dests equal to dest1 with dest2 and all mods equal to
+   * dest1.mod with dest2.mod in the subtree rooted at node. This is called when
+   * a memo match is made where the memo node has a dest that's different from
+   * the currentDest.
+   */
+  def replaceDests(node: Node, dest1: Dest[Any], dest2: Dest[Any]) {
+    if (node.isInstanceOf[MemoNode]) {
+      val memoNode = node.asInstanceOf[MemoNode]
+      if (memoNode.value.isInstanceOf[Changeable[_]]) {
+	val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
+	if (changeable.mod == dest1.mod) {
+	  changeable.mod = dest2.mod
+	}
+      }
+
+      if (memoNode.value.isInstanceOf[Changeable2[_, _]]) {
+	val changeable2 = memoNode.value.asInstanceOf[Changeable2[Any, Any]]
+	if (changeable2.mod2 == dest1.mod) {
+	  changeable2.mod2 = dest2.mod
+	}
+      }
+    }
+
+    if (node.currentDest == dest1) {
+      node.currentDest = dest2
+
+      // Because reads and memos must have as their currentDest the modNoDest
+      // that is closest in enclosing scope, a node that doesn't have dest1 as
+      // its dest can't have any children that have dest1 either.
+      for (child <- node.children) {
+	replaceDests(child, dest1, dest2)
+      }
+    } else if(node.currentDest2 == dest1) {
+      node.currentDest2 = dest2
+
+      for (child <- node.children) {
+	replaceDests(child, dest1, dest2)
+      }
+    }
+  }
+
   override def toString = {
     root.toString("")
   }
