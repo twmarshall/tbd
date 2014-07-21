@@ -311,26 +311,26 @@ class NoDestTest(input: TableInput[Int, Int]) extends Adjustable {
     val four = table.get(4)
     val memo = tbd.makeMemoizer[Changeable[Int]]()
 
-    tbd.modNoDest(() => {
+    tbd.mod {
       tbd.read(one)(oneValue => {
         if (oneValue == 1) {
-          tbd.modNoDest(() => {
+          tbd.mod {
             memo(two) {
               tbd.read(four)(fourValue =>
-                tbd.writeNoDest(fourValue))
+                tbd.write(fourValue))
             }
-          })
+          }
           memo(three) {
-            tbd.writeNoDest(3)
+            tbd.write(3)
           }
         } else {
           memo(two) {
             tbd.read(four)(fourValue =>
-              tbd.writeNoDest(fourValue))
+              tbd.write(fourValue))
           }
         }
       })
-    })
+    }
   }
 }
 
@@ -343,38 +343,38 @@ class NoDestTest2(input: TableInput[Int, Int]) extends Adjustable {
     val five = table.get(5)
     val memo = tbd.makeMemoizer[Changeable[Int]]()
 
-    val six = tbd.modNoDest(() => {
+    val six = tbd.mod {
       tbd.read(one)(one => {
-        val four = tbd.modNoDest(() => {
+        val four = tbd.mod {
           if (one == 1) {
-            tbd.modNoDest(() => {
+            tbd.mod {
               memo(two) {
                 tbd.read(five)(five =>
-                  tbd.writeNoDest(five))
+                  tbd.write(five))
               }
-            })
+            }
             memo(three) {
-              tbd.writeNoDest(3)
+              tbd.write(3)
             }
           } else {
             memo(two) {
               tbd.read(five)(five =>
-                tbd.writeNoDest(five))
+                tbd.write(five))
             }
           }
-        })
+        }
 
         tbd.read(four)(four => {
-          tbd.writeNoDest(four)
+          tbd.write(four)
         })
       })
-    })
+    }
 
-    tbd.modNoDest(() => {
+    tbd.mod {
       tbd.read(six)(six => {
-        tbd.writeNoDest(six)
+        tbd.write(six)
       })
-    })
+    }
   }
 }
 

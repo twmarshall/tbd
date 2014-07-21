@@ -41,19 +41,19 @@ class ChunkListNode[T, U](
       memo: Memoizer[Changeable[ChunkListNode[V, W]]])
         : Changeable[ChunkListNode[V, W]] = {
     val newChunk = chunk.map((pair: (T, U)) => f(tbd, pair))
-    val newNext = tbd.modNoDest(() => {
+    val newNext = tbd.mod {
       tbd.read(nextMod)(next => {
         if (next != null) {
           memo(nextMod) {
             next.map(tbd, f, memo)
           }
         } else {
-          tbd.writeNoDest[ChunkListNode[V, W]](null)
+          tbd.write[ChunkListNode[V, W]](null)
         }
       })
-    })
+    }
 
-    tbd.writeNoDest(new ChunkListNode[V, W](newChunk, newNext))
+    tbd.write(new ChunkListNode[V, W](newChunk, newNext))
   }
 
   def chunkMap[V, Q](

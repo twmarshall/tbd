@@ -45,15 +45,15 @@ class ModList[T, V](
       val memo = tbd.makeMemoizer[Changeable[ModListNode[U, Q]]](!memoized)
 
       new ModList(
-        tbd.modNoDest(() => {
+        tbd.mod {
           tbd.read(head)(node => {
             if (node != null) {
               node.map(tbd, f, memo)
             } else {
-              tbd.writeNoDest(null)
+              tbd.write[ModListNode[U, Q]](null)
             }
           })
-        })
+        }
       )
     }
   }

@@ -35,15 +35,15 @@ class ChunkList[T, U](
 
     val memo = tbd.makeMemoizer[Changeable[ChunkListNode[V, W]]]()
     new ChunkList(
-      tbd.modNoDest(() => {
+      tbd.mod {
         tbd.read(head)(node => {
           if (node != null) {
             node.map(tbd, f, memo)
           } else {
-            tbd.writeNoDest[ChunkListNode[V, W]](null)
+            tbd.write[ChunkListNode[V, W]](null)
           }
         })
-      })
+      }
     )
   }
 

@@ -38,19 +38,18 @@ class ModListNode[T, V] (
       f: (TBD, (T, V)) => (U, Q),
       memo: Memoizer[Changeable[ModListNode[U, Q]]])
         : Changeable[ModListNode[U, Q]] = {
-    val newNext = tbd.modNoDest(() => {
-      tbd.read(next)(next => {
-        if (next != null) {
+    val newNext = tbd.mod {
+      tbd.read(next) {
+	case null =>
+	  tbd.write[ModListNode[U, Q]](null)
+	case next =>
           memo(next) {
             next.map(tbd, f, memo)
           }
-        } else {
-          tbd.writeNoDest[ModListNode[U, Q]](null)
-        }
-      })
-    })
+      }
+    }
 
-    tbd.writeNoDest(new ModListNode[U, Q](f(tbd, value), newNext))
+    tbd.write(new ModListNode[U, Q](f(tbd, value), newNext))
   }
 
   def parMap[U, Q](

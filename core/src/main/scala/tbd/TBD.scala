@@ -137,7 +137,7 @@ class TBD(id: String, val worker: Worker) {
     changeable
   }
 
-  def writeNoDest[T](value: T): Changeable[T] = {
+  def write[T](value: T): Changeable[T] = {
     val awaiting = currentDest.mod.update(value)
     Await.result(Future.sequence(awaiting), DURATION)
 
@@ -236,10 +236,10 @@ class TBD(id: String, val worker: Worker) {
   }
 
   var currentDest: Dest[Any] = null
-  def modNoDest[T](initializer: () => Changeable[T]): Mod[T] = {
+  def mod[T](initializer: => Changeable[T]): Mod[T] = {
     val oldCurrentDest = currentDest
     currentDest = new Dest[T](worker.datastoreRef).asInstanceOf[Dest[Any]]
-    initializer()
+    initializer
     val mod = currentDest.mod
     currentDest = oldCurrentDest
 

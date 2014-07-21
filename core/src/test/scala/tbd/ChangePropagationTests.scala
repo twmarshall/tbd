@@ -108,21 +108,21 @@ class ModNoDestTest(input: TableInput[Int, Int]) extends Adjustable {
   def twoMemo(tbd: TBD, memo: Memoizer[Changeable[Int]]) = {
     tbd.read(four)(fourValue => {
       if (fourValue == 4) {
-	tbd.modNoDest(() => {
+	tbd.mod {
 	  memo(five) {
 	    tbd.read(seven)(sevenValue => {
-	      tbd.writeNoDest(sevenValue)
+	      tbd.write(sevenValue)
 	    })
 	  }
-	})
+	}
 
 	memo(six) {
-	  tbd.writeNoDest(6)
+	  tbd.write(6)
 	}
       } else {
 	memo(five) {
 	  tbd.read(seven)(sevenValue => {
-	    tbd.writeNoDest(sevenValue)
+	    tbd.write(sevenValue)
 	  })
 	}
       }
@@ -132,17 +132,17 @@ class ModNoDestTest(input: TableInput[Int, Int]) extends Adjustable {
   def run(tbd: TBD): Mod[Int] = {
     val memo = tbd.makeMemoizer[Changeable[Int]]()
 
-    tbd.modNoDest(() => {
+    tbd.mod {
       tbd.read(one)(oneValue => {
 	if (oneValue == 1) {
-	  val mod1 = tbd.modNoDest(() => {
+	  val mod1 = tbd.mod {
 	    memo(two) {
 	      twoMemo(tbd, memo)
 	    }
-	  })
+	  }
 
 	  tbd.read(mod1)(value1 => {
-	    tbd.writeNoDest(value1)
+	    tbd.write(value1)
 	  })
 	} else {
 	  memo(two) {
@@ -150,7 +150,7 @@ class ModNoDestTest(input: TableInput[Int, Int]) extends Adjustable {
 	  }
 	}
       })
-    })
+    }
   }
 }
 
