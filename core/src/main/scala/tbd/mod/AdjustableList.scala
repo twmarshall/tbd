@@ -58,11 +58,11 @@ trait AdjustableList[T, U] {
    * starting with initialValue
    */
   def reduce(
-      tbd: TBD,
       initialValueMod: Mod[(T, U)],
       f: (TBD, (T, U), (T, U)) => (T, U),
       parallel: Boolean = false,
-      memoized: Boolean = true) : Mod[(T, U)]
+      memoized: Boolean = true)
+     (implicit tbd: TBD): Mod[(T, U)]
 
   /**
    * Returns a sorted copy of this list.

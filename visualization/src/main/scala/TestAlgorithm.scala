@@ -33,7 +33,7 @@ class ListReduceSumTest()
   def run(implicit tbd: TBD): Mod[(Int, Int)] = {
     val modList = input.getAdjustableList()
     val zero = tbd.mod{ tbd.write((0, 0)) }
-    modList.reduce(tbd, zero,
+    modList.reduce(zero,
       (tbd: TBD, pair1: (Int, Int), pair2: (Int, Int)) => {
         (pair2._1, pair1._2 + pair2._2)
       })

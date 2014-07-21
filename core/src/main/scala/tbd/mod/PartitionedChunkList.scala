@@ -86,24 +86,24 @@ class PartitionedChunkList[T, U](
   }
 
   def reduce(
-      tbd: TBD,
       initialValueMod: Mod[(T, U)],
       f: (TBD, (T, U), (T, U)) => (T, U),
       parallel: Boolean = true,
-      memoized: Boolean = true) : Mod[(T, U)] = {
+      memoized: Boolean = true)
+     (implicit tbd: TBD): Mod[(T, U)] = {
 
-    def parReduce(tbd: TBD, i: Int): Mod[(T, U)] = {
+    def parReduce(i: Int)(implicit tbd: TBD): Mod[(T, U)] = {
       if (i < partitions.size) {
-        val parTup = tbd.par((tbd: TBD) => {
-          partitions(i).reduce(tbd, initialValueMod, f, parallel, memoized)
+        val parTup = par((tbd: TBD) => {
+          partitions(i).reduce(initialValueMod, f, parallel, memoized)(tbd)
         }, (tbd: TBD) => {
-          parReduce(tbd, i + 1)
+          parReduce(i + 1)(tbd)
         })
 
-        tbd.mod {
-          tbd.read2(parTup._1, parTup._2)((a, b) => {
-            tbd.write(f(tbd, a, b))
-          })
+        mod {
+          read2(parTup._1, parTup._2) {
+	    case (a, b) => write(f(tbd, a, b))
+          }
         }
       } else {
         initialValueMod
@@ -111,15 +111,15 @@ class PartitionedChunkList[T, U](
     }
 
     if(parallel) {
-      parReduce(tbd, 0)
+      parReduce(0)
     } else {
       partitions.map((partition: ChunkList[T, U]) => {
-        partition.reduce(tbd, initialValueMod, f, parallel, memoized)
+        partition.reduce(initialValueMod, f, parallel, memoized)
       }).reduce((a, b) => {
-        tbd.mod {
-          tbd.read2(a, b)((a, b) => {
-            tbd.write(f(tbd, a, b))
-          })
+        mod {
+          read2(a, b) {
+	    case (a, b) => tbd.write(f(tbd, a, b))
+          }
         }
       })
     }

@@ -106,7 +106,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val pages = input.getAdjustableList()
     val counts = pages.map(mapper, parallel)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))
-    counts.reduce(tbd, initialValue, reducer, parallel)
+    counts.reduce(initialValue, reducer, parallel)
   }
 }
 
@@ -151,6 +151,6 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val pages = input.getChunkList()
     val counts = pages.chunkMap(tbd, chunkMapper, parallel)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))
-    counts.reduce(tbd, initialValue, chunkReducer, parallel)
+    counts.reduce(initialValue, chunkReducer, parallel)
   }
 }

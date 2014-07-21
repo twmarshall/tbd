@@ -33,6 +33,14 @@ object TBD {
     tbd.read(mod)(reader)
   }
 
+  def read2[T, V, U](
+      a: Mod[T],
+      b: Mod[V])
+     (reader: (T, V) => (Changeable[U]))
+     (implicit tbd: TBD): Changeable[U] = {
+    tbd.read2(a, b)(reader)
+  }
+
   def mod[T](initializer: => Changeable[T])(implicit tbd: TBD): Mod[T] = {
     tbd.mod(initializer)
   }
@@ -47,6 +55,10 @@ object TBD {
 
   def makeMemoizer[T](dummy: Boolean = false)(implicit tbd: TBD): Memoizer[T] = {
     tbd.makeMemoizer[T](dummy)
+  }
+
+  def createMod[T](value: T)(implicit tbd: TBD): Mod[T] = {
+    tbd.createMod(value)
   }
 }
 

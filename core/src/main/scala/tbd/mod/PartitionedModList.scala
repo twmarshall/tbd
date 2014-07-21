@@ -56,26 +56,25 @@ class PartitionedModList[T, V](
   }
 
   def reduce(
-      tbd: TBD,
       initialValueMod: Mod[(T, V)],
       f: (TBD, (T, V), (T, V)) => (T, V),
       parallel: Boolean = true,
-      memoized: Boolean = true) : Mod[(T, V)] = {
+      memoized: Boolean = true)
+     (implicit tbd: TBD): Mod[(T, V)] = {
 
-
-    def parReduce(tbd: TBD, i: Int): Mod[(T, V)] = {
+    def parReduce(i: Int)(implicit tbd: TBD): Mod[(T, V)] = {
       if (i < partitions.size) {
-        val parTup = tbd.par((tbd: TBD) => {
-          partitions(i).reduce(tbd, initialValueMod, f, parallel, memoized)
+        val parTup = par((tbd: TBD) => {
+          partitions(i).reduce(initialValueMod, f, parallel, memoized)(tbd)
         }, (tbd: TBD) => {
-          parReduce(tbd, i + 1)
+          parReduce(i + 1)(tbd)
         })
 
 
-        tbd.mod {
-          tbd.read2(parTup._1, parTup._2)((a, b) => {
-            tbd.write(f(tbd, a, b))
-          })
+        mod {
+          read2(parTup._1, parTup._2) {
+	    case (a, b) => write(f(tbd, a, b))
+          }
         }
       } else {
         initialValueMod
@@ -83,15 +82,15 @@ class PartitionedModList[T, V](
     }
 
     if(parallel) {
-      parReduce(tbd, 0)
+      parReduce(0)
     } else {
       partitions.map((partition: ModList[T, V]) => {
-        partition.reduce(tbd, initialValueMod, f, parallel, memoized)
+        partition.reduce(initialValueMod, f, parallel, memoized)
       }).reduce((a, b) => {
-        tbd.mod {
-          tbd.read2(a, b)((a, b) => {
-            tbd.write(f(tbd, a, b))
-          })
+        mod {
+          read2(a, b) {
+	    case (a, b) => write(f(tbd, a, b))
+          }
         }
       })
     }

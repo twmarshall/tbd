@@ -54,24 +54,24 @@ class ModList[T, V](
   }
 
   def reduce(
-      tbd: TBD,
       identityMod: Mod[(T, V)],
       f: (TBD, (T, V), (T, V)) => (T, V),
       parallel: Boolean = false,
-      memoized: Boolean = true): Mod[(T, V)] = {
+      memoized: Boolean = true)
+     (implicit tbd: TBD): Mod[(T, V)] = {
 
     // Each round we need a hasher and a memo, and we need to guarantee that the
     // same hasher and memo are used for a given round during change propagation,
     // even if the first mod of the list is deleted.
     class RoundMemoizer {
-      val memo = tbd.makeMemoizer[(Hasher,
+      val memo = makeMemoizer[(Hasher,
                                Memoizer[Mod[ModListNode[T, V]]],
                                RoundMemoizer)](!memoized)
 
       def getTuple() =
         memo() {
           (new Hasher(2, 4),
-           tbd.makeMemoizer[Mod[ModListNode[T, V]]](!memoized),
+           makeMemoizer[Mod[ModListNode[T, V]]](!memoized),
            new RoundMemoizer())
 	}
     }
@@ -84,15 +84,16 @@ class ModList[T, V](
       val tuple = roundMemoizer.getTuple()
 
       val halfListMod =
-        tbd.mod {
-          tbd.read(identityMod)(identity =>
-            halfList(identity, identity, head, round, tuple._1, tuple._2))
+        mod {
+          read(identityMod) {
+	    case identity => halfList(identity, identity, head, round, tuple._1, tuple._2)
+	  }
 	}
 
-      tbd.read(halfListMod)(halfList =>
-        tbd.read(halfList.next)(next =>
+      read(halfListMod)(halfList =>
+        read(halfList.next)(next =>
           if(next == null)
-            tbd.write(halfList.value)
+            write(halfList.value)
           else
             randomReduceList(halfList, identity, round + 1, tuple._3)))
     }
@@ -113,21 +114,21 @@ class ModList[T, V](
 
       if(binaryHash(head.next.id, round, hasher)) {
         val newNext = memo(head.next, identityMod) {
-	  tbd.mod {
-	    tbd.read(head.next)(next =>
+	  mod {
+	    read(head.next)(next =>
 	      if (next == null)
-	        tbd.write[ModListNode[T, V]](null)
+	        write[ModListNode[T, V]](null)
 	      else
 	          halfList(identity, identity, next, round,
                            hasher, memo))
 	  }
 	}
-        tbd.write(new ModListNode(newAcc, newNext))
+        write(new ModListNode(newAcc, newNext))
       } else {
-        tbd.read(head.next)(next =>
+        read(head.next)(next =>
 	  if (next == null) {
-	    val newNext = tbd.createMod[ModListNode[T, V]](null)
-            tbd.write(new ModListNode(newAcc, newNext))
+	    val newNext = createMod[ModListNode[T, V]](null)
+            write(new ModListNode(newAcc, newNext))
 	  } else {
 	    halfList(newAcc, identity, next, round, hasher, memo)
 	  }
@@ -136,12 +137,12 @@ class ModList[T, V](
     }
 
     val roundMemoizer = new RoundMemoizer()
-    tbd.mod {
-      tbd.read(identityMod)(identity =>
-        tbd.read(head)(head =>
+    mod {
+      read(identityMod)(identity =>
+        read(head)(head =>
           if(head == null)
-            tbd.read(identityMod)(identity =>
-              tbd.write(identity))
+            read(identityMod)(identity =>
+              write(identity))
           else
             randomReduceList(head, identity, 0, roundMemoizer)))
     }

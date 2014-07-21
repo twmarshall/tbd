@@ -76,11 +76,11 @@ class ChunkList[T, U](
      (implicit tbd: TBD): ChunkList[T, U] = ???
 
   def reduce(
-      tbd: TBD,
       initialValueMod: Mod[(T, U)],
       f: (TBD, (T, U), (T, U)) => (T, U),
       parallel: Boolean = false,
-      memoized: Boolean = true): Mod[(T, U)] = ???
+      memoized: Boolean = true)
+     (implicit tbd: TBD): Mod[(T, U)] = ???
 
   def split(
       tbd: TBD,
@@ -125,7 +125,7 @@ class ChunkList[T, U](
     }
 
     val initialValue = tbd.createMod((0, Vector[(T, U)]()))
-    sortedChunks.reduce(tbd, initialValue, reducer)
+    sortedChunks.reduce(initialValue, reducer)(tbd)
   }
 
   /* Meta functions */
