@@ -19,30 +19,28 @@ import scala.collection.mutable.Buffer
 
 import tbd.{Changeable, Memoizer, TBD}
 import tbd.Constants.ModId
+import tbd.TBD._
 
 class ChunkList[T, U](
     val head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
 
   def map[V, W](
-      tbd: TBD,
       f: (TBD, (T, U)) => (V, W),
       parallel: Boolean = false,
-      memoized: Boolean = true): ChunkList[V, W] = {
+      memoized: Boolean = true)
+     (implicit tbd: TBD): ChunkList[V, W] = {
     if (parallel || !memoized) {
       tbd.log.warning("ChunkList.map ignores the 'parallel' and " +
 		      "'memoized' parameters.")
     }
 
-    val memo = tbd.makeMemoizer[Changeable[ChunkListNode[V, W]]]()
+    val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
     new ChunkList(
-      tbd.mod {
-        tbd.read(head)(node => {
-          if (node != null) {
-            node.map(tbd, f, memo)
-          } else {
-            tbd.write[ChunkListNode[V, W]](null)
-          }
-        })
+      mod {
+        read(head) {
+	  case null => write[ChunkListNode[V, W]](null)
+	  case node => node.map(f, memo)
+        }
       }
     )
   }

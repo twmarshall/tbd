@@ -26,17 +26,16 @@ class PartitionedChunkList[T, U](
   ) extends AdjustableChunkList[T, U] {
 
   def map[V, Q](
-      tbd: TBD,
       f: (TBD, (T, U)) => (V, Q),
       parallel: Boolean = true,
-      memoized: Boolean = false): PartitionedChunkList[V, Q] = {
+      memoized: Boolean = false)(implicit tbd: TBD): PartitionedChunkList[V, Q] = {
     if (parallel) {
-      def innerMemoParMap(tbd: TBD, i: Int): ArrayBuffer[ChunkList[V, Q]] = {
+      def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[V, Q]] = {
         if (i < partitions.size) {
           val parTup = tbd.par((tbd: TBD) => {
-            partitions(i).map(tbd, f, memoized = memoized)
+            partitions(i).map(f, memoized = memoized)(tbd)
           }, (tbd: TBD) => {
-            innerMemoParMap(tbd, i + 1)
+            innerMap(i + 1)(tbd)
           })
 
           parTup._2 += parTup._1
@@ -45,11 +44,11 @@ class PartitionedChunkList[T, U](
         }
       }
 
-      new PartitionedChunkList(innerMemoParMap(tbd, 0))
+      new PartitionedChunkList(innerMap(0))
     } else {
       new PartitionedChunkList(
         partitions.map((partition: ChunkList[T, U]) => {
-          partition.map(tbd, f, memoized = memoized)
+          partition.map(f, memoized = memoized)
         })
       )
     }

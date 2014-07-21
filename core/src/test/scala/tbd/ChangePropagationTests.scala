@@ -56,7 +56,7 @@ class PropagationOrderTest2(input: ListInput[Int, Int]) extends Adjustable {
 
   def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
     val adjustableList = input.getAdjustableList()
-    adjustableList.map(tbd, (tbd: TBD, pair: (Int, Int)) => {
+    adjustableList.map((tbd: TBD, pair: (Int, Int)) => {
       if (tbd.initialRun) {
         values += pair._2
       } else {

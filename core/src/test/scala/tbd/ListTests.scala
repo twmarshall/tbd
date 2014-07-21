@@ -27,7 +27,7 @@ class ListMapTest(
     input: ListInput[String, Int]) extends Adjustable {
   def run(implicit tbd: TBD): AdjustableList[String, Int] = {
     val list = input.getAdjustableList()
-    list.map(tbd, f, parallel = parallel)
+    list.map(f, parallel = parallel)
   }
 }
 
@@ -49,8 +49,7 @@ class ListSortTest(input: ListInput[String, Int])  extends Adjustable {
 class ListMemoMapTest(input: ListInput[String, Int]) extends Adjustable {
   def run(implicit tbd: TBD): AdjustableList[String, Int] = {
     val list = input.getAdjustableList()
-    list.map(tbd,
-             (tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 + 3),
+    list.map((tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 + 3),
              memoized = true)
   }
 }
@@ -58,7 +57,7 @@ class ListMemoMapTest(input: ListInput[String, Int]) extends Adjustable {
 class ChunkListMapTest(input: ListInput[Int, Int]) extends Adjustable {
   def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
     val list = input.getAdjustableList()
-    list.map(tbd, (tbd: TBD, pair: (Int, Int)) => (pair._1, pair._2 - 2))
+    list.map((tbd: TBD, pair: (Int, Int)) => (pair._1, pair._2 - 2))
   }
 }
 

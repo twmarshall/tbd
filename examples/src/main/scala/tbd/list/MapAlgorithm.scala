@@ -55,7 +55,7 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   def run(implicit tbd: TBD) = {
     val pages = input.getAdjustableList()
-    pages.map(tbd, mapper, parallel, memoized)
+    pages.map(mapper, parallel, memoized)
   }
 }
 

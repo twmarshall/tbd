@@ -104,7 +104,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   def run(implicit tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
     val pages = input.getAdjustableList()
-    val counts = pages.map(tbd, mapper, parallel)
+    val counts = pages.map(mapper, parallel)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))
     counts.reduce(tbd, initialValue, reducer, parallel)
   }

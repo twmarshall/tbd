@@ -18,6 +18,7 @@ package tbd.mod
 import java.io.Serializable
 
 import tbd.{Changeable, Changeable2, Memoizer, TBD}
+import tbd.TBD._
 
 class ModListNode[T, V] (
     var value: (T, V),
@@ -34,22 +35,21 @@ class ModListNode[T, V] (
   }
 
   def map[U, Q](
-      tbd: TBD,
       f: (TBD, (T, V)) => (U, Q),
       memo: Memoizer[Changeable[ModListNode[U, Q]]])
-        : Changeable[ModListNode[U, Q]] = {
-    val newNext = tbd.mod {
-      tbd.read(next) {
+     (implicit tbd: TBD): Changeable[ModListNode[U, Q]] = {
+    val newNext = mod {
+      read(next) {
 	case null =>
-	  tbd.write[ModListNode[U, Q]](null)
+	  write[ModListNode[U, Q]](null)
 	case next =>
           memo(next) {
-            next.map(tbd, f, memo)
+            next.map(f, memo)
           }
       }
     }
 
-    tbd.write(new ModListNode[U, Q](f(tbd, value), newNext))
+    write(new ModListNode[U, Q](f(tbd, value), newNext))
   }
 
   def parMap[U, Q](

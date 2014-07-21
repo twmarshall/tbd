@@ -26,17 +26,16 @@ class PartitionedModList[T, V](
   ) extends AdjustableList[T, V] {
 
   def map[U, Q](
-      tbd: TBD,
       f: (TBD, (T, V)) => (U, Q),
       parallel: Boolean = true,
-      memoized: Boolean = true): PartitionedModList[U, Q] = {
+      memoized: Boolean = true)(implicit tbd: TBD): PartitionedModList[U, Q] = {
     if (parallel) {
-      def innerMemoParMap(tbd: TBD, i: Int): ArrayBuffer[ModList[U, Q]] = {
+      def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[U, Q]] = {
         if (i < partitions.size) {
           val parTup = tbd.par((tbd: TBD) => {
-            partitions(i).map(tbd, f, memoized = memoized)
+            partitions(i).map(f, memoized = memoized)(tbd)
           }, (tbd: TBD) => {
-            innerMemoParMap(tbd, i + 1)
+            innerMap(i + 1)(tbd)
           })
 
           parTup._2 += parTup._1
@@ -45,11 +44,11 @@ class PartitionedModList[T, V](
         }
       }
 
-      new PartitionedModList(innerMemoParMap(tbd, 0))
+      new PartitionedModList(innerMap(0))
     } else {
       new PartitionedModList(
         partitions.map((partition: ModList[T, V]) => {
-          partition.map(tbd, f, memoized = memoized)
+          partition.map(f, memoized = memoized)
         })
       )
     }

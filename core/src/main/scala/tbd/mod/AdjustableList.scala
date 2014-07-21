@@ -38,10 +38,9 @@ trait AdjustableList[T, U] {
    * function to each of the elements of this AdjustableList.
    */
   def map[V, Q](
-      tbd: TBD,
       f: (TBD, (T, U)) => (V, Q),
       parallel: Boolean = false,
-      memoized: Boolean = true): AdjustableList[V, Q]
+      memoized: Boolean = true)(implicit tbd: TBD): AdjustableList[V, Q]
 
   /**
    * Returns a AdjustableList containing all of the elements from this

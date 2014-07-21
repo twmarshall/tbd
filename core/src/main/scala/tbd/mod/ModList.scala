@@ -19,40 +19,35 @@ import scala.collection.mutable.{ArrayBuffer, Buffer}
 
 import tbd.{Changeable, Changeable2, Memoizer, TBD}
 import tbd.Constants.ModId
+import tbd.TBD._
 
 class ModList[T, V](
     val head: Mod[ModListNode[T, V]]
   ) extends AdjustableList[T, V] {
 
   def map[U, Q](
-      tbd: TBD,
       f: (TBD, (T, V)) => (U, Q),
       parallel: Boolean = false,
-      memoized: Boolean = true): ModList[U, Q] = {
+      memoized: Boolean = true)
+     (implicit tbd: TBD): ModList[U, Q] = {
     if (parallel) {
       new ModList(
-        tbd.mod {
-          tbd.read(head)(node => {
-            if (node != null) {
-              node.parMap(tbd, f)
-            } else {
-              tbd.write[ModListNode[U, Q]](null)
-            }
-          })
+        mod {
+          read(head) {
+	    case null => write[ModListNode[U, Q]](null)
+	    case node => node.parMap(tbd, f)
+          }
         }
       )
     } else {
-      val memo = tbd.makeMemoizer[Changeable[ModListNode[U, Q]]](!memoized)
+      val memo = makeMemoizer[Changeable[ModListNode[U, Q]]](!memoized)
 
       new ModList(
-        tbd.mod {
-          tbd.read(head)(node => {
-            if (node != null) {
-              node.map(tbd, f, memo)
-            } else {
-              tbd.write[ModListNode[U, Q]](null)
-            }
-          })
+        mod {
+          read(head) {
+            case null => write[ModListNode[U, Q]](null)
+            case node => node.map(f, memo)
+          }
         }
       )
     }

@@ -18,6 +18,7 @@ package tbd.mod
 import java.io.Serializable
 
 import tbd.{Changeable, Memoizer, TBD}
+import tbd.TBD._
 
 // The default value of zero for size works because size is only ever
 // accessed by the Modifier, which will set it appropriately.
@@ -36,24 +37,21 @@ class ChunkListNode[T, U](
   }
 
   def map[V, W](
-      tbd: TBD,
       f: (TBD, (T, U)) => (V, W),
       memo: Memoizer[Changeable[ChunkListNode[V, W]]])
-        : Changeable[ChunkListNode[V, W]] = {
+     (implicit tbd: TBD): Changeable[ChunkListNode[V, W]] = {
     val newChunk = chunk.map((pair: (T, U)) => f(tbd, pair))
-    val newNext = tbd.mod {
-      tbd.read(nextMod)(next => {
-        if (next != null) {
+    val newNext = mod {
+      read(nextMod) {
+	case null => write[ChunkListNode[V, W]](null)
+	case next =>
           memo(nextMod) {
-            next.map(tbd, f, memo)
+            next.map(f, memo)
           }
-        } else {
-          tbd.write[ChunkListNode[V, W]](null)
-        }
-      })
+      }
     }
 
-    tbd.write(new ChunkListNode[V, W](newChunk, newNext))
+    write(new ChunkListNode[V, W](newChunk, newNext))
   }
 
   def chunkMap[V, Q](
