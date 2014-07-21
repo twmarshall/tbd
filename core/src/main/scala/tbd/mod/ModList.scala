@@ -166,24 +166,22 @@ class ModList[T, V](
   }
 
   def split(
-      tbd: TBD,
       pred: (TBD, (T, V)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = false
-    ): (AdjustableList[T, V], AdjustableList[T, V]) = {
-    val memo = tbd.makeMemoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]]()
+      memoized: Boolean = false)
+     (implicit tbd: TBD): (AdjustableList[T, V], AdjustableList[T, V]) = {
+    val memo = makeMemoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]]()
 
-    val result = tbd.mod_2(2) {
-      tbd.read(head)(head => {
-	memo(head) {
-	  if (head == null) {
-	    tbd.write2(null.asInstanceOf[ModListNode[T, V]],
-		       null.asInstanceOf[ModListNode[T, V]])
-	  } else {
-	    head.split(tbd, memo, pred)
+    val result = mod2(2) {
+      read(head) {
+	case null =>
+	  write2(null.asInstanceOf[ModListNode[T, V]],
+		 null.asInstanceOf[ModListNode[T, V]])
+	case node => 
+	  memo(node) {
+	    node.split(memo, pred)
 	  }
-	}
-      })
+      }
     }
 
     (new ModList(result._1), new ModList(result._2))

@@ -56,6 +56,10 @@ object TBD {
     tbd.write(value)
   }
 
+  def write2[T, U](value: T, value2: U)(implicit tbd: TBD): Changeable2[T, U] = {
+    tbd.write2(value, value2)
+  }
+
   def par[T, U](one: TBD => T, two: TBD => U)(implicit tbd: TBD): Tuple2[T, U] = {
     tbd.par(one, two)
   }

@@ -34,7 +34,7 @@ class ListMapTest(
 class ListSplitTest(input: ListInput[String, Int])  extends Adjustable {
   def run(implicit tbd: TBD): (AdjustableList[String, Int], AdjustableList[String, Int]) = {
     val modList = input.getAdjustableList()
-    modList.split(tbd, (tbd, a) => a._2 % 2 == 0, true, true)
+    modList.split((tbd, a) => a._2 % 2 == 0, true, true)
   }
 }
 

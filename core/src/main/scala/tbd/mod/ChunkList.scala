@@ -83,11 +83,10 @@ class ChunkList[T, U](
      (implicit tbd: TBD): Mod[(T, U)] = ???
 
   def split(
-      tbd: TBD,
       pred: (TBD, (T, U)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = false):
-       (AdjustableList[T, U], AdjustableList[T, U]) = ???
+      memoized: Boolean = false)
+     (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   def sort(
       comperator: (TBD, (T, U), (T, U)) => Boolean,

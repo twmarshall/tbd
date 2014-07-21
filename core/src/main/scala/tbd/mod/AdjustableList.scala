@@ -79,11 +79,10 @@ trait AdjustableList[T, U] {
    * given predicate, and the second AdjustableList contains all other elements.
    */
   def split(
-      tbd: TBD,
       pred: (TBD, (T, U)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = false):
-        (AdjustableList[T, U], AdjustableList[T, U])
+      memoized: Boolean = false)
+     (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U])
 
   /* Meta functions */
   def toBuffer(): Buffer[U]

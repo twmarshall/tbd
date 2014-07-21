@@ -56,7 +56,7 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def run(implicit tbd: TBD): SplitResult = {
     val pages = input.getAdjustableList()
 
-    pages.split(tbd, (tbd: TBD, pair:(Int, String)) => SplitAlgorithm.predicate(pair),
+    pages.split((tbd: TBD, pair:(Int, String)) => SplitAlgorithm.predicate(pair),
                 parallel, memoized)
   }
 }

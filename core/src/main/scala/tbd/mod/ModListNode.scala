@@ -96,33 +96,32 @@ class ModListNode[T, V] (
   }
 
   def split(
-      tbd: TBD,
       memo: Memoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]],
       pred: (TBD, (T, V)) => Boolean,
-      parallel: Boolean = false
-    ): Changeable2[ModListNode[T, V], ModListNode[T, V]] = {
+      parallel: Boolean = false)
+     (implicit tbd: TBD): Changeable2[ModListNode[T, V], ModListNode[T, V]] = {
     def readNext(next: ModListNode[T, V]) = {
       memo(next) {
 	if (next != null) {
-	  next.split(tbd, memo, pred)
+	  next.split(memo, pred)
 	} else {
-	  tbd.write2(null.asInstanceOf[ModListNode[T, V]],
-		     null.asInstanceOf[ModListNode[T, V]])
+	  write2(null.asInstanceOf[ModListNode[T, V]],
+		 null.asInstanceOf[ModListNode[T, V]])
 	}
       }
     }
 
     if(pred(tbd, value)) {
       val (matchNext, diffNext) =
-	tbd.mod_2(0) {
-	  tbd.read(next)(readNext)
+	mod2(0) {
+	  read(next)(readNext)
 	}
 
       tbd.writeNoDestLeft(new ModListNode(value, matchNext), diffNext)
     } else {
       val (matchNext, diffNext) =
-	tbd.mod_2(1) {
-	  tbd.read(next)(readNext)
+	mod2(1) {
+	  read(next)(readNext)
 	}
 
       tbd.writeNoDestRight(matchNext, new ModListNode(value, diffNext))
@@ -142,7 +141,7 @@ class ModListNode[T, V] (
 
           val memo = makeMemoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]]()
 
-          next.split(tbd, memo,
+          next.split(memo,
                      (tbd, cv) => { comperator(tbd, cv, value) },
                      parallel)
         }
