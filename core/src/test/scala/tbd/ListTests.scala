@@ -41,7 +41,7 @@ class ListSplitTest(input: ListInput[String, Int])  extends Adjustable {
 class ListSortTest(input: ListInput[String, Int])  extends Adjustable {
   def run(implicit tbd: TBD): AdjustableList[String, Int] = {
     val modList = input.getAdjustableList()
-    modList.sort(tbd, (tbd, a, b) => a._2 < b._2, true, true)
+    modList.sort((tbd, a, b) => a._2 < b._2, true, true)
   }
 }
 

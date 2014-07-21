@@ -130,18 +130,17 @@ class ModListNode[T, V] (
   }
 
   def quicksort(
-        tbd: TBD,
         toAppend: Mod[ModListNode[T, V]],
         comperator: (TBD, (T, V), (T, V)) => Boolean,
         memo: Memoizer[Mod[ModListNode[T, V]]],
         parallel: Boolean = false,
-        memoized: Boolean = false):
-          Changeable[ModListNode[T, V]] = {
-    tbd.read(next)(next => {
+        memoized: Boolean = false)
+       (implicit tbd: TBD): Changeable[ModListNode[T, V]] = {
+    read(next)(next => {
       if(next != null) {
-        val (smaller, greater) = tbd.mod_2(2) {
+        val (smaller, greater) = mod2(2) {
 
-          val memo = tbd.makeMemoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]]()
+          val memo = makeMemoizer[Changeable2[ModListNode[T, V], ModListNode[T, V]]]()
 
           next.split(tbd, memo,
                      (tbd, cv) => { comperator(tbd, cv, value) },
@@ -149,14 +148,13 @@ class ModListNode[T, V] (
         }
 
         val greaterSorted = memo(List(greater)) {
-          tbd.mod {
-            tbd.read(greater)(greater => {
+          mod {
+            read(greater)(greater => {
               if(greater != null) {
-                greater.quicksort(tbd, toAppend,
-                                  comperator, memo, parallel, memoized)
+                greater.quicksort(toAppend, comperator, memo, parallel, memoized)
               } else {
-                tbd.read(toAppend)(toAppend => {
-                  tbd.write(toAppend)
+                read(toAppend)(toAppend => {
+                  write(toAppend)
                 })
               }
             })
@@ -165,16 +163,16 @@ class ModListNode[T, V] (
 
         val mid = new ModListNode(value, greaterSorted)
 
-        tbd.read(smaller)(smaller => {
+        read(smaller)(smaller => {
           if(smaller != null) {
-            smaller.quicksort(tbd, tbd.createMod(mid),
+            smaller.quicksort(createMod(mid),
                               comperator, memo, parallel, memoized)
           } else {
-            tbd.write(mid)
+            write(mid)
           }
         })
       } else {
-        tbd.write(new ModListNode(value, toAppend))
+        write(new ModListNode(value, toAppend))
       }
     })
   }

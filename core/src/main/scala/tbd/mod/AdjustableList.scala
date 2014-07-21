@@ -68,10 +68,10 @@ trait AdjustableList[T, U] {
    * Returns a sorted copy of this list.
    */
   def sort(
-      tbd: TBD,
       comperator: (TBD, (T, U), (T, U)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = false): AdjustableList[T, U]
+      memoized: Boolean = false)
+     (implicit tbd: TBD): AdjustableList[T, U]
 
   /**
    * Returns a tuple of two AdjustableList, whereas the first AdjustableList

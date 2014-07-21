@@ -134,10 +134,10 @@ class PartitionedModList[T, V](
        (AdjustableList[T, V], AdjustableList[T, V]) = ???
 
   def sort(
-      tbd: TBD,
       comperator: (TBD, (T, V), (T, V)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = false): AdjustableList[T, V] = ???
+      memoized: Boolean = false)
+     (implicit tbd: TBD): AdjustableList[T, V] = ???
 
 
   /* Meta Operations */

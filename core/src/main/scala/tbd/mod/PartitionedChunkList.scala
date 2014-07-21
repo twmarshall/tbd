@@ -163,10 +163,10 @@ class PartitionedChunkList[T, U](
        (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   def sort(
-      tbd: TBD,
       comperator: (TBD, (T, U), (T, U)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = false): AdjustableList[T, U] = ???
+      memoized: Boolean = false)
+     (implicit tbd: TBD): AdjustableList[T, U] = ???
 
   def chunkSort(
       tbd: TBD,

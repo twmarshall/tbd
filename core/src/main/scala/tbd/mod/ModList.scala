@@ -190,22 +190,18 @@ class ModList[T, V](
   }
 
   def sort(
-      tbd: TBD,
       comperator: (TBD, (T, V), (T, V)) => Boolean,
       parallel: Boolean = false,
-      memoized: Boolean = false): AdjustableList[T, V] = {
+      memoized: Boolean = false)
+     (implicit tbd: TBD): AdjustableList[T, V] = {
+    val memo = makeMemoizer[Mod[ModListNode[T, V]]](!memoized)
 
-    val memo = tbd.makeMemoizer[Mod[ModListNode[T, V]]](!memoized)
-
-    val sorted = tbd.mod {
-      tbd.read(head)(head => {
-        if(head == null) {
-          tbd.write[ModListNode[T, V]](null)
-        } else {
-          head.quicksort(tbd, tbd.createMod(null),
-                         comperator, memo, parallel, memoized)
-        }
-      })
+    val sorted = mod {
+      read(head) {
+        case null => write[ModListNode[T, V]](null)
+        case node =>
+	  node.quicksort(createMod(null), comperator, memo, parallel, memoized)
+      }
     }
 
     new ModList(sorted)

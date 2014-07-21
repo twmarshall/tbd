@@ -45,6 +45,13 @@ object TBD {
     tbd.mod(initializer)
   }
 
+  def mod2[T, U](
+      write: Int)
+     (initializer: => Changeable2[T, U])
+     (implicit tbd: TBD): (Mod[T], Mod[U]) = {
+    tbd.mod_2(write)(initializer)
+  }
+
   def write[T](value: T)(implicit tbd: TBD): Changeable[T] = {
     tbd.write(value)
   }
