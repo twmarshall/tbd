@@ -25,21 +25,21 @@ class ListMapTest(
     f: (TBD, (String, Int)) => (String, Int),
     parallel: Boolean,
     input: ListInput[String, Int]) extends Adjustable {
-  def run(tbd: TBD): AdjustableList[String, Int] = {
+  def run(implicit tbd: TBD): AdjustableList[String, Int] = {
     val list = input.getAdjustableList()
     list.map(tbd, f, parallel = parallel)
   }
 }
 
 class ListSplitTest(input: ListInput[String, Int])  extends Adjustable {
-  def run(tbd: TBD): (AdjustableList[String, Int], AdjustableList[String, Int]) = {
+  def run(implicit tbd: TBD): (AdjustableList[String, Int], AdjustableList[String, Int]) = {
     val modList = input.getAdjustableList()
     modList.split(tbd, (tbd, a) => a._2 % 2 == 0, true, true)
   }
 }
 
 class ListSortTest(input: ListInput[String, Int])  extends Adjustable {
-  def run(tbd: TBD): AdjustableList[String, Int] = {
+  def run(implicit tbd: TBD): AdjustableList[String, Int] = {
     val modList = input.getAdjustableList()
     modList.sort(tbd, (tbd, a, b) => a._2 < b._2, true, true)
   }
@@ -47,7 +47,7 @@ class ListSortTest(input: ListInput[String, Int])  extends Adjustable {
 
 
 class ListMemoMapTest(input: ListInput[String, Int]) extends Adjustable {
-  def run(tbd: TBD): AdjustableList[String, Int] = {
+  def run(implicit tbd: TBD): AdjustableList[String, Int] = {
     val list = input.getAdjustableList()
     list.map(tbd,
              (tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 + 3),
@@ -56,21 +56,21 @@ class ListMemoMapTest(input: ListInput[String, Int]) extends Adjustable {
 }
 
 class ChunkListMapTest(input: ListInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
+  def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
     val list = input.getAdjustableList()
     list.map(tbd, (tbd: TBD, pair: (Int, Int)) => (pair._1, pair._2 - 2))
   }
 }
 
 class ListFilterTest(input: ListInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
+  def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
     val list = input.getAdjustableList()
     list.filter(tbd, (pair: (Int, Int)) => pair._2 % 2 == 0)
   }
 }
 
 class ListReduceSumTest(input: ListInput[String, Int]) extends Adjustable {
-  def run(tbd: TBD): Mod[(String, Int)] = {
+  def run(implicit tbd: TBD): Mod[(String, Int)] = {
     val modList = input.getAdjustableList()
     val zero = tbd.mod((dest : Dest[(String, Int)]) => tbd.write(dest, ("", 0)))
     modList.reduce(tbd, zero,

@@ -54,7 +54,7 @@ class Master(datastoreRef: ActorRef) extends Actor with ActorLogging {
       workerRef = context.actorOf(workerProps, "worker" + mutatorId)
       workers(mutatorId) = workerRef
 
-      val resultFuture = workerRef ? RunTaskMessage(adjust.run)
+      val resultFuture = workerRef ? RunTaskMessage((tbd: TBD) => adjust.run(tbd))
 
       sender ! resultFuture
     }

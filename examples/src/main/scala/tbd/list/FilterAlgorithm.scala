@@ -47,7 +47,7 @@ class FilterAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def filterer(pair: (Int, Int)) =
     FilterAlgorithm.predicate(pair)
 
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
+  def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
     val pages = input.getAdjustableList()
     pages.filter(tbd, filterer, parallel, memoized)
   }

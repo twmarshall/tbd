@@ -35,7 +35,7 @@ class WCTest(input: ListInput[Int, String], parallel: Boolean)
     (pair1._1, WCAlgorithm.reduce(pair1._2, pair2._2))
    }
 
-  def run(tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
+  def run(implicit tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
     val pages = input.getAdjustableList()
     val counts = pages.map(tbd, mapper, parallel)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))

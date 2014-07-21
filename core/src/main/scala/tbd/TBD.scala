@@ -28,6 +28,24 @@ import tbd.messages._
 import tbd.mod.{Dest, Mod}
 import tbd.worker.Worker
 
+object TBD {
+  def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U)(implicit tbd: TBD): U = {
+    tbd.read(mod)(reader)
+  }
+
+  def mod[T](initializer: => Changeable[T])(implicit tbd: TBD): Mod[T] = {
+    tbd.mod(initializer)
+  }
+
+  def write[T](value: T)(implicit tbd: TBD): Changeable[T] = {
+    tbd.write(value)
+  }
+
+  def par[T, U](one: TBD => T, two: TBD => U)(implicit tbd: TBD): Tuple2[T, U] = {
+    tbd.par(one, two)
+  }
+}
+
 class TBD(id: String, val worker: Worker) {
   import worker.context.dispatcher
   var initialRun = true

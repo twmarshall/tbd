@@ -22,13 +22,13 @@ import tbd._
 import tbd.mod.AdjustableList
 
 class ListTest(input: ListInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
+  def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
     input.getAdjustableList()
   }
 }
 
 class ChunkListTest(input: ChunkListInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
+  def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
     input.getChunkList()
   }
 }

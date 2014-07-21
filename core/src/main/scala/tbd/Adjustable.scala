@@ -16,5 +16,5 @@
 package tbd
 
 trait Adjustable {
-  def run(tbd: TBD): Any
+  def run(implicit tbd: TBD): Any
 }

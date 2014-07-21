@@ -21,6 +21,7 @@ import tbd.{Adjustable, Changeable, Mutator, TableInput, TBD}
 import tbd.ddg.{MemoNode, ReadNode, RootNode}
 import tbd.master.Main
 import tbd.mod.{Dest, Mod}
+import tbd.TBD._
 
 class MemoTest(input: TableInput[Int, Int]) extends Adjustable {
   // Note: real client applications should NOT have mutable state like this.
@@ -28,7 +29,7 @@ class MemoTest(input: TableInput[Int, Int]) extends Adjustable {
   // reexecuted as appropriate.
   var count = 0
 
-  def run(tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD): Mod[Int] = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -75,7 +76,7 @@ class AlreadyMatchedTest(input: TableInput[Int, Int]) extends Adjustable {
    * places in the code, as you can get weird results if the memoized block
    * isn't always the same.
    */
-  def run(tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD): Mod[Int] = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -108,7 +109,7 @@ class AlreadyMatchedTest(input: TableInput[Int, Int]) extends Adjustable {
 class OutOfScopeTest(input: TableInput[Int, Int]) extends Adjustable {
   var num = 0
 
-  def run(tbd: TBD): Int = {
+  def run(implicit tbd: TBD): Int = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -143,7 +144,7 @@ class MatchingSignaturesTest(input: TableInput[Int, Int]) extends Adjustable {
   var count1 = 0
   var count2 = 0
 
-  def run(tbd: TBD): Int = {
+  def run(implicit tbd: TBD): Int = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -180,7 +181,7 @@ class MatchParentTest(input: TableInput[Int, Int]) extends Adjustable {
   var count3 = 0
   var count4 = 0
 
-  def run(tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD): Mod[Int] = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -216,7 +217,7 @@ class MatchParentTest(input: TableInput[Int, Int]) extends Adjustable {
 class PropagateThroughMemoTest(input: TableInput[Int, Int]) extends Adjustable {
   var count = 0
 
-  def run(tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD): Mod[Int] = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -245,7 +246,7 @@ class PropagateThroughMemoTest(input: TableInput[Int, Int]) extends Adjustable {
 class RepeatRunsTest(input: TableInput[Int, Int]) extends Adjustable {
   var count = 0
 
-  def run(tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD): Mod[Int] = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -271,7 +272,7 @@ class OutOfOrderMatchTest(input: TableInput[Int, Int]) extends Adjustable {
   var count2 = 0
   var count3 = 0
 
-  def run(tbd: TBD): Any = {
+  def run(implicit tbd: TBD): Any = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -303,7 +304,7 @@ class OutOfOrderMatchTest(input: TableInput[Int, Int]) extends Adjustable {
 }
 
 class NoDestTest(input: TableInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD): Mod[Int] = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -311,31 +312,32 @@ class NoDestTest(input: TableInput[Int, Int]) extends Adjustable {
     val four = table.get(4)
     val memo = tbd.makeMemoizer[Changeable[Int]]()
 
-    tbd.mod {
-      tbd.read(one)(oneValue => {
-        if (oneValue == 1) {
-          tbd.mod {
-            memo(two) {
-              tbd.read(four)(fourValue =>
-                tbd.write(fourValue))
-            }
+    def memoTwo = {
+      memo(two) {
+        read(four) {
+	  case value => write(value)
+	}
+      }
+    }
+
+    mod {
+      read(one) {
+	case 1 =>
+          mod {
+	    memoTwo
           }
           memo(three) {
-            tbd.write(3)
+            write(3)
           }
-        } else {
-          memo(two) {
-            tbd.read(four)(fourValue =>
-              tbd.write(fourValue))
-          }
-        }
-      })
+	case _ =>
+	  memoTwo
+      }
     }
   }
 }
 
 class NoDestTest2(input: TableInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD): Mod[Int] = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)

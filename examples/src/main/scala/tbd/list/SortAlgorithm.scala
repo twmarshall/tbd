@@ -47,7 +47,7 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     sortedOutput == answer.toBuffer
   }
 
-  def run(tbd: TBD): AdjustableList[Int, String] = {
+  def run(implicit tbd: TBD): AdjustableList[Int, String] = {
     val pages = input.getAdjustableList()
 
     pages.sort(tbd, (tbd: TBD, a:(Int, String), b:(Int, String)) =>
@@ -73,7 +73,7 @@ class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     output.read()._2.map(_._2) == answer.toBuffer
   }
 
-  def run(tbd: TBD): Mod[(Int, Vector[(Int, Int)])] = {
+  def run(implicit tbd: TBD): Mod[(Int, Vector[(Int, Int)])] = {
     val list = input.getChunkList()
 
     list.chunkSort(tbd, (tbd: TBD, a: (Int, Int), b: (Int, Int)) =>

@@ -24,7 +24,7 @@ import tbd.mod._
 class PropagationOrderTest(input: TableInput[Int, Int]) extends Adjustable {
   var num = 0
 
-  def run(tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD): Mod[Int] = {
     val table = input.getTable()
     val one = table.get(1)
 
@@ -50,7 +50,7 @@ class PropagationOrderTest(input: TableInput[Int, Int]) extends Adjustable {
 class PropagationOrderTest2(input: ListInput[Int, Int]) extends Adjustable {
   val values = ArrayBuffer[Int]()
 
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
+  def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
     val adjustableList = input.getAdjustableList()
     adjustableList.map(tbd, (tbd: TBD, pair: (Int, Int)) => {
       if (tbd.initialRun) {
@@ -65,7 +65,7 @@ class PropagationOrderTest2(input: ListInput[Int, Int]) extends Adjustable {
 }
 
 class ReduceTest(input: ListInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): Mod[(Int, Int)] = {
+  def run(implicit tbd: TBD): Mod[(Int, Int)] = {
     val list = input.getAdjustableList()
     val zero = tbd.createMod((0, 0))
     list.reduce(tbd, zero, (tbd: TBD, pair1: (Int, Int), pair2: (Int, Int)) => {
@@ -76,7 +76,7 @@ class ReduceTest(input: ListInput[Int, Int]) extends Adjustable {
 }
 
 class ParTest(input: TableInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD): Mod[Int] = {
     val table = input.getTable()
     val one = table.get(1)
 
@@ -129,7 +129,7 @@ class ModNoDestTest(input: TableInput[Int, Int]) extends Adjustable {
     })
   }
 
-  def run(tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD): Mod[Int] = {
     val memo = tbd.makeMemoizer[Changeable[Int]]()
 
     tbd.mod {

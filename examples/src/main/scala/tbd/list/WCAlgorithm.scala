@@ -102,7 +102,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     (pair1._1, WCAlgorithm.reduce(pair1._2, pair2._2))
    }
 
-  def run(tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
+  def run(implicit tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
     val pages = input.getAdjustableList()
     val counts = pages.map(tbd, mapper, parallel)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))
@@ -147,7 +147,7 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     (pair1._1, WCAlgorithm.reduce(pair1._2, pair2._2))
   }
 
-  def run(tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
+  def run(implicit tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
     val pages = input.getChunkList()
     val counts = pages.chunkMap(tbd, chunkMapper, parallel)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))

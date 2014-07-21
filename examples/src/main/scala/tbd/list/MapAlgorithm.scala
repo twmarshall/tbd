@@ -53,7 +53,7 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     MapAlgorithm.mapper(pair)
   }
 
-  def run(tbd: TBD) = {
+  def run(implicit tbd: TBD) = {
     val pages = input.getAdjustableList()
     pages.map(tbd, mapper, parallel, memoized)
   }
@@ -87,7 +87,7 @@ class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     (0, count)
   }
 
-  def run(tbd: TBD) = {
+  def run(implicit tbd: TBD) = {
     val pages = input.getChunkList()
     pages.chunkMap(tbd, chunkMapper, parallel, memoized)
   }
