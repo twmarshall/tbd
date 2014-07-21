@@ -46,25 +46,22 @@ class ChunkList[T, U](
   }
 
   def chunkMap[V, Q](
-      tbd: TBD,
       f: (TBD, Vector[(T, U)]) => (V, Q),
       parallel: Boolean = false,
-      memoized: Boolean = true): ModList[V, Q] = {
+      memoized: Boolean = true)
+     (implicit tbd: TBD): ModList[V, Q] = {
     if (parallel || !memoized) {
       tbd.log.warning("ChunkList.chunkMap ignores the 'parallel' and " +
 		      "'memoized' parameters.")
     }
 
-    val memo = tbd.makeMemoizer[Mod[ModListNode[V, Q]]]()
+    val memo = makeMemoizer[Mod[ModListNode[V, Q]]]()
     new ModList(
-      tbd.mod {
-        tbd.read(head)(node => {
-          if (node != null) {
-            node.chunkMap(tbd, f, memo)
-          } else {
-            tbd.write[ModListNode[V, Q]](null)
-          }
-        })
+      mod {
+        read(head) {
+	  case null => write[ModListNode[V, Q]](null)
+	  case node => node.chunkMap(f, memo)
+        }
       }
     )
   }
@@ -95,16 +92,15 @@ class ChunkList[T, U](
      (implicit tbd: TBD): AdjustableList[T, U] = ???
 
   def chunkSort(
-      tbd: TBD,
       comparator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false): Mod[(Int, Vector[(T, U)])] = {
-    println("chunkSort")
+      parallel: Boolean = false)
+     (implicit tbd: TBD): Mod[(Int, Vector[(T, U)])] = {
     def mapper(tbd: TBD, chunk: Vector[(T, U)]): (Int, Vector[(T, U)]) = {
       (0, chunk.sortWith((pair1: (T, U), pair2: (T, U)) => {
 	comparator(tbd, pair1, pair2)
       }))
     }
-    val sortedChunks = chunkMap(tbd, mapper)
+    val sortedChunks = chunkMap(mapper)
 
     def reducer(tbd: TBD, pair1: (Int, Vector[(T, U)]), pair2: (Int, Vector[(T, U)])) = {
       def innerReducer(v1: Vector[(T, U)], v2: Vector[(T, U)]): Vector[(T, U)] = {
@@ -123,8 +119,8 @@ class ChunkList[T, U](
       (pair1._1, innerReducer(pair1._2, pair2._2))
     }
 
-    val initialValue = tbd.createMod((0, Vector[(T, U)]()))
-    sortedChunks.reduce(initialValue, reducer)(tbd)
+    val initialValue = createMod((0, Vector[(T, U)]()))
+    sortedChunks.reduce(initialValue, reducer)
   }
 
   /* Meta functions */

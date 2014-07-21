@@ -56,17 +56,17 @@ class PartitionedChunkList[T, U](
   }
 
   def chunkMap[V, Q](
-      tbd: TBD,
       f: (TBD, Vector[(T, U)]) => (V, Q),
       parallel: Boolean = false,
-      memoized: Boolean = true): PartitionedModList[V, Q] = {
+      memoized: Boolean = true)
+     (implicit tbd: TBD): PartitionedModList[V, Q] = {
     if (parallel) {
-      def innerChunkMap(tbd: TBD, i: Int): ArrayBuffer[ModList[V, Q]] = {
+      def innerChunkMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[V, Q]] = {
         if (i < partitions.size) {
-          val parTup = tbd.par((tbd: TBD) => {
-            partitions(i).chunkMap(tbd, f, memoized = memoized)
+          val parTup = par((tbd: TBD) => {
+            partitions(i).chunkMap(f, memoized = memoized)(tbd)
           }, (tbd: TBD) => {
-            innerChunkMap(tbd, i + 1)
+            innerChunkMap(i + 1)(tbd)
           })
 
           parTup._2 += parTup._1
@@ -75,11 +75,11 @@ class PartitionedChunkList[T, U](
         }
       }
 
-      new PartitionedModList(innerChunkMap(tbd, 0))
+      new PartitionedModList(innerChunkMap(0))
     } else {
       new PartitionedModList(
         partitions.map((partition: ChunkList[T, U]) => {
-          partition.chunkMap(tbd, f, memoized = memoized)
+          partition.chunkMap(f, memoized = memoized)
         })
       )
     }
@@ -168,9 +168,9 @@ class PartitionedChunkList[T, U](
      (implicit tbd: TBD): AdjustableList[T, U] = ???
 
   def chunkSort(
-      tbd: TBD,
       comparator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false): Mod[(Int, Vector[(T, U)])] = ???
+      parallel: Boolean = false)
+     (implicit tbd: TBD): Mod[(Int, Vector[(T, U)])] = ???
 
   /* Meta Operations */
   def toBuffer(): Buffer[U] = {

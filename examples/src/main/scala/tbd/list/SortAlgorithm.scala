@@ -76,7 +76,7 @@ class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def run(implicit tbd: TBD): Mod[(Int, Vector[(Int, Int)])] = {
     val list = input.getChunkList()
 
-    list.chunkSort(tbd, (tbd: TBD, a: (Int, Int), b: (Int, Int)) =>
+    list.chunkSort((tbd: TBD, a: (Int, Int), b: (Int, Int)) =>
       a._2 < b._2, parallel)
   }
 }

@@ -149,7 +149,7 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   def run(implicit tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
     val pages = input.getChunkList()
-    val counts = pages.chunkMap(tbd, chunkMapper, parallel)
+    val counts = pages.chunkMap(chunkMapper, parallel)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))
     counts.reduce(initialValue, chunkReducer, parallel)
   }

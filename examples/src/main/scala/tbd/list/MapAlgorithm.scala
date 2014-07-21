@@ -89,6 +89,6 @@ class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   def run(implicit tbd: TBD) = {
     val pages = input.getChunkList()
-    pages.chunkMap(tbd, chunkMapper, parallel, memoized)
+    pages.chunkMap(chunkMapper, parallel, memoized)
   }
 }

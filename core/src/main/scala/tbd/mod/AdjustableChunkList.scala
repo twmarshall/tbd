@@ -19,13 +19,13 @@ import tbd.TBD
 
 trait AdjustableChunkList[T, U] extends AdjustableList[T, U] {
   def chunkMap[V, Q](
-      tbd: TBD,
       f: (TBD, Vector[(T, U)]) => (V, Q),
       parallel: Boolean = false,
-      memoized: Boolean = true): AdjustableList[V, Q]
+      memoized: Boolean = true)
+     (implicit tbd: TBD): AdjustableList[V, Q]
 
   def chunkSort(
-      tbd: TBD,
       comparator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false): Mod[(Int, Vector[(T, U)])]
+      parallel: Boolean = false)
+     (implicit tbd: TBD): Mod[(Int, Vector[(T, U)])]
 }
