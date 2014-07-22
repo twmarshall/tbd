@@ -18,8 +18,9 @@ package tbd.visualization
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
-import tbd._
+import tbd.{Adjustable, Context, ListConf, ListInput, Mutator}
 import tbd.mod.{AdjustableList, Mod}
+import tbd.TBD._
 
 trait TestAlgorithm[T] extends Adjustable[T] {
   def checkOutput(output: T, table: Map[Int, Int]): Boolean
@@ -32,7 +33,7 @@ class ListReduceSumTest()
     extends TestAlgorithm[Mod[(Int, Int)]]  {
   def run(implicit c: Context): Mod[(Int, Int)] = {
     val modList = input.getAdjustableList()
-    val zero = c.mod{ c.write((0, 0)) }
+    val zero = mod{ write((0, 0)) }
     modList.reduce(zero,
       (pair1: (Int, Int), pair2: (Int, Int)) => {
         (pair2._1, pair1._2 + pair2._2)

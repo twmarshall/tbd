@@ -110,6 +110,20 @@ class Memoizer[T](c: Context, memoId: Int) {
 
     ret
   }
+
+  private def updated(args: Seq[_]): Boolean = {
+    var updated = false
+
+    for (arg <- args) {
+      if (arg.isInstanceOf[Mod[_]]) {
+        if (c.updatedMods.contains(arg.asInstanceOf[Mod[_]].id)) {
+	  updated = true
+        }
+      }
+    }
+
+    updated
+  }
 }
 
 class DummyMemoizer[T](c: Context, memoId: Int) extends Memoizer[T](c, memoId) {
