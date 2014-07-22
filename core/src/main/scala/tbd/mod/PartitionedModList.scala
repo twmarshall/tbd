@@ -93,7 +93,7 @@ class PartitionedModList[T, U](
   }
 
   def sort(
-      comperator: (Context, (T, U), (T, U)) => Boolean)
+      comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): AdjustableList[T, U] = ???
 
   def split(

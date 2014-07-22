@@ -47,7 +47,7 @@ class PartitionedChunkList[T, U](
   }
 
   def chunkSort(
-      comparator: (Context, (T, U), (T, U)) => Boolean)
+      comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): Mod[(Int, Vector[(T, U)])] = ???
 
   def filter(
@@ -117,7 +117,7 @@ class PartitionedChunkList[T, U](
   }
 
   def sort(
-      comperator: (Context, (T, U), (T, U)) => Boolean)
+      comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): AdjustableList[T, U] = ???
 
   def split(

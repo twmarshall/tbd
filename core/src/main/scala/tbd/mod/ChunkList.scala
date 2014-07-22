@@ -66,15 +66,15 @@ class ChunkList[T, U](
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   def sort(
-      comperator: (Context, (T, U), (T, U)) => Boolean)
+      comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): AdjustableList[T, U] = ???
 
   def chunkSort(
-      comparator: (Context, (T, U), (T, U)) => Boolean)
+      comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): Mod[(Int, Vector[(T, U)])] = {
     def mapper(c: Context, chunk: Vector[(T, U)]): (Int, Vector[(T, U)]) = {
       (0, chunk.sortWith((pair1: (T, U), pair2: (T, U)) => {
-	comparator(c, pair1, pair2)
+	comparator(pair1, pair2)
       }))
     }
     val sortedChunks = chunkMap(mapper)
@@ -86,7 +86,7 @@ class ChunkList[T, U](
 	} else if (v2.size == 0) {
 	  v1
 	} else {
-	  if (comparator(c, v1.head, v2.head)) {
+	  if (comparator(v1.head, v2.head)) {
 	    v1.head +: innerReducer(v1.tail, v2)
 	  } else {
 	    v2.head +: innerReducer(v1, v2.tail)

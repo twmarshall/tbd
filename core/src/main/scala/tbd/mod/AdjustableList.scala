@@ -59,7 +59,7 @@ trait AdjustableList[T, U] {
    * Returns a sorted copy of this list.
    */
   def sort(
-      comperator: (Context, (T, U), (T, U)) => Boolean)
+      comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): AdjustableList[T, U]
 
   /**

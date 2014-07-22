@@ -47,7 +47,7 @@ class ListSortTest(input: ListInput[String, Int])
 
   def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    modList.sort((c, a, b) => a._2 < b._2)
+    modList.sort((a, b) => a._2 < b._2)
   }
 }
 

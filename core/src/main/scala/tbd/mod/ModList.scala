@@ -149,7 +149,7 @@ class ModList[T, U](
   }
 
   def sort(
-      comperator: (Context, (T, U), (T, U)) => Boolean)
+      comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): AdjustableList[T, U] = {
     val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
 
@@ -157,7 +157,7 @@ class ModList[T, U](
       read(head) {
         case null => write[ModListNode[T, U]](null)
         case node =>
-	  node.sort(createMod(null), comperator, memo)
+	  node.sort(createMod(null), comparator, memo)
       }
     }
 
