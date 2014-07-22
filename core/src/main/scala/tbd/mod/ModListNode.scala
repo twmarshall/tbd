@@ -139,14 +139,14 @@ class ModListNode[T, U] (
 	  read(next)(readNext)
 	}
 
-      c.writeNoDestLeft(new ModListNode(value, matchNext), diffNext)
+      writeLeft(new ModListNode(value, matchNext), diffNext)
     } else {
       val (matchNext, diffNext) =
 	mod2(1) {
 	  read(next)(readNext)
 	}
 
-      c.writeNoDestRight(matchNext, new ModListNode(value, diffNext))
+      writeRight(matchNext, new ModListNode(value, diffNext))
     }
   }
 }

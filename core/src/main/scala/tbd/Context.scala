@@ -87,46 +87,6 @@ class Context(val id: String, val worker: Worker) {
     })(this)
   }
 
-  def writeNoDestLeft[T, U](value: T, mod: Mod[U]): Changeable2[T, U] = {
-    if (mod != currentDest2.mod) {
-      println("WARNING - mod parameter to write2(0) doesn't match " +
-	      "currentDest2")
-    }
-
-    val awaiting = currentDest.mod.update(value)
-    Await.result(Future.sequence(awaiting), DURATION)
-
-    val changeable = new Changeable2(currentDest.mod, currentDest2.mod)
-    if (Main.debug) {
-      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
-                                          currentParent)
-      writeNode.mod2 = currentDest2.mod
-      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
-    }
-
-    changeable.asInstanceOf[Changeable2[T, U]]
-  }
-
-  def writeNoDestRight[T, U](mod: Mod[T], value2: U): Changeable2[T, U] = {
-    if (mod != currentDest.mod) {
-      println("WARNING - mod parameter to writeNoDestRight doesn't match " +
-	      "currentDest " + mod + " " + currentDest.mod)
-    }
-
-    val awaiting = currentDest2.mod.update(value2)
-    Await.result(Future.sequence(awaiting), DURATION)
-
-    val changeable = new Changeable2(currentDest.mod, currentDest2.mod)
-    if (Main.debug) {
-      val writeNode = worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
-                                          currentParent)
-      writeNode.mod2 = currentDest2.mod
-      writeNode.endTime = worker.ddg.nextTimestamp(writeNode)
-    }
-
-    changeable.asInstanceOf[Changeable2[T, U]]
-  }
-
   // The destination created by the most recent (in scope) call to mod. This is
   // what a call to write will write to.
   var currentDest: Dest[Any] = _

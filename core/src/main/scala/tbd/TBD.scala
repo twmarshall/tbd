@@ -116,11 +116,48 @@ object TBD {
     Await.result(Future.sequence(awaiting), DURATION)
     Await.result(Future.sequence(awaiting2), DURATION)
 
+    write2Helper(c)
+  }
+
+  def writeLeft[T, U](
+      value: T,
+      mod: Mod[U])
+     (implicit c: Context): Changeable2[T, U] = {
+    import c.worker.context.dispatcher
+
+    if (mod != c.currentDest2.mod) {
+      println("WARNING - mod parameter to writeLeft doesn't match currentDest2")
+    }
+
+    val awaiting = c.currentDest.mod.update(value)
+    Await.result(Future.sequence(awaiting), DURATION)
+
+    write2Helper(c)
+  }
+
+  def writeRight[T, U](
+      mod: Mod[T],
+      value2: U)
+     (implicit c: Context): Changeable2[T, U] = {
+    import c.worker.context.dispatcher
+
+    if (mod != c.currentDest.mod) {
+      println("WARNING - mod parameter to writeRight doesn't match currentDest")
+    }
+
+    val awaiting = c.currentDest2.mod.update(value2)
+    Await.result(Future.sequence(awaiting), DURATION)
+
+    write2Helper(c)
+  }
+
+  private def write2Helper[T, U](c: Context): Changeable2[T, U] = {
     val changeable = new Changeable2(c.currentDest.mod, c.currentDest2.mod)
+
     if (Main.debug) {
       val writeNode = c.worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
                                             c.currentParent)
-      writeNode.mod2 = changeable.mod2
+      writeNode.mod2 = c.currentDest2.mod
       writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
     }
 
