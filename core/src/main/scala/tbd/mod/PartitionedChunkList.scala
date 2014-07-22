@@ -31,11 +31,11 @@ class PartitionedChunkList[T, U](
      (implicit tbd: TBD): PartitionedModList[V, W] = {
     def innerChunkMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[V, W]] = {
       if (i < partitions.size) {
-        val parTup = par((tbd: TBD) => {
-          partitions(i).chunkMap(f)(tbd)
-        }, (tbd: TBD) => {
-          innerChunkMap(i + 1)(tbd)
-        })
+        val parTup = par {
+          tbd => partitions(i).chunkMap(f)(tbd)
+        } and {
+          tbd => innerChunkMap(i + 1)(tbd)
+        }
 
         parTup._2 += parTup._1
       } else {
@@ -55,11 +55,11 @@ class PartitionedChunkList[T, U](
      (implicit tbd: TBD): PartitionedChunkList[T, U] = {
     def parFilter(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[T, U]] = {
       if (i < partitions.size) {
-        val parTup = par((tbd: TBD) => {
-          partitions(i).filter(pred)(tbd)
-        }, (tbd: TBD) => {
-          parFilter(i + 1)(tbd)
-        })
+        val parTup = par {
+          tbd => partitions(i).filter(pred)(tbd)
+	} and {
+          tbd => parFilter(i + 1)(tbd)
+        }
 
         parTup._2 += parTup._1
       } else {
@@ -75,11 +75,11 @@ class PartitionedChunkList[T, U](
      (implicit tbd: TBD): PartitionedChunkList[V, W] = {
     def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ChunkList[V, W]] = {
       if (i < partitions.size) {
-        val parTup = par((tbd: TBD) => {
-          partitions(i).map(f)(tbd)
-        }, (tbd: TBD) => {
-          innerMap(i + 1)(tbd)
-        })
+        val parTup = par {
+          tbd => partitions(i).map(f)(tbd)
+        } and {
+          tbd => innerMap(i + 1)(tbd)
+        }
 
         parTup._2 += parTup._1
       } else {
@@ -97,11 +97,11 @@ class PartitionedChunkList[T, U](
 
     def parReduce(i: Int)(implicit tbd: TBD): Mod[(T, U)] = {
       if (i < partitions.size) {
-        val parTup = par((tbd: TBD) => {
-          partitions(i).reduce(initialValueMod, f)(tbd)
-        }, (tbd: TBD) => {
-          parReduce(i + 1)(tbd)
-        })
+        val parTup = par {
+          tbd => partitions(i).reduce(initialValueMod, f)(tbd)
+        } and {
+          tbd => parReduce(i + 1)(tbd)
+        }
 
         mod {
           read2(parTup._1, parTup._2) {

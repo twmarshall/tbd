@@ -86,20 +86,22 @@ class ParTest(input: TableInput[Int, Int]) extends Adjustable[Mod[Int]] {
   def run(implicit tbd: TBD) = {
     val table = input.getTable()
     val one = table.get(1)
-    println(tbd)
-    val pair = par((tbd: TBD) => {
-      mod {
-        read(one) {
-          case oneValue => write(oneValue + 1)(tbd)
+
+    val pair = par {
+      tbd =>
+	mod {
+          read(one) {
+            case oneValue => write(oneValue + 1)(tbd)
+	  } (tbd)
 	} (tbd)
-      } (tbd)
-    }, (tbd: TBD) => {
-      0
-    })
+    } and {
+      tbd => 0
+    }
 
     mod {
-      read(pair._1)(value =>
-        write(value * 2))
+      read(pair._1) {
+	case value => write(value * 2)
+      }
     }
   }
 }

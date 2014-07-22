@@ -28,6 +28,12 @@ import tbd.messages._
 import tbd.mod.{Dest, Mod}
 import tbd.worker.Worker
 
+class Parer[T, U](value1: TBD => T) {
+  def and(value2: TBD => U)(implicit tbd: TBD) = {
+    tbd.par(value1, value2)
+  }
+}
+
 object TBD {
   def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U)(implicit tbd: TBD): U = {
     tbd.read(mod)(reader)
@@ -60,8 +66,8 @@ object TBD {
     tbd.write2(value, value2)
   }
 
-  def par[T, U](one: TBD => T, two: TBD => U)(implicit tbd: TBD): Tuple2[T, U] = {
-    tbd.par(one, two)
+  def par[T, U](one: TBD => T): Parer[T, U] = {
+    new Parer(one)
   }
 
   def makeMemoizer[T](dummy: Boolean = false)(implicit tbd: TBD): Memoizer[T] = {
