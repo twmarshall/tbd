@@ -16,7 +16,7 @@
 package tbd
 
 import akka.event.Logging
-import scala.collection.mutable.{ListBuffer, Set}
+import scala.collection.mutable.Set
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
@@ -46,46 +46,6 @@ class Context(val id: String, val worker: Worker) {
   // The timestamp of the node immediately after the end of the read being
   // reexecuted.
   var reexecutionEnd: Timestamp = _
-
-  /* readN - Read n mods. Experimental function.
-   *
-   * Usage Example:
-   *
-   *  mod {
-   *    val a = createMod("Hello");
-   *    val b = createMod(12);
-   *    val c = createMod("Bla");
-   *
-   *    readN(a, b, c)(x => x match {
-   *      case Seq(a:String, b:Int, c:String) => {
-   *        println(a + b + c)
-   *        write(dest, null)
-   *      }
-   *    })
-   *  }
-   */
-  def readN[U](args: Mod[U]*)
-              (reader: (Seq[_]) => (Changeable[U])) : Changeable[U] = {
-
-    readNHelper(args, ListBuffer(), reader)
-  }
-
-  private def readNHelper[U](mods: Seq[Mod[_]],
-                     values: ListBuffer[AnyRef],
-                     reader: (Seq[_]) => (Changeable[U])) : Changeable[U] = {
-    val tail = mods.tail
-    val head = mods.head
-
-
-    TBD.read(head)((value) => {
-      values += value.asInstanceOf[AnyRef]
-      if(tail.isEmpty) {
-        reader(values.toSeq)
-      } else {
-        readNHelper(tail, values, reader)
-      }
-    })(this)
-  }
 
   // The destination created by the most recent (in scope) call to mod. This is
   // what a call to write will write to.
