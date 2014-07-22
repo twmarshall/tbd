@@ -281,13 +281,13 @@ class TBD(id: String, val worker: Worker) {
       Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
     val workerRef1 = worker.context.system.actorOf(workerProps1, id + "-" + workerId)
     workerId += 1
-    val oneFuture = workerRef1 ? RunTaskMessage(one)
+    val oneFuture = workerRef1 ? RunTaskMessage(new Adjustable { def run(implicit tbd: TBD) = one(tbd) })
 
     val workerProps2 =
       Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
     val workerRef2 = worker.context.system.actorOf(workerProps2, id + "-" + workerId)
     workerId += 1
-    val twoFuture = workerRef2 ? RunTaskMessage(two)
+    val twoFuture = workerRef2 ? RunTaskMessage(new Adjustable { def run(implicit tbd: TBD) = two(tbd) })
 
     worker.ddg.addPar(workerRef1, workerRef2, currentParent)
 

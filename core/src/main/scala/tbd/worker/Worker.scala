@@ -22,7 +22,7 @@ import scala.concurrent.{Await, Future, Promise}
 import scala.util.Try
 
 import tbd.Constants._
-import tbd.TBD
+import tbd.{Adjustable, TBD}
 import tbd.ddg.{DDG, Node, MemoNode, ParNode, ReadNode, Timestamp}
 import tbd.messages._
 import tbd.mod.{AdjustableList}
@@ -114,8 +114,8 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
       parent ! PebbleMessage(self, modId, finished)
     }
 
-    case RunTaskMessage(func: (TBD => Any)) => {
-      sender ! func(tbd)
+    case RunTaskMessage(adjust: Adjustable) => {
+      sender ! adjust.run(tbd)
     }
 
     case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {
