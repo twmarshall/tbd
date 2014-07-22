@@ -121,7 +121,7 @@ class PartitionedChunkList[T, U](
      (implicit c: Context): AdjustableList[T, U] = ???
 
   def split(
-      pred: (Context, (T, U)) => Boolean)
+      pred: ((T, U)) => Boolean)
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   /* Meta Operations */

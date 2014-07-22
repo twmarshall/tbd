@@ -38,7 +38,7 @@ class ListSplitTest(input: ListInput[String, Int])
 
   def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    modList.split((c, a) => a._2 % 2 == 0)
+    modList.split(_._2 % 2 == 0)
   }
 }
 

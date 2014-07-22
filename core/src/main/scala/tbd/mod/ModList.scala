@@ -165,7 +165,7 @@ class ModList[T, U](
   }
 
   def split(
-      pred: (Context, (T, U)) => Boolean)
+      pred: ((T, U)) => Boolean)
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = {
     val memo = makeMemoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]]()
 

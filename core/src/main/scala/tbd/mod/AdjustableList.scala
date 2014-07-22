@@ -68,7 +68,7 @@ trait AdjustableList[T, U] {
    * given predicate, and the second AdjustableList contains all other elements.
    */
   def split(
-      pred: (Context, (T, U)) => Boolean)
+      pred: ((T, U)) => Boolean)
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U])
 
   /* Meta functions */

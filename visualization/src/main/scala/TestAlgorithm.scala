@@ -78,7 +78,7 @@ class ListSplitTest()
     extends TestAlgorithm[(AdjustableList[Int, Int], AdjustableList[Int, Int])] {
   def run(implicit c: Context): (AdjustableList[Int, Int], AdjustableList[Int, Int]) = {
     val modList = input.getAdjustableList()
-    modList.split((c, a) => a._2 % 2 == 0)
+    modList.split(_._2 % 2 == 0)
   }
 
  def checkOutput(output: (AdjustableList[Int, Int], AdjustableList[Int, Int]), table: Map[Int, Int]): Boolean = {

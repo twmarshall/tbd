@@ -86,7 +86,7 @@ class ModListNode[T, U] (
 
           val memo = makeMemoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]]()
 
-          next.split(memo, (c, cv) => { comparator(cv, value) })
+          next.split(memo, (cv: (T, U)) => { comparator(cv, value) })
         }
 
         val greaterSorted = memo(List(greater)) {
@@ -120,7 +120,7 @@ class ModListNode[T, U] (
 
   def split(
       memo: Memoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]],
-      pred: (Context, (T, U)) => Boolean)
+      pred: ((T, U)) => Boolean)
      (implicit c: Context): Changeable2[ModListNode[T, U], ModListNode[T, U]] = {
     def readNext(next: ModListNode[T, U]) = {
       memo(next) {
@@ -133,7 +133,7 @@ class ModListNode[T, U] (
       }
     }
 
-    if(pred(c, value)) {
+    if(pred(value)) {
       val (matchNext, diffNext) =
 	mod2(0) {
 	  read(next)(readNext)
