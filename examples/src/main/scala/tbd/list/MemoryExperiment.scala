@@ -17,15 +17,15 @@ package tbd.examples.list
 
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, ListConf, ListInput, Mutator, TBD}
+import tbd.{Adjustable, Context, ListConf, ListInput, Mutator}
 import tbd.mod.AdjustableList
 
 class MemoryExperiment(input: ListInput[Int, String])
     extends Adjustable[AdjustableList[Int, String]] {
   val partitions = 4
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    list.map((tbd: TBD, pair: (Int, String)) => pair)
+    list.map((c: Context, pair: (Int, String)) => pair)
   }
 }
 

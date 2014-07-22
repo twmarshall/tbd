@@ -18,27 +18,28 @@ package tbd.examples.test
 import org.scalatest._
 import scala.collection.immutable.HashMap
 
-import tbd.{Adjustable, ListInput, Mutator, TBD}
+import tbd.{Adjustable, Context, ListInput, Mutator}
 import tbd.examples.list.WCAlgorithm
 import tbd.mod.Mod
+import tbd.TBD._
 
 class WCTest(input: ListInput[Int, String])
     extends Adjustable[Mod[(Int, HashMap[String, Int])]] {
-  def mapper(tbd: TBD, pair: (Int, String)) = {
+  def mapper(c: Context, pair: (Int, String)) = {
     (pair._1, WCAlgorithm.wordcount(pair._2))
   }
 
   def reducer(
-      tbd: TBD,
+      c: Context,
       pair1: (Int, HashMap[String, Int]),
       pair2: (Int, HashMap[String, Int])) = {
     (pair1._1, WCAlgorithm.reduce(pair1._2, pair2._2))
    }
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val pages = input.getAdjustableList()
     val counts = pages.map(mapper)
-    val initialValue = tbd.createMod((0, HashMap[String, Int]()))
+    val initialValue = createMod((0, HashMap[String, Int]()))
     counts.reduce(initialValue, reducer)
   }
 }

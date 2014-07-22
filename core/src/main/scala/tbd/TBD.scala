@@ -28,58 +28,58 @@ import tbd.messages._
 import tbd.mod.{Dest, Mod}
 import tbd.worker.Worker
 
-class Parer[T, U](value1: TBD => T) {
-  def and(value2: TBD => U)(implicit tbd: TBD) = {
-    tbd.par(value1, value2)
+class Parer[T, U](value1: Context => T) {
+  def and(value2: Context => U)(implicit c: Context) = {
+    c.par(value1, value2)
   }
 }
 
 object TBD {
-  def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U)(implicit tbd: TBD): U = {
-    tbd.read(mod)(reader)
+  def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U)(implicit c: Context): U = {
+    c.read(mod)(reader)
   }
 
   def read2[T, V, U](
       a: Mod[T],
       b: Mod[V])
      (reader: (T, V) => (Changeable[U]))
-     (implicit tbd: TBD): Changeable[U] = {
-    tbd.read2(a, b)(reader)
+     (implicit c: Context): Changeable[U] = {
+    c.read2(a, b)(reader)
   }
 
-  def mod[T](initializer: => Changeable[T])(implicit tbd: TBD): Mod[T] = {
-    tbd.mod(initializer)
+  def mod[T](initializer: => Changeable[T])(implicit c: Context): Mod[T] = {
+    c.mod(initializer)
   }
 
   def mod2[T, U](
       write: Int)
      (initializer: => Changeable2[T, U])
-     (implicit tbd: TBD): (Mod[T], Mod[U]) = {
-    tbd.mod_2(write)(initializer)
+     (implicit c: Context): (Mod[T], Mod[U]) = {
+    c.mod_2(write)(initializer)
   }
 
-  def write[T](value: T)(implicit tbd: TBD): Changeable[T] = {
-    tbd.write(value)
+  def write[T](value: T)(implicit c: Context): Changeable[T] = {
+    c.write(value)
   }
 
-  def write2[T, U](value: T, value2: U)(implicit tbd: TBD): Changeable2[T, U] = {
-    tbd.write2(value, value2)
+  def write2[T, U](value: T, value2: U)(implicit c: Context): Changeable2[T, U] = {
+    c.write2(value, value2)
   }
 
-  def par[T, U](one: TBD => T): Parer[T, U] = {
+  def par[T, U](one: Context => T): Parer[T, U] = {
     new Parer(one)
   }
 
-  def makeMemoizer[T](dummy: Boolean = false)(implicit tbd: TBD): Memoizer[T] = {
-    tbd.makeMemoizer[T](dummy)
+  def makeMemoizer[T](dummy: Boolean = false)(implicit c: Context): Memoizer[T] = {
+    c.makeMemoizer[T](dummy)
   }
 
-  def createMod[T](value: T)(implicit tbd: TBD): Mod[T] = {
-    tbd.createMod(value)
+  def createMod[T](value: T)(implicit c: Context): Mod[T] = {
+    c.createMod(value)
   }
 }
 
-class TBD(id: String, val worker: Worker) {
+class Context(id: String, val worker: Worker) {
   import worker.context.dispatcher
   var initialRun = true
 
@@ -111,18 +111,18 @@ class TBD(id: String, val worker: Worker) {
    *
    * Usage Example:
    *
-   *  tbd.mod((dest: Dest[AnyRef]) => {
-   *    val a = tbd.createMod("Hello");
-   *    val b = tbd.createMod(12);
-   *    val c = tbd.createMod("Bla");
+   *  mod {
+   *    val a = createMod("Hello");
+   *    val b = createMod(12);
+   *    val c = createMod("Bla");
    *
-   *    tbd.readN(a, b, c)(x => x match {
+   *    readN(a, b, c)(x => x match {
    *      case Seq(a:String, b:Int, c:String) => {
    *        println(a + b + c)
-   *        tbd.write(dest, null)
+   *        write(dest, null)
    *      }
    *    })
-   *  })
+   *  }
    */
   def readN[U](args: Mod[U]*)
               (reader: (Seq[_]) => (Changeable[U])) : Changeable[U] = {
@@ -282,18 +282,22 @@ class TBD(id: String, val worker: Worker) {
   }
 
   var workerId = 0
-  def par[T, U](one: TBD => T, two: TBD => U): Tuple2[T, U] = {
+  def par[T, U](one: Context => T, two: Context => U): (T, U) = {
     val workerProps1 =
       Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
     val workerRef1 = worker.context.system.actorOf(workerProps1, id + "-" + workerId)
     workerId += 1
-    val oneFuture = workerRef1 ? RunTaskMessage(new Adjustable[T] { def run(implicit tbd: TBD) = one(tbd) })
+
+    val adjust1 = new Adjustable[T] { def run(implicit c: Context) = one(c) }
+    val oneFuture = workerRef1 ? RunTaskMessage(adjust1)
 
     val workerProps2 =
       Worker.props(id + "-" + workerId, worker.datastoreRef, worker.self)
     val workerRef2 = worker.context.system.actorOf(workerProps2, id + "-" + workerId)
     workerId += 1
-    val twoFuture = workerRef2 ? RunTaskMessage(new Adjustable[U] { def run(implicit tbd: TBD) = two(tbd) })
+
+    val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
+    val twoFuture = workerRef2 ? RunTaskMessage(adjust2)
 
     worker.ddg.addPar(workerRef1, workerRef2, currentParent)
 
@@ -316,13 +320,14 @@ class TBD(id: String, val worker: Worker) {
     updated
   }
 
-  var memoId = 0
+  var nextMemoId = 0
   def makeMemoizer[T](dummy:Boolean = false) = {
+    nextMemoId += 1
+
     if(dummy) {
-      new DummyMemoizer[T](this, 0)
+      new DummyMemoizer[T](this, nextMemoId)
     } else {
-      memoId += 1
-      new Memoizer[T](this, memoId)
+      new Memoizer[T](this, nextMemoId)
     }
   }
 }

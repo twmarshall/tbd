@@ -18,7 +18,7 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, ListConf, Mutator, TBD}
+import tbd.{Adjustable, Context, ListConf, Mutator}
 import tbd.mod.{AdjustableList, Mod}
 
 object SplitAlgorithm {
@@ -53,9 +53,9 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     sortedOutputB == answer._2.toBuffer.sortWith(_ < _)
   }
 
-  def run(implicit tbd: TBD): SplitResult = {
+  def run(implicit c: Context): SplitResult = {
     val pages = input.getAdjustableList()
 
-    pages.split((tbd: TBD, pair:(Int, String)) => SplitAlgorithm.predicate(pair))
+    pages.split((c: Context, pair:(Int, String)) => SplitAlgorithm.predicate(pair))
   }
 }

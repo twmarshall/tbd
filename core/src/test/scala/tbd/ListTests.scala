@@ -18,15 +18,16 @@ package tbd.test
 import scala.collection.mutable.{ArrayBuffer, Buffer, Map}
 import org.scalatest._
 
-import tbd._
+import tbd.{Adjustable, Context, Input, ListConf, ListInput, Mutator}
 import tbd.mod.{AdjustableList, Dest, Mod}
+import tbd.TBD._
 
 class ListMapTest(
-    f: (TBD, (String, Int)) => (String, Int),
+    f: (Context, (String, Int)) => (String, Int),
     input: ListInput[String, Int]
   ) extends Adjustable[AdjustableList[String, Int]] {
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val list = input.getAdjustableList()
     list.map(f)
   }
@@ -35,34 +36,34 @@ class ListMapTest(
 class ListSplitTest(input: ListInput[String, Int])
     extends Adjustable[(AdjustableList[String, Int], AdjustableList[String, Int])] {
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    modList.split((tbd, a) => a._2 % 2 == 0)
+    modList.split((c, a) => a._2 % 2 == 0)
   }
 }
 
 class ListSortTest(input: ListInput[String, Int])
     extends Adjustable[AdjustableList[String, Int]] {
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    modList.sort((tbd, a, b) => a._2 < b._2)
+    modList.sort((c, a, b) => a._2 < b._2)
   }
 }
 
 class ChunkListMapTest(input: ListInput[Int, Int])
     extends Adjustable[AdjustableList[Int, Int]] {
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    list.map((tbd: TBD, pair: (Int, Int)) => (pair._1, pair._2 - 2))
+    list.map((c: Context, pair: (Int, Int)) => (pair._1, pair._2 - 2))
   }
 }
 
 class ListFilterTest(input: ListInput[Int, Int])
     extends Adjustable[AdjustableList[Int, Int]] {
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val list = input.getAdjustableList()
     list.filter((pair: (Int, Int)) => pair._2 % 2 == 0)
   }
@@ -71,11 +72,11 @@ class ListFilterTest(input: ListInput[Int, Int])
 class ListReduceSumTest(input: ListInput[String, Int])
     extends Adjustable[Mod[(String, Int)]] {
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    val zero = tbd.mod{ tbd.write(("", 0)) }
+    val zero = mod { write(("", 0)) }
     modList.reduce(zero,
-      (tbd: TBD, pair1: (String, Int), pair2: (String, Int)) => {
+      (c: Context, pair1: (String, Int), pair2: (String, Int)) => {
         (pair2._1, pair1._2 + pair2._2)
       })
   }
@@ -87,7 +88,7 @@ class ListTests extends FlatSpec with Matchers {
     val input = mutator.createList[String, Int]()
     input.put("one", 1)
     input.put("two", 2)
-    val f = (tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 * 2)
+    val f = (c: Context, pair: (String, Int)) => (pair._1, pair._2 * 2)
     val output = mutator.run(new ListMapTest(f, input))
     // (1 * 2), (2 * 2)
     output.toBuffer().sortWith(_ < _) should be (Buffer(2, 4))

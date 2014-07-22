@@ -17,7 +17,7 @@ package tbd.mod
 
 import scala.collection.mutable.{ArrayBuffer, Buffer}
 
-import tbd.{Changeable, Changeable2, Memoizer, TBD}
+import tbd.{Changeable, Changeable2, Context, Memoizer}
 import tbd.Constants.ModId
 import tbd.TBD._
 
@@ -27,7 +27,7 @@ class ModList[T, U](
 
   def filter(
       pred: ((T, U)) => Boolean)
-     (implicit tbd: TBD): ModList[T, U] = {
+     (implicit c: Context): ModList[T, U] = {
     val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
 
     new ModList(
@@ -41,8 +41,8 @@ class ModList[T, U](
   }
 
   def map[V, W](
-      f: (TBD, (T, U)) => (V, W))
-     (implicit tbd: TBD): ModList[V, W] = {
+      f: (Context, (T, U)) => (V, W))
+     (implicit c: Context): ModList[V, W] = {
     val memo = makeMemoizer[Changeable[ModListNode[V, W]]]()
 
     new ModList(
@@ -57,8 +57,8 @@ class ModList[T, U](
 
   def reduce(
       identityMod: Mod[(T, U)],
-      f: (TBD, (T, U), (T, U)) => (T, U))
-     (implicit tbd: TBD): Mod[(T, U)] = {
+      f: (Context, (T, U), (T, U)) => (T, U))
+     (implicit c: Context): Mod[(T, U)] = {
 
     // Each round we need a hasher and a memo, and we need to guarantee that the
     // same hasher and memo are used for a given round during change propagation,
@@ -110,7 +110,7 @@ class ModList[T, U](
         hasher: Hasher,
         memo: Memoizer[Mod[ModListNode[T, U]]]
       ): Changeable[ModListNode[T, U]] = {
-      val newAcc = f(tbd, acc, head.value)
+      val newAcc = f(c, acc, head.value)
 
       if(binaryHash(head.next.id, round, hasher)) {
         val newNext = memo(head.next, identityMod) {
@@ -149,8 +149,8 @@ class ModList[T, U](
   }
 
   def sort(
-      comperator: (TBD, (T, U), (T, U)) => Boolean)
-     (implicit tbd: TBD): AdjustableList[T, U] = {
+      comperator: (Context, (T, U), (T, U)) => Boolean)
+     (implicit c: Context): AdjustableList[T, U] = {
     val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
 
     val sorted = mod {
@@ -165,8 +165,8 @@ class ModList[T, U](
   }
 
   def split(
-      pred: (TBD, (T, U)) => Boolean)
-     (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U]) = {
+      pred: (Context, (T, U)) => Boolean)
+     (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = {
     val memo = makeMemoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]]()
 
     val result = mod2(2) {

@@ -18,7 +18,7 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, ChunkListInput, ListConf, ListInput, TBD}
+import tbd.{Adjustable, ChunkListInput, Context, ListConf, ListInput}
 import tbd.mod.AdjustableList
 
 object MapAlgorithm {
@@ -48,12 +48,12 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     sortedOutput == answer.asInstanceOf[GenIterable[Int]].toBuffer.sortWith(_ < _)
   }
 
-  def mapper(tbd: TBD, pair: (Int, String)) = {
+  def mapper(c: Context, pair: (Int, String)) = {
     mapCount += 1
     MapAlgorithm.mapper(pair)
   }
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val pages = input.getAdjustableList()
     pages.map(mapper)
   }
@@ -75,7 +75,7 @@ class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     output.toBuffer.reduce(_ + _) == answer.asInstanceOf[GenIterable[Int]].reduce(_ + _)
   }
 
-  def chunkMapper(tbd: TBD, chunk: Vector[(Int, String)]) = {
+  def chunkMapper(c: Context, chunk: Vector[(Int, String)]) = {
     mapCount += 1
     var count = 0
 
@@ -87,7 +87,7 @@ class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     (0, count)
   }
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val pages = input.getChunkList()
     pages.chunkMap(chunkMapper)
   }

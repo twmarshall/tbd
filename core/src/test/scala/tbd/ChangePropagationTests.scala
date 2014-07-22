@@ -18,7 +18,7 @@ package tbd.test
 import org.scalatest._
 import scala.collection.mutable.ArrayBuffer
 
-import tbd.{Adjustable, Changeable, ListConf, ListInput, Memoizer, Mutator, TableInput, TBD}
+import tbd.{Adjustable, Changeable, Context, ListConf, ListInput, Memoizer, Mutator, TableInput}
 import tbd.mod.{AdjustableList, Mod}
 import tbd.TBD._
 
@@ -26,7 +26,7 @@ class PropagationOrderTest(input: TableInput[Int, Int])
     extends Adjustable[Mod[Int]] {
   var num = 0
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val table = input.getTable()
     val one = table.get(1)
 
@@ -56,10 +56,10 @@ class PropagationOrderTest2(input: ListInput[Int, Int])
     extends Adjustable[AdjustableList[Int, Int]] {
   val values = ArrayBuffer[Int]()
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val adjustableList = input.getAdjustableList()
-    adjustableList.map((tbd: TBD, pair: (Int, Int)) => {
-      if (tbd.initialRun) {
+    adjustableList.map((c: Context, pair: (Int, Int)) => {
+      if (c.initialRun) {
         values += pair._2
       } else {
         assert(pair._2 == values.head + 1)
@@ -72,10 +72,10 @@ class PropagationOrderTest2(input: ListInput[Int, Int])
 
 class ReduceTest(input: ListInput[Int, Int])
     extends Adjustable[Mod[(Int, Int)]] {
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    val zero = tbd.createMod((0, 0))
-    list.reduce(zero, (tbd: TBD, pair1: (Int, Int), pair2: (Int, Int)) => {
+    val zero = createMod((0, 0))
+    list.reduce(zero, (c: Context, pair1: (Int, Int), pair2: (Int, Int)) => {
       //println("reducing " + pair1._2 + " " + pair2._2)
       (pair1._1, pair1._2 + pair2._2)
     })
@@ -83,19 +83,19 @@ class ReduceTest(input: ListInput[Int, Int])
 }
 
 class ParTest(input: TableInput[Int, Int]) extends Adjustable[Mod[Int]] {
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val table = input.getTable()
     val one = table.get(1)
 
     val pair = par {
-      tbd =>
+      c =>
 	mod {
           read(one) {
-            case oneValue => write(oneValue + 1)(tbd)
-	  } (tbd)
-	} (tbd)
+            case oneValue => write(oneValue + 1)(c)
+	  } (c)
+	} (c)
     } and {
-      tbd => 0
+      c => 0
     }
 
     mod {
@@ -120,48 +120,48 @@ class ModNoDestTest(input: TableInput[Int, Int])
   val seven = table.get(7)
 
   // If four == 4, twoMemo returns 6, otherwise it returns sevenValue.
-  def twoMemo(tbd: TBD, memo: Memoizer[Changeable[Int]]) = {
-    tbd.read(four)(fourValue => {
+  def twoMemo(memo: Memoizer[Changeable[Int]])(implicit c: Context) = {
+    read(four)(fourValue => {
       if (fourValue == 4) {
-	tbd.mod {
+	mod {
 	  memo(five) {
-	    tbd.read(seven)(sevenValue => {
-	      tbd.write(sevenValue)
+	    read(seven)(sevenValue => {
+	      write(sevenValue)
 	    })
 	  }
 	}
 
 	memo(six) {
-	  tbd.write(6)
+	  write(6)
 	}
       } else {
 	memo(five) {
-	  tbd.read(seven)(sevenValue => {
-	    tbd.write(sevenValue)
+	  read(seven)(sevenValue => {
+	    write(sevenValue)
 	  })
 	}
       }
     })
   }
 
-  def run(implicit tbd: TBD) = {
-    val memo = tbd.makeMemoizer[Changeable[Int]]()
+  def run(implicit c: Context) = {
+    val memo = makeMemoizer[Changeable[Int]]()
 
-    tbd.mod {
-      tbd.read(one)(oneValue => {
+    mod {
+      read(one)(oneValue => {
 	if (oneValue == 1) {
-	  val mod1 = tbd.mod {
+	  val mod1 = mod {
 	    memo(two) {
-	      twoMemo(tbd, memo)
+	      twoMemo(memo)
 	    }
 	  }
 
-	  tbd.read(mod1)(value1 => {
-	    tbd.write(value1)
+	  read(mod1)(value1 => {
+	    write(value1)
 	  })
 	} else {
 	  memo(two) {
-	    twoMemo(tbd, memo)
+	    twoMemo(memo)
 	  }
 	}
       })

@@ -18,7 +18,7 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, ListConf, Mutator, TBD}
+import tbd.{Adjustable, Context, ListConf, Mutator}
 import tbd.mod.{AdjustableList, Mod}
 
 object SortAlgorithm {
@@ -47,10 +47,10 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     sortedOutput == answer.toBuffer
   }
 
-  def run(implicit tbd: TBD): AdjustableList[Int, String] = {
+  def run(implicit c: Context): AdjustableList[Int, String] = {
     val pages = input.getAdjustableList()
 
-    pages.sort((tbd: TBD, a:(Int, String), b:(Int, String)) =>
+    pages.sort((c: Context, a:(Int, String), b:(Int, String)) =>
       SortAlgorithm.predicate(a, b))
   }
 }
@@ -73,9 +73,9 @@ class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     output.read()._2.map(_._2) == answer.toBuffer
   }
 
-  def run(implicit tbd: TBD): Mod[(Int, Vector[(Int, Int)])] = {
+  def run(implicit c: Context): Mod[(Int, Vector[(Int, Int)])] = {
     val list = input.getChunkList()
 
-    list.chunkSort((tbd: TBD, a: (Int, Int), b: (Int, Int)) => a._2 < b._2)
+    list.chunkSort((c: Context, a: (Int, Int), b: (Int, Int)) => a._2 < b._2)
   }
 }

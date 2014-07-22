@@ -19,8 +19,9 @@ import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
 import scala.collection.immutable.HashMap
 
-import tbd.{Adjustable, ChunkListInput, ListConf, TBD}
+import tbd.{Adjustable, ChunkListInput, Context, ListConf}
 import tbd.mod.Mod
+import tbd.TBD._
 
 object WCAlgorithm {
   def wordcount(s: String): HashMap[String, Int] = {
@@ -89,23 +90,23 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     output.read()._2 == answer
   }
 
-  def mapper(tbd: TBD, pair: (Int, String)) = {
+  def mapper(c: Context, pair: (Int, String)) = {
     mapCount += 1
     (pair._1, WCAlgorithm.wordcount(pair._2))
   }
 
   def reducer(
-      tbd: TBD,
+      c: Context,
       pair1: (Int, HashMap[String, Int]),
       pair2: (Int, HashMap[String, Int])) = {
     reduceCount += 1
     (pair1._1, WCAlgorithm.reduce(pair1._2, pair2._2))
    }
 
-  def run(implicit tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
+  def run(implicit c: Context): Mod[(Int, HashMap[String, Int])] = {
     val pages = input.getAdjustableList()
     val counts = pages.map(mapper)
-    val initialValue = tbd.createMod((0, HashMap[String, Int]()))
+    val initialValue = createMod((0, HashMap[String, Int]()))
     counts.reduce(initialValue, reducer)
   }
 }
@@ -128,7 +129,7 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     output.read()._2 == answer
   }
 
-  def chunkMapper(tbd: TBD, chunk: Vector[(Int, String)]) = {
+  def chunkMapper(c: Context, chunk: Vector[(Int, String)]) = {
     mapCount += 1
     var counts = Map[String, Int]()
 
@@ -140,17 +141,17 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def chunkReducer(
-      tbd: TBD,
+      c: Context,
       pair1: (Int, HashMap[String, Int]),
       pair2: (Int, HashMap[String, Int])) = {
     reduceCount += 1
     (pair1._1, WCAlgorithm.reduce(pair1._2, pair2._2))
   }
 
-  def run(implicit tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
+  def run(implicit c: Context): Mod[(Int, HashMap[String, Int])] = {
     val pages = input.getChunkList()
     val counts = pages.chunkMap(chunkMapper)
-    val initialValue = tbd.createMod((0, HashMap[String, Int]()))
+    val initialValue = createMod((0, HashMap[String, Int]()))
     counts.reduce(initialValue, chunkReducer)
   }
 }

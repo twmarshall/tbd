@@ -22,7 +22,7 @@ import scala.concurrent.{Await, Future, Promise}
 import scala.util.Try
 
 import tbd.Constants._
-import tbd.{Adjustable, TBD}
+import tbd.{Adjustable, Context}
 import tbd.ddg.{DDG, Node, MemoNode, ParNode, ReadNode, Timestamp}
 import tbd.messages._
 import tbd.mod.{AdjustableList}
@@ -39,7 +39,7 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
   val ddg = new DDG(log, id, this)
   val memoTable = Map[Seq[Any], ArrayBuffer[MemoNode]]()
 
-  private val tbd = new TBD(id, this)
+  private val c = new Context(id, this)
 
   def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
                 end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
@@ -58,25 +58,25 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
 
             val newValue = readNode.mod.read()
 
-	    val oldCurrentParent = tbd.currentParent
-            tbd.currentParent = readNode
-	    val oldStart = tbd.reexecutionStart
-	    tbd.reexecutionStart = readNode.timestamp
-	    val oldEnd = tbd.reexecutionEnd
-	    tbd.reexecutionEnd = readNode.endTime
-            val oldCurrentDest = tbd.currentDest
-            tbd.currentDest = readNode.currentDest
-	    val oldCurrentDest2 = tbd.currentDest2
-	    tbd.currentDest2 = readNode.currentDest2
+	    val oldCurrentParent = c.currentParent
+            c.currentParent = readNode
+	    val oldStart = c.reexecutionStart
+	    c.reexecutionStart = readNode.timestamp
+	    val oldEnd = c.reexecutionEnd
+	    c.reexecutionEnd = readNode.endTime
+            val oldCurrentDest = c.currentDest
+            c.currentDest = readNode.currentDest
+	    val oldCurrentDest2 = c.currentDest2
+	    c.currentDest2 = readNode.currentDest2
 
             readNode.updated = false
             readNode.reader(newValue)
 
-	    tbd.currentParent = oldCurrentParent
-	    tbd.reexecutionStart = oldStart
-	    tbd.reexecutionEnd = oldEnd
-            tbd.currentDest = oldCurrentDest
-	    tbd.currentDest2 = oldCurrentDest2
+	    c.currentParent = oldCurrentParent
+	    c.reexecutionStart = oldStart
+	    c.reexecutionEnd = oldEnd
+            c.currentDest = oldCurrentDest
+	    c.currentDest2 = oldCurrentDest2
 
             for (node <- toCleanup) {
               if (node.parent == null) {
@@ -109,13 +109,13 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
   def receive = {
     case ModUpdatedMessage(modId: ModId, finished: Future[_]) => {
       ddg.modUpdated(modId)
-      tbd.updatedMods += modId
+      c.updatedMods += modId
 
       parent ! PebbleMessage(self, modId, finished)
     }
 
     case RunTaskMessage(adjust: Adjustable[_]) => {
-      sender ! adjust.run(tbd)
+      sender ! adjust.run(c)
     }
 
     case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {
@@ -129,11 +129,11 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case PropagateMessage => {
-      tbd.initialRun = false
+      c.initialRun = false
       val respondTo = sender
       val future = propagate()
       future.onComplete((t: Try[Boolean]) => {
-	tbd.updatedMods.clear()
+	c.updatedMods.clear()
 
         respondTo ! "done"
       })

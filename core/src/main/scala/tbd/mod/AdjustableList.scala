@@ -18,7 +18,7 @@ package tbd.mod
 import akka.actor.ActorRef
 import scala.collection.mutable.{Buffer, Set}
 
-import tbd.TBD
+import tbd.Context
 import tbd.datastore.Datastore
 
 /**
@@ -36,15 +36,15 @@ trait AdjustableList[T, U] {
    */
   def filter(
       pred: ((T, U)) => Boolean)
-     (implicit tbd: TBD): AdjustableList[T, U]
+     (implicit c: Context): AdjustableList[T, U]
 
   /**
    * Returns a AdjustableList containing the results of applying the given
    * function to each of the elements of this AdjustableList.
    */
   def map[V, Q](
-      f: (TBD, (T, U)) => (V, Q))
-     (implicit tbd: TBD): AdjustableList[V, Q]
+      f: (Context, (T, U)) => (V, Q))
+     (implicit c: Context): AdjustableList[V, Q]
 
   /**
    * Reduces all elements in the list using f, in an unspecified order,
@@ -52,15 +52,15 @@ trait AdjustableList[T, U] {
    */
   def reduce(
       initialValueMod: Mod[(T, U)],
-      f: (TBD, (T, U), (T, U)) => (T, U))
-     (implicit tbd: TBD): Mod[(T, U)]
+      f: (Context, (T, U), (T, U)) => (T, U))
+     (implicit c: Context): Mod[(T, U)]
 
   /**
    * Returns a sorted copy of this list.
    */
   def sort(
-      comperator: (TBD, (T, U), (T, U)) => Boolean)
-     (implicit tbd: TBD): AdjustableList[T, U]
+      comperator: (Context, (T, U), (T, U)) => Boolean)
+     (implicit c: Context): AdjustableList[T, U]
 
   /**
    * Returns a tuple of two AdjustableList, whereas the first AdjustableList
@@ -68,8 +68,8 @@ trait AdjustableList[T, U] {
    * given predicate, and the second AdjustableList contains all other elements.
    */
   def split(
-      pred: (TBD, (T, U)) => Boolean)
-     (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U])
+      pred: (Context, (T, U)) => Boolean)
+     (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U])
 
   /* Meta functions */
   def toBuffer(): Buffer[U]

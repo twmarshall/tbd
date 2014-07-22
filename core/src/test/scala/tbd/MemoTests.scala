@@ -17,7 +17,7 @@ package tbd.test
 
 import org.scalatest._
 
-import tbd.{Adjustable, Changeable, Mutator, TableInput, TBD}
+import tbd.{Adjustable, Changeable, Context, Mutator, TableInput}
 import tbd.ddg.{MemoNode, ReadNode, RootNode}
 import tbd.master.Main
 import tbd.mod.Mod
@@ -30,7 +30,7 @@ class MemoTest(input: TableInput[Int, Int])
   // reexecuted as appropriate.
   var count = 0
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -79,7 +79,7 @@ class AlreadyMatchedTest(input: TableInput[Int, Int])
    * places in the code, as you can get weird results if the memoized block
    * isn't always the same.
    */
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -116,7 +116,7 @@ class OutOfScopeTest(input: TableInput[Int, Int])
     extends Adjustable[Mod[Int]] {
   var num = 0
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -148,7 +148,7 @@ class MatchingSignaturesTest(input: TableInput[Int, Int])
   var count1 = 0
   var count2 = 0
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -186,7 +186,7 @@ class MatchParentTest(input: TableInput[Int, Int])
   var count3 = 0
   var count4 = 0
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -224,7 +224,7 @@ class PropagateThroughMemoTest(input: TableInput[Int, Int])
     extends Adjustable[Mod[Int]] {
   var count = 0
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -258,7 +258,7 @@ class RepeatRunsTest(input: TableInput[Int, Int])
     extends Adjustable[Mod[Int]] {
   var count = 0
 
-  def run(implicit tbd: TBD): Mod[Int] = {
+  def run(implicit c: Context): Mod[Int] = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -286,7 +286,7 @@ class OutOfOrderMatchTest(input: TableInput[Int, Int])
   var count2 = 0
   var count3 = 0
 
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -320,7 +320,7 @@ class OutOfOrderMatchTest(input: TableInput[Int, Int])
 
 class NoDestTest(input: TableInput[Int, Int])
     extends Adjustable[Mod[Int]] {
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
@@ -354,7 +354,7 @@ class NoDestTest(input: TableInput[Int, Int])
 
 class NoDestTest2(input: TableInput[Int, Int])
     extends Adjustable[Mod[Int]] {
-  def run(implicit tbd: TBD) = {
+  def run(implicit c: Context) = {
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)

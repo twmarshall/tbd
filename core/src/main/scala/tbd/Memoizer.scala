@@ -23,52 +23,53 @@ import tbd.ddg.MemoNode
 import tbd.master.Master
 import tbd.mod.Mod
 
-class Memoizer[T](tbd: TBD, memoId: Int) {
-  import tbd.worker.context.dispatcher
+class Memoizer[T](c: Context, memoId: Int) {
+  import c.worker.context.dispatcher
 
   def apply(args: Any*)(func: => T): T = {
+    import c._
     val signature = memoId +: args
 
     var found = false
     var ret = null.asInstanceOf[T]
-    if (!tbd.initialRun) {
-      if (!tbd.updated(args)) {
-	if (tbd.worker.memoTable.contains(signature)) {
+    if (!initialRun) {
+      if (!updated(args)) {
+	if (worker.memoTable.contains(signature)) {
 
           // Search through the memo entries matching this signature to see if
           // there's one in the right time range.
-          for (memoNode <- tbd.worker.memoTable(signature)) {
+          for (memoNode <- worker.memoTable(signature)) {
             val timestamp = memoNode.timestamp
-            if (!found && timestamp > tbd.reexecutionStart &&
-		timestamp < tbd.reexecutionEnd &&
+            if (!found && timestamp > reexecutionStart &&
+		timestamp < reexecutionEnd &&
 		memoNode.matchableInEpoch <= Master.epoch) {
 
-	      if (memoNode.currentDest != tbd.currentDest &&
+	      if (memoNode.currentDest != currentDest &&
 		  memoNode.value.isInstanceOf[Changeable[_]]) {
                 val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
 
-                val awaiting = tbd.currentDest.mod.update(changeable.mod.read())
+                val awaiting = currentDest.mod.update(changeable.mod.read())
                 Await.result(Future.sequence(awaiting), DURATION)
 
-		tbd.worker.ddg.replaceDests(memoNode,
+		worker.ddg.replaceDests(memoNode,
 					    memoNode.currentDest,
-					    tbd.currentDest)
+					    currentDest)
               }
 
 	      if (memoNode.value.isInstanceOf[Changeable2[_, _]] &&
-		  memoNode.currentDest2 != tbd.currentDest2) {
+		  memoNode.currentDest2 != currentDest2) {
 		val changeable2 = memoNode.value.asInstanceOf[Changeable2[Any, Any]]
 
-		val awaiting = tbd.currentDest2.mod.update(changeable2.mod2.read())
+		val awaiting = currentDest2.mod.update(changeable2.mod2.read())
 		Await.result(Future.sequence(awaiting), DURATION)
 
-		tbd.worker.ddg.replaceDests(memoNode,
+		worker.ddg.replaceDests(memoNode,
 					    memoNode.currentDest2,
-					    tbd.currentDest2)
+					    currentDest2)
 	      }
 
               found = true
-              tbd.worker.ddg.attachSubtree(tbd.currentParent, memoNode)
+              worker.ddg.attachSubtree(currentParent, memoNode)
 
 	      memoNode.matchableInEpoch = Master.epoch + 1
               ret = memoNode.value.asInstanceOf[T]
@@ -76,9 +77,9 @@ class Memoizer[T](tbd: TBD, memoId: Int) {
 	      // This ensures that we won't match anything under the currently
 	      // reexecuting read that comes before this memo node, since then
 	      // the timestamps would be out of order.
-	      tbd.reexecutionStart = memoNode.endTime
+	      reexecutionStart = memoNode.endTime
 
-              val future = tbd.worker.propagate(timestamp,
+              val future = worker.propagate(timestamp,
                                                 memoNode.endTime)
               Await.result(future, DURATION)
             }
@@ -88,20 +89,20 @@ class Memoizer[T](tbd: TBD, memoId: Int) {
     }
 
     if (!found) {
-      val memoNode = tbd.worker.ddg.addMemo(tbd.currentParent, signature)
-      val outerParent = tbd.currentParent
-      tbd.currentParent = memoNode
+      val memoNode = worker.ddg.addMemo(currentParent, signature)
+      val outerParent = currentParent
+      currentParent = memoNode
       val value = func
-      tbd.currentParent = outerParent
-      memoNode.endTime = tbd.worker.ddg.nextTimestamp(memoNode)
-      memoNode.currentDest = tbd.currentDest
-      memoNode.currentDest2 = tbd.currentDest2
+      currentParent = outerParent
+      memoNode.endTime = worker.ddg.nextTimestamp(memoNode)
+      memoNode.currentDest = currentDest
+      memoNode.currentDest2 = currentDest2
       memoNode.value = value
 
-      if (tbd.worker.memoTable.contains(signature)) {
-        tbd.worker.memoTable(signature) += memoNode
+      if (worker.memoTable.contains(signature)) {
+        worker.memoTable(signature) += memoNode
       } else {
-        tbd.worker.memoTable += (signature -> ArrayBuffer(memoNode))
+        worker.memoTable += (signature -> ArrayBuffer(memoNode))
       }
 
       ret = value
@@ -111,7 +112,7 @@ class Memoizer[T](tbd: TBD, memoId: Int) {
   }
 }
 
-class DummyMemoizer[T](tbd: TBD, memoId: Int) extends Memoizer[T](tbd, memoId) {
+class DummyMemoizer[T](c: Context, memoId: Int) extends Memoizer[T](c, memoId) {
   override def apply(args: Any*)(func: => T): T = {
     func
   }

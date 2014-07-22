@@ -17,7 +17,7 @@ package tbd.mod
 
 import java.io.Serializable
 
-import tbd.{Changeable, Changeable2, Memoizer, TBD}
+import tbd.{Changeable, Changeable2, Context, Memoizer}
 import tbd.TBD._
 
 class ModListNode[T, U] (
@@ -37,7 +37,7 @@ class ModListNode[T, U] (
   def filter(
       pred: ((T, U)) => Boolean,
       memo: Memoizer[Mod[ModListNode[T, U]]])
-     (implicit tbd: TBD): Changeable[ModListNode[T, U]] = {
+     (implicit c: Context): Changeable[ModListNode[T, U]] = {
     def readNext = {
       read(next) {
 	case null => write[ModListNode[T, U]](null)
@@ -58,9 +58,9 @@ class ModListNode[T, U] (
   }
 
   def map[V, W](
-      f: (TBD, (T, U)) => (V, W),
+      f: (Context, (T, U)) => (V, W),
       memo: Memoizer[Changeable[ModListNode[V, W]]])
-     (implicit tbd: TBD): Changeable[ModListNode[V, W]] = {
+     (implicit c: Context): Changeable[ModListNode[V, W]] = {
     val newNext = mod {
       read(next) {
 	case null =>
@@ -72,21 +72,21 @@ class ModListNode[T, U] (
       }
     }
 
-    write(new ModListNode[V, W](f(tbd, value), newNext))
+    write(new ModListNode[V, W](f(c, value), newNext))
   }
 
   def sort(
       toAppend: Mod[ModListNode[T, U]],
-      comperator: (TBD, (T, U), (T, U)) => Boolean,
+      comperator: (Context, (T, U), (T, U)) => Boolean,
       memo: Memoizer[Mod[ModListNode[T, U]]])
-     (implicit tbd: TBD): Changeable[ModListNode[T, U]] = {
+     (implicit c: Context): Changeable[ModListNode[T, U]] = {
     read(next)(next => {
       if(next != null) {
         val (smaller, greater) = mod2(2) {
 
           val memo = makeMemoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]]()
 
-          next.split(memo, (tbd, cv) => { comperator(tbd, cv, value) })
+          next.split(memo, (c, cv) => { comperator(c, cv, value) })
         }
 
         val greaterSorted = memo(List(greater)) {
@@ -120,8 +120,8 @@ class ModListNode[T, U] (
 
   def split(
       memo: Memoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]],
-      pred: (TBD, (T, U)) => Boolean)
-     (implicit tbd: TBD): Changeable2[ModListNode[T, U], ModListNode[T, U]] = {
+      pred: (Context, (T, U)) => Boolean)
+     (implicit c: Context): Changeable2[ModListNode[T, U], ModListNode[T, U]] = {
     def readNext(next: ModListNode[T, U]) = {
       memo(next) {
 	if (next != null) {
@@ -133,20 +133,20 @@ class ModListNode[T, U] (
       }
     }
 
-    if(pred(tbd, value)) {
+    if(pred(c, value)) {
       val (matchNext, diffNext) =
 	mod2(0) {
 	  read(next)(readNext)
 	}
 
-      tbd.writeNoDestLeft(new ModListNode(value, matchNext), diffNext)
+      c.writeNoDestLeft(new ModListNode(value, matchNext), diffNext)
     } else {
       val (matchNext, diffNext) =
 	mod2(1) {
 	  read(next)(readNext)
 	}
 
-      tbd.writeNoDestRight(matchNext, new ModListNode(value, diffNext))
+      c.writeNoDestRight(matchNext, new ModListNode(value, diffNext))
     }
   }
 }

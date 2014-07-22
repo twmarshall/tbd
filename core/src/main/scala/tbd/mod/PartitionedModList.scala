@@ -18,7 +18,7 @@ package tbd.mod
 import akka.actor.ActorRef
 import scala.collection.mutable.{ArrayBuffer, Buffer, Set}
 
-import tbd.{Changeable, TBD}
+import tbd.{Changeable, Context}
 import tbd.datastore.Datastore
 import tbd.TBD._
 
@@ -28,13 +28,13 @@ class PartitionedModList[T, U](
 
   def filter(
       pred: ((T, U)) => Boolean)
-     (implicit tbd: TBD): PartitionedModList[T, U] = {
-    def parFilter(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[T, U]] = {
+     (implicit c: Context): PartitionedModList[T, U] = {
+    def parFilter(i: Int)(implicit c: Context): ArrayBuffer[ModList[T, U]] = {
       if (i < partitions.size) {
         val parTup = par {
-          tbd => partitions(i).filter(pred)(tbd)
+          c => partitions(i).filter(pred)(c)
         } and {
-          tbd => parFilter(i + 1)(tbd)
+          c => parFilter(i + 1)(c)
         }
 
         parTup._2 += parTup._1
@@ -47,14 +47,14 @@ class PartitionedModList[T, U](
   }
 
   def map[V, W](
-      f: (TBD, (T, U)) => (V, W))
-     (implicit tbd: TBD): PartitionedModList[V, W] = {
-    def innerMap(i: Int)(implicit tbd: TBD): ArrayBuffer[ModList[V, W]] = {
+      f: (Context, (T, U)) => (V, W))
+     (implicit c: Context): PartitionedModList[V, W] = {
+    def innerMap(i: Int)(implicit c: Context): ArrayBuffer[ModList[V, W]] = {
       if (i < partitions.size) {
         val parTup = par {
-          tbd => partitions(i).map(f)(tbd)
+          c => partitions(i).map(f)(c)
         } and {
-          tbd => innerMap(i + 1)(tbd)
+          c => innerMap(i + 1)(c)
         }
 
         parTup._2 += parTup._1
@@ -68,20 +68,20 @@ class PartitionedModList[T, U](
 
   def reduce(
       initialValueMod: Mod[(T, U)],
-      f: (TBD, (T, U), (T, U)) => (T, U))
-     (implicit tbd: TBD): Mod[(T, U)] = {
+      f: (Context, (T, U), (T, U)) => (T, U))
+     (implicit c: Context): Mod[(T, U)] = {
 
-    def parReduce(i: Int)(implicit tbd: TBD): Mod[(T, U)] = {
+    def parReduce(i: Int)(implicit c: Context): Mod[(T, U)] = {
       if (i < partitions.size) {
         val parTup = par {
-          tbd => partitions(i).reduce(initialValueMod, f)(tbd)
+          c => partitions(i).reduce(initialValueMod, f)(c)
         } and {
-          tbd => parReduce(i + 1)(tbd)
+          c => parReduce(i + 1)(c)
         }
 
         mod {
           read2(parTup._1, parTup._2) {
-	    case (a, b) => write(f(tbd, a, b))
+	    case (a, b) => write(f(c, a, b))
           }
         }
       } else {
@@ -93,12 +93,12 @@ class PartitionedModList[T, U](
   }
 
   def sort(
-      comperator: (TBD, (T, U), (T, U)) => Boolean)
-     (implicit tbd: TBD): AdjustableList[T, U] = ???
+      comperator: (Context, (T, U), (T, U)) => Boolean)
+     (implicit c: Context): AdjustableList[T, U] = ???
 
   def split(
-      pred: (TBD, (T, U)) => Boolean)
-     (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U]) = ???
+      pred: (Context, (T, U)) => Boolean)
+     (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   /* Meta Operations */
   def toBuffer(): Buffer[U] = {

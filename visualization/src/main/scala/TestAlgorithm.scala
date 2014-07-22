@@ -30,11 +30,11 @@ trait TestAlgorithm[T] extends Adjustable[T] {
 
 class ListReduceSumTest()
     extends TestAlgorithm[Mod[(Int, Int)]]  {
-  def run(implicit tbd: TBD): Mod[(Int, Int)] = {
+  def run(implicit c: Context): Mod[(Int, Int)] = {
     val modList = input.getAdjustableList()
-    val zero = tbd.mod{ tbd.write((0, 0)) }
+    val zero = c.mod{ c.write((0, 0)) }
     modList.reduce(zero,
-      (tbd: TBD, pair1: (Int, Int), pair2: (Int, Int)) => {
+      (c: Context, pair1: (Int, Int), pair2: (Int, Int)) => {
         (pair2._1, pair1._2 + pair2._2)
       })
   }
@@ -55,9 +55,9 @@ class ListReduceSumTest()
 
 class ListQuicksortTest()
     extends TestAlgorithm[AdjustableList[Int, Int]] {
-  def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
+  def run(implicit c: Context): AdjustableList[Int, Int] = {
     val modList = input.getAdjustableList()
-    modList.sort((tbd, a, b) => a._2 < b._2)
+    modList.sort((c, a, b) => a._2 < b._2)
   }
 
   def checkOutput(output: AdjustableList[Int, Int], table: Map[Int, Int]): Boolean = {
@@ -76,9 +76,9 @@ class ListQuicksortTest()
 
 class ListSplitTest()
     extends TestAlgorithm[(AdjustableList[Int, Int], AdjustableList[Int, Int])] {
-  def run(implicit tbd: TBD): (AdjustableList[Int, Int], AdjustableList[Int, Int]) = {
+  def run(implicit c: Context): (AdjustableList[Int, Int], AdjustableList[Int, Int]) = {
     val modList = input.getAdjustableList()
-    modList.split((tbd, a) => a._2 % 2 == 0)
+    modList.split((c, a) => a._2 % 2 == 0)
   }
 
  def checkOutput(output: (AdjustableList[Int, Int], AdjustableList[Int, Int]), table: Map[Int, Int]): Boolean = {

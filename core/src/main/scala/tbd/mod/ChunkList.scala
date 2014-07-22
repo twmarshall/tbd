@@ -17,7 +17,7 @@ package tbd.mod
 
 import scala.collection.mutable.Buffer
 
-import tbd.{Changeable, Memoizer, TBD}
+import tbd.{Changeable, Context, Memoizer}
 import tbd.Constants.ModId
 import tbd.TBD._
 
@@ -25,8 +25,8 @@ class ChunkList[T, U](
     val head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
 
   def map[V, W](
-      f: (TBD, (T, U)) => (V, W))
-     (implicit tbd: TBD): ChunkList[V, W] = {
+      f: (Context, (T, U)) => (V, W))
+     (implicit c: Context): ChunkList[V, W] = {
     val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
     new ChunkList(
       mod {
@@ -39,8 +39,8 @@ class ChunkList[T, U](
   }
 
   def chunkMap[V, Q](
-      f: (TBD, Vector[(T, U)]) => (V, Q))
-     (implicit tbd: TBD): ModList[V, Q] = {
+      f: (Context, Vector[(T, U)]) => (V, Q))
+     (implicit c: Context): ModList[V, Q] = {
     val memo = makeMemoizer[Mod[ModListNode[V, Q]]]()
     new ModList(
       mod {
@@ -54,39 +54,39 @@ class ChunkList[T, U](
 
   def filter(
       pred: ((T, U)) => Boolean)
-     (implicit tbd: TBD): ChunkList[T, U] = ???
+     (implicit c: Context): ChunkList[T, U] = ???
 
   def reduce(
       initialValueMod: Mod[(T, U)],
-      f: (TBD, (T, U), (T, U)) => (T, U))
-     (implicit tbd: TBD): Mod[(T, U)] = ???
+      f: (Context, (T, U), (T, U)) => (T, U))
+     (implicit c: Context): Mod[(T, U)] = ???
 
   def split(
-      pred: (TBD, (T, U)) => Boolean)
-     (implicit tbd: TBD): (AdjustableList[T, U], AdjustableList[T, U]) = ???
+      pred: (Context, (T, U)) => Boolean)
+     (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   def sort(
-      comperator: (TBD, (T, U), (T, U)) => Boolean)
-     (implicit tbd: TBD): AdjustableList[T, U] = ???
+      comperator: (Context, (T, U), (T, U)) => Boolean)
+     (implicit c: Context): AdjustableList[T, U] = ???
 
   def chunkSort(
-      comparator: (TBD, (T, U), (T, U)) => Boolean)
-     (implicit tbd: TBD): Mod[(Int, Vector[(T, U)])] = {
-    def mapper(tbd: TBD, chunk: Vector[(T, U)]): (Int, Vector[(T, U)]) = {
+      comparator: (Context, (T, U), (T, U)) => Boolean)
+     (implicit c: Context): Mod[(Int, Vector[(T, U)])] = {
+    def mapper(c: Context, chunk: Vector[(T, U)]): (Int, Vector[(T, U)]) = {
       (0, chunk.sortWith((pair1: (T, U), pair2: (T, U)) => {
-	comparator(tbd, pair1, pair2)
+	comparator(c, pair1, pair2)
       }))
     }
     val sortedChunks = chunkMap(mapper)
 
-    def reducer(tbd: TBD, pair1: (Int, Vector[(T, U)]), pair2: (Int, Vector[(T, U)])) = {
+    def reducer(c: Context, pair1: (Int, Vector[(T, U)]), pair2: (Int, Vector[(T, U)])) = {
       def innerReducer(v1: Vector[(T, U)], v2: Vector[(T, U)]): Vector[(T, U)] = {
 	if (v1.size == 0) {
 	  v2
 	} else if (v2.size == 0) {
 	  v1
 	} else {
-	  if (comparator(tbd, v1.head, v2.head)) {
+	  if (comparator(c, v1.head, v2.head)) {
 	    v1.head +: innerReducer(v1.tail, v2)
 	  } else {
 	    v2.head +: innerReducer(v1, v2.tail)
