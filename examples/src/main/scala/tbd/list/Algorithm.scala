@@ -22,7 +22,7 @@ import tbd.{Adjustable, ListConf, Mutator}
 import tbd.master.Main
 
 abstract class Algorithm[Input, Output](_conf: Map[String, _],
-    _listConf: ListConf) extends Adjustable {
+    _listConf: ListConf) extends Adjustable[Output] {
   val conf = _conf
   val listConf = _listConf
 

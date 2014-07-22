@@ -15,6 +15,6 @@
  */
 package tbd
 
-trait Adjustable {
-  def run(implicit tbd: TBD): Any
+trait Adjustable[T] {
+  def run(implicit tbd: TBD): T
 }

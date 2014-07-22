@@ -23,7 +23,7 @@ import tbd.examples.list.WCAlgorithm
 import tbd.mod.Mod
 
 class WCTest(input: ListInput[Int, String])
-    extends Adjustable {
+    extends Adjustable[Mod[(Int, HashMap[String, Int])]] {
   def mapper(tbd: TBD, pair: (Int, String)) = {
     (pair._1, WCAlgorithm.wordcount(pair._2))
   }
@@ -35,7 +35,7 @@ class WCTest(input: ListInput[Int, String])
     (pair1._1, WCAlgorithm.reduce(pair1._2, pair2._2))
    }
 
-  def run(implicit tbd: TBD): Mod[(Int, HashMap[String, Int])] = {
+  def run(implicit tbd: TBD) = {
     val pages = input.getAdjustableList()
     val counts = pages.map(mapper)
     val initialValue = tbd.createMod((0, HashMap[String, Int]()))
@@ -53,8 +53,7 @@ class WordcountTests extends FlatSpec with Matchers {
     input.put(2, "cat boy boy ear cat dog")
     input.put(3, "ear cat apple")
 
-    val output =
-      mutator.run[Mod[(Int, HashMap[String, Int])]](test)
+    val output = mutator.run(test)
     val answer = HashMap[String, Int]("apple" -> 3, "boy" -> 3, "cat" -> 6,
 				      "dog" -> 1, "ear" -> 2)
     assert(output.read()._2 == answer)

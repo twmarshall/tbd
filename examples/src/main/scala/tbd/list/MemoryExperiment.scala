@@ -20,9 +20,10 @@ import scala.collection.mutable.Map
 import tbd.{Adjustable, ListConf, ListInput, Mutator, TBD}
 import tbd.mod.AdjustableList
 
-class MemoryExperiment(input: ListInput[Int, String]) extends Adjustable {
+class MemoryExperiment(input: ListInput[Int, String])
+    extends Adjustable[AdjustableList[Int, String]] {
   val partitions = 4
-  def run(implicit tbd: TBD): AdjustableList[Int, String] = {
+  def run(implicit tbd: TBD) = {
     val list = input.getAdjustableList()
     list.map((tbd: TBD, pair: (Int, String)) => pair)
   }
@@ -39,7 +40,7 @@ object MemoryExperiment {
       input.addValue()
     }
 
-    val output = mutator.run[AdjustableList[Int, Int]](new MemoryExperiment(list))
+    val output = mutator.run(new MemoryExperiment(list))
 
     val rand = new scala.util.Random()
     var i = 0

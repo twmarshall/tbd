@@ -22,10 +22,11 @@ import tbd.{Adjustable, Changeable, ListConf, ListInput, Memoizer, Mutator, Tabl
 import tbd.mod.{AdjustableList, Mod}
 import tbd.TBD._
 
-class PropagationOrderTest(input: TableInput[Int, Int]) extends Adjustable {
+class PropagationOrderTest(input: TableInput[Int, Int])
+    extends Adjustable[Mod[Int]] {
   var num = 0
 
-  def run(implicit tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD) = {
     val table = input.getTable()
     val one = table.get(1)
 
@@ -51,10 +52,11 @@ class PropagationOrderTest(input: TableInput[Int, Int]) extends Adjustable {
   }
 }
 
-class PropagationOrderTest2(input: ListInput[Int, Int]) extends Adjustable {
+class PropagationOrderTest2(input: ListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
   val values = ArrayBuffer[Int]()
 
-  def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
+  def run(implicit tbd: TBD) = {
     val adjustableList = input.getAdjustableList()
     adjustableList.map((tbd: TBD, pair: (Int, Int)) => {
       if (tbd.initialRun) {
@@ -68,8 +70,9 @@ class PropagationOrderTest2(input: ListInput[Int, Int]) extends Adjustable {
   }
 }
 
-class ReduceTest(input: ListInput[Int, Int]) extends Adjustable {
-  def run(implicit tbd: TBD): Mod[(Int, Int)] = {
+class ReduceTest(input: ListInput[Int, Int])
+    extends Adjustable[Mod[(Int, Int)]] {
+  def run(implicit tbd: TBD) = {
     val list = input.getAdjustableList()
     val zero = tbd.createMod((0, 0))
     list.reduce(zero, (tbd: TBD, pair1: (Int, Int), pair2: (Int, Int)) => {
@@ -79,27 +82,32 @@ class ReduceTest(input: ListInput[Int, Int]) extends Adjustable {
   }
 }
 
-class ParTest(input: TableInput[Int, Int]) extends Adjustable {
-  def run(implicit tbd: TBD): Mod[Int] = {
+class ParTest(input: TableInput[Int, Int]) extends Adjustable[Mod[Int]] {
+  def run(implicit tbd: TBD) = {
     val table = input.getTable()
     val one = table.get(1)
+    println(tbd)
+    val pair = par((tbd: TBD) => {
+      mod {
+        read(one) {
+          case oneValue => write(oneValue + 1)(tbd)
+	} (tbd)
+      } (tbd)
+    }, (tbd: TBD) => {
+      0
+    })
 
-    val pair = tbd.par((tbd: TBD) =>
-      tbd.mod {
-        tbd.read(one)(oneValue =>
-          tbd.write(oneValue + 1))
-      }, (tbd: TBD) => 0)
-
-    tbd.mod {
-      tbd.read(pair._1)(value =>
-        tbd.write(value * 2))
+    mod {
+      read(pair._1)(value =>
+        write(value * 2))
     }
   }
 }
 
 // Checks that modNoDest returns the correct values even after a convuloted
 // series of memo matches.
-class ModNoDestTest(input: TableInput[Int, Int]) extends Adjustable {
+class ModNoDestTest(input: TableInput[Int, Int])
+    extends Adjustable[Mod[Int]] {
   val table = input.getTable()
   val one = table.get(1)
   val two = table.get(2)
@@ -134,7 +142,7 @@ class ModNoDestTest(input: TableInput[Int, Int]) extends Adjustable {
     })
   }
 
-  def run(implicit tbd: TBD): Mod[Int] = {
+  def run(implicit tbd: TBD) = {
     val memo = tbd.makeMemoizer[Changeable[Int]]()
 
     tbd.mod {
@@ -165,7 +173,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     val input = mutator.createTable[Int, Int]()
     input.put(1, 1)
     val test = new PropagationOrderTest(input)
-    val output = mutator.run[Mod[Int]](test)
+    val output = mutator.run(test)
     test.num should be (2)
 
     test.num = 0
@@ -182,7 +190,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
       input.put(i, i)
     }
     val test = new PropagationOrderTest2(input)
-    mutator.run[AdjustableList[Int, String]](test)
+    mutator.run(test)
 
     for (i <- 0 to 100) {
       input.update(i, i + 1)
@@ -200,7 +208,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
       input.put(i, i)
     }
     val test = new ReduceTest(input)
-    val output = mutator.run[Mod[(Int, Int)]](test)
+    val output = mutator.run(test)
 
     output.read()._2 should be (136)
 
@@ -215,7 +223,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     val mutator = new Mutator()
     val input = mutator.createTable[Int, Int]()
     input.put(1, 1)
-    val output = mutator.run[Mod[Int]](new ParTest(input))
+    val output = mutator.run(new ParTest(input))
     output.read() should be (4)
 
     input.update(1, 2)
@@ -236,7 +244,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     input.put(5, 5)
     input.put(6, 6)
     input.put(7, 7)
-    val output = mutator.run[Mod[Int]](new ModNoDestTest(input))
+    val output = mutator.run(new ModNoDestTest(input))
     output.read() should be (6)
 
     input.update(1, 2)

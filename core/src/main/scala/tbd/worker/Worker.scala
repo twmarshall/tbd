@@ -114,7 +114,7 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
       parent ! PebbleMessage(self, modId, finished)
     }
 
-    case RunTaskMessage(adjust: Adjustable) => {
+    case RunTaskMessage(adjust: Adjustable[_]) => {
       sender ! adjust.run(tbd)
     }
 

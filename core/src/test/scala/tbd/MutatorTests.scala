@@ -21,14 +21,16 @@ import scala.collection.mutable.Map
 import tbd._
 import tbd.mod.AdjustableList
 
-class ListTest(input: ListInput[Int, Int]) extends Adjustable {
-  def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
+class ListTest(input: ListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit tbd: TBD) = {
     input.getAdjustableList()
   }
 }
 
-class ChunkListTest(input: ChunkListInput[Int, Int]) extends Adjustable {
-  def run(implicit tbd: TBD): AdjustableList[Int, Int] = {
+class ChunkListTest(input: ChunkListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit tbd: TBD) = {
     input.getChunkList()
   }
 }
@@ -68,7 +70,10 @@ class MutatorTests extends FlatSpec with Matchers {
     }
   }
 
-  def runTest(mutator: Mutator, adjustable: Adjustable, input: Input[Int, Int]) {
+  def runTest(
+      mutator: Mutator,
+      adjustable: Adjustable[AdjustableList[Int, Int]],
+      input: Input[Int, Int]) {
     val answer = Map[Int, Int]()
 
     var  i  = 0
@@ -78,7 +83,7 @@ class MutatorTests extends FlatSpec with Matchers {
       i += 1
     }
 
-    val output = mutator.run[AdjustableList[Int, Int]](adjustable)
+    val output = mutator.run(adjustable)
     var sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
     output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
 

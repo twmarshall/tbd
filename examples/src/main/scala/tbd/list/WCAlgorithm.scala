@@ -111,7 +111,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 }
 
 class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[String, Mod[(Int, Map[String, Int])]](_conf, _listConf) {
+    extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
   val input = mutator.createChunkList[Int, String](listConf)
 
   data = new WCData(input, count, mutations)
@@ -123,7 +123,7 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   def checkOutput(
       table: Map[Int, String],
-      output: Mod[(Int, Map[String, Int])]) = {
+      output: Mod[(Int, HashMap[String, Int])]) = {
     val answer = runNaive(table.values)
     output.read()._2 == answer
   }

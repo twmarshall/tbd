@@ -21,7 +21,7 @@ import scala.collection.mutable.Map
 import tbd._
 import tbd.mod.{AdjustableList, Mod}
 
-trait TestAlgorithm[T] extends Adjustable {
+trait TestAlgorithm[T] extends Adjustable[T] {
   def checkOutput(output: T, table: Map[Int, Int]): Boolean
   def getListConf() = { new ListConf(partitions = 1) }
 

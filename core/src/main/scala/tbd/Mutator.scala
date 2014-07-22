@@ -38,7 +38,7 @@ class Mutator(aMain: Main = null) {
   val idFuture = main.masterRef ? RegisterMutatorMessage
   val id = Await.result(idFuture, DURATION).asInstanceOf[Int]
 
-  def run[T](adjust: Adjustable): T = {
+  def run[T](adjust: Adjustable[T]): T = {
     val future = main.masterRef ? RunMessage(adjust, id)
     val resultFuture =
       Await.result(future, DURATION).asInstanceOf[Future[Any]]
