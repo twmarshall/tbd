@@ -25,7 +25,7 @@ class MemoryExperiment(input: ListInput[Int, String])
   val partitions = 4
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    list.map((c: Context, pair: (Int, String)) => pair)
+    list.map((x: (Int, String)) => x)
   }
 }
 

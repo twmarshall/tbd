@@ -48,7 +48,7 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     sortedOutput == answer.asInstanceOf[GenIterable[Int]].toBuffer.sortWith(_ < _)
   }
 
-  def mapper(c: Context, pair: (Int, String)) = {
+  def mapper(pair: (Int, String)) = {
     mapCount += 1
     MapAlgorithm.mapper(pair)
   }
@@ -75,7 +75,7 @@ class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     output.toBuffer.reduce(_ + _) == answer.asInstanceOf[GenIterable[Int]].reduce(_ + _)
   }
 
-  def chunkMapper(c: Context, chunk: Vector[(Int, String)]) = {
+  def chunkMapper(chunk: Vector[(Int, String)]) = {
     mapCount += 1
     var count = 0
 

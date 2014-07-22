@@ -25,7 +25,7 @@ class ChunkList[T, U](
     val head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
 
   def map[V, W](
-      f: (Context, (T, U)) => (V, W))
+      f: ((T, U)) => (V, W))
      (implicit c: Context): ChunkList[V, W] = {
     val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
     new ChunkList(
@@ -39,7 +39,7 @@ class ChunkList[T, U](
   }
 
   def chunkMap[V, Q](
-      f: (Context, Vector[(T, U)]) => (V, Q))
+      f: (Vector[(T, U)]) => (V, Q))
      (implicit c: Context): ModList[V, Q] = {
     val memo = makeMemoizer[Mod[ModListNode[V, Q]]]()
     new ModList(
@@ -58,7 +58,7 @@ class ChunkList[T, U](
 
   def reduce(
       initialValueMod: Mod[(T, U)],
-      f: (Context, (T, U), (T, U)) => (T, U))
+      f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)] = ???
 
   def split(
@@ -72,14 +72,14 @@ class ChunkList[T, U](
   def chunkSort(
       comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): Mod[(Int, Vector[(T, U)])] = {
-    def mapper(c: Context, chunk: Vector[(T, U)]): (Int, Vector[(T, U)]) = {
+    def mapper(chunk: Vector[(T, U)]): (Int, Vector[(T, U)]) = {
       (0, chunk.sortWith((pair1: (T, U), pair2: (T, U)) => {
 	comparator(pair1, pair2)
       }))
     }
     val sortedChunks = chunkMap(mapper)
 
-    def reducer(c: Context, pair1: (Int, Vector[(T, U)]), pair2: (Int, Vector[(T, U)])) = {
+    def reducer(pair1: (Int, Vector[(T, U)]), pair2: (Int, Vector[(T, U)])) = {
       def innerReducer(v1: Vector[(T, U)], v2: Vector[(T, U)]): Vector[(T, U)] = {
 	if (v1.size == 0) {
 	  v2

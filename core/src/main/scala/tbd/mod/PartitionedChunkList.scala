@@ -27,7 +27,7 @@ class PartitionedChunkList[T, U](
   ) extends AdjustableChunkList[T, U] {
 
   def chunkMap[V, W](
-      f: (Context, Vector[(T, U)]) => (V, W))
+      f: (Vector[(T, U)]) => (V, W))
      (implicit c: Context): PartitionedModList[V, W] = {
     def innerChunkMap(i: Int)(implicit c: Context): ArrayBuffer[ModList[V, W]] = {
       if (i < partitions.size) {
@@ -71,7 +71,7 @@ class PartitionedChunkList[T, U](
   }
 
   def map[V, W](
-      f: (Context, (T, U)) => (V, W))
+      f: ((T, U)) => (V, W))
      (implicit c: Context): PartitionedChunkList[V, W] = {
     def innerMap(i: Int)(implicit c: Context): ArrayBuffer[ChunkList[V, W]] = {
       if (i < partitions.size) {
@@ -92,7 +92,7 @@ class PartitionedChunkList[T, U](
 
   def reduce(
       initialValueMod: Mod[(T, U)],
-      f: (Context, (T, U), (T, U)) => (T, U))
+      f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)] = {
 
     def parReduce(i: Int)(implicit c: Context): Mod[(T, U)] = {
@@ -105,7 +105,7 @@ class PartitionedChunkList[T, U](
 
         mod {
           read2(parTup._1, parTup._2) {
-	    case (a, b) => write(f(c, a, b))
+	    case (a, b) => write(f(a, b))
           }
         }
       } else {

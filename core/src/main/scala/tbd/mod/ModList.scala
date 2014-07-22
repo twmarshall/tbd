@@ -41,7 +41,7 @@ class ModList[T, U](
   }
 
   def map[V, W](
-      f: (Context, (T, U)) => (V, W))
+      f: ((T, U)) => (V, W))
      (implicit c: Context): ModList[V, W] = {
     val memo = makeMemoizer[Changeable[ModListNode[V, W]]]()
 
@@ -57,7 +57,7 @@ class ModList[T, U](
 
   def reduce(
       identityMod: Mod[(T, U)],
-      f: (Context, (T, U), (T, U)) => (T, U))
+      f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)] = {
 
     // Each round we need a hasher and a memo, and we need to guarantee that the
@@ -110,7 +110,7 @@ class ModList[T, U](
         hasher: Hasher,
         memo: Memoizer[Mod[ModListNode[T, U]]]
       ): Changeable[ModListNode[T, U]] = {
-      val newAcc = f(c, acc, head.value)
+      val newAcc = f(acc, head.value)
 
       if(binaryHash(head.next.id, round, hasher)) {
         val newNext = memo(head.next, identityMod) {

@@ -58,7 +58,7 @@ class ModListNode[T, U] (
   }
 
   def map[V, W](
-      f: (Context, (T, U)) => (V, W),
+      f: ((T, U)) => (V, W),
       memo: Memoizer[Changeable[ModListNode[V, W]]])
      (implicit c: Context): Changeable[ModListNode[V, W]] = {
     val newNext = mod {
@@ -72,7 +72,7 @@ class ModListNode[T, U] (
       }
     }
 
-    write(new ModListNode[V, W](f(c, value), newNext))
+    write(new ModListNode[V, W](f(value), newNext))
   }
 
   def sort(

@@ -25,12 +25,11 @@ import tbd.TBD._
 
 class WCTest(input: ListInput[Int, String])
     extends Adjustable[Mod[(Int, HashMap[String, Int])]] {
-  def mapper(c: Context, pair: (Int, String)) = {
+  def mapper(pair: (Int, String)) = {
     (pair._1, WCAlgorithm.wordcount(pair._2))
   }
 
   def reducer(
-      c: Context,
       pair1: (Int, HashMap[String, Int]),
       pair2: (Int, HashMap[String, Int])) = {
     (pair1._1, WCAlgorithm.reduce(pair1._2, pair2._2))

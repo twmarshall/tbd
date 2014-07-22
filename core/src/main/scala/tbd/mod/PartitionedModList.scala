@@ -47,7 +47,7 @@ class PartitionedModList[T, U](
   }
 
   def map[V, W](
-      f: (Context, (T, U)) => (V, W))
+      f: ((T, U)) => (V, W))
      (implicit c: Context): PartitionedModList[V, W] = {
     def innerMap(i: Int)(implicit c: Context): ArrayBuffer[ModList[V, W]] = {
       if (i < partitions.size) {
@@ -68,7 +68,7 @@ class PartitionedModList[T, U](
 
   def reduce(
       initialValueMod: Mod[(T, U)],
-      f: (Context, (T, U), (T, U)) => (T, U))
+      f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)] = {
 
     def parReduce(i: Int)(implicit c: Context): Mod[(T, U)] = {
@@ -81,7 +81,7 @@ class PartitionedModList[T, U](
 
         mod {
           read2(parTup._1, parTup._2) {
-	    case (a, b) => write(f(c, a, b))
+	    case (a, b) => write(f(a, b))
           }
         }
       } else {

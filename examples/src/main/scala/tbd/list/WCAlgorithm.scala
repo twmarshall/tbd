@@ -90,13 +90,12 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     output.read()._2 == answer
   }
 
-  def mapper(c: Context, pair: (Int, String)) = {
+  def mapper(pair: (Int, String)) = {
     mapCount += 1
     (pair._1, WCAlgorithm.wordcount(pair._2))
   }
 
   def reducer(
-      c: Context,
       pair1: (Int, HashMap[String, Int]),
       pair2: (Int, HashMap[String, Int])) = {
     reduceCount += 1
@@ -129,7 +128,7 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     output.read()._2 == answer
   }
 
-  def chunkMapper(c: Context, chunk: Vector[(Int, String)]) = {
+  def chunkMapper(chunk: Vector[(Int, String)]) = {
     mapCount += 1
     var counts = Map[String, Int]()
 
@@ -141,7 +140,6 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def chunkReducer(
-      c: Context,
       pair1: (Int, HashMap[String, Int]),
       pair2: (Int, HashMap[String, Int])) = {
     reduceCount += 1

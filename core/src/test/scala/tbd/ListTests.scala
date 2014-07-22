@@ -23,7 +23,7 @@ import tbd.mod.{AdjustableList, Dest, Mod}
 import tbd.TBD._
 
 class ListMapTest(
-    f: (Context, (String, Int)) => (String, Int),
+    f: ((String, Int)) => (String, Int),
     input: ListInput[String, Int]
   ) extends Adjustable[AdjustableList[String, Int]] {
 
@@ -56,7 +56,7 @@ class ChunkListMapTest(input: ListInput[Int, Int])
 
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    list.map((c: Context, pair: (Int, Int)) => (pair._1, pair._2 - 2))
+    list.map((pair: (Int, Int)) => (pair._1, pair._2 - 2))
   }
 }
 
@@ -76,7 +76,7 @@ class ListReduceSumTest(input: ListInput[String, Int])
     val modList = input.getAdjustableList()
     val zero = mod { write(("", 0)) }
     modList.reduce(zero,
-      (c: Context, pair1: (String, Int), pair2: (String, Int)) => {
+      (pair1: (String, Int), pair2: (String, Int)) => {
         (pair2._1, pair1._2 + pair2._2)
       })
   }
@@ -88,7 +88,7 @@ class ListTests extends FlatSpec with Matchers {
     val input = mutator.createList[String, Int]()
     input.put("one", 1)
     input.put("two", 2)
-    val f = (c: Context, pair: (String, Int)) => (pair._1, pair._2 * 2)
+    val f = (pair: (String, Int)) => (pair._1, pair._2 * 2)
     val output = mutator.run(new ListMapTest(f, input))
     // (1 * 2), (2 * 2)
     output.toBuffer().sortWith(_ < _) should be (Buffer(2, 4))

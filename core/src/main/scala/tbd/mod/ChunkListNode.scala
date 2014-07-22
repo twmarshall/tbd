@@ -37,7 +37,7 @@ class ChunkListNode[T, U](
   }
 
   def chunkMap[V, W](
-      f: (Context, Vector[(T, U)]) => (V, W),
+      f: (Vector[(T, U)]) => (V, W),
       memo: Memoizer[Mod[ModListNode[V, W]]])
      (implicit c: Context): Changeable[ModListNode[V, W]] = {
     val newNextMod = memo(nextMod) {
@@ -51,14 +51,14 @@ class ChunkListNode[T, U](
       }
     }
 
-    write(new ModListNode[V, W](f(c, chunk), newNextMod))
+    write(new ModListNode[V, W](f(chunk), newNextMod))
   }
 
   def map[V, W](
-      f: (Context, (T, U)) => (V, W),
+      f: ((T, U)) => (V, W),
       memo: Memoizer[Changeable[ChunkListNode[V, W]]])
      (implicit c: Context): Changeable[ChunkListNode[V, W]] = {
-    val newChunk = chunk.map((pair: (T, U)) => f(c, pair))
+    val newChunk = chunk.map(f)
     val newNext = mod {
       read(nextMod) {
 	case null => write[ChunkListNode[V, W]](null)

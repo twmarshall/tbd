@@ -34,7 +34,7 @@ class ListReduceSumTest()
     val modList = input.getAdjustableList()
     val zero = c.mod{ c.write((0, 0)) }
     modList.reduce(zero,
-      (c: Context, pair1: (Int, Int), pair2: (Int, Int)) => {
+      (pair1: (Int, Int), pair2: (Int, Int)) => {
         (pair2._1, pair1._2 + pair2._2)
       })
   }

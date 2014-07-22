@@ -58,7 +58,7 @@ class PropagationOrderTest2(input: ListInput[Int, Int])
 
   def run(implicit c: Context) = {
     val adjustableList = input.getAdjustableList()
-    adjustableList.map((c: Context, pair: (Int, Int)) => {
+    adjustableList.map((pair: (Int, Int)) => {
       if (c.initialRun) {
         values += pair._2
       } else {
@@ -75,7 +75,7 @@ class ReduceTest(input: ListInput[Int, Int])
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
     val zero = createMod((0, 0))
-    list.reduce(zero, (c: Context, pair1: (Int, Int), pair2: (Int, Int)) => {
+    list.reduce(zero, (pair1: (Int, Int), pair2: (Int, Int)) => {
       //println("reducing " + pair1._2 + " " + pair2._2)
       (pair1._1, pair1._2 + pair2._2)
     })

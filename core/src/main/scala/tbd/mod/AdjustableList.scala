@@ -43,7 +43,7 @@ trait AdjustableList[T, U] {
    * function to each of the elements of this AdjustableList.
    */
   def map[V, Q](
-      f: (Context, (T, U)) => (V, Q))
+      f: ((T, U)) => (V, Q))
      (implicit c: Context): AdjustableList[V, Q]
 
   /**
@@ -52,7 +52,7 @@ trait AdjustableList[T, U] {
    */
   def reduce(
       initialValueMod: Mod[(T, U)],
-      f: (Context, (T, U), (T, U)) => (T, U))
+      f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)]
 
   /**
