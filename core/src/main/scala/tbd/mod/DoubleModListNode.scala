@@ -252,19 +252,4 @@ class DoubleModListNode[T, V] (
       }
     })
   }
-
-  override def toString: String = {
-    def toString(lst: DoubleModListNode[T, V]):String = {
-      val nextRead = lst.next.read()
-      val next =
-	if (nextRead != null)
-	  ", " + toString(nextRead)
-	else
-	  ")"
-
-      lst.value + next
-    }
-
-    "DoubleModListNode(" + toString(this)
-  }
 }

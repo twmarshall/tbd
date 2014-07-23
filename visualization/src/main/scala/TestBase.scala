@@ -24,7 +24,7 @@ import scala.util.Random
 
 abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
     extends ExperimentSource[V, Seq[Int]] {
-  var initialSize = 3
+  var initialSize = 10
 
   private val mutator = new Mutator()
   private val listConf = algorithm.getListConf()

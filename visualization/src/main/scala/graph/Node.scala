@@ -52,7 +52,7 @@ class Node(ddgNode: ddg.Node) {
     }).toString()
   }
 
-    def formatFunctionTag(fun: ddg.FunctionTag): String = {
-      "Fun@" + fun.funcId
-    }
+  def formatFunctionTag(fun: ddg.FunctionTag): String = {
+    "Fun@" + fun.funcId
+  }
 }

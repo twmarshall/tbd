@@ -81,28 +81,37 @@ object TraceComparison {
 
   def greedyTraceDistance(before: DDG, after: DDG): ComparisonResult = {
 
-    var set = after.nodes.clone()
+    var set = after.nodes.map(x => new NodeWrapper(x))
 
     var removed = List[Node]()
     var added = List[Node]()
     var unchanged = List[Node]()
 
-    before.nodes.foreach(x => {
+    before.nodes.map(x => new NodeWrapper(x)).foreach(x => {
       if(set.remove(x)) {
-        unchanged = x :: unchanged
+        unchanged = x.node :: unchanged
       } else {
-        added = x :: added
+        added = x.node :: added
       }
     })
 
-    set.foreach(x => removed = x :: removed)
+    set.foreach(x => removed = x.node :: removed)
 
     new ComparisonResult(removed, added, unchanged)
   }
 }
 
-class ComparisonResult(_removed: List[Node], _added: List[Node], _unchanged:List[Node]) {
-  val removed = _removed
-  val added = _added
-  val unchanged = _unchanged
+class ComparisonResult(val removed: List[Node],val added: List[Node], val unchanged:List[Node]) {
+}
+
+class NodeWrapper(val node: Node) {
+
+  override def equals(that: Any): Boolean = {
+      that.isInstanceOf[NodeWrapper] &&
+      that.asInstanceOf[NodeWrapper].node.tag == node.tag
+  }
+
+  override def hashCode(): Int = {
+    node.tag.hashCode()
+  }
 }

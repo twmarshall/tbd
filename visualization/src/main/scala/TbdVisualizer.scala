@@ -17,6 +17,7 @@
 package tbd.visualization
 
 import tbd.visualization.graph._
+import tbd.visualization.analysis._
 import tbd.ddg.{Tag, FunctionTag}
 import scala.collection.mutable.{HashMap, ListBuffer}
 import swing._
@@ -28,11 +29,10 @@ class TbdVisualizer extends Panel with Publisher {
   val vSpacing = 50
   val hSpacing = 50
 
-  var dx: Float = 20
-  var dy: Float = 20
+  var translateX: Float = 0
+  var translateY: Float = 0
 
-  var sx: Float = 1
-  var sy: Float = 1
+  var scale: Float = 1
 
   var lx = -1
   var ly = -1
@@ -68,7 +68,13 @@ class TbdVisualizer extends Panel with Publisher {
   private def transform(pos: (Int, Int)): (Int, Int) = {
     val (x, y) = pos
 
-    (((x + dx) * sx).toInt, ((y + dy) * sy).toInt)
+    (((x + translateX) * scale).toInt, ((y + translateY) * scale).toInt)
+  }
+
+  private def inverseTransform(pos: (Int, Int)): (Int, Int) = {
+    val (x, y) = pos
+
+    ((x / scale - translateX).toInt, (y / scale - translateY).toInt)
   }
 
   override def paintComponent(g: Graphics2D) = {
@@ -87,79 +93,122 @@ class TbdVisualizer extends Panel with Publisher {
     for(node <- nodes) {
       val (x, y) = transform(getPos(node))
 
+      val bg = getNodeBackgroundColor(node)
+
       node.tag match {
-        case q:Tag.Read => drawRead(x, y, g)
-        case q:Tag.Write => drawWrite(x, y, g)
-        case q:Tag.Memo => drawMemo(x, y, g)
-        case q:Tag.Par => drawPar(x, y, g)
-        case q:Tag.Root => drawRoot(x, y, g)
-        case q:Tag.Mod => drawMod(x, y, g)
+        case q:Tag.Read => drawRead(x, y, g, bg)
+        case q:Tag.Write => drawWrite(x, y, g, bg)
+        case q:Tag.Memo => drawMemo(x, y, g, bg)
+        case q:Tag.Par => drawPar(x, y, g, bg)
+        case q:Tag.Root => drawRoot(x, y, g, bg)
+        case q:Tag.Mod => drawMod(x, y, g, bg)
       }
     }
   }
 
-  private def drawRead(x: Int, y: Int, g: Graphics2D) {
-    val radius = 5
+  private def getNodeBackgroundColor(node: Node): Color = {
+    if(comparison != null) {
+      if(comparison.removed.contains(node)) {
+        Color.RED
+      } else if(comparison.added.contains(node)) {
+        Color.YELLOW
+      } else {
+        null
+      }
+    } else {
+      null
+    }
+  }
 
-    g.setColor(Color.BLUE)
+  val nodeSize = 5
+  val backSize = 7
+
+  private def drawRead(x: Int, y: Int, g: Graphics2D, bg: Color) {
+    if(bg != null) {
+      drawRoundNode(x, y, backSize, bg, g)
+    }
+    drawRoundNode(x, y, nodeSize, Color.BLUE, g)
+  }
+
+  private def drawWrite(x: Int, y: Int, g: Graphics2D, bg: Color) {
+    if(bg != null) {
+      drawRoundNode(x, y, backSize, bg, g)
+    }
+    drawRoundNode(x, y, nodeSize, Color.ORANGE, g)
+  }
+
+  private def drawMod(x: Int, y: Int, g: Graphics2D, bg: Color) {
+    if(bg != null) {
+      drawRoundNode(x, y, backSize, bg, g)
+    }
+    drawRoundNode(x, y, nodeSize, Color.MAGENTA, g)
+  }
+
+  private def drawRoot(x: Int, y: Int, g: Graphics2D, bg: Color) {
+    if(bg != null) {
+      drawRectNode(x, y, backSize, bg, g)
+    }
+    drawRectNode(x, y, nodeSize, Color.GRAY, g)
+  }
+
+  private def drawMemo(x: Int, y: Int, g: Graphics2D, bg: Color) {
+    if(bg != null) {
+      drawRectNode(x, y, backSize, bg, g)
+    }
+    drawRectNode(x, y, nodeSize, Color.GREEN, g)
+  }
+
+  private def drawPar(x: Int, y: Int, g: Graphics2D, bg: Color) {
+    if(bg != null) {
+      drawRectNode(x, y, backSize, bg, g)
+    }
+    drawRectNode(x, y, nodeSize, Color.YELLOW, g)
+  }
+
+  private def drawRoundNode(x: Int, y: Int, radius: Int, c: Color, g: Graphics2D) {
+    g.setColor(c)
     g.fillOval(x - radius, y - radius, radius * 2, radius * 2)
   }
 
-  private def drawWrite(x: Int, y: Int, g: Graphics2D) {
-    val radius = 5
-
-    g.setColor(Color.ORANGE)
-    g.fillOval(x - radius, y - radius, radius * 2, radius * 2)
-  }
-
-  private def drawMod(x: Int, y: Int, g: Graphics2D) {
-    val radius = 5
-
-    g.setColor(Color.MAGENTA)
-    g.fillOval(x - radius, y - radius, radius * 2, radius * 2)
-  }
-
-  private def drawRoot(x: Int, y: Int, g: Graphics2D) {
-    val size = 5
-
-    g.setColor(Color.GRAY)
+  private def drawRectNode(x: Int, y: Int, size: Int, c: Color, g: Graphics2D) {
+    g.setColor(c)
     g.fillRect(x - size, y - size, size * 2, size * 2)
   }
 
-  private def drawMemo(x: Int, y: Int, g: Graphics2D) {
-    val size = 5
-
+  private def drawDIamondNode(x: Int, y: Int, size: Int, c: Color, g: Graphics2D) {
     val transform = g.getTransform()
     g.translate(x, y)
     g.rotate(Math.PI / 4)
-    g.setColor(Color.GREEN)
-    g.fillRect(-size, -size, size * 2, size * 2)
-    g.setTransform(transform)
-  }
-
-  private def drawPar(x: Int, y: Int, g: Graphics2D) {
-    val size = 5
-
-    val transform = g.getTransform()
-    g.translate(x, y)
-    g.rotate(Math.PI / 4)
-    g.setColor(Color.YELLOW)
+    g.setColor(c)
     g.fillRect(-size, -size, size * 2, size * 2)
     g.setTransform(transform)
   }
 
   reactions += {
     case e: KeyPressed => println("Key pressed" + e)
-    case e: MousePressed => null
+    case MouseClicked(_, p, _, _, _) => {
+      val (x, y) = inverseTransform((p.x, p.y))
+      val selectedNode = nodes.map(n => {
+        val (nx, ny) = pos(n)
+        val dx = (nx - x)
+        val dy = (ny - y)
+
+        (dx * dx + dy * dy, n)
+      }).sortWith((a, b) => a._1 < b._1).headOption
+
+      if(!selectedNode.isEmpty) {
+        publish(NodeClickedEvent(selectedNode.get._2))
+      }
+    }
     case MouseDragged(_, point, _) => {
         if(lx != -1 && ly != -1) {
-          dx -= (lx - point.x) / sx
-          dy -= (ly - point.y) / sy
-          println("Drag")
+          translateX -= (lx - point.x) / scale
+          translateY -= (ly - point.y) / scale
         }
         lx = point.x
         ly = point.y
 
+        invokePerspectiveChanged()
         repaint()
     }
     case e: MouseReleased => {
@@ -171,16 +220,32 @@ class TbdVisualizer extends Panel with Publisher {
       val scaleSpeed = 1.3f
 
       if(dir < 0) {
-        sx *= scaleSpeed
-        sy *= scaleSpeed
+        scale *= scaleSpeed
       } else {
-        sx /= scaleSpeed
-        sy /= scaleSpeed
+        scale /= scaleSpeed
       }
+
+      invokePerspectiveChanged()
+      repaint()
+    }
+    case _ => null
+  }
+
+  private def invokePerspectiveChanged() {
+    publish(PerspectiveChangedEvent(translateX, translateY, scale))
+  }
+
+  def setNewPerspective(translateX: Float, translateY: Float, scale: Float) {
+    if(this.translateX != translateX ||
+       this.translateY != translateY ||
+       this.scale != scale) {
+
+      this.translateX = translateX
+      this.translateY = translateY
+      this.scale = scale
 
       repaint()
     }
-    case _ => println ("Unreacted event")
   }
 
   private def addNode(node: Node) = {
@@ -265,14 +330,17 @@ class TbdVisualizer extends Panel with Publisher {
   }
 
   var ddg: DDG = null
+  var comparison: ComparisonResult = null
 
-  def showDDG(ddg: DDG) = {
+  def showDDG(ddg: DDG, comparison: ComparisonResult = null) = {
 
     clear()
 
+    println("show ddg " + ddg)
+
     val root = ddg.root
     this.ddg = ddg
-
+    this.comparison = comparison
 
     createTree(root, null)
     layoutTree(root, 0)
@@ -316,53 +384,7 @@ class TbdVisualizer extends Panel with Publisher {
 
     currentMethod + " " + fileName + ":" + lineNumber.toString
   }
-
-  def viewClosed(id: String) {
-
-  }
-
-  def buttonPushed(id: String) { //:(
-      //val node = idToNodes(id)
-
-      //publish(new NodeClickedEvent(node))
-  }
-
-  def formatTag(tag: Tag): String = {
-    tag match{
-      case Tag.Read(value, funcTag) => {
-          "Read " + value +
-          "\nReader " + formatFunctionTag(funcTag)
-      }
-      case Tag.Write(value, dest) => {
-          "Write " + value + " to " + dest
-      }
-      case Tag.Memo(funcTag, signature) => {
-          "Memo" +
-          "\n" + formatFunctionTag(funcTag) +
-          "\nSignature:" + signature.foldLeft("")(_ + "\n   " + _)
-      }
-      case Tag.Mod(dest, initializer) => {
-          "Mod id " + dest
-          "\nInitializer " + formatFunctionTag(initializer)
-      }
-      case Tag.Par(fun1, fun2) => {
-          "Par" +
-          "\nFirst " + formatFunctionTag(fun1) +
-          "\nSecond " + formatFunctionTag(fun2)
-      }
-      case _ => ""
-    }
-  }
-
-  def formatFunctionTag(tag: FunctionTag): String = {
-    "Function: " + tag.funcId +
-    "\nBound free vars:" +
-    tag.freeVars.map(x => x._1 + " = " + x._2).foldLeft("")(_ + "\n   " + _)
-  }
-
-  def buttonReleased(id: String) {
-
-  }
 }
 
- class NodeClickedEvent(val node: Node) extends event.Event {}
+case class NodeClickedEvent(val node: Node) extends event.Event
+case class PerspectiveChangedEvent(val translateX: Float, val translateY: Float, val zoom: Float) extends event.Event

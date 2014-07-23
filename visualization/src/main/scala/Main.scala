@@ -19,7 +19,7 @@ package tbd.visualization
 object Main {
   def main(args: Array[String]) {
 
-    val main = new Main(new ExhaustiveTest(new MinimapAlgorithm()))
+    val main = new Main(new ExhaustiveTest(new ListQuicksortTest()))
     main.run()
 
     //val test = new ExhaustiveTest(new ListMapTest())
@@ -41,14 +41,14 @@ class Main[T, V](val test: TestBase[T, V]) extends ExperimentSink[V, Seq[Int]] {
     val mainView = new MainView()
     mainView.visible = true
 
-    val export = new LatexExport()
+    //val export = new LatexExport()
 
     def resultReceived(
       result: ExperimentResult[V, Seq[Int]],
       sender: ExperimentSource[V, Seq[Int]]) = {
       mainView.addResult(result)
 
-      println(export.export(result.ddg))
+      //println(export.export(result.ddg))
 
       readLine()
     }
