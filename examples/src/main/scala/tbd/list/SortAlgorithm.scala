@@ -22,24 +22,24 @@ import tbd.{Adjustable, Context, ListConf, Mutator}
 import tbd.mod.{AdjustableList, Mod}
 
 object SortAlgorithm {
-  def predicate(a: (Int, String), b: (Int, String)): Boolean = {
+  def predicate(a: (Int, Int), b: (Int, Int)): Boolean = {
     a._2 < b._2
   }
 }
 
 class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[String, AdjustableList[Int, String]](_conf, _listConf) {
-  val input = mutator.createList[Int, String](listConf)
+    extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
+  val input = mutator.createList[Int, Int](listConf)
 
-  data = new WCData(input, count, mutations)
+  data = new IntData(input, count, mutations)
 
-  def runNaive(input: GenIterable[String]) = {
-     input.toBuffer.sortWith(_ < _)
+  def runNaive(input: GenIterable[Int]) = {
+     input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((0, one), (2, two)))
   }
 
   def checkOutput(
-      input: Map[Int, String],
-      output: AdjustableList[Int, String]) = {
+      input: Map[Int, Int],
+      output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer
 
     val answer = runNaive(input.values)
@@ -47,11 +47,10 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     sortedOutput == answer.toBuffer
   }
 
-  def run(implicit c: Context): AdjustableList[Int, String] = {
+  def run(implicit c: Context): AdjustableList[Int, Int] = {
     val pages = input.getAdjustableList()
 
-    pages.sort((a:(Int, String), b:(Int, String)) =>
-      SortAlgorithm.predicate(a, b))
+    pages.sort(SortAlgorithm.predicate)
   }
 }
 
@@ -62,7 +61,7 @@ class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   data = new IntData(input, count, mutations)
 
   def runNaive(input: GenIterable[Int]) = {
-     input.toBuffer.sortWith(_ < _)
+     input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((1, one), (2, two)))
   }
 
   def checkOutput(
@@ -76,6 +75,6 @@ class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def run(implicit c: Context): Mod[(Int, Vector[(Int, Int)])] = {
     val list = input.getChunkList()
 
-    list.chunkSort((a: (Int, Int), b: (Int, Int)) => a._2 < b._2)
+    list.chunkSort(SortAlgorithm.predicate(_, _))
   }
 }
