@@ -71,32 +71,44 @@ class ChunkList[T, U](
 
   def chunkSort(
       comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): Mod[(Int, Vector[(T, U)])] = {
-    def mapper(chunk: Vector[(T, U)]): (Int, Vector[(T, U)]) = {
-      (0, chunk.sortWith((pair1: (T, U), pair2: (T, U)) => {
-	comparator(pair1, pair2)
-      }))
+     (implicit c: Context): Mod[(Int, Array[(T, U)])] = {
+    def mapper(chunk: Vector[(T, U)]): (Int, Array[(T, U)]) = {
+      (0, chunk.sortWith(comparator).toArray)
     }
     val sortedChunks = chunkMap(mapper)
 
-    def reducer(pair1: (Int, Vector[(T, U)]), pair2: (Int, Vector[(T, U)])) = {
-      def innerReducer(v1: Vector[(T, U)], v2: Vector[(T, U)]): Vector[(T, U)] = {
-	if (v1.size == 0) {
-	  v2
-	} else if (v2.size == 0) {
-	  v1
+    def reducer(pair1: (Int, Array[(T, U)]), pair2: (Int, Array[(T, U)])) = {
+      val array1 = pair1._2
+      val array2 = pair2._2
+
+      val reduced = new Array[(T, U)](array1.size + array2.size)
+
+      var i = 0
+      var j = 0
+      while (i < array1.size && j < array2.size) {
+	if (comparator(array1(i), array2(j))) {
+	  reduced(i + j) = array1(i)
+	  i += 1
 	} else {
-	  if (comparator(v1.head, v2.head)) {
-	    v1.head +: innerReducer(v1.tail, v2)
-	  } else {
-	    v2.head +: innerReducer(v1, v2.tail)
-	  }
+	  reduced(i + j) = array2(j)
+	  j += 1
 	}
       }
-      (pair1._1, innerReducer(pair1._2, pair2._2))
+
+      while (i < array1.size) {
+	reduced(i + j) = array1(i)
+	i += 1
+      }
+
+      while (j < array2.size) {
+	reduced(i + j) = array2(j)
+	j += 1
+      }
+
+      (pair1._1, reduced)
     }
 
-    val initialValue = createMod((0, Vector[(T, U)]()))
+    val initialValue = createMod((0, Array[(T, U)]()))
     sortedChunks.reduce(initialValue, reducer)
   }
 

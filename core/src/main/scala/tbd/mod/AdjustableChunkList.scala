@@ -24,5 +24,5 @@ trait AdjustableChunkList[T, U] extends AdjustableList[T, U] {
 
   def chunkSort(
       comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): Mod[(Int, Vector[(T, U)])]
+     (implicit c: Context): Mod[(Int, Array[(T, U)])]
 }
