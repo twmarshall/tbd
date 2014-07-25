@@ -103,7 +103,7 @@ class BerkeleyDBActor extends Actor with ActorLogging{
     }
 
     case DBShutdownMessage() => {
-      log.info("Shutting down. writes = " + writeCount + ", reads = " +
+      println("Shutting down. writes = " + writeCount + ", reads = " +
 	       readCount + ", deletes = " + deleteCount)
       store.close()
       environment.close()

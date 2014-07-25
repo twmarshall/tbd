@@ -75,10 +75,6 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
   }
 
   def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
-    /*if (!store.contains(modId)) {
-      log.warning("Trying to update non-existent mod " + modId)
-    }*/
-
     store.put(modId, value)
 
     val futures = ArrayBuffer[Future[String]]()
@@ -94,10 +90,6 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
   }
 
   def removeMod(modId: ModId) {
-    /*if (!store.contains(modId)) {
-      log.warning("Trying to remove nonexistent mod " + modId)
-    }*/
-
     store.remove(modId)
   }
 

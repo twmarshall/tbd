@@ -89,13 +89,6 @@ class BerkeleyDBStore(cacheSize: Int, context: ActorContext) extends KVStore {
     getPartition(key) ! DBDeleteMessage(key)
   }
 
-  def contains(key: ModId): Boolean = {
-    values.contains(key) || {
-      val future = getPartition(key) ? DBContainsMessage(key)
-      Await.result(future.mapTo[Boolean], DURATION)
-    }
-  }
-
   def shutdown() {
     for ((num, partition) <- partitions) {
       partition ! DBShutdownMessage()

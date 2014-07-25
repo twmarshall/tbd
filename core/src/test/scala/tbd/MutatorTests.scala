@@ -100,7 +100,8 @@ class MutatorTests extends FlatSpec with Matchers {
       output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
     }
 
-    for (j <- 0 to 99) {
+    //for (j <- 0 to 99) {
+    while (answer.size > 0) {
       removeValue(input, answer)
       sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
@@ -113,10 +114,12 @@ class MutatorTests extends FlatSpec with Matchers {
 	  i += 1
 	}
 	case 1 => {
-	  removeValue(input, answer)
+          if (answer.size > 0)
+	    removeValue(input, answer)
 	}
 	case 2 => {
-	  updateValue(input, answer)
+          if (answer.size > 0)
+	    updateValue(input, answer)
 	}
       }
       sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
