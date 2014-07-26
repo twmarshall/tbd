@@ -169,7 +169,7 @@ class ModList[T, U](
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = {
     val memo = makeMemoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]]()
 
-    val result = mod2(2) {
+    val result = mod2 {
       read(head) {
 	case null =>
 	  write2(null.asInstanceOf[ModListNode[T, U]],

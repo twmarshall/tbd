@@ -82,7 +82,7 @@ class ModListNode[T, U] (
      (implicit c: Context): Changeable[ModListNode[T, U]] = {
     read(next)(next => {
       if(next != null) {
-        val (smaller, greater) = mod2(2) {
+        val (smaller, greater) = mod2 {
 
           val memo = makeMemoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]]()
 
@@ -135,14 +135,14 @@ class ModListNode[T, U] (
 
     if(pred(value)) {
       val (matchNext, diffNext) =
-	mod2(0) {
+	modLeft {
 	  read(next)(readNext)
 	}
 
       writeLeft(new ModListNode(value, matchNext), diffNext)
     } else {
       val (matchNext, diffNext) =
-	mod2(1) {
+	modRight {
 	  read(next)(readNext)
 	}
 

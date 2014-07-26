@@ -108,23 +108,13 @@ object TBD {
     mod.asInstanceOf[Mod[T]]
   }
 
-  def mod2[T, U](
-      write: Int)
-     (initializer: => Changeable2[T, U])
-     (implicit c: Context): (Mod[T], Mod[U]) = {
+  def mod2[T, U](initializer: => Changeable2[T, U])
+                   (implicit c: Context): (Mod[T], Mod[U]) = {
     val oldCurrentDest = c.currentDest
-    c.currentDest =
-      if (write == 0 || write == 2)
-	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
-      else
-	c.currentDest
+    c.currentDest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
 
     val oldCurrentDest2 = c.currentDest2
-    c.currentDest2 =
-      if (write == 1 || write == 2)
-	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
-      else
-	c.currentDest2
+    c.currentDest2 = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
 
     initializer
 
@@ -134,6 +124,34 @@ object TBD {
     c.currentDest2 = oldCurrentDest2
 
     (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
+  }
+
+  def modLeft[T, U](initializer: => Changeable2[T, U])
+                   (implicit c: Context): (Mod[T], Changeable[U]) = {
+    val oldCurrentDest = c.currentDest
+    c.currentDest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+
+    initializer
+
+    val mod = c.currentDest.mod
+    c.currentDest = oldCurrentDest
+
+    (mod.asInstanceOf[Mod[T]],
+     new Changeable(c.currentDest2.mod.asInstanceOf[Mod[U]]))
+  }
+
+  def modRight[T, U](initializer: => Changeable2[T, U])
+                   (implicit c: Context): (Changeable[T], Mod[U]) = {
+    val oldCurrentDest2 = c.currentDest2
+    c.currentDest2 = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+
+    initializer
+
+    val mod2 = c.currentDest2.mod
+    c.currentDest2 = oldCurrentDest2
+
+    (new Changeable(c.currentDest.mod.asInstanceOf[Mod[T]]),
+     mod2.asInstanceOf[Mod[U]])
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
@@ -165,11 +183,11 @@ object TBD {
 
   def writeLeft[T, U](
       value: T,
-      mod: Mod[U])
+      changeable: Changeable[U])
      (implicit c: Context): Changeable2[T, U] = {
     import c.worker.context.dispatcher
 
-    if (mod != c.currentDest2.mod) {
+    if (changeable.mod != c.currentDest2.mod) {
       println("WARNING - mod parameter to writeLeft doesn't match currentDest2")
     }
 
@@ -180,12 +198,12 @@ object TBD {
   }
 
   def writeRight[T, U](
-      mod: Mod[T],
+      changeable: Changeable[T],
       value2: U)
      (implicit c: Context): Changeable2[T, U] = {
     import c.worker.context.dispatcher
 
-    if (mod != c.currentDest.mod) {
+    if (changeable.mod != c.currentDest.mod) {
       println("WARNING - mod parameter to writeRight doesn't match currentDest")
     }
 

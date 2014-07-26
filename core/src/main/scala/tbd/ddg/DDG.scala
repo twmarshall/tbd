@@ -234,12 +234,30 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 	  changeable2.mod2 = dest2.mod
 	}
       }
+
+      if (memoNode.value.isInstanceOf[Tuple2[_, _]]) {
+        val tuple = memoNode.value.asInstanceOf[Tuple2[Any, Any]]
+
+        if (tuple._1.isInstanceOf[Changeable[_]]) {
+	  val changeable = tuple._1.asInstanceOf[Changeable[Any]]
+	  if (changeable.mod == dest1.mod) {
+	    changeable.mod = dest2.mod
+	  }
+        }
+
+        if (tuple._2.isInstanceOf[Changeable[_]]) {
+	  val changeable = tuple._2.asInstanceOf[Changeable[Any]]
+	  if (changeable.mod == dest1.mod) {
+	    changeable.mod = dest2.mod
+	  }
+        }
+      }
     }
 
     if (node.currentDest == dest1) {
       node.currentDest = dest2
 
-      // Because reads and memos must have as their currentDest the modNoDest
+      // Because reads and memos must have as their currentDest the mod
       // that is closest in enclosing scope, a node that doesn't have dest1 as
       // its dest can't have any children that have dest1 either.
       for (child <- node.children) {
