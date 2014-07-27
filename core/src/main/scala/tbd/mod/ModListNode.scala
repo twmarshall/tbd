@@ -18,8 +18,12 @@ package tbd.mod
 import java.io.Serializable
 import scala.collection.mutable.Map
 
-import tbd.{Changeable, Changeable2, Context, Memoizer}
+import tbd.{Changeable, Context, Memoizer}
 import tbd.TBD._
+
+object ModListNode {
+  type ChangeableTuple[T, U] = (Changeable[ModListNode[T, U]], Changeable[ModListNode[T, U]])
+}
 
 class ModListNode[T, U] (
     var value: (T, U),
@@ -79,18 +83,17 @@ class ModListNode[T, U] (
   def sort(
       toAppend: Mod[ModListNode[T, U]],
       comparator: ((T, U), (T, U)) => Boolean,
-      memoizers: Map[(T, U), Memoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]]],
+      memoizers: Map[(T, U), Memoizer[ModListNode.ChangeableTuple[T, U]]],
       memo: Memoizer[Mod[ModListNode[T, U]]],
       memo2: Memoizer[Changeable[ModListNode[T, U]]])
      (implicit c: Context): Changeable[ModListNode[T, U]] = {
     val (smaller, greater) = mod2 {
       if (!memoizers.contains(value)) {
-	memoizers(value) = makeMemoizer[Changeable2[ModListNode[T, U],
-						    ModListNode[T, U]]]()
+	memoizers(value) = makeMemoizer[ModListNode.ChangeableTuple[T, U]]()
       }
 
       val memoSplit = memoizers(value)
-      read(next) {
+      read_2(next) {
 	case null =>
 	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
         case nextNode =>
@@ -124,11 +127,11 @@ class ModListNode[T, U] (
   }
 
   def split(
-      memo: Memoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]],
+      memo: Memoizer[ModListNode.ChangeableTuple[T, U]],
       pred: ((T, U)) => Boolean)
-     (implicit c: Context): Changeable2[ModListNode[T, U], ModListNode[T, U]] = {
+     (implicit c: Context): ModListNode.ChangeableTuple[T, U] = {
     def readNext(next: Mod[ModListNode[T, U]]) = {
-      read(next) {
+      read_2(next) {
         case null =>
 	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
         case next =>

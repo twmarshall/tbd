@@ -19,7 +19,7 @@ import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import scala.collection.mutable.{Map, MutableList, Set, TreeSet}
 
-import tbd.{Changeable, Changeable2}
+import tbd.Changeable
 import tbd.Constants._
 import tbd.master.Master
 import tbd.mod.{Dest, Mod}
@@ -225,13 +225,6 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 	val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
 	if (changeable.mod == dest1.mod) {
 	  changeable.mod = dest2.mod
-	}
-      }
-
-      if (memoNode.value.isInstanceOf[Changeable2[_, _]]) {
-	val changeable2 = memoNode.value.asInstanceOf[Changeable2[Any, Any]]
-	if (changeable2.mod2 == dest1.mod) {
-	  changeable2.mod2 = dest2.mod
 	}
       }
 

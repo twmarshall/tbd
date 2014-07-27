@@ -25,7 +25,10 @@ import tbd.messages._
 import tbd.mod.{Dest, Mod}
 
 object TBD {
-  def read[T, U <: Changeable[_]](mod: Mod[T])(reader: T => U)(implicit c: Context): U = {
+  def read[T, U](
+      mod: Mod[T])
+     (reader: T => Changeable[U])
+     (implicit c: Context): Changeable[U] = {
     val readNode = c.worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],
 					c.currentParent,
 					reader.asInstanceOf[Any => Changeable[Any]])
@@ -43,6 +46,29 @@ object TBD {
     readNode.currentDest2 = c.currentDest2
 
     changeable
+  }
+
+  def read_2[T, U, V](
+      mod: Mod[T])
+     (reader: T => (Changeable[U], Changeable[V]))
+     (implicit c: Context): (Changeable[U], Changeable[V]) = {
+    val readNode = c.worker.ddg.addRead(mod.asInstanceOf[Mod[Any]],
+					c.currentParent,
+					reader.asInstanceOf[Any => Changeable[Any]])
+
+    val outerReader = c.currentParent
+    c.currentParent = readNode
+
+    val value = mod.read(c.worker.self)
+
+    val changeables = reader(value)
+    c.currentParent = outerReader
+
+    readNode.endTime = c.worker.ddg.nextTimestamp(readNode)
+    readNode.currentDest = c.currentDest
+    readNode.currentDest2 = c.currentDest2
+
+    changeables
   }
 
   def read2[T, V, U](
@@ -108,8 +134,10 @@ object TBD {
     mod.asInstanceOf[Mod[T]]
   }
 
-  def mod2[T, U](initializer: => Changeable2[T, U], key: Any = null)
-                   (implicit c: Context): (Mod[T], Mod[U]) = {
+  def mod2[T, U](
+      initializer: => (Changeable[T], Changeable[U]),
+      key: Any = null)
+     (implicit c: Context): (Mod[T], Mod[U]) = {
     val oldCurrentDest = c.currentDest
 
     c.currentDest =
@@ -140,6 +168,7 @@ object TBD {
       } else {
 	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
       }
+
     initializer
 
     val mod = c.currentDest.mod
@@ -150,8 +179,10 @@ object TBD {
     (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
   }
 
-  def modLeft[T, U](initializer: => Changeable2[T, U], key: Any = null)
-                   (implicit c: Context): (Mod[T], Changeable[U]) = {
+  def modLeft[T, U](
+      initializer: => (Changeable[T], Changeable[U]),
+      key: Any = null)
+     (implicit c: Context): (Mod[T], Changeable[U]) = {
     val oldCurrentDest = c.currentDest
     c.currentDest =
       if (key != null) {
@@ -175,8 +206,10 @@ object TBD {
      new Changeable(c.currentDest2.mod.asInstanceOf[Mod[U]]))
   }
 
-  def modRight[T, U](initializer: => Changeable2[T, U], key: Any = null)
-                   (implicit c: Context): (Changeable[T], Mod[U]) = {
+  def modRight[T, U](
+      initializer: => (Changeable[T], Changeable[U]),
+      key: Any = null)
+     (implicit c: Context): (Changeable[T], Mod[U]) = {
     val oldCurrentDest2 = c.currentDest2
     c.currentDest2 =
       if (key != null) {
@@ -216,7 +249,10 @@ object TBD {
     changeable.asInstanceOf[Changeable[T]]
   }
 
-  def write2[T, U](value: T, value2: U)(implicit c: Context): Changeable2[T, U] = {
+  def write2[T, U](
+      value: T,
+      value2: U)
+     (implicit c: Context): (Changeable[T], Changeable[U]) = {
     import c.worker.context.dispatcher
 
     val awaiting = c.currentDest.mod.update(value)
@@ -230,7 +266,7 @@ object TBD {
   def writeLeft[T, U](
       value: T,
       changeable: Changeable[U])
-     (implicit c: Context): Changeable2[T, U] = {
+     (implicit c: Context): (Changeable[T], Changeable[U]) = {
     import c.worker.context.dispatcher
 
     if (changeable.mod != c.currentDest2.mod) {
@@ -246,7 +282,7 @@ object TBD {
   def writeRight[T, U](
       changeable: Changeable[T],
       value2: U)
-     (implicit c: Context): Changeable2[T, U] = {
+     (implicit c: Context): (Changeable[T], Changeable[U]) = {
     import c.worker.context.dispatcher
 
     if (changeable.mod != c.currentDest.mod) {
@@ -259,17 +295,17 @@ object TBD {
     write2Helper(c)
   }
 
-  private def write2Helper[T, U](c: Context): Changeable2[T, U] = {
-    val changeable = new Changeable2(c.currentDest.mod, c.currentDest2.mod)
-
+  private def write2Helper[T, U](
+      c: Context): (Changeable[T], Changeable[U]) = {
     if (Main.debug) {
-      val writeNode = c.worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+      val writeNode = c.worker.ddg.addWrite(c.currentDest.mod.asInstanceOf[Mod[Any]],
                                             c.currentParent)
       writeNode.mod2 = c.currentDest2.mod
       writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
     }
 
-    changeable.asInstanceOf[Changeable2[T, U]]
+    (new Changeable(c.currentDest.mod).asInstanceOf[Changeable[T]],
+     new Changeable(c.currentDest2.mod).asInstanceOf[Changeable[U]])
   }
 
   def par[T, U](one: Context => T): Parer[T, U] = {

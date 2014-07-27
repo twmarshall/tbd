@@ -121,18 +121,6 @@ class Memoizer[T](c: Context, memoId: Int) {
 			      currentDest)
     }
 
-    if (memoNode.value.isInstanceOf[Changeable2[_, _]] &&
-	memoNode.currentDest2 != currentDest2) {
-      val changeable2 = memoNode.value.asInstanceOf[Changeable2[Any, Any]]
-
-      val awaiting = currentDest2.mod.update(changeable2.mod2.read())
-      Await.result(Future.sequence(awaiting), DURATION)
-
-      worker.ddg.replaceDests(memoNode,
-			      memoNode.currentDest2,
-			      currentDest2)
-    }
-
     if (memoNode.value.isInstanceOf[Tuple2[_, _]]) {
       val tuple = memoNode.value.asInstanceOf[Tuple2[Any, Any]]
 
