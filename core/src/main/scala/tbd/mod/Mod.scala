@@ -52,5 +52,5 @@ class Mod[T](val id: ModId) extends Serializable {
     }
   }
 
-  override def toString = "Mod(" + id + ")"
+  override def toString = "Mod(" + id + ", " + read() + ")"
 }

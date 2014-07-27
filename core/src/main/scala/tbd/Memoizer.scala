@@ -136,7 +136,8 @@ class Memoizer[T](c: Context, memoId: Int) {
     if (memoNode.value.isInstanceOf[Tuple2[_, _]]) {
       val tuple = memoNode.value.asInstanceOf[Tuple2[Any, Any]]
 
-      if (tuple._1.isInstanceOf[Changeable[_]]) {
+      if (tuple._1.isInstanceOf[Changeable[_]] &&
+	  memoNode.currentDest != currentDest) {
         val changeable = tuple._1.asInstanceOf[Changeable[Any]]
 
         val awaiting = currentDest.mod.update(changeable.mod.read())
@@ -147,7 +148,8 @@ class Memoizer[T](c: Context, memoId: Int) {
 			        currentDest)
       }
 
-      if (tuple._2.isInstanceOf[Changeable[_]]) {
+      if (tuple._2.isInstanceOf[Changeable[_]] &&
+	  memoNode.currentDest2 != currentDest2) {
         val changeable = tuple._2.asInstanceOf[Changeable[Any]]
 
         val awaiting = currentDest2.mod.update(changeable.mod.read())

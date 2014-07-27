@@ -108,14 +108,38 @@ object TBD {
     mod.asInstanceOf[Mod[T]]
   }
 
-  def mod2[T, U](initializer: => Changeable2[T, U])
+  def mod2[T, U](initializer: => Changeable2[T, U], key: Any = null)
                    (implicit c: Context): (Mod[T], Mod[U]) = {
     val oldCurrentDest = c.currentDest
-    c.currentDest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+
+    c.currentDest =
+      if (key != null) {
+	if (c.allocations.contains(key)) {
+	  c.allocations(key)
+	} else {
+	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	  c.allocations(key) = dest
+	  dest
+	}
+      } else {
+	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+      }
+
 
     val oldCurrentDest2 = c.currentDest2
-    c.currentDest2 = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
 
+    c.currentDest2 =
+      if (key != null) {
+	if (c.allocations2.contains(key)) {
+	  c.allocations2(key)
+	} else {
+	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	  c.allocations2(key) = dest
+	  dest
+	}
+      } else {
+	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+      }
     initializer
 
     val mod = c.currentDest.mod
@@ -126,10 +150,21 @@ object TBD {
     (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
   }
 
-  def modLeft[T, U](initializer: => Changeable2[T, U])
+  def modLeft[T, U](initializer: => Changeable2[T, U], key: Any = null)
                    (implicit c: Context): (Mod[T], Changeable[U]) = {
     val oldCurrentDest = c.currentDest
-    c.currentDest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+    c.currentDest =
+      if (key != null) {
+	if (c.allocations.contains(key)) {
+	  c.allocations(key)
+	} else {
+	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	  c.allocations(key) = dest
+	  dest
+	}
+      } else {
+	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+      }
 
     initializer
 
@@ -140,10 +175,21 @@ object TBD {
      new Changeable(c.currentDest2.mod.asInstanceOf[Mod[U]]))
   }
 
-  def modRight[T, U](initializer: => Changeable2[T, U])
+  def modRight[T, U](initializer: => Changeable2[T, U], key: Any = null)
                    (implicit c: Context): (Changeable[T], Mod[U]) = {
     val oldCurrentDest2 = c.currentDest2
-    c.currentDest2 = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+    c.currentDest2 =
+      if (key != null) {
+	if (c.allocations2.contains(key)) {
+	  c.allocations2(key)
+	} else {
+	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	  c.allocations2(key) = dest
+	  dest
+	}
+      } else {
+	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+      }
 
     initializer
 

@@ -15,7 +15,7 @@
  */
 package tbd.mod
 
-import scala.collection.mutable.{ArrayBuffer, Buffer}
+import scala.collection.mutable.{ArrayBuffer, Buffer, Map}
 
 import tbd.{Changeable, Changeable2, Context, Memoizer}
 import tbd.Constants.ModId
@@ -151,13 +151,16 @@ class ModList[T, U](
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): AdjustableList[T, U] = {
+    println("sort")
     val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
+    val memo2 = makeMemoizer[Changeable[ModListNode[T, U]]]()
+    val memoizers = Map[(T, U), Memoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]]]()
 
     val sorted = mod {
       read(head) {
         case null => write[ModListNode[T, U]](null)
         case node =>
-	  node.sort(createMod(null), comparator, memo)
+	  node.sort(createMod(null), comparator, memoizers, memo, memo2)
       }
     }
 
@@ -169,17 +172,16 @@ class ModList[T, U](
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = {
     val memo = makeMemoizer[Changeable2[ModListNode[T, U], ModListNode[T, U]]]()
 
-    val result = mod2 {
+    val result = mod2({
       read(head) {
 	case null =>
-	  write2(null.asInstanceOf[ModListNode[T, U]],
-		 null.asInstanceOf[ModListNode[T, U]])
+	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
 	case node => 
 	  memo(node) {
 	    node.split(memo, pred)
 	  }
       }
-    }
+    }, head.id)
 
     (new ModList(result._1), new ModList(result._2))
   }

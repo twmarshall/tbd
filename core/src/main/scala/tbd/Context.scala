@@ -16,7 +16,7 @@
 package tbd
 
 import akka.event.Logging
-import scala.collection.mutable.Set
+import scala.collection.mutable.{Set, Map}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
@@ -60,4 +60,7 @@ class Context(val id: String, val worker: Worker) {
 
   // A unique id to assign to memo objects created from this context.
   var nextMemoId = 0
+
+  val allocations = Map[Any, Dest[Any]]()
+  val allocations2 = Map[Any, Dest[Any]]()
 }

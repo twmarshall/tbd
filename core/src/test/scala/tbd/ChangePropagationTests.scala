@@ -169,6 +169,37 @@ class ModNoDestTest(input: TableInput[Int, Int])
   }
 }
 
+class SortTest(input: ListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit c: Context) = {
+    val list = input.getAdjustableList()
+    list.sort((pair1, pair2) => {
+      println("      comparing " + pair1 + " " + pair2)
+      pair1._2 < pair2._2
+    })
+  }
+}
+
+class SplitTest(input: ListInput[Int, Int], input2: TableInput[Int, Int])
+    extends Adjustable[Mod[(AdjustableList[Int, Int], AdjustableList[Int, Int])]] {
+  def run(implicit c: Context) = {
+    val table = input2.getTable()
+    val pivot = table.get(1)
+
+    val list = input.getAdjustableList()
+
+    mod {
+      read(pivot) {
+	case pivot =>
+	  write(list.split(pair => {
+	    println("splitting " + pair)
+	    pair._2 < pivot
+	  }))
+      }
+    }
+  }
+}
+
 class ChangePropagationTests extends FlatSpec with Matchers {
   "PropagationOrderTest" should "reexecute reads in the correct order" in {
     val mutator = new Mutator()
@@ -261,4 +292,44 @@ class ChangePropagationTests extends FlatSpec with Matchers {
 
     mutator.shutdown()
   }
+
+  /*"SortTest" should "only reexecute the least possible" in {
+    val mutator = new Mutator()
+    val input = mutator.createList[Int, Int](new ListConf(chunkSize = 1, partitions = 1))
+    for (i <- List(10, 5, 3, 4, 11, 6, 15, 20, 19, 1, 25, 26, 0)) {
+      input.put(i, i)
+    }
+    val output = mutator.run(new SortTest(input))
+    println(output.toBuffer)
+
+    println("\npropagating")
+    input.update(11, 22)
+    mutator.propagate()
+    println(output.toBuffer)
+  }*/
+
+  /*"SplitTest" should " asdf" in {
+    val mutator = new Mutator()
+    val input = mutator.createList[Int, Int](new ListConf(chunkSize = 1, partitions = 1))
+    input.put(5, 5)
+    input.put(3, 3)
+    input.put(6, 6)
+    input.put(7, 7)
+    input.put(9, 9)
+    input.put(2, 2)
+    input.put(1, 1)
+    input.put(4, 4)
+    input.put(10, 10)
+
+    val input2 = mutator.createTable[Int, Int]()
+    input2.put(1, 4)
+    val output = mutator.run(new SplitTest(input, input2))
+    println(output.read()._1 + "\n" + output.read()._2)
+
+    println("\npropagating")
+    //input2.update(1, 5)
+    input.update(5, -1)
+    mutator.propagate()
+    println(output.read()._1 + "\n" + output.read()._2)
+  }*/
 }
