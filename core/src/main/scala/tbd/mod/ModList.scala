@@ -55,6 +55,24 @@ class ModList[T, U](
     )
   }
 
+  override def merge(
+      that: ModList[T, U],
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): ModList[T, U] = {
+    new ModList(
+      mod {
+	read(head) {
+	  case null => read(that.head) { write(_) }
+	  case node =>
+	    read(that.head) {
+	      case null => write(node)
+	      case thatNode => node.merge(thatNode, comparator)
+	    }
+	}
+      }
+    )
+  }
+
   def reduce(
       identityMod: Mod[(T, U)],
       f: ((T, U), (T, U)) => (T, U))
@@ -151,7 +169,6 @@ class ModList[T, U](
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): AdjustableList[T, U] = {
-    println("sort")
     val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
     val memo2 = makeMemoizer[Changeable[ModListNode[T, U]]]()
     val memoizers = Map[(T, U), Memoizer[ModListNode.ChangeableTuple[T, U]]]()

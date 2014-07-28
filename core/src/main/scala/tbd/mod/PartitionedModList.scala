@@ -70,13 +70,12 @@ class PartitionedModList[T, U](
       initialValueMod: Mod[(T, U)],
       f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)] = {
-
-    def parReduce(i: Int)(implicit c: Context): Mod[(T, U)] = {
+    def innerReduce(i: Int)(implicit c: Context): Mod[(T, U)] = {
       if (i < partitions.size) {
         val parTup = par {
           c => partitions(i).reduce(initialValueMod, f)(c)
         } and {
-          c => parReduce(i + 1)(c)
+          c => innerReduce(i + 1)(c)
         }
 
         mod {
@@ -89,12 +88,28 @@ class PartitionedModList[T, U](
       }
     }
 
-    parReduce(0)
+    innerReduce(0)
   }
 
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): AdjustableList[T, U] = ???
+     (implicit c: Context): AdjustableList[T, U] = {
+    def innerSort(i: Int)(implicit c: Context): ModList[T, U] = {
+      if (i < partitions.size) {
+        val (sortedPartition, sortedRest) = par {
+          c => partitions(i).sort(comparator)(c)
+        } and {
+          c => innerSort(i + 1)(c)
+        }
+
+	sortedPartition.merge(sortedRest, comparator)
+      } else {
+        new ModList[T, U](mod { write[ModListNode[T, U]](null) })
+      }
+    }
+
+    innerSort(0)
+  }
 
   def split(
       pred: ((T, U)) => Boolean)

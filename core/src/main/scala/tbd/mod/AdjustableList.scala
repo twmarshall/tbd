@@ -46,6 +46,11 @@ trait AdjustableList[T, U] {
       f: ((T, U)) => (V, Q))
      (implicit c: Context): AdjustableList[V, Q]
 
+  def merge(
+      that: ModList[T, U],
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): ModList[T, U] = ???
+
   /**
    * Reduces all elements in the list using f, in an unspecified order,
    * starting with initialValue

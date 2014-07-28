@@ -80,6 +80,31 @@ class ModListNode[T, U] (
     write(new ModListNode[V, W](f(value), newNext))
   }
 
+  def merge(
+      that: ModListNode[T, U],
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): Changeable[ModListNode[T, U]] = {
+    if (comparator(value, that.value)) {
+      val newNext = mod {
+	read(next) {
+	  case null => write(new ModListNode(that.value, that.next))
+	  case node => node.merge(that, comparator)
+	}
+      }
+
+      write(new ModListNode(value, newNext))
+    } else {
+      val newNext = mod {
+	read(that.next) {
+	  case null => write(new ModListNode(value, next))
+	  case node => merge(node, comparator)
+	}
+      }
+
+      write(new ModListNode(that.value, newNext))
+    }
+  }
+
   def sort(
       toAppend: Mod[ModListNode[T, U]],
       comparator: ((T, U), (T, U)) => Boolean,
