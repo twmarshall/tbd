@@ -26,6 +26,7 @@ import scala.io.StdIn
 class ExhaustiveTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
 
   var maximalMutationsPerPropagation = 2
+  var maximalCountOfMutationRounds = 20
 
   def initialize() = { }
 
@@ -34,7 +35,7 @@ class ExhaustiveTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algo
       randomMutation()
     }
 
-    true
+    mutationCounter < maximalCountOfMutationRounds
   }
 
   def dispose() = { }

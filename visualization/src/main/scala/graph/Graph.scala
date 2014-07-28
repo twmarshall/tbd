@@ -28,8 +28,19 @@ class DDG(_root: Node) extends Graph {
 
   def getCallChildren(node: Node): Seq[Node] = {
     adj(node).filter((e: Edge) => {
-      (e.edgeType == EdgeType.Call)
+      (e.isInstanceOf[Edge.Control])
     }).map(e => e.destination)
+  }
+
+  def getCallParent(node: Node): Node = {
+    val parent = adj(node).filter(e => {
+      e.isInstanceOf[Edge.InverseControl]
+    }).headOption
+    if(parent.isEmpty) {
+      null
+    } else {
+      parent.get.destination
+    }
   }
 }
 
@@ -63,7 +74,8 @@ object DDG {
 
     result.nodes += newNode
     result.adj += (newNode -> new ArrayBuffer[Edge]())
-    result.adj(node) += new Edge(EdgeType.Call, node, newNode)
+    result.adj(node) += new Edge.Control(node, newNode)
+    result.adj(newNode) += new Edge.InverseControl(newNode, node)
 
     getChildren(ddgNode).foreach(x => {
       append(newNode, x, result)

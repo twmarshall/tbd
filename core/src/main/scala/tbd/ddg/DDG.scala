@@ -42,7 +42,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
       funcTag: FunctionTag): ReadNode = {
     val timestamp = nextTimestamp(parent)
     val readNode = new ReadNode(mod, parent, timestamp,
-                                reader, Tag.Read(value, funcTag))
+                                reader, Tag.Read(value, funcTag)(mod.id))
     parent.addChild(readNode)
 
     if (reads.contains(mod.id)) {

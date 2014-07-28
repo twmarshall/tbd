@@ -16,21 +16,13 @@
 
 package tbd.visualization
 
+import tbd.visualization.analysis.DependencyTracker
+
 object Main {
   def main(args: Array[String]) {
 
     val main = new Main(new ExhaustiveTest(new ListQuicksortTest()))
     main.run()
-
-    //val test = new ExhaustiveTest(new ListMapTest())
-    //test.setDDGListener() //Get that shit to work.
-    //val test = new ManualTest(new ListReduceSumTest())
-    //Possible Options:
-    //test.showDDGEachStep = true
-    //test.initialSize = 2
-    //test.maximalMutationsPerPropagation = 1
-
-    //test.run()
   }
 }
 
@@ -46,11 +38,9 @@ class Main[T, V](val test: TestBase[T, V]) extends ExperimentSink[V, Seq[Int]] {
     def resultReceived(
       result: ExperimentResult[V, Seq[Int]],
       sender: ExperimentSource[V, Seq[Int]]) = {
-      mainView.addResult(result)
-
-      //println(export.export(result.ddg))
-
-      readLine()
+        DependencyTracker.findAndInsertReadWriteDependencies(result.ddg)
+        DependencyTracker.findAndInsertFreeVarDependencies(result.ddg)
+        mainView.addResult(result)
     }
 
     def run() {

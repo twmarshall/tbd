@@ -29,7 +29,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
   private val mutator = new Mutator()
   private val listConf = algorithm.getListConf()
   private val input = mutator.createList[Int, Int](listConf)
-  private var mutationCounter = 0
+  protected var mutationCounter = 0
 
   private val table = new HashMap[Int, Int]
   protected val rand = new Random()

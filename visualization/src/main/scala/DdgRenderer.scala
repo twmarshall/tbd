@@ -24,7 +24,12 @@ import swing._
 import swing.event._
 import java.awt.{Color, Graphics2D}
 
-class TbdVisualizer extends Panel with Publisher {
+class DdgRenderer extends Panel with Publisher {
+
+  val CommandEdgeColor = Color.BLACK
+  val RwEdgeColor = new Color(255, 255, 255, 0)
+  val HighlightedRwEdgeColor = new Color(255, 0, 0)
+  val SecondaryHighlightedRwEdgeColor = new Color(255, 64, 64)
 
   val vSpacing = 50
   val hSpacing = 50
@@ -32,14 +37,17 @@ class TbdVisualizer extends Panel with Publisher {
   var translateX: Float = 0
   var translateY: Float = 0
 
-  var scale: Float = 1
+  var scale: Float = 0.2f
 
   var lx = -1
   var ly = -1
 
-  val pos = new HashMap[Node, (Int, Int)]()
-  val nodes = new ListBuffer[Node]()
-  val edges = new ListBuffer[(Node, Node)]()
+  private var selectedNode: Node = null
+
+  private val pos = new HashMap[Node, (Int, Int)]()
+  private val nodes = new ListBuffer[Node]()
+  private val controlEdges = new ListBuffer[(Node, Node)]()
+  private var rwEdges: Iterable[(Node, Node)] = Seq()
 
   listenTo(this.mouse.moves)
   listenTo(this.mouse.clicks)
@@ -60,7 +68,7 @@ class TbdVisualizer extends Panel with Publisher {
   }
 
   private def clear() {
-    edges.clear()
+    controlEdges.clear()
     nodes.clear()
     pos.clear()
   }
@@ -82,12 +90,45 @@ class TbdVisualizer extends Panel with Publisher {
     g.setColor(Color.WHITE)
     g.fillRect(0, 0, g.getClipBounds().width , g.getClipBounds().height)
 
-    for(edge <- edges) {
+    for(edge <- controlEdges) {
       val (x1, y1) = transform(getPos(edge._1))
       val (x2, y2) = transform(getPos(edge._2))
 
-      g.setColor(Color.BLACK)
+      g.setColor(CommandEdgeColor)
       g.drawLine(x1, y1, x2, y2)
+    }
+
+    for(edge <- rwEdges) {
+      val (x1, y1) = transform(getPos(edge._1))
+      val (x2, y2) = transform(getPos(edge._2))
+
+      g.setColor(RwEdgeColor)
+      drawArrow(x1, y1, x2, y2, g)
+    }
+
+    if(selectedNode != null) {
+      tracePath(selectedNode, (x: Edge) => x.isInstanceOf[Edge.ReadWrite],
+               HighlightedRwEdgeColor, SecondaryHighlightedRwEdgeColor,
+               g, false, false)
+      tracePath(selectedNode,  (x: Edge) => x.isInstanceOf[Edge.WriteRead],
+               HighlightedRwEdgeColor, SecondaryHighlightedRwEdgeColor,
+               g, true, true)
+    }
+
+    if(ddg != null) {
+      val freeVarDeps = ddg.adj.flatMap(x => {
+        x._2.filter(y => y.isInstanceOf[Edge.FreeVar])
+      }).map({
+        x => (x.source, x.destination)
+      })
+
+      for(edge <- freeVarDeps) {
+        val (x1, y1) = transform(getPos(edge._1))
+        val (x2, y2) = transform(getPos(edge._2))
+
+        g.setColor(Color.GREEN)
+        drawArrow(x1, y1, x2, y2, g)
+      }
     }
 
     for(node <- nodes) {
@@ -102,6 +143,56 @@ class TbdVisualizer extends Panel with Publisher {
         case q:Tag.Par => drawPar(x, y, g, bg)
         case q:Tag.Root => drawRoot(x, y, g, bg)
         case q:Tag.Mod => drawMod(x, y, g, bg)
+      }
+    }
+  }
+
+  def drawArrow(x1: Float, y1: Float, x2: Float, y2: Float, g: Graphics2D) = {
+
+    val headSize = 5
+
+    val transform = g.getTransform()
+    val dx = x2 - x1
+    val dy = y2 - y1
+    val angle: Float = Math.atan2(dy, dx).toFloat
+    var len: Int = Math.sqrt(dx * dx + dy * dy).toInt
+    g.translate(x1, y1)
+    g.rotate(angle)
+
+    g.drawLine(0, 0, len, 0);
+    len -= 4
+    g.fillPolygon(Array[Int](len, len - headSize, len - headSize, len),
+                  Array[Int](0, -headSize, headSize, 0), 4);
+
+    g.setTransform(transform)
+  }
+
+  private def tracePath(
+      src: Node,
+      f: Edge => Boolean,
+      color: Color,
+      secondaryColor: Color,
+      g: Graphics2D,
+      reverseEdges: Boolean = false,
+      traverseCallDependencies: Boolean = false) {
+    for(edge <- ddg.adj(src).filter(f)) {
+      val (x1, y1) = transform(getPos(edge.source))
+      val (x2, y2) = transform(getPos(edge.destination))
+
+      g.setColor(color)
+      if(reverseEdges) {
+        drawArrow(x1, y1, x2, y2, g)
+      }
+      else {
+        drawArrow(x2, y2, x1, y1, g)
+      }
+      tracePath(edge.destination, f, color, secondaryColor, g,
+                reverseEdges, traverseCallDependencies)
+    }
+    if(traverseCallDependencies) {
+      for(edge <- ddg.adj(src).filter(x => x.isInstanceOf[Edge.Control])) {
+        tracePath(edge.destination, f, secondaryColor, secondaryColor,
+                  g, reverseEdges, traverseCallDependencies)
       }
     }
   }
@@ -197,7 +288,9 @@ class TbdVisualizer extends Panel with Publisher {
       }).sortWith((a, b) => a._1 < b._1).headOption
 
       if(!selectedNode.isEmpty) {
+        this.selectedNode = selectedNode.get._2
         publish(NodeClickedEvent(selectedNode.get._2))
+        repaint()
       }
     }
     case MouseDragged(_, point, _) => {
@@ -215,15 +308,21 @@ class TbdVisualizer extends Panel with Publisher {
       lx = -1
       ly = -1
     }
-    case MouseWheelMoved(_, _, _, dir) => {
+    case MouseWheelMoved(_, pt, _, dir) => {
 
       val scaleSpeed = 1.3f
+      val (x, y) = inverseTransform((pt.x, pt.y))
 
       if(dir < 0) {
         scale *= scaleSpeed
       } else {
         scale /= scaleSpeed
       }
+
+      val (x2, y2) = inverseTransform((pt.x, pt.y))
+
+      translateX -= (x - x2)
+      translateY -= (y - y2)
 
       invokePerspectiveChanged()
       repaint()
@@ -257,11 +356,11 @@ class TbdVisualizer extends Panel with Publisher {
   }
 
   private def addEdge(a: Node, b: Node) = {
-    edges += Tuple2(a, b)
+    controlEdges += Tuple2(a, b)
   }
 
   private def removeEdge(a: Node, b: Node) {
-    edges -= Tuple2(a, b)
+    controlEdges -= Tuple2(a, b)
   }
 
   private def getNodeType(node: Node): String = {
@@ -336,8 +435,6 @@ class TbdVisualizer extends Panel with Publisher {
 
     clear()
 
-    println("show ddg " + ddg)
-
     val root = ddg.root
     this.ddg = ddg
     this.comparison = comparison
@@ -345,44 +442,9 @@ class TbdVisualizer extends Panel with Publisher {
     createTree(root, null)
     layoutTree(root, 0)
 
+    rwEdges = ddg.adj.flatMap(x => x._2.filter(y => y.isInstanceOf[Edge.ReadWrite])).map(x => (x.source, x.destination))
+
     this.repaint()
-  }
-
-  private def extractMethodName(node: Node): String = {
-
-    if(node.stacktrace == null) {
-      return "<No stacktrace available. Set Main.debug = true to enable stacktraces>"
-    }
-
-    val methodNames = node.stacktrace.map(y => y.getMethodName())
-    val fileNames = node.stacktrace.map(y => (y.getMethodName(), y.getFileName(), y.getLineNumber()))
-
-    var (_, fileName, lineNumber) = fileNames.filter(y => (y._1.contains("apply")))(0)
-
-    var currentMethod = methodNames.filter(y => (!y.startsWith("<init>")
-                                            && !y.startsWith("()")
-                                            && !y.startsWith("addRead")
-                                            && !y.startsWith("addWrite")
-                                            && !y.startsWith("addMemo")
-                                            && !y.startsWith("createMod")
-                                            && !y.startsWith("getStackTrace")
-                                            && !y.startsWith("apply")
-                                            && !y.startsWith("read")
-                                            && !y.startsWith("memo")
-                                            && !y.startsWith("par")
-                                            && !y.startsWith("write")
-                                            && !y.startsWith("mod")))(0)
-
-    if(currentMethod.contains("$")) {
-      currentMethod = currentMethod.substring(0, currentMethod.lastIndexOf("$"))
-      currentMethod = currentMethod.substring(currentMethod.lastIndexOf("$") + 1)
-    }
-
-    if(methodNames.find(x => x == "createMod").isDefined) {
-      currentMethod += " (createMod)"
-    }
-
-    currentMethod + " " + fileName + ":" + lineNumber.toString
   }
 }
 

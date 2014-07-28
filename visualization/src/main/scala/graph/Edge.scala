@@ -16,14 +16,16 @@
 
 package tbd.visualization.graph
 
-object EdgeType extends Enumeration {
-  type EdgeType = Value
-  val Call, Dependency = Value
-}
-import EdgeType._
+import tbd.Constants.ModId
 
-class Edge(tp: EdgeType, src: Node, dst: Node) {
-  val destination = dst
-  val source = src
-  val edgeType = tp
+abstract class Edge() {
+  def source: Node
+  def destination: Node
+}
+object Edge {
+  case class Control(val source: Node, val destination: Node) extends Edge
+  case class InverseControl(val source: Node, val destination: Node) extends Edge
+  case class ReadWrite(val source: Node, val destination: Node, val modId: ModId) extends Edge
+  case class WriteRead(val source: Node, val destination: Node, val modId: ModId) extends Edge
+  case class FreeVar(val source: Node, val destination: Node, var dependencies: List[(String, Any)]) extends Edge
 }

@@ -25,12 +25,12 @@ object TraceComparison {
     val a = new TopoSortIterator(
               before.root,
               before,
-              (e: Edge) => (e.edgeType == EdgeType.Call)).toBuffer
+              (e: Edge) => (e.isInstanceOf[Edge.Control])).toBuffer
 
     val b = new TopoSortIterator(
               after.root,
               after,
-              (e: Edge) => (e.edgeType == EdgeType.Call)).toBuffer
+              (e: Edge) => (e.isInstanceOf[Edge.Control])).toBuffer
     //Theoretically, the toposort has the wrong order,
     //however we concat the result in reverse order when backtracking, too
     //so the result is correct.

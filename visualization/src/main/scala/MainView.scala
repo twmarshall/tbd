@@ -23,176 +23,55 @@ import tbd.ddg.{Tag, FunctionTag}
 
 class MainView extends MainFrame {
 
-  val visualizer1 = new TbdVisualizer()
-  val visualizer2 = new TbdVisualizer()
-
-  listenTo(visualizer1)
-  listenTo(visualizer2)
-
-  var ddg1: DDG = null
-  var ddg2: DDG = null
-
-  reactions += {
-    case event.ButtonClicked(button) => {
-      println("button clicked.")
-      if(buttonGroupA.buttons.contains(button)) {
-        var res = buttonTags(button.asInstanceOf[RadioButton])
-        if(res != null) {
-          ddg1 = res.ddg
-          updateDDGDisplay()
-        }
-      } else if(buttonGroupB.buttons.contains(button)) {
-        var res = buttonTags(button.asInstanceOf[RadioButton])
-        if(res != null) {
-          ddg2 = res.ddg
-          updateDDGDisplay()
-        }
-      }
-    }
-    case NodeClickedEvent(node) => {
-      label.text = formatTag(node.tag)
-    }
-    case PerspectiveChangedEvent(dx, dy, s) => {
-      visualizer1.setNewPerspective(dx, dy, s)
-      visualizer2.setNewPerspective(dx, dy, s)
-    }
-  }
-
-  private def updateDDGDisplay() {
-
-    val diff = compareDDGs()
-
-    if(ddg1 != null)
-      visualizer1.showDDG(ddg1, diff)
-    if(ddg2 != null)
-      visualizer2.showDDG(ddg2, diff)
-  }
-
-  private def compareDDGs(): ComparisonResult = {
-    if(ddg1 != null && ddg2 != null) {
-      TraceComparison.greedyTraceDistance(ddg1, ddg2)
-    } else {
-      null
-    }
-  }
-
-  var label = new TextArea("Click node for info.\nScroll with arrow keys.\nZoom with PgDown and PgUp.")
+  val label = new TextArea("To calculate trace distance, select two different DDGs.")
   label.editable = false
   label.background = java.awt.Color.LIGHT_GRAY
 
-  val buttonGroupA = new ButtonGroup()
-  val buttonGroupB = new ButtonGroup()
-
   def addResult(result: ExperimentResult[Any, Any]) {
-    val selector = new SelectionView(result, buttonGroupA, buttonGroupB)
-    this.listenTo(selector.select1)
-    this.listenTo(selector.select2)
+    visualizer1.addResult(result)
+    visualizer2.addResult(result)
 
-    box.contents += selector
-    pack()
+    listenTo(visualizer1)
+    listenTo(visualizer2)
   }
 
-  val buttonTags = new scala.collection.mutable.HashMap[RadioButton, ExperimentResult[Any, Any]]
+  reactions += {
+    case SelectedDDGChanged(ddg) => {
+      println("selection changed")
+      updateDiff()
+    }
+  }
 
-  class SelectionView(result: ExperimentResult[Any, Any], groupA: ButtonGroup, groupB: ButtonGroup) extends GridBagPanel {
-    layout(new Label(result.runId + " - " + result.input, null, Alignment.Left))  = new Constraints() {
+  private def updateDiff() {
+    if(visualizer1.ddg != null && visualizer2.ddg != null) {
+      val diff = TraceComparison.greedyTraceDistance(visualizer1.ddg.ddg, visualizer2.ddg.ddg)
+      visualizer1.setComparisonResult(diff)
+      visualizer2.setComparisonResult(diff)
+
+      label.text = "Trace Distance: " + (diff.added.length + diff.removed.length)
+    }
+  }
+
+
+  val visualizer1 = new DdgVisualizer()
+  val visualizer2 = new DdgVisualizer()
+  contents = new GridBagPanel() {
+    layout(new SplitPane(Orientation.Vertical) {
+      contents_$eq(visualizer1, visualizer2)
+    }) = new Constraints() {
       gridx = 0
       gridy = 0
       weighty = 1
       weightx = 1
       fill = GridBagPanel.Fill.Both
     }
-
-    val select1 = new RadioButton()
-    layout(select1)  = new Constraints() {
-      gridx = 1
-      gridy = 0
-      weighty = 1
-      fill = GridBagPanel.Fill.Vertical
-    }
-
-    val select2 = new RadioButton()
-    layout(select2)  = new Constraints() {
-      gridx = 2
-      gridy = 0
-      weighty = 1
-      fill = GridBagPanel.Fill.Vertical
-    }
-
-    groupA.buttons += select1
-    groupB.buttons += select2
-
-    buttonTags(select1) = result
-    buttonTags(select2) = result
-
-    this.maximumSize = new Dimension(9999999, 20)
-  }
-
-  val box = new BoxPanel(Orientation.Vertical)
-
-  contents = new GridBagPanel(){
-    layout(box)  = new Constraints() {
+    layout(label) = new Constraints() {
       gridx = 0
-      gridy = 0
-      weighty = 1
-      fill = GridBagPanel.Fill.Vertical
-    }
-    layout(visualizer1)  = new Constraints() {
-      gridx = 1
-      gridy = 0
-      weighty = 1
-      weightx = 1
-      fill = GridBagPanel.Fill.Both
-    }
-    layout(visualizer2)  = new Constraints() {
-      gridx = 2
-      gridy = 0
-      weighty = 1
-      weightx = 1
-      fill = GridBagPanel.Fill.Both
-    }
-    layout(new ScrollPane(label))  = new Constraints() {
-      gridx = 1
-      gridy = 2
-      weighty = 0.3
-      weightx = 2
-      gridwidth = 2
-      fill = GridBagPanel.Fill.Both
+      gridy = 1
+      fill = GridBagPanel.Fill.Horizontal
     }
   }
-
-  def formatTag(tag: Tag): String = {
-    tag match{
-      case Tag.Read(value, funcTag) => {
-          "Read " + value +
-          "\nReader " + formatFunctionTag(funcTag)
-      }
-      case Tag.Write(value, dest) => {
-          "Write " + value + " to " + dest
-      }
-      case Tag.Memo(funcTag, signature) => {
-          "Memo" +
-          "\n" + formatFunctionTag(funcTag) +
-          "\nSignature:" + signature.foldLeft("")(_ + "\n   " + _)
-      }
-      case Tag.Mod(dest, initializer) => {
-          "Mod id " + dest +
-          "\nInitializer " + formatFunctionTag(initializer)
-      }
-      case Tag.Par(fun1, fun2) => {
-          "Par" +
-          "\nFirst " + formatFunctionTag(fun1) +
-          "\nSecond " + formatFunctionTag(fun2)
-      }
-      case _ => ""
-    }
-  }
-
-  def formatFunctionTag(tag: FunctionTag): String = {
-    "Function: " + tag.funcId +
-    "\nBound free vars:" +
-    tag.freeVars.map(x => x._1 + " = " + x._2).foldLeft("")(_ + "\n   " + _)
-  }
+  pack()
 
   visible = true
 }
