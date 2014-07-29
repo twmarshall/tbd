@@ -21,7 +21,6 @@ import scala.collection.mutable.Map
 import tbd._
 import tbd.mod.{AdjustableList, Dest, Mod, DoubleModList}
 
-//TODO: Remove TestAlgorithm and make visualizer work with Examples.
 trait TestAlgorithm[T, V] extends Adjustable {
   def getResult(output: T): V
   def getExpectedResult(input: Map[Int, Int]): V

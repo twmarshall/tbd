@@ -31,6 +31,7 @@ class ManualTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorith
   private val updatem = "(u) (\\d+) (\\d+)".r
   private val remm = "(r) (\\d+)".r
   private val propagatem = "(p)".r
+  private val exitm = "(e)".r
 
   def initialize() {
     println("// Commands: ")
@@ -38,22 +39,26 @@ class ManualTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorith
     println("// u KEY VALUE updates a value ")
     println("// r KEY removes a key and value ")
     println("// p propagates ")
+    println("// e exits ")
     println("")
     println("// KEY and VALUE have to be integers ")
   }
 
   def step(): Boolean = {
     var propagate = false
+    var continue = true
     while(!propagate) {
       StdIn.readLine() match {
         case putm(_, key, value) => addValue(key.toInt, value.toInt)
         case updatem(_, key, value) => updateValue(key.toInt, value.toInt)
         case remm(_, key) => removeValue(key.toInt)
         case propagatem(_) => propagate = true
+        case exitm(_) => propagate = true
+                         continue = false
         case _ => println("Invalid Command.")
       }
     }
-    true
+    continue
   }
 
   def dispose() = { }

@@ -4,7 +4,7 @@ import Keys._
 object TBDBuild extends Build {
   val buildOrganization = "edu.cmu.cs"
   val buildVersion      = "0.1-SNAPSHOT"
-  val buildScalaVersion = "2.11.1"
+  val buildScalaVersion = "2.11.0"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
     organization := buildOrganization,
@@ -65,7 +65,8 @@ object TBDBuild extends Build {
     file("visualization"),
     settings = buildSettings ++ Seq (
       libraryDependencies ++= (commonDeps
-                          ++ Seq("org.scala-lang" % "scala-swing" % "2.10.4")),
+                          ++ Seq("org.scala-lang" % "scala-swing" % "2.11.0-M7",
+                                 "org.rogach" % "scallop_2.11" % "0.9.5")),
       mkvisualization := {
         val classpath = (fullClasspath in Runtime).value.files.absString
         val template = """#!/bin/sh
@@ -87,11 +88,8 @@ object TBDBuild extends Build {
     file("macros"),
     settings = buildSettings ++ Seq (
       libraryDependencies ++= (commonDeps
-                          ++ Seq("org.graphstream" % "gs-core" % "1.2",
-                                 "org.graphstream" % "gs-ui" % "1.2",
-                                 "org.scala-lang" % "scala-compiler" % "2.11.1",
-                                 "org.scala-lang" % "scala-reflect" % "2.11.1",
-                                 "org.scala-lang" % "scala-swing" % "2.11.0-M7"))
+                          ++ Seq("org.scala-lang" % "scala-compiler" % "2.11.1",
+                                 "org.scala-lang" % "scala-reflect" % "2.11.1"))
     )
   )
 
