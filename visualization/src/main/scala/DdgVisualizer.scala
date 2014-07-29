@@ -28,10 +28,36 @@ class DdgVisualizer extends GridBagPanel with Publisher {
   var ddg: ExperimentResult[Any, Any] = null
   var comboBoxItems = List[ExperimentResult[Any, Any]]()
   var selector: ComboBox[ExperimentResult[Any, Any]] = null
-  val label = new TextArea("Click node for info.\nScroll with arrow keys.\nZoom with PgDown and PgUp.")
+
+  val htmlInto = "<html><body style=\"font-family: monospaced\">"
+  val htmlOutro = "</body></html>"
+  val label = new javax.swing.JTextPane() {
+    setContentType("text/html")
+    setEditable(false)
+    setBackground(java.awt.Color.LIGHT_GRAY)
+  }
+  setLabelText("Click node for info.<br />Scroll by dragging the mouse.<br />Zoom with scroll wheel.")
   var selectedNode: Node = null
-  label.editable = false
-  label.background = java.awt.Color.LIGHT_GRAY
+
+  def setLabelText(text: String) {
+    label.setText(htmlInto + text + htmlOutro)
+  }
+
+  def htmlEscape(text: String): String = {
+    text.
+    replaceAll("  ", "&nbsp;&nbsp;").
+    replaceAll("<", "&lt;").
+    replaceAll(">", "&gt;").
+    replaceAll("\n", "<br />")
+  }
+
+  def toHtmlString(o: Any): String = {
+    if(o == null) {
+      "null"
+    } else {
+      htmlEscape(o.toString())
+    }
+  }
 
   def initComboBox() = {
     if(selector != null) {
@@ -59,12 +85,67 @@ class DdgVisualizer extends GridBagPanel with Publisher {
 
   }
 
+  def formatFunctionTag(node: Node, tag: FunctionTag): String = {
+    val freeVarEdges = ddg.ddg.adj(node).filter({
+        x => x.isInstanceOf[Edge.FreeVar]
+    }).map(x => x.asInstanceOf[Edge.FreeVar])
+
+    val freeVarsText = freeVarEdges.zipWithIndex.flatMap(edge => {
+      val color = DdgRenderer.getFreeVarColorKey(edge._2)
+      val colorString = "rgb(" + color.getRed() + ", " + color.getGreen() + ", " + color.getBlue() + ")"
+
+      edge._1.dependencies.map(dep => {
+        "<font color=\"" + colorString + "\">" +
+        toHtmlString(dep._1) + " = " + toHtmlString(dep._2) +
+        "</font>"
+      })
+    }).foldLeft("")(_ + "<br />&nbsp;&nbsp;&nbsp;" + _)
+
+    val varsFromOutsideScopes =
+    tag.freeVars.filter(dep => {
+      !freeVarEdges.flatMap(x => x.dependencies).contains(dep)
+    }).map(dep => {
+      toHtmlString(dep._1) + " = " + toHtmlString(dep._2)
+    }).foldLeft("")(_ + "<br />&nbsp;&nbsp;&nbsp;" + _)
+
+    "Function: " + tag.funcId +
+    "<br />Bound free vars:" + freeVarsText +
+    "<br />Free vars from outside scopes:" + varsFromOutsideScopes
+  }
+
+  def formatTag(node: Node): String = {
+    node.tag match{
+      case Tag.Read(value, funcTag) => {
+          "Read " + toHtmlString(value) +
+          "<br>Reader " + formatFunctionTag(node, funcTag)
+      }
+      case Tag.Write(value, dest) => {
+          "Write " + toHtmlString(value) + " to " + dest
+      }
+      case Tag.Memo(funcTag, signature) => {
+          "Memo" +
+          "<br>" + formatFunctionTag(node, funcTag) +
+          "<br>Signature:" + htmlEscape(signature.foldLeft("")(_ + "\n   " + _))
+      }
+      case Tag.Mod(dest, initializer) => {
+          "Mod id " + dest +
+          "<br>Initializer " + formatFunctionTag(node, initializer)
+      }
+      case Tag.Par(fun1, fun2) => {
+          "Par" +
+          "<br>First " + formatFunctionTag(node, fun1) +
+          "<br>Second " + formatFunctionTag(node, fun2)
+      }
+      case _ => ""
+    }
+  }
+
   initComboBox()
 
   reactions += {
     case NodeClickedEvent(node) => {
       selectedNode = node
-      label.text = "in " + extractMethodName(node) + ":\n" + tbd.ddg.Tag.formatTag(node.tag)
+      setLabelText(htmlEscape(extractMethodName(node)) + ":<br />" + formatTag(node))
     }
     case x:PerspectiveChangedEvent => {
       //publish(x)
@@ -93,7 +174,9 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     fill = GridBagPanel.Fill.Both
   }
 
-  layout(new ScrollPane(label))  = new Constraints() {
+  layout(new ScrollPane(new Component() {
+    override lazy val peer = label
+  }))  = new Constraints() {
     gridx = 0
     gridy = 2
     weighty = 0.2

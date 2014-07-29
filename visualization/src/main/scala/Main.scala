@@ -40,6 +40,7 @@ class Main[T, V](val test: TestBase[T, V]) extends ExperimentSink[V, Seq[Int]] {
       sender: ExperimentSource[V, Seq[Int]]) = {
         DependencyTracker.findAndInsertReadWriteDependencies(result.ddg)
         DependencyTracker.findAndInsertFreeVarDependencies(result.ddg)
+        DependencyTracker.findAndInsertModWriteDependencies(result.ddg)
         mainView.addResult(result)
     }
 

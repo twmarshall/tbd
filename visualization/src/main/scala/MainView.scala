@@ -44,11 +44,14 @@ class MainView extends MainFrame {
 
   private def updateDiff() {
     if(visualizer1.ddg != null && visualizer2.ddg != null) {
-      val diff = TraceComparison.greedyTraceDistance(visualizer1.ddg.ddg, visualizer2.ddg.ddg)
+      val diff = TraceComparison.greedyTraceDistance(visualizer1.ddg.ddg, visualizer2.ddg.ddg, (node => node.tag))
       visualizer1.setComparisonResult(diff)
       visualizer2.setComparisonResult(diff)
 
-      label.text = "Trace Distance: " + (diff.added.length + diff.removed.length)
+      val tbdDiff = TraceComparison.greedyTraceDistance(visualizer1.ddg.ddg, visualizer2.ddg.ddg, (node => node.internalId))
+
+      label.text = "Trace Distance: " + (diff.added.length + diff.removed.length) + "\n" +
+      "TBD Distance: " + (tbdDiff.added.length + tbdDiff.removed.length)
     }
   }
 

@@ -22,7 +22,20 @@ import tbd.ddg.{Tag, FunctionTag}
 import scala.collection.mutable.{HashMap, ListBuffer}
 import swing._
 import swing.event._
-import java.awt.{Color, Graphics2D}
+import java.awt.{Color, Graphics2D, BasicStroke}
+
+object DdgRenderer {
+  def getFreeVarColorKey(index: Int): Color = {
+    val colors = List(new Color(0, 0, 255),
+                      new Color(0, 255, 0),
+                      new Color(255, 0, 0),
+                      new Color(255, 255, 0),
+                      new Color(0, 255, 255),
+                      new Color(255, 0, 255))
+
+    colors(index % colors.length)
+  }
+}
 
 class DdgRenderer extends Panel with Publisher {
 
@@ -71,6 +84,7 @@ class DdgRenderer extends Panel with Publisher {
     controlEdges.clear()
     nodes.clear()
     pos.clear()
+    selectedNode = null
   }
 
   private def transform(pos: (Int, Int)): (Int, Int) = {
@@ -98,38 +112,96 @@ class DdgRenderer extends Panel with Publisher {
       g.drawLine(x1, y1, x2, y2)
     }
 
-    for(edge <- rwEdges) {
-      val (x1, y1) = transform(getPos(edge._1))
-      val (x2, y2) = transform(getPos(edge._2))
-
-      g.setColor(RwEdgeColor)
-      drawArrow(x1, y1, x2, y2, g)
-    }
+//    for(edge <- rwEdges) {
+//      val (x1, y1) = transform(getPos(edge._1))
+//      val (x2, y2) = transform(getPos(edge._2))
+//
+//      g.setColor(RwEdgeColor)
+//      drawArrow(x1, y1, x2, y2, g)
+//    }
 
     if(selectedNode != null) {
-      tracePath(selectedNode, (x: Edge) => x.isInstanceOf[Edge.ReadWrite],
-               HighlightedRwEdgeColor, SecondaryHighlightedRwEdgeColor,
-               g, false, false)
-      tracePath(selectedNode,  (x: Edge) => x.isInstanceOf[Edge.WriteRead],
-               HighlightedRwEdgeColor, SecondaryHighlightedRwEdgeColor,
-               g, true, true)
-    }
 
-    if(ddg != null) {
-      val freeVarDeps = ddg.adj.flatMap(x => {
-        x._2.filter(y => y.isInstanceOf[Edge.FreeVar])
-      }).map({
-        x => (x.source, x.destination)
-      })
+      val rwEdges = ddg.adj(selectedNode).filter(x => x.isInstanceOf[Edge.ReadWrite])
 
-      for(edge <- freeVarDeps) {
-        val (x1, y1) = transform(getPos(edge._1))
-        val (x2, y2) = transform(getPos(edge._2))
+      for(edge <- rwEdges) {
+        val (x1, y1) = transform(getPos(edge.source))
+        val (x2, y2) = transform(getPos(edge.destination))
 
-        g.setColor(Color.GREEN)
+
+        g.setColor(Color.RED)
         drawArrow(x1, y1, x2, y2, g)
       }
+
+      val wrEdges = ddg.adj(selectedNode).filter(x => x.isInstanceOf[Edge.WriteRead])
+
+      for(edge <- wrEdges) {
+        val (x1, y1) = transform(getPos(edge.destination))
+        val (x2, y2) = transform(getPos(edge.source))
+
+        g.setColor(Color.RED)
+        drawArrow(x1, y1, x2, y2, g)
+      }
+
+      val wmEdges = ddg.adj(selectedNode).filter(x => x.isInstanceOf[Edge.WriteMod])
+
+      for(edge <- wmEdges) {
+        val (x1, y1) = transform(getPos(edge.destination))
+        val (x2, y2) = transform(getPos(edge.source))
+
+        g.setColor(Color.RED)
+        drawArrow(x1, y1, x2, y2, g)
+      }
+
+      val mwEdges = ddg.adj(selectedNode).filter(x => x.isInstanceOf[Edge.ModWrite])
+
+      for(edge <- mwEdges) {
+        val (x1, y1) = transform(getPos(edge.source))
+        val (x2, y2) = transform(getPos(edge.destination))
+
+        g.setColor(Color.RED)
+        drawArrow(x1, y1, x2, y2, g)
+      }
+
+//      tracePath(selectedNode, (x: Edge) => x.isInstanceOf[Edge.ReadWrite],
+//               HighlightedRwEdgeColor, SecondaryHighlightedRwEdgeColor,
+//               g, false, false)
+//      tracePath(selectedNode,  (x: Edge) => x.isInstanceOf[Edge.WriteRead],
+//               HighlightedRwEdgeColor, SecondaryHighlightedRwEdgeColor,
+//               g, true, true)
+
+      val freeVarDeps = ddg.adj(selectedNode).filter(x => x.isInstanceOf[Edge.FreeVar])
+
+      val stroke = g.getStroke()
+      g.setStroke(new BasicStroke(2.0f,
+                      BasicStroke.CAP_BUTT,
+                      BasicStroke.JOIN_MITER,
+                      10.0f, Array(10.0f), 0.0f))
+
+      for(edge <- freeVarDeps.zipWithIndex) {
+        val (x1, y1) = transform(getPos(edge._1.source))
+        val (x2, y2) = transform(getPos(edge._1.destination))
+
+        g.setColor(DdgRenderer.getFreeVarColorKey(edge._2))
+        drawArrow(x1, y1, x2, y2, g)
+      }
+
+      g.setStroke(stroke)
     }
+
+//    if(ddg != null) {
+//      val freeVarDeps = ddg.adj.flatMap(x => {
+//        x._2.filter(y => y.isInstanceOf[Edge.FreeVar])
+//      })
+//
+//      for(edge <- freeVarDeps) {
+//        val (x1, y1) = transform(getPos(edge.source))
+//        val (x2, y2) = transform(getPos(edge.destination))
+//
+//        g.setColor(Color.GREEN)
+//        drawArrow(x1, y1, x2, y2, g)
+//      }
+//    }
 
     for(node <- nodes) {
       val (x, y) = transform(getPos(node))
@@ -442,7 +514,9 @@ class DdgRenderer extends Panel with Publisher {
     createTree(root, null)
     layoutTree(root, 0)
 
-    rwEdges = ddg.adj.flatMap(x => x._2.filter(y => y.isInstanceOf[Edge.ReadWrite])).map(x => (x.source, x.destination))
+    rwEdges = ddg.adj.flatMap(x => {
+        x._2.filter(y => y.isInstanceOf[Edge.ReadWrite])
+    }).map(x => (x.source, x.destination))
 
     this.repaint()
   }

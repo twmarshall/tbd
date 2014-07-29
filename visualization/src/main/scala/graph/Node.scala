@@ -20,6 +20,7 @@ import tbd.ddg
 
 class Node(ddgNode: ddg.Node) {
   val tag = ddgNode.tag
+  val internalId = ddgNode.internalId
   val stacktrace = ddgNode.stacktrace
 
   def ~(that: Node): Boolean = {

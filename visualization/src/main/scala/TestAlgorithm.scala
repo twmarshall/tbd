@@ -87,7 +87,7 @@ class ListMapTest()
     extends TestAlgorithm[AdjustableList[Int, Int], Seq[Int]] {
   def run(tbd: TBD): AdjustableList[Int, Int] = {
     val modList = input.getAdjustableList()
-    modList.map(tbd, (tbd, a) => (a._1, a._2 * 2), false, true)
+    modList.map(tbd, (tbd, a) => (a._1, a._2 * 2), true, true)
   }
 
   def getResult(output: AdjustableList[Int, Int]): Seq[Int] = {

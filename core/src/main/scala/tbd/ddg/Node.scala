@@ -26,6 +26,15 @@ import tbd.master.Main
 import tbd.messages._
 import tbd.mod.{Dest, Mod}
 
+object Node {
+  var id = 0
+
+  def getId(): Integer = {
+    id = id + 1
+    id
+  }
+}
+
 abstract class Node(
     var parent: Node,
     val timestamp: Timestamp,
@@ -40,6 +49,8 @@ abstract class Node(
   var children = MutableList[Node]()
 
   var updated = false
+
+  val internalId = Node.getId()
 
   // The earliest epoch in which this node may be matched, if it is a MemoNode.
   // This is increased above the current epoch whenever the node is matched, so

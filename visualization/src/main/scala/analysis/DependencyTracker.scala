@@ -42,6 +42,24 @@ object DependencyTracker {
     })
   }
 
+  def findAndInsertModWriteDependencies(ddg: DDG) {
+    val mods = new HashMap[ModId, Node]
+
+    ddg.nodes.foreach(x => x.tag match {
+      case y:Tag.Mod => mods(y.dest) = x
+      case _ => null
+    })
+
+    ddg.nodes.foreach(x => x.tag match {
+      case y:Tag.Write => if(mods.contains(y.dest)) {
+        val dst = mods(y.dest)
+        val src = x
+        ddg.adj(src) += Edge.ModWrite(src, dst, y.dest)
+        ddg.adj(dst) += Edge.WriteMod(dst, src, y.dest)
+      }
+      case _ => null
+    })
+  }
   def findAndInsertFreeVarDependencies(ddg: DDG) {
 
     //Inverse direction for faster lookup
@@ -118,5 +136,4 @@ object DependencyTracker {
       }
     })
   }
-
 }
