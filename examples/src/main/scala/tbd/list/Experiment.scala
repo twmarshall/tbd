@@ -290,6 +290,29 @@ Options:
       i += 1
     }
 
+    if (!confs("output").contains("runs")) {
+      println("WARNING: 'output' must contain 'runs'")
+    }
+
+    println("Options:")
+    for ((key, value) <- confs) {
+      print(key)
+
+      if (key.size < 7) {
+	print("\t\t")
+      } else {
+	print("\t")
+      }
+
+      println(value.mkString("(", ", ", ")"))
+
+      if (key != "output" && key != "mutations" &&
+	  value.size > 1 && !confs("output").contains(key)) {
+	println("WARNING: " + key + " is being varied but isn't listed in " +
+		"'output', so the final results may not make sense.")
+      }
+    }
+
     for (i <- 0 to repeat) {
       if (i == 0) {
         println("warmup")
