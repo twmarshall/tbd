@@ -18,63 +18,65 @@ package tbd.test
 import scala.collection.mutable.{ArrayBuffer, Buffer, Map}
 import org.scalatest._
 
-import tbd._
+import tbd.{Adjustable, Context, Input, ListConf, ListInput, Mutator}
 import tbd.mod.{AdjustableList, Dest, Mod}
+import tbd.TBD._
 
 class ListMapTest(
-    f: (TBD, (String, Int)) => (String, Int),
-    parallel: Boolean,
-    input: ListInput[String, Int]) extends Adjustable {
-  def run(tbd: TBD): AdjustableList[String, Int] = {
+    f: ((String, Int)) => (String, Int),
+    input: ListInput[String, Int]
+  ) extends Adjustable[AdjustableList[String, Int]] {
+
+  def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    list.map(tbd, f, parallel = parallel)
+    list.map(f)
   }
 }
 
-class ListSplitTest(input: ListInput[String, Int])  extends Adjustable {
-  def run(tbd: TBD): (AdjustableList[String, Int], AdjustableList[String, Int]) = {
+class ListSplitTest(input: ListInput[String, Int])
+    extends Adjustable[(AdjustableList[String, Int], AdjustableList[String, Int])] {
+
+  def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    modList.split(tbd, (tbd, a) => a._2 % 2 == 0, true, true)
+    modList.split(_._2 % 2 == 0)
   }
 }
 
-class ListSortTest(input: ListInput[String, Int])  extends Adjustable {
-  def run(tbd: TBD): AdjustableList[String, Int] = {
+class ListSortTest(input: ListInput[String, Int])
+    extends Adjustable[AdjustableList[String, Int]] {
+
+  def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    modList.sort(tbd, (tbd, a, b) => a._2 < b._2, true, true)
+    modList.sort((a, b) => a._2 < b._2)
   }
 }
 
+class ChunkListMapTest(input: ListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
 
-class ListMemoMapTest(input: ListInput[String, Int]) extends Adjustable {
-  def run(tbd: TBD): AdjustableList[String, Int] = {
+  def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    list.map(tbd,
-             (tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 + 3),
-             memoized = true)
+    list.map((pair: (Int, Int)) => (pair._1, pair._2 - 2))
   }
 }
 
-class ChunkListMapTest(input: ListInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
+class ListFilterTest(input: ListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
+
+  def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    list.map(tbd, (tbd: TBD, pair: (Int, Int)) => (pair._1, pair._2 - 2))
+    list.filter((pair: (Int, Int)) => pair._2 % 2 == 0)
   }
 }
 
-class ListFilterTest(input: ListInput[Int, Int]) extends Adjustable {
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
-    val list = input.getAdjustableList()
-    list.filter(tbd, (pair: (Int, Int)) => pair._2 % 2 == 0)
-  }
-}
+class ListReduceSumTest(input: ListInput[String, Int])
+    extends Adjustable[Mod[(String, Int)]] {
 
-class ListReduceSumTest(input: ListInput[String, Int]) extends Adjustable {
-  def run(tbd: TBD): Mod[(String, Int)] = {
+  def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    val zero = tbd.mod((dest : Dest[(String, Int)]) => tbd.write(dest, ("", 0)))
-    modList.reduce(tbd, zero,
-      (tbd: TBD, pair1: (String, Int), pair2: (String, Int)) => {
+    val zero = mod { write(("", 0)) }
+    modList.reduce(zero,
+      (pair1: (String, Int), pair2: (String, Int)) => {
         (pair2._1, pair1._2 + pair2._2)
       })
   }
@@ -86,9 +88,8 @@ class ListTests extends FlatSpec with Matchers {
     val input = mutator.createList[String, Int]()
     input.put("one", 1)
     input.put("two", 2)
-    val f = (tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 * 2)
-    val output =
-      mutator.run[AdjustableList[String, Int]](new ListMapTest(f, false, input))
+    val f = (pair: (String, Int)) => (pair._1, pair._2 * 2)
+    val output = mutator.run(new ListMapTest(f, input))
     // (1 * 2), (2 * 2)
     output.toBuffer().sortWith(_ < _) should be (Buffer(2, 4))
 
@@ -120,87 +121,6 @@ class ListTests extends FlatSpec with Matchers {
                                       (Buffer(-4, 4, 6, 6, 10, 16, 20))
 
     mutator.shutdown()
-  }
-
-  "ListParMapTest" should "return the mapped list" in {
-    val mutator = new Mutator()
-    val input = mutator.createList[String, Int]()
-    input.put("one", 1)
-    input.put("two", 2)
-    val f = (tbd: TBD, pair: (String, Int)) => (pair._1, pair._2 + 1)
-    val output = mutator.run[AdjustableList[String, Int]](new ListMapTest(f, true, input))
-    // (1 + 1), (2 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(2, 3))
-
-    input.put("three", 3)
-    mutator.propagate()
-    // (1 + 1), (2 + 1), (3 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(2, 3, 4))
-
-    input.update("one", 4)
-    mutator.propagate()
-    // (4 + 1), (2 + 1), (3 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(3, 4, 5))
-
-    input.update("three", 2)
-    input.update("one", 7)
-    mutator.propagate()
-    // (7 + 1), (2 + 1), (2 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(3, 3, 8))
-
-    input.put("four", -1)
-    input.put("five", 10)
-    mutator.propagate()
-    // (7 + 1), (2 + 1), (2 + 1), (-1 + 1), (10 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(0, 3, 3, 8, 11))
-
-    input.put("six", -3)
-    input.update("four", 3)
-    input.update("three", 5)
-    mutator.propagate()
-    // (7 + 1), (2 + 1), (5 + 1), (3 + 1), (10 + 1), (-3 + 1)
-    output.toBuffer().sortWith(_ < _) should be (Buffer(-2, 3, 4, 6, 8, 11))
-
-    mutator.shutdown()
-  }
-
-  "ListMemoMapTest" should "return the mapped AdjustableList" in {
-    val mutator = new Mutator()
-    val input = mutator.createList[String, Int]()
-    input.put("one", 1)
-    input.put("two", 2)
-    input.put("three", 3)
-    input.put("four", 4)
-    val output = mutator.run[AdjustableList[String, Int]](new ListMemoMapTest(input))
-    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 5, 6, 7))
-
-    input.remove("two")
-    mutator.propagate()
-    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 6, 7))
-
-    input.put("five", 5)
-    input.remove("three")
-    mutator.propagate()
-    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 7, 8))
-
-    input.put("six", 6)
-    input.put("seven", 7)
-    input.put("eight", 8)
-    input.remove("six")
-    mutator.propagate()
-    output.toBuffer().sortWith(_ < _) should be (Buffer(4, 7, 8, 10, 11))
-
-    input.remove("one")
-    input.remove("five")
-    input.remove("eight")
-    mutator.propagate()
-    output.toBuffer().sortWith(_ < _) should be (Buffer(7, 10))
-
-    input.update("four", -4)
-    input.put("nine", 9)
-    input.remove("seven")
-    mutator.propagate()
-    output.toBuffer().sortWith(_ < _) should be (Buffer(-1, 12))
   }
 
   val maxKey = 1000
@@ -256,7 +176,7 @@ class ListTests extends FlatSpec with Matchers {
       }
 
       val test = new ChunkListMapTest(input)
-      val output = mutator.run[AdjustableList[String, Int]](test)
+      val output = mutator.run(test)
 
       var answer = table.values.map(_ - 2).toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (answer)
@@ -287,8 +207,7 @@ class ListTests extends FlatSpec with Matchers {
         addValue(input, table)
       }
 
-      val output =
-	mutator.run[AdjustableList[String, Int]](new ListFilterTest(input))
+      val output = mutator.run(new ListFilterTest(input))
       var answer = table.values.filter(_ % 2 == 0).toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (answer)
 
@@ -312,7 +231,7 @@ class ListTests extends FlatSpec with Matchers {
     val input = mutator.createList[String, Int]()
     input.put("one", 1)
     input.put("two", 2)
-    val output = mutator.run[Mod[(String, Int)]](new ListReduceSumTest(input))
+    val output = mutator.run(new ListReduceSumTest(input))
     // 1 + 2 = 3
     output.read()._2 should be (3)
 
@@ -359,7 +278,7 @@ class ListTests extends FlatSpec with Matchers {
       sum = sum + r
     }
 
-    val output = mutator.run[Mod[(String, Int)]](new ListReduceSumTest(input))
+    val output = mutator.run(new ListReduceSumTest(input))
     output.read()._2 should be (sum)
 
     mutator.shutdown()
@@ -370,8 +289,7 @@ class ListTests extends FlatSpec with Matchers {
     val input = mutator.createList[String, Int](ListConf(partitions = 1))
     input.put("one", 0)
     input.put("two", 2)
-    val output = mutator.run[(AdjustableList[String, Int], AdjustableList[String, Int])](
-      new ListSplitTest(input))
+    val output = mutator.run(new ListSplitTest(input))
 
     output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 2))
     output._2.toBuffer().sortWith(_ < _) should be (Buffer())
@@ -441,9 +359,7 @@ class ListTests extends FlatSpec with Matchers {
       data += r
     }
 
-    val output = mutator.run[(AdjustableList[String, Int],
-                              AdjustableList[String, Int])](
-      new ListSplitTest(input))
+    val output = mutator.run(new ListSplitTest(input))
 
     var answer = (data.filter(x => x % 2 == 0), data.filter(x => x % 2 != 0))
 
@@ -492,7 +408,7 @@ class ListTests extends FlatSpec with Matchers {
     input.put("three", 2)
     input.put("four", 4)
     input.put("five", 1)
-    val output = mutator.run[AdjustableList[String, Int]](new ListSortTest(input))
+    val output = mutator.run(new ListSortTest(input))
 
     output.toBuffer() should be (Buffer(0, 1, 2, 3, 4))
 
@@ -523,7 +439,7 @@ class ListTests extends FlatSpec with Matchers {
       data += r
     }
 
-    val output = mutator.run[AdjustableList[String, Int]](new ListSortTest(input))
+    val output = mutator.run(new ListSortTest(input))
 
     output.toBuffer() should be (data.sortWith(_ < _))
 

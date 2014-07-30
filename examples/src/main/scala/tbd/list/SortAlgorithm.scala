@@ -18,28 +18,28 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, ListConf, Mutator, TBD}
+import tbd.{Adjustable, Context, ListConf, Mutator}
 import tbd.mod.{AdjustableList, Mod}
 
 object SortAlgorithm {
-  def predicate(a: (Int, String), b: (Int, String)): Boolean = {
+  def predicate(a: (Int, Int), b: (Int, Int)): Boolean = {
     a._2 < b._2
   }
 }
 
 class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[String, AdjustableList[Int, String]](_conf, _listConf) {
-  val input = mutator.createList[Int, String](listConf)
+    extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
+  val input = mutator.createList[Int, Int](listConf)
 
-  data = new WCData(input, count, mutations)
+  data = new IntData(input, count, mutations)
 
-  def runNaive(input: GenIterable[String]) = {
-     input.toBuffer.sortWith(_ < _)
+  def runNaive(input: GenIterable[Int]) = {
+     input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((0, one), (2, two)))
   }
 
   def checkOutput(
-      input: Map[Int, String],
-      output: AdjustableList[Int, String]) = {
+      input: Map[Int, Int],
+      output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer
 
     val answer = runNaive(input.values)
@@ -47,36 +47,34 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     sortedOutput == answer.toBuffer
   }
 
-  def run(tbd: TBD): AdjustableList[Int, String] = {
+  def run(implicit c: Context): AdjustableList[Int, Int] = {
     val pages = input.getAdjustableList()
 
-    pages.sort(tbd, (tbd: TBD, a:(Int, String), b:(Int, String)) =>
-      SortAlgorithm.predicate(a, b), parallel, memoized)
+    pages.sort(SortAlgorithm.predicate)
   }
 }
 
 class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[Int, Mod[(Int, Vector[(Int, Int)])]](_conf, _listConf) {
+    extends Algorithm[Int, Mod[(Int, Array[(Int, Int)])]](_conf, _listConf) {
   val input = mutator.createChunkList[Int, Int](listConf)
 
   data = new IntData(input, count, mutations)
 
   def runNaive(input: GenIterable[Int]) = {
-     input.toBuffer.sortWith(_ < _)
+     input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((1, one), (2, two)))
   }
 
   def checkOutput(
       input: Map[Int, Int],
-      output: Mod[(Int, Vector[(Int, Int)])]) = {
+      output: Mod[(Int, Array[(Int, Int)])]) = {
     val answer = runNaive(input.values)
 
-    output.read()._2.map(_._2) == answer.toBuffer
+    output.read()._2.map(_._2).toBuffer == answer.toBuffer
   }
 
-  def run(tbd: TBD): Mod[(Int, Vector[(Int, Int)])] = {
+  def run(implicit c: Context): Mod[(Int, Array[(Int, Int)])] = {
     val list = input.getChunkList()
 
-    list.chunkSort(tbd, (tbd: TBD, a: (Int, Int), b: (Int, Int)) =>
-      a._2 < b._2, parallel)
+    list.chunkSort(SortAlgorithm.predicate(_, _))
   }
 }

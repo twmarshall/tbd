@@ -18,12 +18,15 @@ package tbd.visualization
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
-import tbd._
-import tbd.mod.{AdjustableList, Dest, Mod, DoubleModList}
 
-trait TestAlgorithm[T, V] extends Adjustable {
-  def getResult(output: T): V
-  def getExpectedResult(input: Map[Int, Int]): V
+import tbd.{Adjustable, Context, ListConf, ListInput, Mutator}
+import tbd.mod.{AdjustableList, Mod}
+import tbd.TBD._
+
+trait TestAlgorithm[TbdOutputType, NativeOutputType]
+    extends Adjustable[TbdOutputType] {
+  def getResult(output: TbdOutputType): NativeOutputType
+  def getExpectedResult(input: Map[Int, Int]): NativeOutputType
   def getListConf() = { new ListConf(partitions = 1) }
 
   var input: ListInput[Int, Int] = null
@@ -32,11 +35,11 @@ trait TestAlgorithm[T, V] extends Adjustable {
 class ListReduceSumTest()
     extends TestAlgorithm[Mod[(Int, Int)], Int] {
 
-  def run(tbd: TBD): Mod[(Int, Int)] = {
+  def run(implicit c: Context): Mod[(Int, Int)] = {
     val modList = input.getAdjustableList()
-    val zero = tbd.mod((dest : Dest[(Int, Int)]) => tbd.write(dest, (0, 0)))
-    modList.reduce(tbd, zero,
-      (tbd: TBD, pair1: (Int, Int), pair2: (Int, Int)) => {
+    val zero = mod{ write((0, 0)) }
+    modList.reduce(zero,
+      (pair1: (Int, Int), pair2: (Int, Int)) => {
         (pair2._1, pair1._2 + pair2._2)
       })
   }
@@ -52,9 +55,9 @@ class ListReduceSumTest()
 
 class ListQuicksortTest()
     extends TestAlgorithm[AdjustableList[Int, Int], Seq[Int]] {
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
+  def run(implicit c: Context): AdjustableList[Int, Int] = {
     val modList = input.getAdjustableList()
-    modList.sort(tbd, (tbd, a, b) => a._2 < b._2, true, true)
+    modList.sort((a, b) => a._2 < b._2)
   }
 
   def getResult(output:  AdjustableList[Int, Int]): Seq[Int] = {
@@ -67,26 +70,31 @@ class ListQuicksortTest()
 }
 
 class ListSplitTest()
-    extends TestAlgorithm[(AdjustableList[Int, Int], AdjustableList[Int, Int]), (Seq[Int], Seq[Int])] {
-  def run(tbd: TBD): (AdjustableList[Int, Int], AdjustableList[Int, Int]) = {
+    extends TestAlgorithm[
+      (AdjustableList[Int, Int], AdjustableList[Int, Int]),
+      (Seq[Int], Seq[Int])] {
+  def run(implicit c: Context):
+      (AdjustableList[Int, Int], AdjustableList[Int, Int]) = {
     val modList = input.getAdjustableList()
-    modList.split(tbd, (tbd, a) => a._2 % 2 == 0, false, false)
+    modList.split((a) => a._2 % 2 == 0)
   }
 
-  def getResult(output:  (AdjustableList[Int, Int], AdjustableList[Int, Int])): (Seq[Int], Seq[Int]) = {
+  def getResult(output:  (AdjustableList[Int, Int], AdjustableList[Int, Int])):
+      (Seq[Int], Seq[Int]) = {
     (output._1.toBuffer(), output._2.toBuffer())
   }
 
   def getExpectedResult(input: Map[Int, Int]): (Seq[Int], Seq[Int]) = {
-    (input.values.toBuffer.filter(x => x % 2 == 0), input.values.toBuffer.filter(x => x % 2 != 0))
+    (input.values.toBuffer.filter(x => x % 2 == 0),
+     input.values.toBuffer.filter(x => x % 2 != 0))
   }
 }
 
 class ListMapTest()
     extends TestAlgorithm[AdjustableList[Int, Int], Seq[Int]] {
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
+  def run(implicit c: Context): AdjustableList[Int, Int] = {
     val modList = input.getAdjustableList()
-    modList.map(tbd, (tbd, a) => (a._1, a._2 * 2), true, true)
+    modList.map((a) => (a._1, a._2 * 2))
   }
 
   def getResult(output: AdjustableList[Int, Int]): Seq[Int] = {

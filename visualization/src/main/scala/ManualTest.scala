@@ -24,8 +24,8 @@ import scala.util.Random
 import scala.util.matching.Regex
 import scala.io.StdIn
 
-class ManualTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
-
+class ManualTest[T, V](algorithm: TestAlgorithm[T, V])
+    extends TestBase(algorithm) {
 
   private val putm = "(a) (\\d+) (\\d+)".r
   private val updatem = "(u) (\\d+) (\\d+)".r

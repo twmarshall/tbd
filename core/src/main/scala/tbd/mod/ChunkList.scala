@@ -17,99 +17,99 @@ package tbd.mod
 
 import scala.collection.mutable.Buffer
 
-import tbd.{Changeable, Memoizer, TBD}
+import tbd.{Changeable, Context, Memoizer}
 import tbd.Constants.ModId
+import tbd.TBD._
 
 class ChunkList[T, U](
     val head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
 
-  def map[V, Q](
-      tbd: TBD,
-      f: (TBD, (T, U)) => (V, Q),
-      parallel: Boolean = false,
-      memoized: Boolean = true): ChunkList[V, Q] = ???
+  def map[V, W](
+      f: ((T, U)) => (V, W))
+     (implicit c: Context): ChunkList[V, W] = {
+    val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
+    new ChunkList(
+      mod {
+        read(head) {
+	  case null => write[ChunkListNode[V, W]](null)
+	  case node => node.map(f, memo)
+        }
+      }
+    )
+  }
 
   def chunkMap[V, Q](
-      tbd: TBD,
-      f: (TBD, Vector[(T, U)]) => (V, Q),
-      parallel: Boolean = false,
-      memoized: Boolean = true): ModList[V, Q] = {
-    if (parallel || !memoized) {
-      tbd.log.warning("ChunkList.chunkMap ignores the 'parallel' and " +
-		      "'memoized' parameters.")
-    }
-
-    val memo = tbd.makeMemoizer[Mod[ModListNode[V, Q]]]()
+      f: (Vector[(T, U)]) => (V, Q))
+     (implicit c: Context): ModList[V, Q] = {
+    val memo = makeMemoizer[Mod[ModListNode[V, Q]]]()
     new ModList(
-      tbd.mod((dest: Dest[ModListNode[V, Q]]) => {
-        tbd.read(head)(node => {
-          if (node != null) {
-            node.chunkMap(tbd, dest, f, memo)
-          } else {
-            tbd.write(dest, null)
-          }
-        })
-      })
+      mod {
+        read(head) {
+	  case null => write[ModListNode[V, Q]](null)
+	  case node => node.chunkMap(f, memo)
+        }
+      }
     )
   }
 
   def filter(
-      tbd: TBD,
-      pred: ((T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = true): ChunkList[T, U] = ???
+      pred: ((T, U)) => Boolean)
+     (implicit c: Context): ChunkList[T, U] = ???
 
   def reduce(
-      tbd: TBD,
       initialValueMod: Mod[(T, U)],
-      f: (TBD, (T, U), (T, U)) => (T, U),
-      parallel: Boolean = false,
-      memoized: Boolean = true): Mod[(T, U)] = ???
+      f: ((T, U), (T, U)) => (T, U))
+     (implicit c: Context): Mod[(T, U)] = ???
 
   def split(
-      tbd: TBD,
-      pred: (TBD, (T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false):
-       (AdjustableList[T, U], AdjustableList[T, U]) = ???
+      pred: ((T, U)) => Boolean)
+     (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   def sort(
-      tbd: TBD,
-      comperator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false,
-      memoized: Boolean = false): AdjustableList[T, U] = ???
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): AdjustableList[T, U] = ???
 
   def chunkSort(
-      tbd: TBD,
-      comparator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false): Mod[(Int, Vector[(T, U)])] = {
-    println("chunkSort")
-    def mapper(tbd: TBD, chunk: Vector[(T, U)]): (Int, Vector[(T, U)]) = {
-      (0, chunk.sortWith((pair1: (T, U), pair2: (T, U)) => {
-	comparator(tbd, pair1, pair2)
-      }))
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): Mod[(Int, Array[(T, U)])] = {
+    def mapper(chunk: Vector[(T, U)]): (Int, Array[(T, U)]) = {
+      (0, chunk.sortWith(comparator).toArray)
     }
-    val sortedChunks = chunkMap(tbd, mapper)
+    val sortedChunks = chunkMap(mapper)
 
-    def reducer(tbd: TBD, pair1: (Int, Vector[(T, U)]), pair2: (Int, Vector[(T, U)])) = {
-      def innerReducer(v1: Vector[(T, U)], v2: Vector[(T, U)]): Vector[(T, U)] = {
-	if (v1.size == 0) {
-	  v2
-	} else if (v2.size == 0) {
-	  v1
+    def reducer(pair1: (Int, Array[(T, U)]), pair2: (Int, Array[(T, U)])) = {
+      val array1 = pair1._2
+      val array2 = pair2._2
+
+      val reduced = new Array[(T, U)](array1.size + array2.size)
+
+      var i = 0
+      var j = 0
+      while (i < array1.size && j < array2.size) {
+	if (comparator(array1(i), array2(j))) {
+	  reduced(i + j) = array1(i)
+	  i += 1
 	} else {
-	  if (comparator(tbd, v1.head, v2.head)) {
-	    v1.head +: innerReducer(v1.tail, v2)
-	  } else {
-	    v2.head +: innerReducer(v1, v2.tail)
-	  }
+	  reduced(i + j) = array2(j)
+	  j += 1
 	}
       }
-      (pair1._1, innerReducer(pair1._2, pair2._2))
+
+      while (i < array1.size) {
+	reduced(i + j) = array1(i)
+	i += 1
+      }
+
+      while (j < array2.size) {
+	reduced(i + j) = array2(j)
+	j += 1
+      }
+
+      (pair1._1, reduced)
     }
 
-    val initialValue = tbd.createMod((0, Vector[(T, U)]()))
-    sortedChunks.reduce(tbd, initialValue, reducer)
+    val initialValue = createMod((0, Array[(T, U)]()))
+    sortedChunks.reduce(initialValue, reducer)
   }
 
   /* Meta functions */

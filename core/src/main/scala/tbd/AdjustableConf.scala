@@ -18,7 +18,7 @@ package tbd
 trait AdjustableConf
 
 case class ListConf(file: String = "", partitions: Int = 8, chunkSize: Int = 1,
-  chunkSizer: Any => Int = _ => 1, valueMod: Boolean = true)
+  chunkSizer: Any => Int = _ => 1)
     extends AdjustableConf
 
 case class TableConf() extends AdjustableConf

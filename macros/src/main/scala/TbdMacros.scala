@@ -35,54 +35,60 @@ object TbdMacros {
     import c.universe._
 
     val closedVars = createFreeVariableList(c)(func)
-    val memo = Select(c.prefix.tree, TermName("memoInternal"))
+    val memo = Select(c.prefix.tree, TermName("applyInternal"))
     val id = Literal(Constant(getFuncId()))
     c.Expr[T](q"$memo(List(..$args), $func, $id, $closedVars)")
   }
 
-  def parMacro[T, U]
-      (c: Context)(one: c.Tree, two: c.Tree): c.Expr[(T, U)] = {
+  def parOneMacro[Q]
+      (c: Context)(one: c.Tree): c.Expr[Q] = {
     import c.universe._
 
-    val closedVars1 = createFreeVariableList(c)(one)
-    val closedVars2 = createFreeVariableList(c)(two)
+    val closedVars = createFreeVariableList(c)(one)
     val par = Select(c.prefix.tree, TermName("parInternal"))
-    val id1 = Literal(Constant(getFuncId()))
-    val id2 = Literal(Constant(getFuncId()))
-    c.Expr[(T, U)](q"$par($one, $two, $id1, $id2, $closedVars1, $closedVars2)")
-  }
-
-
-  def readMacro[T, U]
-      (c: Context)(mod: c.Tree)(reader: c.Tree): c.Expr[U] = {
-    import c.universe._
-
-    val closedVars = createFreeVariableList(c)(reader)
-    val readFunc = Select(c.prefix.tree, TermName("readInternal"))
     val id = Literal(Constant(getFuncId()))
-    c.Expr[U](q"$readFunc($mod, $reader, $id, $closedVars)")
+    c.Expr[Q](q"$par($one, $id, $closedVars)")
   }
 
-  def modMacro[T, U]
-      (c: Context)(initializer: c.Tree): c.Expr[U] = {
-    import c.universe._
+  def parTwoMacro[Q]
+      (con: Context)(two: con.Tree)(c: con.Tree): con.Expr[Q] = {
+    import con.universe._
 
-    val closedVars = createFreeVariableList(c)(initializer)
-    val modFunc = Select(c.prefix.tree, TermName("modInternal"))
+    val closedVars = createFreeVariableList(con)(two)
+    val par = Select(con.prefix.tree, TermName("parTwoInternal"))
     val id = Literal(Constant(getFuncId()))
-    c.Expr[U](q"$modFunc($initializer, $id, $closedVars)")
+    con.Expr[Q](q"$par($two, $c, $id, $closedVars)")
   }
 
-  def modNoDestMacro[T, U]
-      (c: Context)(initializer: c.Tree): c.Expr[U] = {
-    import c.universe._
+  def readMacro[T]
+      (con: Context)(mod: con.Tree)(reader: con.Tree)(c: con.Tree): con.Expr[T] = {
+    import con.universe._
 
-    val closedVars = createFreeVariableList(c)(initializer)
-    val modFunc = Select(c.prefix.tree, TermName("modNoDestInternal"))
+    val closedVars = createFreeVariableList(con)(reader)
+    val readFunc = Select(con.prefix.tree, TermName("readInternal"))
     val id = Literal(Constant(getFuncId()))
-    c.Expr[U](q"$modFunc($initializer, $id, $closedVars)")
+    con.Expr[T](q"$readFunc($mod, $reader, $c, $id, $closedVars)")
   }
 
+  def read_2Macro[T]
+      (con: Context)(mod: con.Tree)(reader: con.Tree)(c: con.Tree): con.Expr[T] = {
+    import con.universe._
+
+    val closedVars = createFreeVariableList(con)(reader)
+    val readFunc = Select(con.prefix.tree, TermName("read_2Internal"))
+    val id = Literal(Constant(getFuncId()))
+    con.Expr[T](q"$readFunc($mod, $reader, $c, $id, $closedVars)")
+  }
+
+  def modMacro[T]
+      (con: Context)(initializer: con.Tree)(c: con.Tree): con.Expr[T] = {
+    import con.universe._
+
+    val closedVars = createFreeVariableList(con)(initializer)
+    val modFunc = Select(con.prefix.tree, TermName("modInternal"))
+    val id = Literal(Constant(getFuncId()))
+    con.Expr[T](q"$modFunc($initializer, $c, $id, $closedVars)")
+  }
 
   /**
    * Generates a list using quasiquotes from free variables from
@@ -104,7 +110,7 @@ object TbdMacros {
    *
    * Static or class variables are not found.
    */
-  private def findFreeVariabels(c: Context)(func: c.Tree) = {
+  private def findFreeVariabels(c: Context)(func: c.Tree): List[(c.Tree, String)] = {
     import c.universe._
 
     //Symbol of our function.
@@ -217,13 +223,16 @@ object TbdMacros {
                 + " in enclosing tree. Symbol was: "
                 + targetSymbol)
 
+      //We are not allowed to return anything, as this list might contain
+      //functions we try to evaluate without params. 
+      List[(Tree, String)]()
+    } else {
+      //New return all Idents from our function which are also defined as
+      //Vals in the outer scope. This is necassary to filter out methods,
+      //which can be referenced via Ident, too.
+      distincFreeTerms.filter(x => {
+          !valDefExtractor.defs.find(y => (y._1 == x._2)).isEmpty
+      })
     }
-
-    //New return all Idents from our function which are also defined as
-    //Vals in the outer scope. This is necassary to filter out methods,
-    //which can be referenced via Ident, too.
-    distincFreeTerms.filter(x => {
-        !valDefExtractor.defs.find(y => (y._1 == x._2)).isEmpty
-    })
   }
 }

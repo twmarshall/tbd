@@ -21,97 +21,73 @@ import scala.concurrent.{Await, Future}
 import tbd.Constants._
 import tbd.ddg.MemoNode
 import tbd.master.Master
-import tbd.mod.Mod
 import tbd.macros.TbdMacros
 import tbd.ddg.FunctionTag
+import tbd.mod.{Dest, Mod}
+import tbd.worker.Worker
 
-class Memoizer[T](tbd: TBD, memoId: Int) {
-  import tbd.worker.context.dispatcher
+class Memoizer[T](c: Context, memoId: Int) {
+  import c.worker.context.dispatcher
 
   import scala.language.experimental.macros
   def apply(args: Any*)(func: => T): T = macro TbdMacros.memoMacro[T]
 
-  def memoInternal(
+  def applyInternal(
       args: Seq[_],
       func: => T,
       funcId: Int,
       freeTerms: List[(String, Any)]): T = {
-    val signature = memoId :: args.toList
+
+    import c._
+    val signature = memoId +: args
 
     var found = false
     var ret = null.asInstanceOf[T]
-    if (!tbd.initialRun) {
-      if (!tbd.updated(args)) {
-	if (tbd.worker.memoTable.contains(signature)) {
+    if (!initialRun && !updated(args) && worker.memoTable.contains(signature)) {
+        // Search through the memo entries matching this signature to see if
+        // there's one in the right time range.
+        for (memoNode <- worker.memoTable(signature)) {
+          val timestamp = memoNode.timestamp
+          if (!found && timestamp > reexecutionStart &&
+	      timestamp < reexecutionEnd &&
+	      memoNode.matchableInEpoch <= Master.epoch) {
 
-          // Search through the memo entries matching this signature to see if
-          // there's one in the right time range.
-          for (memoNode <- tbd.worker.memoTable(signature)) {
-            val timestamp = memoNode.timestamp
-            if (!found && timestamp > tbd.reexecutionStart &&
-		timestamp < tbd.reexecutionEnd &&
-		memoNode.matchableInEpoch <= Master.epoch) {
+            updateChangeables(memoNode, worker, currentDest, currentDest2)
 
-	      if (memoNode.currentDest != tbd.currentDest &&
-		  memoNode.value.isInstanceOf[Changeable[_]]) {
-                val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
+            found = true
+            worker.ddg.attachSubtree(currentParent, memoNode)
 
-                val awaiting = tbd.currentDest.mod.update(changeable.mod.read())
-                Await.result(Future.sequence(awaiting), DURATION)
+	    memoNode.matchableInEpoch = Master.epoch + 1
+            ret = memoNode.value.asInstanceOf[T]
 
-		tbd.worker.ddg.replaceDests(memoNode,
-					    memoNode.currentDest,
-					    tbd.currentDest)
-              }
+	    // This ensures that we won't match anything under the currently
+	    // reexecuting read that comes before this memo node, since then
+	    // the timestamps would be out of order.
+	    reexecutionStart = memoNode.endTime
 
-	      if (memoNode.value.isInstanceOf[Changeable2[_, _]] &&
-		  memoNode.currentDest2 != tbd.currentDest2) {
-		val changeable2 = memoNode.value.asInstanceOf[Changeable2[Any, Any]]
-
-		val awaiting = tbd.currentDest2.mod.update(changeable2.mod2.read())
-		Await.result(Future.sequence(awaiting), DURATION)
-
-		tbd.worker.ddg.replaceDests(memoNode,
-					    memoNode.currentDest2,
-					    tbd.currentDest2)
-	      }
-
-              found = true
-              tbd.worker.ddg.attachSubtree(tbd.currentParent, memoNode)
-
-	      memoNode.matchableInEpoch = Master.epoch + 1
-              ret = memoNode.value.asInstanceOf[T]
-
-	      // This ensures that we won't match anything under the currently
-	      // reexecuting read that comes before this memo node, since then
-	      // the timestamps would be out of order.
-	      tbd.reexecutionStart = memoNode.endTime
-
-              val future = tbd.worker.propagate(timestamp,
-                                                memoNode.endTime)
-              Await.result(future, DURATION)
-            }
-          }
+            val future = worker.propagate(timestamp,
+                                          memoNode.endTime)
+            Await.result(future, DURATION)
 	}
       }
     }
 
     if (!found) {
-      val memoNode = tbd.worker.ddg.addMemo(tbd.currentParent, signature,
-                                            FunctionTag(funcId, freeTerms))
-      val outerParent = tbd.currentParent
-      tbd.currentParent = memoNode
+      val memoNode = worker.ddg.addMemo(currentParent, signature,
+                                        FunctionTag(funcId, freeTerms))
+      val outerParent = currentParent
+      currentParent = memoNode
       val value = func
-      tbd.currentParent = outerParent
-      memoNode.endTime = tbd.worker.ddg.nextTimestamp(memoNode)
-      memoNode.currentDest = tbd.currentDest
-      memoNode.currentDest2 = tbd.currentDest2
+      currentParent = outerParent
+      memoNode.currentDest = currentDest
+      memoNode.currentDest2 = currentDest2
+      memoNode.endTime = worker.ddg.nextTimestamp(memoNode)
       memoNode.value = value
 
-      if (tbd.worker.memoTable.contains(signature)) {
-        tbd.worker.memoTable(signature) += memoNode
+      if (worker.memoTable.contains(signature)) {
+        worker.memoTable(signature) += memoNode
       } else {
-        tbd.worker.memoTable += (signature -> ArrayBuffer(memoNode))
+        worker.memoTable += (signature -> ArrayBuffer(memoNode))
       }
 
       ret = value
@@ -119,10 +95,70 @@ class Memoizer[T](tbd: TBD, memoId: Int) {
 
     ret
   }
+
+  private def updated(args: Seq[_]): Boolean = {
+    var updated = false
+
+    for (arg <- args) {
+      if (arg.isInstanceOf[Mod[_]]) {
+        if (c.updatedMods.contains(arg.asInstanceOf[Mod[_]].id)) {
+	  updated = true
+        }
+      }
+    }
+
+    updated
+  }
+
+  private def updateChangeables(
+      memoNode: MemoNode,
+      worker: Worker,
+      currentDest: Dest[Any],
+      currentDest2: Dest[Any]) {
+    if (memoNode.currentDest != currentDest &&
+	memoNode.value.isInstanceOf[Changeable[_]]) {
+      val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
+
+      val awaiting = currentDest.mod.update(changeable.mod.read())
+      Await.result(Future.sequence(awaiting), DURATION)
+
+      worker.ddg.replaceDests(memoNode,
+			      memoNode.currentDest,
+			      currentDest)
+    }
+
+    if (memoNode.value.isInstanceOf[Tuple2[_, _]]) {
+      val tuple = memoNode.value.asInstanceOf[Tuple2[Any, Any]]
+
+      if (tuple._1.isInstanceOf[Changeable[_]] &&
+	  memoNode.currentDest != currentDest) {
+        val changeable = tuple._1.asInstanceOf[Changeable[Any]]
+
+        val awaiting = currentDest.mod.update(changeable.mod.read())
+        Await.result(Future.sequence(awaiting), DURATION)
+
+        worker.ddg.replaceDests(memoNode,
+			        memoNode.currentDest,
+			        currentDest)
+      }
+
+      if (tuple._2.isInstanceOf[Changeable[_]] &&
+	  memoNode.currentDest2 != currentDest2) {
+        val changeable = tuple._2.asInstanceOf[Changeable[Any]]
+
+        val awaiting = currentDest2.mod.update(changeable.mod.read())
+        Await.result(Future.sequence(awaiting), DURATION)
+
+        worker.ddg.replaceDests(memoNode,
+			        memoNode.currentDest2,
+			        currentDest2)
+      }
+    }
+  }
 }
 
-class DummyMemoizer[T](tbd: TBD, memoId: Int) extends Memoizer[T](tbd, memoId) {
-  override def memoInternal(
+class DummyMemoizer[T](c: Context, memoId: Int) extends Memoizer[T](c, memoId) {
+  override def applyInternal(
       args: Seq[_],
       func: => T,
       fundId: Int,

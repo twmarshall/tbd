@@ -112,14 +112,6 @@ class DdgRenderer extends Panel with Publisher {
       g.drawLine(x1, y1, x2, y2)
     }
 
-//    for(edge <- rwEdges) {
-//      val (x1, y1) = transform(getPos(edge._1))
-//      val (x2, y2) = transform(getPos(edge._2))
-//
-//      g.setColor(RwEdgeColor)
-//      drawArrow(x1, y1, x2, y2, g)
-//    }
-
     if(selectedNode != null) {
 
       val rwEdges = ddg.adj(selectedNode).filter(x => x.isInstanceOf[Edge.ReadWrite])
@@ -127,7 +119,6 @@ class DdgRenderer extends Panel with Publisher {
       for(edge <- rwEdges) {
         val (x1, y1) = transform(getPos(edge.source))
         val (x2, y2) = transform(getPos(edge.destination))
-
 
         g.setColor(Color.RED)
         drawArrow(x1, y1, x2, y2, g)
@@ -163,13 +154,6 @@ class DdgRenderer extends Panel with Publisher {
         drawArrow(x1, y1, x2, y2, g)
       }
 
-//      tracePath(selectedNode, (x: Edge) => x.isInstanceOf[Edge.ReadWrite],
-//               HighlightedRwEdgeColor, SecondaryHighlightedRwEdgeColor,
-//               g, false, false)
-//      tracePath(selectedNode,  (x: Edge) => x.isInstanceOf[Edge.WriteRead],
-//               HighlightedRwEdgeColor, SecondaryHighlightedRwEdgeColor,
-//               g, true, true)
-
       val freeVarDeps = ddg.adj(selectedNode).filter(x => x.isInstanceOf[Edge.FreeVar])
 
       val stroke = g.getStroke()
@@ -188,20 +172,6 @@ class DdgRenderer extends Panel with Publisher {
 
       g.setStroke(stroke)
     }
-
-//    if(ddg != null) {
-//      val freeVarDeps = ddg.adj.flatMap(x => {
-//        x._2.filter(y => y.isInstanceOf[Edge.FreeVar])
-//      })
-//
-//      for(edge <- freeVarDeps) {
-//        val (x1, y1) = transform(getPos(edge.source))
-//        val (x2, y2) = transform(getPos(edge.destination))
-//
-//        g.setColor(Color.GREEN)
-//        drawArrow(x1, y1, x2, y2, g)
-//      }
-//    }
 
     for(node <- nodes) {
       val (x, y) = transform(getPos(node))
@@ -488,12 +458,6 @@ class DdgRenderer extends Panel with Publisher {
 
     val (x, y) = getPos(parent)
     setPos(parent, x + dx, y)
-
-    if(((x + dx) / vSpacing) % 2 == 0) {
-      //setStyle(parent, "text-offset: 0, 3;")
-    } else {
-      //setStyle(parent, "text-offset: 0, -27;")
-    }
 
     ddg.getCallChildren(parent).foreach(child => {
       translateTree(child, dx)

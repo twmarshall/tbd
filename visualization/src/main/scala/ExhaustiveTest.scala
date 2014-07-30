@@ -25,18 +25,18 @@ import scala.io.StdIn
 
 class ExhaustiveTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
 
-  var maximalMutationsPerPropagation = 2
-  var minimalMutationsPerPropagation = 0
-  var maximalCountOfMutationRounds = 20
+  var maxMutations = 2
+  var minMutations = 0
+  var count = 20
 
   def initialize() = { }
 
   def step() = {
-    for(i <- 1 to rand.nextInt(maximalMutationsPerPropagation - minimalMutationsPerPropagation) + minimalMutationsPerPropagation) {
+    for(i <- 1 to rand.nextInt(maxMutations - minMutations) + minMutations) {
       randomMutation()
     }
 
-    mutationCounter < maximalCountOfMutationRounds
+    mutationCounter < count
   }
 
   def dispose() = { }

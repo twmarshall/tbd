@@ -47,7 +47,9 @@ class Node(ddgNode: ddg.Node) {
       case ddg.Tag.Write(value, dest) => (value, dest)
       case ddg.Tag.Read(value, fun) => (value, formatFunctionTag(fun))
       case ddg.Tag.Memo(fun, args) => (formatFunctionTag(fun), args)
-      case ddg.Tag.Par(fun1, fun2) => (formatFunctionTag(fun1), formatFunctionTag(fun2))
+      case ddg.Tag.Par(fun1, fun2) => {
+        (formatFunctionTag(fun1), formatFunctionTag(fun2))
+      }
       case ddg.Tag.Root() => ""
       case ddg.Tag.Mod(dest, fun) => (dest, formatFunctionTag(fun))
     }).toString()

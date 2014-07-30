@@ -36,7 +36,8 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     setEditable(false)
     setBackground(java.awt.Color.LIGHT_GRAY)
   }
-  setLabelText("Click node for info.<br />Scroll by dragging the mouse.<br />Zoom with scroll wheel.")
+  setLabelText("Click node for info.<br />Scroll by dragging the mouse.<br />" +
+               "Zoom with scroll wheel.")
   var selectedNode: Node = null
 
   def setLabelText(text: String) {
@@ -66,7 +67,13 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     }
 
     selector = new ComboBox(comboBoxItems) {
-      renderer = ListView.Renderer(x => if(x == null) "None" else (x.runId + " - " + x.input))
+      renderer = ListView.Renderer(x =>
+        if(x == null) {
+          "None"
+        } else {
+          (x.runId + " - " + x.input)
+        }
+      )
     }
 
     listenTo(selector.selection)
@@ -92,7 +99,8 @@ class DdgVisualizer extends GridBagPanel with Publisher {
 
     val freeVarsText = freeVarEdges.zipWithIndex.flatMap(edge => {
       val color = DdgRenderer.getFreeVarColorKey(edge._2)
-      val colorString = "rgb(" + color.getRed() + ", " + color.getGreen() + ", " + color.getBlue() + ")"
+      val colorString = "rgb(" + color.getRed() + ", " + color.getGreen() +
+                        ", " + color.getBlue() + ")"
 
       edge._1.dependencies.map(dep => {
         "<font color=\"" + colorString + "\">" +
@@ -145,7 +153,8 @@ class DdgVisualizer extends GridBagPanel with Publisher {
   reactions += {
     case NodeClickedEvent(node) => {
       selectedNode = node
-      setLabelText(htmlEscape(extractMethodName(node)) + ":<br />" + formatTag(node))
+      setLabelText(htmlEscape(extractMethodName(node)) +
+                   ":<br />" + formatTag(node))
     }
     case x:PerspectiveChangedEvent => {
       //publish(x)
@@ -187,13 +196,18 @@ class DdgVisualizer extends GridBagPanel with Publisher {
   private def extractMethodName(node: Node): String = {
 
     if(node.stacktrace == null) {
-      return "<No stacktrace available. Set Main.debug = true to enable stacktraces>"
+      return "<No stacktrace available. Set Main.debug = true to enable " +
+             "stacktraces>"
     }
 
     val methodNames = node.stacktrace.map(y => y.getMethodName())
-    val fileNames = node.stacktrace.map(y => (y.getMethodName(), y.getFileName(), y.getLineNumber()))
+    val fileNames = node.stacktrace.map(y => {
+      (y.getMethodName(),y.getFileName(), y.getLineNumber())
+    })
 
-    var (_, fileName, lineNumber) = fileNames.filter(y => (y._1.contains("apply")))(0)
+    var (_, fileName, lineNumber) = fileNames.filter(y => {
+        y._1.contains("apply")
+    })(0)
 
     var currentMethod = methodNames.filter(y => (!y.startsWith("<init>")
                                             && !y.startsWith("()")

@@ -47,14 +47,14 @@ class Master(datastoreRef: ActorRef) extends Actor with ActorLogging {
   private val workers = Map[Int, ActorRef]()
 
   def receive = {
-    case RunMessage(adjust: Adjustable, mutatorId: Int) => {
+    case RunMessage(adjust: Adjustable[_], mutatorId: Int) => {
       log.debug("RunMessage")
 
       val workerProps = Worker.props("w0", datastoreRef, self)
       workerRef = context.actorOf(workerProps, "worker" + mutatorId)
       workers(mutatorId) = workerRef
 
-      val resultFuture = workerRef ? RunTaskMessage(adjust.run)
+      val resultFuture = workerRef ? RunTaskMessage(adjust)
 
       sender ! resultFuture
     }

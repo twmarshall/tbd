@@ -19,9 +19,10 @@ import tbd.Constants.ModId
 
 abstract class Tag
 object Tag {
-  case class Read(val readValue: Any, val reader: FunctionTag)(val mod: ModId) extends Tag
+  case class Read(val readValue: Any, val reader: FunctionTag)(val mod: ModId)
+    extends Tag
   case class Write(val value: Any, val dest: ModId) extends Tag
-  case class Memo(val function: FunctionTag, val args: List[Any]) extends Tag
+  case class Memo(val function: FunctionTag, val args: Seq[Any]) extends Tag
   case class Mod(val dest: ModId, val initializer: FunctionTag) extends Tag
   case class Par(val fun1: FunctionTag, val fun2: FunctionTag) extends Tag
   case class Root() extends Tag

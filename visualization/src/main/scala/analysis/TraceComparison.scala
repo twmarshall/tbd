@@ -44,7 +44,11 @@ object TraceComparison {
           if(min(i, j) == 0) {
             max(i, j)
           } else {
-            val equal = if(a(i - 1) ~ b(j - 1)) m(i - 1)(j - 1) else Int.MaxValue
+            val equal = if(a(i - 1) ~ b(j - 1)) {
+              m(i - 1)(j - 1)
+            } else {
+              Int.MaxValue
+            }
             val add = m(i)(j - 1) + 1
             val remove = m(i - 1)(j) + 1
 
@@ -59,10 +63,16 @@ object TraceComparison {
                          List[Node](), List[Node](), List[Node]())
   }
 
-  private def backtrackChanges(m: Array[Array[Int]],
-                               a: Buffer[Node], b: Buffer[Node],
-                               i: Int, j: Int, removed: List[Node],
-                               added: List[Node], unchanged: List[Node]): ComparisonResult = {
+  private def backtrackChanges(
+        m: Array[Array[Int]],
+        a: Buffer[Node],
+        b: Buffer[Node],
+        i: Int,
+        j: Int,
+        removed: List[Node],
+        added: List[Node],
+        unchanged: List[Node]):
+      ComparisonResult = {
 
     if(i > 0 && m(i - 1)(j) + 1 == m(i)(j)) {
       backtrackChanges(m, a, b, i - 1, j,
@@ -79,7 +89,8 @@ object TraceComparison {
 
   }
 
-  def greedyTraceDistance(before: DDG, after: DDG, extractor: (Node => Any)): ComparisonResult = {
+  def greedyTraceDistance(before: DDG, after: DDG, extractor: (Node => Any)):
+      ComparisonResult = {
 
     var set = after.nodes.map(x => new NodeWrapper(x, extractor))
 
@@ -101,7 +112,10 @@ object TraceComparison {
   }
 }
 
-class ComparisonResult(val removed: List[Node],val added: List[Node], val unchanged:List[Node]) {
+class ComparisonResult(
+  val removed: List[Node],
+  val added: List[Node],
+  val unchanged:List[Node]) {
 }
 
 class NodeWrapper(val node: Node, extractor: (Node => Any)) {

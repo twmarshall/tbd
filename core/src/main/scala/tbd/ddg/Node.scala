@@ -148,7 +148,7 @@ class ParNode(
 class MemoNode(
     _parent: Node,
     _timestamp: Timestamp,
-    val signature: List[Any],
+    val signature: Seq[Any],
     _memoTag: Tag.Memo) extends Node(_parent, _timestamp, _memoTag) {
 
   var value: Any = null

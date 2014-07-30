@@ -17,15 +17,15 @@ package tbd.examples.list
 
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, ListConf, ListInput, Mutator, TBD}
+import tbd.{Adjustable, Context, ListConf, ListInput, Mutator}
 import tbd.mod.AdjustableList
 
-class MemoryExperiment(input: ListInput[Int, String]) extends Adjustable {
+class MemoryExperiment(input: ListInput[Int, String])
+    extends Adjustable[AdjustableList[Int, String]] {
   val partitions = 4
-  val valueMod = true
-  def run(tbd: TBD): AdjustableList[Int, String] = {
+  def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    list.map(tbd, (tbd: TBD, pair: (Int, String)) => pair)
+    list.map((x: (Int, String)) => x)
   }
 }
 
@@ -33,14 +33,14 @@ object MemoryExperiment {
   def main(args: Array[String]) {
     val max = 1000
     val mutator = new Mutator()
-    val list = mutator.createList[Int, String](new ListConf(partitions = 4, valueMod = true))
+    val list = mutator.createList[Int, String](new ListConf(partitions = 4))
     val input = new WCData(list, max, Array("insert", "remove", "update"))
 
     for (i <- 0 to max) {
       input.addValue()
     }
 
-    val output = mutator.run[AdjustableList[Int, Int]](new MemoryExperiment(list))
+    val output = mutator.run(new MemoryExperiment(list))
 
     val rand = new scala.util.Random()
     var i = 0

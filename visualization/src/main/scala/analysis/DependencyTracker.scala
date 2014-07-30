@@ -71,10 +71,18 @@ object DependencyTracker {
       x._2.filter(y => y.isInstanceOf[Edge.Control])
     }).map(e => {
       e.destination.tag match {
-        case Tag.Read(_, fun) => Edge.FreeVar(e.destination, e.source, fun.freeVars)
-        case Tag.Memo(fun, _) => Edge.FreeVar(e.destination, e.source, fun.freeVars)
-        case Tag.Mod(_, fun) => Edge.FreeVar(e.destination, e.source, fun.freeVars)
-        case Tag.Par(fun1, fun2) => Edge.FreeVar(e.destination, e.source, fun1.freeVars ::: fun2.freeVars)
+        case Tag.Read(_, fun) => {
+          Edge.FreeVar(e.destination, e.source, fun.freeVars)
+        }
+        case Tag.Memo(fun, _) => {
+          Edge.FreeVar(e.destination, e.source, fun.freeVars)
+        }
+        case Tag.Mod(_, fun) => {
+          Edge.FreeVar(e.destination, e.source, fun.freeVars)
+        }
+        case Tag.Par(fun1, fun2) => {
+          Edge.FreeVar(e.destination, e.source, fun1.freeVars ::: fun2.freeVars)
+        }
         case _ => null
       }
     }).filter(x => x != null).foreach(e => {
@@ -104,7 +112,8 @@ object DependencyTracker {
 
           val parent = ddg.getCallParent(n)
 
-          invDeps(parent) = (Edge.FreeVar(e.source, parent, inter)) :: invDeps(parent)
+          invDeps(parent) =
+            (Edge.FreeVar(e.source, parent, inter)) :: invDeps(parent)
         })
       }
     })
@@ -115,9 +124,11 @@ object DependencyTracker {
         var deps = HashMap[Node, Edge.FreeVar]()
         invDeps(n).foreach(e =>
           if(deps.contains(e.source)) {
-            deps(e.source).dependencies = (deps(e.source).dependencies ::: e.dependencies).distinct
+            deps(e.source).dependencies =
+              (deps(e.source).dependencies ::: e.dependencies).distinct
           } else (
-            deps(e.source) = Edge.FreeVar(e.source, e.destination, e.dependencies.distinct)
+            deps(e.source) =
+              Edge.FreeVar(e.source, e.destination, e.dependencies.distinct)
           )
         )
 

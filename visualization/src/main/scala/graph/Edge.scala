@@ -24,10 +24,19 @@ abstract class Edge() {
 }
 object Edge {
   case class Control(val source: Node, val destination: Node) extends Edge
-  case class InverseControl(val source: Node, val destination: Node) extends Edge
-  case class ReadWrite(val source: Node, val destination: Node, val modId: ModId) extends Edge
-  case class WriteRead(val source: Node, val destination: Node, val modId: ModId) extends Edge
-  case class ModWrite(val source: Node, val destination: Node, val modId: ModId) extends Edge
-  case class WriteMod(val source: Node, val destination: Node, val modId: ModId) extends Edge
-  case class FreeVar(val source: Node, val destination: Node, var dependencies: List[(String, Any)]) extends Edge
+  case class InverseControl(val source: Node, val destination: Node)
+    extends Edge
+  case class ReadWrite(val source: Node, val destination: Node, val modId: ModId)
+    extends Edge
+  case class WriteRead(val source: Node, val destination: Node, val modId: ModId)
+    extends Edge
+  case class ModWrite(val source: Node, val destination: Node, val modId: ModId)
+    extends Edge
+  case class WriteMod(val source: Node, val destination: Node, val modId: ModId)
+    extends Edge
+  case class FreeVar(
+      val source: Node,
+      val destination: Node, 
+      var dependencies: List[(String, Any)])
+    extends Edge
 }

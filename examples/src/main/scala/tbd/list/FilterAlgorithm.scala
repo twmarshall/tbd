@@ -18,7 +18,7 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, ListConf, TBD}
+import tbd.{Adjustable, Context, ListConf}
 import tbd.mod.AdjustableList
 
 object FilterAlgorithm {
@@ -47,8 +47,8 @@ class FilterAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def filterer(pair: (Int, Int)) =
     FilterAlgorithm.predicate(pair)
 
-  def run(tbd: TBD): AdjustableList[Int, Int] = {
+  def run(implicit c: Context): AdjustableList[Int, Int] = {
     val pages = input.getAdjustableList()
-    pages.filter(tbd, filterer, parallel, memoized)
+    pages.filter(filterer)
   }
 }

@@ -22,7 +22,10 @@ trait GraphIterator extends Iterator[Node] {
   def hasNext(): Boolean
   def next() : Node
 }
-class DfsIterator(root: Node, graph: Graph, filter: (Edge => Boolean) = (x => true))
+class DfsIterator(
+      root: Node,
+      graph: Graph,
+      filter: (Edge => Boolean) = (x => true))
     extends GraphIterator {
   private val visited = new HashSet[Node]()
   private var state = List((root, 0))
@@ -48,7 +51,7 @@ class DfsIterator(root: Node, graph: Graph, filter: (Edge => Boolean) = (x => tr
     if(index < adjList.length) {
       state = (node, index + 1) :: tail
       val nextEdge = adjList(index)
-      //We could throw the order overboard? Will it be a good idea to use lexigraphic ordering?
+
       if(!visited.contains(nextEdge.destination) && filter(nextEdge)) {
         visited += nextEdge.destination
         state = (nextEdge.destination, 0) :: state
@@ -69,7 +72,10 @@ class DfsIterator(root: Node, graph: Graph, filter: (Edge => Boolean) = (x => tr
   }
 }
 
-class TopoSortIterator(root: Node, graph: Graph, filter: (Edge => Boolean) = (x => true))
+class TopoSortIterator(
+    root: Node,
+    graph: Graph,
+    filter: (Edge => Boolean) = (x => true))
   extends DfsIterator(root, graph, filter) {
 
   private var isLast = false

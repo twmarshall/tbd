@@ -19,7 +19,7 @@ import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import scala.collection.mutable.{Map, MutableList, Set, TreeSet}
 
-import tbd.{Changeable, Changeable2}
+import tbd.Changeable
 import tbd.Constants._
 import tbd.master.Master
 import tbd.mod.{Dest, Mod}
@@ -54,7 +54,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     readNode
   }
 
-  def addMod[T](mod: Mod[T], parent: Node, funcTag: FunctionTag): ModNode = {
+  def addMod(mod: Mod[Any], parent: Node, funcTag: FunctionTag): ModNode = {
     val timestamp = nextTimestamp(parent)
     val modNode = new ModNode(parent, timestamp,
                                   Tag.Mod(mod.id, funcTag))
@@ -91,7 +91,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 
   def addMemo(
       parent: Node,
-      signature: List[Any],
+      signature: Seq[Any],
       funcTag: FunctionTag): MemoNode = {
     val timestamp = nextTimestamp(parent)
     val memoNode = new MemoNode(parent, timestamp, signature,
@@ -251,18 +251,29 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 	}
       }
 
-      if (memoNode.value.isInstanceOf[Changeable2[_, _]]) {
-	val changeable2 = memoNode.value.asInstanceOf[Changeable2[Any, Any]]
-	if (changeable2.mod2 == dest1.mod) {
-	  changeable2.mod2 = dest2.mod
-	}
+      if (memoNode.value.isInstanceOf[Tuple2[_, _]]) {
+        val tuple = memoNode.value.asInstanceOf[Tuple2[Any, Any]]
+
+        if (tuple._1.isInstanceOf[Changeable[_]]) {
+	  val changeable = tuple._1.asInstanceOf[Changeable[Any]]
+	  if (changeable.mod == dest1.mod) {
+	    changeable.mod = dest2.mod
+	  }
+        }
+
+        if (tuple._2.isInstanceOf[Changeable[_]]) {
+	  val changeable = tuple._2.asInstanceOf[Changeable[Any]]
+	  if (changeable.mod == dest1.mod) {
+	    changeable.mod = dest2.mod
+	  }
+        }
       }
     }
 
     if (node.currentDest == dest1) {
       node.currentDest = dest2
 
-      // Because reads and memos must have as their currentDest the modNoDest
+      // Because reads and memos must have as their currentDest the mod
       // that is closest in enclosing scope, a node that doesn't have dest1 as
       // its dest can't have any children that have dest1 either.
       for (child <- node.children) {

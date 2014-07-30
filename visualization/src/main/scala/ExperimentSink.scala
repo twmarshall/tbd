@@ -33,7 +33,8 @@ trait ExperimentSource[T, V] {
 
 
 trait ExperimentSink[T, V] {
-  def resultReceived(result: ExperimentResult[T, V], sender: ExperimentSource[T, V])
+  def resultReceived(result: ExperimentResult[T, V],
+                     sender: ExperimentSource[T, V])
 }
 
 case class ExperimentResult[+T, +V](

@@ -34,10 +34,6 @@ class MemoryStore extends KVStore {
     values -= key
   }
 
-  def contains(key: ModId): Boolean = {
-    values.contains(key)
-  }
-
   def shutdown() {
     values.clear()
   }

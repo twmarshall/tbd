@@ -15,17 +15,14 @@
  */
 package tbd.mod
 
-import tbd.TBD
+import tbd.Context
 
 trait AdjustableChunkList[T, U] extends AdjustableList[T, U] {
   def chunkMap[V, Q](
-      tbd: TBD,
-      f: (TBD, Vector[(T, U)]) => (V, Q),
-      parallel: Boolean = false,
-      memoized: Boolean = true): AdjustableList[V, Q]
+      f: (Vector[(T, U)]) => (V, Q))
+     (implicit c: Context): AdjustableList[V, Q]
 
   def chunkSort(
-      tbd: TBD,
-      comparator: (TBD, (T, U), (T, U)) => Boolean,
-      parallel: Boolean = false): Mod[(Int, Vector[(T, U)])]
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): Mod[(Int, Array[(T, U)])]
 }

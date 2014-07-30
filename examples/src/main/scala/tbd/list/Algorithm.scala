@@ -22,7 +22,7 @@ import tbd.{Adjustable, ListConf, Mutator}
 import tbd.master.Main
 
 abstract class Algorithm[Input, Output](_conf: Map[String, _],
-    _listConf: ListConf) extends Adjustable {
+    _listConf: ListConf) extends Adjustable[Output] {
   val conf = _conf
   val listConf = _listConf
 
@@ -31,8 +31,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
   val mutations = conf("mutations").asInstanceOf[Array[String]]
   val partition = conf("partitions").asInstanceOf[String].toInt
-  val parallel = conf("parallel") == "true"
-  val memoized = conf("memoized") == "true"
+  //val memoized = conf("memoized") == "true"
   val store = conf("store").asInstanceOf[String]
 
   val main = new Main(store, cacheSize)
@@ -46,15 +45,17 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   var data: Data[Input] = null.asInstanceOf[Data[Input]]
 
   def naive(): (Long, Long) = {
+    if (Experiment.verbose) {
+      println("Naive load.")
+    }
     val beforeLoad = System.currentTimeMillis()
     data.loadNaive()
-    val naiveTable =
-      if (parallel)
-	Vector(data.naiveTable.values.toSeq: _*).par
-      else
-	Vector(data.naiveTable.values.toSeq: _*)
+    val naiveTable = Vector(data.naiveTable.values.toSeq: _*).par
     val loadElapsed = System.currentTimeMillis() - beforeLoad
 
+    if (Experiment.verbose) {
+      println("Naive run.")
+    }
     val before = System.currentTimeMillis()
     runNaive(naiveTable)
     val elapsed = System.currentTimeMillis() - before
@@ -65,6 +66,9 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   protected def runNaive(table: GenIterable[Input]): Any
 
   def initial(): (Long, Long) = {
+    if (Experiment.verbose) {
+      println("Initial load.")
+    }
     val beforeLoad = System.currentTimeMillis()
     data.loadInitial()
     val loadElapsed = System.currentTimeMillis() - beforeLoad
@@ -73,6 +77,9 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
       data.clearValues()
     }
 
+    if (Experiment.verbose) {
+      println("Initial run.")
+    }
     val before = System.currentTimeMillis()
     output = mutator.run[Output](this)
     val elapsed = System.currentTimeMillis() - before
@@ -87,6 +94,10 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   protected def checkOutput(table: Map[Int, Input], output: Output): Boolean
 
   def update(count: Double): (Long, Long) = {
+    if (Experiment.verbose) {
+      println("Updating " + count)
+    }
+
     var i = 0
     val beforeLoad = System.currentTimeMillis()
     while (i < count) {
@@ -95,6 +106,9 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
     }
     val loadElapsed = System.currentTimeMillis() - beforeLoad
 
+    if (Experiment.verbose) {
+      println("Running change propagation.")
+    }
     val before = System.currentTimeMillis()
     mutator.propagate()
     val elapsed = System.currentTimeMillis() - before

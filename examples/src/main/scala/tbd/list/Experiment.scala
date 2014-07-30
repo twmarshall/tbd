@@ -130,10 +130,7 @@ Options:
   -v, --verbose              Turns on verbose output.
 
   --repeat n                 Number of times to repeat each experiment.
-  --valueMod true,false      Should the list values be contained within their
-                               own modifiables.
   --memoized true,false      Should memoization be used?
-  --parallel true,false      Should the experiments be run in parallel?
   --load                     If specified, loading times will be included in
                                formatted output.
   --store type               The type of datastore to use, either 'memory' or
@@ -160,8 +157,6 @@ Options:
                   ("partitions" -> Array("8")),
                   ("runs" -> Array("naive", "initial", ".01", ".05", ".1")),
                   ("output" -> Array("algorithms", "runs", "counts")),
-		  ("valueMod" -> Array("true")),
-		  ("parallel" -> Array("true")),
 		  ("memoized" -> Array("true")),
 		  ("store" -> Array("memory")))
 
@@ -276,12 +271,6 @@ Options:
         case "--repeat" =>
           repeat = args(i + 1).toInt
 	  i += 1
-        case "--valueMod" =>
-          confs("valueMod") = args(i + 1).split(",")
-	  i += 1
-        case "--parallel" =>
-          confs("parallel") = args(i + 1).split(",")
-	  i += 1
         case "--memoized" =>
           confs("memoized") = args(i + 1).split(",")
 	  i += 1
@@ -301,6 +290,29 @@ Options:
       i += 1
     }
 
+    if (!confs("output").contains("runs")) {
+      println("WARNING: 'output' must contain 'runs'")
+    }
+
+    println("Options:")
+    for ((key, value) <- confs) {
+      print(key)
+
+      if (key.size < 7) {
+	print("\t\t")
+      } else {
+	print("\t")
+      }
+
+      println(value.mkString("(", ", ", ")"))
+
+      if (key != "output" && key != "mutations" &&
+	  value.size > 1 && !confs("output").contains(key)) {
+	println("WARNING: " + key + " is being varied but isn't listed in " +
+		"'output', so the final results may not make sense.")
+      }
+    }
+
     for (i <- 0 to repeat) {
       if (i == 0) {
         println("warmup")
@@ -313,32 +325,27 @@ Options:
 	  for (chunkSize <- confs("chunkSizes")) {
             for (count <- confs("counts")) {
               for (partitions <- confs("partitions")) {
-		for (valueMod <- confs("valueMod")) {
-		  for (parallel <- confs("parallel")) {
-		    for (memoized <- confs("memoized")) {
-		      val conf = Map(("algorithms" -> algorithm),
-				     ("cacheSizes" -> cacheSize),
-				     ("chunkSizes" -> chunkSize),
-				     ("counts" -> count),
-				     ("mutations" -> confs("mutations")),
-				     ("partitions" -> partitions),
-				     ("runs" -> confs("runs")),
-				     ("repeat" -> i),
-				     ("parallel" -> parallel),
-				     ("memoized" -> memoized),
-				     ("store" -> confs("store")(0)))
+		for (memoized <- confs("memoized")) {
+		  val conf = Map(("algorithms" -> algorithm),
+				 ("cacheSizes" -> cacheSize),
+				 ("chunkSizes" -> chunkSize),
+				 ("counts" -> count),
+				 ("mutations" -> confs("mutations")),
+				 ("partitions" -> partitions),
+				 ("runs" -> confs("runs")),
+				 ("repeat" -> i),
+				 ("memoized" -> memoized),
+				 ("store" -> confs("store")(0)))
 
-		      val listConf = new ListConf("", partitions.toInt,
-						  chunkSize.toInt, _ => 1, valueMod == "true")
+		  val listConf = new ListConf("", partitions.toInt,
+					      chunkSize.toInt, _ => 1)
 
-		      val experiment = new Experiment(conf, listConf)
+		  val experiment = new Experiment(conf, listConf)
 
-		      val results = experiment.run()
-		      println(results)
-		      if (i != 0) {
-			Experiment.allResults += (conf -> results)
-		      }
-		    }
+		  val results = experiment.run()
+		  println(results)
+		  if (i != 0) {
+		    Experiment.allResults += (conf -> results)
 		  }
 		}
 	      }

@@ -16,61 +16,172 @@
 package tbd.mod
 
 import java.io.Serializable
+import scala.collection.mutable.Map
 
-import tbd.{Changeable, Memoizer, TBD}
+import tbd.{Changeable, Context, Memoizer}
+import tbd.TBD._
 
-class ModListNode[T, V] (
-    var value: (T, V),
-    val next: Mod[ModListNode[T, V]]
+object ModListNode {
+  type ChangeableTuple[T, U] = (Changeable[ModListNode[T, U]], Changeable[ModListNode[T, U]])
+}
+
+class ModListNode[T, U] (
+    var value: (T, U),
+    val next: Mod[ModListNode[T, U]]
   ) extends Serializable {
 
   override def equals(obj: Any): Boolean = {
-    if (!obj.isInstanceOf[ModListNode[T, V]]) {
+    if (!obj.isInstanceOf[ModListNode[T, U]]) {
       false
     } else {
-      val that = obj.asInstanceOf[ModListNode[T, V]]
+      val that = obj.asInstanceOf[ModListNode[T, U]]
       that.value == value && that.next == next
     }
   }
 
-  def map[U, Q](
-      tbd: TBD,
-      f: (TBD, (T, V)) => (U, Q),
-      memo: Memoizer[Changeable[ModListNode[U, Q]]])
-        : Changeable[ModListNode[U, Q]] = {
-    val newNext = tbd.modNoDest[ModListNode[U, Q]](() => {
-      tbd.read(next)(next => {
-        if (next != null) {
-          memo(next) {
-            next.map(tbd, f, memo)
-          }
-        } else {
-          tbd.writeNoDest[ModListNode[U, Q]](null)
+  def filter(
+      pred: ((T, U)) => Boolean,
+      memo: Memoizer[Mod[ModListNode[T, U]]])
+     (implicit c: Context): Changeable[ModListNode[T, U]] = {
+    def readNext = {
+      read(next) {
+	case null => write[ModListNode[T, U]](null)
+	case next => next.filter(pred, memo)
+      }
+    }
+
+    if (pred(value)) {
+      val newNext = memo(List(next)) {
+        mod {
+	  readNext
         }
-      })
-    })
-
-    tbd.writeNoDest(new ModListNode[U, Q](f(tbd, value), newNext))
+      }
+      write(new ModListNode(value, newNext))
+    } else {
+      readNext
+    }
   }
 
-  def parMap[U, Q](
-      tbd: TBD,
-      dest: Dest[ModListNode[U, Q]],
-      f: (TBD, (T, V)) => (U, Q)): Changeable[ModListNode[U, Q]] = {
-    val modTuple =
-      tbd.par((tbd: TBD) => {
-	f(tbd, value)
-      }, (tbd: TBD) => {
-        tbd.mod((nextDest: Dest[ModListNode[U, Q]]) => {
-	        tbd.read(next)(next => {
-            if (next != null) {
-              next.parMap(tbd, nextDest, f)
-            } else {
-              tbd.write(nextDest, null)
-            }
-          })
-        })
-      })
-    tbd.write(dest, new ModListNode[U, Q](modTuple._1, modTuple._2))
+  def map[V, W](
+      f: ((T, U)) => (V, W),
+      memo: Memoizer[Changeable[ModListNode[V, W]]])
+     (implicit c: Context): Changeable[ModListNode[V, W]] = {
+    val newNext = mod {
+      read(next) {
+	case null =>
+	  write[ModListNode[V, W]](null)
+	case next =>
+          memo(next) {
+            next.map(f, memo)
+          }
+      }
+    }
+
+    write(new ModListNode[V, W](f(value), newNext))
   }
+
+  def merge(
+      that: ModListNode[T, U],
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): Changeable[ModListNode[T, U]] = {
+    if (comparator(value, that.value)) {
+      val newNext = mod {
+	read(next) {
+	  case null => write(new ModListNode(that.value, that.next))
+	  case node => node.merge(that, comparator)
+	}
+      }
+
+      write(new ModListNode(value, newNext))
+    } else {
+      val newNext = mod {
+	read(that.next) {
+	  case null => write(new ModListNode(value, next))
+	  case node => merge(node, comparator)
+	}
+      }
+
+      write(new ModListNode(that.value, newNext))
+    }
+  }
+
+  def sort(
+      toAppend: Mod[ModListNode[T, U]],
+      comparator: ((T, U), (T, U)) => Boolean,
+      memoizers: Map[(T, U), Memoizer[ModListNode.ChangeableTuple[T, U]]],
+      memo: Memoizer[Mod[ModListNode[T, U]]],
+      memo2: Memoizer[Changeable[ModListNode[T, U]]])
+     (implicit c: Context): Changeable[ModListNode[T, U]] = {
+    val (smaller, greater) = mod2 {
+      if (!memoizers.contains(value)) {
+	memoizers(value) = makeMemoizer[ModListNode.ChangeableTuple[T, U]]()
+      }
+
+      val memoSplit = memoizers(value)
+      read_2(next) {
+	case null =>
+	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
+        case nextNode =>
+	  memoSplit(nextNode) {
+	    nextNode.split(memoSplit, (cv: (T, U)) => { comparator(cv, value) })
+	  }
+      }
+    }
+
+    val greaterSorted = memo(greater) {
+      mod {
+        read(greater) {
+	  case null =>
+	    read(toAppend) { write(_) }
+	  case greater =>
+	    greater.sort(toAppend, comparator, memoizers, memo, memo2)
+        }
+      }
+    }
+
+    memo2(smaller) {
+      val mid = new ModListNode(value, greaterSorted)
+
+      read(smaller) {
+	case null =>
+	  write(mid)
+	case smallerNode =>
+	  smallerNode.sort(createMod(mid), comparator, memoizers, memo, memo2)
+      }
+    }
+  }
+
+  def split(
+      memo: Memoizer[ModListNode.ChangeableTuple[T, U]],
+      pred: ((T, U)) => Boolean)
+     (implicit c: Context): ModListNode.ChangeableTuple[T, U] = {
+    def readNext(next: Mod[ModListNode[T, U]]) = {
+      read_2(next) {
+        case null =>
+	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
+        case next =>
+          memo(next) {
+	    next.split(memo, pred)
+          }
+      }
+    }
+
+    if(pred(value)) {
+      val (matchMod, diffChangeable) =
+	modLeft({
+	  readNext(next)
+	}, next.id)
+
+      writeLeft(new ModListNode(value, matchMod), diffChangeable)
+    } else {
+      val (matchChangeable, diffMod) =
+	modRight({
+	  readNext(next)
+	}, next.id)
+
+      writeRight(matchChangeable, new ModListNode(value, diffMod))
+    }
+  }
+
+  override def toString = "Node(" + value + ", " + next + ")"
 }

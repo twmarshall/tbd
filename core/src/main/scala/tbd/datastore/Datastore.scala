@@ -25,23 +25,24 @@ import tbd.messages._
 import tbd.mod._
 
 object Datastore {
-  def props(storeType: String, cacheSize: Int): Props = {
-    val store =
-      if (storeType == "memory") {
-        new MemoryStore()
-      } else if (storeType == "berkeleydb") {
-        new BerkeleyDBStore(cacheSize)
-      } else {
-        println("WARNING: storeType '" + storeType + "' is invalid. Using " +
-                "'memory' instead")
-        new MemoryStore()
-      }
-    Props(classOf[Datastore], store)
-  }
+  def props(storeType: String, cacheSize: Int): Props =
+    Props(classOf[Datastore], storeType, cacheSize)
 }
 
-class Datastore(store: KVStore) extends Actor with ActorLogging {
+class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLogging {
   import context.dispatcher
+
+  val store =
+    if (storeType == "memory") {
+      new MemoryStore()
+    } else if (storeType == "berkeleydb") {
+      new BerkeleyDBStore(cacheSize, context)
+    } else {
+      println("WARNING: storeType '" + storeType + "' is invalid. Using " +
+              "'memory' instead")
+      new MemoryStore()
+    }
+
   // Maps the name of an input table to a set containing the Modifiers that were
   // returned containing elements from this table, so that we can inform them
   // when the table is updated.
@@ -51,8 +52,17 @@ class Datastore(store: KVStore) extends Actor with ActorLogging {
 
   private var nextInputId: InputId = 0
 
+  // Analytics
+  private var startTime = System.currentTimeMillis()
+  private var createCount = 0
+  private var updateCount = 0
+  private var getCount = 0
+  private var deleteCount = 0
+
   private var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
+    createCount += 1
+
     val mod = new Mod[T](new ModId("d." + nextModId))
     nextModId += 1
 
@@ -62,6 +72,8 @@ class Datastore(store: KVStore) extends Actor with ActorLogging {
   }
 
   def getMod(modId: ModId, workerRef: ActorRef = null): Any = {
+    getCount += 1
+
     if (workerRef != null) {
       if (dependencies.contains(modId)) {
 	dependencies(modId) += workerRef
@@ -74,9 +86,7 @@ class Datastore(store: KVStore) extends Actor with ActorLogging {
   }
 
   def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
-    if (!store.contains(modId)) {
-      log.warning("Trying to update non-existent mod " + modId)
-    }
+    updateCount += 1
 
     store.put(modId, value)
 
@@ -93,9 +103,7 @@ class Datastore(store: KVStore) extends Actor with ActorLogging {
   }
 
   def removeMod(modId: ModId) {
-    if (!store.contains(modId)) {
-      log.warning("Trying to remove nonexistent mod " + modId)
-    }
+    deleteCount += 1
 
     store.remove(modId)
   }
@@ -109,40 +117,20 @@ class Datastore(store: KVStore) extends Actor with ActorLogging {
 	conf match {
 	  case conf: ListConf =>
 	    if (conf.chunkSize > 1) {
-	      if (!conf.valueMod) {
-		if (conf.partitions == 1) {
-		  log.info("Creating new ChunkList.")
-		  new ChunkListModifier(this, conf)
-		} else {
-		  log.info("Creating new PartitionedChunkList.")
-		  new PartitionedChunkListModifier(this, conf)
-		}
+	      if (conf.partitions == 1) {
+		log.info("Creating new ChunkList.")
+		new ChunkListModifier(this, conf)
 	      } else {
-		if (conf.partitions == 1) {
-		  log.info("Creating new DoubleChunkList.")
-		  new DoubleChunkListModifier(this, conf)
-		} else {
-		  log.info("Creating new PartitionedDoubleChunkList.")
-		  new PartitionedDoubleChunkListModifier(this, conf)
-		}
+		log.info("Creating new PartitionedChunkList.")
+		new PartitionedChunkListModifier(this, conf)
 	      }
 	    } else {
-	      if (!conf.valueMod) {
-		if (conf.partitions == 1) {
-		  log.info("Creating new ModList.")
-		  new ModListModifier(this, conf)
-		} else {
-		  log.info("Creating new PartitionedModList.")
-		  new PartitionedModListModifier(this, conf)
-		}
+	      if (conf.partitions == 1) {
+		log.info("Creating new ModList.")
+		new ModListModifier(this, conf)
 	      } else {
-		if (conf.partitions == 1) {
-		  log.info("Creating new DoubleModList.")
-		  new DoubleModListModifier(this, conf)
-		} else {
-		  log.info("Creating new PartitionedDoubleModList.")
-		  new PartitionedDoubleModListModifier(this, conf)
-		}
+		log.info("Creating new PartitionedModList.")
+		new PartitionedModListModifier(this, conf)
 	      }
 	    }
 	  case TableConf() => {
@@ -209,6 +197,10 @@ class Datastore(store: KVStore) extends Actor with ActorLogging {
     }
 
     case CleanupMessage => {
+      val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
+      log.info("Shutting down. reads/s = " + getCount / elapsed +
+	       ", write/s = " + updateCount / elapsed + " deletes/s = " +
+	       deleteCount / elapsed + ", creates/s = " + createCount / elapsed)
       store.shutdown()
       sender ! "done"
     }

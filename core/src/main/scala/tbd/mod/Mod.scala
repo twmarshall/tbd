@@ -43,8 +43,6 @@ class Mod[T](val id: ModId) extends Serializable {
     Await.result(futuresFuture.mapTo[ArrayBuffer[Future[String]]], DURATION)
   }
 
-  override def toString = "Mod(" + id + ")"
-
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[Mod[T]]) {
       false
@@ -53,6 +51,11 @@ class Mod[T](val id: ModId) extends Serializable {
       that.id == id
     }
   }
+
+  //Notice: Removed reading of mod from toString, because calling
+  //read() when the mod is no longer valid (for instance in Visualizer)
+  //causes a crash.
+  override def toString = "Mod(" + id + ")"
 
   override def hashCode(): Int = {
     id.hashCode()
