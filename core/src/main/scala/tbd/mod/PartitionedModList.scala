@@ -97,9 +97,9 @@ class PartitionedModList[T, U](
     def innerSort(i: Int)(implicit c: Context): ModList[T, U] = {
       if (i < partitions.size) {
         val (sortedPartition, sortedRest) = par {
-          (c => partitions(i).sort(comparator)(c)): (Context => AdjustableList[T, U])
+          c => partitions(i).sort(comparator)(c)
         } and {
-          (c => innerSort(i + 1)(c)): (Context => ModList[T, U])
+          c => innerSort(i + 1)(c)
         }
 
 	sortedPartition.merge(sortedRest, comparator)
