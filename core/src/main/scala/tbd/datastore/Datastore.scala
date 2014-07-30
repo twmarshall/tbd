@@ -52,8 +52,17 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
 
   private var nextInputId: InputId = 0
 
+  // Analytics
+  private var startTime = System.currentTimeMillis()
+  private var createCount = 0
+  private var updateCount = 0
+  private var getCount = 0
+  private var deleteCount = 0
+
   private var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
+    createCount += 1
+
     val mod = new Mod[T](new ModId("d." + nextModId))
     nextModId += 1
 
@@ -63,6 +72,8 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
   }
 
   def getMod(modId: ModId, workerRef: ActorRef = null): Any = {
+    getCount += 1
+
     if (workerRef != null) {
       if (dependencies.contains(modId)) {
 	dependencies(modId) += workerRef
@@ -75,6 +86,8 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
   }
 
   def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
+    updateCount += 1
+
     store.put(modId, value)
 
     val futures = ArrayBuffer[Future[String]]()
@@ -90,6 +103,8 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
   }
 
   def removeMod(modId: ModId) {
+    deleteCount += 1
+
     store.remove(modId)
   }
 
@@ -182,6 +197,10 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
     }
 
     case CleanupMessage => {
+      val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
+      log.info("Shutting down. reads/s = " + getCount / elapsed +
+	       ", write/s = " + updateCount / elapsed + " deletes/s = " +
+	       deleteCount / elapsed + ", creates/s = " + createCount / elapsed)
       store.shutdown()
       sender ! "done"
     }
