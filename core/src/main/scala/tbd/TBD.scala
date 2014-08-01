@@ -99,7 +99,6 @@ object TBD {
     changeables
   }
 
-  @deprecated("", "")
   def read2[T, V, U](
       a: Mod[T],
       b: Mod[V])
