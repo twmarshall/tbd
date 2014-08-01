@@ -249,6 +249,7 @@ object TBD {
     Await.result(Future.sequence(awaiting), DURATION)
 
     val changeable = new Changeable(c.currentDest.mod)
+
     if (Main.debug) {
       val writeNode = c.worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
                                             c.currentParent)

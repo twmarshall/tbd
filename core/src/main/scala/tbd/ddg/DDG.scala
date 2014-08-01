@@ -41,8 +41,15 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
       reader: Any => Changeable[Any],
       funcTag: FunctionTag): ReadNode = {
     val timestamp = nextTimestamp(parent)
-    val readNode = new ReadNode(mod, parent, timestamp,
-                                reader, Tag.Read(value, funcTag)(mod.id))
+
+    val readNode = if(tbd.master.Main.debug) {
+      new ReadNode(mod, parent, timestamp,
+                   reader, Tag.Read(value, funcTag)(mod.id))
+    } else {
+      new ReadNode(mod, parent, timestamp,
+                   reader, null)
+    }
+
     parent.addChild(readNode)
 
     if (reads.contains(mod.id)) {
@@ -56,8 +63,12 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 
   def addMod(mod: Mod[Any], parent: Node, funcTag: FunctionTag): ModNode = {
     val timestamp = nextTimestamp(parent)
-    val modNode = new ModNode(parent, timestamp,
-                                  Tag.Mod(mod.id, funcTag))
+    val modNode =
+    if(tbd.master.Main.debug) {
+      new ModNode(parent, timestamp, Tag.Mod(mod.id, funcTag))
+    } else {
+      new ModNode(parent, timestamp, null)
+    }
 
     parent.addChild(modNode)
 
@@ -66,8 +77,14 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 
   def addWrite[T](mod: Mod[Any], parent: Node): WriteNode = {
     val timestamp = nextTimestamp(parent)
-    val writeNode = new WriteNode(mod, parent, timestamp,
-                                  Tag.Write(mod.read(), mod.id))
+
+
+    val writeNode = if(tbd.master.Main.debug) {
+      new WriteNode(mod, parent, timestamp,
+           Tag.Write(mod.read(), mod.id))
+    } else {
+      new WriteNode(mod, parent, timestamp, null)
+    }
 
     parent.addChild(writeNode)
 
@@ -81,8 +98,13 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
              fun2: FunctionTag) {
     val timestamp = nextTimestamp(parent)
 
-    val parNode = new ParNode(workerRef1, workerRef2, parent, timestamp,
+    val parNode = if(tbd.master.Main.debug) {
+      new ParNode(workerRef1, workerRef2, parent, timestamp,
                               Tag.Par(fun1, fun2))
+    } else {
+      new ParNode(workerRef1, workerRef2, parent, timestamp, null)
+    }
+
     parent.addChild(parNode)
 
     pars(workerRef1) = parNode
@@ -94,8 +116,15 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
       signature: Seq[Any],
       funcTag: FunctionTag): MemoNode = {
     val timestamp = nextTimestamp(parent)
-    val memoNode = new MemoNode(parent, timestamp, signature,
-                                Tag.Memo(funcTag, signature))
+
+    val memoNode = if(tbd.master.Main.debug) {
+      new MemoNode(parent, timestamp, signature,
+        Tag.Memo(funcTag, signature))
+    } else {
+      new MemoNode(parent, timestamp, signature,
+        null)
+    }
+
     parent.addChild(memoNode)
     memoNode
   }

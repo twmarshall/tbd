@@ -24,6 +24,9 @@ import scala.language.existentials
 object Main {
   def main(args: Array[String]) {
 
+    //Set debug flag to true so we can have nice tags
+    tbd.master.Main.debug = true
+
     object Conf extends ScallopConf(args) {
       version("TBD Visualizer 0.1 (c) 2014 Carnegie Mellon University")
       banner("Usage: visualizer.sh -a [ALGORITHM] [OPTIONS]\n" +
