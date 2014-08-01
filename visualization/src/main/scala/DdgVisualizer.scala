@@ -123,8 +123,8 @@ class DdgVisualizer extends GridBagPanel with Publisher {
 
   def formatTag(node: Node): String = {
     node.tag match{
-      case Tag.Read(value, funcTag) => {
-          "Read " + toHtmlString(value) +
+      case read @ Tag.Read(value, funcTag) => {
+          "Read " + read.mod + " = " + toHtmlString(value) +
           "<br>Reader " + formatFunctionTag(node, funcTag)
       }
       case Tag.Write(value, dest) => {
@@ -144,7 +144,7 @@ class DdgVisualizer extends GridBagPanel with Publisher {
           "<br>First " + formatFunctionTag(node, fun1) +
           "<br>Second " + formatFunctionTag(node, fun2)
       }
-      case _ => ""
+      case Tag.Root() => "(Root)"
     }
   }
 
@@ -154,7 +154,7 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     case NodeClickedEvent(node) => {
       selectedNode = node
       setLabelText(htmlEscape(extractMethodName(node)) +
-                   ":<br />" + formatTag(node))
+                   "<br />" + formatTag(node))
     }
     case x:PerspectiveChangedEvent => {
       //publish(x)
@@ -175,20 +175,18 @@ class DdgVisualizer extends GridBagPanel with Publisher {
       renderer.showDDG(ddg.ddg, diff)
   }
 
-  layout(renderer)  = new Constraints() {
+  val scrollPane = new ScrollPane(new Component() {
+    override lazy val peer = label
+  })
+
+  val splitPane = new SplitPane(Orientation.Horizontal) {
+    contents_$eq(renderer, scrollPane)
+  }
+
+  layout(splitPane) = new Constraints() {
     gridx = 0
     gridy = 1
     weighty = 1
-    weightx = 1
-    fill = GridBagPanel.Fill.Both
-  }
-
-  layout(new ScrollPane(new Component() {
-    override lazy val peer = label
-  }))  = new Constraints() {
-    gridx = 0
-    gridy = 2
-    weighty = 0.2
     weightx = 1
     fill = GridBagPanel.Fill.Both
   }
@@ -209,7 +207,7 @@ class DdgVisualizer extends GridBagPanel with Publisher {
         y._1.contains("apply")
     })(0)
 
-    var currentMethod = methodNames.filter(y => (!y.startsWith("<init>")
+    val currentMethodOption = methodNames.filter(y => (!y.startsWith("<init>")
                                             && !y.startsWith("()")
                                             && !y.startsWith("addRead")
                                             && !y.startsWith("addWrite")
@@ -221,18 +219,24 @@ class DdgVisualizer extends GridBagPanel with Publisher {
                                             && !y.startsWith("memo")
                                             && !y.startsWith("par")
                                             && !y.startsWith("write")
-                                            && !y.startsWith("mod")))(0)
+                                            && !y.startsWith("mod"))).headOption
 
-    if(currentMethod.contains("$")) {
-      currentMethod = currentMethod.substring(0, currentMethod.lastIndexOf("$"))
-      currentMethod = currentMethod.substring(currentMethod.lastIndexOf("$") + 1)
+    if(!currentMethodOption.isEmpty) {
+      var currentMethod = currentMethodOption.get
+
+      if(currentMethod.contains("$")) {
+        currentMethod = currentMethod.substring(0, currentMethod.lastIndexOf("$"))
+        currentMethod = currentMethod.substring(currentMethod.lastIndexOf("$") + 1)
+      }
+
+      if(methodNames.find(x => x == "createMod").isDefined) {
+        currentMethod += " (createMod)"
+      }
+
+      "Method " + currentMethod + " at " + fileName + ":" + lineNumber.toString
+    } else {
+      "<unknown>"
     }
-
-    if(methodNames.find(x => x == "createMod").isDefined) {
-      currentMethod += " (createMod)"
-    }
-
-    currentMethod + " " + fileName + ":" + lineNumber.toString
   }
 }
 

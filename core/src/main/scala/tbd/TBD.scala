@@ -105,54 +105,54 @@ object TBD {
       b: Mod[V])
      (reader: (T, V) => (Changeable[U]))
      (implicit c: Context): Changeable[U] = {
-    read(a) {
-      case a => read(b) { case b => reader(a, b) }
-    }
+    readInternal(a, (a: T) => {
+        readInternal(b, (b: V) => { reader(a, b) }, c, -1, List[(String, Any)]())
+    }, c, -1, List[(String, Any)]())
   }
 
-  /* readN - Read n mods. Experimental function.
-   *
-   * Usage Example:
-   *
-   *  mod {
-   *    val a = createMod("Hello");
-   *    val b = createMod(12);
-   *    val c = createMod("Bla");
-   *
-   *    readN(a, b, c) {
-   *      case Seq(a:String, b:Int, c:String) => {
-   *        println(a + b + c)
-   *        write(dest, null)
-   *      }
-   *    }
-   *  }
-   */
-  @deprecated("", "")
-  def readN[U](
-      args: Mod[U]*)
-     (reader: (Seq[_]) => (Changeable[U]))
-     (implicit c: Context): Changeable[U] = {
-    readNHelper(args, ListBuffer(), reader)
-  }
-
-  private def readNHelper[U](
-      mods: Seq[Mod[_]],
-      values: ListBuffer[AnyRef],
-      reader: (Seq[_]) => (Changeable[U]))
-     (implicit c: Context): Changeable[U] = {
-    val tail = mods.tail
-    val head = mods.head
-
-    read(head) {
-      case value =>
-	values += value.asInstanceOf[AnyRef]
-	if(tail.isEmpty) {
-          reader(values.toSeq)
-	} else {
-          readNHelper(tail, values, reader)
-	}
-    }
-  }
+//  /* readN - Read n mods. Experimental function.
+//   *
+//   * Usage Example:
+//   *
+//   *  mod {
+//   *    val a = createMod("Hello");
+//   *    val b = createMod(12);
+//   *    val c = createMod("Bla");
+//   *
+//   *    readN(a, b, c) {
+//   *      case Seq(a:String, b:Int, c:String) => {
+//   *        println(a + b + c)
+//   *        write(dest, null)
+//   *      }
+//   *    }
+//   *  }
+//   */
+//  @deprecated("", "")
+//  def readN[U](
+//      args: Mod[U]*)
+//     (reader: (Seq[_]) => (Changeable[U]))
+//     (implicit c: Context): Changeable[U] = {
+//    readNHelper(args, ListBuffer(), reader)
+//  }
+//
+//  private def readNHelper[U](
+//      mods: Seq[Mod[_]],
+//      values: ListBuffer[AnyRef],
+//      reader: (Seq[_]) => (Changeable[U]))
+//     (implicit c: Context): Changeable[U] = {
+//    val tail = mods.tail
+//    val head = mods.head
+//
+//    read(head) {
+//      case value =>
+//	values += value.asInstanceOf[AnyRef]
+//	if(tail.isEmpty) {
+//          reader(values.toSeq)
+//	} else {
+//          readNHelper(tail, values, reader)
+//	}
+//    }
+//  }
 
   def mod[T](
       initializer: => Changeable[T])
