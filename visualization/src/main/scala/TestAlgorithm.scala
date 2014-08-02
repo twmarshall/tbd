@@ -33,8 +33,7 @@ class ListReduceSumTest()
     extends TestAlgorithm[Mod[(Int, Int)]]  {
   def run(implicit c: Context): Mod[(Int, Int)] = {
     val modList = input.getAdjustableList()
-    val zero = mod{ write((0, 0)) }
-    modList.reduce(zero,
+    modList.reduce(
       (pair1: (Int, Int), pair2: (Int, Int)) => {
         (pair2._1, pair1._2 + pair2._2)
       })

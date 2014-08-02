@@ -57,7 +57,6 @@ class ChunkList[T, U](
      (implicit c: Context): ChunkList[T, U] = ???
 
   def reduce(
-      initialValueMod: Mod[(T, U)],
       f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)] = ???
 
@@ -108,8 +107,7 @@ class ChunkList[T, U](
       (pair1._1, reduced)
     }
 
-    val initialValue = createMod((0, Array[(T, U)]()))
-    sortedChunks.reduce(initialValue, reducer)
+    sortedChunks.reduce(reducer)
   }
 
   /* Meta functions */

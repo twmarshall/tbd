@@ -74,7 +74,6 @@ class ModList[T, U](
   }
 
   def reduce(
-      identityMod: Mod[(T, U)],
       f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)] = {
 
@@ -96,24 +95,22 @@ class ModList[T, U](
 
     def randomReduceList(
         head: ModListNode[T, U],
-        identity: (T, U),
+        next: ModListNode[T, U],
         round: Int,
         roundMemoizer: RoundMemoizer): Changeable[(T, U)] = {
       val tuple = roundMemoizer.getTuple()
 
-      val halfListMod =
-        mod {
-          read(identityMod) {
-	    case identity => halfList(identity, identity, head, round, tuple._1, tuple._2)
-	  }
-	}
+      val halfListMod = mod {
+	halfList(head.value, next, round, tuple._1, tuple._2)
+      }
 
-      read(halfListMod)(halfList =>
-        read(halfList.next)(next =>
-          if(next == null)
-            write(halfList.value)
-          else
-            randomReduceList(halfList, identity, round + 1, tuple._3)))
+      read(halfListMod) {
+        case halfList =>
+          read(halfList.next) {
+            case null => write(halfList.value)
+            case next => randomReduceList(halfList, next, round + 1, tuple._3)
+          }
+      }
     }
 
     def binaryHash(id: ModId, round: Int, hasher: Hasher) = {
@@ -122,47 +119,51 @@ class ModList[T, U](
 
     def halfList(
         acc: (T, U),
-        identity: (T, U),
-        head: ModListNode[T, U],
+        node: ModListNode[T, U],
         round: Int,
         hasher: Hasher,
         memo: Memoizer[Mod[ModListNode[T, U]]]
       ): Changeable[ModListNode[T, U]] = {
-      val newAcc = f(acc, head.value)
+      val newAcc = f(acc, node.value)
 
-      if(binaryHash(head.next.id, round, hasher)) {
-        val newNext = memo(head.next, identityMod) {
+      if(binaryHash(node.next.id, round, hasher)) {
+        val newNext = memo(node.next) {
 	  mod {
-	    read(head.next)(next =>
-	      if (next == null)
-	        write[ModListNode[T, U]](null)
-	      else
-	          halfList(identity, identity, next, round,
-                           hasher, memo))
+	    read(node.next) {
+              case null => write[ModListNode[T, U]](null)
+              case next =>
+                read(next.next) {
+                  case null =>
+                    val tail = mod { write[ModListNode[T, U]](null) }
+                    write(new ModListNode(next.value, tail))
+                  case nextNext =>
+	            halfList(next.value, nextNext, round, hasher, memo)
+                }
+            }
 	  }
 	}
         write(new ModListNode(newAcc, newNext))
       } else {
-        read(head.next)(next =>
-	  if (next == null) {
-	    val newNext = createMod[ModListNode[T, U]](null)
-            write(new ModListNode(newAcc, newNext))
-	  } else {
-	    halfList(newAcc, identity, next, round, hasher, memo)
-	  }
-        )
+        read(node.next) {
+          case null =>
+	    val tail = createMod[ModListNode[T, U]](null)
+            write(new ModListNode(newAcc, tail))
+          case next =>
+	    halfList(newAcc, next, round, hasher, memo)
+        }
       }
     }
 
     val roundMemoizer = new RoundMemoizer()
     mod {
-      read(identityMod)(identity =>
-        read(head)(head =>
-          if(head == null)
-            read(identityMod)(identity =>
-              write(identity))
-          else
-            randomReduceList(head, identity, 0, roundMemoizer)))
+      read(head) {
+        case null => write(null)
+        case head =>
+          read(head.next) {
+            case null => write(head.value)
+            case next => randomReduceList(head, next, 0, roundMemoizer)
+          }
+      }
     }
   }
 

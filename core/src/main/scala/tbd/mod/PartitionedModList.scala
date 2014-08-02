@@ -67,24 +67,32 @@ class PartitionedModList[T, U](
   }
 
   def reduce(
-      initialValueMod: Mod[(T, U)],
       f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)] = {
     def innerReduce(i: Int)(implicit c: Context): Mod[(T, U)] = {
       if (i < partitions.size) {
-        val parTup = par {
-          c => partitions(i).reduce(initialValueMod, f)(c)
+        val (partition, rest) = par {
+          c => partitions(i).reduce(f)(c)
         } and {
           c => innerReduce(i + 1)(c)
         }
 
         mod {
-          read2(parTup._1, parTup._2) {
-	    case (a, b) => write(f(a, b))
+          read(partition) {
+            case null =>
+              read(rest) {
+                case null => write(null)
+                case rest => write(rest)
+              }
+            case partition =>
+              read(rest) {
+                case null => write(partition)
+                case rest => write(f(partition, rest))
+              }
           }
         }
       } else {
-        initialValueMod
+        mod { write[(T, U)](null) }
       }
     }
 

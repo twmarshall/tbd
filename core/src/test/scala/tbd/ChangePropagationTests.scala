@@ -74,8 +74,7 @@ class ReduceTest(input: ListInput[Int, Int])
     extends Adjustable[Mod[(Int, Int)]] {
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    val zero = createMod((0, 0))
-    list.reduce(zero, (pair1: (Int, Int), pair2: (Int, Int)) => {
+    list.reduce((pair1: (Int, Int), pair2: (Int, Int)) => {
       //println("reducing " + pair1._2 + " " + pair2._2)
       (pair1._1, pair1._2 + pair2._2)
     })

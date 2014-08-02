@@ -52,11 +52,9 @@ trait AdjustableList[T, U] {
      (implicit c: Context): ModList[T, U] = ???
 
   /**
-   * Reduces all elements in the list using f, in an unspecified order,
-   * starting with initialValue
+   * Reduces all elements in the list using f, in an unspecified order.
    */
   def reduce(
-      initialValueMod: Mod[(T, U)],
       f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)]
 
