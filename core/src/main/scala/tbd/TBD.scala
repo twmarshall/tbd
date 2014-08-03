@@ -124,10 +124,27 @@ object TBD {
     }
   }
 
-  def mod[T](initializer: => Changeable[T])(implicit c: Context): Mod[T] = {
+  def mod[T](
+      initializer: => Changeable[T],
+      key: Any = null)
+     (implicit c: Context): Mod[T] = {
     val oldCurrentDest = c.currentDest
-    c.currentDest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+
+    c.currentDest =
+      if (key != null) {
+	if (c.allocations.contains(key)) {
+	  c.allocations(key)
+	} else {
+	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	  c.allocations(key) = dest
+	  dest
+	}
+      } else {
+	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+      }
+
     initializer
+
     val mod = c.currentDest.mod
     c.currentDest = oldCurrentDest
 

@@ -46,12 +46,12 @@ class ModList[T, U](
     val memo = makeMemoizer[Changeable[ModListNode[V, W]]]()
 
     new ModList(
-      mod {
+      mod({
         read(head) {
           case null => write[ModListNode[V, W]](null)
           case node => node.map(f, memo)
         }
-      }
+      }, head.id)
     )
   }
 
