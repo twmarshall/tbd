@@ -125,13 +125,13 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
       funcTag: FunctionTag): MemoNode = {
     val timestamp = nextTimestamp(parent)
 
-    val memoNode = if(tbd.master.Main.debug) {
-      new MemoNode(parent, timestamp, signature,
-        Tag.Memo(funcTag, signature))
+    val tag = if(tbd.master.Main.debug) {
+      Tag.Memo(funcTag, signature)
     } else {
-      new MemoNode(parent, timestamp, signature,
-        null)
+      null
     }
+
+    val memoNode = new MemoNode(parent, timestamp, signature, tag)
 
     parent.addChild(memoNode)
     memoNode

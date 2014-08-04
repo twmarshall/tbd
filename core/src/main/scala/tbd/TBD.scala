@@ -173,6 +173,7 @@ object TBD {
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
+
     val oldCurrentDest = c.currentDest
 
     c.currentDest =
@@ -241,6 +242,7 @@ object TBD {
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
+
     val oldCurrentDest = c.currentDest
     c.currentDest =
       if (key != null) {
