@@ -109,9 +109,10 @@ object TBD {
     }, c, -1, List[(String, Any)]())
   }
 
+  def makeModizer[T]() = new Modizer[T]()
+
   def mod[T](initializer: => Changeable[T], key: Any)
      (implicit c: Context): Mod[T] = macro TbdMacros.modMacroKeyed[Mod[T]]
-
 
   def mod[T](initializer: => Changeable[T])
      (implicit c: Context): Mod[T] = macro TbdMacros.modMacro[Mod[T]]

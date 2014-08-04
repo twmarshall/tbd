@@ -17,7 +17,7 @@ package tbd.mod
 
 import scala.collection.mutable.{ArrayBuffer, Buffer, Map}
 
-import tbd.{Changeable, Context, Memoizer}
+import tbd.{Changeable, Context, Memoizer, Modizer}
 import tbd.Constants.ModId
 import tbd.TBD._
 
@@ -59,14 +59,26 @@ class ModList[T, U](
       that: ModList[T, U],
       comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): ModList[T, U] = {
+    merge(that, comparator, makeMemoizer[Changeable[ModListNode[T, U]]](), makeModizer[ModListNode[T, U]]())
+  }
+
+  def merge(
+      that: ModList[T, U],
+      comparator: ((T, U), (T, U)) => Boolean,
+      memo: Memoizer[Changeable[ModListNode[T, U]]],
+      modizer: Modizer[ModListNode[T, U]])
+     (implicit c: Context): ModList[T, U] = {
     new ModList(
-      mod {
+      modizer(head.id) {
 	read(head) {
 	  case null => read(that.head) { write(_) }
 	  case node =>
 	    read(that.head) {
 	      case null => write(node)
-	      case thatNode => node.merge(thatNode, comparator)
+	      case thatNode =>
+		memo(node.value, thatNode.value) {
+		  node.merge(thatNode, comparator, memo, modizer)
+		}
 	    }
 	}
       }
@@ -115,6 +127,9 @@ class ModList[T, U](
 
     def binaryHash(id: ModId, round: Int, hasher: Hasher) = {
       hasher.hash(id.hashCode() ^ round) == 0
+
+      // makes reduce deterministic, for testing purposes
+      //id.hashCode() % 3 == 0
     }
 
     def halfList(
@@ -170,7 +185,7 @@ class ModList[T, U](
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): AdjustableList[T, U] = {
-    val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
+    /*val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
     val memo2 = makeMemoizer[Changeable[ModListNode[T, U]]]()
     val memoizers = Map[(T, U), Memoizer[ModListNode.ChangeableTuple[T, U]]]()
 
@@ -182,7 +197,39 @@ class ModList[T, U](
       }
     }
 
-    new ModList(sorted)
+    new ModList(sorted)*/
+
+    def mapper(pair: (T, U)) = {
+      val tail = mod({
+	write(new ModListNode[T, U](pair, mod({ write(null) }, pair._1 + "null")))
+      }, pair._1)
+
+      ("" + pair._1, new ModList(tail))
+    }
+
+    val memo = makeMemoizer[(Memoizer[Changeable[ModListNode[T, U]]],
+			     Modizer[ModListNode[T, U]])]()
+
+    def reducer(pair1: (String, ModList[T, U]), pair2: (String, ModList[T, U])) = {
+      val (memoizer, modizer) = memo(pair1, pair2) {
+        (makeMemoizer[Changeable[ModListNode[T, U]]](),
+	 makeModizer[ModListNode[T, U]]())
+      }
+
+      val merged = pair2._2.merge(pair1._2, comparator, memoizer, modizer)
+      (pair1._1 + pair2._1, merged)
+    }
+
+    val mapped = map(mapper)
+    val reduced = mapped.reduce(reducer)
+
+    new ModList(
+      mod {
+        read(reduced) {
+          case (key, list) => read(list.head) { write(_) }
+        }
+      }
+    )
   }
 
   def split(
@@ -214,6 +261,15 @@ class ModList[T, U](
 
     buf
   }
+
+  override def equals(that: Any): Boolean = {
+    that match {
+      case thatList: ModList[T, U] => head == thatList.head
+      case _ => false
+    }
+  }
+
+  override def hashCode() = head.hashCode()
 
   override def toString: String = {
     head.toString
