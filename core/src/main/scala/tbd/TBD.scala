@@ -109,18 +109,34 @@ object TBD {
     }, c, -1, List[(String, Any)]())
   }
 
-  def mod[T](
-      initializer: => Changeable[T])
+  def mod[T](initializer: => Changeable[T], key: Any)
+     (implicit c: Context): Mod[T] = macro TbdMacros.modMacroKeyed[Mod[T]]
+
+
+  def mod[T](initializer: => Changeable[T])
      (implicit c: Context): Mod[T] = macro TbdMacros.modMacro[Mod[T]]
 
   def modInternal[T](
       initializer: => Changeable[T],
+      key: Any,
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
 
     val oldCurrentDest = c.currentDest
-    c.currentDest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+
+    c.currentDest =
+      if (key != null) {
+	if (c.allocations.contains(key)) {
+	  c.allocations(key)
+	} else {
+	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	  c.allocations(key) = dest
+	  dest
+	}
+      } else {
+	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+      }
 
     if(Main.debug) {
       val modNode = c.worker.ddg.addMod(c.currentDest.mod, c.currentParent,

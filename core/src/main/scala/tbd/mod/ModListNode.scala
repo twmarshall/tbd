@@ -39,6 +39,8 @@ class ModListNode[T, U] (
     }
   }
 
+  override def hashCode() = value.hashCode() * next.hashCode()
+
   def filter(
       pred: ((T, U)) => Boolean,
       memo: Memoizer[Mod[ModListNode[T, U]]])
@@ -66,7 +68,7 @@ class ModListNode[T, U] (
       f: ((T, U)) => (V, W),
       memo: Memoizer[Changeable[ModListNode[V, W]]])
      (implicit c: Context): Changeable[ModListNode[V, W]] = {
-    val newNext = mod {
+    val newNext = mod({
       read(next) {
 	case null =>
 	  write[ModListNode[V, W]](null)
@@ -75,7 +77,7 @@ class ModListNode[T, U] (
             next.map(f, memo)
           }
       }
-    }
+    }, next.id)
 
     write(new ModListNode[V, W](f(value), newNext))
   }

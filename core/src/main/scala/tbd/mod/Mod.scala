@@ -57,7 +57,5 @@ class Mod[T](val id: ModId) extends Serializable {
   //causes a crash.
   override def toString = "Mod(" + id + ")"
 
-  override def hashCode(): Int = {
-    id.hashCode()
-  }
+  override def hashCode() = id.hashCode()
 }

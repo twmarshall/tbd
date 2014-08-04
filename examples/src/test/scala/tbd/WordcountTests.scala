@@ -38,8 +38,7 @@ class WCTest(input: ListInput[Int, String])
   def run(implicit c: Context) = {
     val pages = input.getAdjustableList()
     val counts = pages.map(mapper)
-    val initialValue = createMod((0, HashMap[String, Int]()))
-    counts.reduce(initialValue, reducer)
+    counts.reduce(reducer)
   }
 }
 

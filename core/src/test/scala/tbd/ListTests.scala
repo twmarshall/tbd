@@ -74,11 +74,9 @@ class ListReduceSumTest(input: ListInput[String, Int])
 
   def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    val zero = mod { write(("", 0)) }
-    modList.reduce(zero,
-      (pair1: (String, Int), pair2: (String, Int)) => {
-        (pair2._1, pair1._2 + pair2._2)
-      })
+    modList.reduce((pair1: (String, Int), pair2: (String, Int)) => {
+      (pair2._1, pair1._2 + pair2._2)
+    })
   }
 }
 

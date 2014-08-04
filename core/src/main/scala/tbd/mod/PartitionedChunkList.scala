@@ -91,30 +91,8 @@ class PartitionedChunkList[T, U](
   }
 
   def reduce(
-      initialValueMod: Mod[(T, U)],
       f: ((T, U), (T, U)) => (T, U))
-     (implicit c: Context): Mod[(T, U)] = {
-
-    def parReduce(i: Int)(implicit c: Context): Mod[(T, U)] = {
-      if (i < partitions.size) {
-        val parTup = par {
-          c => partitions(i).reduce(initialValueMod, f)(c)
-        } and {
-          c => parReduce(i + 1)(c)
-        }
-
-        mod {
-          read2(parTup._1, parTup._2) {
-	    case (a, b) => write(f(a, b))
-          }
-        }
-      } else {
-        initialValueMod
-      }
-    }
-
-    parReduce(0)
-  }
+     (implicit c: Context): Mod[(T, U)] = ???
 
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)

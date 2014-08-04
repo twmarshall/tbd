@@ -105,8 +105,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def run(implicit c: Context): Mod[(Int, HashMap[String, Int])] = {
     val pages = input.getAdjustableList()
     val counts = pages.map(mapper)
-    val initialValue = createMod((0, HashMap[String, Int]()))
-    counts.reduce(initialValue, reducer)
+    counts.reduce(reducer)
   }
 }
 
@@ -149,7 +148,6 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def run(implicit c: Context): Mod[(Int, HashMap[String, Int])] = {
     val pages = input.getChunkList()
     val counts = pages.chunkMap(chunkMapper)
-    val initialValue = createMod((0, HashMap[String, Int]()))
-    counts.reduce(initialValue, chunkReducer)
+    counts.reduce(chunkReducer)
   }
 }
