@@ -39,6 +39,8 @@ class ModListNode[T, U] (
     }
   }
 
+  override def hashCode() = value.hashCode() * next.hashCode()
+
   def filter(
       pred: ((T, U)) => Boolean,
       memo: Memoizer[Mod[ModListNode[T, U]]])
