@@ -18,7 +18,7 @@ package tbd.mod
 import java.io.Serializable
 import scala.collection.mutable.Map
 
-import tbd.{Changeable, Context, Memoizer}
+import tbd.{Changeable, Context, Memoizer, Modizer}
 import tbd.TBD._
 
 object ModListNode {
@@ -84,22 +84,30 @@ class ModListNode[T, U] (
 
   def merge(
       that: ModListNode[T, U],
-      comparator: ((T, U), (T, U)) => Boolean)
+      comparator: ((T, U), (T, U)) => Boolean,
+      memo: Memoizer[Changeable[ModListNode[T, U]]],
+      modizer: Modizer[ModListNode[T, U]])
      (implicit c: Context): Changeable[ModListNode[T, U]] = {
     if (comparator(value, that.value)) {
-      val newNext = mod {
+      val newNext = modizer(next.id + that.next.id) {
 	read(next) {
 	  case null => write(new ModListNode(that.value, that.next))
-	  case node => node.merge(that, comparator)
+	  case node =>
+            memo(node, that) {
+              node.merge(that, comparator, memo, modizer)
+            }
 	}
       }
 
       write(new ModListNode(value, newNext))
     } else {
-      val newNext = mod {
+      val newNext = modizer(next.id + that.next.id) {
 	read(that.next) {
 	  case null => write(new ModListNode(value, next))
-	  case node => merge(node, comparator)
+	  case node =>
+            memo(this, node) {
+              this.merge(node, comparator, memo, modizer)
+            }
 	}
       }
 

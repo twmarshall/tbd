@@ -168,8 +168,8 @@ class ModNoDestTest(input: TableInput[Int, Int])
   }
 }
 
-class SortTest(input: ListInput[Int, Int])
-    extends Adjustable[AdjustableList[Int, Int]] {
+class SortTest(input: ListInput[Int, Double])
+    extends Adjustable[AdjustableList[Int, Double]] {
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
     list.sort((pair1, pair2) => {
@@ -196,6 +196,36 @@ class SplitTest(input: ListInput[Int, Int], input2: TableInput[Int, Int])
 	  }))
       }
     }
+  }
+}
+
+class MergeTest(input: ListInput[Int, Int], input2: ListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit c: Context) = {
+    val list = input.getAdjustableList()
+    val list2 = input2.getAdjustableList()
+
+    list.merge(list2.asInstanceOf[tbd.mod.ModList[Int, Int]], (pair, pair2) => {
+      println("comparing " + pair + " " + pair2)
+      pair._2 <= pair2._2
+    })
+  }
+}
+
+class MapReduceTest(input: ListInput[Int, Int])
+    extends Adjustable[Mod[(Int, Int)]] {
+  def run(implicit c: Context) = {
+    val list = input.getAdjustableList()
+
+    val mapped = list.map(pair => {
+      println("mapping " + pair)
+      (pair._1, pair._2 * 2)
+    })
+
+    mapped.reduce((pair1, pair2) => {
+      println("reducing " + pair1 + " and " + pair2)
+      (pair1._1, pair1._2 + pair2._2)
+    })
   }
 }
 
@@ -233,7 +263,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 
-  "ReduceTest" should "reexecute only the necessary reduce steps" in {
+  /*"ReduceTest" should "reexecute only the necessary reduce steps" in {
     val mutator = new Mutator()
     val input = mutator.createList[Int, Int](new ListConf(partitions = 1))
     for (i <- 1 to 16) {
@@ -243,15 +273,14 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     val output = mutator.run(test)
 
     output.read()._2 should be (136)
-
     input.remove(16)
     input.remove(7)
     mutator.propagate()
 
     output.read()._2 should be (113)
-  }
+  }*/
 
-  "ParTest" should "do something" in {
+  /*"ParTest" should "do something" in {
     val mutator = new Mutator()
     val input = mutator.createTable[Int, Int]()
     input.put(1, 1)
@@ -290,19 +319,19 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     output.read() should be (8)
 
     mutator.shutdown()
-  }
+  }*/
 
   /*"SortTest" should "only reexecute the least possible" in {
     val mutator = new Mutator()
-    val input = mutator.createList[Int, Int](new ListConf(chunkSize = 1, partitions = 1))
-    for (i <- List(10, 5, 3, 4, 11, 6, 15, 20, 19, 1, 25, 26, 0)) {
+    val input = mutator.createList[Int, Double](new ListConf(chunkSize = 1, partitions = 1))
+    for (i <- List(10, 5, 6, 1, 7, 4, 8, 3, 2, 9)) {
       input.put(i, i)
     }
     val output = mutator.run(new SortTest(input))
     println(output.toBuffer)
 
     println("\npropagating")
-    input.update(11, 22)
+    input.update(1, 8.5)
     mutator.propagate()
     println(output.toBuffer)
   }*/
@@ -330,5 +359,51 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     input.update(5, -1)
     mutator.propagate()
     println(output.read()._1 + "\n" + output.read()._2)
+  }*/
+
+  /*"MergeTest" should "asdf" in {
+    val mutator = new Mutator()
+    val conf = new ListConf(partitions = 1, chunkSize = 1)
+
+    val input = mutator.createList[Int, Int](conf)
+    input.put(1, 1)
+    input.put(3, 3)
+    input.put(5, 5)
+    input.put(10, 10)
+
+    val input2 = mutator.createList[Int, Int](conf)
+    input2.put(4, 4)
+    input2.put(8, 8)
+
+    println(input.getAdjustableList())
+    println(input2.getAdjustableList())
+    val output = mutator.run(new MergeTest(input, input2))
+    println(output)
+    println(output.toBuffer)
+
+    println("\npropagating")
+    input.remove(3)
+    input.put(3, 12)
+
+    println(input.getAdjustableList())
+    println(input2.getAdjustableList())
+    mutator.propagate()
+    println(output)
+    println(output.toBuffer)
+  }*/
+
+  /*"MapReduceTest" should "only reexecute the necessary parts" in {
+    val mutator = new Mutator()
+    val input = mutator.createList[Int, Int](new ListConf(partitions = 1, chunkSize = 1))
+    for (i <- List(6, 2, 7, 3, 8, 1, 5, 10)) {
+      input.put(i, i)
+    }
+
+    val output = mutator.run(new MapReduceTest(input))
+    println(output.read())
+
+    println("propagate")
+    input.update(7, 8)
+    mutator.propagate()
   }*/
 }

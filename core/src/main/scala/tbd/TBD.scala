@@ -124,6 +124,8 @@ object TBD {
     }
   }
 
+  def makeModizer[T]() = new Modizer[T]()
+
   def mod[T](
       initializer: => Changeable[T],
       key: Any = null)
