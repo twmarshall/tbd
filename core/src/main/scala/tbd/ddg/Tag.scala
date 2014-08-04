@@ -17,13 +17,14 @@ package tbd.ddg
 
 import tbd.Constants.ModId
 
+
 abstract class Tag
 object Tag {
   case class Read(val readValue: Any, val reader: FunctionTag)(val mod: ModId)
     extends Tag
-  case class Write(val value: Any, val dest: ModId) extends Tag
+  case class Write(val writes: List[SingleWriteTag]) extends Tag
   case class Memo(val function: FunctionTag, val args: Seq[Any]) extends Tag
-  case class Mod(val dest: ModId, val initializer: FunctionTag) extends Tag
+  case class Mod(val dests: List[ModId], val initializer: FunctionTag) extends Tag
   case class Par(val fun1: FunctionTag, val fun2: FunctionTag) extends Tag
   case class Root() extends Tag
 
@@ -34,8 +35,10 @@ object Tag {
           "Read " + value +
           "\nReader " + formatFunctionTag(funcTag)
       }
-      case Tag.Write(value, dest) => {
-          "Write " + value + " to " + dest
+      case Tag.Write(writes) => {
+        writes.map(x =>  {
+          "write " + x.value + " to " + x.mod
+        }).reduceLeft(_ + "\n   " + _)
       }
       case Tag.Memo(funcTag, signature) => {
           "Memo" +
@@ -43,7 +46,7 @@ object Tag {
           "\nSignature:" + signature.foldLeft("")(_ + "\n   " + _)
       }
       case Tag.Mod(dest, initializer) => {
-          "Mod id " + dest +
+          "Mod id " + dest.reduceLeft(_ + ", " + _) +
           "\nInitializer " + formatFunctionTag(initializer)
       }
       case Tag.Par(fun1, fun2) => {
@@ -63,3 +66,4 @@ object Tag {
 }
 
 case class FunctionTag(val funcId: Int, val freeVars: List[(String, Any)])
+case class SingleWriteTag(val mod: ModId, val value: Any)

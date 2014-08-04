@@ -44,7 +44,7 @@ class Node(ddgNode: ddg.Node) {
 
   def getShortLabel(): String = {
     (tag match {
-      case ddg.Tag.Write(value, dest) => (value, dest)
+      case ddg.Tag.Write(writes) => writes
       case ddg.Tag.Read(value, fun) => (value, formatFunctionTag(fun))
       case ddg.Tag.Memo(fun, args) => (formatFunctionTag(fun), args)
       case ddg.Tag.Par(fun1, fun2) => {

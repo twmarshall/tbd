@@ -127,16 +127,18 @@ class DdgVisualizer extends GridBagPanel with Publisher {
           "Read " + read.mod + " = " + toHtmlString(value) +
           "<br>Reader " + formatFunctionTag(node, funcTag)
       }
-      case Tag.Write(value, dest) => {
-          "Write " + toHtmlString(value) + " to " + dest
+      case Tag.Write(writes) => {
+        writes.map(x =>  {
+          "write " + x.value + " to " + x.mod
+        }).reduceLeft(_ + "<br />   " + _)
       }
       case Tag.Memo(funcTag, signature) => {
           "Memo" +
           "<br>" + formatFunctionTag(node, funcTag) +
           "<br>Signature:" + htmlEscape(signature.foldLeft("")(_ + "\n   " + _))
       }
-      case Tag.Mod(dest, initializer) => {
-          "Mod id " + dest +
+      case Tag.Mod(dests, initializer) => {
+          "Mod id " + dests.reduceLeft(_ + ", " + _) +
           "<br>Initializer " + formatFunctionTag(node, initializer)
       }
       case Tag.Par(fun1, fun2) => {

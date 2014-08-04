@@ -61,30 +61,38 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     readNode
   }
 
-  def addMod(mod: Mod[Any], parent: Node, funcTag: FunctionTag): ModNode = {
+  def addMod(mod: Mod[Any], mod2: Mod[Any], parent: Node, funcTag: FunctionTag): ModNode = {
     val timestamp = nextTimestamp(parent)
-    val modNode =
-    if(tbd.master.Main.debug) {
-      new ModNode(parent, timestamp, Tag.Mod(mod.id, funcTag))
+
+    val tag = if(tbd.master.Main.debug) {
+      val reads = List(mod, mod2).filter(_ != null).map(x => {
+        x.id
+      }).toList
+      Tag.Mod(reads, funcTag)
     } else {
-      new ModNode(parent, timestamp, null)
+      null
     }
+    val modNode = new ModNode(parent, timestamp, tag)
 
     parent.addChild(modNode)
 
     modNode
   }
 
-  def addWrite[T](mod: Mod[Any], parent: Node): WriteNode = {
+  def addWrite[T](mod: Mod[Any], mod2: Mod[Any], parent: Node): WriteNode = {
     val timestamp = nextTimestamp(parent)
 
 
-    val writeNode = if(tbd.master.Main.debug) {
-      new WriteNode(mod, parent, timestamp,
-           Tag.Write(mod.read(), mod.id))
+    val tag = if(tbd.master.Main.debug) {
+      val writes = List(mod, mod2).filter(_ != null).map((x: Mod[Any]) => {
+        SingleWriteTag(x.id, x.read())
+      }).toList
+      Tag.Write(writes)
     } else {
-      new WriteNode(mod, parent, timestamp, null)
+      null
     }
+
+    val writeNode = new WriteNode(mod, mod2, parent, timestamp, tag)
 
     parent.addChild(writeNode)
 

@@ -100,6 +100,65 @@ object TbdMacros {
     con.Expr[T](q"$modFunc($initializer, null, $c, $id, $closedVars)")
   }
 
+  def mod2Macro[T]
+      (con: Context)(initializer: con.Tree)(c: con.Tree): con.Expr[T] = {
+    import con.universe._
+
+    val closedVars = createFreeVariableList(con)(initializer)
+    val modFunc = Select(con.prefix.tree, TermName("mod2Internal"))
+    val id = Literal(Constant(getFuncId()))
+    con.Expr[T](q"$modFunc($initializer, null, $c, $id, $closedVars)")
+  }
+
+  def mod2KeyedMacro[T]
+      (con: Context)(initializer: con.Tree, key: con.Tree)(c: con.Tree): con.Expr[T] = {
+    import con.universe._
+
+    val closedVars = createFreeVariableList(con)(initializer)
+    val modFunc = Select(con.prefix.tree, TermName("mod2Internal"))
+    val id = Literal(Constant(getFuncId()))
+    con.Expr[T](q"$modFunc($initializer, $key, $c, $id, $closedVars)")
+  }
+
+  def modLeftMacro[T]
+      (con: Context)(initializer: con.Tree)(c: con.Tree): con.Expr[T] = {
+    import con.universe._
+
+    val closedVars = createFreeVariableList(con)(initializer)
+    val modFunc = Select(con.prefix.tree, TermName("modLeftInternal"))
+    val id = Literal(Constant(getFuncId()))
+    con.Expr[T](q"$modFunc($initializer, null, $c, $id, $closedVars)")
+  }
+
+  def modLeftKeyedMacro[T]
+      (con: Context)(initializer: con.Tree, key: con.Tree)(c: con.Tree): con.Expr[T] = {
+    import con.universe._
+
+    val closedVars = createFreeVariableList(con)(initializer)
+    val modFunc = Select(con.prefix.tree, TermName("modLeftInternal"))
+    val id = Literal(Constant(getFuncId()))
+    con.Expr[T](q"$modFunc($initializer, $key, $c, $id, $closedVars)")
+  }
+
+  def modRightMacro[T]
+      (con: Context)(initializer: con.Tree)(c: con.Tree): con.Expr[T] = {
+    import con.universe._
+
+    val closedVars = createFreeVariableList(con)(initializer)
+    val modFunc = Select(con.prefix.tree, TermName("modRightInternal"))
+    val id = Literal(Constant(getFuncId()))
+    con.Expr[T](q"$modFunc($initializer, null, $c, $id, $closedVars)")
+  }
+
+  def modRightKeyedMacro[T]
+      (con: Context)(initializer: con.Tree, key: con.Tree)(c: con.Tree): con.Expr[T] = {
+    import con.universe._
+
+    val closedVars = createFreeVariableList(con)(initializer)
+    val modFunc = Select(con.prefix.tree, TermName("modRightInternal"))
+    val id = Literal(Constant(getFuncId()))
+    con.Expr[T](q"$modFunc($initializer, $key, $c, $id, $closedVars)")
+  }
   /**
    * Generates a list using quasiquotes from free variables from
    * within a tree

@@ -27,7 +27,9 @@ object DependencyTracker {
     val writes = new HashMap[ModId, Node]
 
     ddg.nodes.foreach(x => x.tag match {
-      case y:Tag.Write => writes(y.dest) = x
+      case Tag.Write(ws) => for(w <- ws) {
+        writes(w.mod) = x
+      }
       case _ => null
     })
 
@@ -46,17 +48,22 @@ object DependencyTracker {
     val mods = new HashMap[ModId, Node]
 
     ddg.nodes.foreach(x => x.tag match {
-      case y:Tag.Mod => mods(y.dest) = x
+      case Tag.Mod(dests, _) => for(dest <- dests) {
+          mods(dest) = x
+      }
       case _ => null
     })
 
     ddg.nodes.foreach(x => x.tag match {
-      case y:Tag.Write => if(mods.contains(y.dest)) {
-        val dst = mods(y.dest)
-        val src = x
-        ddg.adj(src) += Edge.ModWrite(src, dst, y.dest)
-        ddg.adj(dst) += Edge.WriteMod(dst, src, y.dest)
-      }
+      case Tag.Write(writes) =>
+        for(write <- writes) {
+          if(mods.contains(write.mod)) {
+            val dst = mods(write.mod)
+            val src = x
+            ddg.adj(src) += Edge.ModWrite(src, dst, write.mod)
+            ddg.adj(dst) += Edge.WriteMod(dst, src, write.mod)
+          }
+        }
       case _ => null
     })
   }

@@ -104,10 +104,10 @@ class ReadNode(
 
 class WriteNode(
     val mod: Mod[Any],
+    val mod2: Mod[Any],
     _parent: Node,
     _timestamp: Timestamp,
     _writeTag: Tag.Write) extends Node(_parent, _timestamp, _writeTag) {
-  var mod2: Mod[Any] = null
 
   override def toString(prefix: String) = {
     prefix + "WriteNode modId=(" + mod.id + ") " +
@@ -167,6 +167,7 @@ class RootNode(id: String) extends Node(null, null, Tag.Root()) {
 
 class ModNode(_parent: Node, _timestamp: Timestamp, _modTag: Tag.Mod) extends Node(_parent, _timestamp, _modTag) {
   override def toString(prefix: String) = {
-    prefix + "ModNode dest=(" + _modTag.dest + ")" + super.toString(prefix)
+    prefix + "ModNode dest=(" + _modTag.dests.foldLeft("")(_ + ", " + _) + ")" +
+    super.toString(prefix)
   }
 }

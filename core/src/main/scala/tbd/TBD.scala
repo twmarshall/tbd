@@ -138,20 +138,16 @@ object TBD {
 	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
       }
 
-    if(Main.debug) {
-      val modNode = c.worker.ddg.addMod(c.currentDest.mod, c.currentParent,
-                                        FunctionTag(readerId, freeTerms))
+    val modNode = c.worker.ddg.addMod(c.currentDest.mod, null, c.currentParent,
+                                      FunctionTag(readerId, freeTerms))
 
-      val outerReader = c.currentParent
-      c.currentParent = modNode
+    val outerReader = c.currentParent
+    c.currentParent = modNode
 
-      initializer
+    initializer
 
-      c.currentParent = outerReader
-      modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
-    } else {
-      initializer
-    }
+    c.currentParent = outerReader
+    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
 
     val mod = c.currentDest.mod
     c.currentDest = oldCurrentDest
@@ -160,9 +156,22 @@ object TBD {
   }
 
   def mod2[T, U](
+    initializer: => (Changeable[T], Changeable[U]))
+   (implicit c: Context): (Mod[T], Mod[U]) = macro TbdMacros.mod2Macro[(Mod[T], Mod[U])]
+
+
+  def mod2[T, U](
+    initializer: => (Changeable[T], Changeable[U]),
+    key: Any)
+   (implicit c: Context): (Mod[T], Mod[U]) = macro TbdMacros.mod2KeyedMacro[(Mod[T], Mod[U])]
+
+
+  def mod2Internal[T, U](
       initializer: => (Changeable[T], Changeable[U]),
-      key: Any = null)
-     (implicit c: Context): (Mod[T], Mod[U]) = {
+      key: Any,
+      c: Context,
+      readerId: Int,
+      freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
     val oldCurrentDest = c.currentDest
 
     c.currentDest =
@@ -194,7 +203,17 @@ object TBD {
 	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
       }
 
+    val modNode = c.worker.ddg.addMod(c.currentDest.mod, c.currentDest2.mod,
+                                      c.currentParent,
+                                      FunctionTag(readerId, freeTerms))
+
+    val outerReader = c.currentParent
+    c.currentParent = modNode
+
     initializer
+
+    c.currentParent = outerReader
+    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
 
     val mod = c.currentDest.mod
     c.currentDest = oldCurrentDest
@@ -205,9 +224,22 @@ object TBD {
   }
 
   def modLeft[T, U](
+      initializer: => (Changeable[T], Changeable[U]))
+     (implicit c: Context):
+    (Mod[T], Changeable[U]) = macro TbdMacros.modLeftMacro[(Mod[T], Changeable[U])]
+
+  def modLeft[T, U](
       initializer: => (Changeable[T], Changeable[U]),
-      key: Any = null)
-     (implicit c: Context): (Mod[T], Changeable[U]) = {
+      key: Any)
+     (implicit c: Context):
+    (Mod[T], Changeable[U]) = macro TbdMacros.modLeftKeyedMacro[(Mod[T], Changeable[U])]
+
+  def modLeftInternal[T, U](
+      initializer: => (Changeable[T], Changeable[U]),
+      key: Any,
+      c: Context,
+      readerId: Int,
+      freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
     val oldCurrentDest = c.currentDest
     c.currentDest =
       if (key != null) {
@@ -222,7 +254,17 @@ object TBD {
 	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
       }
 
+    val modNode = c.worker.ddg.addMod(c.currentDest.mod, null,
+                                      c.currentParent,
+                                      FunctionTag(readerId, freeTerms))
+
+    val outerReader = c.currentParent
+    c.currentParent = modNode
+
     initializer
+
+    c.currentParent = outerReader
+    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
 
     val mod = c.currentDest.mod
     c.currentDest = oldCurrentDest
@@ -232,9 +274,22 @@ object TBD {
   }
 
   def modRight[T, U](
+      initializer: => (Changeable[T], Changeable[U]))
+     (implicit c: Context):
+    (Changeable[T], Mod[U]) = macro TbdMacros.modRightMacro[(Changeable[T], Mod[U])]
+
+  def modRight[T, U](
       initializer: => (Changeable[T], Changeable[U]),
-      key: Any = null)
-     (implicit c: Context): (Changeable[T], Mod[U]) = {
+      key: Any)
+     (implicit c: Context):
+    (Changeable[T], Mod[U]) = macro TbdMacros.modRightKeyedMacro[(Changeable[T], Mod[U])]
+
+  def modRightInternal[T, U](
+      initializer: => (Changeable[T], Changeable[U]),
+      key: Any,
+      c: Context,
+      readerId: Int,
+      freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
     val oldCurrentDest2 = c.currentDest2
     c.currentDest2 =
       if (key != null) {
@@ -249,7 +304,18 @@ object TBD {
 	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
       }
 
+    val modNode = c.worker.ddg.addMod(null,
+                                      c.currentDest2.mod,
+                                      c.currentParent,
+                                      FunctionTag(readerId, freeTerms))
+
+    val outerReader = c.currentParent
+    c.currentParent = modNode
+
     initializer
+
+    c.currentParent = outerReader
+    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
 
     val mod2 = c.currentDest2.mod
     c.currentDest2 = oldCurrentDest2
@@ -268,6 +334,7 @@ object TBD {
 
     if (Main.debug) {
       val writeNode = c.worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+                                            null,
                                             c.currentParent)
       writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
     }
@@ -286,6 +353,14 @@ object TBD {
     Await.result(Future.sequence(awaiting), DURATION)
     Await.result(Future.sequence(awaiting2), DURATION)
 
+    if (Main.debug) {
+      val writeNode = c.worker.ddg.addWrite(c.currentDest.mod.asInstanceOf[Mod[Any]],
+                                            c.currentDest2.mod.asInstanceOf[Mod[Any]],
+                                            c.currentParent)
+
+      writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
+    }
+
     write2Helper(c)
   }
 
@@ -301,6 +376,14 @@ object TBD {
 
     val awaiting = c.currentDest.mod.update(value)
     Await.result(Future.sequence(awaiting), DURATION)
+
+    if (Main.debug) {
+      val writeNode = c.worker.ddg.addWrite(c.currentDest.mod.asInstanceOf[Mod[Any]],
+                                            null,
+                                            c.currentParent)
+
+      writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
+    }
 
     write2Helper(c)
   }
@@ -318,18 +401,19 @@ object TBD {
     val awaiting = c.currentDest2.mod.update(value2)
     Await.result(Future.sequence(awaiting), DURATION)
 
+    if (Main.debug) {
+      val writeNode = c.worker.ddg.addWrite(null,
+                                            c.currentDest2.mod.asInstanceOf[Mod[Any]],
+                                            c.currentParent)
+
+      writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
+    }
+
     write2Helper(c)
   }
 
   private def write2Helper[T, U](
       c: Context): (Changeable[T], Changeable[U]) = {
-    if (Main.debug) {
-      val writeNode = c.worker.ddg.addWrite(c.currentDest.mod.asInstanceOf[Mod[Any]],
-                                            c.currentParent)
-      writeNode.mod2 = c.currentDest2.mod
-      writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
-    }
-
     (new Changeable(c.currentDest.mod).asInstanceOf[Changeable[T]],
      new Changeable(c.currentDest2.mod).asInstanceOf[Changeable[U]])
   }
