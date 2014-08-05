@@ -87,15 +87,17 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
 
   def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
     updateCount += 1
-
-    store.put(modId, value)
-
     val futures = ArrayBuffer[Future[String]]()
-    if (dependencies.contains(modId)) {
-      for (workerRef <- dependencies(modId)) {
-	val finished = Promise[String]()
-	workerRef ! ModUpdatedMessage(modId, finished)
-	futures += finished.future
+
+    if (value != getMod(modId)) {
+      store.put(modId, value)
+
+      if (dependencies.contains(modId)) {
+	for (workerRef <- dependencies(modId)) {
+	  val finished = Promise[String]()
+	  workerRef ! ModUpdatedMessage(modId, finished)
+	  futures += finished.future
+	}
       }
     }
 
