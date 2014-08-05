@@ -22,16 +22,23 @@ import tbd.mod.{AdjustableList, Dest, Mod}
 import collection.mutable.HashMap
 import scala.util.Random
 
-class TestBase(conf: ListConf) {
-  val mutator = new Mutator()
-  val input = mutator.createList[Int, Int](conf)
+abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
+    extends ExperimentSource[V, Seq[Int]] {
+  var initialSize = 10
 
-  val table = new HashMap[Int, Int]
-  val rand = new Random()
-  var freeList = List[Int]()
+  private val mutator = new Mutator()
+  private val listConf = algorithm.getListConf()
+  private val input = mutator.createList[Int, Int](listConf)
+  protected var mutationCounter = 0
 
-  var keyCounter = 0
-  var maxValue = 100
+  private val table = new HashMap[Int, Int]
+  protected val rand = new Random()
+  private var freeList = List[Int]()
+
+  private var keyCounter = 0
+  private var maxValue = 100
+
+  var listener: ExperimentSink[V, Seq[Int]] = null
 
   def addValue() {
     val newValue = rand.nextInt(maxValue)
@@ -108,4 +115,40 @@ class TestBase(conf: ListConf) {
       case 2 => addValue()
     }
   }
+
+  def run() {
+    for(i <- 1 to initialSize)
+      addValue()
+
+    algorithm.input = input
+    val output = mutator.run[T](algorithm)
+
+    initialize()
+
+    do {
+      mutator.propagate()
+      mutationCounter += 1
+
+      val input = table.values.toBuffer
+      val result = algorithm.getResult(output)
+      val expectedResult = algorithm.getExpectedResult(table)
+
+      val ddg = graph.DDG.create(mutator.getDDG().root)
+      pushResult(new ExperimentResult(mutationCounter, input,
+                                      result, expectedResult, ddg))
+
+      if(result != expectedResult) {
+        println("//Check error!")
+      }
+
+    } while(step())
+
+    dispose()
+
+    mutator.shutdown()
+  }
+
+  def initialize()
+  def step(): Boolean
+  def dispose()
 }

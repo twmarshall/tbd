@@ -36,10 +36,20 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 
   def addRead(
       mod: Mod[Any],
+      value: Any,
       parent: Node,
-      reader: Any => Changeable[Any]): ReadNode = {
+      reader: Any => Changeable[Any],
+      funcTag: FunctionTag): ReadNode = {
     val timestamp = nextTimestamp(parent)
-    val readNode = new ReadNode(mod, parent, timestamp, reader)
+
+    val readNode = if(tbd.master.Main.debug) {
+      new ReadNode(mod, parent, timestamp,
+                   reader, Tag.Read(value, funcTag)(mod.id))
+    } else {
+      new ReadNode(mod, parent, timestamp,
+                   reader, null)
+    }
+
     parent.addChild(readNode)
 
     if (reads.contains(mod.id)) {
@@ -51,28 +61,78 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
     readNode
   }
 
-  def addWrite(mod: Mod[Any], parent: Node): WriteNode = {
+  def addMod(mod: Mod[Any], mod2: Mod[Any], parent: Node, funcTag: FunctionTag): ModNode = {
     val timestamp = nextTimestamp(parent)
-    val writeNode = new WriteNode(mod, parent, timestamp)
+
+    val tag = if(tbd.master.Main.debug) {
+      val reads = List(mod, mod2).filter(_ != null).map(x => {
+        x.id
+      }).toList
+      Tag.Mod(reads, funcTag)
+    } else {
+      null
+    }
+    val modNode = new ModNode(parent, timestamp, tag)
+
+    parent.addChild(modNode)
+
+    modNode
+  }
+
+  def addWrite[T](mod: Mod[Any], mod2: Mod[Any], parent: Node): WriteNode = {
+    val timestamp = nextTimestamp(parent)
+
+
+    val tag = if(tbd.master.Main.debug) {
+      val writes = List(mod, mod2).filter(_ != null).map((x: Mod[Any]) => {
+        SingleWriteTag(x.id, x.read())
+      }).toList
+      Tag.Write(writes)
+    } else {
+      null
+    }
+
+    val writeNode = new WriteNode(mod, mod2, parent, timestamp, tag)
 
     parent.addChild(writeNode)
 
     writeNode
   }
 
-  def addPar(workerRef1: ActorRef, workerRef2: ActorRef, parent: Node) {
+  def addPar(workerRef1: ActorRef,
+             workerRef2: ActorRef,
+             parent: Node,
+             fun1: FunctionTag,
+             fun2: FunctionTag) {
     val timestamp = nextTimestamp(parent)
 
-    val parNode = new ParNode(workerRef1, workerRef2, parent, timestamp)
+    val parNode = if(tbd.master.Main.debug) {
+      new ParNode(workerRef1, workerRef2, parent, timestamp,
+                              Tag.Par(fun1, fun2))
+    } else {
+      new ParNode(workerRef1, workerRef2, parent, timestamp, null)
+    }
+
     parent.addChild(parNode)
 
     pars(workerRef1) = parNode
     pars(workerRef2) = parNode
   }
 
-  def addMemo(parent: Node, signature: Seq[Any]): MemoNode = {
+  def addMemo(
+      parent: Node,
+      signature: Seq[Any],
+      funcTag: FunctionTag): MemoNode = {
     val timestamp = nextTimestamp(parent)
-    val memoNode = new MemoNode(parent, timestamp, signature)
+
+    val tag = if(tbd.master.Main.debug) {
+      Tag.Memo(funcTag, signature)
+    } else {
+      null
+    }
+
+    val memoNode = new MemoNode(parent, timestamp, signature, tag)
+
     parent.addChild(memoNode)
     memoNode
   }

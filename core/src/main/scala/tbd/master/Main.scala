@@ -27,7 +27,7 @@ import tbd.datastore.Datastore
 import tbd.messages._
 
 object Main {
-  val debug = false
+  var debug = false
 
   var id = 0
 

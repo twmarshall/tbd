@@ -26,7 +26,19 @@ import tbd.master.Main
 import tbd.messages._
 import tbd.mod.{Dest, Mod}
 
-abstract class Node(var parent: Node, val timestamp: Timestamp) {
+object Node {
+  var id = 0
+
+  def getId(): Integer = {
+    id = id + 1
+    id
+  }
+}
+
+abstract class Node(
+    var parent: Node,
+    val timestamp: Timestamp,
+    val tag: Tag) {
   var endTime: Timestamp = null
   var stacktrace =
     if (Main.debug)
@@ -37,6 +49,8 @@ abstract class Node(var parent: Node, val timestamp: Timestamp) {
   var children = MutableList[Node]()
 
   var updated = false
+
+  val internalId = Node.getId()
 
   // The earliest epoch in which this node may be matched, if it is a MemoNode.
   // This is increased above the current epoch whenever the node is matched, so
@@ -78,8 +92,9 @@ class ReadNode(
     val mod: Mod[Any],
     _parent: Node,
     _timestamp: Timestamp,
-    val reader: Any => Changeable[Any])
-      extends Node(_parent, _timestamp) {
+    val reader: Any => Changeable[Any],
+    _readTag: Tag.Read)
+      extends Node(_parent, _timestamp, _readTag) {
 
   override def toString(prefix: String) = {
     prefix + this + " modId=(" + mod.id + ") " + " time=" + timestamp + " to " + endTime +
@@ -87,9 +102,12 @@ class ReadNode(
   }
 }
 
-class WriteNode(val mod: Mod[Any], _parent: Node, _timestamp: Timestamp)
-    extends Node(_parent, _timestamp) {
-  var mod2: Mod[Any] = null
+class WriteNode(
+    val mod: Mod[Any],
+    val mod2: Mod[Any],
+    _parent: Node,
+    _timestamp: Timestamp,
+    _writeTag: Tag.Write) extends Node(_parent, _timestamp, _writeTag) {
 
   override def toString(prefix: String) = {
     prefix + "WriteNode modId=(" + mod.id + ") " +
@@ -101,7 +119,8 @@ class ParNode(
     val workerRef1: ActorRef,
     val workerRef2: ActorRef,
     _parent: Node,
-    _timestamp: Timestamp) extends Node(_parent, _timestamp) {
+    _timestamp: Timestamp,
+    _parTag: Tag.Par) extends Node(_parent, _timestamp, _parTag) {
 
   var pebble1 = false
   var pebble2 = false
@@ -116,12 +135,22 @@ class ParNode(
     prefix + "ParNode time=" + timestamp + " pebbles=(" + pebble1 + ", " +
       pebble2 + ")\n" + output1 + "\n" + output2 + super.toString(prefix)
   }
+
+  def getFirstSubtree() = {
+    Await.result(workerRef1 ? GetDDGMessage, DURATION).asInstanceOf[DDG]
+  }
+
+  def getSecondSubtree() = {
+    Await.result(workerRef2 ? GetDDGMessage, DURATION).asInstanceOf[DDG]
+  }
 }
 
 class MemoNode(
     _parent: Node,
     _timestamp: Timestamp,
-    val signature: Seq[Any]) extends Node(_parent, _timestamp) {
+    val signature: Seq[Any],
+    _memoTag: Tag.Memo) extends Node(_parent, _timestamp, _memoTag) {
+
   var value: Any = null
 
   override def toString(prefix: String) = {
@@ -130,8 +159,15 @@ class MemoNode(
   }
 }
 
-class RootNode(id: String) extends Node(null, null) {
+class RootNode(id: String) extends Node(null, null, Tag.Root()) {
   override def toString(prefix: String) = {
     prefix + "RootNode id=(" + id + ")" + super.toString(prefix)
+  }
+}
+
+class ModNode(_parent: Node, _timestamp: Timestamp, _modTag: Tag.Mod) extends Node(_parent, _timestamp, _modTag) {
+  override def toString(prefix: String) = {
+    prefix + "ModNode dest=(" + _modTag.dests.foldLeft("")(_ + ", " + _) + ")" +
+    super.toString(prefix)
   }
 }

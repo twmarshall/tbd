@@ -18,12 +18,24 @@ package tbd
 import akka.pattern.ask
 import scala.concurrent.Await
 
+import tbd.macros.TbdMacros
+
 import tbd.Constants._
 import tbd.messages._
 import tbd.worker.Worker
+import tbd.ddg.FunctionTag
 
-class Parer[T, U](one: Context => T) {
-  def and(two: Context => U)(implicit c: Context): (T, U) = {
+class Parer[T](one: Context => T, id1: Int, closedTerms1: List[(String, Any)]) {
+
+  import scala.language.experimental.macros
+  def and[U](two: Context => U)(implicit c: Context): (T, U) = macro TbdMacros.parTwoMacro[(T, U)]
+
+  def parTwoInternal[U](
+      two: Context => U,
+      c: Context,
+      id2: Int,
+      closedTerms2: List[(String, Any)]): (T, U) = {
+
     val workerProps1 =
       Worker.props(c.id + "-" + c.workerId, c.worker.datastoreRef, c.worker.self)
     val workerRef1 = c.worker.context.system.actorOf(workerProps1, c.id + "-" + c.workerId)
@@ -40,7 +52,9 @@ class Parer[T, U](one: Context => T) {
     val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
     val twoFuture = workerRef2 ? RunTaskMessage(adjust2)
 
-    c.worker.ddg.addPar(workerRef1, workerRef2, c.currentParent)
+    c.worker.ddg.addPar(workerRef1, workerRef2, c.currentParent,
+                      FunctionTag(id1, closedTerms1),
+                      FunctionTag(id2, closedTerms2))
 
     val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]

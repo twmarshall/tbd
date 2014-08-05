@@ -18,19 +18,23 @@ package tbd.visualization
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
+
 import tbd.{Adjustable, Context, ListConf, ListInput, Mutator}
 import tbd.mod.{AdjustableList, Mod}
 import tbd.TBD._
 
-trait TestAlgorithm[T] extends Adjustable[T] {
-  def checkOutput(output: T, table: Map[Int, Int]): Boolean
+trait TestAlgorithm[TbdOutputType, NativeOutputType]
+    extends Adjustable[TbdOutputType] {
+  def getResult(output: TbdOutputType): NativeOutputType
+  def getExpectedResult(input: Map[Int, Int]): NativeOutputType
   def getListConf() = { new ListConf(partitions = 1) }
 
   var input: ListInput[Int, Int] = null
 }
 
 class ListReduceSumTest()
-    extends TestAlgorithm[Mod[(Int, Int)]]  {
+    extends TestAlgorithm[Mod[(Int, Int)], Int] {
+
   def run(implicit c: Context): Mod[(Int, Int)] = {
     val modList = input.getAdjustableList()
     modList.reduce(
@@ -39,62 +43,64 @@ class ListReduceSumTest()
       })
   }
 
-  def checkOutput(output: Mod[(Int, Int)], table: Map[Int, Int]): Boolean = {
-    val ca: Int = table.values.foldLeft(0)(_ + _)
-    val a: Int = output.read()._2
+  def getResult(output: Mod[(Int, Int)]): Int = {
+    output.read()._2
+  }
 
-    if(a != ca ) {
-      println("Output: " + a)
-      println("Expected: " + ca)
-
-      false
-    }
-    true
+  def getExpectedResult(input: Map[Int, Int]): Int = {
+    input.values.foldLeft(0)(_ + _)
   }
 }
 
 class ListQuicksortTest()
-    extends TestAlgorithm[AdjustableList[Int, Int]] {
+    extends TestAlgorithm[AdjustableList[Int, Int], Seq[Int]] {
   def run(implicit c: Context): AdjustableList[Int, Int] = {
     val modList = input.getAdjustableList()
     modList.sort((a, b) => a._2 < b._2)
   }
 
-  def checkOutput(output: AdjustableList[Int, Int], table: Map[Int, Int]): Boolean = {
-    val ca = table.values.toBuffer.sortWith(_ < _)
-    val a = output.toBuffer()
+  def getResult(output:  AdjustableList[Int, Int]): Seq[Int] = {
+    output.toBuffer()
+  }
 
-    if(a != ca ) {
-      println("Output: " + a)
-      println("Expected: " + ca)
-
-      false
-    }
-    true
+  def getExpectedResult(input: Map[Int, Int]): Seq[Int] = {
+    input.values.toBuffer.sortWith(_ < _)
   }
 }
 
 class ListSplitTest()
-    extends TestAlgorithm[(AdjustableList[Int, Int], AdjustableList[Int, Int])] {
-  def run(implicit c: Context): (AdjustableList[Int, Int], AdjustableList[Int, Int]) = {
+    extends TestAlgorithm[
+      (AdjustableList[Int, Int], AdjustableList[Int, Int]),
+      (Seq[Int], Seq[Int])] {
+  def run(implicit c: Context):
+      (AdjustableList[Int, Int], AdjustableList[Int, Int]) = {
     val modList = input.getAdjustableList()
-    modList.split(_._2 % 2 == 0)
+    modList.split((a) => a._2 % 2 == 0)
   }
 
- def checkOutput(output: (AdjustableList[Int, Int], AdjustableList[Int, Int]), table: Map[Int, Int]): Boolean = {
-    val ca = table.values.toBuffer.filter(x => x % 2 == 0)
-    val a = output._1.toBuffer()
-    val cb = table.values.toBuffer.filter(x => x % 2 != 0)
-    val b = output._2.toBuffer()
+  def getResult(output:  (AdjustableList[Int, Int], AdjustableList[Int, Int])):
+      (Seq[Int], Seq[Int]) = {
+    (output._1.toBuffer(), output._2.toBuffer())
+  }
 
-    if(a != ca || b != cb) {
-      println("OutputA: " + a)
-      println("ExpectedA: " + ca)
-      println("OutputB: " + b)
-      println("ExpectedB: " + cb)
+  def getExpectedResult(input: Map[Int, Int]): (Seq[Int], Seq[Int]) = {
+    (input.values.toBuffer.filter(x => x % 2 == 0),
+     input.values.toBuffer.filter(x => x % 2 != 0))
+  }
+}
 
-      false
-    }
-    true
+class ListMapTest()
+    extends TestAlgorithm[AdjustableList[Int, Int], Seq[Int]] {
+  def run(implicit c: Context): AdjustableList[Int, Int] = {
+    val modList = input.getAdjustableList()
+    modList.map((a) => (a._1, a._2 * 2))
+  }
+
+  def getResult(output: AdjustableList[Int, Int]): Seq[Int] = {
+    output.toBuffer().sortWith(_ < _)
+  }
+
+  def getExpectedResult(input: Map[Int, Int]): Seq[Int] = {
+    input.values.map(x => x * 2).toBuffer.sortWith(_ < _)
   }
 }

@@ -21,13 +21,23 @@ import scala.concurrent.{Await, Future}
 import tbd.Constants._
 import tbd.ddg.MemoNode
 import tbd.master.Master
+import tbd.macros.TbdMacros
+import tbd.ddg.FunctionTag
 import tbd.mod.{Dest, Mod}
 import tbd.worker.Worker
 
 class Memoizer[T](c: Context, memoId: Int) {
   import c.worker.context.dispatcher
 
-  def apply(args: Any*)(func: => T): T = {
+  import scala.language.experimental.macros
+  def apply(args: Any*)(func: => T): T = macro TbdMacros.memoMacro[T]
+
+  def applyInternal(
+      args: Seq[_],
+      func: => T,
+      funcId: Int,
+      freeTerms: List[(String, Any)]): T = {
+
     import c._
     val signature = memoId +: args
 
@@ -63,7 +73,8 @@ class Memoizer[T](c: Context, memoId: Int) {
     }
 
     if (!found) {
-      val memoNode = worker.ddg.addMemo(currentParent, signature)
+      val memoNode = worker.ddg.addMemo(currentParent, signature,
+                                        FunctionTag(funcId, freeTerms))
       val outerParent = currentParent
       currentParent = memoNode
       val value = func
@@ -147,7 +158,11 @@ class Memoizer[T](c: Context, memoId: Int) {
 }
 
 class DummyMemoizer[T](c: Context, memoId: Int) extends Memoizer[T](c, memoId) {
-  override def apply(args: Any*)(func: => T): T = {
+  override def applyInternal(
+      args: Seq[_],
+      func: => T,
+      fundId: Int,
+      freeTerms: List[(String, Any)]): T = {
     func
   }
 }
