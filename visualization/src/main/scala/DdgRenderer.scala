@@ -318,7 +318,7 @@ class DdgRenderer extends Panel with Publisher {
   }
 
   reactions += {
-    case e: KeyPressed => println("Key pressed" + e)
+    case e: KeyPressed => null
     case MouseClicked(_, p, _, _, _) => {
       val (x, y) = inverseTransform((p.x, p.y))
       val selectedNode = nodes.map(n => {

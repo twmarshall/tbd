@@ -17,17 +17,17 @@ package tbd.ddg
 
 import tbd.Constants.ModId
 
-
 abstract class Tag
 object Tag {
   case class Read(val readValue: Any, val reader: FunctionTag)(val mod: ModId)
     extends Tag
+    //What about key/values? We can use that for mod comparison?
+    //Additional Idea: If verticis match, all allocated modifiabels in child nodes would also match.
   case class Write(val writes: List[SingleWriteTag]) extends Tag
   case class Memo(val function: FunctionTag, val args: Seq[Any]) extends Tag
   case class Mod(val dests: List[ModId], val initializer: FunctionTag) extends Tag
   case class Par(val fun1: FunctionTag, val fun2: FunctionTag) extends Tag
   case class Root() extends Tag
-
 
   def formatTag(tag: Tag): String = {
     tag match{

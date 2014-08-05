@@ -299,12 +299,12 @@ object TBD {
 	if (c.allocations2.contains(key)) {
 	  c.allocations2(key)
 	} else {
-	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	  val dest = new Dest[U](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
 	  c.allocations2(key) = dest
 	  dest
 	}
       } else {
-	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	new Dest[U](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
       }
 
     val modNode = c.worker.ddg.addMod(null,

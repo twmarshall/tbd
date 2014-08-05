@@ -40,7 +40,6 @@ class MainView(diffMode: Boolean) extends MainFrame {
 
   reactions += {
     case SelectedDDGChanged(ddg) => {
-      println("selection changed")
       updateDiff()
     }
   }
@@ -55,9 +54,13 @@ class MainView(diffMode: Boolean) extends MainFrame {
       val tbdDiff = TraceComparison.greedyTraceDistance(visualizer1.ddg.ddg,
                         visualizer2.ddg.ddg, (node => node.internalId))
 
-      label.text = "Trace Distance: " +
-        (diff.added.length + diff.removed.length) + "\n" +
-        "TBD Distance: " + (tbdDiff.added.length + tbdDiff.removed.length)
+      label.text = "Tree size left: " + visualizer1.ddg.ddg.nodes.size +
+        ", right: " + visualizer2.ddg.ddg.nodes.size +
+        "\nTrace Distance: " +
+        (diff.added.length + diff.removed.length) +
+        " (Added: " + diff.removed.length + ", removed: " + diff.added.length + ") \n" +
+        "TBD Distance: " + (tbdDiff.added.length + tbdDiff.removed.length) +
+        " (Added: " + tbdDiff.removed.length + ", removed: " + tbdDiff.added.length + ")"
     }
   }
 

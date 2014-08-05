@@ -411,11 +411,15 @@ class MemoTests extends FlatSpec with Matchers {
     test.count should be (1)
 
     val root = new MockRootNode(List(
-      new MockReadNode(List(
-        new MockMemoNode(List(
+      new MockModNode(List(
+        new MockReadNode(List(
+          new MockMemoNode(List(
+            new MockModNode(List(
+              new MockReadNode(List())
+            ))
+          )),
           new MockReadNode(List())
-        )),
-        new MockReadNode(List())
+        ))
       ))
     ))
 
@@ -433,12 +437,18 @@ class MemoTests extends FlatSpec with Matchers {
     test.count should be (1)
 
     val root2 = new MockRootNode(List(
-      new MockReadNode(List(
-        new MockReadNode(List()),
-        new MockMemoNode(List(
+      new MockModNode(List(
+        new MockReadNode(List(
+          new MockModNode(List(
+            new MockReadNode(List())
+          )),
+          new MockMemoNode(List(
+            new MockModNode(List(
+              new MockReadNode(List())
+            ))
+          )),
           new MockReadNode(List())
-        )),
-        new MockReadNode(List())
+        ))
       ))
     ))
 
