@@ -171,7 +171,7 @@ class ChunkList[T, U](
      (implicit c: Context): AdjustableList[T, U] = {
     def mapper(chunk: Vector[(T, U)]) = {
       val tail = mod({
-	write(new ChunkListNode[T, U](Vector[(T, U)](chunk.toBuffer.sortWith(comparator): _*), mod({ write(null) })))
+	write(new ChunkListNode[T, U]((chunk.toBuffer.sortWith(comparator).toVector), mod({ write(null) })))
       })
 
       ("", new ChunkList(tail))
