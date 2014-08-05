@@ -16,6 +16,7 @@
 package tbd.examples.list
 
 import scala.collection.{GenIterable, GenMap, Seq}
+import scala.collection.immutable.TreeSet
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Context, ListConf, Mutator}
@@ -34,7 +35,8 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   data = new IntData(input, count, mutations)
 
   def runNaive(input: GenIterable[Int]) = {
-     input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((0, one), (2, two)))
+     //input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((0, one), (2, two)))
+    input map { TreeSet(_) } reduce((one: TreeSet[Int], two: TreeSet[Int]) => one ++ two)
   }
 
   def checkOutput(
