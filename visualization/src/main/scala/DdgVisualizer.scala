@@ -22,6 +22,10 @@ import scala.swing._
 import scala.swing.event._
 import tbd.ddg.{Tag, FunctionTag}
 
+// Usage for quick visualizer
+//
+// tbd.visualization.QuickVisualizer.show(mutator.getDDG())
+
 object QuickVisualizer {
   def create() = {
     val view = new MainView(false)

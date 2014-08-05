@@ -318,7 +318,26 @@ class DdgRenderer extends Panel with Publisher {
   }
 
   reactions += {
-    case e: KeyPressed => null
+    case KeyPressed(_, key, _, _) => {
+      var shallRepaint = true
+      key match {
+        case Key.Up => translateY -= 20 / scale
+        case Key.Down => translateY += 20 / scale
+        case Key.Left => translateX -= 20 / scale
+        case Key.Right => translateX += 20 / scale
+        case Key.PageUp => {
+          zoom(size.width / 2, size.height / 2, 1)
+        }
+        case Key.PageDown => {
+          zoom(size.width / 2, size.height / 2, -1)
+        }
+        case _ => shallRepaint = false
+      }
+      if(shallRepaint) {
+    invokePerspectiveChanged()
+        repaint()
+      }
+    }
     case MouseClicked(_, p, _, _, _) => {
       val (x, y) = inverseTransform((p.x, p.y))
       val selectedNode = nodes.map(n => {
@@ -352,24 +371,28 @@ class DdgRenderer extends Panel with Publisher {
     }
     case MouseWheelMoved(_, pt, _, dir) => {
 
-      val scaleSpeed = 1.3f
-      val (x, y) = inverseTransform((pt.x, pt.y))
-
-      if(dir < 0) {
-        scale *= scaleSpeed
-      } else {
-        scale /= scaleSpeed
-      }
-
-      val (x2, y2) = inverseTransform((pt.x, pt.y))
-
-      translateX -= (x - x2)
-      translateY -= (y - y2)
-
-      invokePerspectiveChanged()
-      repaint()
+      zoom(pt.x, pt.y, dir)
     }
     case _ => null
+  }
+
+  private def zoom(cx: Int, cy: Int, dir: Int) {
+    val scaleSpeed = 1.3f
+    val (x, y) = inverseTransform((cx, cy))
+
+    if(dir < 0) {
+      scale *= scaleSpeed
+    } else {
+      scale /= scaleSpeed
+    }
+
+    val (x2, y2) = inverseTransform((cx, cy))
+
+    translateX -= (x - x2)
+    translateY -= (y - y2)
+
+    invokePerspectiveChanged()
+    repaint()
   }
 
   private def invokePerspectiveChanged() {
