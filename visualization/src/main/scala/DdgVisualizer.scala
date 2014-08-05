@@ -22,6 +22,18 @@ import scala.swing._
 import scala.swing.event._
 import tbd.ddg.{Tag, FunctionTag}
 
+object QuickVisualizer {
+  def create() = {
+    val view = new MainView(false)
+    view.visualizer1
+  }
+  def show(ddg: tbd.ddg.DDG) {
+    val view = new MainView(false)
+    view.addResult(ExperimentResult(0,
+        List(), List(), List(), graph.DDG.create(ddg.root)))
+  }
+}
+
 class DdgVisualizer extends GridBagPanel with Publisher {
   val renderer = new DdgRenderer()
   listenTo(renderer)
