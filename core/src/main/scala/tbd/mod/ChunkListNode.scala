@@ -17,7 +17,7 @@ package tbd.mod
 
 import java.io.Serializable
 
-import tbd.{Changeable, Context, Memoizer}
+import tbd.{Changeable, Context, Memoizer, Modizer}
 import tbd.TBD._
 
 // The default value of zero for size works because size is only ever
@@ -71,4 +71,6 @@ class ChunkListNode[T, U](
 
     write(new ChunkListNode[V, W](newChunk, newNext))
   }
+
+  override def toString = "Node(" + chunk + ", " + nextMod + ")"
 }

@@ -18,8 +18,8 @@ package tbd.test
 import org.scalatest._
 import scala.collection.mutable.ArrayBuffer
 
-import tbd.{Adjustable, Changeable, Context, ListConf, ListInput, Memoizer, Mutator, TableInput}
-import tbd.mod.{AdjustableList, Mod}
+import tbd.{Adjustable, Changeable, Context, ListConf, ListInput, Memoizer, Mutator, TableInput, ChunkListInput}
+import tbd.mod.{AdjustableList, Mod, ChunkList}
 import tbd.TBD._
 
 class PropagationOrderTest(input: TableInput[Int, Int])
@@ -179,6 +179,17 @@ class SortTest(input: ListInput[Int, Double])
   }
 }
 
+class ChunkSortTest(input: ChunkListInput[Int, Double])
+    extends Adjustable[AdjustableList[Int, Double]] {
+  def run(implicit c: Context) = {
+    val list = input.getChunkList()
+    list.sort((pair1, pair2) => {
+      println("      comparing " + pair1 + " " + pair2)
+      pair1._2 < pair2._2
+    })
+  }
+}
+
 class SplitTest(input: ListInput[Int, Int], input2: TableInput[Int, Int])
     extends Adjustable[Mod[(AdjustableList[Int, Int], AdjustableList[Int, Int])]] {
   def run(implicit c: Context) = {
@@ -199,16 +210,17 @@ class SplitTest(input: ListInput[Int, Int], input2: TableInput[Int, Int])
   }
 }
 
-class MergeTest(input: ListInput[Int, Int], input2: ListInput[Int, Int])
+class MergeTest(input: ChunkListInput[Int, Int], input2: ChunkListInput[Int, Int])
     extends Adjustable[AdjustableList[Int, Int]] {
   def run(implicit c: Context) = {
-    val list = input.getAdjustableList()
-    val list2 = input2.getAdjustableList()
+    val list = input.getChunkList()
+    val list2 = input2.getChunkList()
 
-    list.merge(list2.asInstanceOf[tbd.mod.ModList[Int, Int]], (pair, pair2) => {
-      println("comparing " + pair + " " + pair2)
-      pair._2 <= pair2._2
-    })
+    list.asInstanceOf[ChunkList[Int, Int]]
+      .merge(list2.asInstanceOf[ChunkList[Int, Int]], (pair: (Int, Int), pair2: (Int, Int)) => {
+	println("comparing " + pair + " " + pair2)
+	pair._2 <= pair2._2
+      })
   }
 }
 
@@ -336,6 +348,21 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     println(output.toBuffer)
   }*/
 
+  /*"ChunkSortTest" should "only reexecute the least possible" in {
+    val mutator = new Mutator()
+    val input = mutator.createChunkList[Int, Double](new ListConf(chunkSize = 2, partitions = 1))
+    for (i <- List(10, 5, 6, 1, 7, 4, 8, 3, 2, 9)) {
+      input.put(i, i)
+    }
+    val output = mutator.run(new ChunkSortTest(input))
+    println(output.toBuffer)
+
+    println("\npropagating")
+    input.update(1, 8.5)
+    mutator.propagate()
+    println(output.toBuffer)
+  }*/
+
   /*"SplitTest" should " asdf" in {
     val mutator = new Mutator()
     val input = mutator.createList[Int, Int](new ListConf(chunkSize = 1, partitions = 1))
@@ -363,30 +390,35 @@ class ChangePropagationTests extends FlatSpec with Matchers {
 
   /*"MergeTest" should "asdf" in {
     val mutator = new Mutator()
-    val conf = new ListConf(partitions = 1, chunkSize = 1)
+    val conf = new ListConf(partitions = 1, chunkSize = 2)
 
-    val input = mutator.createList[Int, Int](conf)
-    input.put(1, 1)
-    input.put(3, 3)
-    input.put(5, 5)
-    input.put(10, 10)
+    val input = mutator.createChunkList[Int, Int](conf)
 
-    val input2 = mutator.createList[Int, Int](conf)
-    input2.put(4, 4)
-    input2.put(8, 8)
+    val input2 = mutator.createChunkList[Int, Int](conf)
+    //input2.put(0, 0)
+    //input2.put(2, 2)
+    input.put(4, 4)
+    input.put(8, 8)
+    //input2.put(13, 13)
+    //input2.put(14, 14)
 
-    println(input.getAdjustableList())
-    println(input2.getAdjustableList())
+    input2.put(1, 1)
+    input2.put(3, 3)
+    input2.put(5, 5)
+    input2.put(10, 10)
+
+    println(input.getChunkList())
+    println(input2.getChunkList())
     val output = mutator.run(new MergeTest(input, input2))
     println(output)
     println(output.toBuffer)
 
     println("\npropagating")
-    input.remove(3)
-    input.put(3, 12)
+    input2.remove(3)
+    input2.put(3, 12)
 
-    println(input.getAdjustableList())
-    println(input2.getAdjustableList())
+    println(input.getChunkList())
+    println(input2.getChunkList())
     mutator.propagate()
     println(output)
     println(output.toBuffer)

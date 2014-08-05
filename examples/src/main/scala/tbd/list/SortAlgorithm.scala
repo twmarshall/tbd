@@ -57,7 +57,7 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 }
 
 class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[Int, Mod[(Int, Array[(Int, Int)])]](_conf, _listConf) {
+    extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = mutator.createChunkList[Int, Int](listConf)
 
   data = new IntData(input, count, mutations)
@@ -68,15 +68,15 @@ class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   def checkOutput(
       input: Map[Int, Int],
-      output: Mod[(Int, Array[(Int, Int)])]) = {
+      output: AdjustableList[Int, Int]) = {
     val answer = runNaive(input.values)
 
-    output.read()._2.map(_._2).toBuffer == answer.toBuffer
+    output.toBuffer == answer.toBuffer
   }
 
-  def run(implicit c: Context): Mod[(Int, Array[(Int, Int)])] = {
+  def run(implicit c: Context) = {
     val list = input.getChunkList()
 
-    list.chunkSort(SortAlgorithm.predicate(_, _))
+    list.sort(SortAlgorithm.predicate(_, _))
   }
 }
