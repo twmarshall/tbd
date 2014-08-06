@@ -15,30 +15,10 @@
  */
 package tbd
 
-import akka.actor.ActorRef
-import akka.pattern.ask
-import scala.concurrent.Await
+trait Input[T, U] {
+  def put(key: T, value: U)
 
-import tbd.Constants._
-import tbd.messages._
-import tbd.mod.AdjustableList
+  def update(key: T, value: U)
 
-abstract class Input[T, U](masterRef: ActorRef, conf: AdjustableConf) {
-  val future = (masterRef ? CreateAdjustableMessage(conf)).mapTo[InputId]
-  val inputId = Await.result(future, DURATION)
-
-  def put(key: T, value: U) {
-    val future = masterRef ? PutInputMessage(inputId, key, value)
-    Await.result(future, DURATION)
-  }
-
-  def update(key: T, value: U) {
-    val future = masterRef ? UpdateInputMessage(inputId, key, value)
-    Await.result(future, DURATION)
-  }
-
-  def remove(key: T) {
-    val future = masterRef ? RemoveInputMessage(inputId, key)
-    Await.result(future, DURATION)
-  }
+  def remove(key: T)
 }

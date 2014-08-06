@@ -20,11 +20,10 @@ import akka.pattern.ask
 import scala.collection.mutable.MutableList
 import scala.concurrent.Await
 
-import tbd.Changeable
+import tbd.{Changeable, Dest, Mod}
 import tbd.Constants._
 import tbd.master.Main
 import tbd.messages._
-import tbd.mod.{Dest, Mod}
 
 object Node {
   var id = 0

@@ -18,8 +18,8 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, Context, ListConf}
-import tbd.mod.AdjustableList
+import tbd._
+import tbd.list._
 
 object FilterAlgorithm {
   def predicate(pair: (Int, Int)): Boolean = {
@@ -29,7 +29,7 @@ object FilterAlgorithm {
 
 class FilterAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = mutator.createList[Int, Int](listConf)
+  val input = ListInput[Int, Int](listConf)
 
   data = new IntData(input, count, mutations)
 

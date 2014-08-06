@@ -23,7 +23,6 @@ import tbd.ddg.MemoNode
 import tbd.master.Master
 import tbd.macros.TbdMacros
 import tbd.ddg.FunctionTag
-import tbd.mod.{Dest, Mod}
 import tbd.worker.Worker
 
 class Memoizer[T](c: Context, memoId: Int) {

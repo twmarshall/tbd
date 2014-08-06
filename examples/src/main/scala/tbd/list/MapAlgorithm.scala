@@ -18,8 +18,8 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, ChunkListInput, Context, ListConf, ListInput}
-import tbd.mod.AdjustableList
+import tbd._
+import tbd.list._
 
 object MapAlgorithm {
   def mapper(pair: (Int, String)): (Int, Int) = {
@@ -33,7 +33,7 @@ object MapAlgorithm {
 
 class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = mutator.createList[Int, String](listConf)
+  val input = ListInput[Int, String](listConf)
 
   data = new WCData(input, count, mutations)
 
@@ -61,7 +61,7 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
 class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = mutator.createChunkList[Int, String](listConf)
+  val input = ChunkListInput[Int, String](listConf)
 
   data = new WCData(input, count, mutations)
 

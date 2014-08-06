@@ -18,8 +18,8 @@ package tbd.test
 import scala.collection.mutable.{ArrayBuffer, Buffer, Map}
 import org.scalatest._
 
-import tbd.{Adjustable, Context, Input, ListConf, ListInput, Mutator}
-import tbd.mod.{AdjustableList, Dest, Mod}
+import tbd._
+import tbd.list._
 import tbd.TBD._
 
 class ListMapTest(
@@ -83,7 +83,7 @@ class ListReduceSumTest(input: ListInput[String, Int])
 class ListTests extends FlatSpec with Matchers {
   "ListMapTest" should "return the mapped list" in {
     val mutator = new Mutator()
-    val input = mutator.createList[String, Int]()
+    val input = ListInput[String, Int]()
     input.put("one", 1)
     input.put("two", 2)
     val f = (pair: (String, Int)) => (pair._1, pair._2 * 2)
@@ -123,7 +123,7 @@ class ListTests extends FlatSpec with Matchers {
 
   val maxKey = 1000
   val rand = new scala.util.Random()
-  def addValue(input: Input[Int, Int], table: Map[Int, Int]) {
+  def addValue(input: ListInput[Int, Int], table: Map[Int, Int]) {
     var key = rand.nextInt(maxKey)
     val value = rand.nextInt(Int.MaxValue)
     while (table.contains(key)) {
@@ -133,7 +133,7 @@ class ListTests extends FlatSpec with Matchers {
     table += (key -> value)
   }
 
-  def removeValue(input: Input[Int, Int], table: Map[Int, Int]) {
+  def removeValue(input: ListInput[Int, Int], table: Map[Int, Int]) {
     if (table.size > 1) {
       var key = rand.nextInt(maxKey)
       while (!table.contains(key)) {
@@ -144,7 +144,7 @@ class ListTests extends FlatSpec with Matchers {
     }
   }
 
-  def updateValue(input: Input[Int, Int], table: Map[Int, Int]) {
+  def updateValue(input: ListInput[Int, Int], table: Map[Int, Int]) {
     var key = rand.nextInt(maxKey)
     val value = rand.nextInt(Int.MaxValue)
     while (!table.contains(key)) {
@@ -154,7 +154,7 @@ class ListTests extends FlatSpec with Matchers {
     table(key) = value
   }
 
-  def update(input: Input[Int, Int], table: Map[Int, Int]) {
+  def update(input: ListInput[Int, Int], table: Map[Int, Int]) {
     rand.nextInt(3) match {
       case 0 => addValue(input, table)
       case 1 => removeValue(input, table)
@@ -166,7 +166,7 @@ class ListTests extends FlatSpec with Matchers {
     for (partitions <- List(1, 2, 8)) {
       val mutator = new Mutator()
       val conf = new ListConf(partitions = partitions, chunkSize = 2)
-      val input = mutator.createList[Int, Int](conf)
+      val input = ListInput[Int, Int](conf)
       val table = Map[Int, Int]()
 
       for (i <- 0 to 100) {
@@ -198,7 +198,7 @@ class ListTests extends FlatSpec with Matchers {
     for (partitions <- List(1, 2, 8)) {
       val mutator = new Mutator()
       val conf = new ListConf(partitions = partitions)
-      val input = mutator.createList[Int, Int](conf)
+      val input = ListInput[Int, Int](conf)
       val table = Map[Int, Int]()
 
       for (i <- 0 to 100) {
@@ -226,7 +226,7 @@ class ListTests extends FlatSpec with Matchers {
 
   "ListReduceSumTest" should "return the reduced list" in {
     val mutator = new Mutator()
-    val input = mutator.createList[String, Int]()
+    val input = ListInput[String, Int]()
     input.put("one", 1)
     input.put("two", 2)
     val output = mutator.run(new ListReduceSumTest(input))
@@ -267,7 +267,7 @@ class ListTests extends FlatSpec with Matchers {
 
   it should "return the reduced big list" in {
     val mutator = new Mutator()
-    val input = mutator.createList[String, Int]()
+    val input = ListInput[String, Int]()
     var sum = 0
 
     for(i <- 0 to 100) {
@@ -284,7 +284,7 @@ class ListTests extends FlatSpec with Matchers {
 
   "ListSplitTest" should "return the list, split in two" in {
     val mutator = new Mutator()
-    val input = mutator.createList[String, Int](ListConf(partitions = 1))
+    val input = ListInput[String, Int](ListConf(partitions = 1))
     input.put("one", 0)
     input.put("two", 2)
     val output = mutator.run(new ListSplitTest(input))
@@ -347,7 +347,7 @@ class ListTests extends FlatSpec with Matchers {
 
   it should "return the big list, split in two" in {
     val mutator = new Mutator()
-    val input = mutator.createList[String, Int](ListConf(partitions = 1))
+    val input = ListInput[String, Int](ListConf(partitions = 1))
 
     var data = new ArrayBuffer[Int]()
 
@@ -400,7 +400,7 @@ class ListTests extends FlatSpec with Matchers {
 
   "ListSortTest" should "return the sorted list" in {
     val mutator = new Mutator()
-    val input = mutator.createList[String, Int](ListConf(partitions = 1))
+    val input = ListInput[String, Int](ListConf(partitions = 1))
     input.put("one", 0)
     input.put("two", 3)
     input.put("three", 2)
@@ -427,7 +427,7 @@ class ListTests extends FlatSpec with Matchers {
 
    it should "return the sorted big list" in {
     val mutator = new Mutator()
-    val input = mutator.createList[String, Int](ListConf(partitions = 1))
+    val input = ListInput[String, Int](ListConf(partitions = 1))
 
     var data = new ArrayBuffer[Int]()
 

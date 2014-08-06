@@ -15,6 +15,4 @@
  */
 package tbd
 
-import tbd.mod.Mod
-
 class Changeable[T](var mod: Mod[T])

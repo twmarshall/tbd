@@ -19,10 +19,9 @@ import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import scala.collection.mutable.{Map, MutableList, Set, TreeSet}
 
-import tbd.Changeable
+import tbd.{Changeable, Dest, Mod}
 import tbd.Constants._
 import tbd.master.Master
-import tbd.mod.{Dest, Mod}
 import tbd.worker.Worker
 
 class DDG(log: LoggingAdapter, id: String, worker: Worker) {

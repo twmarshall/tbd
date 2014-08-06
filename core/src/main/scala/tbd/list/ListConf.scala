@@ -13,16 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.mod
+package tbd.list
 
-import tbd.Context
-
-trait AdjustableChunkList[T, U] extends AdjustableList[T, U] {
-  def chunkMap[V, Q](
-      f: (Vector[(T, U)]) => (V, Q))
-     (implicit c: Context): AdjustableList[V, Q]
-
-  def chunkSort(
-      comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): Mod[(Int, Array[(T, U)])]
-}
+case class ListConf(file: String = "", partitions: Int = 8, chunkSize: Int = 1,
+  chunkSizer: Any => Int = _ => 1)

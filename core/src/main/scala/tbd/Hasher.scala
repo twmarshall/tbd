@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package tbd.mod
+package tbd
 
 class Hasher(
   k: Int,

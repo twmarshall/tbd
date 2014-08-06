@@ -13,45 +13,44 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.datastore
+package tbd.list
 
-import scala.collection.mutable.{ArrayBuffer, Map}
-import scala.concurrent.Future
+import scala.collection.mutable.ArrayBuffer
+import scala.concurrent.{Await, Future}
 
-import tbd.ListConf
-import tbd.mod._
+import tbd.Constants._
+import tbd.datastore.Datastore
 
-class PartitionedModListModifier(
-    _datastore: Datastore,
-    conf: ListConf) extends Modifier(_datastore) {
+class PartitionedListInput[T, U](conf: ListConf) extends ListInput[T, U] {
+  import scala.concurrent.ExecutionContext.Implicits.global
 
-  val partitionModifiers = ArrayBuffer[ModListModifier]()
-  val modList = initialize()
+  val partitionModifiers = ArrayBuffer[ModListInput[T, U]]()
+  val partitionedModList = initialize()
 
-  private def initialize(): PartitionedModList[Any, Any] = {
-    val partitions = new ArrayBuffer[ModList[Any, Any]]()
+  private def initialize(): PartitionedModList[T, U] = {
+    val partitions = new ArrayBuffer[ModList[T, U]]()
     for (i <- 1 to conf.partitions) {
-      val modListModifier = new ModListModifier(datastore, conf)
+      val modListModifier = new ModListInput[T, U]()
       partitionModifiers += modListModifier
       partitions += modListModifier.modList
     }
 
-    new PartitionedModList[Any, Any](partitions)
+    new PartitionedModList[T, U](partitions)
   }
 
-  private var insertInto = 0
-  def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
-    insertInto = (insertInto + 1) % conf.partitions
-    partitionModifiers(insertInto).insert(key, value)
+  private var putInto = 0
+  override def put(key: T, value: U) {
+    putInto = (putInto + 1) % conf.partitions
+    partitionModifiers(putInto).put(key, value)
   }
 
-  def update(key: Any, value: Any): ArrayBuffer[Future[String]] = {
+  override def update(key: T, value: U) {
     var futures = ArrayBuffer[Future[String]]()
 
     var found = false
     for (partitionModifier <- partitionModifiers) {
       if (!found && partitionModifier.contains(key)) {
-        futures = partitionModifier.update(key, value)
+        partitionModifier.update(key, value)
         found = true
       }
     }
@@ -60,24 +59,24 @@ class PartitionedModListModifier(
      println("Warning: tried to update nonexistant key")
    }
 
-    futures
+    Await.result(Future.sequence(futures), DURATION)
   }
 
-  def remove(key: Any): ArrayBuffer[Future[String]] = {
+  override def remove(key: T) {
     var futures = ArrayBuffer[Future[String]]()
 
     var found = false
     for (partitionModifier <- partitionModifiers) {
       if (!found && partitionModifier.contains(key)) {
-        futures = partitionModifier.remove(key)
+        partitionModifier.remove(key)
         found = true
       }
     }
 
-    futures
+    Await.result(Future.sequence(futures), DURATION)
   }
 
-  def getModifiable(): AdjustableList[Any, Any] = {
-    modList
+  override def getAdjustableList(): AdjustableList[T, U] = {
+    partitionedModList
   }
 }

@@ -17,8 +17,6 @@ package tbd
 
 import scala.collection.mutable.Map
 
-import tbd.mod.{Dest, Mod}
-
 class Modizer[T] {
   val allocations = Map[Any, Dest[Any]]()
 

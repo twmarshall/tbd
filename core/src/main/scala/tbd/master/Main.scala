@@ -31,8 +31,6 @@ object Main {
 
   var id = 0
 
-  var datastoreRef: ActorRef = null
-
   def main(args: Array[String]) {
     val main = new Main()
     println("New master started at: akka.tcp://" + main.system.name + "@127.0.0.1:2552")
@@ -46,7 +44,7 @@ class Main(storeType: String = "memory", cacheSize: Int = 10000) {
 
   val datastoreRef = system.actorOf(Datastore.props(storeType, cacheSize),
 				    "datastore")
-  Main.datastoreRef = datastoreRef
+  Datastore.datastoreRef = datastoreRef
 
   val masterRef = system.actorOf(Master.props(datastoreRef), "master")
 

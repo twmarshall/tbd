@@ -19,8 +19,8 @@ import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
 import scala.collection.immutable.HashMap
 
-import tbd.{Adjustable, ChunkListInput, Context, ListConf}
-import tbd.mod.Mod
+import tbd._
+import tbd.list._
 import tbd.TBD._
 
 object WCAlgorithm {
@@ -74,7 +74,7 @@ object WCAlgorithm {
 
 class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
-  val input = mutator.createList[Int, String](listConf)
+  val input = ListInput[Int, String](listConf)
 
   data = new WCData(input, count, mutations)
 
@@ -111,7 +111,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
 class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
-  val input = mutator.createChunkList[Int, String](listConf)
+  val input = ChunkListInput[Int, String](listConf)
 
   data = new WCData(input, count, mutations)
 

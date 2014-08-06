@@ -16,17 +16,43 @@
 package tbd.datastore
 
 import akka.actor.{Actor, ActorRef, ActorLogging, Props}
+import akka.pattern.ask
 import scala.collection.mutable.{ArrayBuffer, Map, Set}
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{Await, Future, Promise}
 
+import tbd.{Mod}
 import tbd.Constants._
-import tbd.{AdjustableConf, ListConf, TableConf}
 import tbd.messages._
-import tbd.mod._
 
 object Datastore {
+  var datastoreRef: ActorRef = null
+
   def props(storeType: String, cacheSize: Int): Props =
     Props(classOf[Datastore], storeType, cacheSize)
+
+  def createMod[T](value: T): Mod[T] = {
+    val future = datastoreRef ? CreateModMessage(value)
+    Await.result(future, DURATION).asInstanceOf[Mod[T]]
+  }
+
+  def getMod(modId: ModId, workerRef: ActorRef = null): Any = {
+    val future = datastoreRef ? GetModMessage(modId, workerRef)
+    val ret = Await.result(future, DURATION)
+
+    ret match {
+      case NullMessage => null
+      case x => x
+    }
+  }
+
+  def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
+    val futuresFuture = datastoreRef ? UpdateModMessage(modId, value)
+    Await.result(futuresFuture.mapTo[ArrayBuffer[Future[String]]], DURATION)
+  }
+
+  def removeMod(modId: ModId) {
+    datastoreRef ! RemoveModMessage(modId)
+  }
 }
 
 class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLogging {
@@ -43,14 +69,7 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
       new MemoryStore()
     }
 
-  // Maps the name of an input table to a set containing the Modifiers that were
-  // returned containing elements from this table, so that we can inform them
-  // when the table is updated.
-  private val inputs = Map[InputId, Modifier]()
-
   private val dependencies = Map[ModId, Set[ActorRef]]()
-
-  private var nextInputId: InputId = 0
 
   // Analytics
   private var startTime = System.currentTimeMillis()
@@ -111,62 +130,11 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
   }
 
   def receive = {
-    case CreateAdjustableMessage(conf: AdjustableConf) => {
-      val inputId = nextInputId
-      nextInputId += 1
-
-      val modifier =
-	conf match {
-	  case conf: ListConf =>
-	    if (conf.chunkSize > 1) {
-	      if (conf.partitions == 1) {
-		log.info("Creating new ChunkList.")
-		new ChunkListModifier(this, conf)
-	      } else {
-		log.info("Creating new PartitionedChunkList.")
-		new PartitionedChunkListModifier(this, conf)
-	      }
-	    } else {
-	      if (conf.partitions == 1) {
-		log.info("Creating new ModList.")
-		new ModListModifier(this, conf)
-	      } else {
-		log.info("Creating new PartitionedModList.")
-		new PartitionedModListModifier(this, conf)
-	      }
-	    }
-	  case TableConf() => {
-	    new TableModifier(this)
-	  }
-	}
-      inputs(inputId) = modifier
-
-      sender ! inputId
+    case CreateModMessage(value: Any) => {
+      sender ! createMod(value)
     }
 
-    case PutInputMessage(inputId: InputId, key: Any, value: Any) => {
-      val futures = inputs(inputId).insert(key, value)
-
-      sender ! Future.sequence(futures)
-    }
-
-    case UpdateInputMessage(inputId: InputId, key: Any, value: Any) => {
-      val futures = inputs(inputId).update(key, value)
-
-      sender ! Future.sequence(futures)
-    }
-
-    case RemoveInputMessage(inputId: InputId, key: Any) => {
-      val futures = inputs(inputId).remove(key)
-
-      sender ! Future.sequence(futures)
-    }
-
-    case GetInputMessage(inputId: InputId) => {
-      sender ! inputs(inputId).getModifiable()
-    }
-
-    case CreateModMessage() => {
+    case CreateModMessage(null) => {
       sender ! createMod(null)
     }
 
@@ -196,6 +164,10 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
 
     case UpdateModMessage(modId: ModId, null) => {
       sender ! updateMod(modId, null)
+    }
+
+    case RemoveModMessage(modId) => {
+      removeMod(modId)
     }
 
     case CleanupMessage => {

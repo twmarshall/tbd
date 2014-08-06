@@ -15,18 +15,13 @@
  */
 package tbd
 
-import akka.actor.ActorRef
-import akka.pattern.ask
-import scala.concurrent.Await
-
-import tbd.Constants._
-import tbd.messages._
-import tbd.mod.AdjustableList
-
-class ListInput[T, U](masterRef: ActorRef, conf: ListConf)
-    extends Input[T, U](masterRef, conf) {
-  def getAdjustableList(): AdjustableList[T, U] = {
-    val future = masterRef ? GetInputMessage(inputId)
-    Await.result(future.mapTo[AdjustableList[T, U]], DURATION)
-  }
+/**
+ * A simple iterator trait.
+ */
+trait Iterable[T, U, N <: Iterator[T, U, N]] {
+  /**
+   * Returns multiple disjoint iterators for the collection, which can be used
+   * in parallel. It is guaranteed that at least one iterator is returned.
+   */
+  def iterators(c: Context): List[Mod[N]]
 }

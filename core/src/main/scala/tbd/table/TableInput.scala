@@ -13,20 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd
+package tbd.table
 
-import akka.actor.ActorRef
-import akka.pattern.ask
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.messages._
-import tbd.mod.AdjustableChunkList
+import tbd.Input
+import tbd.datastore.Datastore
 
-class ChunkListInput[T, U](masterRef: ActorRef, conf: ListConf)
-    extends Input[T, U](masterRef, conf) {
-  def getChunkList(): AdjustableChunkList[T, U] = {
-    val future = masterRef ? GetInputMessage(inputId)
-    Await.result(future.mapTo[AdjustableChunkList[T, U]], DURATION)
+object TableInput {
+  def apply[T, U]() = new TableInput[T, U]
+}
+
+class TableInput[T, U] extends Input[T, U] {
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  val table = new ModTable[T, U]()
+
+  def put(key: T, value: U) {
+    table.table(key) = Datastore.createMod(value)
   }
+
+  def update(key: T, value: U) {
+    val futures = Datastore.updateMod(table.table(key).id, value)
+    Await.result(Future.sequence(futures), DURATION)
+  }
+
+  def remove(key: T) = ???
+
+  def getTable(): ModTable[T, U] = table
 }

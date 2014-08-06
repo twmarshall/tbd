@@ -13,45 +13,38 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.datastore
+package tbd.list
 
-import scala.collection.mutable.{ArrayBuffer, Map}
-import scala.concurrent.Future
+import scala.collection.mutable.ArrayBuffer
 
-import tbd.ListConf
-import tbd.mod._
+class PartitionedChunkListInput[T, U](conf: ListConf)
+    extends ChunkListInput[T, U] {
 
-class PartitionedChunkListModifier(
-    _datastore: Datastore,
-    conf: ListConf) extends Modifier(_datastore) {
-
-  val partitionModifiers = ArrayBuffer[ChunkListModifier]()
+  val partitionModifiers = ArrayBuffer[ModChunkListInput[T, U]]()
   val list = initialize()
 
-  private def initialize(): PartitionedChunkList[Any, Any] = {
-    val partitions = new ArrayBuffer[ChunkList[Any, Any]]()
+  private def initialize(): PartitionedChunkList[T, U] = {
+    val partitions = new ArrayBuffer[ChunkList[T, U]]()
     for (i <- 1 to conf.partitions) {
-      val chunkListModifier = new ChunkListModifier(datastore, conf)
+      val chunkListModifier = new ModChunkListInput[T, U](conf)
       partitionModifiers += chunkListModifier
       partitions += chunkListModifier.list
     }
 
-    new PartitionedChunkList[Any, Any](partitions)
+    new PartitionedChunkList[T, U](partitions)
   }
 
-  private var insertInto = 0
-  def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
-    insertInto = (insertInto + 1) % conf.partitions
-    partitionModifiers(insertInto).insert(key, value)
+  private var putInto = 0
+  def put(key: T, value: U) {
+    putInto = (putInto + 1) % conf.partitions
+    partitionModifiers(putInto).put(key, value)
   }
 
-  def update(key: Any, value: Any): ArrayBuffer[Future[String]] = {
-    var futures = ArrayBuffer[Future[String]]()
-
+  def update(key: T, value: U) {
     var found = false
     for (partitionModifier <- partitionModifiers) {
       if (!found && partitionModifier.contains(key)) {
-        futures = partitionModifier.update(key, value)
+        partitionModifier.update(key, value)
         found = true
       }
     }
@@ -59,17 +52,13 @@ class PartitionedChunkListModifier(
    if (!found) {
      println("Warning: tried to update nonexistant key " + key)
    }
-
-    futures
   }
 
-  def remove(key: Any): ArrayBuffer[Future[String]] = {
-    var futures = ArrayBuffer[Future[String]]()
-
+  def remove(key: T) {
     var found = false
     for (partitionModifier <- partitionModifiers) {
       if (!found && partitionModifier.contains(key)) {
-        futures = partitionModifier.remove(key)
+        partitionModifier.remove(key)
         found = true
       }
     }
@@ -77,10 +66,7 @@ class PartitionedChunkListModifier(
    if (!found) {
      println("Warning: tried to remove nonexistant key " + key)
    }
-
-    futures
   }
 
-  def getModifiable(): AdjustableList[Any, Any] = list
+  def getChunkList(): AdjustableChunkList[T, U] = list
 }
-

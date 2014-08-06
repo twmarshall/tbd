@@ -13,45 +13,46 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.datastore
+package tbd.list
 
 import akka.actor.ActorRef
-import scala.collection.mutable.{ArrayBuffer, Map}
-import scala.concurrent.Future
+import akka.pattern.ask
+import scala.collection.mutable.Map
+import scala.concurrent.{Await, Future}
 
-import tbd.Constants.ModId
-import tbd.ListConf
-import tbd.mod.{ChunkList, ChunkListNode, Mod}
+import tbd.Mod
+import tbd.Constants._
+import tbd.datastore.Datastore
 
-class ChunkListModifier(
-    _datastore: Datastore,
-    conf: ListConf) extends Modifier(_datastore) {
-  protected var tailMod = datastore.createMod[ChunkListNode[Any, Any]](null)
+class ModChunkListInput[T, U](conf: ListConf) extends ChunkListInput[T, U] {
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  protected var tailMod = Datastore.createMod[ChunkListNode[T, U]](null)
 
   // Contains the last ChunkListNode before the tail node. If the list is empty,
   // the contents of this mod will be null.
-  protected var lastNodeMod = datastore.createMod[ChunkListNode[Any, Any]](null)
+  protected var lastNodeMod = Datastore.createMod[ChunkListNode[T, U]](null)
 
-  val nodes = Map[Any, Mod[ChunkListNode[Any, Any]]]()
-  val previous = Map[Any, Mod[ChunkListNode[Any, Any]]]()
+  val nodes = Map[T, Mod[ChunkListNode[T, U]]]()
+  val previous = Map[T, Mod[ChunkListNode[T, U]]]()
 
-  val list = new ChunkList[Any, Any](lastNodeMod)
+  val list = new ChunkList[T, U](lastNodeMod)
 
-  def insert(key: Any, value: Any): ArrayBuffer[Future[String]] = {
-    val lastNode = datastore.getMod(lastNodeMod.id)
-      .asInstanceOf[ChunkListNode[Any, Any]]
+  def put(key: T, value: U) {
+    val lastNode = Datastore.getMod(lastNodeMod.id)
+      .asInstanceOf[ChunkListNode[T, U]]
 
     val newNode =
       if (lastNode == null) {
-        val chunk = Vector[(Any, Any)]((key -> value))
+        val chunk = Vector[(T, U)]((key -> value))
         val size = conf.chunkSizer(value)
 
         previous(key) = null
 
         new ChunkListNode(chunk, tailMod, size)
       } else if (lastNode.size >= conf.chunkSize) {
-        val newTailMod = datastore.createMod[ChunkListNode[Any, Any]](null)
-        val chunk = Vector[(Any, Any)]((key -> value))
+        val newTailMod = Datastore.createMod[ChunkListNode[T, U]](null)
+        val chunk = Vector[(T, U)]((key -> value))
         previous(key) = lastNodeMod
 
         lastNodeMod = tailMod
@@ -68,13 +69,14 @@ class ChunkListModifier(
 
     nodes(key) = lastNodeMod
 
-    datastore.updateMod(lastNodeMod.id, newNode)
+    val futures = Datastore.updateMod(lastNodeMod.id, newNode)
+    Await.result(Future.sequence(futures), DURATION)
   } //ensuring(isValid())
 
-  def update(key: Any, value: Any): ArrayBuffer[Future[String]] = {
-    val node = datastore.getMod(nodes(key).id).asInstanceOf[ChunkListNode[Any, Any]]
+  def update(key: T, value: U) {
+    val node = Datastore.getMod(nodes(key).id).asInstanceOf[ChunkListNode[T, U]]
 
-    var oldValue: Any = null.asInstanceOf[Any]
+    var oldValue: U = null.asInstanceOf[U]
     val newChunk = node.chunk.map{ case (_key, _value) => {
       if (key == _key) {
         oldValue = _value
@@ -87,14 +89,15 @@ class ChunkListModifier(
     val newSize = node.size + conf.chunkSizer(value) - conf.chunkSizer(oldValue)
     val newNode = new ChunkListNode(newChunk, node.nextMod, newSize)
 
-    datastore.updateMod(nodes(key).id, newNode)
+    val futures = Datastore.updateMod(nodes(key).id, newNode)
+    Await.result(Future.sequence(futures), DURATION)
   } //ensuring(isValid())
 
-  def remove(key: Any): ArrayBuffer[Future[String]] = {
-    val node = datastore.getMod(nodes(key).id)
-      .asInstanceOf[ChunkListNode[Any, Any]]
+  def remove(key: T) {
+    val node = Datastore.getMod(nodes(key).id)
+      .asInstanceOf[ChunkListNode[T, U]]
 
-    var oldValue: Any = null.asInstanceOf[Any]
+    var oldValue: U = null.asInstanceOf[U]
     val newChunk = node.chunk.filter{ case (_key, _value) => {
       if (key == _key) {
         oldValue = _value
@@ -106,8 +109,8 @@ class ChunkListModifier(
 
     val newNode =
       if (newChunk.size == 0) {
-        val nextNode = datastore.getMod(node.nextMod.id)
-          .asInstanceOf[ChunkListNode[Any, Any]]
+        val nextNode = Datastore.getMod(node.nextMod.id)
+          .asInstanceOf[ChunkListNode[T, U]]
 
         if (nextNode == null) {
           if (previous(key) == null) {
@@ -129,8 +132,8 @@ class ChunkListModifier(
             previous(k) = previous(key)
           }
 
-          val nextNextNode = datastore.getMod(nextNode.nextMod.id)
-            .asInstanceOf[ChunkListNode[Any, Any]]
+          val nextNextNode = Datastore.getMod(nextNode.nextMod.id)
+            .asInstanceOf[ChunkListNode[T, U]]
           if (nextNextNode != null) {
             for ((k, v) <- nextNextNode.chunk) {
               previous(k) = nodes(key)
@@ -144,19 +147,20 @@ class ChunkListModifier(
         new ChunkListNode(newChunk, node.nextMod, newSize)
       }
 
-    datastore.updateMod(nodes(key).id, newNode)
+    val futures = Datastore.updateMod(nodes(key).id, newNode)
+    Await.result(Future.sequence(futures), DURATION)
   } //ensuring(isValid())
 
-  def contains(key: Any): Boolean = {
+  def contains(key: T): Boolean = {
     nodes.contains(key)
   }
 
-  def isValid(): Boolean = {
-    var previousMod: Mod[ChunkListNode[Any, Any]] = null
-    var previousNode: ChunkListNode[Any, Any] = null
+  private def isValid(): Boolean = {
+    var previousMod: Mod[ChunkListNode[T, U]] = null
+    var previousNode: ChunkListNode[T, U] = null
     var mod = list.head
-    var node = datastore.getMod(mod.id)
-      .asInstanceOf[ChunkListNode[Any, Any]]
+    var node = Datastore.getMod(mod.id)
+      .asInstanceOf[ChunkListNode[T, U]]
 
     var valid = true
     while (node != null) {
@@ -172,12 +176,12 @@ class ChunkListModifier(
       previousMod = mod
       previousNode = node
       mod = node.nextMod
-      node = datastore.getMod(mod.id)
-        .asInstanceOf[ChunkListNode[Any, Any]]
+      node = Datastore.getMod(mod.id)
+        .asInstanceOf[ChunkListNode[T, U]]
     }
 
     valid
   }
 
-  def getModifiable(): Any = list
+  def getChunkList(): AdjustableChunkList[T, U] = list
 }

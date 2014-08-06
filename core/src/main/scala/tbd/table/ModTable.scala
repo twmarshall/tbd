@@ -13,20 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd
+package tbd.table
 
-import akka.actor.ActorRef
-import akka.pattern.ask
-import scala.concurrent.Await
+import scala.collection.mutable.Map
 
-import tbd.Constants._
-import tbd.messages._
-import tbd.mod.ModTable
+import tbd.Mod
 
-class TableInput[T, U](masterRef: ActorRef, conf: TableConf)
-    extends Input[T, U](masterRef, conf) {
-  def getTable(): ModTable[T, U] = {
-    val future = masterRef ? GetInputMessage(inputId)
-    Await.result(future.mapTo[ModTable[T, U]], DURATION)
-  }
+class ModTable[T, U] {
+  val table = Map[T, Mod[U]]()
+
+  def get(key: T): Mod[U] = table(key)
 }
