@@ -260,6 +260,7 @@ object TBD {
     val modNode = c.worker.ddg.addMod(c.currentDest.mod, null,
                                       c.currentParent,
                                       FunctionTag(readerId, freeTerms))
+    modNode.currentDest2 = c.currentDest2
 
     val outerReader = c.currentParent
     c.currentParent = modNode
@@ -311,6 +312,7 @@ object TBD {
                                       c.currentDest2.mod,
                                       c.currentParent,
                                       FunctionTag(readerId, freeTerms))
+    modNode.currentDest = c.currentDest
 
     val outerReader = c.currentParent
     c.currentParent = modNode
