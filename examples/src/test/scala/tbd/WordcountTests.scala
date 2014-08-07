@@ -18,9 +18,9 @@ package tbd.examples.test
 import org.scalatest._
 import scala.collection.immutable.HashMap
 
-import tbd.{Adjustable, Context, ListInput, Mutator}
+import tbd._
 import tbd.examples.list.WCAlgorithm
-import tbd.mod.Mod
+import tbd.list._
 import tbd.TBD._
 
 class WCTest(input: ListInput[Int, String])
@@ -45,7 +45,7 @@ class WCTest(input: ListInput[Int, String])
 class WordcountTests extends FlatSpec with Matchers {
   "WCAdjust" should "return the corrent word count" in {
     val mutator = new Mutator()
-    val input = mutator.createList[Int, String]()
+    val input = ListInput[Int, String]()
     val test = new WCTest(input)
 
     input.put(1, "apple boy apple cat cat cat")

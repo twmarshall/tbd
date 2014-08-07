@@ -17,10 +17,11 @@
 package tbd.visualization
 
 import scala.collection.mutable.ArrayBuffer
-import tbd.{Adjustable, Changeable, ListConf, ListInput, Mutator, TBD}
-import tbd.mod.{AdjustableList, Dest, Mod}
 import collection.mutable.HashMap
 import scala.util.Random
+
+import tbd._
+import tbd.list.ListInput
 
 abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
     extends ExperimentSource[V, Seq[Int]] {
@@ -28,7 +29,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
 
   private val mutator = new Mutator()
   private val listConf = algorithm.getListConf()
-  private val input = mutator.createList[Int, Int](listConf)
+  private val input = ListInput[Int, Int](listConf)
   protected var mutationCounter = 0
 
   private val table = new HashMap[Int, Int]

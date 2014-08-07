@@ -13,12 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.mod
+package tbd.list
 
-import scala.collection.mutable.Map
+import tbd.{Context, Mod}
 
-class ModTable[T, U] {
-  val table = Map[T, Mod[U]]()
+trait AdjustableChunkList[T, U] extends AdjustableList[T, U] {
+  def chunkMap[V, Q](
+      f: (Vector[(T, U)]) => (V, Q))
+     (implicit c: Context): AdjustableList[V, Q]
 
-  def get(key: T): Mod[U] = table(key)
+  def chunkSort(
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): Mod[(Int, Array[(T, U)])]
 }

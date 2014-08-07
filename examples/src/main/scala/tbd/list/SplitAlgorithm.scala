@@ -18,8 +18,8 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, Context, ListConf, Mutator}
-import tbd.mod.{AdjustableList, Mod}
+import tbd._
+import tbd.list._
 
 object SplitAlgorithm {
   def predicate(pair: (Int, String)): Boolean = {
@@ -33,7 +33,7 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, SplitAlgorithm.SplitResult](_conf, _listConf) {
   import SplitAlgorithm._
 
-  val input = mutator.createList[Int, String](listConf)
+  val input = ListInput[Int, String](listConf)
 
   data = new WCData(input, count, mutations)
 

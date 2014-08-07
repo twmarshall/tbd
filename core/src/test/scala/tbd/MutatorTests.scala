@@ -19,7 +19,7 @@ import org.scalatest._
 import scala.collection.mutable.Map
 
 import tbd._
-import tbd.mod.AdjustableList
+import tbd.list._
 
 class ListTest(input: ListInput[Int, Int])
     extends Adjustable[AdjustableList[Int, Int]] {
@@ -134,10 +134,10 @@ class MutatorTests extends FlatSpec with Matchers {
 
 	val conf = new ListConf(partitions = partitions, chunkSize = chunkSize)
 	if (chunkSize == 1) {
-	  val input = mutator.createList[Int, Int](conf)
+	  val input = ListInput[Int, Int](conf)
 	  runTest(mutator, new ListTest(input), input)
 	} else {
-	  val input = mutator.createChunkList[Int, Int](conf)
+	  val input = ChunkListInput[Int, Int](conf)
 	  runTest(mutator, new ChunkListTest(input), input)
 	}
 

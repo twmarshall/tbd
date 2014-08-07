@@ -20,9 +20,9 @@ import akka.pattern.ask
 import scala.collection.mutable.Map
 import scala.concurrent.Await
 
+import tbd.Mod
 import tbd.Constants._
 import tbd.messages._
-import tbd.mod.Mod
 
 class LRUNode(
   val key: ModId,

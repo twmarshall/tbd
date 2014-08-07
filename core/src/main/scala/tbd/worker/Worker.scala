@@ -25,7 +25,6 @@ import tbd.Constants._
 import tbd.{Adjustable, Context}
 import tbd.ddg.{DDG, Node, MemoNode, ParNode, ReadNode, Timestamp}
 import tbd.messages._
-import tbd.mod.{AdjustableList}
 
 object Worker {
   def props(id: String, datastoreRef: ActorRef, parent: ActorRef): Props =

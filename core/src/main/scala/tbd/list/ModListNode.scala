@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.mod
+package tbd.list
 
 import java.io.Serializable
 import scala.collection.mutable.Map
 
-import tbd.{Changeable, Context, Memoizer, Modizer}
+import tbd._
 import tbd.TBD._
 
 object ModListNode {
@@ -89,9 +89,13 @@ class ModListNode[T, U] (
       modizer: Modizer[ModListNode[T, U]])
      (implicit c: Context): Changeable[ModListNode[T, U]] = {
     if (comparator(value, that.value)) {
-      val newNext = modizer(next.id + that.next.id) {
+      val newNext =
+	modizer(value) {
 	read(next) {
-	  case null => write(new ModListNode(that.value, that.next))
+	  case null =>
+	    memo(null, that) {
+	      that.mergeTail(memo, modizer)
+	    }
 	  case node =>
             memo(node, that) {
               node.merge(that, comparator, memo, modizer)
@@ -101,18 +105,40 @@ class ModListNode[T, U] (
 
       write(new ModListNode(value, newNext))
     } else {
-      val newNext = modizer(next.id + that.next.id) {
-	read(that.next) {
-	  case null => write(new ModListNode(value, next))
-	  case node =>
-            memo(this, node) {
-              this.merge(node, comparator, memo, modizer)
-            }
+      val newNext =
+	modizer(that.value) {
+	  read(that.next) {
+	    case null =>
+	      memo(null, this) {
+		this.mergeTail(memo, modizer)
+	      }
+	    case node =>
+              memo(this, node) {
+		this.merge(node, comparator, memo, modizer)
+              }
 	}
       }
 
       write(new ModListNode(that.value, newNext))
     }
+  }
+
+  private def mergeTail(
+      memo: Memoizer[Changeable[ModListNode[T, U]]],
+      modizer: Modizer[ModListNode[T, U]])
+     (implicit c: Context): Changeable[ModListNode[T, U]] = {
+    val newNext = modizer(value) {
+      read(next) {
+	case null =>
+	  write[ModListNode[T, U]](null)
+	case next =>
+          memo(next) {
+            next.mergeTail(memo, modizer)
+          }
+      }
+    }
+
+    write(new ModListNode[T, U](value, newNext))
   }
 
   def sort(

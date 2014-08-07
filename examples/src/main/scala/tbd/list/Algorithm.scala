@@ -18,7 +18,8 @@ package tbd.examples.list
 import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, ListConf, Mutator}
+import tbd.{Adjustable, Mutator}
+import tbd.list.ListConf
 import tbd.master.Main
 
 abstract class Algorithm[Input, Output](_conf: Map[String, _],

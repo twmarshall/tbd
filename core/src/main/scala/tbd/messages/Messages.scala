@@ -19,21 +19,15 @@ import akka.actor.ActorRef
 import scala.collection.mutable.Set
 import scala.concurrent.Promise
 
-import tbd.{Adjustable, AdjustableConf, Changeable, TBD}
+import tbd.{Adjustable, Changeable, TBD}
 import tbd.Constants._
 import tbd.ddg.Node
-import tbd.mod.{AdjustableList, Mod}
 
 // Datastore
-case class CreateAdjustableMessage(conf: AdjustableConf)
-case class PutInputMessage(inputId: InputId, key: Any, value: Any)
-case class UpdateInputMessage(inputId: InputId, key: Any, value: Any)
-case class RemoveInputMessage(inputId: InputId, key: Any)
-case class GetInputMessage(inputId: InputId)
-
-case class CreateModMessage()
+case class CreateModMessage(value: Any)
 case class GetModMessage(modId: ModId, workerRef: ActorRef)
 case class UpdateModMessage(modId: ModId, value: Any)
+case class RemoveModMessage(modId: ModId)
 case class NullMessage()
 
 case class DBPutMessage(key: ModId, value: Any)

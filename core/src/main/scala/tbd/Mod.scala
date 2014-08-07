@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.mod
+package tbd
 
 import akka.actor.ActorRef
 import akka.pattern.ask
@@ -22,25 +22,18 @@ import scala.collection.mutable.{ArrayBuffer, Set}
 import scala.concurrent.{Await, Future, Lock, Promise}
 
 import tbd.Constants._
-import tbd.TBD
+import tbd.datastore.Datastore
 import tbd.master.Main
 import tbd.messages._
 
 class Mod[T](val id: ModId) extends Serializable {
 
   def read(workerRef: ActorRef = null): T = {
-    val valueFuture = Main.datastoreRef ? GetModMessage(id, workerRef)
-    val ret = Await.result(valueFuture, DURATION)
-
-    ret match {
-      case NullMessage => null.asInstanceOf[T]
-      case _ => ret.asInstanceOf[T]
-    }
+    Datastore.getMod(id, workerRef).asInstanceOf[T]
   }
 
   def update(_value: T): ArrayBuffer[Future[String]] = {
-    val futuresFuture = Main.datastoreRef ? UpdateModMessage(id, _value)
-    Await.result(futuresFuture.mapTo[ArrayBuffer[Future[String]]], DURATION)
+    Datastore.updateMod(id, _value)
   }
 
   override def equals(obj: Any): Boolean = {

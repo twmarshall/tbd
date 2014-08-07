@@ -17,11 +17,11 @@
 package tbd.visualization
 
 import scala.collection.mutable.ArrayBuffer
-import tbd.{Adjustable, Changeable, ListConf, ListInput, Mutator, TBD}
-import tbd.mod.{AdjustableList, Dest, Mod}
 import collection.mutable.HashMap
 import scala.util.Random
 import scala.io.StdIn
+
+import tbd._
 
 class ExhaustiveTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
 

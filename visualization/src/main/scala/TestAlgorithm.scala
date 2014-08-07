@@ -19,8 +19,8 @@ package tbd.visualization
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, Context, ListConf, ListInput, Mutator}
-import tbd.mod.{AdjustableList, Mod}
+import tbd._
+import tbd.list._
 import tbd.TBD._
 
 trait TestAlgorithm[TbdOutputType, NativeOutputType]

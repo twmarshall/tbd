@@ -22,7 +22,6 @@ import scala.concurrent.{Await, Future}
 import tbd.Constants._
 import tbd.ddg.{Node, Timestamp}
 import tbd.master.Main
-import tbd.mod.{Dest, Mod}
 import tbd.worker.Worker
 
 class Context(val id: String, val worker: Worker) {

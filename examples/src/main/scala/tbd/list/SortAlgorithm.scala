@@ -19,8 +19,8 @@ import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.immutable.TreeSet
 import scala.collection.mutable.Map
 
-import tbd.{Adjustable, Context, ListConf, Mutator}
-import tbd.mod.{AdjustableList, Mod}
+import tbd._
+import tbd.list._
 
 object SortAlgorithm {
   def predicate(a: (Int, Int), b: (Int, Int)): Boolean = {
@@ -30,7 +30,7 @@ object SortAlgorithm {
 
 class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = mutator.createList[Int, Int](listConf)
+  val input = ListInput[Int, Int](listConf)
 
   data = new IntData(input, count, mutations)
 
@@ -58,7 +58,7 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
 class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = mutator.createChunkList[Int, Int](listConf)
+  val input = ChunkListInput[Int, Int](listConf)
 
   data = new IntData(input, count, mutations)
 

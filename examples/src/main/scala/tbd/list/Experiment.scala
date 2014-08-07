@@ -19,8 +19,8 @@ import akka.util.Timeout
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.duration._
 
-import tbd.{Constants, ListConf, Mutator}
-
+import tbd.{Constants, Mutator}
+import tbd.list.ListConf
 
 class Experiment(conf: Map[String, _], listConf: ListConf) {
   val algorithm = conf("algorithms")

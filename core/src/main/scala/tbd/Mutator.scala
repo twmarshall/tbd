@@ -22,7 +22,6 @@ import tbd.Constants._
 import tbd.ddg.DDG
 import tbd.master.Main
 import tbd.messages._
-import tbd.mod.Mod
 
 class Mutator(aMain: Main = null) {
   var launchedMain = false
@@ -49,19 +48,6 @@ class Mutator(aMain: Main = null) {
   def propagate() {
     val future = main.masterRef ? PropagateMessage
     Await.result(future, DURATION)
-  }
-
-  def createList[T, U](conf: ListConf = new ListConf()): ListInput[T, U] = {
-    new ListInput[T, U](main.masterRef, conf)
-  }
-
-  def createChunkList[T, U](conf: ListConf = new ListConf())
-      : ChunkListInput[T, U] = {
-    new ChunkListInput[T, U](main.masterRef, conf)
-  }
-
-  def createTable[T, U](conf: TableConf = new TableConf()): TableInput[T, U] = {
-    new TableInput[T, U](main.masterRef, conf)
   }
 
   def getDDG(): DDG  = {
