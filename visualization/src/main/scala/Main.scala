@@ -77,6 +77,7 @@ object Main {
       case "quicksort" => create(new ListQuicksortTest())
       case "split" => create(new ListSplitTest())
       case "map" => create(new ListMapTest())
+      case "modDependency" => create(new ModDepTest())
     }
 
     main.run()

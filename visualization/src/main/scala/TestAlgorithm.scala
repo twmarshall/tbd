@@ -104,3 +104,32 @@ class ListMapTest()
     input.values.map(x => x * 2).toBuffer.sortWith(_ < _)
   }
 }
+
+class ModDepTest()
+    extends TestAlgorithm[Mod[Int], Int] {
+  def run(implicit c: Context): Mod[Int] = {
+    val modList = input.getAdjustableList().asInstanceOf[tbd.mod.ModList[Int, Int]]
+
+    mod{
+      val a = 10
+      read(mod {
+        val b = 5
+        read(modList.head) {
+          case next => {
+            write(next.value._2 + a + b)
+          }
+        }
+      }) {
+        case res => write(res)
+      }
+    }
+  }
+
+  def getResult(output: Mod[Int]): Int = {
+    output.read()
+  }
+
+  def getExpectedResult(input: Map[Int, Int]): Int = {
+    input.head._2 + 15
+  }
+}

@@ -72,86 +72,67 @@ object DependencyTracker {
     //Inverse direction for faster lookup
     var invDeps = HashMap[Node, List[Edge.FreeVar]]()
 
-    //Find all dependencies (only between child/parent
-
-    ddg.adj.flatMap(x => {
-      x._2.filter(y => y.isInstanceOf[Edge.Control])
-    }).map(e => {
-      e.destination.tag match {
-        case Tag.Read(_, fun) => {
-          Edge.FreeVar(e.destination, e.source, fun.freeVars)
-        }
-        case Tag.Memo(fun, _) => {
-          Edge.FreeVar(e.destination, e.source, fun.freeVars)
-        }
-        case Tag.Mod(_, fun) => {
-          Edge.FreeVar(e.destination, e.source, fun.freeVars)
-        }
-        case Tag.Par(fun1, fun2) => {
-          Edge.FreeVar(e.destination, e.source, fun1.freeVars ::: fun2.freeVars)
-        }
-        case _ => null
+    //Insert single edges for each node.
+    ddg.nodes.foreach(node => {
+      var dependencies = node.tag match {
+        case Tag.Read(_, fun) => fun.freeVars
+        case Tag.Par(fun1, fun2) => fun1.freeVars ::: fun2.freeVars
+        case Tag.Mod(_, fun) => fun.freeVars
+        case Tag.Memo(fun, _) => fun.freeVars
+        case _ => List[(String, Any)]()
       }
-    }).filter(x => x != null).foreach(e => {
-      invDeps(e.destination) = List(e)
+
+      if(!dependencies.isEmpty) {
+        val parent = ddg.getCallParent(node)
+        if(!invDeps.contains(parent)) {
+          invDeps(parent) = List()
+        }
+
+        invDeps(parent) = Edge.FreeVar(node, parent, dependencies) :: invDeps(parent)
+      }
     })
 
-    //Bubble dependencies upwards
+    //Summarize paths with similar dependencies. 
     val iter = new TopoSortIterator(
-          ddg.root,
-          ddg,
-          (e: Edge) => (e.isInstanceOf[Edge.Control])).toList
+                ddg.root,
+                ddg,
+                (e: Edge) => (e.isInstanceOf[Edge.Control])).toList
+    iter.foreach(node => {
+      val parent = ddg.getCallParent(node)
 
-    iter.foreach(n => {
-      if(!n.tag.isInstanceOf[Tag.Root] && invDeps.contains(n)) {
-        val vars = n.tag match {
-          case Tag.Read(_, fun) => fun.freeVars
-          case Tag.Memo(fun, _) => fun.freeVars
-          case Tag.Mod(_, fun) => fun.freeVars
-          case Tag.Par(fun1, fun2) => fun1.freeVars ::: fun2.freeVars
-          case _ => List[(String, Any)]()
+      if(parent != null && invDeps.contains(node)) {
+        val depsToMe = invDeps(node)
+        val depsToParent = invDeps(parent)
+
+        for(depToMe <- depsToMe) {
+          for(depToParent <- depsToParent) {
+            if(depToParent.source == node) {
+              val common = depToParent.dependencies.intersect(depToMe.dependencies)
+
+              if(!common.isEmpty) {
+                depToMe.dependencies = depToMe.dependencies.filter(x => {
+                  !common.contains(x)
+                })
+
+                invDeps(parent) = Edge.FreeVar(depToMe.source, parent, common) :: invDeps(parent)
+              }
+            }
+          }
         }
-
-        invDeps(n).foreach(e => {
-          val inter = vars.intersect(e.dependencies)
-
-          e.dependencies = e.dependencies.filter(e => !inter.contains(e))
-
-          val parent = ddg.getCallParent(n)
-
-          invDeps(parent) =
-            (Edge.FreeVar(e.source, parent, inter)) :: invDeps(parent)
-        })
       }
     })
 
-    //Merge and reduce freeVar dep edges
-    ddg.nodes.foreach(n => {
-      if(invDeps.contains(n)) {
-        var deps = HashMap[Node, Edge.FreeVar]()
-        invDeps(n).foreach(e =>
-          if(deps.contains(e.source)) {
-            deps(e.source).dependencies =
-              (deps(e.source).dependencies ::: e.dependencies).distinct
-          } else (
-            deps(e.source) =
-              Edge.FreeVar(e.source, e.destination, e.dependencies.distinct)
-          )
-        )
+    //Remove deps to root
+    invDeps(ddg.root) = List()
 
-        //Remove empty dependencies and dependencies to direct childs of root
-        //because this is out of our scope of change propagation and therefore
-        //considered constant.
-        deps = deps.filter(e => {
-          !e._2.dependencies.isEmpty &&
-          e._2.destination != ddg.root &&
-          ddg.getCallParent(e._2.destination) != ddg.root
-        })
-
-        deps.foreach(e => {
-          ddg.adj(e._2.source) += e._2
-        })
+    //Add non-empty edges to graph
+    for(dep <- invDeps) {
+      val (_, edges) = dep
+      for(edge <- edges) {
+        if(!edge.dependencies.isEmpty) {
+          ddg.adj(edge.source) += edge
+        }
       }
-    })
+    }
   }
 }
