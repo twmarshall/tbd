@@ -211,7 +211,21 @@ class SplitTest(input: ListInput[Int, Int], input2: TableInput[Int, Int])
   }
 }
 
-class MergeTest(input: ChunkListInput[Int, Int], input2: ChunkListInput[Int, Int])
+class MergeTest(input: ListInput[Int, Int], input2: ListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit c: Context) = {
+    val list = input.getAdjustableList()
+    val list2 = input2.getAdjustableList()
+
+    list.asInstanceOf[ModList[Int, Int]]
+      .merge(list2.asInstanceOf[ModList[Int, Int]], (pair: (Int, Int), pair2: (Int, Int)) => {
+	println("comparing " + pair + " " + pair2)
+	pair._2 <= pair2._2
+      })
+  }
+}
+
+class ChunkMergeTest(input: ChunkListInput[Int, Int], input2: ChunkListInput[Int, Int])
     extends Adjustable[AdjustableList[Int, Int]] {
   def run(implicit c: Context) = {
     val list = input.getChunkList()
@@ -243,7 +257,7 @@ class MapReduceTest(input: ListInput[Int, Int])
 }
 
 class ChangePropagationTests extends FlatSpec with Matchers {
-  "PropagationOrderTest" should "reexecute reads in the correct order" in {
+  /*"PropagationOrderTest" should "reexecute reads in the correct order" in {
     val mutator = new Mutator()
     val input = TableInput[Int, Int]()
     input.put(1, 1)
@@ -274,7 +288,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     mutator.propagate()
 
     mutator.shutdown()
-  }
+  }*/
 
   /*"ReduceTest" should "reexecute only the necessary reduce steps" in {
     val mutator = new Mutator()
@@ -391,6 +405,44 @@ class ChangePropagationTests extends FlatSpec with Matchers {
 
   /*"MergeTest" should "asdf" in {
     val mutator = new Mutator()
+    val conf = new ListConf(partitions = 1, chunkSize = 1)
+
+    val input = ListInput[Int, Int](conf)
+    /*input.put(1, 1)
+    input.put(5, 5)
+    input.put(6, 6)
+    input.put(7, 7)
+    input.put(10, 10)*/
+    input.put(1, 1)
+    input.put(6, 6)
+
+    val input2 = ListInput[Int, Int](conf)
+    /*input2.put(2, 2)
+    input2.put(3, 3)
+    input2.put(4, 4)
+    input2.put(8, 8)
+    input2.put(9, 9)*/
+    input2.put(7, 7)
+
+    //println(input.getAdjustableList())
+    //println(input2.getAdjustableList())
+    val output = mutator.run(new MergeTest(input, input2))
+    println(output)
+    println(output.toBuffer)
+
+    println("\npropagating")
+    input.remove(1)
+    input.put(1, 8)
+
+    //println(input.getAdjustableList())
+    //println(input2.getAdjustableList())
+    mutator.propagate()
+    println(output)
+    println(output.toBuffer)
+  }*/
+
+  /*"ChunkMergeTest" should "asdf" in {
+    val mutator = new Mutator()
     val conf = new ListConf(partitions = 1, chunkSize = 2)
 
     val input = ChunkListInput[Int, Int](conf)
@@ -400,9 +452,8 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     //input2.put(2, 2)
     input.put(4, 4)
     input.put(8, 8)
-    //input2.put(13, 13)
-    //input2.put(14, 14)
 
+    val input2 = mutator.createChunkList[Int, Int](conf)
     input2.put(1, 1)
     input2.put(3, 3)
     input2.put(5, 5)

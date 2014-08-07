@@ -59,7 +59,8 @@ class ModList[T, U](
       that: ModList[T, U],
       comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): ModList[T, U] = {
-    merge(that, comparator, makeMemoizer[Changeable[ModListNode[T, U]]](), makeModizer[ModListNode[T, U]]())
+    merge(that, comparator, makeMemoizer[Changeable[ModListNode[T, U]]](),
+	  makeModizer[ModListNode[T, U]]())
   }
 
   def merge(
@@ -71,12 +72,14 @@ class ModList[T, U](
     new ModList(
       modizer(head.id) {
 	read(head) {
-	  case null => read(that.head) { write(_) }
+	  case null =>
+	    read(that.head) { write(_) }
 	  case node =>
 	    read(that.head) {
-	      case null => write(node)
+	      case null =>
+		write(node)
 	      case thatNode =>
-		memo(node.value, thatNode.value) {
+		memo(node, thatNode) {
 		  node.merge(thatNode, comparator, memo, modizer)
 		}
 	    }
@@ -129,7 +132,7 @@ class ModList[T, U](
       hasher.hash(id.hashCode() ^ round) == 0
 
       // makes reduce deterministic, for testing purposes
-      //id.hashCode() % 3 == 0
+      // id.hashCode() % 3 == 0
     }
 
     def halfList(
@@ -207,16 +210,19 @@ class ModList[T, U](
       ("" + pair._1, new ModList(tail))
     }
 
-    val memo = makeMemoizer[(Memoizer[Changeable[ModListNode[T, U]]],
-			     Modizer[ModListNode[T, U]])]()
+    val memo = makeMemoizer[ModList[T, U]](false)
 
     def reducer(pair1: (String, ModList[T, U]), pair2: (String, ModList[T, U])) = {
-      val (memoizer, modizer) = memo(pair1, pair2) {
-        (makeMemoizer[Changeable[ModListNode[T, U]]](),
-	 makeModizer[ModListNode[T, U]]())
+      //println("merging " + pair2._2)
+      //println(" and " + pair1._2)
+
+      val merged = memo(pair1, pair2) {
+        val memoizer = makeMemoizer[Changeable[ModListNode[T, U]]](false)
+	val modizer = makeModizer[ModListNode[T, U]]()
+	pair2._2.merge(pair1._2, comparator, memoizer, modizer)
       }
 
-      val merged = pair2._2.merge(pair1._2, comparator, memoizer, modizer)
+      //println("merged - " + merged)
       (pair1._1 + pair2._1, merged)
     }
 
