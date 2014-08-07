@@ -108,7 +108,7 @@ class ListMapTest()
 class ModDepTest()
     extends TestAlgorithm[Mod[Int], Int] {
   def run(implicit c: Context): Mod[Int] = {
-    val modList = input.getAdjustableList().asInstanceOf[tbd.mod.ModList[Int, Int]]
+    val modList = input.getAdjustableList().asInstanceOf[tbd.list.ModList[Int, Int]]
 
     mod{
       val a = 10
