@@ -92,7 +92,7 @@ object DependencyTracker {
       }
     })
 
-    //Summarize paths with similar dependencies. 
+    //Summarize paths with similar dependencies.
     val iter = new TopoSortIterator(
                 ddg.root,
                 ddg,
