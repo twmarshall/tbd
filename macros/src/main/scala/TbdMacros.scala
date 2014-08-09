@@ -20,6 +20,11 @@ import reflect.macros.whitebox.Context
 import language.experimental.macros
 import scala.tools.reflect.ToolBox
 
+//Static annotation for TBD functions, which can be read by our macro.
+//We use this to re-use code as we can use the same macro for different
+//functions. Only the parameter list has to be equal.
+class functionToInvoke(value: String) extends scala.annotation.StaticAnnotation
+
 object TbdMacros {
 
   var funcId = 0
@@ -35,7 +40,7 @@ object TbdMacros {
     import c.universe._
 
     val closedVars = createFreeVariableList(c)(func)
-    val memo = Select(c.prefix.tree, TermName("applyInternal"))
+    val memo = getFunctionToInvoke(c)
     val id = Literal(Constant(getFuncId()))
     c.Expr[T](q"$memo(List(..$args), $func, $id, $closedVars)")
   }
@@ -45,7 +50,7 @@ object TbdMacros {
     import c.universe._
 
     val closedVars = createFreeVariableList(c)(one)
-    val par = Select(c.prefix.tree, TermName("parInternal"))
+    val par = getFunctionToInvoke(c)
     val id = Literal(Constant(getFuncId()))
     c.Expr[Q](q"$par($one, $id, $closedVars)")
   }
@@ -55,7 +60,7 @@ object TbdMacros {
     import con.universe._
 
     val closedVars = createFreeVariableList(con)(two)
-    val par = Select(con.prefix.tree, TermName("parTwoInternal"))
+    val par = getFunctionToInvoke(con)
     val id = Literal(Constant(getFuncId()))
     con.Expr[Q](q"$par($two, $c, $id, $closedVars)")
   }
@@ -65,17 +70,7 @@ object TbdMacros {
     import con.universe._
 
     val closedVars = createFreeVariableList(con)(reader)
-    val readFunc = Select(con.prefix.tree, TermName("readInternal"))
-    val id = Literal(Constant(getFuncId()))
-    con.Expr[T](q"$readFunc($mod, $reader, $c, $id, $closedVars)")
-  }
-
-  def read_2Macro[T]
-      (con: Context)(mod: con.Tree)(reader: con.Tree)(c: con.Tree): con.Expr[T] = {
-    import con.universe._
-
-    val closedVars = createFreeVariableList(con)(reader)
-    val readFunc = Select(con.prefix.tree, TermName("read_2Internal"))
+    val readFunc = getFunctionToInvoke(con)
     val id = Literal(Constant(getFuncId()))
     con.Expr[T](q"$readFunc($mod, $reader, $c, $id, $closedVars)")
   }
@@ -85,7 +80,7 @@ object TbdMacros {
     import con.universe._
 
     val closedVars = createFreeVariableList(con)(initializer)
-    val modFunc = Select(con.prefix.tree, TermName("modInternal"))
+    val modFunc = getFunctionToInvoke(con)
     val id = Literal(Constant(getFuncId()))
     con.Expr[T](q"$modFunc($initializer, $key, $c, $id, $closedVars)")
   }
@@ -95,69 +90,29 @@ object TbdMacros {
     import con.universe._
 
     val closedVars = createFreeVariableList(con)(initializer)
-    val modFunc = Select(con.prefix.tree, TermName("modInternal"))
+    val modFunc = getFunctionToInvoke(con)
     val id = Literal(Constant(getFuncId()))
     con.Expr[T](q"$modFunc($initializer, null, $c, $id, $closedVars)")
   }
 
-  def mod2Macro[T]
-      (con: Context)(initializer: con.Tree)(c: con.Tree): con.Expr[T] = {
-    import con.universe._
+  /**
+   * Finds the the value of the functionToInvoke setting of the
+   * called macro application, or alternatively, fails and stops makro
+   * expansion.
+   */
+  private def getFunctionToInvoke(c: Context) = {
+    import c.universe._
+    val settingValue = c.macroApplication.symbol.annotations.filter(
+      _.tree.tpe <:< typeOf[functionToInvoke]
+    ).headOption.flatMap(
+      _.tree.children.tail.collectFirst {
+        case Literal(Constant(s: String)) => s
+      }
+    ).getOrElse(
+      c.abort(c.enclosingPosition, "functionToInvoke annotation not found.")
+    )
 
-    val closedVars = createFreeVariableList(con)(initializer)
-    val modFunc = Select(con.prefix.tree, TermName("mod2Internal"))
-    val id = Literal(Constant(getFuncId()))
-    con.Expr[T](q"$modFunc($initializer, null, $c, $id, $closedVars)")
-  }
-
-  def mod2KeyedMacro[T]
-      (con: Context)(initializer: con.Tree, key: con.Tree)(c: con.Tree): con.Expr[T] = {
-    import con.universe._
-
-    val closedVars = createFreeVariableList(con)(initializer)
-    val modFunc = Select(con.prefix.tree, TermName("mod2Internal"))
-    val id = Literal(Constant(getFuncId()))
-    con.Expr[T](q"$modFunc($initializer, $key, $c, $id, $closedVars)")
-  }
-
-  def modLeftMacro[T]
-      (con: Context)(initializer: con.Tree)(c: con.Tree): con.Expr[T] = {
-    import con.universe._
-
-    val closedVars = createFreeVariableList(con)(initializer)
-    val modFunc = Select(con.prefix.tree, TermName("modLeftInternal"))
-    val id = Literal(Constant(getFuncId()))
-    con.Expr[T](q"$modFunc($initializer, null, $c, $id, $closedVars)")
-  }
-
-  def modLeftKeyedMacro[T]
-      (con: Context)(initializer: con.Tree, key: con.Tree)(c: con.Tree): con.Expr[T] = {
-    import con.universe._
-
-    val closedVars = createFreeVariableList(con)(initializer)
-    val modFunc = Select(con.prefix.tree, TermName("modLeftInternal"))
-    val id = Literal(Constant(getFuncId()))
-    con.Expr[T](q"$modFunc($initializer, $key, $c, $id, $closedVars)")
-  }
-
-  def modRightMacro[T]
-      (con: Context)(initializer: con.Tree)(c: con.Tree): con.Expr[T] = {
-    import con.universe._
-
-    val closedVars = createFreeVariableList(con)(initializer)
-    val modFunc = Select(con.prefix.tree, TermName("modRightInternal"))
-    val id = Literal(Constant(getFuncId()))
-    con.Expr[T](q"$modFunc($initializer, null, $c, $id, $closedVars)")
-  }
-
-  def modRightKeyedMacro[T]
-      (con: Context)(initializer: con.Tree, key: con.Tree)(c: con.Tree): con.Expr[T] = {
-    import con.universe._
-
-    val closedVars = createFreeVariableList(con)(initializer)
-    val modFunc = Select(con.prefix.tree, TermName("modRightInternal"))
-    val id = Literal(Constant(getFuncId()))
-    con.Expr[T](q"$modFunc($initializer, $key, $c, $id, $closedVars)")
+    Select(c.prefix.tree, TermName(settingValue))
   }
   /**
    * Generates a list using quasiquotes from free variables from
