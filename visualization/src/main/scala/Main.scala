@@ -16,7 +16,7 @@
 
 package tbd.visualization
 
-import tbd.visualization.analysis.DependencyTracker
+import tbd.visualization.analysis._
 import org.rogach.scallop._
 import scala.language.existentials
 
@@ -95,9 +95,9 @@ class Main[T, V](val test: TestBase[T, V], val mainView: MainView)
   def resultReceived(
     result: ExperimentResult[V, Seq[Int]],
     sender: ExperimentSource[V, Seq[Int]]) = {
-      DependencyTracker.findAndInsertReadWriteDependencies(result.ddg)
-      DependencyTracker.findAndInsertFreeVarDependencies(result.ddg)
-      DependencyTracker.findAndInsertModWriteDependencies(result.ddg)
+      new ModDependencyTracker().findAndInsertDependencies(result.ddg)
+      new FreeVarDependencyTracker().findAndInsertDependencies(result.ddg)
+      new ReadWriteDependencyTracker().findAndInsertDependencies(result.ddg)
       mainView.addResult(result)
   }
 

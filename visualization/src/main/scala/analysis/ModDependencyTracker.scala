@@ -21,14 +21,30 @@ import tbd.ddg.Tag
 import tbd.Constants.ModId
 import tbd.visualization.graph._
 
-abstract class DependencyTracker {
-  def findAndInsertDependencies(ddg: DDG) {
-    var deps = findDependencies(ddg)
+class ModDependencyTracker extends DependencyTracker {
+  def findDependencies(ddg: DDG): Iterable[Edge] = {
+    val mods = new HashMap[ModId, Node]
 
-    deps.foreach(d => {
-        ddg.adj(d.source) += d;
+    ddg.nodes.foreach(x => x.tag match {
+      case Tag.Mod(dests, _) => for(dest <- dests) {
+          mods(dest) = x
+      }
+      case _ => null
+    })
+
+    ddg.nodes.flatMap(x => x.tag match {
+      case Tag.Write(writes) =>
+        writes.flatMap(write => {
+          if(mods.contains(write.mod)) {
+            val dst = mods(write.mod)
+            val src = x
+            List(Edge.ModWrite(src, dst, write.mod),
+                 Edge.WriteMod(dst, src, write.mod))
+          } else {
+            List()
+          }
+        })
+      case _ => List()
     })
   }
-
-  def findDependencies(ddg: DDG): Iterable[Edge]
 }

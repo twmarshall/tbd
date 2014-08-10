@@ -46,12 +46,12 @@ class MainView(diffMode: Boolean) extends MainFrame {
 
   private def updateDiff() {
     if(visualizer1.ddg != null && diffMode && visualizer2.ddg != null) {
-      val diff = TraceComparison.greedyTraceDistance(visualizer1.ddg.ddg,
+      val diff = new GreedyTraceComparison().compare(visualizer1.ddg.ddg,
                     visualizer2.ddg.ddg, (node => node.tag))
       visualizer1.setComparisonResult(diff)
       visualizer2.setComparisonResult(diff)
 
-      val tbdDiff = TraceComparison.greedyTraceDistance(visualizer1.ddg.ddg,
+      val tbdDiff = new GreedyTraceComparison().compare(visualizer1.ddg.ddg,
                         visualizer2.ddg.ddg, (node => node.internalId))
 
       label.text = "Tree size left: " + visualizer1.ddg.ddg.nodes.size +

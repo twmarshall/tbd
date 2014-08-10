@@ -16,19 +16,30 @@
 
 package tbd.visualization.analysis
 
-import scala.collection.mutable.{HashMap}
-import tbd.ddg.Tag
-import tbd.Constants.ModId
 import tbd.visualization.graph._
+import scala.collection.mutable.{Buffer, HashSet}
 
-abstract class DependencyTracker {
-  def findAndInsertDependencies(ddg: DDG) {
-    var deps = findDependencies(ddg)
+class GreedyTraceComparison extends TraceComparison {
 
-    deps.foreach(d => {
-        ddg.adj(d.source) += d;
+  def compare(before: DDG, after: DDG, extractor: (Node => Any)):
+      ComparisonResult = {
+
+    var set = after.nodes.map(x => new NodeWrapper(x, extractor))
+
+    var removed = List[Node]()
+    var added = List[Node]()
+    var unchanged = List[Node]()
+
+    before.nodes.map(x => new NodeWrapper(x, extractor)).foreach(x => {
+      if(set.remove(x)) {
+        unchanged = x.node :: unchanged
+      } else {
+        added = x.node :: added
+      }
     })
-  }
 
-  def findDependencies(ddg: DDG): Iterable[Edge]
+    set.foreach(x => removed = x.node :: removed)
+
+    new ComparisonResult(removed, added, unchanged)
+  }
 }
