@@ -43,33 +43,47 @@ object Main {
       val minMutations = opt[Int]("minimalMutationsPerPropagation", 'k',
         default = Some(0),
         descr = "The count of minimal mutations per mutation round")
-      val diff = opt[Boolean]("diff", 'd', default = Some(false),
-        descr = "Activate diff mode. The visualizer will show two graphs " +
-        "side-by-side to calculate and visualize trace distance")
-      val manual = opt[Boolean]("manual", 'm', default = Some(false),
-        descr = "Activate manual mode. The command line can be used to " +
-        "modify the input")
+      val output = opt[String]("o", 'o', default = Some("visualizer"),
+        descr = "Sets the output mode: visualizer (default), diff or 2dplot.")
+      val testmode = opt[String]("test", 't', default = Some("random"),
+        descr = "Test case generation mode: random (default), manual or exhaustive")
     }
 
     def createTestEnvironment[T, V](algo: TestAlgorithm[T, V]) = {
-      if(Conf.manual.get.get) {
-        new ManualTest(algo) {
+      Conf.testmode.get.get match {
+        case "manual" => new ManualTest(algo) {
           initialSize = Conf.initialCount.get.get
         }
-      } else {
-        new RandomExhaustiveTest(algo) {
+
+        case "random" => new RandomExhaustiveTest(algo) {
           maxMutations = Conf.maxMutations.get.get
           minMutations = Conf.minMutations.get.get
           count = Conf.mutationRoundCount.get.get
           initialSize = Conf.initialCount.get.get
         }
+
+        case "exhaustive" => new TargetedExhaustiveTest(algo) {
+          initialSize = Conf.initialCount.get.get
+        }
+      }
+    }
+
+    def createOutput[V](): ExperimentSink[V] = {
+      Conf.output.get.get match {
+        case "visualizer" => new MainView[V](false) {
+          visible = true
+        }
+        case "diff" => new MainView[V](true){
+          visible = true
+        }
+        case "chart2d" => new UpdateLengthPositionPlot[V](new analysis.GreedyTraceComparison((node => node.tag)))
       }
     }
 
     def create[T, V](algo: TestAlgorithm[T, V]) = {
       val test = createTestEnvironment(algo)
-      val mainView = new MainView(Conf.diff.get.get)
-      new Main(test, mainView)
+      val output = createOutput[V]()
+      new Main(test, List(output))
     }
 
     val main = Conf.algo.get.get match {
@@ -84,24 +98,24 @@ object Main {
   }
 }
 
-class Main[T, V](val test: TestBase[T, V], val mainView: MainView)
-    extends ExperimentSink[V, Seq[Int]] {
+class Main[T, V](val test: TestBase[T, V],
+                 val outputs: List[ExperimentSink[V]])
+    extends ExperimentSink[V] {
   test.setDDGListener(this)
-
-  mainView.visible = true
 
   //val export = new LatexExport()
 
   def resultReceived(
-    result: ExperimentResult[V, Seq[Int]],
-    sender: ExperimentSource[V, Seq[Int]]) = {
+    result: ExperimentResult[V],
+    sender: ExperimentSource[V]) = {
       new ModDependencyTracker().findAndInsertDependencies(result.ddg)
       new FreeVarDependencyTracker().findAndInsertDependencies(result.ddg)
       new ReadWriteDependencyTracker().findAndInsertDependencies(result.ddg)
-      mainView.addResult(result)
+      outputs.foreach(_.resultReceived(result, sender))
   }
 
   def run() {
     test.run()
+    outputs.foreach(x => x.finish())
   }
 }

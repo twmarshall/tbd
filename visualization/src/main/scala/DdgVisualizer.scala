@@ -34,12 +34,12 @@ object QuickVisualizer {
   }
   def show(ddg: tbd.ddg.DDG) {
     val view = new MainView(false)
-    view.addResult(ExperimentResult(0, List(),
+    view.addResult(ExperimentResult(0, Map(),
         List(), List(), List(), graph.DDG.create(ddg.root)))
   }
   def show(ddg: DDG) {
     val view = new MainView(false)
-    view.addResult(ExperimentResult(0, List(),
+    view.addResult(ExperimentResult(0, Map(),
         List(), List(), List(), ddg))
   }
 }
@@ -56,11 +56,11 @@ class DdgVisualizer extends GridBagPanel with Publisher {
   listenTo(renderer)
 
   //The experiment results to display.
-  var ddg: ExperimentResult[Any, Any] = null
-  var comboBoxItems = List[ExperimentResult[Any, Any]]()
+  var ddg: ExperimentResult[Any] = null
+  var comboBoxItems = List[ExperimentResult[Any]]()
 
   //A combo box for selecting items.
-  private var selector: ComboBox[ExperimentResult[Any, Any]] = null
+  private var selector: ComboBox[ExperimentResult[Any]] = null
 
   //HTML Support methods - we use HTML for text styling in the text box.
   private val htmlInto = "<html><body style=\"font-family: monospaced\">"
@@ -209,7 +209,7 @@ class DdgVisualizer extends GridBagPanel with Publisher {
   }
 
   //Adds a new experiment result to this view and updates the combo-box.
-  def addResult(result: ExperimentResult[Any, Any]) {
+  def addResult(result: ExperimentResult[Any]) {
     comboBoxItems =  comboBoxItems :+ result
     initComboBox()
   }

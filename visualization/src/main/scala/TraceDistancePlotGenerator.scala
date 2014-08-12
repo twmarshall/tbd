@@ -19,22 +19,26 @@ package tbd.visualization
 import tbd.visualization.analysis._
 import collection.mutable.{MutableList}
 
-abstract class TraceDistancePlotGenerator[T, V](
-  val distanceAlgorithm: TraceComparison) extends ExperimentSink[T, V] {
+abstract class TraceDistancePlotGenerator[T](
+  val distanceAlgorithm: TraceComparison) extends ExperimentSink[T] {
 
-  protected val experiments: MutableList[ExperimentResult[T, V]]
+  protected val experiments = MutableList[ExperimentResult[T]]()
 
   def getPlot(): PlotInfo
 
-  def resultReceived(result: ExperimentResult[T, V],
-                     sender: ExperimentSource[T, V]) {
+  def resultReceived(result: ExperimentResult[T],
+                     sender: ExperimentSource[T]) {
     experiments += result
+  }
+
+  override def finish() = {
+    println(getPlot().formatAsText())
   }
 }
 
-case class PlotInfo(val data: Iterable[Iterable[Float]],
-                    val xaxis: Iterable[Float],
-                    val yaxis: Iterable[Float],
+case class PlotInfo(val data: Array[Array[Float]],
+                    val xaxis: Array[Float],
+                    val yaxis: Array[Float],
                     val xaxisDescription: String = "",
                     val yaxisDescription: String = "",
                     val plotTitle: String = "") {
@@ -42,9 +46,11 @@ case class PlotInfo(val data: Iterable[Iterable[Float]],
     val sb = new StringBuilder()
 
     sb.append(plotTitle).append("\n")
-    sb.append(yaxisDescription).append("\\").append(xaxisDescription).append("\t\n")
+    sb.append(yaxisDescription).append("\\").append(xaxisDescription).append("\t\n\t")
 
     xaxis.foreach(x => sb.append(x).append("\t"))
+
+    sb.append("\n")
 
     val yIterator = yaxis.iterator
     val dataIterator = data.iterator

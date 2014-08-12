@@ -21,8 +21,9 @@ import tbd.visualization.graph._
 import scala.collection.mutable.{Buffer, HashSet}
 
 
-class OrderSensitiveTraceComparison extends TraceComparison {
-  def compare(before: DDG, after: DDG, extractor: (Node => Any)): ComparisonResult = {
+class OrderSensitiveTraceComparison(extractor: (Node => Any))
+    extends TraceComparison(extractor) {
+  def compare(before: DDG, after: DDG): ComparisonResult = {
     val a = new TopoSortIterator(
               before.root,
               before,
@@ -88,7 +89,7 @@ class OrderSensitiveTraceComparison extends TraceComparison {
                        removed, b(j - 1).node :: added, unchanged)
     } else if(i > 0 && j > 0) {
       backtrackChanges(m, a, b, i - 1, j - 1,
-                       removed, added, a(i - 1).node :: unchanged) 
+                       removed, added, a(i - 1).node :: unchanged)
     } else {
       new ComparisonResult(removed, added, unchanged)
     }

@@ -16,29 +16,33 @@
 
 package tbd.visualization
 
-trait ExperimentSource[T, V] {
+import scala.collection.immutable.Map
 
-  var listener: ExperimentSink[T, V]
+trait ExperimentSource[T] {
 
-  def setDDGListener(listener: ExperimentSink[T, V]) = {
+  var listener: ExperimentSink[T]
+
+  def setDDGListener(listener: ExperimentSink[T]) = {
     this.listener = listener
   }
 
-  def pushResult(result: ExperimentResult[T, V]) = {
+  def pushResult(result: ExperimentResult[T]) = {
     if(listener != null) {
       listener.resultReceived(result, this)
     }
   }
 }
 
-trait ExperimentSink[T, V] {
-  def resultReceived(result: ExperimentResult[T, V],
-                     sender: ExperimentSource[T, V])
+trait ExperimentSink[T] {
+  def resultReceived(result: ExperimentResult[T],
+                     sender: ExperimentSource[T])
+
+  def finish() = { }
 }
 
-case class ExperimentResult[+T, +V](
+case class ExperimentResult[+T](
   val runId: Int,
-  val input: V,
+  val input: Map[Int, Int],
   val mutations: List[Mutation],
   val result: T,
   val expectedResult: T,

@@ -19,9 +19,10 @@ package tbd.visualization.analysis
 import tbd.visualization.graph._
 import scala.collection.mutable.{Buffer, HashSet}
 
-class GreedyTraceComparison extends TraceComparison {
+class GreedyTraceComparison(extractor: (Node => Any))
+  extends TraceComparison(extractor) {
 
-  def compare(before: DDG, after: DDG, extractor: (Node => Any)):
+  def compare(before: DDG, after: DDG):
       ComparisonResult = {
 
     var set = after.nodes.map(x => new NodeWrapper(x, extractor))

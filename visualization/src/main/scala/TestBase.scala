@@ -24,7 +24,7 @@ import tbd._
 import tbd.list.ListInput
 
 abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
-    extends ExperimentSource[V, Seq[Int]] {
+    extends ExperimentSource[V] {
   var initialSize = 10
 
   private val mutator = new Mutator()
@@ -37,11 +37,11 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
   private var freeList = List[Int]()
 
   private var keyCounter = 0
-  private var maxValue = 100
+  protected var maxValue = 100
 
   protected var mutations: MutableList[Mutation] = null
 
-  var listener: ExperimentSink[V, Seq[Int]] = null
+  var listener: ExperimentSink[V] = null
 
   def addValue() {
     val newValue = rand.nextInt(maxValue)
@@ -119,12 +119,14 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
   }
 
   def run() {
+
+    mutations = MutableList[Mutation]()
+
     for(i <- 1 to initialSize)
       addValue()
 
     algorithm.input = input
     val output = mutator.run[T](algorithm)
-    mutations = MutableList[Mutation]()
 
     initialize()
 
@@ -132,7 +134,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
       mutator.propagate()
       mutationCounter += 1
 
-      val input = table.values.toBuffer
+      val input = table.toMap
       val result = algorithm.getResult(output)
       val expectedResult = algorithm.getExpectedResult(table)
 

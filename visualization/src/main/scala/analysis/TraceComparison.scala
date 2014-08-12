@@ -20,8 +20,8 @@ import scala.math.{min, max}
 import tbd.visualization.graph._
 import scala.collection.mutable.{Buffer, HashSet}
 
-abstract class TraceComparison {
-  def compare(first: DDG, second: DDG, extractor: (Node => Any)): ComparisonResult
+abstract class TraceComparison(val extractor: (Node => Any)) {
+  def compare(first: DDG, second: DDG): ComparisonResult
 }
 
 class NodeWrapper(val node: Node, extractor: (Node => Any)) {
@@ -36,8 +36,12 @@ class NodeWrapper(val node: Node, extractor: (Node => Any)) {
   }
 }
 
-class ComparisonResult(
+case class ComparisonResult(
   val removed: List[Node],
   val added: List[Node],
   val unchanged:List[Node]) {
+
+  def distance() = {
+    removed.size + added.size
+  }
 }

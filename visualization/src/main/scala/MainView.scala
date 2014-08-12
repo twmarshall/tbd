@@ -21,7 +21,7 @@ import analysis._
 import scala.swing._
 import tbd.ddg.{Tag, FunctionTag}
 
-class MainView(diffMode: Boolean) extends MainFrame {
+class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
 
 
   val label = if(diffMode) {
@@ -33,7 +33,12 @@ class MainView(diffMode: Boolean) extends MainFrame {
     null
   }
 
-  def addResult(result: ExperimentResult[Any, Any]) {
+  def resultReceived(result: ExperimentResult[T],
+                   sender: ExperimentSource[T]) {
+    addResult(result)
+  }
+
+  def addResult(result: ExperimentResult[Any]) {
     visualizer1.addResult(result)
     if(diffMode) { visualizer2.addResult(result) }
   }
@@ -46,13 +51,13 @@ class MainView(diffMode: Boolean) extends MainFrame {
 
   private def updateDiff() {
     if(visualizer1.ddg != null && diffMode && visualizer2.ddg != null) {
-      val diff = new GreedyTraceComparison().compare(visualizer1.ddg.ddg,
-                    visualizer2.ddg.ddg, (node => node.tag))
+      val diff = new GreedyTraceComparison((node => node.tag)).compare(visualizer1.ddg.ddg,
+                    visualizer2.ddg.ddg)
       visualizer1.setComparisonResult(diff)
       visualizer2.setComparisonResult(diff)
 
-      val tbdDiff = new GreedyTraceComparison().compare(visualizer1.ddg.ddg,
-                        visualizer2.ddg.ddg, (node => node.internalId))
+      val tbdDiff = new GreedyTraceComparison((node => node.internalId)).compare(visualizer1.ddg.ddg,
+                        visualizer2.ddg.ddg)
 
       label.text = "Tree size left: " + visualizer1.ddg.ddg.nodes.size +
         ", right: " + visualizer2.ddg.ddg.nodes.size +
