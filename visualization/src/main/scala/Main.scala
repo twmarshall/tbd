@@ -57,7 +57,7 @@ object Main {
           initialSize = Conf.initialCount.get.get
         }
       } else {
-        new ExhaustiveTest(algo) {
+        new RandomExhaustiveTest(algo) {
           maxMutations = Conf.maxMutations.get.get
           minMutations = Conf.minMutations.get.get
           count = Conf.mutationRoundCount.get.get

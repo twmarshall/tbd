@@ -14,30 +14,6 @@
  * limitations under the License.
  */
 
-package tbd.visualization
+class TraceAnalysis {
 
-import scala.collection.mutable.ArrayBuffer
-import collection.mutable.HashMap
-import scala.util.Random
-import scala.io.StdIn
-
-import tbd._
-
-class ExhaustiveTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
-
-  var maxMutations = 2
-  var minMutations = 0
-  var count = 20
-
-  def initialize() = { }
-
-  def step() = {
-    for(i <- 1 to rand.nextInt(maxMutations - minMutations) + minMutations) {
-      randomMutation()
-    }
-
-    mutationCounter < count
-  }
-
-  def dispose() = { }
 }

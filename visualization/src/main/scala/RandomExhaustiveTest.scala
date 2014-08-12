@@ -16,30 +16,28 @@
 
 package tbd.visualization
 
-trait ExperimentSource[T, V] {
+import scala.collection.mutable.ArrayBuffer
+import collection.mutable.HashMap
+import scala.util.Random
+import scala.io.StdIn
 
-  var listener: ExperimentSink[T, V]
+import tbd._
 
-  def setDDGListener(listener: ExperimentSink[T, V]) = {
-    this.listener = listener
-  }
+class RandomExhaustiveTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
 
-  def pushResult(result: ExperimentResult[T, V]) = {
-    if(listener != null) {
-      listener.resultReceived(result, this)
+  var maxMutations = 2
+  var minMutations = 0
+  var count = 20
+
+  def initialize() = { }
+
+  def step() = {
+    for(i <- 1 to rand.nextInt(maxMutations - minMutations) + minMutations) {
+      randomMutation()
     }
+
+    mutationCounter < count
   }
-}
 
-trait ExperimentSink[T, V] {
-  def resultReceived(result: ExperimentResult[T, V],
-                     sender: ExperimentSource[T, V])
+  def dispose() = { }
 }
-
-case class ExperimentResult[+T, +V](
-  val runId: Int,
-  val input: V,
-  val mutations: List[Mutation],
-  val result: T,
-  val expectedResult: T,
-  val ddg: graph.DDG) { }

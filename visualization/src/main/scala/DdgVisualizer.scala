@@ -34,12 +34,12 @@ object QuickVisualizer {
   }
   def show(ddg: tbd.ddg.DDG) {
     val view = new MainView(false)
-    view.addResult(ExperimentResult(0,
+    view.addResult(ExperimentResult(0, List(),
         List(), List(), List(), graph.DDG.create(ddg.root)))
   }
   def show(ddg: DDG) {
     val view = new MainView(false)
-    view.addResult(ExperimentResult(0,
+    view.addResult(ExperimentResult(0, List(),
         List(), List(), List(), ddg))
   }
 }

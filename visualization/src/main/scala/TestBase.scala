@@ -17,7 +17,7 @@
 package tbd.visualization
 
 import scala.collection.mutable.ArrayBuffer
-import collection.mutable.HashMap
+import collection.mutable.{HashMap, MutableList}
 import scala.util.Random
 
 import tbd._
@@ -39,6 +39,8 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
   private var keyCounter = 0
   private var maxValue = 100
 
+  protected var mutations: MutableList[Mutation] = null
+
   var listener: ExperimentSink[V, Seq[Int]] = null
 
   def addValue() {
@@ -59,9 +61,9 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
   def addValue(key: Int, value: Int) {
 
     if(table.contains(key)) {
-      println("//Element already exists!")
+      //Element exists. Skip.
     } else {
-      println("m.put(" + key + ", " + value + ")")
+      mutations += Deletion(key, value)
 
       input.put(key, value)
       table += (key -> value)
@@ -81,7 +83,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
 
   def removeValue(key: Int) {
 
-      println("m.remove(" + key + ") // Was " + table(key))
+      mutations += Deletion(key, table(key))
 
       table -= key
       input.remove(key)
@@ -102,8 +104,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
 
   def updateValue(key: Int, value: Int) {
 
-      println("m.update(" + key + ", " + value + ")" +
-              "// was (" + key + ", " + table(key) + ") ")
+      mutations += Update(key, value, table(key))
 
       table(key) = value
       input.update(key, value)
@@ -123,6 +124,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
 
     algorithm.input = input
     val output = mutator.run[T](algorithm)
+    mutations = MutableList[Mutation]()
 
     initialize()
 
@@ -135,13 +137,14 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
       val expectedResult = algorithm.getExpectedResult(table)
 
       val ddg = graph.DDG.create(mutator.getDDG().root)
-      pushResult(new ExperimentResult(mutationCounter, input,
+      pushResult(new ExperimentResult(mutationCounter, input, mutations.toList,
                                       result, expectedResult, ddg))
 
       if(result != expectedResult) {
-        println("//Check error!")
+        println("//Check error!") //Todo: Handle this without println
       }
 
+      mutations = MutableList[Mutation]()
     } while(step())
 
     dispose()
@@ -153,3 +156,8 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
   def step(): Boolean
   def dispose()
 }
+
+abstract class Mutation(key: Int)
+case class Insertion(key: Int, value: Int) extends Mutation(key)
+case class Deletion(key: Int, value: Int) extends Mutation(key)
+case class Update(key: Int, newValue: Int, oldValue: Int) extends Mutation(key)
