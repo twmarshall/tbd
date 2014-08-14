@@ -29,6 +29,9 @@ class IndependentSubtrees extends TraceAnalysis {
 
     // (NodeType, Method, NodeType, method)
     type DepTag = (String, MethodInfo, String, MethodInfo)
+    //Note: Binary deps might be not sufficient. A dependency graph would
+    //be better (we could use tracing of changes).
+    //Furthermore, this does not work for stuff which is not mod <- Therefore, we should ignore subtrees without write. Write guarantees to give mod  back.
     var calls = HashMap[DepTag, Boolean]()
 
     val iter = new TopoSortIterator(
@@ -61,7 +64,7 @@ class IndependentSubtrees extends TraceAnalysis {
 
         for(a <- childrenToIterate) {
           for(b <- childrenToIterate) {
-            if(a != b) {
+            if(a != b && !deps(a).isEmpty && !deps(b).isEmpty) { //Empty trees are not interesting...
 
               val callTag = (a.typeString, MethodInfo.extract(a),
                              b.typeString, MethodInfo.extract(b))
