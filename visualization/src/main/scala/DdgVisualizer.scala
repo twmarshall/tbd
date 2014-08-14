@@ -244,49 +244,8 @@ class DdgVisualizer extends GridBagPanel with Publisher {
              "stacktraces>"
     }
 
-    val methods = node.stacktrace.map(y => {
-      (y.getMethodName(),y.getFileName(), y.getLineNumber())
-    })
-
-    val currentMethods = methods.filter(x => {
-      val y = x._1
-      (!y.startsWith("<init>")
-      && !y.startsWith("()")
-      && !y.startsWith("addRead")
-      && !y.startsWith("addMod")
-      && !y.startsWith("mod2")
-      && !y.startsWith("modLeft")
-      && !y.startsWith("modRight")
-      && !y.startsWith("addWrite")
-      && !y.startsWith("addMemo")
-      && !y.startsWith("createMod")
-      && !y.startsWith("getStackTrace")
-      && !y.startsWith("apply")
-      && !y.startsWith("read")
-      && !y.startsWith("memo")
-      && !y.startsWith("par")
-      && !y.startsWith("write")
-      && !y.startsWith("mod"))})
-
-    val methodName = if(!currentMethods.isEmpty) {
-      var currentMethod = currentMethods(0)._1
-
-      if(currentMethod.contains("$")) {
-        currentMethod = currentMethod.substring(0, currentMethod.lastIndexOf("$"))
-        currentMethod = currentMethod.substring(currentMethod.lastIndexOf("$") + 1)
-      }
-
-      currentMethod
-    } else {
-      "<unknown>"
-    }
-
-    val (fileName, lineNumber) = if(!currentMethods.isEmpty) {
-      (currentMethods(0)._2, currentMethods(0)._3)
-    } else {
-      ("<unknown>", 0)
-    }
-    "Method " + methodName + " at " + fileName + ":" + lineNumber.toString
+    val info = analysis.MethodInfo.extract(node)
+    "Method " + info.name + " at " + info.file + ":" + info.line.toString
   }
 }
 

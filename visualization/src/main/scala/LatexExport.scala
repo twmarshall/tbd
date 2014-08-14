@@ -34,9 +34,8 @@ class LatexExport{
       ddg: DDG,
       pre: String): Unit = {
     out.append(pre)
-    out.append("node [")
-    out.append(node.getTypeString())
-    out.append(", label={180:"+node.getShortLabel()+"}")
+    out.append(s"node [${node.typeString}")
+    out.append(s", label={180:${node.shortLabel}}")
     out.append("]{}\n")
 
     val childs = ddg.getCallChildren(node)

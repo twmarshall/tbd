@@ -31,7 +31,7 @@ class Node(ddgNode: ddg.Node) {
     tag.toString()
   }
 
-  def getTypeString(): String = {
+  def typeString(): String = {
     tag match {
       case x:ddg.Tag.Write => "write"
       case x:ddg.Tag.Read => "read"
@@ -42,7 +42,7 @@ class Node(ddgNode: ddg.Node) {
     }
   }
 
-  def getShortLabel(): String = {
+  def shortLabel(): String = {
     (tag match {
       case ddg.Tag.Write(writes) => writes
       case ddg.Tag.Read(value, fun) => (value, formatFunctionTag(fun))
@@ -55,7 +55,7 @@ class Node(ddgNode: ddg.Node) {
     }).toString()
   }
 
-  def formatFunctionTag(fun: ddg.FunctionTag): String = {
+  private def formatFunctionTag(fun: ddg.FunctionTag): String = {
     "Fun@" + fun.funcId
   }
 }

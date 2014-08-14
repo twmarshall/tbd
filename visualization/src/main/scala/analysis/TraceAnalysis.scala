@@ -14,6 +14,18 @@
  * limitations under the License.
  */
 
-class TraceAnalysis {
+package tbd.visualization.analysis
 
+import tbd.visualization.ExperimentResult
+
+abstract class TraceAnalysis {
+  def analyze(trace: ExperimentResult[Any]): Iterable[AnalysisInfo]
 }
+
+class AnalysisInfo(val message: String, val file: String, val position: Int) { }
+case class IndependentSubtreeInfo(
+    override val message: String,
+    override val file: String,
+    val position1: Int,
+    val position2: Int)
+  extends AnalysisInfo(message, file, position1)
