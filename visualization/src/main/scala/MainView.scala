@@ -32,15 +32,6 @@ class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
   } else {
     null
   }
-  val optimizeButton = if(diffMode) {
-    new Button("Optimize Mod Id's") {
-      reactions += {
-        case e: event.ButtonClicked => optimizeModIds()
-      }
-    }
-  } else {
-    null
-  }
 
   def resultReceived(result: ExperimentResult[T],
                    sender: ExperimentSource[T]) {
@@ -79,11 +70,6 @@ class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
     }
   }
 
-  private def optimizeModIds() {
-    new ModIdOptimizer().optimize(visualizer1.ddg.ddg, visualizer2.ddg.ddg)
-    updateDiff()
-  }
-
   val visualizer1 = new DdgVisualizer()
   val visualizer2 = if(diffMode) { new DdgVisualizer() } else { null }
 
@@ -114,12 +100,6 @@ class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
         gridx = 1
         gridy = 1
         fill = GridBagPanel.Fill.Horizontal
-      }
-      layout(optimizeButton) = new Constraints() {
-        gridx = 0
-        gridy = 1
-        fill = GridBagPanel.Fill.Horizontal
-        weightx = 0.1
       }
     }
   }
