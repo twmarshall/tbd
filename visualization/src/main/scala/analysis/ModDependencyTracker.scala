@@ -38,8 +38,8 @@ class ModDependencyTracker extends DependencyTracker {
           if(mods.contains(write.mod)) {
             val dst = mods(write.mod)
             val src = x
-            List(Edge.ModWrite(src, dst, write.mod),
-                 Edge.WriteMod(dst, src, write.mod))
+            List(Edge.WriteMod(src, dst, write.mod),
+                 Edge.ModWrite(dst, src, write.mod))
           } else {
             List()
           }

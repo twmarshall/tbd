@@ -32,6 +32,15 @@ class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
   } else {
     null
   }
+  val optimizeButton = if(diffMode) {
+    new Button("Optimize Mod Id's") {
+      reactions += {
+        case e: event.ButtonClicked => optimizeModIds()
+      }
+    }
+  } else {
+    null
+  }
 
   def resultReceived(result: ExperimentResult[T],
                    sender: ExperimentSource[T]) {
@@ -51,6 +60,7 @@ class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
 
   private def updateDiff() {
     if(visualizer1.ddg != null && diffMode && visualizer2.ddg != null) {
+
       val diff = new GreedyTraceComparison((node => node.tag)).compare(visualizer1.ddg.ddg,
                     visualizer2.ddg.ddg)
       visualizer1.setComparisonResult(diff)
@@ -69,6 +79,10 @@ class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
     }
   }
 
+  private def optimizeModIds() {
+    new ModIdOptimizer().optimize(visualizer1.ddg.ddg, visualizer2.ddg.ddg)
+    updateDiff()
+  }
 
   val visualizer1 = new DdgVisualizer()
   val visualizer2 = if(diffMode) { new DdgVisualizer() } else { null }
@@ -92,13 +106,20 @@ class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
       gridy = 0
       weighty = 1
       weightx = 1
+      gridwidth = 2
       fill = GridBagPanel.Fill.Both
     }
     if(diffMode) {
       layout(label) = new Constraints() {
+        gridx = 1
+        gridy = 1
+        fill = GridBagPanel.Fill.Horizontal
+      }
+      layout(optimizeButton) = new Constraints() {
         gridx = 0
         gridy = 1
         fill = GridBagPanel.Fill.Horizontal
+        weightx = 0.1
       }
     }
   }

@@ -19,7 +19,7 @@ package tbd.visualization.graph
 import tbd.ddg
 
 class Node(ddgNode: ddg.Node) {
-  val tag = ddgNode.tag
+  var tag = ddgNode.tag
   val internalId = ddgNode.internalId
   val stacktrace = ddgNode.stacktrace
 

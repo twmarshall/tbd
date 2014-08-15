@@ -88,3 +88,37 @@ class TopoSortIterator(
     current
   }
 }
+
+class DfsFirstIterator(
+    root: Node,
+    graph: Graph,
+    filter: (Edge => Boolean) = (x => true))
+  extends DfsIterator(root, graph, filter) {
+
+  private var isFirst = false
+
+  protected override def firstVisit(n: Node) = { isFirst = true }
+
+  private var nextNode: Node = null
+  moveToNext()
+
+  override def next(): Node = {
+    val res = nextNode
+    moveToNext()
+    res
+  }
+
+  override def hasNext(): Boolean = {
+    nextNode != null
+  }
+
+  private def moveToNext() {
+    isFirst = false
+    while(!isFirst && super.hasNext()) { iterationStep() }
+    if(isFirst) {
+      nextNode = current
+    } else {
+      nextNode = null
+    }
+  }
+}
