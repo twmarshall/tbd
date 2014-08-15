@@ -35,12 +35,15 @@ The visualizer can be used to visualize traces and dependencies. Furthermore, th
 > mkvisualization
 ```
 
-To run:
+Run examples:
 
 ```
 > bin/visualization.sh --help
-> bin/visualization.sh -a quicksort
-> bin/visualization.sh -a map -d
+> bin/visualization.sh -a sort
+> bin/visualization.sh -a map -o diff
+> bin/visualization.sh -a map -o diff -t manual
+> bin/visualization.sh -a sort -o plot2d -t exhaustive
+> bin/visualization.sh -a reduce -i 5 -o chart2d -t exhaustive
 ```
 
 To call a quick visualizer from within your code (for debugging), use: 
