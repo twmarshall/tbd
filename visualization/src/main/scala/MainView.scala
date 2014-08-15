@@ -21,16 +21,47 @@ import analysis._
 import scala.swing._
 import tbd.ddg.{Tag, FunctionTag}
 
-class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
+/*
+ * Main Frame of the single visualizer application.
+ */
+class SingleView[T]() extends MainFrame with ExperimentSink[T] {
+  def resultReceived(result: ExperimentResult[T],
+                   sender: ExperimentSource[T]) {
+    addResult(result)
+  }
 
+  def addResult(result: ExperimentResult[Any]) {
+    visualizer.addResult(result)
+  }
 
-  val label = if(diffMode) {
-    new TextArea("To calculate trace distance, select two different DDGs.") {
-      editable = false
-      background = java.awt.Color.LIGHT_GRAY
+  val visualizer = new DdgVisualizer()
+
+  listenTo(visualizer)
+
+  contents = new GridBagPanel() {
+    layout(visualizer) = new Constraints() {
+      gridx = 0
+      gridy = 0
+      weighty = 1
+      weightx = 1
+      gridwidth = 2
+      fill = GridBagPanel.Fill.Both
     }
-  } else {
-    null
+  }
+  pack()
+
+  visible = true
+}
+
+/*
+ * Main frame for the diff visualizer application.
+ */
+class DiffView[T]() extends MainFrame with ExperimentSink[T] {
+
+
+  val label = new TextArea("To calculate trace distance, select two different DDGs.") {
+    editable = false
+    background = java.awt.Color.LIGHT_GRAY
   }
 
   def resultReceived(result: ExperimentResult[T],
@@ -40,7 +71,7 @@ class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
 
   def addResult(result: ExperimentResult[Any]) {
     visualizer1.addResult(result)
-    if(diffMode) { visualizer2.addResult(result) }
+    visualizer2.addResult(result)
   }
 
   reactions += {
@@ -49,8 +80,9 @@ class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
     }
   }
 
+  //Calculates and updates the diff information. 
   private def updateDiff() {
-    if(visualizer1.ddg != null && diffMode && visualizer2.ddg != null) {
+    if(visualizer1.ddg != null && visualizer2.ddg != null) {
 
       val diff = new GreedyTraceComparison((node => node.tag)).compare(visualizer1.ddg.ddg,
                     visualizer2.ddg.ddg)
@@ -71,21 +103,15 @@ class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
   }
 
   val visualizer1 = new DdgVisualizer()
-  val visualizer2 = if(diffMode) { new DdgVisualizer() } else { null }
+  val visualizer2 = new DdgVisualizer()
 
   listenTo(visualizer1)
+  listenTo(visualizer2)
 
-  if(diffMode) {
-    listenTo(visualizer2)
-  }
   contents = new GridBagPanel() {
     layout(
-      if(diffMode) {
-        new SplitPane(Orientation.Vertical) {
-          contents_$eq(visualizer1, visualizer2)
-        }
-      } else {
-        visualizer1
+      new SplitPane(Orientation.Vertical) {
+        contents_$eq(visualizer1, visualizer2)
       }
     ) = new Constraints() {
       gridx = 0
@@ -95,12 +121,10 @@ class MainView[T](diffMode: Boolean) extends MainFrame with ExperimentSink[T] {
       gridwidth = 2
       fill = GridBagPanel.Fill.Both
     }
-    if(diffMode) {
-      layout(label) = new Constraints() {
-        gridx = 1
-        gridy = 1
-        fill = GridBagPanel.Fill.Horizontal
-      }
+    layout(label) = new Constraints() {
+      gridx = 1
+      gridy = 1
+      fill = GridBagPanel.Fill.Horizontal
     }
   }
   pack()

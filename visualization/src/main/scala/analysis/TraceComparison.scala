@@ -20,10 +20,17 @@ import scala.math.{min, max}
 import tbd.visualization.graph._
 import scala.collection.mutable.{Buffer, HashSet}
 
+/*
+ * Base class for comparisons between DDGs.
+ */
 abstract class TraceComparison(val extractor: (Node => Any)) {
   def compare(first: DDG, second: DDG): ComparisonResult
 }
 
+/*
+ * Wraps each node into a structure which uses the given extractor
+ * to define node equality.
+ */
 class NodeWrapper(val node: Node, extractor: (Node => Any)) {
 
   override def equals(that: Any): Boolean = {
@@ -36,11 +43,13 @@ class NodeWrapper(val node: Node, extractor: (Node => Any)) {
   }
 }
 
+//Represents the result of a trace comparison.
 case class ComparisonResult(
   val removed: List[Node],
   val added: List[Node],
   val unchanged:List[Node]) {
 
+  //The trace distance
   def distance() = {
     removed.size + added.size
   }

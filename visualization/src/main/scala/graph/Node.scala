@@ -18,19 +18,20 @@ package tbd.visualization.graph
 
 import tbd.ddg
 
+/*
+ * Represents a visualizer DDG node.
+ * Is created by copying all necessary properties of the TBD ddg node.
+ */
 class Node(ddgNode: ddg.Node) {
   var tag = ddgNode.tag
   val internalId = ddgNode.internalId
   val stacktrace = ddgNode.stacktrace
 
-  def ~(that: Node): Boolean = {
-    return this.tag == this.tag
-  }
-
   override def toString = {
     tag.toString()
   }
 
+  //Gets a string identifying the nodes type.
   def typeString(): String = {
     tag match {
       case x:ddg.Tag.Write => "write"
@@ -42,6 +43,7 @@ class Node(ddgNode: ddg.Node) {
     }
   }
 
+  //Gets a short label representing this node. 
   def shortLabel(): String = {
     (tag match {
       case ddg.Tag.Write(writes) => writes

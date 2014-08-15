@@ -21,6 +21,10 @@ import tbd.ddg.Tag
 import tbd.Constants.ModId
 import tbd.visualization.graph._
 
+/*
+ * Finds dependencies introduced by free variables which are bound from an
+ * outer scope.
+ */
 class FreeVarDependencyTracker extends DependencyTracker {
   def findDependencies(ddg: DDG): Iterable[Edge] = {
 
@@ -47,7 +51,12 @@ class FreeVarDependencyTracker extends DependencyTracker {
       }
     })
 
-    //Summarize paths with similar dependencies.
+    //Finds adjacent paths with the same dependencies, and makes them
+    //point to the node where the bound variable is introduced instead of some
+    //intermediate node. This is comparable to path compression. 
+    //
+    //For example, the set of dependencies (A -> B) (B -> C) becomes
+    //(A -> C) (B -> C).
     val iter = new TopoSortIterator(
                 ddg.root,
                 ddg,
@@ -69,7 +78,8 @@ class FreeVarDependencyTracker extends DependencyTracker {
                   !common.contains(x)
                 })
 
-                invDeps(parent) = Edge.FreeVar(depToMe.source, parent, common) :: invDeps(parent)
+                invDeps(parent) = Edge.FreeVar(depToMe.source, parent, common) ::
+                                  invDeps(parent)
               }
             }
           }
@@ -77,7 +87,8 @@ class FreeVarDependencyTracker extends DependencyTracker {
       }
     })
 
-    //Remove deps to root
+    //Remove dependencies to root - these are constant and bound from outside
+    //of the program (like memoized or parallel parameters).
     invDeps(ddg.root) = List()
 
     //Add non-empty edges to graph

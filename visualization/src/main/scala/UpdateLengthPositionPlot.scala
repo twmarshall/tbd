@@ -20,22 +20,34 @@ import scala.collection.mutable.{Map}
 import scala.math.{min, max}
 import tbd.visualization.analysis._
 
+/**
+ * Generates a plot whereas the x-axis is the starting position of a mutation,
+ * the y-axis is the length of a mutation, and the values are the average trace
+ * distance.
+ *
+ * This plot is basically only meaningful for continous updates.
+ */
 class UpdateLengthPositionPlot[T](distanceAlgorithm: TraceComparison)
   extends TraceDistancePlotGenerator[T](distanceAlgorithm) {
 
   var maxLen = 0
   var maxPos = 0
 
+  //Aggregates the update data and generates the plot.
   def getPlot(): PlotInfo = {
-    val denseData = Map[(Int, Int), Int]() //Maps (length, start position) to (distance)
+
+    //Maps (length, start position) to (distance)
+    val sparseData = Map[(Int, Int), Int]()
 
     var lastExperiment = experiments.head
 
     for(experiment <- experiments.tail) {
 
+      //Calculate update start position and update length for this experiment.
       var startPos = Integer.MAX_VALUE
       var length = experiment.mutations.size
 
+      //We only allow updates here.
       for(update <- experiment.mutations){
         update match {
           case Update(k, n, o) => startPos = min(k, startPos)
@@ -43,16 +55,20 @@ class UpdateLengthPositionPlot[T](distanceAlgorithm: TraceComparison)
         }
       }
 
+      //For each experiment, compute the trace distance to the last experiment.
       val comparison = distanceAlgorithm.compare(lastExperiment.ddg, experiment.ddg)
 
-      denseData((length, startPos)) = comparison.distance
+      sparseData((length, startPos)) = comparison.distance
 
+      //Remember the maximum occouring length and position, so we know how long
+      //our axis are.
       maxLen = max(maxLen, length)
       maxPos = max(maxPos, startPos)
 
       lastExperiment = experiment
     }
 
+    //Create data structures holding the data.
     var data = new Array[Array[Float]](maxLen)
     val xaxis = new Array[Float](maxLen)
     val yaxis = new Array[Float](maxPos)
@@ -67,11 +83,13 @@ class UpdateLengthPositionPlot[T](distanceAlgorithm: TraceComparison)
       yaxis(i) = i + 1
     }
 
-    for(d <- denseData) {
+    //Convert the sparse data map to the output array.
+    for(d <- sparseData) {
       data(d._1._1 - 1)(d._1._2 - 1) += d._2
       count(d._1._1 - 1)(d._1._2 - 1) += 1
     }
 
+    //Calculate the average of all corresponding data points.
     for(i <- 0 to maxLen - 1)
       for(j <- 0 to maxPos - 1)
         if(count(i)(j) != 0)

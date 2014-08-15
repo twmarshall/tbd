@@ -21,8 +21,14 @@ import tbd.ddg.Tag
 import tbd.Constants.ModId
 import tbd.visualization.graph._
 
+/*
+ * Finds all dependencies between mod nodes and their corresponding write
+ * nodes in the DDG.
+ */
 class ModDependencyTracker extends DependencyTracker {
   def findDependencies(ddg: DDG): Iterable[Edge] = {
+
+    //Find all mod nodes and remember them.
     val mods = new HashMap[ModId, Node]
 
     ddg.nodes.foreach(x => x.tag match {
@@ -32,6 +38,8 @@ class ModDependencyTracker extends DependencyTracker {
       case _ => null
     })
 
+    //Find all write nodes. If we find a write node which writes to one
+    //of the remembered mods, we add an edge to the result. 
     ddg.nodes.flatMap(x => x.tag match {
       case Tag.Write(writes) =>
         writes.flatMap(write => {

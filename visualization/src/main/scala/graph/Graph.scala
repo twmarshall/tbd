@@ -17,21 +17,32 @@
 package tbd.visualization.graph
 
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
+import tbd.visualization.analysis.MethodInfo
 
+/*
+ * Represents any graph.
+ */
 class Graph() {
   val adj = new HashMap[Node, ArrayBuffer[Edge]]()
   val nodes = new HashSet[Node]()
 }
 
-class DDG(_root: Node) extends Graph {
-  val root = _root
+/*
+ * Represents a DDG.
+ *
+ * A DDG stripped of all edged except the control edges is guaranteed to be a
+ * tree. A DDG has a root.
+ */
+class DDG(val root: Node) extends Graph {
 
+  //Gets all children of a node, connected by control edges.
   def getCallChildren(node: Node): Seq[Node] = {
     adj(node).filter((e: Edge) => {
       (e.isInstanceOf[Edge.Control])
     }).map(e => e.destination)
   }
 
+  //Gets the parent of a node, connected by an inverse control edge.
   def getCallParent(node: Node): Node = {
     val parent = adj(node).filter(e => {
       e.isInstanceOf[Edge.InverseControl]
@@ -44,7 +55,11 @@ class DDG(_root: Node) extends Graph {
   }
 }
 
+//Helper object to create visualizer.graph.DDGs from tbd.ddg.DDGs.
+//This wey we can maintain an independent copy of all necassary information
+//for ourselfs, without creating memory leaks or accessing disposed mods.
 object DDG {
+  //Recursivley creates a visualizer DDG from a TBD DDG.
   def create(root: tbd.ddg.RootNode): DDG = {
 
     val newNode = new Node(root)
@@ -57,9 +72,13 @@ object DDG {
       append(newNode, x, result)
     })
 
+    //Check whether all function tag id's are consistent.
+    checkFunctionTagConsistency(result)
+
     result
   }
 
+  //Fetches child nodes for a given node. Takes extra care of par nodes.
   private def getChildren(node: tbd.ddg.Node): Seq[tbd.ddg.Node] = {
     node match {
       case parNode: tbd.ddg.ParNode =>
@@ -69,6 +88,7 @@ object DDG {
     }
   }
 
+  //Recursivley creates a visualizer DDG from a TBD DDG.
   private def append(node: Node, ddgNode: tbd.ddg.Node, result: DDG): Unit = {
     val newNode = new Node(ddgNode)
 
@@ -80,5 +100,37 @@ object DDG {
     getChildren(ddgNode).foreach(x => {
       append(newNode, x, result)
     })
+  }
+
+  //Check wether there are no two different functions with equal function ids
+  //in the DDG.
+  private def checkFunctionTagConsistency(ddg: DDG) {
+
+    val ids = HashMap[(Int, Int), MethodInfo]()
+
+    for(node <- ddg.nodes) {
+      var funcId = node.tag match {
+        case tbd.ddg.Tag.Read(_, fun) => (fun.funcId, 0)
+        case tbd.ddg.Tag.Par(fun1, fun2) => (fun1.funcId, fun2.funcId)
+        case tbd.ddg.Tag.Mod(_, fun) => (fun.funcId, 0)
+        case tbd.ddg.Tag.Memo(fun, _) => (fun.funcId, 0)
+        case _ => null
+      }
+
+      if(funcId != null) {
+        var stackTrace = MethodInfo.extract(node)
+
+        if(ids.contains(funcId)) {
+          if(ids(funcId) != stackTrace) {
+            throw new IllegalArgumentException("Function ids are not " +
+              "consistent. Please clean and build the project " +
+              "to fix this error.")
+          }
+        } else {
+          ids(funcId) = stackTrace
+        }
+      }
+    }
+
   }
 }

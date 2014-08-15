@@ -21,7 +21,12 @@ import tbd.ddg.Tag
 import tbd.Constants.ModId
 import tbd.visualization.graph._
 
-abstract class DependencyTracker {
+/*
+ * Trait for dependency trackers, which track dependencies and
+ * insert them into the DDG as new edges.
+ */
+trait DependencyTracker {
+  //Invokes findDependencies and inserts the result in the DDG.
   def findAndInsertDependencies(ddg: DDG) {
     var deps = findDependencies(ddg)
 
@@ -30,5 +35,6 @@ abstract class DependencyTracker {
     })
   }
 
+  //Scans the DDG for dependencies and returns the result as a list of edges. 
   def findDependencies(ddg: DDG): Iterable[Edge]
 }

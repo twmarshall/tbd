@@ -29,16 +29,16 @@ import tbd.ddg.{Tag, FunctionTag}
  */
 object QuickVisualizer {
   def create() = {
-    val view = new MainView(false)
-    view.visualizer1
+    val view = new SingleView()
+    view.visualizer
   }
   def show(ddg: tbd.ddg.DDG) {
-    val view = new MainView(false)
+    val view = new SingleView()
     view.addResult(ExperimentResult(0, Map(),
         List(), List(), List(), graph.DDG.create(ddg.root)))
   }
   def show(ddg: DDG) {
-    val view = new MainView(false)
+    val view = new SingleView()
     view.addResult(ExperimentResult(0, Map(),
         List(), List(), List(), ddg))
   }

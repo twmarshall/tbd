@@ -23,6 +23,10 @@ import scala.io.StdIn
 
 import tbd._
 
+/*
+ * Test generator which performs continous updates of all possible lengths
+ * on all possible positions.
+ */
 class TargetedExhaustiveTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
 
   def initialize() = { }

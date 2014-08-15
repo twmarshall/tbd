@@ -18,9 +18,14 @@ package tbd.visualization.analysis
 
 import tbd.visualization.graph.Node
 
+/*
+ * Represents information about a method for debugging purposes.
+ */
 case class MethodInfo(val name: String, val file: String, val line: Int)
 
+
 object MethodInfo {
+  //Extracts method information from a stack trace. 
   def extract(node: Node) = {
     val methods = node.stacktrace.map(y => {
       (y.getMethodName(),y.getFileName(), y.getLineNumber())

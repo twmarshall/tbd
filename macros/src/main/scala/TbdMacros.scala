@@ -28,13 +28,18 @@ class functionToInvoke(value: String) extends scala.annotation.StaticAnnotation
 object TbdMacros {
 
   var funcId = 0
+
   def getFuncId(): Int = {
-    //Well, this is dirty - we always have to do a clean build to get
-    //unique ids.
+    //We always have to do a clean build to get unique ids.
     funcId = funcId + 1
     funcId
   }
 
+  /*
+   * Macros to be invoked by their corresponding methods.
+   * Since for a method and a macro, the signature has to match, we need
+   * to have a macro for each signature type.
+   */
   def memoMacro[T]
       (c: Context)(args: c.Tree*)(func: c.Tree): c.Expr[T] = {
     import c.universe._

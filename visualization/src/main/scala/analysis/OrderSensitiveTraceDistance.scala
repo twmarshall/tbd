@@ -20,10 +20,15 @@ import scala.math.{min, max}
 import tbd.visualization.graph._
 import scala.collection.mutable.{Buffer, HashSet}
 
-
+/*
+ * Order sensitive trace distance.
+ * Practically not very useful.
+ */
 class OrderSensitiveTraceComparison(extractor: (Node => Any))
     extends TraceComparison(extractor) {
   def compare(before: DDG, after: DDG): ComparisonResult = {
+
+    //Sort all nodes of both DDGs in topological order.
     val a = new TopoSortIterator(
               before.root,
               before,
@@ -42,6 +47,7 @@ class OrderSensitiveTraceComparison(extractor: (Node => Any))
     //however we concat the result in reverse order when backtracking, too
     //so the result is correct.
 
+    //Now, compute a (levensthein) editing distance on the two ordered sets.
     val m = new Array[Array[Int]](a.length + 1)
 
     for(i <- 0 to a.length) {
@@ -64,8 +70,7 @@ class OrderSensitiveTraceComparison(extractor: (Node => Any))
       }
     }
 
-    println("Distance: " + m(a.length)(b.length))
-
+    //Backtrack changes to see which nodes were removed, and which were kept. 
     backtrackChanges(m, a, b, a.length, b.length,
                          List[Node](), List[Node](), List[Node]())
   }

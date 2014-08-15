@@ -13,7 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tbd.visualization.analysis
 
 import scala.collection.mutable.{HashMap}
@@ -21,8 +20,14 @@ import tbd.ddg.Tag
 import tbd.Constants.ModId
 import tbd.visualization.graph._
 
+/*
+ * Finds all dependencies between write nodes and their corresponding read
+ * nodes in the DDG.
+ */
 class ReadWriteDependencyTracker extends DependencyTracker {
   def findDependencies(ddg: DDG): Iterable[Edge] = {
+
+    //Find all write nodes and remember them.
     val writes = new HashMap[ModId, Node]
 
     ddg.nodes.foreach(x => x.tag match {
@@ -32,8 +37,8 @@ class ReadWriteDependencyTracker extends DependencyTracker {
       case _ => null
     })
 
-    var dependencies = List[Edge]()
-
+    //Find all read nodes. If we find a read node whicih reads one
+    //of the remembered mods, we add an edge to the result.
     ddg.nodes.flatMap(x => x.tag match {
       case y:Tag.Read if writes.contains(y.mod) =>
         val dst = writes(y.mod)

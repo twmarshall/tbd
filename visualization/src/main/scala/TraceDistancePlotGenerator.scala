@@ -19,29 +19,41 @@ package tbd.visualization
 import tbd.visualization.analysis._
 import collection.mutable.{MutableList}
 
+/*
+ * Abstract class for plot generators.
+ */
 abstract class TraceDistancePlotGenerator[T](
   val distanceAlgorithm: TraceComparison) extends ExperimentSink[T] {
 
+  //Collects all received experiments.
   protected val experiments = MutableList[ExperimentResult[T]]()
 
+  //Returns the generated plot.
   def getPlot(): PlotInfo
 
+  //Stores the result to add it to the plot.
   def resultReceived(result: ExperimentResult[T],
                      sender: ExperimentSource[T]) {
     experiments += result
   }
 
+  //Generates and prints the plot.
   override def finish() = {
     println(getPlot().formatAsText())
   }
 }
 
+/*
+ * A plot, including two-dimensional data, axis, descriptions and a title.
+ */
 case class PlotInfo(val data: Array[Array[Float]],
                     val xaxis: Array[Float],
                     val yaxis: Array[Float],
                     val xaxisDescription: String = "",
                     val yaxisDescription: String = "",
                     val plotTitle: String = "") {
+
+  //Formats this plot as table with a given seperator. 
   def formatAsText(seperator: String = "\t"): String = {
     val sb = new StringBuilder()
 

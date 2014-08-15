@@ -19,12 +19,19 @@ package tbd.visualization.analysis
 import tbd.visualization.graph._
 import scala.collection.mutable.{Buffer, HashSet}
 
+/*
+ * Greedy (intrinsic) trace distance computation.
+ */
 class GreedyTraceComparison(extractor: (Node => Any))
   extends TraceComparison(extractor) {
 
   def compare(before: DDG, after: DDG):
       ComparisonResult = {
 
+    //Inserts nodes into two sets A, B and computes
+    //unchanged = A ? B
+    //removed = A \ B
+    //added = B \ A
     var set = after.nodes.map(x => new NodeWrapper(x, extractor))
 
     var removed = List[Node]()

@@ -18,32 +18,46 @@ package tbd.visualization
 
 import scala.collection.immutable.Map
 
+/*
+ * Trait for a class which generates results for a given algorithm.
+ */
 trait ExperimentSource[T] {
 
   var listener: ExperimentSink[T]
 
-  def setDDGListener(listener: ExperimentSink[T]) = {
+  //Attaches a listener.
+  def setExperimentListener(listener: ExperimentSink[T]) = {
     this.listener = listener
   }
 
-  def pushResult(result: ExperimentResult[T]) = {
+  //Pushes the given ExperimentResult to the attached listener.
+  protected def pushResult(result: ExperimentResult[T]) = {
     if(listener != null) {
       listener.resultReceived(result, this)
     }
   }
 }
 
+/*
+ * Trait for a class which receives ExperimentResults from an ExperimentSource
+ */
 trait ExperimentSink[T] {
+
+  //Called whenever the ExperimentSource generates a new ExperimentResult.
   def resultReceived(result: ExperimentResult[T],
                      sender: ExperimentSource[T])
 
+  //Called when the ExperimentSource finished generating results.
   def finish() = { }
 }
 
+/*
+ * Represents the result of an initial run or change propagation.
+ */
 case class ExperimentResult[+T](
-  val runId: Int,
-  val input: Map[Int, Int],
-  val mutations: List[Mutation],
-  val result: T,
-  val expectedResult: T,
-  val ddg: graph.DDG) { }
+  val runId: Int, //The unique id of the run.
+  val input: Map[Int, Int], //The input set of the run.
+  val mutations: List[Mutation], //The input mutations from the previous to this run.
+  val result: T, //The result of this run, from the incremental algorithm.
+  val expectedResult: T, //The expected result of this run, from the test code.
+  val ddg: graph.DDG) //The ddg of this run.

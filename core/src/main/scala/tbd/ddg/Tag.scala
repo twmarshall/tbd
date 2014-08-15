@@ -17,19 +17,48 @@ package tbd.ddg
 
 import tbd.Constants.ModId
 
+/*
+ * Represents a node tag, which holds valuable information
+ * for debugging and analyzing for each node.
+ */
 abstract class Tag
-object Tag {
-////What about key/values? We can use that for mod comparison?
-    //Additional Idea: If verticis match, all allocated modifiabels in child nodes would also match.
 
+object Tag {
+  /*
+   * A read tag, consisting of the value read by the read node and the tag of
+   * the reader function.
+   *
+   * Addidtionally, the mod being read is stored in the second parameter list
+   * for visualization purposes.
+   */
   case class Read(val readValue: Any, val reader: FunctionTag)(val mod: ModId)
     extends Tag
+  /*
+   * A write tag, consisting of a list of the writes done.
+   */
   case class Write(val writes: List[SingleWriteTag]) extends Tag
+  /*
+   * A memo tag, consisting of the tag of the function invoked by the memo and
+   * the memo's parameter list to match against.
+   */
   case class Memo(val function: FunctionTag, val args: Seq[Any]) extends Tag
+  /*
+   * A mod tag, consisting of a list of created dests and the tag of the
+   * function invoked.
+   */
   case class Mod(val dests: List[ModId], val initializer: FunctionTag) extends Tag
+  /*
+   * A par tag, consisting of two function tags for the two invoked functions.
+   */
   case class Par(val fun1: FunctionTag, val fun2: FunctionTag) extends Tag
+  /*
+   * A root tag. Empty.
+   */
   case class Root() extends Tag
 
+  /*
+   * Formats a tag for more easy-to-read output.
+   */
   def formatTag(tag: Tag): String = {
     tag match{
       case Tag.Read(value, funcTag) => {
@@ -66,5 +95,14 @@ object Tag {
   }
 }
 
+/*
+ * Represents a invoked function parameter. Consisting of the function ID, which
+ * is unique for each function call in the source code and a list of variables
+ * which are bound from an outside scope.
+ */
 case class FunctionTag(val funcId: Int, val freeVars: List[(String, Any)])
+/*
+ * Represents a single value written to a single mod, consisting of the mod id
+ * and the value being written. 
+ */
 case class SingleWriteTag(val mod: ModId, val value: Any)

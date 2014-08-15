@@ -22,9 +22,10 @@ import scala.language.existentials
 
 
 object Main {
+  //Main entry point.
   def main(args: Array[String]) {
 
-    //Set debug flag to true so we can have nice tags
+    //Set debug flag to true so we can have nice tags.
     tbd.master.Main.debug = true
 
     object Conf extends ScallopConf(args) {
@@ -44,11 +45,12 @@ object Main {
         default = Some(0),
         descr = "The count of minimal mutations per mutation round")
       val output = opt[String]("o", 'o', default = Some("visualizer"),
-        descr = "Sets the output mode: visualizer (default), diff or 2dplot.")
+        descr = "Sets the output mode: visualizer (default), diff, latex or 2dplot.")
       val testmode = opt[String]("test", 't', default = Some("random"),
         descr = "Test case generation mode: random (default), manual or exhaustive")
     }
 
+    //Creates the ExperimentSource for the selected test.
     def createTestEnvironment[T, V](algo: TestAlgorithm[T, V]) = {
       Conf.testmode.get.get match {
         case "manual" => new ManualTest(algo) {
@@ -68,15 +70,19 @@ object Main {
       }
     }
 
+    //Creates the ExperimentSink for processing the experiment results.
     def createOutput[V](): ExperimentSink[V] = {
       Conf.output.get.get match {
-        case "visualizer" => new MainView[V](false) {
+        case "visualizer" => new SingleView[V]() {
           visible = true
         }
-        case "diff" => new MainView[V](true){
+        case "diff" => new DiffView[V](){
           visible = true
         }
-        case "chart2d" => new UpdateLengthPositionPlot[V](new analysis.GreedyTraceComparison((node => node.tag)))
+        case "chart2d" => new UpdateLengthPositionPlot[V](
+          new analysis.GreedyTraceComparison((node => node.tag))
+        )
+        case "latex" => new LatexExport[V]()
       }
     }
 
@@ -86,9 +92,10 @@ object Main {
       new Main(test, List(output))
     }
 
+    //Creates the test algorithm.
     val main = Conf.algo.get.get match {
       case "reduce" => create(new ListReduceSumTest())
-      case "quicksort" => create(new ListQuicksortTest())
+      case "sort" => create(new ListSortTest())
       case "split" => create(new ListSplitTest())
       case "map" => create(new ListMapTest())
       case "modDependency" => create(new ModDepTest())
@@ -98,19 +105,25 @@ object Main {
   }
 }
 
+/*
+ * Runs a given test, tracks all dependencies, and then sends the result
+ * to the given ExperimentSink.
+ */
 class Main[T, V](val test: TestBase[T, V],
                  val outputs: List[ExperimentSink[V]])
     extends ExperimentSink[V] {
-  test.setDDGListener(this)
+  test.setExperimentListener(this)
 
-  //val export = new LatexExport()
+  val modTracker = new ModDependencyTracker()
+  val freeVarTracker = new FreeVarDependencyTracker()
+  val readWriteTracker = new ReadWriteDependencyTracker()
 
   def resultReceived(
     result: ExperimentResult[V],
     sender: ExperimentSource[V]) = {
-      new ModDependencyTracker().findAndInsertDependencies(result.ddg)
-      new FreeVarDependencyTracker().findAndInsertDependencies(result.ddg)
-      new ReadWriteDependencyTracker().findAndInsertDependencies(result.ddg)
+      modTracker.findAndInsertDependencies(result.ddg)
+      freeVarTracker.findAndInsertDependencies(result.ddg)
+      readWriteTracker.findAndInsertDependencies(result.ddg)
       outputs.foreach(_.resultReceived(result, sender))
   }
 
