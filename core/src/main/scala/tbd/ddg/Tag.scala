@@ -20,6 +20,13 @@ import tbd.Constants.ModId
 /*
  * Represents a node tag, which holds valuable information
  * for debugging and analyzing for each node.
+ *
+ * Each tag has a primary and a secondary parameter list.
+ * The primary parameter list contains attributes, which are relevant for
+ * node equality. Basically the analysis package assumes that two nodes are
+ * equal, iff the primary parameter lists of their tags are equal.
+ * The secondary parameter lists can be used to hold additional information, for
+ * example for debugging purposes. 
  */
 abstract class Tag
 
@@ -103,6 +110,6 @@ object Tag {
 case class FunctionTag(val funcId: Int, val freeVars: List[(String, Any)])
 /*
  * Represents a single value written to a single mod, consisting of the mod id
- * and the value being written. 
+ * and the value being written.
  */
 case class SingleWriteTag(val mod: ModId, val value: Any)

@@ -62,6 +62,17 @@ class DdgVisualizer extends GridBagPanel with Publisher {
   //A combo box for selecting items.
   private var selector: ComboBox[ExperimentResult[Any]] = null
 
+  //A latex export button.
+  private val exportButton = new Button("L") {
+    reactions += {
+      case e: ButtonClicked => new LatexExport().resultReceived(ddg, null)
+    }
+  }
+
+  private val topPane = new BorderPanel {
+    layout(exportButton) = BorderPanel.Position.East
+  }
+
   //HTML Support methods - we use HTML for text styling in the text box.
   private val htmlInto = "<html><body style=\"font-family: monospaced\">"
   private val htmlOutro = "</body></html>"
@@ -119,11 +130,8 @@ class DdgVisualizer extends GridBagPanel with Publisher {
       selector.selection.item = comboBoxItems(0)
     }
 
-    layout(selector) = new Constraints() {
-      gridx = 0
-      gridy = 0
-      fill = GridBagPanel.Fill.Horizontal
-    }
+
+    topPane.layout(selector) = BorderPanel.Position.Center
 
     this.revalidate()
   }
@@ -234,6 +242,13 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     weighty = 1
     weightx = 1
     fill = GridBagPanel.Fill.Both
+  }
+
+
+  layout(topPane) = new Constraints() {
+    gridx = 0
+    gridy = 0
+    fill = GridBagPanel.Fill.Horizontal
   }
 
   //Guesses the method name from the node stacktrace.
