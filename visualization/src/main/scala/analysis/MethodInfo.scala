@@ -23,33 +23,22 @@ import tbd.visualization.graph.Node
  */
 case class MethodInfo(val name: String, val file: String, val line: Int)
 
-
 object MethodInfo {
-  //Extracts method information from a stack trace. 
+  //Words which are internal function calls - we filter those out of the
+  //stack trace for identifying the call site in user code.
+  var reservedWords = List("<init>", "()", "addRead", "addMod", "mod2", "modLeft",
+  "modRight", "addWrite", "addMemo", "createMod", "getStackTrace",
+  "apply", "read", "memo", "par", "write", "mod")
+
+  //Extracts method information from a stack trace.
   def extract(node: Node) = {
     val methods = node.stacktrace.map(y => {
       (y.getMethodName(),y.getFileName(), y.getLineNumber())
     })
 
     val currentMethods = methods.filter(x => {
-      val y = x._1
-      (!y.startsWith("<init>")
-      && !y.startsWith("()")
-      && !y.startsWith("addRead")
-      && !y.startsWith("addMod")
-      && !y.startsWith("mod2")
-      && !y.startsWith("modLeft")
-      && !y.startsWith("modRight")
-      && !y.startsWith("addWrite")
-      && !y.startsWith("addMemo")
-      && !y.startsWith("createMod")
-      && !y.startsWith("getStackTrace")
-      && !y.startsWith("apply")
-      && !y.startsWith("read")
-      && !y.startsWith("memo")
-      && !y.startsWith("par")
-      && !y.startsWith("write")
-      && !y.startsWith("mod"))})
+      reservedWords.forall(y => !x._1.startsWith(y))
+    })
 
     val methodName = if(!currentMethods.isEmpty) {
       var currentMethod = currentMethods(0)._1

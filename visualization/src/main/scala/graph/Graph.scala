@@ -72,9 +72,6 @@ object DDG {
       append(newNode, x, result)
     })
 
-    //Check whether all function tag id's are consistent.
-    checkFunctionTagConsistency(result)
-
     result
   }
 
@@ -100,37 +97,5 @@ object DDG {
     getChildren(ddgNode).foreach(x => {
       append(newNode, x, result)
     })
-  }
-
-  //Check wether there are no two different functions with equal function ids
-  //in the DDG.
-  private def checkFunctionTagConsistency(ddg: DDG) {
-
-    val ids = HashMap[(Int, Int), MethodInfo]()
-
-    for(node <- ddg.nodes) {
-      var funcId = node.tag match {
-        case tbd.ddg.Tag.Read(_, fun) => (fun.funcId, 0)
-        case tbd.ddg.Tag.Par(fun1, fun2) => (fun1.funcId, fun2.funcId)
-        case tbd.ddg.Tag.Mod(_, fun) => (fun.funcId, 0)
-        case tbd.ddg.Tag.Memo(fun, _) => (fun.funcId, 0)
-        case _ => null
-      }
-
-      if(funcId != null) {
-        var stackTrace = MethodInfo.extract(node)
-
-        if(ids.contains(funcId)) {
-          if(ids(funcId) != stackTrace) {
-            throw new IllegalArgumentException("Function ids are not " +
-              "consistent. Please clean and build the project " +
-              "to fix this error.")
-          }
-        } else {
-          ids(funcId) = stackTrace
-        }
-      }
-    }
-
   }
 }
