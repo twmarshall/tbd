@@ -19,6 +19,7 @@ import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
 import tbd._
+import tbd.datastore.StringData
 import tbd.list._
 
 object SplitAlgorithm {
@@ -35,7 +36,7 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val input = ListInput[Int, String](listConf)
 
-  val data = new WCData(input, count, mutations)
+  val data = new StringData(input, count, mutations, Experiment.check)
 
   def runNaive(input: GenIterable[String]) = {
     input.partition(value => {

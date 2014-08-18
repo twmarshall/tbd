@@ -19,6 +19,7 @@ import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator}
+import tbd.datastore.Data
 import tbd.list.ListConf
 import tbd.master.Main
 

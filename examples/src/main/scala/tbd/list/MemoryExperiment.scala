@@ -18,6 +18,7 @@ package tbd.examples.list
 import scala.collection.mutable.Map
 
 import tbd._
+import tbd.datastore.StringData
 import tbd.list._
 
 class MemoryExperiment(input: ListInput[Int, String])
@@ -34,7 +35,7 @@ object MemoryExperiment {
     val max = 1000
     val mutator = new Mutator()
     val list = ListInput[Int, String](new ListConf(partitions = 4))
-    val input = new WCData(list, max, Array("insert", "remove", "update"))
+    val input = new StringData(list, max, Array("insert", "remove", "update"), false)
 
     for (i <- 0 to max) {
       input.addValue()

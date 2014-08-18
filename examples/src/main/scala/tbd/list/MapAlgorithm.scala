@@ -19,6 +19,7 @@ import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
 import tbd._
+import tbd.datastore.StringData
 import tbd.list._
 
 object MapAlgorithm {
@@ -35,7 +36,7 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ListInput[Int, String](listConf)
 
-  val data = new WCData(input, count, mutations)
+  val data = new StringData(input, count, mutations, Experiment.check)
 
   def runNaive(list: GenIterable[String]) = {
     list.map(MapAlgorithm.mapper(0, _)._2)
@@ -63,7 +64,7 @@ class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ChunkListInput[Int, String](listConf)
 
-  val data = new WCData(input, count, mutations)
+  val data = new StringData(input, count, mutations, Experiment.check)
 
   def runNaive(list: GenIterable[String]) = {
     list.map(MapAlgorithm.mapper(0, _)._2)

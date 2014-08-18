@@ -13,43 +13,75 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.examples.list
-
+package tbd.datastore
 
 import scala.collection.GenIterable
 import scala.collection.mutable.{ArrayBuffer, Map}
 
 import tbd.{Input, Mutator}
 
-class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
-    extends Data[Int] {
+class StringData(
+    input: Input[Int, String],
+    count: Int,
+    mutations: Array[String],
+    check: Boolean
+  ) extends Data[String] {
+
   val maxKey = count * 10
 
   val rand = new scala.util.Random()
 
-  private def loadPages(table: Map[Int, Int]) {
-    var i = 0
+  private def loadPages(
+      table: Map[Int, String],
+      chunks: ArrayBuffer[String],
+      count: Int) {
     while (table.size < count) {
-      val value = rand.nextInt(Int.MaxValue)
-      table += (i -> value)
-      i += 1
+      val elems = scala.xml.XML.loadFile("wiki.xml")
+
+      var i = table.size
+      (elems \\ "elem").map(elem => {
+        (elem \\ "value").map(value => {
+          if (table.size < count) {
+            table += (i -> value.text)
+            i += 1
+          } else {
+	    chunks += value.text
+          }
+        })
+      })
     }
   }
 
-  def loadNaive() {
-    loadPages(table)
+  private def loadChunks(
+      chunks: ArrayBuffer[String]) {
+    val elems = scala.xml.XML.loadFile("wiki.xml")
+
+    var i = 0
+    (elems \\ "elem").map(elem => {
+      (elem \\ "value").map(value => {
+	chunks += value.text
+      })
+    })
   }
 
+  def loadNaive() {
+    loadPages(table, chunks, count)
+  }
+
+  val chunks = new ArrayBuffer[String]()
   def loadInitial() {
+    loadPages(table, chunks, count)
+
     for (pair <- table) {
       input.put(pair._1, pair._2)
     }
   }
 
-  def clearValues() {}
-
-  def prepareCheck(): GenIterable[Int] =
-    table.values.par
+  def clearValues() {
+    for ((key, value) <- table) {
+      table(key) = ""
+    }
+  }
 
   def update() {
     mutations(rand.nextInt(mutations.size)) match {
@@ -60,14 +92,24 @@ class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
   }
 
   def addValue() {
+    if (chunks.size == 0) {
+      loadChunks(chunks)
+    }
+
     var key = rand.nextInt(maxKey)
     val value = rand.nextInt(Int.MaxValue)
     while (table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-    input.put(key, value)
+    input.put(key, chunks.head)
 
-    table += (key -> value)
+    if (check) {
+      table += (key -> chunks.head)
+    } else {
+      table += (key -> "")
+    }
+
+    chunks -= chunks.head
   }
 
   def removeValue() {
@@ -84,13 +126,21 @@ class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
   }
 
   def updateValue() {
+    if (chunks.size == 0) {
+      loadChunks(chunks)
+    }
+
     var key = rand.nextInt(maxKey)
     val value = rand.nextInt(Int.MaxValue)
     while (!table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-    input.update(key, value)
+    input.update(key, chunks.head)
 
-    table(key) = value
+    if (check) {
+      table(key) = chunks.head
+    }
+
+    chunks -= chunks.head
   }
 }

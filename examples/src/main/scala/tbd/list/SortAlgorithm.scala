@@ -20,6 +20,7 @@ import scala.collection.immutable.TreeSet
 import scala.collection.mutable.Map
 
 import tbd._
+import tbd.datastore.IntData
 import tbd.list._
 
 object SortAlgorithm {

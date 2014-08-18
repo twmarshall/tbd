@@ -20,6 +20,7 @@ import scala.collection.mutable.Map
 import scala.collection.immutable.HashMap
 
 import tbd._
+import tbd.datastore.StringData
 import tbd.list._
 import tbd.TBD._
 
@@ -76,7 +77,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
   val input = ListInput[Int, String](listConf)
 
-  val data = new WCData(input, count, mutations)
+  val data = new StringData(input, count, mutations, Experiment.check)
 
   def runNaive(list: GenIterable[String]) = {
     list.aggregate(Map[String, Int]())((x, line) =>
@@ -113,7 +114,7 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
   val input = ChunkListInput[Int, String](listConf)
 
-  val data = new WCData(input, count, mutations)
+  val data = new StringData(input, count, mutations, Experiment.check)
 
   def runNaive(list: GenIterable[String]) = {
     list.aggregate(Map[String, Int]())((x, line) =>
