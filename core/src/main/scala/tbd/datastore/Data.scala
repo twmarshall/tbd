@@ -21,11 +21,17 @@ import scala.collection.mutable.Map
 trait Data[Input] {
   val table = Map[Int, Input]()
 
-  def loadNaive()
+  // Fills in 'table' with the initial data set. This must be the first method
+  // called on a new Data object.
+  def generate()
 
-  def loadInitial()
+  // Transfers to data in 'table' into an Input object.
+  def load()
 
+  // Removed all of the values in 'table' while keeping the keys - intended for
+  // experiments with large datasets that don't care about checking the output.
   def clearValues()
 
+  // Changes a single value (possibly an update, removal, or insertion).
   def update()
 }

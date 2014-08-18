@@ -22,11 +22,11 @@ import tbd.{Input, Mutator}
 
 class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
     extends Data[Int] {
-  val maxKey = count * 10
+  val maxKey = count * 100
 
   val rand = new scala.util.Random()
 
-  private def loadPages(table: Map[Int, Int]) {
+  def generate() {
     var i = 0
     while (table.size < count) {
       val value = rand.nextInt(Int.MaxValue)
@@ -35,20 +35,13 @@ class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
     }
   }
 
-  def loadNaive() {
-    loadPages(table)
-  }
-
-  def loadInitial() {
+  def load() {
     for (pair <- table) {
       input.put(pair._1, pair._2)
     }
   }
 
   def clearValues() {}
-
-  def prepareCheck(): GenIterable[Int] =
-    table.values.par
 
   def update() {
     mutations(rand.nextInt(mutations.size)) match {
@@ -70,7 +63,7 @@ class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
   }
 
   def removeValue() {
-    if (table.size > 1) {
+    if (table.size > 0) {
       var key = rand.nextInt(maxKey)
       while (!table.contains(key)) {
         key = rand.nextInt(maxKey)
@@ -83,13 +76,17 @@ class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
   }
 
   def updateValue() {
-    var key = rand.nextInt(maxKey)
-    val value = rand.nextInt(Int.MaxValue)
-    while (!table.contains(key)) {
-      key = rand.nextInt(maxKey)
-    }
-    input.update(key, value)
+    if (table.size > 0) {
+      var key = rand.nextInt(maxKey)
+      val value = rand.nextInt(Int.MaxValue)
+      while (!table.contains(key)) {
+	key = rand.nextInt(maxKey)
+      }
+      input.update(key, value)
 
-    table(key) = value
+      table(key) = value
+    } else {
+      addValue()
+    }
   }
 }

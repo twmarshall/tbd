@@ -16,7 +16,6 @@
 package tbd.test
 
 import org.scalatest._
-import scala.collection.mutable.Map
 
 import tbd._
 import tbd.list._
@@ -36,93 +35,39 @@ class ChunkListTest(input: ChunkListInput[Int, Int])
 }
 
 class MutatorTests extends FlatSpec with Matchers {
-  val rand = new scala.util.Random()
-
-  def updateValue(input: Input[Int, Int], answer: Map[Int, Int]) {
-    val index = rand.nextInt(answer.size)
-    var i = 0
-    for ((key, value) <- answer) {
-      if (i == index) {
-	val newValue = rand.nextInt(1000)
-	input.update(key, newValue)
-	answer(key) = newValue
-      }
-
-      i += 1
-    }
-  }
-
-  def insertValue(input: Input[Int, Int], answer: Map[Int, Int], i: Int) {
-    val value = rand.nextInt(1000)
-    answer += (i -> value)
-    input.put(i, value)
-  }
-
-  def removeValue(input: Input[Int, Int], answer: Map[Int, Int]) {
-    val index = rand.nextInt(answer.size)
-    var j = 0
-    for ((key, value) <- answer) {
-      if (j == index) {
-	input.remove(key)
-	answer -= key
-      }
-      j += 1
-    }
-  }
-
   def runTest(
       mutator: Mutator,
       adjustable: Adjustable[AdjustableList[Int, Int]],
       input: Input[Int, Int]) {
-    val answer = Map[Int, Int]()
-
-    var  i  = 0
-    while (i < 100) {
-      answer += (i -> i)
-      input.put(i, i)
-      i += 1
-    }
+    val data = new tbd.datastore.IntData(input, 100, Array("insert", "remove", "update"))
+    data.generate()
+    data.load()
 
     val output = mutator.run(adjustable)
-    var sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+    var sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
     output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
 
-    for (j <- 0 to i - 1) {
-      updateValue(input, answer)
-      sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+    for (j <- 0 to 100) {
+      data.updateValue()
+      sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
     }
 
-    while (i < 200) {
-      insertValue(input, answer, i)
-      i += 1
-      sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+    for (j <- 0 to 100) {
+      data.addValue()
+      sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
     }
 
-    //for (j <- 0 to 99) {
-    while (answer.size > 0) {
-      removeValue(input, answer)
-      sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+    while (data.table.size > 0) {
+      data.removeValue()
+      sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
     }
 
     for (j <- 0 to 99) {
-      rand.nextInt(3) match {
-	case 0 => {
-	  insertValue(input, answer, i)
-	  i += 1
-	}
-	case 1 => {
-          if (answer.size > 0)
-	    removeValue(input, answer)
-	}
-	case 2 => {
-          if (answer.size > 0)
-	    updateValue(input, answer)
-	}
-      }
-      sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+      data.update()
+      sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
     }
   }

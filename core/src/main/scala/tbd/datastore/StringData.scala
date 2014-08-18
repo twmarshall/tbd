@@ -31,10 +31,19 @@ class StringData(
 
   val rand = new scala.util.Random()
 
-  private def loadPages(
-      table: Map[Int, String],
-      chunks: ArrayBuffer[String],
-      count: Int) {
+  private def loadChunks(
+      chunks: ArrayBuffer[String]) {
+    val elems = scala.xml.XML.loadFile("wiki.xml")
+
+    var i = 0
+    (elems \\ "elem").map(elem => {
+      (elem \\ "value").map(value => {
+	chunks += value.text
+      })
+    })
+  }
+
+  def generate() {
     while (table.size < count) {
       val elems = scala.xml.XML.loadFile("wiki.xml")
 
@@ -52,26 +61,8 @@ class StringData(
     }
   }
 
-  private def loadChunks(
-      chunks: ArrayBuffer[String]) {
-    val elems = scala.xml.XML.loadFile("wiki.xml")
-
-    var i = 0
-    (elems \\ "elem").map(elem => {
-      (elem \\ "value").map(value => {
-	chunks += value.text
-      })
-    })
-  }
-
-  def loadNaive() {
-    loadPages(table, chunks, count)
-  }
-
   val chunks = new ArrayBuffer[String]()
-  def loadInitial() {
-    loadPages(table, chunks, count)
-
+  def load() {
     for (pair <- table) {
       input.put(pair._1, pair._2)
     }
