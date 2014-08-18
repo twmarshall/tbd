@@ -20,8 +20,11 @@ import scala.collection.mutable.{ArrayBuffer, Map}
 
 import tbd.{Input, Mutator}
 
-class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
-    extends Data[Int] {
+class IntData(
+    input: Input[Int, Int],
+    count: Int,
+    mutations: Array[String] = Array("insert", "update", "remove")
+  ) extends Data[Int] {
   val maxKey = count * 100
 
   val rand = new scala.util.Random()
