@@ -35,7 +35,7 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val input = ListInput[Int, String](listConf)
 
-  data = new WCData(input, count, mutations)
+  val data = new WCData(input, count, mutations)
 
   def runNaive(input: GenIterable[String]) = {
     input.partition(value => {

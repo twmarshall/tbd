@@ -43,25 +43,29 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   var mapCount = 0
   var reduceCount = 0
 
-  var data: Data[Input] = null.asInstanceOf[Data[Input]]
+  def data: Data[Input]
+
+  var naiveLoadElapsed: Long = 0
 
   def naive(): (Long, Long) = {
     if (Experiment.verbose) {
       println("Naive load.")
     }
+
     val beforeLoad = System.currentTimeMillis()
     data.loadNaive()
-    val naiveTable = Vector(data.naiveTable.values.toSeq: _*).par
-    val loadElapsed = System.currentTimeMillis() - beforeLoad
+    val naiveTable = Vector(data.table.values.toSeq: _*).par
+    naiveLoadElapsed = System.currentTimeMillis() - beforeLoad
 
     if (Experiment.verbose) {
       println("Naive run.")
     }
+
     val before = System.currentTimeMillis()
     runNaive(naiveTable)
     val elapsed = System.currentTimeMillis() - before
 
-    (elapsed, loadElapsed)
+    (elapsed, naiveLoadElapsed)
   }
 
   protected def runNaive(table: GenIterable[Input]): Any
@@ -70,9 +74,10 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
     if (Experiment.verbose) {
       println("Initial load.")
     }
+
     val beforeLoad = System.currentTimeMillis()
     data.loadInitial()
-    val loadElapsed = System.currentTimeMillis() - beforeLoad
+    val loadElapsed = naiveLoadElapsed + System.currentTimeMillis() - beforeLoad
 
     if (!Experiment.check) {
       data.clearValues()
@@ -81,6 +86,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
     if (Experiment.verbose) {
       println("Initial run.")
     }
+
     val before = System.currentTimeMillis()
     output = mutator.run[Output](this)
     val elapsed = System.currentTimeMillis() - before

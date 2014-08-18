@@ -19,7 +19,6 @@ import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
 trait Data[Input] {
-  val naiveTable = Map[Int, Input]()
   val table = Map[Int, Input]()
 
   def loadNaive()
@@ -27,8 +26,6 @@ trait Data[Input] {
   def loadInitial()
 
   def clearValues()
-
-  def updateNaive()
 
   def update()
 }

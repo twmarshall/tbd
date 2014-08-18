@@ -37,12 +37,10 @@ class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
   }
 
   def loadNaive() {
-    loadPages(naiveTable)
+    loadPages(table)
   }
 
   def loadInitial() {
-    loadPages(table)
-
     for (pair <- table) {
       input.put(pair._1, pair._2)
     }
@@ -94,46 +92,5 @@ class IntData(input: Input[Int, Int], count: Int, mutations: Array[String])
     input.update(key, value)
 
     table(key) = value
-  }
-
-  def updateNaive() {
-    mutations(rand.nextInt(mutations.size)) match {
-      case "insert" => addValueNaive()
-      case "remove" => removeValueNaive()
-      case "update" => updateValueNaive()
-    }
-  }
-
-  def addValueNaive() {
-    var key = rand.nextInt(maxKey)
-    val value = rand.nextInt(Int.MaxValue)
-    while (naiveTable.contains(key)) {
-      key = rand.nextInt(maxKey)
-    }
-
-    naiveTable += (key -> value)
-  }
-
-  def removeValueNaive() {
-    if (naiveTable.size > 1) {
-      var key = rand.nextInt(maxKey)
-      while (!naiveTable.contains(key)) {
-        key = rand.nextInt(maxKey)
-      }
-
-      naiveTable -= key
-    } else {
-      addValueNaive()
-    }
-  }
-
-  def updateValueNaive() {
-    var key = rand.nextInt(maxKey)
-    val value = rand.nextInt(Int.MaxValue)
-    while (!naiveTable.contains(key)) {
-      key = rand.nextInt(maxKey)
-    }
-
-    naiveTable(key) = value
   }
 }

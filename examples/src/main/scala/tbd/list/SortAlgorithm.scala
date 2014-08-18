@@ -32,7 +32,7 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ListInput[Int, Int](listConf)
 
-  data = new IntData(input, count, mutations)
+  val data = new IntData(input, count, mutations)
 
   def runNaive(input: GenIterable[Int]) = {
      //input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((0, one), (2, two)))
@@ -60,7 +60,7 @@ class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ChunkListInput[Int, Int](listConf)
 
-  data = new IntData(input, count, mutations)
+  val data = new IntData(input, count, mutations)
 
   def runNaive(input: GenIterable[Int]) = {
      input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((1, one), (2, two)))
