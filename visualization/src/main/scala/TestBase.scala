@@ -17,30 +17,45 @@
 package tbd.visualization
 
 import scala.collection.mutable.ArrayBuffer
-import collection.mutable.HashMap
+import collection.mutable.{HashMap, MutableList}
 import scala.util.Random
 
 import tbd._
 import tbd.list.ListInput
 
+/*
+ * Base class for test generators.
+ */
 abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
-    extends ExperimentSource[V, Seq[Int]] {
+    extends ExperimentSource[V] {
+  //Size of input for initial run.
   var initialSize = 10
 
   private val mutator = new Mutator()
   private val listConf = algorithm.getListConf()
   private val input = ListInput[Int, Int](listConf)
+
+  //Counter keeping track of mutation rounds.
   protected var mutationCounter = 0
 
+  //Input.
   private val table = new HashMap[Int, Int]
+
   protected val rand = new Random()
+
+  //List keeping track of free id's.
   private var freeList = List[Int]()
-
   private var keyCounter = 0
-  private var maxValue = 100
 
-  var listener: ExperimentSink[V, Seq[Int]] = null
+  //Maximum of values in the input.
+  protected var maxValue = 100
 
+  //List holding all mutations of the current mutation round.
+  protected var mutations: MutableList[Mutation] = null
+
+  var listener: ExperimentSink[V] = null
+
+  //Adds a random value with any free key.
   def addValue() {
     val newValue = rand.nextInt(maxValue)
     val newKey =
@@ -56,18 +71,20 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
     addValue(newKey, newValue)
   }
 
+  //Adds a given value with a given key.
   def addValue(key: Int, value: Int) {
 
     if(table.contains(key)) {
-      println("//Element already exists!")
+      //Element exists. Skip.
     } else {
-      println("m.put(" + key + ", " + value + ")")
+      mutations += Deletion(key, value)
 
       input.put(key, value)
       table += (key -> value)
     }
   }
 
+  //Removes a random value.
   def removeValue() {
     val keys = table.keys.toBuffer
 
@@ -79,15 +96,17 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
     }
   }
 
+  //Removes the value with the given key.
   def removeValue(key: Int) {
 
-      println("m.remove(" + key + ") // Was " + table(key))
+      mutations += Deletion(key, table(key))
 
       table -= key
       input.remove(key)
       freeList = (freeList :+ key)
   }
 
+  //Updates a random value.
   def updateValue() {
     val keys = table.keys.toBuffer
 
@@ -100,15 +119,16 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
     }
   }
 
+  //Updates the value associated with the given key to a new value.
   def updateValue(key: Int, value: Int) {
 
-      println("m.update(" + key + ", " + value + ")" +
-              "// was (" + key + ", " + table(key) + ") ")
+      mutations += Update(key, value, table(key))
 
       table(key) = value
       input.update(key, value)
   }
 
+  //Does a random mutation, update, add or remove.
   def randomMutation() {
     rand.nextInt(3) match {
       case 0 => updateValue()
@@ -117,7 +137,11 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
     }
   }
 
+  //Runs this test generator.
   def run() {
+
+    mutations = MutableList[Mutation]()
+
     for(i <- 1 to initialSize)
       addValue()
 
@@ -130,18 +154,20 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
       mutator.propagate()
       mutationCounter += 1
 
-      val input = table.values.toBuffer
+      val input = table.toMap
       val result = algorithm.getResult(output)
       val expectedResult = algorithm.getExpectedResult(table)
 
       val ddg = graph.DDG.create(mutator.getDDG().root)
-      pushResult(new ExperimentResult(mutationCounter, input,
+      pushResult(new ExperimentResult(mutationCounter, input, mutations.toList,
                                       result, expectedResult, ddg))
 
       if(result != expectedResult) {
-        println("//Check error!")
+        throw new IllegalArgumentException("Check Error. Expected: " + expectedResult +
+                                    "Got: " + result)
       }
 
+      mutations = MutableList[Mutation]()
     } while(step())
 
     dispose()
@@ -149,7 +175,19 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
     mutator.shutdown()
   }
 
+  //Called before test generation starts.
   def initialize()
+  //Called when a new mutation round should be done.
+  //If false is returned, the test generation stops.
   def step(): Boolean
+  //Called after test generatrion stopped.
   def dispose()
 }
+
+/*
+ * Classes representing mutations on the input.
+ */
+abstract class Mutation(key: Int)
+case class Insertion(key: Int, value: Int) extends Mutation(key)
+case class Deletion(key: Int, value: Int) extends Mutation(key)
+case class Update(key: Int, newValue: Int, oldValue: Int) extends Mutation(key)

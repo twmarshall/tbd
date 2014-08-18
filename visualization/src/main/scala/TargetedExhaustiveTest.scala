@@ -23,20 +23,40 @@ import scala.io.StdIn
 
 import tbd._
 
-class ExhaustiveTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
-
-  var maxMutations = 2
-  var minMutations = 0
-  var count = 20
+/*
+ * Test generator which performs continous updates of all possible lengths
+ * on all possible positions.
+ */
+class TargetedExhaustiveTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
 
   def initialize() = { }
 
+  private var len = 1
+  private var pos = 1
+  var repetitions = 5
+  private var ec = 0
+
   def step() = {
-    for(i <- 1 to rand.nextInt(maxMutations - minMutations) + minMutations) {
-      randomMutation()
+    if(ec == repetitions) {
+      pos += 1
+      if(pos + len > initialSize + 1)
+      {
+        pos = 1
+        len += 1
+      }
+      ec = 1
+    } else {
+      ec += 1
     }
 
-    mutationCounter < count
+    if(len <= initialSize) {
+      for(i <- pos to (pos + len - 1)) {
+        updateValue(i, rand.nextInt(maxValue))
+      }
+      true
+    } else {
+      false
+    }
   }
 
   def dispose() = { }

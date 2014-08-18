@@ -19,7 +19,7 @@ import akka.pattern.ask
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.{Await, Future}
 
-import tbd.macros.TbdMacros
+import tbd.macros.{TbdMacros, functionToInvoke}
 
 import tbd.Constants._
 import tbd.master.Main
@@ -30,6 +30,8 @@ import tbd.TBD._
 object TBD {
 
   import scala.language.experimental.macros
+
+  @functionToInvoke("readInternal")
   def read[T, U](
       mod: Mod[T])
      (reader: T => Changeable[U])
@@ -64,12 +66,13 @@ object TBD {
     changeable
   }
 
+  @functionToInvoke("read_2Internal")
   def read_2[T, U, V](
       mod: Mod[T])
      (reader: T => (Changeable[U], Changeable[V]))
      (implicit c: Context):
     (Changeable[U], Changeable[V]) =
-      macro TbdMacros.read_2Macro[(Changeable[U], Changeable[V])]
+      macro TbdMacros.readMacro[(Changeable[U], Changeable[V])]
 
   def read_2Internal[T, U, V](
       mod: Mod[T],
@@ -110,9 +113,11 @@ object TBD {
 
   def makeModizer[T]() = new Modizer[T]()
 
+  @functionToInvoke("modInternal")
   def mod[T](initializer: => Changeable[T], key: Any)
      (implicit c: Context): Mod[T] = macro TbdMacros.modMacroKeyed[Mod[T]]
 
+  @functionToInvoke("modInternal")
   def mod[T](initializer: => Changeable[T])
      (implicit c: Context): Mod[T] = macro TbdMacros.modMacro[Mod[T]]
 
@@ -155,16 +160,16 @@ object TBD {
     mod.asInstanceOf[Mod[T]]
   }
 
+  @functionToInvoke("mod2Internal")
   def mod2[T, U](
     initializer: => (Changeable[T], Changeable[U]))
-   (implicit c: Context): (Mod[T], Mod[U]) = macro TbdMacros.mod2Macro[(Mod[T], Mod[U])]
+   (implicit c: Context): (Mod[T], Mod[U]) = macro TbdMacros.modMacro[(Mod[T], Mod[U])]
 
-
+  @functionToInvoke("mod2Internal")
   def mod2[T, U](
     initializer: => (Changeable[T], Changeable[U]),
     key: Any)
-   (implicit c: Context): (Mod[T], Mod[U]) = macro TbdMacros.mod2KeyedMacro[(Mod[T], Mod[U])]
-
+   (implicit c: Context): (Mod[T], Mod[U]) = macro TbdMacros.modMacroKeyed[(Mod[T], Mod[U])]
 
   def mod2Internal[T, U](
       initializer: => (Changeable[T], Changeable[U]),
@@ -224,16 +229,18 @@ object TBD {
     (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
   }
 
+  @functionToInvoke("modLeftInternal")
   def modLeft[T, U](
       initializer: => (Changeable[T], Changeable[U]))
      (implicit c: Context):
-    (Mod[T], Changeable[U]) = macro TbdMacros.modLeftMacro[(Mod[T], Changeable[U])]
+    (Mod[T], Changeable[U]) = macro TbdMacros.modMacro[(Mod[T], Changeable[U])]
 
+  @functionToInvoke("modLeftInternal")
   def modLeft[T, U](
       initializer: => (Changeable[T], Changeable[U]),
       key: Any)
      (implicit c: Context):
-    (Mod[T], Changeable[U]) = macro TbdMacros.modLeftKeyedMacro[(Mod[T], Changeable[U])]
+    (Mod[T], Changeable[U]) = macro TbdMacros.modMacroKeyed[(Mod[T], Changeable[U])]
 
   def modLeftInternal[T, U](
       initializer: => (Changeable[T], Changeable[U]),
@@ -276,16 +283,18 @@ object TBD {
      new Changeable(c.currentDest2.mod.asInstanceOf[Mod[U]]))
   }
 
+  @functionToInvoke("modRightInternal")
   def modRight[T, U](
       initializer: => (Changeable[T], Changeable[U]))
      (implicit c: Context):
-    (Changeable[T], Mod[U]) = macro TbdMacros.modRightMacro[(Changeable[T], Mod[U])]
+    (Changeable[T], Mod[U]) = macro TbdMacros.modMacro[(Changeable[T], Mod[U])]
 
+  @functionToInvoke("modRightInternal")
   def modRight[T, U](
       initializer: => (Changeable[T], Changeable[U]),
       key: Any)
      (implicit c: Context):
-    (Changeable[T], Mod[U]) = macro TbdMacros.modRightKeyedMacro[(Changeable[T], Mod[U])]
+    (Changeable[T], Mod[U]) = macro TbdMacros.modMacroKeyed[(Changeable[T], Mod[U])]
 
   def modRightInternal[T, U](
       initializer: => (Changeable[T], Changeable[U]),
@@ -422,6 +431,7 @@ object TBD {
      new Changeable(c.currentDest2.mod).asInstanceOf[Changeable[U]])
   }
 
+  @functionToInvoke("parInternal")
   def par[T](one: Context => T): Parer[T] = macro TbdMacros.parOneMacro[Parer[T]]
 
   def parInternal[T](

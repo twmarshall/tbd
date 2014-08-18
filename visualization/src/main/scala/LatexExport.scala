@@ -18,7 +18,24 @@ package tbd.visualization
 
 import graph._
 
-class LatexExport{
+/*
+ * Generates a latex representation of the control graph of a DDG, using
+ * TIKZ.
+ *
+ * The following TIKS styles have to be included into the document:
+ * \tikzstyle{root}=[draw,fill=gray,rectangle,minimum size=8pt,inner sep=0pt,label={0:root}]
+ * \tikzstyle{read}=[draw,fill=blue,circle,minimum size=8pt,inner sep=0pt,label={0:read}]
+ * \tikzstyle{mod}=[draw,fill=magenta,circle,minimum size=8pt,inner sep=0pt,label={0:mod}]
+ * \tikzstyle{memo}=[draw,fill=green!50,shape=diamond,minimum size=8pt,inner sep=0pt,label={0:memo}]
+ * \tikzstyle{write}=[draw,fill=orange,circle,minimum size=8pt,inner sep=0pt,label={0:write}]
+ * \tikzstyle{par}=[draw,fill=yellow,shape=diamond,minimum size=8pt,inner sep=0pt,label={0:par}]
+ */
+class LatexExport[T] extends ExperimentSink[T] {
+
+  def resultReceived(result: ExperimentResult[T],
+                     sender: ExperimentSource[T]) {
+    println(export(result.ddg))
+  }
 
   def export(ddg: DDG): String = {
     val out = new StringBuilder()
@@ -28,15 +45,15 @@ class LatexExport{
     out.toString
   }
 
+  //Recursively writes DDG nodes to the supplied StringBuilder.
   private def writeNode(
       out: StringBuilder,
       node: Node,
       ddg: DDG,
       pre: String): Unit = {
     out.append(pre)
-    out.append("node [")
-    out.append(node.getTypeString())
-    out.append(", label={180:"+node.getShortLabel()+"}")
+    out.append(s"node [${node.typeString}")
+    out.append(s", label={180:${node.shortLabel}}")
     out.append("]{}\n")
 
     val childs = ddg.getCallChildren(node)

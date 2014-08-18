@@ -23,15 +23,25 @@ import tbd._
 import tbd.list._
 import tbd.TBD._
 
+/*
+ * Trait for test algorithms to run with the visualizer.
+ */
 trait TestAlgorithm[TbdOutputType, NativeOutputType]
     extends Adjustable[TbdOutputType] {
+  //Reads the output and returns the result
   def getResult(output: TbdOutputType): NativeOutputType
+  //Processes the input in a conventional way to generate verification output.
   def getExpectedResult(input: Map[Int, Int]): NativeOutputType
+  //Returns the list conf for the algorithm, so we can enforce a
+  //certain type of list.
   def getListConf() = { new ListConf(partitions = 1) }
 
   var input: ListInput[Int, Int] = null
 }
 
+/*
+ * A reduce algorithm test.
+ */
 class ListReduceSumTest()
     extends TestAlgorithm[Mod[(Int, Int)], Int] {
 
@@ -52,7 +62,10 @@ class ListReduceSumTest()
   }
 }
 
-class ListQuicksortTest()
+/*
+ * A sort algorithm test.
+ */
+class ListSortTest()
     extends TestAlgorithm[AdjustableList[Int, Int], Seq[Int]] {
   def run(implicit c: Context): AdjustableList[Int, Int] = {
     val modList = input.getAdjustableList()
@@ -68,6 +81,9 @@ class ListQuicksortTest()
   }
 }
 
+/*
+ * A split algorithm test.
+ */
 class ListSplitTest()
     extends TestAlgorithm[
       (AdjustableList[Int, Int], AdjustableList[Int, Int]),
@@ -102,5 +118,37 @@ class ListMapTest()
 
   def getExpectedResult(input: Map[Int, Int]): Seq[Int] = {
     input.values.map(x => x * 2).toBuffer.sortWith(_ < _)
+  }
+}
+
+/*
+ * A test which creats a tiny DDG to check dependencies. 
+ */
+class ModDepTest()
+    extends TestAlgorithm[Mod[Int], Int] {
+  def run(implicit c: Context): Mod[Int] = {
+    val modList = input.getAdjustableList().asInstanceOf[tbd.list.ModList[Int, Int]]
+
+    mod{
+      val a = 10
+      read(mod {
+        val b = 5
+        read(modList.head) {
+          case next => {
+            write(next.value._2 + a + b)
+          }
+        }
+      }) {
+        case res => write(res)
+      }
+    }
+  }
+
+  def getResult(output: Mod[Int]): Int = {
+    output.read()
+  }
+
+  def getExpectedResult(input: Map[Int, Int]): Int = {
+    input.head._2 + 15
   }
 }

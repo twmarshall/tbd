@@ -24,6 +24,9 @@ import scala.io.StdIn
 
 import tbd._
 
+/*
+ * Test generator which uses user interaction to mutate the input.
+ */
 class ManualTest[T, V](algorithm: TestAlgorithm[T, V])
     extends TestBase(algorithm) {
 

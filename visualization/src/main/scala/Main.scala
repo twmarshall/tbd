@@ -16,15 +16,16 @@
 
 package tbd.visualization
 
-import tbd.visualization.analysis.DependencyTracker
+import tbd.visualization.analysis._
 import org.rogach.scallop._
 import scala.language.existentials
 
 
 object Main {
+  //Main entry point.
   def main(args: Array[String]) {
 
-    //Set debug flag to true so we can have nice tags
+    //Set debug flag to true so we can have nice tags.
     tbd.master.Main.debug = true
 
     object Conf extends ScallopConf(args) {
@@ -43,64 +44,91 @@ object Main {
       val minMutations = opt[Int]("minimalMutationsPerPropagation", 'k',
         default = Some(0),
         descr = "The count of minimal mutations per mutation round")
-      val diff = opt[Boolean]("diff", 'd', default = Some(false),
-        descr = "Activate diff mode. The visualizer will show two graphs " +
-        "side-by-side to calculate and visualize trace distance")
-      val manual = opt[Boolean]("manual", 'm', default = Some(false),
-        descr = "Activate manual mode. The command line can be used to " +
-        "modify the input")
+      val output = opt[String]("o", 'o', default = Some("visualizer"),
+        descr = "Sets the output mode: visualizer (default), diff, latex or 2dplot.")
+      val testmode = opt[String]("test", 't', default = Some("random"),
+        descr = "Test case generation mode: random (default), manual or exhaustive")
     }
 
+    //Creates the ExperimentSource for the selected test.
     def createTestEnvironment[T, V](algo: TestAlgorithm[T, V]) = {
-      if(Conf.manual.get.get) {
-        new ManualTest(algo) {
+      Conf.testmode.get.get match {
+        case "manual" => new ManualTest(algo) {
           initialSize = Conf.initialCount.get.get
         }
-      } else {
-        new ExhaustiveTest(algo) {
+
+        case "random" => new RandomExhaustiveTest(algo) {
           maxMutations = Conf.maxMutations.get.get
           minMutations = Conf.minMutations.get.get
           count = Conf.mutationRoundCount.get.get
           initialSize = Conf.initialCount.get.get
         }
+
+        case "exhaustive" => new TargetedExhaustiveTest(algo) {
+          initialSize = Conf.initialCount.get.get
+        }
+      }
+    }
+
+    //Creates the ExperimentSink for processing the experiment results.
+    def createOutput[V](): ExperimentSink[V] = {
+      Conf.output.get.get match {
+        case "visualizer" => new SingleView[V]() {
+          visible = true
+        }
+        case "diff" => new DiffView[V](){
+          visible = true
+        }
+        case "chart2d" => new UpdateLengthPositionPlot[V](
+          new analysis.GreedyTraceComparison((node => node.tag))
+        )
+        case "latex" => new LatexExport[V]()
       }
     }
 
     def create[T, V](algo: TestAlgorithm[T, V]) = {
       val test = createTestEnvironment(algo)
-      val mainView = new MainView(Conf.diff.get.get)
-      new Main(test, mainView)
+      val output = createOutput[V]()
+      new Main(test, List(output))
     }
 
+    //Creates the test algorithm.
     val main = Conf.algo.get.get match {
       case "reduce" => create(new ListReduceSumTest())
-      case "quicksort" => create(new ListQuicksortTest())
+      case "sort" => create(new ListSortTest())
       case "split" => create(new ListSplitTest())
       case "map" => create(new ListMapTest())
+      case "modDependency" => create(new ModDepTest())
     }
 
     main.run()
   }
 }
 
-class Main[T, V](val test: TestBase[T, V], val mainView: MainView)
-    extends ExperimentSink[V, Seq[Int]] {
-  test.setDDGListener(this)
+/*
+ * Runs a given test, tracks all dependencies, and then sends the result
+ * to the given ExperimentSink.
+ */
+class Main[T, V](val test: TestBase[T, V],
+                 val outputs: List[ExperimentSink[V]])
+    extends ExperimentSink[V] {
+  test.setExperimentListener(this)
 
-  mainView.visible = true
-
-  //val export = new LatexExport()
+  val modTracker = new ModDependencyTracker()
+  val freeVarTracker = new FreeVarDependencyTracker()
+  val readWriteTracker = new ReadWriteDependencyTracker()
 
   def resultReceived(
-    result: ExperimentResult[V, Seq[Int]],
-    sender: ExperimentSource[V, Seq[Int]]) = {
-      DependencyTracker.findAndInsertReadWriteDependencies(result.ddg)
-      DependencyTracker.findAndInsertFreeVarDependencies(result.ddg)
-      DependencyTracker.findAndInsertModWriteDependencies(result.ddg)
-      mainView.addResult(result)
+    result: ExperimentResult[V],
+    sender: ExperimentSource[V]) = {
+      modTracker.findAndInsertDependencies(result.ddg)
+      freeVarTracker.findAndInsertDependencies(result.ddg)
+      readWriteTracker.findAndInsertDependencies(result.ddg)
+      outputs.foreach(_.resultReceived(result, sender))
   }
 
   def run() {
     test.run()
+    outputs.foreach(x => x.finish())
   }
 }

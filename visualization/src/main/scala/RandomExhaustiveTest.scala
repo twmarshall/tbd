@@ -14,27 +14,33 @@
  * limitations under the License.
  */
 
-package tbd.visualization.analysis
+package tbd.visualization
 
-import scala.collection.mutable.{HashMap}
-import tbd.ddg.Tag
-import tbd.Constants.ModId
-import tbd.visualization.graph._
+import scala.collection.mutable.ArrayBuffer
+import collection.mutable.HashMap
+import scala.util.Random
+import scala.io.StdIn
+
+import tbd._
 
 /*
- * Trait for dependency trackers, which track dependencies and
- * insert them into the DDG as new edges.
+ * Test generator which performs random mutations on the input. 
  */
-trait DependencyTracker {
-  //Invokes findDependencies and inserts the result in the DDG.
-  def findAndInsertDependencies(ddg: DDG) {
-    var deps = findDependencies(ddg)
+class RandomExhaustiveTest[T, V](algorithm: TestAlgorithm[T, V]) extends TestBase(algorithm) {
 
-    deps.foreach(d => {
-        ddg.adj(d.source) += d;
-    })
+  var maxMutations = 2
+  var minMutations = 0
+  var count = 20
+
+  def initialize() = { }
+
+  def step() = {
+    for(i <- 1 to rand.nextInt(maxMutations - minMutations) + minMutations) {
+      randomMutation()
+    }
+
+    mutationCounter < count
   }
 
-  //Scans the DDG for dependencies and returns the result as a list of edges. 
-  def findDependencies(ddg: DDG): Iterable[Edge]
+  def dispose() = { }
 }

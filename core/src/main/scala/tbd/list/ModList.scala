@@ -112,7 +112,8 @@ class ModList[T, U](
         head: ModListNode[T, U],
         next: ModListNode[T, U],
         round: Int,
-        roundMemoizer: RoundMemoizer): Changeable[(T, U)] = {
+        roundMemoizer: RoundMemoizer)
+        (implicit c: Context): Changeable[(T, U)] = {
       val tuple = roundMemoizer.getTuple()
 
       val halfListMod = mod {
@@ -141,7 +142,8 @@ class ModList[T, U](
         round: Int,
         hasher: Hasher,
         memo: Memoizer[Mod[ModListNode[T, U]]]
-      ): Changeable[ModListNode[T, U]] = {
+      )
+      (implicit c: Context): Changeable[ModListNode[T, U]] = {
       val newAcc = f(acc, node.value)
 
       if(binaryHash(node.next.id, round, hasher)) {
@@ -247,7 +249,7 @@ class ModList[T, U](
       read_2(head) {
 	case null =>
 	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
-	case node => 
+	case node =>
 	  memo(node) {
 	    node.split(memo, pred)
 	  }

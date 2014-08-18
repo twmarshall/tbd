@@ -22,16 +22,61 @@ import scala.swing._
 import scala.swing.event._
 import tbd.ddg.{Tag, FunctionTag}
 
-class DdgVisualizer extends GridBagPanel with Publisher {
-  val renderer = new DdgRenderer()
-  listenTo(renderer)
-  var ddg: ExperimentResult[Any, Any] = null
-  var comboBoxItems = List[ExperimentResult[Any, Any]]()
-  var selector: ComboBox[ExperimentResult[Any, Any]] = null
+/*
+ * Quick stand alone visualizer.
+ *
+ * Usage: tbd.visualization.QuickVisualizer.show(mutator.getDDG())
+ */
+object QuickVisualizer {
+  def create() = {
+    val view = new SingleView()
+    view.visualizer
+  }
+  def show(ddg: tbd.ddg.DDG) {
+    val view = new SingleView()
+    view.addResult(ExperimentResult(0, Map(),
+        List(), List(), List(), graph.DDG.create(ddg.root)))
+  }
+  def show(ddg: DDG) {
+    val view = new SingleView()
+    view.addResult(ExperimentResult(0, Map(),
+        List(), List(), List(), ddg))
+  }
+}
 
-  val htmlInto = "<html><body style=\"font-family: monospaced\">"
-  val htmlOutro = "</body></html>"
-  val label = new javax.swing.JTextPane() {
+/*
+ * UI component capable of showing a list of DDGs, from which a DDG to render
+ * can be selected. Furthermore, this component receives click events form the
+ * DdgRenderer and shows an according description.
+ */
+class DdgVisualizer extends GridBagPanel with Publisher {
+
+  //Renderer to use.
+  private val renderer = new DdgRenderer()
+  listenTo(renderer)
+
+  //The experiment results to display.
+  var ddg: ExperimentResult[Any] = null
+  var comboBoxItems = List[ExperimentResult[Any]]()
+
+  //A combo box for selecting items.
+  private var selector: ComboBox[ExperimentResult[Any]] = null
+
+  //A latex export button.
+  private val exportButton = new Button("L") {
+    reactions += {
+      case e: ButtonClicked => new LatexExport().resultReceived(ddg, null)
+    }
+  }
+
+  private val topPane = new BorderPanel {
+    layout(exportButton) = BorderPanel.Position.East
+  }
+
+  //HTML Support methods - we use HTML for text styling in the text box.
+  private val htmlInto = "<html><body style=\"font-family: monospaced\">"
+  private val htmlOutro = "</body></html>"
+  private val label = new javax.swing.JTextPane() {
     setContentType("text/html")
     setEditable(false)
     setBackground(java.awt.Color.LIGHT_GRAY)
@@ -40,11 +85,11 @@ class DdgVisualizer extends GridBagPanel with Publisher {
                "Zoom with scroll wheel.")
   var selectedNode: Node = null
 
-  def setLabelText(text: String) {
+  private def setLabelText(text: String) {
     label.setText(htmlInto + text + htmlOutro)
   }
 
-  def htmlEscape(text: String): String = {
+  private def htmlEscape(text: String): String = {
     text.
     replaceAll("  ", "&nbsp;&nbsp;").
     replaceAll("<", "&lt;").
@@ -52,7 +97,7 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     replaceAll("\n", "<br />")
   }
 
-  def toHtmlString(o: Any): String = {
+  private def toHtmlString(o: Any): String = {
     if(o == null) {
       "null"
     } else {
@@ -60,7 +105,10 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     }
   }
 
-  def initComboBox() = {
+  //Creates a new combo-box for list display.
+  //Due to a scala compiler bug, we cannot just set new items for the
+  //combo-box, we have to re-create it.
+  private def initComboBox() = {
     if(selector != null) {
       layout -= selector
       deafTo(selector.selection)
@@ -82,17 +130,16 @@ class DdgVisualizer extends GridBagPanel with Publisher {
       selector.selection.item = comboBoxItems(0)
     }
 
-    layout(selector) = new Constraints() {
-      gridx = 0
-      gridy = 0
-      fill = GridBagPanel.Fill.Horizontal
-    }
+
+    topPane.layout(selector) = BorderPanel.Position.Center
 
     this.revalidate()
-
   }
 
-  def formatFunctionTag(node: Node, tag: FunctionTag): String = {
+  initComboBox()
+
+  //HTML Formats a function tag for nice display.
+  private def formatFunctionTag(node: Node, tag: FunctionTag): String = {
     val freeVarEdges = ddg.ddg.adj(node).filter({
         x => x.isInstanceOf[Edge.FreeVar]
     }).map(x => x.asInstanceOf[Edge.FreeVar])
@@ -121,7 +168,8 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     "<br />Free vars from outside scopes:" + varsFromOutsideScopes
   }
 
-  def formatTag(node: Node): String = {
+  //HTML Formats a node tag for nice display.
+  private def formatTag(node: Node): String = {
     node.tag match{
       case read @ Tag.Read(value, funcTag) => {
           "Read " + read.mod + " = " + toHtmlString(value) +
@@ -150,12 +198,12 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     }
   }
 
-  initComboBox()
-
+  //Event handlers
   reactions += {
     case NodeClickedEvent(node) => {
       selectedNode = node
       setLabelText(htmlEscape(extractMethodName(node)) +
+                   " (TBD-Id: " + node.internalId + ")" +
                    "<br />" + formatTag(node))
     }
     case x:PerspectiveChangedEvent => {
@@ -168,20 +216,23 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     }
   }
 
-  def addResult(result: ExperimentResult[Any, Any]) {
+  //Adds a new experiment result to this view and updates the combo-box.
+  def addResult(result: ExperimentResult[Any]) {
     comboBoxItems =  comboBoxItems :+ result
     initComboBox()
   }
 
+  //Sets a comparison result, if applicable.
   def setComparisonResult(diff: ComparisonResult) {
       renderer.showDDG(ddg.ddg, diff)
   }
 
-  val scrollPane = new ScrollPane(new Component() {
+  //Layouting logic.
+  private val scrollPane = new ScrollPane(new Component() {
     override lazy val peer = label
   })
 
-  val splitPane = new SplitPane(Orientation.Horizontal) {
+  private val splitPane = new SplitPane(Orientation.Horizontal) {
     contents_$eq(renderer, scrollPane)
   }
 
@@ -193,6 +244,14 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     fill = GridBagPanel.Fill.Both
   }
 
+
+  layout(topPane) = new Constraints() {
+    gridx = 0
+    gridy = 0
+    fill = GridBagPanel.Fill.Horizontal
+  }
+
+  //Guesses the method name from the node stacktrace.
   private def extractMethodName(node: Node): String = {
 
     if(node.stacktrace == null) {
@@ -200,46 +259,12 @@ class DdgVisualizer extends GridBagPanel with Publisher {
              "stacktraces>"
     }
 
-    val methodNames = node.stacktrace.map(y => y.getMethodName())
-    val fileNames = node.stacktrace.map(y => {
-      (y.getMethodName(),y.getFileName(), y.getLineNumber())
-    })
-
-    var (_, fileName, lineNumber) = fileNames.filter(y => {
-        y._1.contains("apply")
-    })(0)
-
-    val currentMethodOption = methodNames.filter(y => (!y.startsWith("<init>")
-                                            && !y.startsWith("()")
-                                            && !y.startsWith("addRead")
-                                            && !y.startsWith("addWrite")
-                                            && !y.startsWith("addMemo")
-                                            && !y.startsWith("createMod")
-                                            && !y.startsWith("getStackTrace")
-                                            && !y.startsWith("apply")
-                                            && !y.startsWith("read")
-                                            && !y.startsWith("memo")
-                                            && !y.startsWith("par")
-                                            && !y.startsWith("write")
-                                            && !y.startsWith("mod"))).headOption
-
-    if(!currentMethodOption.isEmpty) {
-      var currentMethod = currentMethodOption.get
-
-      if(currentMethod.contains("$")) {
-        currentMethod = currentMethod.substring(0, currentMethod.lastIndexOf("$"))
-        currentMethod = currentMethod.substring(currentMethod.lastIndexOf("$") + 1)
-      }
-
-      if(methodNames.find(x => x == "createMod").isDefined) {
-        currentMethod += " (createMod)"
-      }
-
-      "Method " + currentMethod + " at " + fileName + ":" + lineNumber.toString
-    } else {
-      "<unknown>"
-    }
+    val info = analysis.MethodInfo.extract(node)
+    "Method " + info.name + " at " + info.file + ":" + info.line.toString
   }
 }
 
+/*
+ * Event for a change of the selected DDG.
+ */
 case class SelectedDDGChanged(ddg: DDG) extends Event

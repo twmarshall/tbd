@@ -17,21 +17,32 @@
 package tbd.visualization.graph
 
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
+import tbd.visualization.analysis.MethodInfo
 
+/*
+ * Represents any graph.
+ */
 class Graph() {
   val adj = new HashMap[Node, ArrayBuffer[Edge]]()
   val nodes = new HashSet[Node]()
 }
 
-class DDG(_root: Node) extends Graph {
-  val root = _root
+/*
+ * Represents a DDG.
+ *
+ * A DDG stripped of all edged except the control edges is guaranteed to be a
+ * tree. A DDG has a root.
+ */
+class DDG(val root: Node) extends Graph {
 
+  //Gets all children of a node, connected by control edges.
   def getCallChildren(node: Node): Seq[Node] = {
     adj(node).filter((e: Edge) => {
       (e.isInstanceOf[Edge.Control])
     }).map(e => e.destination)
   }
 
+  //Gets the parent of a node, connected by an inverse control edge.
   def getCallParent(node: Node): Node = {
     val parent = adj(node).filter(e => {
       e.isInstanceOf[Edge.InverseControl]
@@ -44,7 +55,11 @@ class DDG(_root: Node) extends Graph {
   }
 }
 
+//Helper object to create visualizer.graph.DDGs from tbd.ddg.DDGs.
+//This wey we can maintain an independent copy of all necassary information
+//for ourselfs, without creating memory leaks or accessing disposed mods.
 object DDG {
+  //Recursivley creates a visualizer DDG from a TBD DDG.
   def create(root: tbd.ddg.RootNode): DDG = {
 
     val newNode = new Node(root)
@@ -60,6 +75,7 @@ object DDG {
     result
   }
 
+  //Fetches child nodes for a given node. Takes extra care of par nodes.
   private def getChildren(node: tbd.ddg.Node): Seq[tbd.ddg.Node] = {
     node match {
       case parNode: tbd.ddg.ParNode =>
@@ -69,6 +85,7 @@ object DDG {
     }
   }
 
+  //Recursivley creates a visualizer DDG from a TBD DDG.
   private def append(node: Node, ddgNode: tbd.ddg.Node, result: DDG): Unit = {
     val newNode = new Node(ddgNode)
 

@@ -21,14 +21,15 @@ import scala.concurrent.{Await, Future}
 import tbd.Constants._
 import tbd.ddg.MemoNode
 import tbd.master.Master
-import tbd.macros.TbdMacros
+import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.ddg.FunctionTag
 import tbd.worker.Worker
 
 class Memoizer[T](c: Context, memoId: Int) {
   import c.worker.context.dispatcher
-
   import scala.language.experimental.macros
+
+  @functionToInvoke("applyInternal")
   def apply(args: Any*)(func: => T): T = macro TbdMacros.memoMacro[T]
 
   def applyInternal(

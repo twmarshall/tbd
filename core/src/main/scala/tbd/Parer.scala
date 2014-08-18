@@ -18,7 +18,7 @@ package tbd
 import akka.pattern.ask
 import scala.concurrent.Await
 
-import tbd.macros.TbdMacros
+import tbd.macros.{TbdMacros, functionToInvoke}
 
 import tbd.Constants._
 import tbd.messages._
@@ -26,8 +26,9 @@ import tbd.worker.Worker
 import tbd.ddg.FunctionTag
 
 class Parer[T](one: Context => T, id1: Int, closedTerms1: List[(String, Any)]) {
-
   import scala.language.experimental.macros
+
+  @functionToInvoke("parTwoInternal")
   def and[U](two: Context => U)(implicit c: Context): (T, U) = macro TbdMacros.parTwoMacro[(T, U)]
 
   def parTwoInternal[U](

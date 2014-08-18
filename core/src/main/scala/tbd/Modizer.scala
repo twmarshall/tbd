@@ -16,11 +16,23 @@
 package tbd
 
 import scala.collection.mutable.Map
+import tbd.macros.{TbdMacros, functionToInvoke}
 
 class Modizer[T] {
   val allocations = Map[Any, Dest[Any]]()
 
-  def apply(key: Any)(initializer: => Changeable[T])(implicit c: Context) = {
+  import scala.language.experimental.macros
+
+  @functionToInvoke("applyInternal")
+  def apply(key: Any)(initializer: => Changeable[T])
+    (implicit c: Context)= macro TbdMacros.modizerMacro[Mod[T]]
+
+  def applyInternal(
+      key: Any,
+      initializer: => Changeable[T],
+      c: Context,
+      readerId: Int,
+      freeTerms: List[(String, Any)]) = {
     val oldCurrentDest = c.currentDest
 
     c.currentDest =
@@ -36,7 +48,17 @@ class Modizer[T] {
 	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
       }
 
+    val modNode = c.worker.ddg.addMod(c.currentDest.mod, null, c.currentParent,
+                                      ddg.FunctionTag(readerId, freeTerms))
+
+    val outerReader = c.currentParent
+    c.currentParent = modNode
+
     initializer
+
+    c.currentParent = outerReader
+    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
+
     val mod = c.currentDest.mod
     c.currentDest = oldCurrentDest
 

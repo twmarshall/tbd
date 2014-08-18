@@ -18,23 +18,44 @@ package tbd.visualization.graph
 
 import scala.collection.mutable.HashSet
 
+/*
+ * Trait for graph iterators, so we can iterate a graph in different, meaningful
+ * ways.
+ */
 trait GraphIterator extends Iterator[Node] {
+  //True, iff there is a next element to iterate over.
   def hasNext(): Boolean
+  //Moves the iterator to the next element and returns it.
   def next() : Node
 }
+
+/*
+ * A DFS iterator, which is queue-based.
+ * Iterates a graph in depth-first order.
+ */
 class DfsIterator(
+      //The node to start iteration from.
       root: Node,
+      //The graph to iterate.
       graph: Graph,
+      //An optional filter function to include only edges we want to consult
+      //for this iteration.
       filter: (Edge => Boolean) = (x => true))
     extends GraphIterator {
+
   private val visited = new HashSet[Node]()
   private var state = List((root, 0))
 
   protected var current: Node = null
+
+  //Called whenever a node is visited.
   protected def visit(n: Node) = { }
+  //Called whenever a node is visited for the first time.
   protected def firstVisit(n: Node) = { }
+  //Called whenever a node is visited for the last time.
   protected def lastVisit(n: Node) = { }
 
+  //Moves to the next node in the graph.
   protected def iterationStep() {
     val (head :: tail) = state;
     val (node, index) = head;
@@ -72,6 +93,10 @@ class DfsIterator(
   }
 }
 
+/*
+ * Iterates a graph in topological order: All nodes are iterated exactly once,
+ * when they are visited the last time by the DFS.
+ */
 class TopoSortIterator(
     root: Node,
     graph: Graph,
@@ -86,5 +111,48 @@ class TopoSortIterator(
     isLast = false
     while(!isLast) { iterationStep() }
     current
+  }
+}
+
+/*
+ * Iteratesa all nodes exactly once, when they are visited the first time
+ * by the DFS.
+ */
+class DfsFirstIterator(
+    root: Node,
+    graph: Graph,
+    filter: (Edge => Boolean) = (x => true))
+  extends DfsIterator(root, graph, filter) {
+
+  private var isFirst = false
+
+  protected override def firstVisit(n: Node) = { isFirst = true }
+
+  //It is difficult to provide a "hasNext" for this kind of iteration,
+  //so we just pre-fetch the next node every time. If we don't find a next node
+  //any more, we can be sure that we don't have a next node.
+
+  private var nextNode: Node = null
+  moveToNext()
+
+  override def next(): Node = {
+    val res = nextNode
+    moveToNext()
+    res
+  }
+
+  override def hasNext(): Boolean = {
+    nextNode != null
+  }
+
+  //Find and remember next node. 
+  private def moveToNext() {
+    isFirst = false
+    while(!isFirst && super.hasNext()) { iterationStep() }
+    if(isFirst) {
+      nextNode = current
+    } else {
+      nextNode = null
+    }
   }
 }
