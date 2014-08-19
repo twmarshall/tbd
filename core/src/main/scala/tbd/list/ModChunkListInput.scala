@@ -148,6 +148,7 @@ class ModChunkListInput[T, U](conf: ListConf) extends ChunkListInput[T, U] {
       }
 
     val futures = Datastore.updateMod(nodes(key).id, newNode)
+    nodes -= key
     Await.result(Future.sequence(futures), DURATION)
   } //ensuring(isValid())
 
