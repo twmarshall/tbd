@@ -125,6 +125,22 @@ class MapReduceTest(input: ListInput[Int, Int])
   }
 }
 
+class JoinTest(
+    input: ListInput[Int, Int],
+    input2: ListInput[Int, Int]
+  ) extends Adjustable[ModList[Int, (Int, Int)]] {
+  def comparator(pair1: (Int, Int), pair2: (Int, Int)) = {
+    println("comparing " + pair1 + " with " + pair2)
+    pair1._1 == pair2._1
+  }
+
+  def run(implicit c: Context) = {
+    val list = input.getAdjustableList()
+    val list2 = input2.getAdjustableList()
+    list.join(list2.asInstanceOf[ModList[Int, Int]], comparator)
+  }
+}
+
 class ReexecutionTests extends FlatSpec with Matchers {
   /*"ReduceTest" should "reexecute only the necessary reduce steps" in {
     val mutator = new Mutator()
@@ -285,4 +301,27 @@ class ReexecutionTests extends FlatSpec with Matchers {
     input.update(7, 8)
     mutator.propagate()
   }*/
+
+  "JoinTest" should "only reexecute the necessary parts" in {
+    val mutator = new Mutator()
+    val conf = new ListConf(partitions = 1, chunkSize = 1)
+    val input = ListInput[Int, Int](conf)
+
+    for (i <- List(1, 8, 3, 4, 6, 10, 5)) {
+      input.put(i, i)
+    }
+
+    val input2 = ListInput[Int, Int](conf)
+
+    for (i <- List(1, 4, 5, 2, 7, 8)) {
+      input2.put(i, i * 2)
+    }
+
+    val output = mutator.run(new JoinTest(input, input2))
+    println(output.toBuffer)
+
+    input2.put(10, 10)
+    mutator.propagate()
+    println(output.toBuffer)
+  }
 }

@@ -66,47 +66,60 @@ class ModListNode[T, U] (
 
   def loopJoin[V](
       that: ModList[T, V],
+      comparator: ((T, U), (T, V)) => Boolean,
       memo: Memoizer[Changeable[ModListNode[T, (U, V)]]])
      (implicit c: Context): Changeable[ModListNode[T, (U, V)]] = {
-    val joinedValue = that.joinOne(value)
-
-    read(joinedValue) {
-      case null =>
-	read(next) {
-	  case null =>
-	    write[ModListNode[T, (U, V)]](null)
-	  case next =>
-	    memo(next) {
-	      next.loopJoin(that, memo)
-	    }
-	}
-      case value =>
-	val newNext = mod {
-	  read(next) {
-	    case null =>
-	      write[ModListNode[T, (U, V)]](null)
-	    case next =>
-	      memo(next) {
-		next.loopJoin(that, memo)
-	      }
+    val newNext = mod {
+      read(next) {
+	case null =>
+	  write[ModListNode[T, (U, V)]](null)
+	case node =>
+	  memo(node) {
+	    node.loopJoin(that, comparator, memo)
 	  }
-	}
+      }
+    }
 
-	write(new ModListNode[T, (U, V)](value, newNext))
+    val memo2 = makeMemoizer[Changeable[ModListNode[T, (U, V)]]]()
+    read(that.head) {
+      case null =>
+	read(newNext) { write(_) }
+      case node =>
+	node.joinHelper(value, comparator, newNext, memo2)
     }
   }
 
-  def joinOne[V](
-      thatValue: (T, V))
-     (implicit c: Context): Changeable[(T, (V, U))] = {
-    if (value._1 == thatValue._1) {
-      write((value._1, (thatValue._2, value._2)))
+  // Iterates over the second join list, testing each element for equality
+  // with a single element from the first list.
+  private def joinHelper[V](
+      thatValue: (T, V),
+      comparator: ((T, V), (T, U)) => Boolean,
+      tail: Mod[ModListNode[T, (V, U)]],
+      memo: Memoizer[Changeable[ModListNode[T, (V, U)]]])
+     (implicit c: Context): Changeable[ModListNode[T, (V, U)]] = {
+    if (comparator(thatValue, value)) {
+      val newValue = (value._1, (thatValue._2, value._2))
+
+      read(next) {
+	case null =>
+	  write(new ModListNode[T, (V, U)](newValue, tail))
+	case node =>
+	  val newNext = mod {
+	    memo(node) {
+	      node.joinHelper(thatValue, comparator, tail, memo)
+	    }
+	  }
+
+	  write(new ModListNode[T, (V, U)](newValue, newNext))
+      }
     } else {
       read(next) {
 	case null =>
-	  write[(T, (V, U))](null)
+	  read(tail) { write(_) }
 	case node =>
-	  node.joinOne(thatValue)
+	  memo(node) {
+	    node.joinHelper(thatValue, comparator, tail, memo)
+	  }
       }
     }
   }

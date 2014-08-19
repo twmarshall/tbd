@@ -41,7 +41,8 @@ class ModList[T, U](
   }
 
   override def join[V](
-      that: ModList[T, V])
+      that: ModList[T, V],
+      comparator: ((T, U), (T, V)) => Boolean)
      (implicit c: Context): ModList[T, (U, V)] = {
     val memo = makeMemoizer[Changeable[ModListNode[T, (U ,V)]]]()
 
@@ -49,23 +50,10 @@ class ModList[T, U](
       mod {
 	read(head) {
 	  case null => write[ModListNode[T, (U, V)]](null)
-	  case node => node.loopJoin(that, memo)
+	  case node => node.loopJoin(that, comparator, memo)
 	}
       }
     )
-  }
-
-  def joinOne[V](
-      thatValue: (T, V))
-     (implicit c: Context): Mod[(T, (V, U))] = {
-    mod {
-      read(head) {
-	case null =>
-	  write[(T, (V, U))](null)
-	case node =>
-	  node.joinOne(thatValue)
-      }
-    }
   }
 
   def map[V, W](
