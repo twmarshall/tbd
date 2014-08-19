@@ -54,6 +54,8 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
 	  new ChunkSortAlgorithm(conf, listConf)
 	else
           new SortAlgorithm(conf, listConf)
+
+      case "join" => new JoinAlgorithm(conf, listConf)
     }
 
     for (run <- runs) {

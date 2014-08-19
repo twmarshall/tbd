@@ -38,13 +38,23 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
-  def runNaive(list: GenIterable[String]) = {
-    list.map(MapAlgorithm.mapper(0, _)._2)
+  var naiveTable: GenIterable[String] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = Vector(data.table.values.toSeq: _*).par
+  }
+
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
+
+  private def naiveHelper(input: GenIterable[String]) = {
+    input.map(MapAlgorithm.mapper(0, _)._2)
   }
 
   def checkOutput(table: Map[Int, String], output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val answer = runNaive(table.values)
+    val answer = naiveHelper(table.values)
 
     sortedOutput == answer.asInstanceOf[GenIterable[Int]].toBuffer.sortWith(_ < _)
   }
@@ -66,12 +76,22 @@ class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
-  def runNaive(list: GenIterable[String]) = {
-    list.map(MapAlgorithm.mapper(0, _)._2)
+  var naiveTable: GenIterable[String] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = Vector(data.table.values.toSeq: _*).par
+  }
+
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
+
+  private def naiveHelper(input: GenIterable[String]) = {
+    input.map(MapAlgorithm.mapper(0, _)._2)
   }
 
   def checkOutput(table: Map[Int, String], output: AdjustableList[Int, Int]) = {
-    val answer = runNaive(table.values)
+    val answer = naiveHelper(table.values)
 
     output.toBuffer.reduce(_ + _) == answer.asInstanceOf[GenIterable[Int]].reduce(_ + _)
   }

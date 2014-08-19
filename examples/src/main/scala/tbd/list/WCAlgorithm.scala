@@ -79,15 +79,25 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
-  def runNaive(list: GenIterable[String]) = {
-    list.aggregate(Map[String, Int]())((x, line) =>
+  var naiveTable: GenIterable[String] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = Vector(data.table.values.toSeq: _*).par
+  }
+
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
+
+  private def naiveHelper(input: GenIterable[String] = naiveTable) = {
+    input.aggregate(Map[String, Int]())((x, line) =>
       WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
   }
 
   def checkOutput(
       table: Map[Int, String],
       output: Mod[(Int, HashMap[String, Int])]) = {
-    val answer = runNaive(table.values)
+    val answer = naiveHelper(table.values)
     output.read()._2 == answer
   }
 
@@ -116,15 +126,25 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
-  def runNaive(list: GenIterable[String]) = {
-    list.aggregate(Map[String, Int]())((x, line) =>
+  var naiveTable: GenIterable[String] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = Vector(data.table.values.toSeq: _*).par
+  }
+
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
+
+  private def naiveHelper(input: GenIterable[String] = naiveTable) = {
+    input.aggregate(Map[String, Int]())((x, line) =>
       WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
   }
 
   def checkOutput(
       table: Map[Int, String],
       output: Mod[(Int, HashMap[String, Int])]) = {
-    val answer = runNaive(table.values)
+    val answer = naiveHelper(table.values)
     output.read()._2 == answer
   }
 

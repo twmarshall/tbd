@@ -35,8 +35,17 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val data = new IntData(input, count, mutations)
 
-  def runNaive(input: GenIterable[Int]) = {
-     //input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((0, one), (2, two)))
+  var naiveTable: GenIterable[Int] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = Vector(data.table.values.toSeq: _*).par
+  }
+
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
+
+  private def naiveHelper(input: GenIterable[Int]) = {
     input map { TreeSet(_) } reduce((one: TreeSet[Int], two: TreeSet[Int]) => one ++ two)
   }
 
@@ -45,7 +54,7 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
       output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer
 
-    val answer = runNaive(input.values)
+    val answer = naiveHelper(input.values)
 
     sortedOutput == answer.toBuffer
   }
@@ -63,14 +72,24 @@ class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val data = new IntData(input, count, mutations)
 
-  def runNaive(input: GenIterable[Int]) = {
-     input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((1, one), (2, two)))
+  var naiveTable: GenIterable[Int] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = Vector(data.table.values.toSeq: _*).par
+  }
+
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
+
+  private def naiveHelper(input: GenIterable[Int]) = {
+    input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((1, one), (2, two)))
   }
 
   def checkOutput(
       input: Map[Int, Int],
       output: AdjustableList[Int, Int]) = {
-    val answer = runNaive(input.values)
+    val answer = naiveHelper(input.values)
 
     output.toBuffer == answer.toBuffer
   }

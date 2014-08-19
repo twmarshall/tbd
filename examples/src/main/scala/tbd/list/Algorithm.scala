@@ -54,8 +54,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
     }
 
     val beforeLoad = System.currentTimeMillis()
-    data.generate()
-    val naiveTable = Vector(data.table.values.toSeq: _*).par
+    generateNaive()
     naiveLoadElapsed = System.currentTimeMillis() - beforeLoad
 
     if (Experiment.verbose) {
@@ -63,13 +62,15 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
     }
 
     val before = System.currentTimeMillis()
-    runNaive(naiveTable)
+    runNaive()
     val elapsed = System.currentTimeMillis() - before
 
     (elapsed, naiveLoadElapsed)
   }
 
-  protected def runNaive(table: GenIterable[Input]): Any
+  protected def generateNaive()
+
+  protected def runNaive(): Any
 
   def initial(): (Long, Long) = {
     if (Experiment.verbose) {

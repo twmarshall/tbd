@@ -25,16 +25,19 @@ class IntData(
     count: Int,
     mutations: Array[String] = Array("insert", "update", "remove")
   ) extends Data[Int] {
-  val maxKey = count * 100
+  val maxKey = count * 10
 
   val rand = new scala.util.Random()
 
   def generate() {
-    var i = 0
     while (table.size < count) {
+      var key = rand.nextInt(maxKey)
       val value = rand.nextInt(Int.MaxValue)
-      table += (i -> value)
-      i += 1
+      while (table.contains(key)) {
+	key = rand.nextInt(maxKey)
+      }
+
+      table += (key -> value)
     }
   }
 

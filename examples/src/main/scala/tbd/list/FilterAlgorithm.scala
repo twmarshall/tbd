@@ -34,13 +34,23 @@ class FilterAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val data = new IntData(input, count, mutations)
 
-  def runNaive(list: GenIterable[Int]) = {
-    list.filter(FilterAlgorithm.predicate(0, _))
+  var naiveTable: GenIterable[Int] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = Vector(data.table.values.toSeq: _*).par
+  }
+
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
+
+  private def naiveHelper(input: GenIterable[Int]) = {
+    input.filter(FilterAlgorithm.predicate(0, _))
   }
 
   def checkOutput(table: Map[Int, Int], output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer().sortWith(_ < _)
-    val answer = runNaive(table.values)
+    val answer = naiveHelper(table.values)
 
     sortedOutput == answer.toBuffer.sortWith(_ < _)
   }

@@ -38,7 +38,17 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
-  def runNaive(input: GenIterable[String]) = {
+  var naiveTable: GenIterable[String] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = Vector(data.table.values.toSeq: _*).par
+  }
+
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
+
+  private def naiveHelper(input: GenIterable[String]) = {
     input.partition(value => {
       SplitAlgorithm.predicate((0, value))
     })
@@ -48,7 +58,7 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val sortedOutputA = output._1.toBuffer.sortWith(_ < _)
     val sortedOutputB = output._2.toBuffer.sortWith(_ < _)
 
-    val answer = runNaive(input.values)
+    val answer = naiveHelper(input.values)
 
     sortedOutputA == answer._1.toBuffer.sortWith(_ < _)
     sortedOutputB == answer._2.toBuffer.sortWith(_ < _)
