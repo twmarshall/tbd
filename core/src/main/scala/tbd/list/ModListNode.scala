@@ -64,6 +64,53 @@ class ModListNode[T, U] (
     }
   }
 
+  def loopJoin[V](
+      that: ModList[T, V],
+      memo: Memoizer[Changeable[ModListNode[T, (U, V)]]])
+     (implicit c: Context): Changeable[ModListNode[T, (U, V)]] = {
+    val joinedValue = that.joinOne(value)
+
+    read(joinedValue) {
+      case null =>
+	read(next) {
+	  case null =>
+	    write[ModListNode[T, (U, V)]](null)
+	  case next =>
+	    memo(next) {
+	      next.loopJoin(that, memo)
+	    }
+	}
+      case value =>
+	val newNext = mod {
+	  read(next) {
+	    case null =>
+	      write[ModListNode[T, (U, V)]](null)
+	    case next =>
+	      memo(next) {
+		next.loopJoin(that, memo)
+	      }
+	  }
+	}
+
+	write(new ModListNode[T, (U, V)](value, newNext))
+    }
+  }
+
+  def joinOne[V](
+      thatValue: (T, V))
+     (implicit c: Context): Changeable[(T, (V, U))] = {
+    if (value._1 == thatValue._1) {
+      write((value._1, (thatValue._2, value._2)))
+    } else {
+      read(next) {
+	case null =>
+	  write[(T, (V, U))](null)
+	case node =>
+	  node.joinOne(thatValue)
+      }
+    }
+  }
+
   def map[V, W](
       f: ((T, U)) => (V, W),
       memo: Memoizer[Changeable[ModListNode[V, W]]])

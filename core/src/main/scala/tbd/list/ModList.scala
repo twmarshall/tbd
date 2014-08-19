@@ -40,6 +40,34 @@ class ModList[T, U](
     )
   }
 
+  override def join[V](
+      that: ModList[T, V])
+     (implicit c: Context): ModList[T, (U, V)] = {
+    val memo = makeMemoizer[Changeable[ModListNode[T, (U ,V)]]]()
+
+    new ModList(
+      mod {
+	read(head) {
+	  case null => write[ModListNode[T, (U, V)]](null)
+	  case node => node.loopJoin(that, memo)
+	}
+      }
+    )
+  }
+
+  def joinOne[V](
+      thatValue: (T, V))
+     (implicit c: Context): Mod[(T, (V, U))] = {
+    mod {
+      read(head) {
+	case null =>
+	  write[(T, (V, U))](null)
+	case node =>
+	  node.joinOne(thatValue)
+      }
+    }
+  }
+
   def map[V, W](
       f: ((T, U)) => (V, W))
      (implicit c: Context): ModList[V, W] = {

@@ -33,6 +33,7 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def generateNaive() = {
     data.generate()
     data2.generate()
+    data2.load()
   }
 
   def runNaive() {
@@ -48,7 +49,7 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 	}
       }
     }
-    println(output)
+
     output
   }
 
@@ -57,8 +58,11 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
       output: AdjustableList[Int, (Int, Int)]): Boolean = {
     val sortedOutput = output.toBuffer.sortWith(_._1 < _._1)
     val answer = naiveHelper(input, data2.table)
+    val sortedAnswer = answer.values.toBuffer.sortWith(_._1 < _._1)
 
-    answer.values.toBuffer.sortWith(_._1 < _._1) == sortedOutput
+    //println(sortedAnswer)
+    //println(sortedOutput)
+    sortedAnswer == sortedOutput
   }
 
   def run(implicit c: Context): AdjustableList[Int, (Int, Int)] = {
