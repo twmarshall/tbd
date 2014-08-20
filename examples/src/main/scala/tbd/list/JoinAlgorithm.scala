@@ -20,7 +20,7 @@ import scala.collection.mutable.Map
 
 import tbd.Context
 import tbd.datastore.IntData
-import tbd.list.{AdjustableList, ListConf, ListInput, ModList}
+import tbd.list._
 
 class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
@@ -74,5 +74,60 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val list2 = input2.getAdjustableList().asInstanceOf[ModList[Int, Int]]
 
     list.join(list2, comparator)
+  }
+}
+
+class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
+    extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
+  val input = ChunkListInput[Int, Int](listConf)
+  val data = new IntData(input, count, mutations)
+
+  val input2 = ChunkListInput[Int, Int](listConf)
+  val data2 = new IntData(input2, count)
+
+  def generateNaive() = {
+    data.generate()
+    data2.generate()
+    data2.load()
+  }
+
+  def runNaive() {
+    naiveHelper(data.table, data2.table)
+  }
+
+  private def naiveHelper(input: Map[Int, Int], input2: Map[Int, Int]) = {
+    val output = Map[Int, (Int, Int)]()
+    for ((key, value) <- input) {
+      for ((key2, value2) <- input2) {
+	if (key == key2) {
+	  output(key) = (value, value2)
+	}
+      }
+    }
+
+    output
+  }
+
+  def checkOutput(
+      input: Map[Int, Int],
+      output: AdjustableList[Int, (Int, Int)]): Boolean = {
+    val sortedOutput = output.toBuffer.sortWith(_._1 < _._1)
+    val answer = naiveHelper(input, data2.table)
+    val sortedAnswer = answer.values.toBuffer.sortWith(_._1 < _._1)
+
+    //println(sortedAnswer)
+    //println(sortedOutput)
+    sortedAnswer == sortedOutput
+  }
+
+  def comparator(pair1: (Int, Int), pair2: (Int, Int)) = {
+    pair1._1 == pair2._1
+  }
+
+  def run(implicit c: Context): AdjustableList[Int, (Int, Int)] = {
+    val list = input.getChunkList()
+    val list2 = input2.getChunkList().asInstanceOf[ChunkList[Int, Int]]
+
+    list.chunkJoin(list2, comparator)
   }
 }

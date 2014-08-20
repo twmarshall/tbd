@@ -18,6 +18,11 @@ package tbd.list
 import tbd.{Context, Mod}
 
 trait AdjustableChunkList[T, U] extends AdjustableList[T, U] {
+  def chunkJoin[V](
+      that: ChunkList[T, V],
+      comparator: ((T, U), (T, V)) => Boolean)
+     (implicit c: Context): ChunkList[T, (U, V)] = ???
+
   def chunkMap[V, Q](
       f: (Vector[(T, U)]) => (V, Q))
      (implicit c: Context): AdjustableList[V, Q]

@@ -24,6 +24,22 @@ import tbd.TBD._
 class ChunkList[T, U](
     val head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
 
+  override def chunkJoin[V](
+      that: ChunkList[T, V],
+      comparator: ((T, U), (T, V)) => Boolean)
+     (implicit c: Context): ChunkList[T, (U, V)] = {
+    val memo = makeMemoizer[Changeable[ChunkListNode[T, (U ,V)]]]()
+
+    new ChunkList(
+      mod {
+	read(head) {
+	  case null => write[ChunkListNode[T, (U, V)]](null)
+	  case node => node.loopJoin(that, comparator, memo)
+	}
+      }
+    )
+  }
+
   def map[V, W](
       f: ((T, U)) => (V, W))
      (implicit c: Context): ChunkList[V, W] = {

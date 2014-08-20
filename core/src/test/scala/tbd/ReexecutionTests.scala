@@ -141,6 +141,22 @@ class JoinTest(
   }
 }
 
+class ChunkJoinTest(
+    input: ChunkListInput[Int, Int],
+    input2: ChunkListInput[Int, Int]
+  ) extends Adjustable[ChunkList[Int, (Int, Int)]] {
+  def comparator(pair1: (Int, Int), pair2: (Int, Int)) = {
+    println("comparing " + pair1 + " with " + pair2)
+    pair1._1 == pair2._1
+  }
+
+  def run(implicit c: Context) = {
+    val list = input.getChunkList()
+    val list2 = input2.getChunkList()
+    list.chunkJoin(list2.asInstanceOf[ChunkList[Int, Int]], comparator)
+  }
+}
+
 class ReexecutionTests extends FlatSpec with Matchers {
   /*"ReduceTest" should "reexecute only the necessary reduce steps" in {
     val mutator = new Mutator()
@@ -302,7 +318,7 @@ class ReexecutionTests extends FlatSpec with Matchers {
     mutator.propagate()
   }*/
 
-  "JoinTest" should "only reexecute the necessary parts" in {
+  /*"JoinTest" should "only reexecute the necessary parts" in {
     val mutator = new Mutator()
     val conf = new ListConf(partitions = 1, chunkSize = 1)
     val input = ListInput[Int, Int](conf)
@@ -323,5 +339,28 @@ class ReexecutionTests extends FlatSpec with Matchers {
     input2.put(10, 10)
     mutator.propagate()
     println(output.toBuffer)
-  }
+  }*/
+
+  /*"ChunkJoinTest" should "only reexecute the necessary parts" in {
+    val mutator = new Mutator()
+    val conf = new ListConf(partitions = 1, chunkSize = 2)
+    val input = ChunkListInput[Int, Int](conf)
+
+    for (i <- List(1, 8, 3, 4, 6, 10, 5)) {
+      input.put(i, i)
+    }
+
+    val input2 = ChunkListInput[Int, Int](conf)
+
+    for (i <- List(1, 4, 5, 2, 7, 8)) {
+      input2.put(i, i * 2)
+    }
+
+    val output = mutator.run(new ChunkJoinTest(input, input2))
+    println(output.toBuffer)
+
+    input2.put(10, 20)
+    mutator.propagate()
+    println(output.toBuffer)
+  }*/
 }

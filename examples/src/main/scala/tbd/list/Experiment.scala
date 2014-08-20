@@ -55,7 +55,11 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
 	else
           new SortAlgorithm(conf, listConf)
 
-      case "join" => new JoinAlgorithm(conf, listConf)
+      case "join" =>
+	if (listConf.chunkSize > 1)
+	  new ChunkJoinAlgorithm(conf, listConf)
+	else
+	  new JoinAlgorithm(conf, listConf)
     }
 
     for (run <- runs) {

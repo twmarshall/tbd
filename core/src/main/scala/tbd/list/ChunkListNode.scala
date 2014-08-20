@@ -54,6 +54,80 @@ class ChunkListNode[T, U](
     write(new ModListNode[V, W](f(chunk), newNextMod))
   }
 
+  def loopJoin[V](
+      that: ChunkList[T, V],
+      comparator: ((T, U), (T, V)) => Boolean,
+      memo: Memoizer[Changeable[ChunkListNode[T, (U, V)]]])
+     (implicit c: Context): Changeable[ChunkListNode[T, (U, V)]] = {
+    val newNext = mod {
+      read(nextMod) {
+	case null =>
+	  write[ChunkListNode[T, (U, V)]](null)
+	case node =>
+	  memo(node) {
+	    node.loopJoin(that, comparator, memo)
+	  }
+      }
+    }
+
+    read(that.head) {
+      case null =>
+	read(newNext) { write(_) }
+      case node =>
+	var tail = newNext
+	for (i <- 0 until chunk.size - 1) {
+	  tail = mod {
+	    val memo2 = makeMemoizer[Changeable[ChunkListNode[T, (U, V)]]]()
+	    node.joinHelper(chunk(i), comparator, tail, memo2)
+	  }
+	}
+
+	val memo2 = makeMemoizer[Changeable[ChunkListNode[T, (U, V)]]]()
+	node.joinHelper(chunk(chunk.size - 1), comparator, tail, memo2)
+    }
+  }
+
+  // Iterates over the second join list, testing each element for equality
+  // with a single element from the first list.
+  private def joinHelper[V](
+      thatValue: (T, V),
+      comparator: ((T, V), (T, U)) => Boolean,
+      tail: Mod[ChunkListNode[T, (V, U)]],
+      memo: Memoizer[Changeable[ChunkListNode[T, (V, U)]]])
+     (implicit c: Context): Changeable[ChunkListNode[T, (V, U)]] = {
+    var newChunk = Vector[(T, (V, U))]()
+    for (value <- chunk) {
+      if (comparator(thatValue, value)) {
+	val newValue = (value._1, (thatValue._2, value._2))
+	newChunk :+= newValue
+      }
+    }
+
+    if (newChunk.size > 0) {
+      read(nextMod) {
+	case null =>
+	  write(new ChunkListNode[T, (V, U)](newChunk, tail))
+	case node =>
+	  val newNext = mod {
+	    memo(node) {
+	      node.joinHelper(thatValue, comparator, tail, memo)
+	    }
+	  }
+
+	  write(new ChunkListNode[T, (V, U)](newChunk, newNext))
+      }
+    } else {
+      read(nextMod) {
+	case null =>
+	  read(tail) { write(_) }
+	case node =>
+	  memo(node) {
+	    node.joinHelper(thatValue, comparator, tail, memo)
+	  }
+      }
+    }
+  }
+
   def map[V, W](
       f: ((T, U)) => (V, W),
       memo: Memoizer[Changeable[ChunkListNode[V, W]]])
