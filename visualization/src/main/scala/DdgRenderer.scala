@@ -426,7 +426,7 @@ class DdgRenderer extends Panel with Publisher {
 
       zoom(pt.x, pt.y, dir)
     }
-    case _ => null
+    case _ =>
   }
 
   //Auxillary method for doing zoom.

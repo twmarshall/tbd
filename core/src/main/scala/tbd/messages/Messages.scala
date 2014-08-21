@@ -18,6 +18,7 @@ package tbd.messages
 import akka.actor.ActorRef
 import scala.collection.mutable.Set
 import scala.concurrent.Promise
+import scala.language.existentials
 
 import tbd.{Adjustable, Changeable, TBD}
 import tbd.Constants._

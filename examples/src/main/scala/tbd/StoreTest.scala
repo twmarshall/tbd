@@ -82,7 +82,7 @@ class StoreTest {
     assert(original == obj)
   }
 
-  def runScala() {
+  /*def runScala() {
     val pickle = original.pickle
 
     val entity = new TestEntity()
@@ -93,7 +93,7 @@ class StoreTest {
 
     val obj = byteArray.unpickle[scala.collection.mutable.Set[String]]
     assert(obj == original)
-  }
+  }*/
 
   val system = ActorSystem("example")
   val serialization = SerializationExtension(system)
@@ -147,12 +147,12 @@ class StoreTest {
     run(runAkka)
     //run(runDB)
     run(runJava)
-    run(runScala)
+    //run(runScala)
     run(runDB2)
 
     //run(runDB, "DB:")
     run(runJava, "Java:")
-    run(runScala, "Scala:")
+    //run(runScala, "Scala:")
     run(runDB2, "DB2:")
     run(runAkka, "Akka:")
 

@@ -25,7 +25,7 @@ class Modizer[T] {
 
   @functionToInvoke("applyInternal")
   def apply(key: Any)(initializer: => Changeable[T])
-    (implicit c: Context)= macro TbdMacros.modizerMacro[Mod[T]]
+    (implicit c: Context): Mod[T] = macro TbdMacros.modizerMacro[Mod[T]]
 
   def applyInternal(
       key: Any,
