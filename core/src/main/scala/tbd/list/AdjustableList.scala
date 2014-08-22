@@ -57,7 +57,7 @@ trait AdjustableList[T, U] {
   def join[V](
       that: AdjustableList[T, V],
       comparator: ((T, U), (T, V)) => Boolean)
-     (implicit c: Context): AdjustableList[T, (U, V)] = ???
+     (implicit c: Context): AdjustableList[T, (U, V)]
 
   /**
    * Returns a AdjustableList containing the results of applying the given

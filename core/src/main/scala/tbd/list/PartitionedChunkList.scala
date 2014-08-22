@@ -46,29 +46,14 @@ class PartitionedChunkList[T, U](
     new PartitionedModList(innerChunkMap(0))
   }
 
-  def chunkSort(
-      comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): Mod[(Int, Array[(T, U)])] = ???
-
   def filter(
       pred: ((T, U)) => Boolean)
-     (implicit c: Context): PartitionedChunkList[T, U] = {
-    def parFilter(i: Int)(implicit c: Context): ArrayBuffer[ChunkList[T, U]] = {
-      if (i < partitions.size) {
-        val parTup = par {
-          c => partitions(i).filter(pred)(c)
-	} and {
-          c => parFilter(i + 1)(c)
-        }
+     (implicit c: Context): PartitionedChunkList[T, U] = ???
 
-        parTup._2 += parTup._1
-      } else {
-        ArrayBuffer[ChunkList[T, U]]()
-      }
-    }
-
-    new PartitionedChunkList(parFilter(0))
-  }
+  def join[V](
+      that: AdjustableList[T, V],
+      comparator: ((T, U), (T, V)) => Boolean)
+     (implicit c: Context): AdjustableList[T, (U, V)] = ???
 
   def map[V, W](
       f: ((T, U)) => (V, W))

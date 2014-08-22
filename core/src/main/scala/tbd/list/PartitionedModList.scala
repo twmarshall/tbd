@@ -46,6 +46,11 @@ class PartitionedModList[T, U](
     new PartitionedModList(parFilter(0))
   }
 
+  def join[V](
+      that: AdjustableList[T, V],
+      comparator: ((T, U), (T, V)) => Boolean)
+     (implicit c: Context): AdjustableList[T, (U, V)] = ???
+
   def map[V, W](
       f: ((T, U)) => (V, W))
      (implicit c: Context): PartitionedModList[V, W] = {

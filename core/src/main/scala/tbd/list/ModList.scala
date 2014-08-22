@@ -40,7 +40,7 @@ class ModList[T, U](
     )
   }
 
-  override def join[V](
+  def join[V](
       _that: AdjustableList[T, V],
       comparator: ((T, U), (T, V)) => Boolean)
      (implicit c: Context): ModList[T, (U, V)] = {
