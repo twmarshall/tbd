@@ -26,7 +26,6 @@ import tbd.TBD._
  * These tests are intended for manual testing of what gets reexecuted when
  * running various algorithms, and will generally be commented out on master.
  */
-
 class ReduceTest(input: ListInput[Int, Int])
     extends Adjustable[Mod[(Int, Int)]] {
   def run(implicit c: Context) = {
@@ -42,17 +41,6 @@ class SortTest(input: ListInput[Int, Double])
     extends Adjustable[AdjustableList[Int, Double]] {
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    list.sort((pair1, pair2) => {
-      println("      comparing " + pair1 + " " + pair2)
-      pair1._2 < pair2._2
-    })
-  }
-}
-
-class ChunkSortTest(input: ChunkListInput[Int, Double])
-    extends Adjustable[AdjustableList[Int, Double]] {
-  def run(implicit c: Context) = {
-    val list = input.getChunkList()
     list.sort((pair1, pair2) => {
       println("      comparing " + pair1 + " " + pair2)
       pair1._2 < pair2._2
@@ -94,11 +82,11 @@ class MergeTest(input: ListInput[Int, Int], input2: ListInput[Int, Int])
   }
 }
 
-class ChunkMergeTest(input: ChunkListInput[Int, Int], input2: ChunkListInput[Int, Int])
+class ChunkMergeTest(input: ListInput[Int, Int], input2: ListInput[Int, Int])
     extends Adjustable[AdjustableList[Int, Int]] {
   def run(implicit c: Context) = {
-    val list = input.getChunkList()
-    val list2 = input2.getChunkList()
+    val list = input.getAdjustableList()
+    val list2 = input2.getAdjustableList()
 
     list.asInstanceOf[ChunkList[Int, Int]]
       .merge(list2.asInstanceOf[ChunkList[Int, Int]], (pair: (Int, Int), pair2: (Int, Int)) => {
@@ -128,7 +116,7 @@ class MapReduceTest(input: ListInput[Int, Int])
 class JoinTest(
     input: ListInput[Int, Int],
     input2: ListInput[Int, Int]
-  ) extends Adjustable[ModList[Int, (Int, Int)]] {
+  ) extends Adjustable[AdjustableList[Int, (Int, Int)]] {
   def comparator(pair1: (Int, Int), pair2: (Int, Int)) = {
     println("comparing " + pair1 + " with " + pair2)
     pair1._1 == pair2._1
@@ -137,23 +125,7 @@ class JoinTest(
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
     val list2 = input2.getAdjustableList()
-    list.join(list2.asInstanceOf[ModList[Int, Int]], comparator)
-  }
-}
-
-class ChunkJoinTest(
-    input: ChunkListInput[Int, Int],
-    input2: ChunkListInput[Int, Int]
-  ) extends Adjustable[ChunkList[Int, (Int, Int)]] {
-  def comparator(pair1: (Int, Int), pair2: (Int, Int)) = {
-    println("comparing " + pair1 + " with " + pair2)
-    pair1._1 == pair2._1
-  }
-
-  def run(implicit c: Context) = {
-    val list = input.getChunkList()
-    val list2 = input2.getChunkList()
-    list.chunkJoin(list2.asInstanceOf[ChunkList[Int, Int]], comparator)
+    list.join(list2, comparator)
   }
 }
 
@@ -182,21 +154,6 @@ class ReexecutionTests extends FlatSpec with Matchers {
       input.put(i, i)
     }
     val output = mutator.run(new SortTest(input))
-    println(output.toBuffer)
-
-    println("\npropagating")
-    input.update(1, 8.5)
-    mutator.propagate()
-    println(output.toBuffer)
-  }*/
-
-  /*"ChunkSortTest" should "only reexecute the least possible" in {
-    val mutator = new Mutator()
-    val input = ChunkListInput[Int, Double](new ListConf(chunkSize = 2, partitions = 1))
-    for (i <- List(10, 5, 6, 1, 7, 4, 8, 3, 2, 9)) {
-      input.put(i, i)
-    }
-    val output = mutator.run(new ChunkSortTest(input))
     println(output.toBuffer)
 
     println("\npropagating")
@@ -272,9 +229,9 @@ class ReexecutionTests extends FlatSpec with Matchers {
     val mutator = new Mutator()
     val conf = new ListConf(partitions = 1, chunkSize = 2)
 
-    val input = ChunkListInput[Int, Int](conf)
+    val input = ListInput[Int, Int](conf)
 
-    val input2 = ChunkListInput[Int, Int](conf)
+    val input2 = ListInput[Int, Int](conf)
     //input2.put(0, 0)
     //input2.put(2, 2)
     input.put(4, 4)
@@ -286,8 +243,8 @@ class ReexecutionTests extends FlatSpec with Matchers {
     input2.put(5, 5)
     input2.put(10, 10)
 
-    println(input.getChunkList())
-    println(input2.getChunkList())
+    println(input.getAdjustableList())
+    println(input2.getAdjustableList())
     val output = mutator.run(new MergeTest(input, input2))
     println(output)
     println(output.toBuffer)
@@ -296,8 +253,8 @@ class ReexecutionTests extends FlatSpec with Matchers {
     input2.remove(3)
     input2.put(3, 12)
 
-    println(input.getChunkList())
-    println(input2.getChunkList())
+    println(input.getAdjustableList())
+    println(input2.getAdjustableList())
     mutator.propagate()
     println(output)
     println(output.toBuffer)
@@ -337,29 +294,6 @@ class ReexecutionTests extends FlatSpec with Matchers {
     println(output.toBuffer)
 
     input2.put(10, 10)
-    mutator.propagate()
-    println(output.toBuffer)
-  }*/
-
-  /*"ChunkJoinTest" should "only reexecute the necessary parts" in {
-    val mutator = new Mutator()
-    val conf = new ListConf(partitions = 1, chunkSize = 2)
-    val input = ChunkListInput[Int, Int](conf)
-
-    for (i <- List(1, 8, 3, 4, 6, 10, 5)) {
-      input.put(i, i)
-    }
-
-    val input2 = ChunkListInput[Int, Int](conf)
-
-    for (i <- List(1, 4, 5, 2, 7, 8)) {
-      input2.put(i, i * 2)
-    }
-
-    val output = mutator.run(new ChunkJoinTest(input, input2))
-    println(output.toBuffer)
-
-    input2.put(10, 20)
     mutator.propagate()
     println(output.toBuffer)
   }*/

@@ -72,7 +72,7 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
 class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = ChunkListInput[Int, String](listConf)
+  val input = ListInput[Int, String](listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
@@ -109,7 +109,7 @@ class ChunkMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def run(implicit c: Context) = {
-    val pages = input.getChunkList()
+    val pages = input.getAdjustableList()
     pages.chunkMap(chunkMapper)
   }
 }

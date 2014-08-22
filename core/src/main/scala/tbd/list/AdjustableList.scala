@@ -31,6 +31,15 @@ import tbd.datastore.Datastore
  */
 trait AdjustableList[T, U] {
   /**
+   * Returns an AdjustableList containing the results of applying the given
+   * function to each chunk of this AdjustableList. Only defined for chunked
+   * lists.
+   */
+  def chunkMap[V, Q](
+      f: (Vector[(T, U)]) => (V, Q))
+     (implicit c: Context): AdjustableList[V, Q] = ???
+
+  /**
    * Returns a AdjustableList containing all of the elements from this
    * AdjustableList that satisfy the given predicate.
    */
@@ -38,10 +47,17 @@ trait AdjustableList[T, U] {
       pred: ((T, U)) => Boolean)
      (implicit c: Context): AdjustableList[T, U]
 
+  /**
+   * Returns an AdjustableList mapping each key from the two lists such that
+   * the comparator returns true to a pair containing the corresponding values
+   * from each list.
+   *
+   * Generally only defined where the type of that matches this.
+   */
   def join[V](
-      that: ModList[T, V],
+      that: AdjustableList[T, V],
       comparator: ((T, U), (T, V)) => Boolean)
-     (implicit c: Context): ModList[T, (U, V)] = ???
+     (implicit c: Context): AdjustableList[T, (U, V)] = ???
 
   /**
    * Returns a AdjustableList containing the results of applying the given
@@ -50,11 +66,6 @@ trait AdjustableList[T, U] {
   def map[V, Q](
       f: ((T, U)) => (V, Q))
      (implicit c: Context): AdjustableList[V, Q]
-
-  def merge(
-      that: ModList[T, U],
-      comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): ModList[T, U] = ???
 
   /**
    * Reduces all elements in the list using f, in an unspecified order.

@@ -50,10 +50,7 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
         new SplitAlgorithm(conf, listConf)
 
       case "sort" =>
-	if (listConf.chunkSize > 1)
-	  new ChunkSortAlgorithm(conf, listConf)
-	else
-          new SortAlgorithm(conf, listConf)
+        new SortAlgorithm(conf, listConf)
 
       case "join" =>
 	if (listConf.chunkSize > 1)

@@ -79,10 +79,10 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
 class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
-  val input = ChunkListInput[Int, Int](listConf)
+  val input = ListInput[Int, Int](listConf)
   val data = new IntData(input, count, mutations)
 
-  val input2 = ChunkListInput[Int, Int](listConf)
+  val input2 = ListInput[Int, Int](listConf)
   val data2 = new IntData(input2, count)
 
   def generateNaive() = {
@@ -125,9 +125,9 @@ class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def run(implicit c: Context): AdjustableList[Int, (Int, Int)] = {
-    val list = input.getChunkList()
-    val list2 = input2.getChunkList().asInstanceOf[ChunkList[Int, Int]]
+    val list = input.getAdjustableList()
+    val list2 = input2.getAdjustableList().asInstanceOf[ChunkList[Int, Int]]
 
-    list.chunkJoin(list2, comparator)
+    list.join(list2, comparator)
   }
 }

@@ -22,12 +22,15 @@ import tbd.Constants.ModId
 import tbd.TBD._
 
 class ChunkList[T, U](
-    val head: Mod[ChunkListNode[T, U]]) extends AdjustableChunkList[T, U] {
+    val head: Mod[ChunkListNode[T, U]]) extends AdjustableList[T, U] {
 
-  override def chunkJoin[V](
-      that: ChunkList[T, V],
+  override def join[V](
+      _that: AdjustableList[T, V],
       comparator: ((T, U), (T, V)) => Boolean)
      (implicit c: Context): ChunkList[T, (U, V)] = {
+    assert(_that.isInstanceOf[ChunkList[T, V]])
+    val that = _that.asInstanceOf[ChunkList[T, V]]
+
     val memo = makeMemoizer[Changeable[ChunkListNode[T, (U ,V)]]]()
 
     new ChunkList(
@@ -156,7 +159,7 @@ class ChunkList[T, U](
     )
   }
 
-  def chunkMap[V, Q](
+  override def chunkMap[V, Q](
       f: (Vector[(T, U)]) => (V, Q))
      (implicit c: Context): ModList[V, Q] = {
     val memo = makeMemoizer[Mod[ModListNode[V, Q]]]()

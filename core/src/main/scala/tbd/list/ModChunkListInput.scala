@@ -24,7 +24,7 @@ import tbd.Mod
 import tbd.Constants._
 import tbd.datastore.Datastore
 
-class ModChunkListInput[T, U](conf: ListConf) extends ChunkListInput[T, U] {
+class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   protected var tailMod = Datastore.createMod[ChunkListNode[T, U]](null)
@@ -184,5 +184,5 @@ class ModChunkListInput[T, U](conf: ListConf) extends ChunkListInput[T, U] {
     valid
   }
 
-  def getChunkList(): AdjustableChunkList[T, U] = list
+  def getAdjustableList() = list
 }

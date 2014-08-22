@@ -41,9 +41,12 @@ class ModList[T, U](
   }
 
   override def join[V](
-      that: ModList[T, V],
+      _that: AdjustableList[T, V],
       comparator: ((T, U), (T, V)) => Boolean)
      (implicit c: Context): ModList[T, (U, V)] = {
+    assert(_that.isInstanceOf[ModList[T, V]])
+    val that = _that.asInstanceOf[ModList[T, V]]
+
     val memo = makeMemoizer[Changeable[ModListNode[T, (U ,V)]]]()
 
     new ModList(
@@ -71,7 +74,7 @@ class ModList[T, U](
     )
   }
 
-  override def merge(
+  def merge(
       that: ModList[T, U],
       comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): ModList[T, U] = {
@@ -205,7 +208,7 @@ class ModList[T, U](
 
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): AdjustableList[T, U] = {
+     (implicit c: Context): ModList[T, U] = {
     /*val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
     val memo2 = makeMemoizer[Changeable[ModListNode[T, U]]]()
     val memoizers = Map[(T, U), Memoizer[ModListNode.ChangeableTuple[T, U]]]()

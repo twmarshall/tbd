@@ -20,27 +20,21 @@ import tbd.Input
 object ListInput {
   def apply[T, U](conf: ListConf = new ListConf()): ListInput[T, U] = {
     if (conf.partitions == 1) {
-      new ModListInput()
+      if (conf.chunkSize > 1) {
+	new ChunkListInput(conf)
+      } else {
+	new ModListInput()
+      }
     } else {
-      new PartitionedListInput(conf)
+      if (conf.chunkSize > 1) {
+	new PartitionedChunkListInput(conf)
+      } else {
+	new PartitionedListInput(conf)
+      }
     }
   }
 }
 
 trait ListInput[T, U] extends Input[T, U] {
   def getAdjustableList(): AdjustableList[T, U]
-}
-
-object ChunkListInput {
-  def apply[T, U](conf: ListConf = new ListConf()): ChunkListInput[T, U] = {
-    if (conf.partitions == 1) {
-      new ModChunkListInput(conf)
-    } else {
-      new PartitionedChunkListInput(conf)
-    }
-  }
-}
-
-trait ChunkListInput[T, U] extends Input[T, U] {
-  def getChunkList(): AdjustableChunkList[T, U]
 }

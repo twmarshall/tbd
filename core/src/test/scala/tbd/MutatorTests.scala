@@ -27,13 +27,6 @@ class ListTest(input: ListInput[Int, Int])
   }
 }
 
-class ChunkListTest(input: ChunkListInput[Int, Int])
-    extends Adjustable[AdjustableList[Int, Int]] {
-  def run(implicit c: Context) = {
-    input.getChunkList()
-  }
-}
-
 class MutatorTests extends FlatSpec with Matchers {
   def runTest(
       mutator: Mutator,
@@ -78,13 +71,8 @@ class MutatorTests extends FlatSpec with Matchers {
 	val mutator = new Mutator()
 
 	val conf = new ListConf(partitions = partitions, chunkSize = chunkSize)
-	if (chunkSize == 1) {
-	  val input = ListInput[Int, Int](conf)
-	  runTest(mutator, new ListTest(input), input)
-	} else {
-	  val input = ChunkListInput[Int, Int](conf)
-	  runTest(mutator, new ChunkListTest(input), input)
-	}
+	val input = ListInput[Int, Int](conf)
+	runTest(mutator, new ListTest(input), input)
 
 	mutator.shutdown()
       }

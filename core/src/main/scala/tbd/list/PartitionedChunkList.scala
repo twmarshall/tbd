@@ -24,9 +24,9 @@ import tbd.TBD._
 
 class PartitionedChunkList[T, U](
     val partitions: ArrayBuffer[ChunkList[T, U]]
-  ) extends AdjustableChunkList[T, U] {
+  ) extends AdjustableList[T, U] {
 
-  def chunkMap[V, W](
+  override def chunkMap[V, W](
       f: (Vector[(T, U)]) => (V, W))
      (implicit c: Context): PartitionedModList[V, W] = {
     def innerChunkMap(i: Int)(implicit c: Context): ArrayBuffer[ModList[V, W]] = {

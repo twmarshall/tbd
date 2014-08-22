@@ -66,9 +66,9 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 }
 
-class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
+/*class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = ChunkListInput[Int, Int](listConf)
+  val input = ListInput[Int, Int](listConf)
 
   val data = new IntData(input, count, mutations)
 
@@ -95,8 +95,8 @@ class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def run(implicit c: Context) = {
-    val list = input.getChunkList()
+    val list = input.getAdjustableList()
 
     list.sort(SortAlgorithm.predicate(_, _))
   }
-}
+}*/
