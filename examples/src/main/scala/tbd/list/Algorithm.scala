@@ -49,7 +49,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   var naiveLoadElapsed: Long = 0
 
   def naive(): (Long, Long) = {
-    if (Experiment.verbose) {
+    if (Experiment.verbosity > 1) {
       println("Naive load.")
     }
 
@@ -57,7 +57,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
     generateNaive()
     naiveLoadElapsed = System.currentTimeMillis() - beforeLoad
 
-    if (Experiment.verbose) {
+    if (Experiment.verbosity > 1) {
       println("Naive run.")
     }
 
@@ -73,7 +73,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   protected def runNaive(): Any
 
   def initial(): (Long, Long) = {
-    if (Experiment.verbose) {
+    if (Experiment.verbosity > 1) {
       println("Initial load.")
     }
 
@@ -85,7 +85,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
       data.clearValues()
     }
 
-    if (Experiment.verbose) {
+    if (Experiment.verbosity > 1) {
       println("Initial run.")
     }
 
@@ -103,7 +103,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   protected def checkOutput(table: Map[Int, Input], output: Output): Boolean
 
   def update(count: Double): (Long, Long) = {
-    if (Experiment.verbose) {
+    if (Experiment.verbosity > 1) {
       println("Updating " + count)
     }
 
@@ -115,7 +115,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
     }
     val loadElapsed = System.currentTimeMillis() - beforeLoad
 
-    if (Experiment.verbose) {
+    if (Experiment.verbosity > 1) {
       println("Running change propagation.")
     }
     val before = System.currentTimeMillis()

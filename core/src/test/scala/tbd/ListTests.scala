@@ -34,12 +34,14 @@ class ListMapTest(
   }
 }
 
-class ListSplitTest(input: ListInput[Int, Int])
-    extends Adjustable[(AdjustableList[Int, Int], AdjustableList[Int, Int])] {
+class ListReduceTest(input: ListInput[Int, Int])
+    extends Adjustable[Mod[(Int, Int)]] {
 
   def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    modList.split(_._2 % 2 == 0)
+    modList.reduce((pair1: (Int, Int), pair2: (Int, Int)) => {
+      (pair2._1, pair1._2 + pair2._2)
+    })
   }
 }
 
@@ -52,32 +54,12 @@ class ListSortTest[T](input: ListInput[T, Int])
   }
 }
 
-class ChunkListMapTest(input: ListInput[Int, Int])
-    extends Adjustable[AdjustableList[Int, Int]] {
-
-  def run(implicit c: Context) = {
-    val list = input.getAdjustableList()
-    list.map((pair: (Int, Int)) => (pair._1, pair._2 - 2))
-  }
-}
-
-class ListFilterTest(input: ListInput[Int, Int])
-    extends Adjustable[AdjustableList[Int, Int]] {
-
-  def run(implicit c: Context) = {
-    val list = input.getAdjustableList()
-    list.filter((pair: (Int, Int)) => pair._2 % 2 == 0)
-  }
-}
-
-class ListReduceSumTest(input: ListInput[Int, Int])
-    extends Adjustable[Mod[(Int, Int)]] {
+class ListSplitTest(input: ListInput[Int, Int])
+    extends Adjustable[(AdjustableList[Int, Int], AdjustableList[Int, Int])] {
 
   def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    modList.reduce((pair1: (Int, Int), pair2: (Int, Int)) => {
-      (pair2._1, pair1._2 + pair2._2)
-    })
+    modList.split(_._2 % 2 == 0)
   }
 }
 
@@ -122,71 +104,12 @@ class ListTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 
-  "ChunkListMapTest" should "return the mapped list" in {
-    for (partitions <- List(1, 2, 8)) {
-      val mutator = new Mutator()
-      val conf = new ListConf(partitions = partitions, chunkSize = 2)
-      val input = ListInput[Int, Int](conf)
-      val data = new IntData(input, 100)
-      data.generate()
-      data.load()
-
-      val test = new ChunkListMapTest(input)
-      val output = mutator.run(test)
-
-      var answer = data.table.values.map(_ - 2).toBuffer.sortWith(_ < _)
-      output.toBuffer().sortWith(_ < _) should be (answer)
-
-      for (i <- 0 to 5) {
-        for (j <- 0 to 10) {
-	  data.update()
-        }
-
-        mutator.propagate()
-
-        answer = data.table.values.map(_ - 2).toBuffer.sortWith(_ < _)
-        output.toBuffer().sortWith(_ < _) should be (answer)
-      }
-
-      mutator.shutdown()
-    }
-  }
-
-  "ListFilterTest" should "return the filtered list" in {
-    for (partitions <- List(1, 2, 8)) {
-      val mutator = new Mutator()
-      val conf = new ListConf(partitions = partitions)
-      val input = ListInput[Int, Int](conf)
-
-      val data = new IntData(input, 100)
-      data.generate()
-      data.load()
-
-      val output = mutator.run(new ListFilterTest(input))
-      var answer = data.table.values.filter(_ % 2 == 0).toBuffer.sortWith(_ < _)
-      output.toBuffer().sortWith(_ < _) should be (answer)
-
-      for (i <- 0 to 5) {
-        for (j <- 0 to 10) {
-	  data.update()
-        }
-
-        mutator.propagate()
-
-        answer = data.table.values.filter(_ % 2 == 0).toBuffer.sortWith(_ < _)
-        output.toBuffer().sortWith(_ < _) should be (answer)
-      }
-
-      mutator.shutdown()
-    }
-  }
-
-  "ListReduceSumTest" should "return the reduced list" in {
+  "ListReduceTest" should "return the reduced list" in {
     val mutator = new Mutator()
     val input = ListInput[Int, Int]()
     input.put(1, 1)
     input.put(2, 2)
-    val output = mutator.run(new ListReduceSumTest(input))
+    val output = mutator.run(new ListReduceTest(input))
     // 1 + 2 = 3
     output.read()._2 should be (3)
 
@@ -222,16 +145,29 @@ class ListTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 
-  it should "return the reduced big list" in {
+  "ListSortTest" should "return the sorted list" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int]()
-    val data = new IntData(input, 100)
-    data.generate()
-    data.load()
+    val input = ListInput[String, Int](ListConf(partitions = 1))
+    input.put("one", 0)
+    input.put("two", 3)
+    input.put("three", 2)
+    input.put("four", 4)
+    input.put("five", 1)
+    val output = mutator.run(new ListSortTest(input))
 
-    val answer = data.table.reduce((pair1, pair2) => (pair1._1, pair1._2 + pair2._2))
-    val output = mutator.run(new ListReduceSumTest(input))
-    output.read()._2 should be (answer._2)
+    output.toBuffer() should be (Buffer(0, 1, 2, 3, 4))
+
+    input.put("six", 5)
+    mutator.propagate()
+    output.toBuffer() should be (Buffer(0, 1, 2, 3, 4, 5))
+
+    input.put("seven", -1)
+    mutator.propagate()
+    output.toBuffer() should be (Buffer(-1, 0, 1, 2, 3, 4, 5))
+
+    input.update("two", 5)
+    mutator.propagate()
+    output.toBuffer() should be (Buffer(-1, 0, 1, 2, 4, 5, 5))
 
     mutator.shutdown()
   }
@@ -294,105 +230,6 @@ class ListTests extends FlatSpec with Matchers {
     output._1.toBuffer().sortWith(_ < _) should be (Buffer(0, 4, 8))
     output._2.toBuffer().sortWith(_ < _) should be (Buffer())
 
-
-    mutator.shutdown()
-  }
-
-  it should "return the big list, split in two" in {
-    val mutator = new Mutator()
-    val input = ListInput[Int, Int](ListConf(partitions = 1))
-    val data = new IntData(input, 1000)
-
-    val output = mutator.run(new ListSplitTest(input))
-
-    def computeAnswer(table: Map[Int, Int]) =
-      (table.values.filter(_ % 2 == 0).toBuffer,
-       table.values.filter(_ % 2 != 0).toBuffer)
-
-    var answer = computeAnswer(data.table)
-
-    output._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
-    output._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
-
-    for(i <- 0 to 100) {
-	data.updateValue()
-    }
-
-    mutator.propagate()
-
-    answer = computeAnswer(data.table)
-
-    output._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
-    output._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
-
-    for(i <- 0 to 100) {
-      data.removeValue()
-    }
-
-    mutator.propagate()
-
-    answer = computeAnswer(data.table)
-
-    output._1.toBuffer().sortWith(_ < _) should be (answer._1.sortWith(_ < _))
-    output._2.toBuffer().sortWith(_ < _) should be (answer._2.sortWith(_ < _))
-
-    mutator.shutdown()
-  }
-
-  "ListSortTest" should "return the sorted list" in {
-    val mutator = new Mutator()
-    val input = ListInput[String, Int](ListConf(partitions = 1))
-    input.put("one", 0)
-    input.put("two", 3)
-    input.put("three", 2)
-    input.put("four", 4)
-    input.put("five", 1)
-    val output = mutator.run(new ListSortTest(input))
-
-    output.toBuffer() should be (Buffer(0, 1, 2, 3, 4))
-
-    input.put("six", 5)
-    mutator.propagate()
-    output.toBuffer() should be (Buffer(0, 1, 2, 3, 4, 5))
-
-    input.put("seven", -1)
-    mutator.propagate()
-    output.toBuffer() should be (Buffer(-1, 0, 1, 2, 3, 4, 5))
-
-    input.update("two", 5)
-    mutator.propagate()
-    output.toBuffer() should be (Buffer(-1, 0, 1, 2, 4, 5, 5))
-
-    mutator.shutdown()
-  }
-
-  it should "return the sorted big list" in {
-    val mutator = new Mutator()
-    val input = ListInput[Int, Int](ListConf(partitions = 1))
-
-    val data = new IntData(input, 100)
-    data.generate()
-    data.load()
-
-    val output = mutator.run(new ListSortTest(input))
-
-    output.toBuffer() should be (data.table.values.toBuffer.sortWith(_ < _))
-
-    for(i <- 0 to 100) {
-      data.updateValue()
-    }
-
-    mutator.propagate()
-
-    output.toBuffer() should be (data.table.values.toBuffer.sortWith(_ < _))
-
-    for(i <- 0 to 100) {
-      data.removeValue()
-    }
-
-    mutator.propagate()
-
-    output.toBuffer() should be (data.table.values.toBuffer.sortWith(_ < _))
 
     mutator.shutdown()
   }

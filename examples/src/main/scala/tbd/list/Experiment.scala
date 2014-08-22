@@ -33,10 +33,7 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
 
     val alg = algorithm match {
       case "map" =>
-	if (listConf.chunkSize > 1)
-	  new ChunkMapAlgorithm(conf, listConf)
-	else
-	  new MapAlgorithm(conf, listConf)
+	new MapAlgorithm(conf, listConf)
 
       case "filter" => new FilterAlgorithm(conf, listConf)
 
@@ -69,7 +66,7 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
 	results("initial") = pair._1
 	results("initial-load") = pair._2
 
-	if (Experiment.verbose) {
+	if (Experiment.verbosity > 1) {
 	  if (alg.mapCount != 0) {
 	    println("map count = " + alg.mapCount)
 	    alg.mapCount = 0
@@ -95,7 +92,7 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
       }
     }
 
-    if (Experiment.verbose) {
+    if (Experiment.verbosity > 1) {
       if (alg.mapCount != 0)
 	println("map count = " + alg.mapCount)
       if (alg.reduceCount != 0)
@@ -130,8 +127,8 @@ Options:
                                are included automatically, so this is a list
                                of update sizes (f >= 1) or update percentages
                                (0 < f < 1).
-  -v, --verbose              Turns on verbose output.
-
+  -v, --verbosity            Adjusts the amount of output, with 0 indicating no
+                               output. (default: '1')
   --repeat n                 Number of times to repeat each experiment.
   --memoized true,false      Should memoization be used?
   --load                     If specified, loading times will be included in
@@ -146,9 +143,9 @@ Options:
 
   var inputSize = 0
 
-  var check = false
+  var verbosity = 1
 
-  var verbose = false
+  var check = false
 
   var displayLoad = false
 
@@ -269,8 +266,9 @@ Options:
 	case "--chunkSizes" | "-s" =>
 	  confs("chunkSizes") = args(i + 1).split(",")
 	  i += 1
-	case "--verbose" | "-v" =>
-	  verbose = true
+	case "--verbosity" | "-v" =>
+	  verbosity = args(i + 1).toInt
+	  i += 1
         case "--repeat" =>
           repeat = args(i + 1).toInt
 	  i += 1
@@ -316,11 +314,17 @@ Options:
       }
     }
 
+    run(confs)
+  }
+ 
+  def run(confs: Map[String, Array[String]]) {
     for (i <- 0 to repeat) {
-      if (i == 0) {
-        println("warmup")
-      } else if (i == 1) {
-        println("done warming up")
+      if (verbosity > 0) {
+	if (i == 0) {
+          println("warmup")
+	} else if (i == 1) {
+          println("done warming up")
+	}
       }
 
       for (algorithm <- confs("algorithms")) {
@@ -346,7 +350,11 @@ Options:
 		  val experiment = new Experiment(conf, listConf)
 
 		  val results = experiment.run()
-		  println(results)
+
+		  if (verbosity > 0) {
+		    println(results)
+		  }
+
 		  if (i != 0) {
 		    Experiment.allResults += (conf -> results)
 		  }
@@ -358,6 +366,8 @@ Options:
       }
     }
 
-    printCharts(confs("output")(0), confs("output")(1), confs("output")(2))
+    if (verbosity > 0) {
+      printCharts(confs("output")(0), confs("output")(1), confs("output")(2))
+    }
   }
 }

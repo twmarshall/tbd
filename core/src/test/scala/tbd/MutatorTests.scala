@@ -28,11 +28,12 @@ class ListTest(input: ListInput[Int, Int])
 }
 
 class MutatorTests extends FlatSpec with Matchers {
+  val intensity = 10
   def runTest(
       mutator: Mutator,
       adjustable: Adjustable[AdjustableList[Int, Int]],
       input: Input[Int, Int]) {
-    val data = new tbd.datastore.IntData(input, 100, Array("insert", "remove", "update"))
+    val data = new tbd.datastore.IntData(input, intensity, Array("insert", "remove", "update"))
     data.generate()
     data.load()
 
@@ -40,13 +41,13 @@ class MutatorTests extends FlatSpec with Matchers {
     var sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
     output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
 
-    for (j <- 0 to 100) {
+    for (j <- 0 to intensity) {
       data.updateValue()
       sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
     }
 
-    for (j <- 0 to 100) {
+    for (j <- 0 to intensity) {
       data.addValue()
       sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
@@ -58,7 +59,7 @@ class MutatorTests extends FlatSpec with Matchers {
       output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
     }
 
-    for (j <- 0 to 99) {
+    for (j <- 0 to intensity) {
       data.update()
       sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
       output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
