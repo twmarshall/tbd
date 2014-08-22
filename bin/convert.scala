@@ -3,7 +3,7 @@ exec scala "$0" "$@"
 !#
 
 import java.io._
-import scala.xml.XML
+import scala.xml.{Utility, XML}
 
 object Convert {
   def main(args: Array[String]) {
@@ -15,12 +15,8 @@ object Convert {
     (elems \\ "elem").map(elem => {
       (elem \\ "key").map(key => {
         (elem \\ "value").map(value => {
-          if (value.text.size > 500) {
-            output.write("<elem><key>" + key.text + "</key><value>" +
-                         value + "</value></elem>")
-          } else {
-            println(value.text)
-          }
+	  output.write("<elem><key>" + Utility.escape(key.text) + "</key><value>" +
+              Utility.escape(value.text) + "</value></elem>")
         })
       })
     })
