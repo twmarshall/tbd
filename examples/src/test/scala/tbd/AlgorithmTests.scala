@@ -55,15 +55,8 @@ class AlgorithmTests extends FlatSpec with Matchers {
   }
 
   "SortTest" should "run sort successfully." in {
-    // Chunked, not partitioned.
     Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("sort"),
-					   "chunkSizes" -> Array("4"),
-					   "counts" -> Array(intensity.toString),
-					   "partitions" -> Array("1")))
-
-    // Not chunked, both partitioned and not.
-    Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("sort"),
-					   "chunkSizes" -> Array("1"),
+					   "chunkSizes" -> Array("1", "4"),
 					   "counts" -> Array(intensity.toString),
 					   "partitions" -> Array("1", "4")))
   }

@@ -81,7 +81,23 @@ class PartitionedChunkList[T, U](
 
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): AdjustableList[T, U] = ???
+     (implicit c: Context): AdjustableList[T, U] = {
+    def innerSort(i: Int)(implicit c: Context): ChunkList[T, U] = {
+      if (i < partitions.size) {
+        val (sortedPartition, sortedRest) = par {
+          c => partitions(i).sort(comparator)(c)
+        } and {
+          c => innerSort(i + 1)(c)
+        }
+
+	sortedPartition.merge(sortedRest, comparator)
+      } else {
+        new ChunkList[T, U](mod { write[ChunkListNode[T, U]](null) })
+      }
+    }
+
+    innerSort(0)
+  }
 
   def split(
       pred: ((T, U)) => Boolean)
