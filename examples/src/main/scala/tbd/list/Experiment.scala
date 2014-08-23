@@ -37,6 +37,8 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
 
       case "filter" => new FilterAlgorithm(conf, listConf)
 
+      case "flatMap" => new FlatMapAlgorithm(conf, listConf)
+
       case "wc" =>
 	if (listConf.chunkSize > 1)
 	  new ChunkWCAlgorithm(conf, listConf)

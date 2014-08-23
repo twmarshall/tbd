@@ -64,6 +64,33 @@ class ModListNode[T, U] (
     }
   }
 
+  def flatMap[V, W](
+      f: ((T, U)) => List[(V, W)],
+      memo: Memoizer[Changeable[ModListNode[V, W]]])
+     (implicit c: Context): Changeable[ModListNode[V, W]] = {
+    var tail = mod({
+      read(next) {
+	case null =>
+	  write[ModListNode[V, W]](null)
+	case next =>
+          memo(next) {
+            next.flatMap(f, memo)
+          }
+      }
+    }, next.id)
+
+    var mapped = f(value)
+
+    while (mapped.size > 1) {
+      tail = mod {
+	write(new ModListNode[V, W](mapped.head, tail))
+      }
+      mapped = mapped.tail
+    }
+
+    write(new ModListNode[V, W](mapped(mapped.size - 1), tail))
+  }
+
   def loopJoin[V](
       that: ModList[T, V],
       comparator: ((T, U), (T, V)) => Boolean,

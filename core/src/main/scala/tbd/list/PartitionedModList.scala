@@ -46,6 +46,26 @@ class PartitionedModList[T, U](
     new PartitionedModList(parFilter(0))
   }
 
+  def flatMap[V, W](
+      f: ((T, U)) => List[(V, W)])
+     (implicit c: Context): AdjustableList[V, W] = {
+    def innerFlatMap(i: Int)(implicit c: Context): ArrayBuffer[ModList[V, W]] = {
+      if (i < partitions.size) {
+        val (thisPartition, rest) = par {
+          c => partitions(i).flatMap(f)(c)
+        } and {
+          c => innerFlatMap(i + 1)(c)
+        }
+
+	rest += thisPartition
+      } else {
+        ArrayBuffer[ModList[V, W]]()
+      }
+    }
+
+    new PartitionedModList(innerFlatMap(0))
+  }
+
   def join[V](
       that: AdjustableList[T, V],
       comparator: ((T, U), (T, V)) => Boolean)

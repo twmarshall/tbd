@@ -48,6 +48,14 @@ trait AdjustableList[T, U] {
      (implicit c: Context): AdjustableList[T, U]
 
   /**
+   * Returns an AdjustableList containing each element produced by applying
+   * the mapping function to each element of this list.
+   */
+  def flatMap[V, Q](
+      f: ((T, U)) => List[(V, Q)])
+     (implicit c: Context): AdjustableList[V, Q]
+
+  /**
    * Returns an AdjustableList mapping each key from the two lists such that
    * the comparator returns true to a pair containing the corresponding values
    * from each list.

@@ -42,6 +42,10 @@ class ChunkList[T, U](
       pred: ((T, U)) => Boolean)
      (implicit c: Context): ChunkList[T, U] = ???
 
+  def flatMap[V, Q](
+      f: ((T, U)) => List[(V, Q)])
+     (implicit c: Context): AdjustableList[V, Q] = ???
+
   def join[V](
       _that: AdjustableList[T, V],
       comparator: ((T, U), (T, V)) => Boolean)

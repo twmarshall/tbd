@@ -40,6 +40,21 @@ class ModList[T, U](
     )
   }
 
+  def flatMap[V, W](
+      f: ((T, U)) => List[(V, W)])
+     (implicit c: Context): ModList[V, W] = {
+    val memo = makeMemoizer[Changeable[ModListNode[V, W]]]()
+
+    new ModList(
+      mod({
+        read(head) {
+          case null => write[ModListNode[V, W]](null)
+          case node => node.flatMap(f, memo)
+        }
+      }, head.id)
+    )
+  }
+
   def join[V](
       _that: AdjustableList[T, V],
       comparator: ((T, U), (T, V)) => Boolean)
