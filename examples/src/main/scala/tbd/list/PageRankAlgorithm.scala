@@ -1,0 +1,101 @@
+/**
+ * Copyright (C) 2013 Carnegie Mellon University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package tbd.examples.list
+
+import scala.collection.GenIterable
+import scala.collection.mutable.Map
+
+import tbd.Context
+import tbd.datastore.GraphData
+import tbd.list._
+
+class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
+    extends Algorithm[Array[Int], AdjustableList[Int, Double]](_conf, _listConf) {
+  val input = ListInput[Int, Array[Int]](listConf)
+
+  val data = new GraphData(input)//, count, mutations, Experiment.check)
+
+  var naiveTable: Map[Int, Array[Int]] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = data.table
+  }
+
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
+
+  private def naiveHelper(links: Map[Int, Array[Int]]) = {
+    var ranks = links.map(pair => (pair._1, 1.0))
+
+    for (i <- 1 to iters) {
+      val joined = Map[Int, (Array[Int], Double)]()
+      for ((url, rank) <- ranks) {
+	joined(url) = (links(url), rank)
+      }
+
+      val contribs = joined.values.flatMap { case (links, rank) =>
+        val size = links.size
+        links.map(url => (url, rank / size))
+      }
+
+      val reducedContribs = Map[Int, Double]()
+      for ((url, contrib) <- contribs) {
+	reducedContribs(url) = contrib + reducedContribs.getOrElse(url, 0.0)
+      }
+      ranks = reducedContribs.map(pair => (pair._1, .15 + .85 * pair._2))
+    }
+
+    ranks
+  }
+
+  def checkOutput(table: Map[Int, Array[Int]], output: AdjustableList[Int, Double]) = {
+    println(output)
+    val sortedOutput = output.toBuffer().sortWith(_ < _)
+    val answer = naiveHelper(table)
+    println(answer)
+    val sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
+
+    println(sortedOutput)
+    println(sortedAnswer)
+    sortedOutput == sortedAnswer
+  }
+
+  def joinComparator(pair1: (Int, Array[Int]), pair2: (Int, Double)) = {
+    pair1._1 == pair2._1
+  }
+
+  val iters = 1
+  def run(implicit c: Context) = {
+    val links = input.getAdjustableList()
+    var ranks = links.map((pair: (Int, Array[Int])) => (pair._1, 1.0))
+
+    println(links.toBuffer)
+    println(ranks.toBuffer)
+
+    for (i <- 1 to iters) {
+      val contribs = links.join(ranks, joinComparator).flatMap { case (page, (links, rank)) =>
+        val size = links.size
+        links.map(url => (url, rank / size))
+      }
+
+      ranks = contribs.reduceByKey(_ + _, (pair1, pair2) => pair1._1 < pair2._2)
+	.map(pair => (pair._1, .15 + .85 * pair._2))
+    }
+
+    ranks
+  }
+}

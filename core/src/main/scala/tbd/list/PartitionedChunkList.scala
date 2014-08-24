@@ -51,7 +51,7 @@ class PartitionedChunkList[T, U](
      (implicit c: Context): PartitionedChunkList[T, U] = ???
 
   def flatMap[V, Q](
-      f: ((T, U)) => List[(V, Q)])
+      f: ((T, U)) => Iterable[(V, Q)])
      (implicit c: Context): AdjustableList[V, Q] = ???
 
   def join[V](

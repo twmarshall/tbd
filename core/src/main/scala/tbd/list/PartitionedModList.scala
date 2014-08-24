@@ -47,7 +47,7 @@ class PartitionedModList[T, U](
   }
 
   def flatMap[V, W](
-      f: ((T, U)) => List[(V, W)])
+      f: ((T, U)) => Iterable[(V, W)])
      (implicit c: Context): AdjustableList[V, W] = {
     def innerFlatMap(i: Int)(implicit c: Context): ArrayBuffer[ModList[V, W]] = {
       if (i < partitions.size) {

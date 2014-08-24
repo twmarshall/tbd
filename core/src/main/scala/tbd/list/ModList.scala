@@ -41,7 +41,7 @@ class ModList[T, U](
   }
 
   def flatMap[V, W](
-      f: ((T, U)) => List[(V, W)])
+      f: ((T, U)) => Iterable[(V, W)])
      (implicit c: Context): ModList[V, W] = {
     val memo = makeMemoizer[Changeable[ModListNode[V, W]]]()
 
@@ -221,10 +221,30 @@ class ModList[T, U](
     }
   }
 
+  override def reduceByKey(
+      f: (U, U) => U,
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): ModList[T, U] = {
+    println("reduceByKey")
+    val sorted = this.sort(comparator)
+    println("sorted")
+
+    new ModList(
+      mod {
+	read(head) {
+	  case null =>
+	    write(null)
+	  case node =>
+	    node.reduceByKey(f, node.value._1, null.asInstanceOf[U])
+	}
+      }
+    )
+  }
+
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): ModList[T, U] = {
-    /*val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
+    val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
     val memo2 = makeMemoizer[Changeable[ModListNode[T, U]]]()
     val memoizers = Map[(T, U), Memoizer[ModListNode.ChangeableTuple[T, U]]]()
 
@@ -236,9 +256,9 @@ class ModList[T, U](
       }
     }
 
-    new ModList(sorted)*/
+    new ModList(sorted)
 
-    def mapper(pair: (T, U)) = {
+    /*def mapper(pair: (T, U)) = {
       val tail = mod({
 	write(new ModListNode[T, U](pair, mod({ write(null) }, pair._1 + "null")))
       }, pair._1)
@@ -271,7 +291,7 @@ class ModList[T, U](
           case (key, list) => read(list.head) { write(_) }
         }
       }
-    )
+    )*/
   }
 
   def split(

@@ -32,18 +32,20 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
     val results = Map[String, Double]()
 
     val alg = algorithm match {
-      case "map" =>
-	new MapAlgorithm(conf, listConf)
-
       case "filter" => new FilterAlgorithm(conf, listConf)
 
       case "flatMap" => new FlatMapAlgorithm(conf, listConf)
 
-      case "wc" =>
+      case "join" =>
 	if (listConf.chunkSize > 1)
-	  new ChunkWCAlgorithm(conf, listConf)
+	  new ChunkJoinAlgorithm(conf, listConf)
 	else
-	  new WCAlgorithm(conf, listConf)
+	  new JoinAlgorithm(conf, listConf)
+
+      case "map" =>
+	new MapAlgorithm(conf, listConf)
+
+      case "pagerank" => new PageRankAlgorithm(conf, listConf)
 
       case "split" =>
         new SplitAlgorithm(conf, listConf)
@@ -51,11 +53,11 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
       case "sort" =>
         new SortAlgorithm(conf, listConf)
 
-      case "join" =>
+      case "wc" =>
 	if (listConf.chunkSize > 1)
-	  new ChunkJoinAlgorithm(conf, listConf)
+	  new ChunkWCAlgorithm(conf, listConf)
 	else
-	  new JoinAlgorithm(conf, listConf)
+	  new WCAlgorithm(conf, listConf)
     }
 
     for (run <- runs) {

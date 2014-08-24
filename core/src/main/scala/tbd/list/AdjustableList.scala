@@ -52,7 +52,7 @@ trait AdjustableList[T, U] {
    * the mapping function to each element of this list.
    */
   def flatMap[V, Q](
-      f: ((T, U)) => List[(V, Q)])
+      f: ((T, U)) => Iterable[(V, Q)])
      (implicit c: Context): AdjustableList[V, Q]
 
   /**
@@ -81,6 +81,11 @@ trait AdjustableList[T, U] {
   def reduce(
       f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)]
+
+  def reduceByKey(
+      f: (U, U) => U,
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): AdjustableList[T, U] = ???
 
   /**
    * Returns a sorted copy of this list.

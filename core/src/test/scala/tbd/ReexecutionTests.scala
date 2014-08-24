@@ -37,6 +37,23 @@ class ReduceTest(input: ListInput[Int, Int])
   }
 }
 
+class ReduceByKeyTest(input: ListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
+  def mapper(pair: (Int, Int)) = {
+    List((pair._1, pair._2), (pair._1 * 2, pair._2))
+  }
+
+  def run(implicit c: Context) = {
+    val list = input.getAdjustableList()
+    val mapped = list.flatMap(mapper)
+    println("mapped")
+    mapped.reduceByKey(_ + _, (pair1, pair2) => {
+      println("comparing " + pair1 + " " + pair2)
+      pair1._1 < pair2._1
+    })
+  }
+}
+
 class SortTest(input: ListInput[Int, Double])
     extends Adjustable[AdjustableList[Int, Double]] {
   def run(implicit c: Context) = {
@@ -145,6 +162,16 @@ class ReexecutionTests extends FlatSpec with Matchers {
     mutator.propagate()
 
     output.read()._2 should be (113)
+  }*/
+
+  /*"ReduceByKeyTest" should "reexecute only the necessary parts" in {
+    val mutator = new Mutator()
+    val input = ListInput[Int, Int](new ListConf(partitions = 1, chunkSize = 1))
+    for (i <- List(1, 2, 3, 4)) {
+      input.put(i, i)
+    }
+    val output = mutator.run(new ReduceByKeyTest(input))
+    println(output.toBuffer)
   }*/
 
   /*"SortTest" should "only reexecute the least possible" in {

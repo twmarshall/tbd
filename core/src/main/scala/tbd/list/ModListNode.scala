@@ -65,7 +65,7 @@ class ModListNode[T, U] (
   }
 
   def flatMap[V, W](
-      f: ((T, U)) => List[(V, W)],
+      f: ((T, U)) => Iterable[(V, W)],
       memo: Memoizer[Changeable[ModListNode[V, W]]])
      (implicit c: Context): Changeable[ModListNode[V, W]] = {
     var tail = mod({
@@ -88,7 +88,7 @@ class ModListNode[T, U] (
       mapped = mapped.tail
     }
 
-    write(new ModListNode[V, W](mapped(mapped.size - 1), tail))
+    write(new ModListNode[V, W](mapped.head, tail))
   }
 
   def loopJoin[V](
@@ -226,6 +226,39 @@ class ModListNode[T, U] (
     }
 
     write(new ModListNode[T, U](value, newNext))
+  }
+
+  def reduceByKey(
+      f: (U, U) => U,
+      previousKey: T,
+      runningValue: U)
+     (implicit c: Context): Changeable[ModListNode[T, U]] = {
+    if (value._1 == previousKey) {
+      val newRunningValue =
+	if (runningValue == null)
+	  value._2
+	else
+	  f(runningValue, value._2)
+
+      read(next) {
+	case null =>
+	  val tail = mod { write[ModListNode[T, U]](null) }
+	  write(new ModListNode((value._1, newRunningValue), tail))
+	case node =>
+	  node.reduceByKey(f, value._1, newRunningValue)
+      }
+    } else {
+      val newNext = mod {
+	read(next) {
+	  case null =>
+	    write[ModListNode[T, U]](null)
+	  case node =>
+	    node.reduceByKey(f, value._1, value._2)
+	}
+      }
+
+      write(new ModListNode((previousKey, runningValue), newNext))
+    }
   }
 
   def sort(
