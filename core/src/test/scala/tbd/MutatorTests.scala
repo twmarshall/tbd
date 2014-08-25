@@ -39,30 +39,30 @@ class MutatorTests extends FlatSpec with Matchers {
 
     val output = mutator.run(adjustable)
     var sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
-    output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
+    output.toBuffer().map(_._2).sortWith(_ < _) should be (sortedAnswer)
 
     for (j <- 0 to intensity) {
       data.updateValue()
       sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
-      output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
+      output.toBuffer().map(_._2).sortWith(_ < _) should be (sortedAnswer)
     }
 
     for (j <- 0 to intensity) {
       data.addValue()
       sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
-      output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
+      output.toBuffer().map(_._2).sortWith(_ < _) should be (sortedAnswer)
     }
 
     while (data.table.size > 0) {
       data.removeValue()
       sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
-      output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
+      output.toBuffer().map(_._2).sortWith(_ < _) should be (sortedAnswer)
     }
 
     for (j <- 0 to intensity) {
       data.update()
       sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
-      output.toBuffer().sortWith(_ < _) should be (sortedAnswer)
+      output.toBuffer().map(_._2).sortWith(_ < _) should be (sortedAnswer)
     }
   }
 

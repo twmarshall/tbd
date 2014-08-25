@@ -63,7 +63,7 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def checkOutput(table: Map[Int, Array[Int]], output: AdjustableList[Int, Double]) = {
-    val sortedOutput = output.toBuffer().sortWith(_ < _)
+    val sortedOutput = output.toBuffer().map(_._2).sortWith(_ < _)
     val answer = naiveHelper(table)
     val sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
 

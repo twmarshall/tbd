@@ -313,11 +313,11 @@ class ModList[T, U](
     (new ModList(result._1), new ModList(result._2))
   }
 
-  def toBuffer(): Buffer[U] = {
-    val buf = ArrayBuffer[U]()
+  def toBuffer(): Buffer[(T, U)] = {
+    val buf = ArrayBuffer[(T, U)]()
     var node = head.read()
     while (node != null) {
-      buf += node.value._2
+      buf += node.value
       node = node.next.read()
     }
 

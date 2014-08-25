@@ -49,7 +49,7 @@ class FlatMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def checkOutput(table: Map[Int, Int], output: AdjustableList[Int, Int]) = {
-    val sortedOutput = output.toBuffer().sortWith(_ < _)
+    val sortedOutput = output.toBuffer().map(_._2).sortWith(_ < _)
     val answer = naiveHelper(table.values)
 
     sortedOutput == answer.map(_._2).toBuffer.sortWith(_ < _)

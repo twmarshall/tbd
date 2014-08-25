@@ -73,7 +73,7 @@ class ListSortTest()
   }
 
   def getResult(output:  AdjustableList[Int, Int]): Seq[Int] = {
-    output.toBuffer()
+    output.toBuffer().map(_._2)
   }
 
   def getExpectedResult(input: Map[Int, Int]): Seq[Int] = {
@@ -96,7 +96,7 @@ class ListSplitTest()
 
   def getResult(output:  (AdjustableList[Int, Int], AdjustableList[Int, Int])):
       (Seq[Int], Seq[Int]) = {
-    (output._1.toBuffer(), output._2.toBuffer())
+    (output._1.toBuffer().map(_._2), output._2.toBuffer().map(_._2))
   }
 
   def getExpectedResult(input: Map[Int, Int]): (Seq[Int], Seq[Int]) = {
@@ -113,7 +113,7 @@ class ListMapTest()
   }
 
   def getResult(output: AdjustableList[Int, Int]): Seq[Int] = {
-    output.toBuffer().sortWith(_ < _)
+    output.toBuffer().map(_._2).sortWith(_ < _)
   }
 
   def getExpectedResult(input: Map[Int, Int]): Seq[Int] = {

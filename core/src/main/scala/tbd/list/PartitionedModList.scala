@@ -149,13 +149,13 @@ class PartitionedModList[T, U](
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   /* Meta Operations */
-  def toBuffer(): Buffer[U] = {
-    val buf = ArrayBuffer[U]()
+  def toBuffer(): Buffer[(T, U)] = {
+    val buf = Buffer[(T, U)]()
 
     for (partition <- partitions) {
       var innerNode = partition.head.read()
       while (innerNode != null) {
-        buf += innerNode.value._2
+        buf += innerNode.value
         innerNode = innerNode.next.read()
       }
     }

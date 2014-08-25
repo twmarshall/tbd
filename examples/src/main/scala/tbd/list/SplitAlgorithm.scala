@@ -55,8 +55,8 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def checkOutput(input: Map[Int, String], output: SplitResult): Boolean = {
-    val sortedOutputA = output._1.toBuffer.sortWith(_ < _)
-    val sortedOutputB = output._2.toBuffer.sortWith(_ < _)
+    val sortedOutputA = output._1.toBuffer.map(_._2).sortWith(_ < _)
+    val sortedOutputB = output._2.toBuffer.map(_._2).sortWith(_ < _)
 
     val answer = naiveHelper(input.values)
 

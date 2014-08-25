@@ -108,13 +108,13 @@ class PartitionedChunkList[T, U](
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   /* Meta Operations */
-  def toBuffer(): Buffer[U] = {
-    val buf = ArrayBuffer[U]()
+  def toBuffer(): Buffer[(T, U)] = {
+    val buf = ArrayBuffer[(T, U)]()
 
     for (partition <- partitions) {
       var innerNode = partition.head.read()
       while (innerNode != null) {
-        buf ++= innerNode.chunk.map(pair => pair._2)
+        buf ++= innerNode.chunk
         innerNode = innerNode.nextMod.read()
       }
     }

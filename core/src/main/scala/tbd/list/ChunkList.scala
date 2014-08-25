@@ -227,11 +227,11 @@ class ChunkList[T, U](
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   /* Meta functions */
-  def toBuffer(): Buffer[U] = {
-    val buf = Buffer[U]()
+  def toBuffer(): Buffer[(T, U)] = {
+    val buf = Buffer[(T, U)]()
     var node = head.read()
     while (node != null) {
-      buf ++= node.chunk.map(value => value._2)
+      buf ++= node.chunk
       node = node.nextMod.read()
     }
 

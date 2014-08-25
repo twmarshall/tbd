@@ -104,5 +104,5 @@ trait AdjustableList[T, U] {
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U])
 
   /* Meta functions */
-  def toBuffer(): Buffer[U]
+  def toBuffer(): Buffer[(T, U)]
 }
