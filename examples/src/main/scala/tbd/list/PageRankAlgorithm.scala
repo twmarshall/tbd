@@ -26,7 +26,7 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Array[Int], AdjustableList[Int, Double]](_conf, _listConf) {
   val input = ListInput[Int, Array[Int]](listConf)
 
-  val data = new GraphData(input)//, count, mutations, Experiment.check)
+  val data = new GraphData(input, count, mutations)
 
   var naiveTable: Map[Int, Array[Int]] = _
   def generateNaive() {
@@ -63,14 +63,10 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def checkOutput(table: Map[Int, Array[Int]], output: AdjustableList[Int, Double]) = {
-    println(output)
     val sortedOutput = output.toBuffer().sortWith(_ < _)
     val answer = naiveHelper(table)
-    println(answer)
     val sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
 
-    println(sortedOutput)
-    println(sortedAnswer)
     sortedOutput == sortedAnswer
   }
 
@@ -83,17 +79,17 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val links = input.getAdjustableList()
     var ranks = links.map((pair: (Int, Array[Int])) => (pair._1, 1.0))
 
-    println(links.toBuffer)
-    println(ranks.toBuffer)
-
     for (i <- 1 to iters) {
-      val contribs = links.join(ranks, joinComparator).flatMap { case (page, (links, rank)) =>
+      val joined = links.join(ranks, joinComparator)
+
+      val contribs = joined.flatMap { case (page, (links, rank)) =>
         val size = links.size
         links.map(url => (url, rank / size))
       }
 
-      ranks = contribs.reduceByKey(_ + _, (pair1, pair2) => pair1._1 < pair2._2)
-	.map(pair => (pair._1, .15 + .85 * pair._2))
+      val reduced = contribs.reduceByKey(_ + _, (pair1, pair2) => pair1._1 < pair2._2)
+
+      ranks = reduced.map(pair => (pair._1, .15 + .85 * pair._2))
     }
 
     ranks

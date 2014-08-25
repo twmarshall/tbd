@@ -21,11 +21,19 @@ import scala.collection.mutable.Map
 import tbd.list.ListInput
 
 class GraphData(
-    input: ListInput[Int, Array[Int]]
+    input: ListInput[Int, Array[Int]],
+    count: Int,
+    mutations: Array[String]
   ) extends Data[Array[Int]] {
 
+  val maxKey = count * 100
+
+  val averageDegree = 5
+
+  val rand = new scala.util.Random()
+
   def generate() {
-    val lines = io.Source.fromFile("graph.txt").getLines
+    /*val lines = io.Source.fromFile("graph.txt").getLines
     for (line <- lines) {
       val tokens = line.split("\\s+")
 
@@ -41,20 +49,76 @@ class GraphData(
       } else {
 	table(start) = Array(end)
       }
+    }*/
+
+    var sum = 0.0
+    for (i <- 1 to count) {
+      table(i) = generateEdges(1 to count)
+      sum += table(i).size
+    }
+    println("average degree = " + sum / count)
+  }
+
+  private def generateEdges(keys: Iterable[Int] = table.keys) = {
+    var edges = Array[Int]()
+
+    val n = keys.size / averageDegree
+    for (key <- keys) {
+      if (rand.nextInt(n) == 0) {
+	edges :+= key
+      }
     }
 
-    for ((key, value) <- table) {
-      input.put(key, value)
-      println(key + " -> " + value.mkString(","))
-    }
+    edges
   }
 
   def load() {
+    for ((key, value) <- table) {
+      if (value.size > 0) {
+	input.put(key, value)
+      }
+    }
   }
 
   def clearValues() {
   }
 
   def update() {
+    mutations(rand.nextInt(mutations.size)) match {
+      case "insert" => addValue()
+      case "remove" => removeValue()
+      case "update" => updateValue()
+    }
+  }
+
+  private def addValue() {
+    var key = rand.nextInt(maxKey)
+    while (table.contains(key)) {
+      key = rand.nextInt(maxKey)
+    }
+    table(key) = generateEdges()
+    input.put(key, table(key))
+  }
+
+  private def removeValue() {
+    if (table.size > 0) {
+      var key = rand.nextInt(maxKey)
+      while (!table.contains(key)) {
+	key = rand.nextInt(maxKey)
+      }
+      table -= key
+      input.remove(key)
+    } else {
+      addValue()
+    }
+  }
+
+  private def updateValue() {
+    var key = rand.nextInt(maxKey)
+    while (!table.contains(key)) {
+      key = rand.nextInt(maxKey)
+    }
+    table(key) = generateEdges()
+    input.update(key, table(key))
   }
 }
