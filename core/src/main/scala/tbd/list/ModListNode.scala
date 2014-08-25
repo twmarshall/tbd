@@ -251,7 +251,8 @@ class ModListNode[T, U] (
       val newNext = mod {
 	read(next) {
 	  case null =>
-	    write[ModListNode[T, U]](null)
+	    val tail = mod { write[ModListNode[T, U]](null) }
+	    write(new ModListNode(value, tail))
 	  case node =>
 	    node.reduceByKey(f, value._1, value._2)
 	}
