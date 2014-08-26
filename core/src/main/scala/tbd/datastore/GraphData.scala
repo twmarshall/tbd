@@ -56,7 +56,6 @@ class GraphData(
       table(i) = generateEdges(1 to count)
       sum += table(i).size
     }
-    println("average degree = " + sum / count)
   }
 
   private def generateEdges(keys: Iterable[Int] = table.keys) = {
