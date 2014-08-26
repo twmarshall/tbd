@@ -46,7 +46,7 @@ class ModListInput[T, U] extends ListInput[T, U] {
   }
 
   def update(key: T, value: U) {
-    val nextMod = Datastore.getMod(nodes(key).id).asInstanceOf[ModListNode[T, U]].next
+    val nextMod = Datastore.getMod(nodes(key).id).asInstanceOf[ModListNode[T, U]].nextMod
     val newNode = new ModListNode((key, value), nextMod)
 
     var futures = Datastore.updateMod(nodes(key).id, newNode)
@@ -56,11 +56,11 @@ class ModListInput[T, U] extends ListInput[T, U] {
 
   def remove(key: T) {
     val node = Datastore.getMod(nodes(key).id).asInstanceOf[ModListNode[T, U]]
-    val nextNode = Datastore.getMod(node.next.id).asInstanceOf[ModListNode[T, U]]
+    val nextNode = Datastore.getMod(node.nextMod.id).asInstanceOf[ModListNode[T, U]]
 
     if (nextNode == null) {
       // We're removing the last element in the last.
-      assert(tailMod == node.next)
+      assert(tailMod == node.nextMod)
       tailMod = nodes(key)
     } else {
       nodes(nextNode.value._1) = nodes(key)

@@ -16,31 +16,31 @@
 package tbd.list
 
 import akka.actor.ActorRef
-import scala.collection.mutable.{ArrayBuffer, Buffer, Set}
+import scala.collection.mutable.{Buffer, Set}
 
 import tbd._
 import tbd.datastore.Datastore
 import tbd.TBD._
 
 class PartitionedChunkList[T, U](
-    val partitions: ArrayBuffer[ChunkList[T, U]],
+    val partitions: Buffer[ChunkList[T, U]],
     conf: ListConf
   ) extends AdjustableList[T, U] {
 
   override def chunkMap[V, W](
       f: (Vector[(T, U)]) => (V, W))
      (implicit c: Context): PartitionedModList[V, W] = {
-    def innerChunkMap(i: Int)(implicit c: Context): ArrayBuffer[ModList[V, W]] = {
+    def innerChunkMap(i: Int)(implicit c: Context): Buffer[ModList[V, W]] = {
       if (i < partitions.size) {
-        val parTup = par {
+        val (mappedPartition, mappedRest) = par {
           c => partitions(i).chunkMap(f)(c)
         } and {
           c => innerChunkMap(i + 1)(c)
         }
 
-        parTup._2 += parTup._1
+	mappedRest += mappedPartition
       } else {
-        ArrayBuffer[ModList[V, W]]()
+        Buffer[ModList[V, W]]()
       }
     }
 
@@ -54,17 +54,17 @@ class PartitionedChunkList[T, U](
   def flatMap[V, W](
       f: ((T, U)) => Iterable[(V, W)])
      (implicit c: Context): PartitionedChunkList[V, W] = {
-    def innerMap(i: Int)(implicit c: Context): ArrayBuffer[ChunkList[V, W]] = {
+    def innerMap(i: Int)(implicit c: Context): Buffer[ChunkList[V, W]] = {
       if (i < partitions.size) {
-        val parTup = par {
+        val (mappedPartition, mappedRest) = par {
           c => partitions(i).flatMap(f)(c)
         } and {
           c => innerMap(i + 1)(c)
         }
 
-        parTup._2 += parTup._1
+	mappedRest += mappedPartition
       } else {
-        ArrayBuffer[ChunkList[V, W]]()
+        Buffer[ChunkList[V, W]]()
       }
     }
 
@@ -74,22 +74,22 @@ class PartitionedChunkList[T, U](
   def join[V](
       that: AdjustableList[T, V],
       comparator: ((T, U), (T, V)) => Boolean)
-     (implicit c: Context): AdjustableList[T, (U, V)] = ???
+     (implicit c: Context): PartitionedChunkList[T, (U, V)] = ???
 
   def map[V, W](
       f: ((T, U)) => (V, W))
      (implicit c: Context): PartitionedChunkList[V, W] = {
-    def innerMap(i: Int)(implicit c: Context): ArrayBuffer[ChunkList[V, W]] = {
+    def innerMap(i: Int)(implicit c: Context): Buffer[ChunkList[V, W]] = {
       if (i < partitions.size) {
-        val parTup = par {
+        val (mappedPartition, mappedRest) = par {
           c => partitions(i).map(f)(c)
         } and {
           c => innerMap(i + 1)(c)
         }
 
-        parTup._2 += parTup._1
+	mappedRest += mappedPartition
       } else {
-        ArrayBuffer[ChunkList[V, W]]()
+        Buffer[ChunkList[V, W]]()
       }
     }
 
@@ -100,9 +100,14 @@ class PartitionedChunkList[T, U](
       f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)] = ???
 
+  def reduceByKey(
+      f: (U, U) => U,
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): PartitionedChunkList[T, U] = ???
+
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): AdjustableList[T, U] = {
+     (implicit c: Context): PartitionedChunkList[T, U] = {
     def innerSort(i: Int)(implicit c: Context): ChunkList[T, U] = {
       if (i < partitions.size) {
         val (sortedPartition, sortedRest) = par {
@@ -113,27 +118,25 @@ class PartitionedChunkList[T, U](
 
 	sortedPartition.merge(sortedRest, comparator)
       } else {
-        new ChunkList[T, U](mod { write[ChunkListNode[T, U]](null) }, conf)
+	new ChunkList[T, U](mod { write[ChunkListNode[T, U]](null) }, conf)
       }
     }
 
-    innerSort(0)
+    // TODO: make the output have as many partitions as this list.
+    new PartitionedChunkList[T, U](Buffer(innerSort(0)), conf)
   }
 
   def split(
       pred: ((T, U)) => Boolean)
-     (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
+     (implicit c: Context
+    ): (PartitionedChunkList[T, U], PartitionedChunkList[T, U]) = ???
 
   /* Meta Operations */
   def toBuffer(): Buffer[(T, U)] = {
-    val buf = ArrayBuffer[(T, U)]()
+    val buf = Buffer[(T, U)]()
 
     for (partition <- partitions) {
-      var innerNode = partition.head.read()
-      while (innerNode != null) {
-        buf ++= innerNode.chunk
-        innerNode = innerNode.nextMod.read()
-      }
+      buf ++= partition.toBuffer()
     }
 
     buf

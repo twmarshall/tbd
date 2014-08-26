@@ -16,30 +16,30 @@
 package tbd.list
 
 import akka.actor.ActorRef
-import scala.collection.mutable.{ArrayBuffer, Buffer, Set}
+import scala.collection.mutable.{Buffer, Set}
 
 import tbd._
 import tbd.datastore.Datastore
 import tbd.TBD._
 
 class PartitionedModList[T, U](
-    val partitions: ArrayBuffer[ModList[T, U]]
+    val partitions: Buffer[ModList[T, U]]
   ) extends AdjustableList[T, U] {
 
   def filter(
       pred: ((T, U)) => Boolean)
      (implicit c: Context): PartitionedModList[T, U] = {
-    def parFilter(i: Int)(implicit c: Context): ArrayBuffer[ModList[T, U]] = {
+    def parFilter(i: Int)(implicit c: Context): Buffer[ModList[T, U]] = {
       if (i < partitions.size) {
-        val parTup = par {
+        val (filteredPartition, filteredRest) = par {
           c => partitions(i).filter(pred)(c)
         } and {
           c => parFilter(i + 1)(c)
         }
 
-        parTup._2 += parTup._1
+	filteredRest += filteredPartition
       } else {
-        ArrayBuffer[ModList[T, U]]()
+        Buffer[ModList[T, U]]()
       }
     }
 
@@ -48,18 +48,18 @@ class PartitionedModList[T, U](
 
   def flatMap[V, W](
       f: ((T, U)) => Iterable[(V, W)])
-     (implicit c: Context): AdjustableList[V, W] = {
-    def innerFlatMap(i: Int)(implicit c: Context): ArrayBuffer[ModList[V, W]] = {
+     (implicit c: Context): PartitionedModList[V, W] = {
+    def innerFlatMap(i: Int)(implicit c: Context): Buffer[ModList[V, W]] = {
       if (i < partitions.size) {
-        val (thisPartition, rest) = par {
+        val (mappedPartition, mappedRest) = par {
           c => partitions(i).flatMap(f)(c)
         } and {
           c => innerFlatMap(i + 1)(c)
         }
 
-	rest += thisPartition
+	mappedRest += mappedPartition
       } else {
-        ArrayBuffer[ModList[V, W]]()
+        Buffer[ModList[V, W]]()
       }
     }
 
@@ -69,22 +69,22 @@ class PartitionedModList[T, U](
   def join[V](
       that: AdjustableList[T, V],
       comparator: ((T, U), (T, V)) => Boolean)
-     (implicit c: Context): AdjustableList[T, (U, V)] = ???
+     (implicit c: Context): PartitionedModList[T, (U, V)] = ???
 
   def map[V, W](
       f: ((T, U)) => (V, W))
      (implicit c: Context): PartitionedModList[V, W] = {
-    def innerMap(i: Int)(implicit c: Context): ArrayBuffer[ModList[V, W]] = {
+    def innerMap(i: Int)(implicit c: Context): Buffer[ModList[V, W]] = {
       if (i < partitions.size) {
-        val parTup = par {
+        val (mappedPartition, mappedRest) = par {
           c => partitions(i).map(f)(c)
         } and {
           c => innerMap(i + 1)(c)
         }
 
-        parTup._2 += parTup._1
+	mappedRest += mappedPartition
       } else {
-        ArrayBuffer[ModList[V, W]]()
+        Buffer[ModList[V, W]]()
       }
     }
 
@@ -96,21 +96,21 @@ class PartitionedModList[T, U](
      (implicit c: Context): Mod[(T, U)] = {
     def innerReduce(i: Int)(implicit c: Context): Mod[(T, U)] = {
       if (i < partitions.size) {
-        val (partition, rest) = par {
+        val (reducedPartition, reducedRest) = par {
           c => partitions(i).reduce(f)(c)
         } and {
           c => innerReduce(i + 1)(c)
         }
 
         mod {
-          read(partition) {
+          read(reducedPartition) {
             case null =>
-              read(rest) {
+              read(reducedRest) {
                 case null => write(null)
                 case rest => write(rest)
               }
             case partition =>
-              read(rest) {
+              read(reducedRest) {
                 case null => write(partition)
                 case rest => write(f(partition, rest))
               }
@@ -124,9 +124,14 @@ class PartitionedModList[T, U](
     innerReduce(0)
   }
 
+  def reduceByKey(
+      f: (U, U) => U,
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): PartitionedModList[T, U] = ???
+
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): AdjustableList[T, U] = {
+     (implicit c: Context): PartitionedModList[T, U] = {
     def innerSort(i: Int)(implicit c: Context): ModList[T, U] = {
       if (i < partitions.size) {
         val (sortedPartition, sortedRest) = par {
@@ -141,23 +146,21 @@ class PartitionedModList[T, U](
       }
     }
 
-    innerSort(0)
+    // TODO: make the output have as many partitions as this list.
+    new PartitionedModList(Buffer(innerSort(0)))
   }
 
   def split(
       pred: ((T, U)) => Boolean)
-     (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
+     (implicit c: Context
+    ): (PartitionedModList[T, U], PartitionedModList[T, U]) = ???
 
   /* Meta Operations */
   def toBuffer(): Buffer[(T, U)] = {
     val buf = Buffer[(T, U)]()
 
     for (partition <- partitions) {
-      var innerNode = partition.head.read()
-      while (innerNode != null) {
-        buf += innerNode.value
-        innerNode = innerNode.next.read()
-      }
+      buf ++= partition.toBuffer()
     }
 
     buf

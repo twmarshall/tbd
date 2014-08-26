@@ -25,14 +25,15 @@ class ChunkList[T, U](
     val head: Mod[ChunkListNode[T, U]],
     conf: ListConf) extends AdjustableList[T, U] {
 
-  override def chunkMap[V, Q](
-      f: (Vector[(T, U)]) => (V, Q))
-     (implicit c: Context): ModList[V, Q] = {
-    val memo = makeMemoizer[Mod[ModListNode[V, Q]]]()
+  override def chunkMap[V, W](
+      f: (Vector[(T, U)]) => (V, W))
+     (implicit c: Context): ModList[V, W] = {
+    val memo = makeMemoizer[Mod[ModListNode[V, W]]]()
+
     new ModList(
       mod {
         read(head) {
-	  case null => write[ModListNode[V, Q]](null)
+	  case null => write[ModListNode[V, W]](null)
 	  case node => node.chunkMap(f, memo)
         }
       }
@@ -198,6 +199,11 @@ class ChunkList[T, U](
       f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)] = ???
 
+  def reduceByKey(
+      f: (U, U) => U,
+      comparator: ((T, U), (T, U)) => Boolean)
+     (implicit c: Context): ChunkList[T, U] = ???
+
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): ChunkList[T, U] = {
@@ -237,7 +243,7 @@ class ChunkList[T, U](
 
   def split(
       pred: ((T, U)) => Boolean)
-     (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
+     (implicit c: Context): (ChunkList[T, U], ChunkList[T, U]) = ???
 
   /* Meta functions */
   def toBuffer(): Buffer[(T, U)] = {

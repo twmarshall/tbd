@@ -35,9 +35,9 @@ trait AdjustableList[T, U] {
    * function to each chunk of this AdjustableList. Only defined for chunked
    * lists.
    */
-  def chunkMap[V, Q](
-      f: (Vector[(T, U)]) => (V, Q))
-     (implicit c: Context): AdjustableList[V, Q] = ???
+  def chunkMap[V, W](
+      f: (Vector[(T, U)]) => (V, W))
+     (implicit c: Context): AdjustableList[V, W] = ???
 
   /**
    * Returns a AdjustableList containing all of the elements from this
@@ -51,9 +51,9 @@ trait AdjustableList[T, U] {
    * Returns an AdjustableList containing each element produced by applying
    * the mapping function to each element of this list.
    */
-  def flatMap[V, Q](
-      f: ((T, U)) => Iterable[(V, Q)])
-     (implicit c: Context): AdjustableList[V, Q]
+  def flatMap[V, W](
+      f: ((T, U)) => Iterable[(V, W)])
+     (implicit c: Context): AdjustableList[V, W]
 
   /**
    * Returns an AdjustableList mapping each key from the two lists such that
@@ -71,9 +71,9 @@ trait AdjustableList[T, U] {
    * Returns a AdjustableList containing the results of applying the given
    * function to each of the elements of this AdjustableList.
    */
-  def map[V, Q](
-      f: ((T, U)) => (V, Q))
-     (implicit c: Context): AdjustableList[V, Q]
+  def map[V, W](
+      f: ((T, U)) => (V, W))
+     (implicit c: Context): AdjustableList[V, W]
 
   /**
    * Reduces all elements in the list using f, in an unspecified order.
@@ -82,10 +82,13 @@ trait AdjustableList[T, U] {
       f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)]
 
+  /**
+   * Reduces all elements with the same key using f.
+   */
   def reduceByKey(
       f: (U, U) => U,
       comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): AdjustableList[T, U] = ???
+     (implicit c: Context): AdjustableList[T, U]
 
   /**
    * Returns a sorted copy of this list.

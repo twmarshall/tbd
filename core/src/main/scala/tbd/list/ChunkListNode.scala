@@ -27,15 +27,6 @@ class ChunkListNode[T, U](
     val nextMod: Mod[ChunkListNode[T, U]],
     val size: Int = 0) extends Serializable {
 
-  override def equals(obj: Any): Boolean = {
-    if (!obj.isInstanceOf[ChunkListNode[T, U]]) {
-      false
-    } else {
-      val that = obj.asInstanceOf[ChunkListNode[T, U]]
-      that.chunk == chunk && that.nextMod == nextMod
-    }
-  }
-
   def chunkMap[V, W](
       f: (Vector[(T, U)]) => (V, W),
       memo: Memoizer[Mod[ModListNode[V, W]]])
@@ -172,6 +163,15 @@ class ChunkListNode[T, U](
     }
 
     write(new ChunkListNode[V, W](newChunk, newNext))
+  }
+
+  override def equals(obj: Any): Boolean = {
+    if (!obj.isInstanceOf[ChunkListNode[T, U]]) {
+      false
+    } else {
+      val that = obj.asInstanceOf[ChunkListNode[T, U]]
+      that.chunk == chunk && that.nextMod == nextMod
+    }
   }
 
   override def toString = "Node(" + chunk + ", " + nextMod + ")"

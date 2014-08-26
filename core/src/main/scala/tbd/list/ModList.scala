@@ -145,19 +145,19 @@ class ModList[T, U](
 
     def randomReduceList(
         head: ModListNode[T, U],
-        next: ModListNode[T, U],
+        nextMod: ModListNode[T, U],
         round: Int,
         roundMemoizer: RoundMemoizer)
         (implicit c: Context): Changeable[(T, U)] = {
       val tuple = roundMemoizer.getTuple()
 
       val halfListMod = mod {
-	halfList(head.value, next, round, tuple._1, tuple._2)
+	halfList(head.value, nextMod, round, tuple._1, tuple._2)
       }
 
       read(halfListMod) {
         case halfList =>
-          read(halfList.next) {
+          read(halfList.nextMod) {
             case null => write(halfList.value)
             case next => randomReduceList(halfList, next, round + 1, tuple._3)
           }
@@ -181,13 +181,13 @@ class ModList[T, U](
       (implicit c: Context): Changeable[ModListNode[T, U]] = {
       val newAcc = f(acc, node.value)
 
-      if(binaryHash(node.next.id, round, hasher)) {
-        val newNext = memo(node.next) {
+      if(binaryHash(node.nextMod.id, round, hasher)) {
+        val newNextMod = memo(node.nextMod) {
 	  mod {
-	    read(node.next) {
+	    read(node.nextMod) {
               case null => write[ModListNode[T, U]](null)
               case next =>
-                read(next.next) {
+                read(next.nextMod) {
                   case null =>
                     val tail = mod { write[ModListNode[T, U]](null) }
                     write(new ModListNode(next.value, tail))
@@ -197,9 +197,9 @@ class ModList[T, U](
             }
 	  }
 	}
-        write(new ModListNode(newAcc, newNext))
+        write(new ModListNode(newAcc, newNextMod))
       } else {
-        read(node.next) {
+        read(node.nextMod) {
           case null =>
 	    val tail = createMod[ModListNode[T, U]](null)
             write(new ModListNode(newAcc, tail))
@@ -214,7 +214,7 @@ class ModList[T, U](
       read(head) {
         case null => write(null)
         case head =>
-          read(head.next) {
+          read(head.nextMod) {
             case null => write(head.value)
             case next => randomReduceList(head, next, 0, roundMemoizer)
           }
@@ -317,7 +317,7 @@ class ModList[T, U](
     var node = head.read()
     while (node != null) {
       buf += node.value
-      node = node.next.read()
+      node = node.nextMod.read()
     }
 
     buf
