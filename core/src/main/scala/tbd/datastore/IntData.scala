@@ -32,7 +32,7 @@ class IntData(
   def generate() {
     while (table.size < count) {
       var key = rand.nextInt(maxKey)
-      val value = rand.nextInt(Int.MaxValue)
+      val value = rand.nextInt(maxKey)
       while (table.contains(key)) {
 	key = rand.nextInt(maxKey)
       }
@@ -59,7 +59,7 @@ class IntData(
 
   def addValue() {
     var key = rand.nextInt(maxKey)
-    val value = rand.nextInt(Int.MaxValue)
+    val value = rand.nextInt(maxKey)
     while (table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
@@ -84,7 +84,7 @@ class IntData(
   def updateValue() {
     if (table.size > 0) {
       var key = rand.nextInt(maxKey)
-      val value = rand.nextInt(Int.MaxValue)
+      val value = rand.nextInt(maxKey)
       while (!table.contains(key)) {
 	key = rand.nextInt(maxKey)
       }
