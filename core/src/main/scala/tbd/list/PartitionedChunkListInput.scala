@@ -31,7 +31,7 @@ class PartitionedChunkListInput[T, U](conf: ListConf)
       partitions += chunkListModifier.list
     }
 
-    new PartitionedChunkList[T, U](partitions)
+    new PartitionedChunkList[T, U](partitions, conf)
   }
 
   private var putInto = 0

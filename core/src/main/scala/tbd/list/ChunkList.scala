@@ -22,7 +22,8 @@ import tbd.Constants.ModId
 import tbd.TBD._
 
 class ChunkList[T, U](
-    val head: Mod[ChunkListNode[T, U]]) extends AdjustableList[T, U] {
+    val head: Mod[ChunkListNode[T, U]],
+    conf: ListConf) extends AdjustableList[T, U] {
 
   override def chunkMap[V, Q](
       f: (Vector[(T, U)]) => (V, Q))
@@ -42,9 +43,20 @@ class ChunkList[T, U](
       pred: ((T, U)) => Boolean)
      (implicit c: Context): ChunkList[T, U] = ???
 
-  def flatMap[V, Q](
-      f: ((T, U)) => Iterable[(V, Q)])
-     (implicit c: Context): AdjustableList[V, Q] = ???
+  def flatMap[V, W](
+      f: ((T, U)) => Iterable[(V, W)])
+     (implicit c: Context): ChunkList[V, W] = {
+    val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
+
+    new ChunkList(
+      mod {
+        read(head) {
+	  case null => write[ChunkListNode[V, W]](null)
+	  case node => node.flatMap(f, conf.chunkSize, memo)
+        }
+      }, conf
+    )
+  }
 
   def join[V](
       _that: AdjustableList[T, V],
@@ -61,7 +73,7 @@ class ChunkList[T, U](
 	  case null => write[ChunkListNode[T, (U, V)]](null)
 	  case node => node.loopJoin(that, comparator, memo)
 	}
-      }
+      }, conf
     )
   }
 
@@ -69,13 +81,14 @@ class ChunkList[T, U](
       f: ((T, U)) => (V, W))
      (implicit c: Context): ChunkList[V, W] = {
     val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
+
     new ChunkList(
       mod {
         read(head) {
 	  case null => write[ChunkListNode[V, W]](null)
 	  case node => node.map(f, memo)
         }
-      }
+      }, conf
     )
   }
 
@@ -177,7 +190,7 @@ class ChunkList[T, U](
 		}
 	    }
 	}
-      }
+      }, conf
     )
   }
 
@@ -193,7 +206,7 @@ class ChunkList[T, U](
 	write(new ChunkListNode[T, U]((chunk.toBuffer.sortWith(comparator).toVector), mod({ write(null) })))
       })
 
-      ("", new ChunkList(tail))
+      ("", new ChunkList(tail, conf))
     }
 
     val memo = makeMemoizer[(Memoizer[Changeable[ChunkListNode[T, U]]],
@@ -218,7 +231,7 @@ class ChunkList[T, U](
         read(reduced) {
           case (key, list) => read(list.head) { write(_) }
         }
-      }
+      }, conf
     )
   }
 

@@ -23,7 +23,8 @@ import tbd.datastore.Datastore
 import tbd.TBD._
 
 class PartitionedChunkList[T, U](
-    val partitions: ArrayBuffer[ChunkList[T, U]]
+    val partitions: ArrayBuffer[ChunkList[T, U]],
+    conf: ListConf
   ) extends AdjustableList[T, U] {
 
   override def chunkMap[V, W](
@@ -50,9 +51,25 @@ class PartitionedChunkList[T, U](
       pred: ((T, U)) => Boolean)
      (implicit c: Context): PartitionedChunkList[T, U] = ???
 
-  def flatMap[V, Q](
-      f: ((T, U)) => Iterable[(V, Q)])
-     (implicit c: Context): AdjustableList[V, Q] = ???
+  def flatMap[V, W](
+      f: ((T, U)) => Iterable[(V, W)])
+     (implicit c: Context): PartitionedChunkList[V, W] = {
+    def innerMap(i: Int)(implicit c: Context): ArrayBuffer[ChunkList[V, W]] = {
+      if (i < partitions.size) {
+        val parTup = par {
+          c => partitions(i).flatMap(f)(c)
+        } and {
+          c => innerMap(i + 1)(c)
+        }
+
+        parTup._2 += parTup._1
+      } else {
+        ArrayBuffer[ChunkList[V, W]]()
+      }
+    }
+
+    new PartitionedChunkList(innerMap(0), conf)
+  }
 
   def join[V](
       that: AdjustableList[T, V],
@@ -76,7 +93,7 @@ class PartitionedChunkList[T, U](
       }
     }
 
-    new PartitionedChunkList(innerMap(0))
+    new PartitionedChunkList(innerMap(0), conf)
   }
 
   def reduce(
@@ -96,7 +113,7 @@ class PartitionedChunkList[T, U](
 
 	sortedPartition.merge(sortedRest, comparator)
       } else {
-        new ChunkList[T, U](mod { write[ChunkListNode[T, U]](null) })
+        new ChunkList[T, U](mod { write[ChunkListNode[T, U]](null) }, conf)
       }
     }
 

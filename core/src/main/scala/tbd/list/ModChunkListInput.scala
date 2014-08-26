@@ -36,7 +36,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
   val nodes = Map[T, Mod[ChunkListNode[T, U]]]()
   val previous = Map[T, Mod[ChunkListNode[T, U]]]()
 
-  val list = new ChunkList[T, U](lastNodeMod)
+  val list = new ChunkList[T, U](lastNodeMod, conf)
 
   def put(key: T, value: U) {
     val lastNode = Datastore.getMod(lastNodeMod.id)

@@ -35,7 +35,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
 
   "FlatMapTest" should "run flatMap successfully" in {
     Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("flatMap"),
-					   "chunkSizes" -> Array("1"),
+					   "chunkSizes" -> Array("1", "4"),
 					   "counts" -> Array(intensity.toString),
 					   "partitions" -> Array("1", "4")))
   }
