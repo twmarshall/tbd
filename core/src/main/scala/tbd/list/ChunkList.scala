@@ -202,7 +202,20 @@ class ChunkList[T, U](
   def reduceByKey(
       f: (U, U) => U,
       comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): ChunkList[T, U] = ???
+     (implicit c: Context): ChunkList[T, U] = {
+    val sorted = this.sort(comparator)
+
+    new ChunkList(
+      mod {
+	read(sorted.head) {
+	  case null =>
+	    write(null)
+	  case node =>
+	    node.reduceByKey(f, node.chunk.head._1, null.asInstanceOf[U])
+	}
+      }, conf
+    )
+  }
 
   def sort(
       comparator: ((T, U), (T, U)) => Boolean)

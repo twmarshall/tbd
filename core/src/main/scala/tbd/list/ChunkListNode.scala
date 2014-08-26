@@ -16,6 +16,7 @@
 package tbd.list
 
 import java.io.Serializable
+import scala.collection.mutable.Buffer
 
 import tbd._
 import tbd.TBD._
@@ -163,6 +164,93 @@ class ChunkListNode[T, U](
     }
 
     write(new ChunkListNode[V, W](newChunk, newNext))
+  }
+
+  def reduceByKey(
+      f: (U, U) => U,
+      previousKey: T,
+      runningValue: U)
+     (implicit c: Context): Changeable[ChunkListNode[T, U]] = {
+    var remaining = chunk
+    var reduced = Buffer[(T, U)]()
+
+    var newRunningValue = runningValue
+    var newPreviousKey = previousKey
+
+    while (remaining.size > 0) {
+      while (remaining.size > 0 && remaining.head._1 == newPreviousKey) {
+	newRunningValue =
+	  if (newRunningValue == null)
+	    remaining.head._2
+	  else
+	    f(newRunningValue, remaining.head._2)
+
+	remaining = remaining.tail
+      }
+
+      if (remaining.size > 0) {
+	reduced += ((newPreviousKey, newRunningValue))
+	newPreviousKey = remaining.head._1
+	newRunningValue = null.asInstanceOf[U]
+      }
+    }
+
+    if (reduced.size > 0) {
+      var tail = mod {
+	read(nextMod) {
+	  case null =>
+	    val tail = mod { write[ChunkListNode[T, U]](null) }
+	    write(new ChunkListNode(Vector((newPreviousKey, newRunningValue)), tail))
+	  case node =>
+	    node.reduceByKey(f, newPreviousKey, newRunningValue)
+	}
+      }
+
+      while (reduced.size > 1) {
+	tail = mod {
+	  write(new ChunkListNode(Vector(reduced.head), tail))
+	}
+	reduced = reduced.tail
+      }
+
+      write(new ChunkListNode(Vector(reduced.head), tail))
+    } else {
+      read(nextMod) {
+	case null =>
+	  val tail = mod { write[ChunkListNode[T, U]](null) }
+	  write(new ChunkListNode(Vector((newPreviousKey, newRunningValue)), tail))
+	case node =>
+	  node.reduceByKey(f, newPreviousKey, newRunningValue)
+      }
+    }
+
+    /*if (value._1 == previousKey) {
+      val newRunningValue =
+	if (runningValue == null)
+	  value._2
+	else
+	  f(runningValue, value._2)
+
+      read(nextMod) {
+	case null =>
+	  val tail = mod { write[ChunkListNode[T, U]](null) }
+	  write(new ChunkListNode((value._1, newRunningValue), tail))
+	case node =>
+	  node.reduceByKey(f, value._1, newRunningValue)
+      }
+    } else {
+      val newNextMod = mod {
+	read(nextMod) {
+	  case null =>
+	    val tail = mod { write[ChunkListNode[T, U]](null) }
+	    write(new ChunkListNode(value, tail))
+	  case node =>
+	    node.reduceByKey(f, value._1, value._2)
+	}
+      }
+
+      write(new ChunkListNode((previousKey, runningValue), newNextMod))
+    }*/
   }
 
   override def equals(obj: Any): Boolean = {

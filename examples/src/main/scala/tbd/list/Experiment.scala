@@ -47,6 +47,8 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
 
       case "pgrank" => new PageRankAlgorithm(conf, listConf)
 
+      case "rbk" => new ReduceByKeyAlgorithm(conf, listConf)
+
       case "split" =>
         new SplitAlgorithm(conf, listConf)
 

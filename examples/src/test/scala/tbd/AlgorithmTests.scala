@@ -61,6 +61,13 @@ class AlgorithmTests extends FlatSpec with Matchers {
 					   "partitions" -> Array("1")))
   }
 
+  "ReduceByKeyTest" should "run reduceByKey successfully" in {
+    Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("rbk"),
+					   "chunkSizes" -> Array("1", "4"),
+					   "counts" -> Array(intensity.toString),
+					   "partitions" -> Array("1")))
+  }
+
   "SortTest" should "run sort successfully." in {
     Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("sort"),
 					   "chunkSizes" -> Array("1", "4"),
