@@ -62,12 +62,19 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     ranks
   }
 
+  val epsilon = 0.000001
   def checkOutput(table: Map[Int, Array[Int]], output: AdjustableList[Int, Double]) = {
-    val sortedOutput = output.toBuffer().map(_._2).sortWith(_ < _)
+    val out = output.toBuffer()
     val answer = naiveHelper(table)
-    val sortedAnswer = answer.values.toBuffer.sortWith(_ < _)
 
-    sortedOutput == sortedAnswer
+    var check = out.size == answer.size
+    for ((node, rank) <- out) {
+      if (!answer.contains(node) || (answer(node) - rank).abs > epsilon) {
+	check = false
+      }
+    }
+
+    check
   }
 
   def joinComparator(pair1: (Int, Array[Int]), pair2: (Int, Double)) = {
