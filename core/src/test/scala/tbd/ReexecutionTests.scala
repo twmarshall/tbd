@@ -40,6 +40,15 @@ class ChunkMergeTest(input: ListInput[Int, Int], input2: ListInput[Int, Int])
   }
 }
 
+class FlatMapTest(input: ListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit c: Context) = {
+    val list = input.getAdjustableList()
+    list.flatMap(pair =>
+      List(pair, (pair._1, pair._2 * 2), (pair._1 * 2, pair._2)))
+  }
+}
+
 class JoinTest(
     input: ListInput[Int, Int],
     input2: ListInput[Int, Int]
@@ -180,6 +189,23 @@ class ReexecutionTests extends FlatSpec with Matchers {
     mutator.propagate()
     println(output)
     println(output.toBuffer)
+  }*/
+
+  /*"FlatMapTest" should "only reexecute the necessary parts" in {
+    val mutator = new Mutator()
+    val conf = new ListConf(partitions = 1, chunkSize = 1)
+    val input = ListInput[Int, Int](conf)
+
+    for (i <- List(1, 6, 2)) {
+      input.put(i, i)
+    }
+
+    val output = mutator.run(new FlatMapTest(input))
+    println(output)
+
+    input.update(6, 3)
+    mutator.propagate()
+    println(output)
   }*/
 
   /*"JoinTest" should "only reexecute the necessary parts" in {

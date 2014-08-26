@@ -66,18 +66,19 @@ class ModListNode[T, U] (
 
   def flatMap[V, W](
       f: ((T, U)) => Iterable[(V, W)],
-      memo: Memoizer[Changeable[ModListNode[V, W]]])
+      memo: Memoizer[Changeable[ModListNode[V, W]]],
+      modizer: Modizer[ModListNode[V, W]])
      (implicit c: Context): Changeable[ModListNode[V, W]] = {
-    var tail = mod({
+    var tail = modizer(next.id) {
       read(next) {
 	case null =>
 	  write[ModListNode[V, W]](null)
 	case next =>
           memo(next) {
-            next.flatMap(f, memo)
+            next.flatMap(f, memo, modizer)
           }
       }
-    }, next.id)
+    }
 
     var mapped = f(value)
 
