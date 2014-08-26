@@ -54,11 +54,11 @@ class AlgorithmTests extends FlatSpec with Matchers {
 					   "partitions" -> Array("1", "4")))
   }
 
-  "WordcountTest" should "run wordcount successfully." in {
-    Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("wc"),
-					   "chunkSizes" -> Array("1", "4"),
+  "PageRankTest" should "run page rank successfully." in {
+    Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("pgrank"),
+					   "chunkSizes" -> Array("1"),
 					   "counts" -> Array(intensity.toString),
-					   "partitions" -> Array("1", "4")))
+					   "partitions" -> Array("1")))
   }
 
   "SortTest" should "run sort successfully." in {
@@ -73,5 +73,12 @@ class AlgorithmTests extends FlatSpec with Matchers {
 					   "chunkSizes" -> Array("1"),
 					   "counts" -> Array(intensity.toString),
 					   "partitions" -> Array("1")))
+  }
+
+  "WordcountTest" should "run wordcount successfully." in {
+    Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("wc"),
+					   "chunkSizes" -> Array("1", "4"),
+					   "counts" -> Array(intensity.toString),
+					   "partitions" -> Array("1", "4")))
   }
 }
