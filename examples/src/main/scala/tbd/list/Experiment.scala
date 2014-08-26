@@ -45,7 +45,7 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
       case "map" =>
 	new MapAlgorithm(conf, listConf)
 
-      case "pagerank" => new PageRankAlgorithm(conf, listConf)
+      case "pgrank" => new PageRankAlgorithm(conf, listConf)
 
       case "split" =>
         new SplitAlgorithm(conf, listConf)

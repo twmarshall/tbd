@@ -87,7 +87,7 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
         links.map(url => (url, rank / size))
       }
 
-      val reduced = contribs.reduceByKey(_ + _, (pair1, pair2) => pair1._1 < pair2._2)
+      val reduced = contribs.reduceByKey(_ + _, (pair1, pair2) => pair1._1 < pair2._1)
 
       ranks = reduced.map(pair => (pair._1, .15 + .85 * pair._2))
     }

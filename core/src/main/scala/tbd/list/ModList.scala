@@ -225,13 +225,11 @@ class ModList[T, U](
       f: (U, U) => U,
       comparator: ((T, U), (T, U)) => Boolean)
      (implicit c: Context): ModList[T, U] = {
-    println("reduceByKey")
     val sorted = this.sort(comparator)
-    println("sorted")
 
     new ModList(
       mod {
-	read(head) {
+	read(sorted.head) {
 	  case null =>
 	    write(null)
 	  case node =>
