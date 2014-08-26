@@ -25,7 +25,7 @@ import tbd.list._
 
 object SortAlgorithm {
   def predicate(a: (Int, Int), b: (Int, Int)): Boolean = {
-    a._2 < b._2
+    a._1 < b._1
   }
 }
 
@@ -35,26 +35,23 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val data = new IntData(input, count, mutations)
 
-  var naiveTable: GenIterable[Int] = _
   def generateNaive() {
     data.generate()
-    naiveTable = Vector(data.table.values.toSeq: _*).par
   }
 
   def runNaive() {
-    naiveHelper(naiveTable)
+    naiveHelper(data.table)
   }
 
-  private def naiveHelper(input: GenIterable[Int]) = {
-    input map { TreeSet(_) } reduce((one: TreeSet[Int], two: TreeSet[Int]) => one ++ two)
+  private def naiveHelper(input: Map[Int, Int]) = {
+    input map { TreeSet(_) } reduce((one, two) => one ++ two)
   }
 
   def checkOutput(
       input: Map[Int, Int],
       output: AdjustableList[Int, Int]) = {
-    val sortedOutput = output.toBuffer().map(_._2)
-
-    val answer = naiveHelper(input.values)
+    val sortedOutput = output.toBuffer()
+    val answer = naiveHelper(input)
 
     sortedOutput == answer.toBuffer
   }
@@ -65,38 +62,3 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     pages.sort(SortAlgorithm.predicate)
   }
 }
-
-/*class ChunkSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = ListInput[Int, Int](listConf)
-
-  val data = new IntData(input, count, mutations)
-
-  var naiveTable: GenIterable[Int] = _
-  def generateNaive() {
-    data.generate()
-    naiveTable = Vector(data.table.values.toSeq: _*).par
-  }
-
-  def runNaive() {
-    naiveHelper(naiveTable)
-  }
-
-  private def naiveHelper(input: GenIterable[Int]) = {
-    input.toBuffer.sortWith((one, two) => SortAlgorithm.predicate((1, one), (2, two)))
-  }
-
-  def checkOutput(
-      input: Map[Int, Int],
-      output: AdjustableList[Int, Int]) = {
-    val answer = naiveHelper(input.values)
-
-    output.toBuffer == answer.toBuffer
-  }
-
-  def run(implicit c: Context) = {
-    val list = input.getAdjustableList()
-
-    list.sort(SortAlgorithm.predicate(_, _))
-  }
-}*/
