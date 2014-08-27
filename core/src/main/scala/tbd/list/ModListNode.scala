@@ -83,7 +83,6 @@ class ModListNode[T, U] (
 
   def loopJoin[V](
       that: ModList[T, V],
-      comparator: ((T, U), (T, V)) => Boolean,
       memo: Memoizer[Changeable[ModListNode[T, (U, V)]]])
      (implicit c: Context): Changeable[ModListNode[T, (U, V)]] = {
     val newNextMod = mod {
@@ -92,7 +91,7 @@ class ModListNode[T, U] (
 	  write[ModListNode[T, (U, V)]](null)
 	case node =>
 	  memo(node) {
-	    node.loopJoin(that, comparator, memo)
+	    node.loopJoin(that, memo)
 	  }
       }
     }
@@ -102,7 +101,7 @@ class ModListNode[T, U] (
       case null =>
 	read(newNextMod) { write(_) }
       case node =>
-	node.joinHelper(value, comparator, newNextMod, memo2)
+	node.joinHelper(value, newNextMod, memo2)
     }
   }
 
@@ -110,32 +109,35 @@ class ModListNode[T, U] (
   // with a single element from the first list.
   private def joinHelper[V](
       thatValue: (T, V),
-      comparator: ((T, V), (T, U)) => Boolean,
       tail: Mod[ModListNode[T, (V, U)]],
       memo: Memoizer[Changeable[ModListNode[T, (V, U)]]])
      (implicit c: Context): Changeable[ModListNode[T, (V, U)]] = {
-    if (comparator(thatValue, value)) {
+    if (thatValue._1 == value._1) {
       val newValue = (value._1, (thatValue._2, value._2))
 
-      read(nextMod) {
+      // Terminating early here only works under the assumption that the keys
+      // are unique. We'll want to define alternate version of join that work
+      // when this assumption isn't true.
+      /*read(nextMod) {
 	case null =>
 	  write(new ModListNode[T, (V, U)](newValue, tail))
 	case node =>
 	  val newNextMod = mod {
 	    memo(node) {
-	      node.joinHelper(thatValue, comparator, tail, memo)
+	      node.joinHelper(thatValue, tail, memo)
 	    }
 	  }
 
 	  write(new ModListNode[T, (V, U)](newValue, newNextMod))
-      }
+      }*/
+      write(new ModListNode[T, (V, U)](newValue, tail))
     } else {
       read(nextMod) {
 	case null =>
 	  read(tail) { write(_) }
 	case node =>
 	  memo(node) {
-	    node.joinHelper(thatValue, comparator, tail, memo)
+	    node.joinHelper(thatValue, tail, memo)
 	  }
       }
     }

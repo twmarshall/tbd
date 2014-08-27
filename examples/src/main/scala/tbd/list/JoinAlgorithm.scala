@@ -65,15 +65,11 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     sortedAnswer == sortedOutput
   }
 
-  def comparator(pair1: (Int, Int), pair2: (Int, Int)) = {
-    pair1._1 == pair2._1
-  }
-
   def run(implicit c: Context): AdjustableList[Int, (Int, Int)] = {
     val list = input.getAdjustableList()
     val list2 = input2.getAdjustableList().asInstanceOf[ModList[Int, Int]]
 
-    list.join(list2, comparator)
+    list.join(list2)
   }
 }
 
@@ -120,14 +116,10 @@ class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     sortedAnswer == sortedOutput
   }
 
-  def comparator(pair1: (Int, Int), pair2: (Int, Int)) = {
-    pair1._1 == pair2._1
-  }
-
   def run(implicit c: Context): AdjustableList[Int, (Int, Int)] = {
     val list = input.getAdjustableList()
     val list2 = input2.getAdjustableList().asInstanceOf[ChunkList[Int, Int]]
 
-    list.join(list2, comparator)
+    list.join(list2)
   }
 }

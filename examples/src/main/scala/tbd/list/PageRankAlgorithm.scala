@@ -77,19 +77,13 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     check
   }
 
-  def joinComparator(pair1: (Int, Array[Int]), pair2: (Int, Double)) = {
-    pair1._1 == pair2._1
-  }
-
   val iters = 1
   def run(implicit c: Context) = {
     val links = input.getAdjustableList()
     var ranks = links.map((pair: (Int, Array[Int])) => (pair._1, 1.0))
 
     for (i <- 1 to iters) {
-      val joined = links.join(ranks, joinComparator)
-
-      val contribs = joined.flatMap { case (page, (links, rank)) =>
+      val contribs = links.join(ranks).flatMap { case (page, (links, rank)) =>
         val size = links.size
         links.map(url => (url, rank / size))
       }

@@ -76,7 +76,6 @@ class ChunkListNode[T, U](
 
   def loopJoin[V](
       that: ChunkList[T, V],
-      comparator: ((T, U), (T, V)) => Boolean,
       memo: Memoizer[Changeable[ChunkListNode[T, (U, V)]]])
      (implicit c: Context): Changeable[ChunkListNode[T, (U, V)]] = {
     val newNext = mod {
@@ -85,7 +84,7 @@ class ChunkListNode[T, U](
 	  write[ChunkListNode[T, (U, V)]](null)
 	case node =>
 	  memo(node) {
-	    node.loopJoin(that, comparator, memo)
+	    node.loopJoin(that, memo)
 	  }
       }
     }
@@ -98,12 +97,12 @@ class ChunkListNode[T, U](
 	for (i <- 0 until chunk.size - 1) {
 	  tail = mod {
 	    val memo2 = makeMemoizer[Changeable[ChunkListNode[T, (U, V)]]]()
-	    node.joinHelper(chunk(i), comparator, tail, memo2)
+	    node.joinHelper(chunk(i),  tail, memo2)
 	  }
 	}
 
 	val memo2 = makeMemoizer[Changeable[ChunkListNode[T, (U, V)]]]()
-	node.joinHelper(chunk(chunk.size - 1), comparator, tail, memo2)
+	node.joinHelper(chunk(chunk.size - 1), tail, memo2)
     }
   }
 
@@ -111,13 +110,12 @@ class ChunkListNode[T, U](
   // with a single element from the first list.
   private def joinHelper[V](
       thatValue: (T, V),
-      comparator: ((T, V), (T, U)) => Boolean,
       tail: Mod[ChunkListNode[T, (V, U)]],
       memo: Memoizer[Changeable[ChunkListNode[T, (V, U)]]])
      (implicit c: Context): Changeable[ChunkListNode[T, (V, U)]] = {
     var newChunk = Vector[(T, (V, U))]()
     for (value <- chunk) {
-      if (comparator(thatValue, value)) {
+      if (thatValue._1 == value._1) {
 	val newValue = (value._1, (thatValue._2, value._2))
 	newChunk :+= newValue
       }
@@ -130,7 +128,7 @@ class ChunkListNode[T, U](
 	case node =>
 	  val newNext = mod {
 	    memo(node) {
-	      node.joinHelper(thatValue, comparator, tail, memo)
+	      node.joinHelper(thatValue, tail, memo)
 	    }
 	  }
 
@@ -142,7 +140,7 @@ class ChunkListNode[T, U](
 	  read(tail) { write(_) }
 	case node =>
 	  memo(node) {
-	    node.joinHelper(thatValue, comparator, tail, memo)
+	    node.joinHelper(thatValue, tail, memo)
 	  }
       }
     }

@@ -53,15 +53,10 @@ class JoinTest(
     input: ListInput[Int, Int],
     input2: ListInput[Int, Int]
   ) extends Adjustable[AdjustableList[Int, (Int, Int)]] {
-  def comparator(pair1: (Int, Int), pair2: (Int, Int)) = {
-    println("comparing " + pair1 + " with " + pair2)
-    pair1._1 == pair2._1
-  }
-
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
     val list2 = input2.getAdjustableList()
-    list.join(list2, comparator)
+    list.join(list2)
   }
 }
 

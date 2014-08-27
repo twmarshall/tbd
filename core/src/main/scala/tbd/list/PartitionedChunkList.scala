@@ -72,8 +72,7 @@ class PartitionedChunkList[T, U](
   }
 
   def join[V](
-      that: AdjustableList[T, V],
-      comparator: ((T, U), (T, V)) => Boolean)
+      that: AdjustableList[T, V])
      (implicit c: Context): PartitionedChunkList[T, (U, V)] = ???
 
   def map[V, W](

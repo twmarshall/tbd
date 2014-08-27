@@ -57,8 +57,7 @@ class ModList[T, U](
   }
 
   def join[V](
-      _that: AdjustableList[T, V],
-      comparator: ((T, U), (T, V)) => Boolean)
+      _that: AdjustableList[T, V])
      (implicit c: Context): ModList[T, (U, V)] = {
     assert(_that.isInstanceOf[ModList[T, V]])
     val that = _that.asInstanceOf[ModList[T, V]]
@@ -69,7 +68,7 @@ class ModList[T, U](
       mod {
 	read(head) {
 	  case null => write[ModListNode[T, (U, V)]](null)
-	  case node => node.loopJoin(that, comparator, memo)
+	  case node => node.loopJoin(that, memo)
 	}
       }
     )
