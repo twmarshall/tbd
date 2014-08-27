@@ -20,7 +20,7 @@ import scala.collection.immutable.TreeSet
 import scala.collection.mutable.Map
 
 import tbd._
-import tbd.datastore.IntData
+import tbd.datastore.{IntData, IntFileData}
 import tbd.list._
 
 object SortAlgorithm {
@@ -33,7 +33,11 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ListInput[Int, Int](listConf)
 
-  val data = new IntData(input, count, mutations)
+  val data =
+    if (Experiment.file != "")
+      new IntFileData(input, Experiment.file)
+    else
+      new IntData(input, count, mutations)
 
   def generateNaive() {
     data.generate()
@@ -52,6 +56,9 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
       output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer()
     val answer = naiveHelper(input)
+
+    println(sortedOutput)
+    println(answer.toBuffer)
 
     sortedOutput == answer.toBuffer
   }

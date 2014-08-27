@@ -26,7 +26,7 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
   val algorithm = conf("algorithms")
   val count = conf("counts").asInstanceOf[String].toInt
   val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
-  val runs = conf("runs").asInstanceOf[Array[String]]
+  var runs = conf("runs").asInstanceOf[Array[String]]
 
   def run(): Map[String, Double] = {
     val results = Map[String, Double]()
@@ -62,40 +62,57 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
 	  new WCAlgorithm(conf, listConf)
     }
 
-    for (run <- runs) {
-      if (run == "naive") {
-	val pair = alg.naive()
-	results("naive") = pair._1
-	results("naive-load") = pair._2
-      } else if (run == "initial") {
-	val pair = alg.initial()
-	results("initial") = pair._1
-	results("initial-load") = pair._2
+    // Naive run.
+    val (naive, naiveLoad) = alg.naive()
+    results("naive") = naive
+    results("naive-load") = naiveLoad
 
-	if (Experiment.verbosity > 1) {
-	  if (alg.mapCount != 0) {
-	    println("map count = " + alg.mapCount)
-	    alg.mapCount = 0
-	  }
-	  if (alg.reduceCount != 0) {
-	    println("reduce count = " + alg.reduceCount)
-	    alg.reduceCount = 0
-	  }
-	  println("starting prop")
-	}
-      } else {
-        var i =  0
+    // Initial run.
+    val (initial, initialLoad) = alg.initial()
+    results("initial") = initial
+    results("initial-load") = initialLoad
 
-	val updateCount =
-	  if (run.toDouble < 1)
-	    run.toDouble * count
-	  else
-	    run.toDouble
-
-	val pair = alg.update(updateCount)
-        results(run) = pair._1
-	results(run + "-load") = pair._2
+    if (Experiment.verbosity > 1) {
+      if (alg.mapCount != 0) {
+	println("map count = " + alg.mapCount)
+	alg.mapCount = 0
       }
+      if (alg.reduceCount != 0) {
+	println("reduce count = " + alg.reduceCount)
+	alg.reduceCount = 0
+      }
+      println("starting prop")
+    }
+
+    if (Experiment.file == "") {
+      for (run <- runs) {
+	run match {
+	  case "naive" | "initial" =>
+	  case run =>
+	    val updateCount =
+	      if (run.toDouble < 1)
+		 (run.toDouble * count).toInt
+	      else
+		run.toInt
+
+	    val pair = alg.update(updateCount)
+            results(run) = pair._1
+	    results(run + "-load") = pair._2
+	}
+      }
+    } else {
+      var r = 1
+      runs = Array("naive", "initial")
+
+      while (alg.data.hasUpdates()) {
+	val pair = alg.update(-1)
+        results(r + "") = pair._1
+	results(r + "-load") = pair._2
+	runs :+= r + ""
+	r += 1
+      }
+
+      Experiment.confs("runs") = runs
     }
 
     if (Experiment.verbosity > 1) {
@@ -118,6 +135,9 @@ Options:
   -a, --algorithms s,s,...   Algorithms to run, where s could be: map,nmap,
                                pmap,mpmap,mmap,filter,etc.
   -c, --check                Turns output checking on, for debugging.
+  -f, --file                 File to read the workload from. If none is
+                               specified, the data will be randomly generated.
+                               This option overrides --counts and --runs.
   -h, --help                 Display this message.
   -m, --mutations s,s,...    Mutations to perform on the input data. Must be
                                one of 'update', 'insert', or 'remove'.
@@ -154,6 +174,8 @@ Options:
   var check = false
 
   var displayLoad = false
+
+  var file = ""
 
   val confs = Map(("algorithms" -> Array("map")),
                   ("cacheSizes" -> Array("100000")),
@@ -252,6 +274,9 @@ Options:
 	  check = true
         case "--counts" | "-n" =>
           confs("counts") = args(i + 1).split(",")
+	  i += 1
+	case "--file" | "-f" =>
+	  file = args(i + 1)
 	  i += 1
         case "--help" | "-h" =>
           println(usage)

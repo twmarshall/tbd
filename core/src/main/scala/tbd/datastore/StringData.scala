@@ -74,11 +74,13 @@ class StringData(
     }
   }
 
-  def update() {
-    mutations(rand.nextInt(mutations.size)) match {
-      case "insert" => addValue()
-      case "remove" => removeValue()
-      case "update" => updateValue()
+  def update(n: Int) {
+    for (i <- 1 to n) {
+      mutations(rand.nextInt(mutations.size)) match {
+	case "insert" => addValue()
+	case "remove" => removeValue()
+	case "update" => updateValue()
+      }
     }
   }
 
@@ -134,4 +136,6 @@ class StringData(
 
     chunks -= chunks.head
   }
+
+  def hasUpdates() = true
 }

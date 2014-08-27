@@ -82,11 +82,13 @@ class GraphData(
   def clearValues() {
   }
 
-  def update() {
-    mutations(rand.nextInt(mutations.size)) match {
-      case "insert" => addValue()
-      case "remove" => removeValue()
-      case "update" => updateValue()
+  def update(n: Int) {
+    for (i <- 1 to n) {
+      mutations(rand.nextInt(mutations.size)) match {
+	case "insert" => addValue()
+	case "remove" => removeValue()
+	case "update" => updateValue()
+      }
     }
   }
 
@@ -120,4 +122,6 @@ class GraphData(
     table(key) = generateEdges()
     input.update(key, table(key))
   }
+
+  def hasUpdates() = true
 }

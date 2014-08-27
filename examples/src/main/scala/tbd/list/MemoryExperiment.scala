@@ -46,9 +46,7 @@ object MemoryExperiment {
     val rand = new scala.util.Random()
     var i = 0
     while (i < 1000) {
-      for (i <- 0 to 100) {
-        input.update()
-      }
+      input.update(100)
 
       println("starting propagating")
       mutator.propagate()

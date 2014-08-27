@@ -15,10 +15,9 @@
  */
 package tbd.datastore
 
-import scala.collection.GenIterable
-import scala.collection.mutable.{ArrayBuffer, Map}
+import java.io._
 
-import tbd.{Input, Mutator}
+import tbd.Input
 
 class IntData(
     input: Input[Int, Int],
@@ -29,6 +28,8 @@ class IntData(
 
   val rand = new scala.util.Random()
 
+  val output = new PrintWriter(new File("data.txt"))
+
   def generate() {
     while (table.size < count) {
       var key = rand.nextInt(maxKey)
@@ -38,6 +39,7 @@ class IntData(
       }
 
       table += (key -> value)
+      log("generated " + (key, value))
     }
   }
 
@@ -49,12 +51,15 @@ class IntData(
 
   def clearValues() {}
 
-  def update() {
-    mutations(rand.nextInt(mutations.size)) match {
-      case "insert" => addValue()
-      case "remove" => removeValue()
-      case "update" => updateValue()
+  def update(n: Int) {
+    for (i <- 1 to n) {
+      mutations(rand.nextInt(mutations.size)) match {
+	case "insert" => addValue()
+	case "remove" => removeValue()
+	case "update" => updateValue()
+      }
     }
+    log("---")
   }
 
   def addValue() {
@@ -64,6 +69,8 @@ class IntData(
       key = rand.nextInt(maxKey)
     }
     input.put(key, value)
+
+    log("adding " + (key, value))
 
     table += (key -> value)
   }
@@ -75,6 +82,9 @@ class IntData(
         key = rand.nextInt(maxKey)
       }
       input.remove(key)
+
+      log("removing " + (key, table(key)))
+
       table -= key
     } else {
       addValue()
@@ -88,11 +98,20 @@ class IntData(
       while (!table.contains(key)) {
 	key = rand.nextInt(maxKey)
       }
+      log("updating " + (key, value))
+
       input.update(key, value)
 
       table(key) = value
     } else {
       addValue()
     }
+  }
+
+  def hasUpdates() = true
+
+  private def log(s: String) {
+    output.print(s + "\n")
+    output.flush()
   }
 }

@@ -102,17 +102,14 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
 
   protected def checkOutput(table: Map[Int, Input], output: Output): Boolean
 
-  def update(count: Double): (Long, Long) = {
+  def update(count: Int): (Long, Long) = {
     if (Experiment.verbosity > 1) {
       println("Updating " + count)
     }
 
-    var i = 0
     val beforeLoad = System.currentTimeMillis()
-    while (i < count) {
-      i += 1
-      data.update()
-    }
+    data.update(count)
+
     val loadElapsed = System.currentTimeMillis() - beforeLoad
 
     if (Experiment.verbosity > 1) {

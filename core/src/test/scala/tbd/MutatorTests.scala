@@ -60,7 +60,7 @@ class MutatorTests extends FlatSpec with Matchers {
     }
 
     for (j <- 0 to intensity) {
-      data.update()
+      data.update(1)
       sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
       output.toBuffer().map(_._2).sortWith(_ < _) should be (sortedAnswer)
     }
