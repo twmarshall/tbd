@@ -17,6 +17,7 @@ package tbd.list
 
 import akka.actor.ActorRef
 import akka.pattern.ask
+import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
@@ -24,25 +25,45 @@ import tbd.Mod
 import tbd.Constants._
 import tbd.datastore.Datastore
 
-class ModListInput[T, U] extends ListInput[T, U] {
+class SortedModListInput[T, U](implicit ordering: Ordering[T])
+  extends ListInput[T, U] {
+
   import scala.concurrent.ExecutionContext.Implicits.global
 
   private var tailMod = Datastore.createMod[ModListNode[T, U]](null)
 
-  val nodes = Map[T, Mod[ModListNode[T, U]]]()
+  var nodes = TreeMap[T, Mod[ModListNode[T, U]]]()
 
   val modList = new ModList[T, U](tailMod)
 
   def put(key: T, value: U) {
-    val newTail = Datastore.createMod[ModListNode[T, U]](null)
-    val newNode = new ModListNode((key, value), newTail)
+    val nextOption = nodes.find { case (_key, _value) => ordering.lt(key, _key) }
 
-    val futures = Datastore.updateMod(tailMod.id, newNode)
+    nextOption match {
+      case None =>
+	val newTail = Datastore.createMod[ModListNode[T, U]](null)
+	val newNode = new ModListNode((key, value), newTail)
 
-    nodes(key) = tailMod
-    tailMod = newTail
+	val futures = Datastore.updateMod(tailMod.id, newNode)
 
-    Await.result(Future.sequence(futures), DURATION)
+	nodes += ((key, tailMod))
+	tailMod = newTail
+
+	Await.result(Future.sequence(futures), DURATION)
+      case Some(nextPair) =>
+	val (nextKey, nextMod) = nextPair
+
+	val nextNode = Datastore.getMod(nextMod.id).asInstanceOf[ModListNode[T, U]]
+	val newNextMod = Datastore.createMod[ModListNode[T, U]](nextNode)
+
+	val newNode = new ModListNode((key, value), newNextMod)
+	val futures = Datastore.updateMod(nextMod.id, newNode)
+
+	nodes += ((nextKey, newNextMod))
+	nodes += ((key, nextMod))
+
+	Await.result(Future.sequence(futures), DURATION)
+    }
   }
 
   def update(key: T, value: U) {
@@ -63,7 +84,7 @@ class ModListInput[T, U] extends ListInput[T, U] {
       assert(tailMod == node.nextMod)
       tailMod = nodes(key)
     } else {
-      nodes(nextNode.value._1) = nodes(key)
+      nodes += ((nextNode.value._1, nodes(key)))
     }
 
     val futures = Datastore.updateMod(nodes(key).id, nextNode)

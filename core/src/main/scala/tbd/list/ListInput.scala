@@ -18,18 +18,24 @@ package tbd.list
 import tbd.Input
 
 object ListInput {
-  def apply[T, U](conf: ListConf = new ListConf()): ListInput[T, U] = {
-    if (conf.partitions == 1) {
-      if (conf.chunkSize > 1) {
-	new ChunkListInput(conf)
+  def apply[T, U](conf: ListConf = new ListConf())(implicit ordering: Ordering[T]): ListInput[T, U] = {
+    if (conf.sorted) {
+      assert(conf.chunkSize == 1 && conf.partitions == 1)
+      new SortedModListInput()
+    }
+    else {
+      if (conf.partitions == 1) {
+	if (conf.chunkSize > 1) {
+	  new ChunkListInput(conf)
+	} else {
+	  new ModListInput()
+	}
       } else {
-	new ModListInput()
-      }
-    } else {
-      if (conf.chunkSize > 1) {
-	new PartitionedChunkListInput(conf)
-      } else {
-	new PartitionedListInput(conf)
+	if (conf.chunkSize > 1) {
+	  new PartitionedChunkListInput(conf)
+	} else {
+	  new PartitionedListInput(conf)
+	}
       }
     }
   }

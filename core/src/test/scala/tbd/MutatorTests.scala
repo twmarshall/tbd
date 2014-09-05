@@ -18,6 +18,7 @@ package tbd.test
 import org.scalatest._
 
 import tbd._
+import tbd.datastore.IntData
 import tbd.list._
 
 class ListTest(input: ListInput[Int, Int])
@@ -29,40 +30,49 @@ class ListTest(input: ListInput[Int, Int])
 
 class MutatorTests extends FlatSpec with Matchers {
   val intensity = 10
-  def runTest(
-      mutator: Mutator,
-      adjustable: Adjustable[AdjustableList[Int, Int]],
-      input: Input[Int, Int]) {
-    val data = new tbd.datastore.IntData(input, intensity, Array("insert", "remove", "update"))
+  def runTest
+      (mutator: Mutator,
+       adjustable: Adjustable[AdjustableList[Int, Int]],
+       input: Input[Int, Int],
+       sorted: Boolean) {
+
+    def check(output: AdjustableList[Int, Int], data: IntData): Boolean = {
+      val sortedAnswer = data.table.toBuffer.sortWith(_._1 < _._1)
+
+      val sortedOutput =
+	if (sorted)
+	  output.toBuffer
+	else
+	  output.toBuffer.sortWith(_._1 < _._1)
+
+      sortedOutput == sortedAnswer
+    }
+
+    val data = new IntData(input, intensity, Array("insert", "remove", "update"))
     data.generate()
     data.load()
 
     val output = mutator.run(adjustable)
-    var sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
-    output.toBuffer().map(_._2).sortWith(_ < _) should be (sortedAnswer)
+    check(output, data)
 
     for (j <- 0 to intensity) {
       data.updateValue()
-      sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
-      output.toBuffer().map(_._2).sortWith(_ < _) should be (sortedAnswer)
+      assert(check(output, data))
     }
 
     for (j <- 0 to intensity) {
       data.addValue()
-      sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
-      output.toBuffer().map(_._2).sortWith(_ < _) should be (sortedAnswer)
+      assert(check(output, data))
     }
 
     while (data.table.size > 0) {
       data.removeValue()
-      sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
-      output.toBuffer().map(_._2).sortWith(_ < _) should be (sortedAnswer)
+      assert(check(output, data))
     }
 
     for (j <- 0 to intensity) {
       data.update(1)
-      sortedAnswer = data.table.values.toBuffer.sortWith(_ < _)
-      output.toBuffer().map(_._2).sortWith(_ < _) should be (sortedAnswer)
+      assert(check(output, data))
     }
   }
 
@@ -73,10 +83,19 @@ class MutatorTests extends FlatSpec with Matchers {
 
 	val conf = new ListConf(partitions = partitions, chunkSize = chunkSize)
 	val input = ListInput[Int, Int](conf)
-	runTest(mutator, new ListTest(input), input)
+	runTest(mutator, new ListTest(input), input, false)
 
 	mutator.shutdown()
       }
     }
+  }
+
+  "SortedListTests" should "update the sorted AdjustableList correctly" in {
+    val mutator = new Mutator()
+    val conf = new ListConf(partitions = 1, chunkSize = 1, sorted = true)
+    val input = ListInput[Int, Int](conf)
+    runTest(mutator, new ListTest(input), input, true)
+
+    mutator.shutdown()
   }
 }
