@@ -223,7 +223,8 @@ class ModListNode[T, U] (
   def reduceByKey(
       f: (U, U) => U,
       previousKey: T,
-      runningValue: U)
+      runningValue: U,
+      memo: Memoizer[Changeable[ModListNode[T, U]]])
      (implicit c: Context): Changeable[ModListNode[T, U]] = {
     if (value._1 == previousKey) {
       val newRunningValue =
@@ -237,7 +238,9 @@ class ModListNode[T, U] (
 	  val tail = mod { write[ModListNode[T, U]](null) }
 	  write(new ModListNode((value._1, newRunningValue), tail))
 	case node =>
-	  node.reduceByKey(f, value._1, newRunningValue)
+	  memo(node, value._1, newRunningValue) {
+	    node.reduceByKey(f, value._1, newRunningValue, memo)
+	  }
       }
     } else {
       val newNextMod = mod {
@@ -246,7 +249,9 @@ class ModListNode[T, U] (
 	    val tail = mod { write[ModListNode[T, U]](null) }
 	    write(new ModListNode(value, tail))
 	  case node =>
-	    node.reduceByKey(f, value._1, value._2)
+	    memo(node, value._1, value._2) {
+	      node.reduceByKey(f, value._1, value._2, memo)
+	    }
 	}
       }
 

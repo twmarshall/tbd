@@ -227,13 +227,16 @@ class ModList[T, U](
      (implicit c: Context): ModList[T, U] = {
     val sorted = this.sort(comparator)
 
+    val memo = makeMemoizer[Changeable[ModListNode[T, U]]]()
     new ModList(
       mod {
 	read(sorted.head) {
 	  case null =>
 	    write(null)
 	  case node =>
-	    node.reduceByKey(f, node.value._1, null.asInstanceOf[U])
+	    memo(node, node.value._1, null) {
+	      node.reduceByKey(f, node.value._1, null.asInstanceOf[U], memo)
+	    }
 	}
       }
     )
