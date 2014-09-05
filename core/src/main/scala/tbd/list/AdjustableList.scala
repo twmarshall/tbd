@@ -75,6 +75,16 @@ trait AdjustableList[T, U] {
      (implicit c: Context): AdjustableList[V, W]
 
   /**
+   * Returns a AdjustableList containing the results of applying the given
+   * function to each of the values of this AdjustableList.
+   *
+   * Unlike map, if this is sorted, the output will be too.
+   */
+  def mapValues[V]
+      (f: U => V)
+      (implicit c: Context): AdjustableList[T, V] = ???
+
+  /**
    * Reduces all elements in the list using f, in an unspecified order.
    */
   def reduce(

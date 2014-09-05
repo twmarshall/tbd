@@ -21,9 +21,10 @@ import tbd._
 import tbd.Constants.ModId
 import tbd.TBD._
 
-class ModList[T, U](
-    val head: Mod[ModListNode[T, U]]
-  ) extends AdjustableList[T, U] {
+class ModList[T, U]
+    (val head: Mod[ModListNode[T, U]],
+     val sorted: Boolean = false)
+  extends AdjustableList[T, U] {
 
   def filter(
       pred: ((T, U)) => Boolean)
@@ -87,6 +88,22 @@ class ModList[T, U](
           case node => node.map(f, memo, modizer)
         }
       }
+    )
+  }
+
+  override def mapValues[V]
+      (f: U => V)
+      (implicit c: Context): ModList[T, V] = {
+    val memo = makeMemoizer[Changeable[ModListNode[T, V]]]()
+    val modizer = makeModizer[ModListNode[T, V]]()
+
+    new ModList(
+      modizer(head.id) {
+        read(head) {
+          case null => write[ModListNode[T, V]](null)
+          case node => node.mapValues(f, memo, modizer)
+        }
+      }, sorted
     )
   }
 
@@ -307,9 +324,20 @@ class ModList[T, U](
       ordering.lt(pair1._1, pair2._1)
     }
 
-    val thisSorted = this.sort(comparator)
-    //println("thisSorted = " + thisSorted.toBuffer)
-    val thatSorted = that.sort(comparator)
+    val thisSorted =
+      if (this.sorted) {
+	println("skipped sort!")
+	this
+      }
+    else
+      this.sort(comparator)
+    val thatSorted =
+	if (that.sorted) {
+	  println("skipped sort!")
+	  that
+	}
+	else
+	  that.sort(comparator)
     //println("thatSorted = " + thatSorted.toBuffer)
 
     val memo = makeMemoizer[Changeable[ModListNode[T, (U, V)]]]()

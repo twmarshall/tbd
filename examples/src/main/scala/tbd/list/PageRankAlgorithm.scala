@@ -24,7 +24,7 @@ import tbd.list._
 
 class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Array[Int], AdjustableList[Int, Double]](_conf, _listConf) {
-  val input = ListInput[Int, Array[Int]](listConf)
+  val input = ListInput[Int, Array[Int]](listConf.copy(sorted = true))
 
   val data = new GraphData(input, count, mutations)
 
@@ -80,7 +80,7 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   val iters = 1
   def run(implicit c: Context) = {
     val links = input.getAdjustableList()
-    var ranks = links.map((pair: (Int, Array[Int])) => (pair._1, 1.0))
+    var ranks = links.mapValues(value => 1.0)
 
     for (i <- 1 to iters) {
       val contribs = links.sortJoin(ranks).flatMap { case (page, (links, rank)) =>

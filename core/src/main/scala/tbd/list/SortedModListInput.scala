@@ -34,7 +34,7 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
 
   var nodes = TreeMap[T, Mod[ModListNode[T, U]]]()
 
-  val modList = new ModList[T, U](tailMod)
+  val modList = new ModList[T, U](tailMod, true)
 
   def put(key: T, value: U) {
     val nextOption = nodes.find { case (_key, _value) => ordering.lt(key, _key) }
