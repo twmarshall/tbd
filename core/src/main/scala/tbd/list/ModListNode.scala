@@ -145,18 +145,19 @@ class ModListNode[T, U] (
 
   def map[V, W](
       f: ((T, U)) => (V, W),
-      memo: Memoizer[Changeable[ModListNode[V, W]]])
+      memo: Memoizer[Changeable[ModListNode[V, W]]],
+      modizer: Modizer[ModListNode[V, W]])
      (implicit c: Context): Changeable[ModListNode[V, W]] = {
-    val newNextMod = mod({
+    val newNextMod = modizer(nextMod.id) {
       read(nextMod) {
 	case null =>
 	  write[ModListNode[V, W]](null)
 	case next =>
           memo(next) {
-            next.map(f, memo)
+            next.map(f, memo, modizer)
           }
       }
-    }, nextMod.id)
+    }
 
     write(new ModListNode[V, W](f(value), newNextMod))
   }

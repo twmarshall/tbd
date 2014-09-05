@@ -116,38 +116,18 @@ object TBD {
   def makeModizer2[T, U]() = new Modizer2[T, U]()
 
   @functionToInvoke("modInternal")
-  def mod[T](initializer: => Changeable[T], key: Any)
-     (implicit c: Context): Mod[T] = macro TbdMacros.modMacroKeyed[Mod[T]]
-
-  @functionToInvoke("modInternal")
   def mod[T](initializer: => Changeable[T])
      (implicit c: Context): Mod[T] = macro TbdMacros.modMacro[Mod[T]]
 
   def modInternal[T](
       initializer: => Changeable[T],
-      key: Any,
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
 
     val oldCurrentDest = c.currentDest
 
-    c.currentDest =
-      if (key != null) {
-	if (c.allocations.contains(key)) {
-	  if (c.initialRun) {
-	    println("WARNING - keyed allocation matched during initial run!")
-	  }
-
-	  c.allocations(key)
-	} else {
-	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
-	  c.allocations(key) = dest
-	  dest
-	}
-      } else {
-	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
-      }
+    c.currentDest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
 
     val modNode = c.worker.ddg.addMod(c.currentDest.mod, null, c.currentParent,
                                       FunctionTag(readerId, freeTerms))
@@ -173,7 +153,6 @@ object TBD {
 
   def mod2Internal[T, U](
       initializer: => (Changeable[T], Changeable[U]),
-      key: Any,
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
@@ -214,7 +193,6 @@ object TBD {
 
   def modLeftInternal[T, U](
       initializer: => (Changeable[T], Changeable[U]),
-      key: Any,
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
@@ -250,7 +228,6 @@ object TBD {
 
   def modRightInternal[T, U](
       initializer: => (Changeable[T], Changeable[U]),
-      key: Any,
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {

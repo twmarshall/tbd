@@ -78,14 +78,15 @@ class ModList[T, U](
       f: ((T, U)) => (V, W))
      (implicit c: Context): ModList[V, W] = {
     val memo = makeMemoizer[Changeable[ModListNode[V, W]]]()
+    val modizer = makeModizer[ModListNode[V, W]]()
 
     new ModList(
-      mod({
+      modizer(head.id) {
         read(head) {
           case null => write[ModListNode[V, W]](null)
-          case node => node.map(f, memo)
+          case node => node.map(f, memo, modizer)
         }
-      }, head.id)
+      }
     )
   }
 

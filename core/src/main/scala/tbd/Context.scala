@@ -59,6 +59,4 @@ class Context(val id: String, val worker: Worker) {
 
   // A unique id to assign to memo objects created from this context.
   var nextMemoId = 0
-
-  val allocations = Map[Any, Dest[Any]]()
 }

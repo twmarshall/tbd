@@ -80,16 +80,6 @@ object TbdMacros {
     con.Expr[T](q"$readFunc($mod, $reader, $c, $id, $closedVars)")
   }
 
-  def modMacroKeyed[T]
-      (con: Context)(initializer: con.Tree, key: con.Tree)(c: con.Tree): con.Expr[T] = {
-    import con.universe._
-
-    val closedVars = createFreeVariableList(con)(initializer)
-    val modFunc = getFunctionToInvoke(con)
-    val id = Literal(Constant(getFuncId()))
-    con.Expr[T](q"$modFunc($initializer, $key, $c, $id, $closedVars)")
-  }
-
   def modizerMacro[T]
       (con: Context)(key: con.Tree)(initializer: con.Tree)(c: con.Tree): con.Expr[T] = {
     import con.universe._
@@ -107,7 +97,7 @@ object TbdMacros {
     val closedVars = createFreeVariableList(con)(initializer)
     val modFunc = getFunctionToInvoke(con)
     val id = Literal(Constant(getFuncId()))
-    con.Expr[T](q"$modFunc($initializer, null, $c, $id, $closedVars)")
+    con.Expr[T](q"$modFunc($initializer, $c, $id, $closedVars)")
   }
 
   /**
