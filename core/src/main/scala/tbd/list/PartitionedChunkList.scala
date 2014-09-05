@@ -125,6 +125,10 @@ class PartitionedChunkList[T, U](
     new PartitionedChunkList[T, U](Buffer(innerSort(0)), conf)
   }
 
+  def sortJoin[V]
+      (that: AdjustableList[T, V])
+      (implicit c: Context, ordering: Ordering[T]): AdjustableList[T, (U, V)] = ???
+
   def split(
       pred: ((T, U)) => Boolean)
      (implicit c: Context

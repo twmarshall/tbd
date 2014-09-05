@@ -45,6 +45,11 @@ class AlgorithmTests extends FlatSpec with Matchers {
 					   "chunkSizes" -> Array("1", "4"),
 					   "counts" -> Array(intensity.toString),
 					   "partitions" -> Array("1")))
+
+    Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("sjoin"),
+					   "chunkSizes" -> Array("1"),
+					   "counts" -> Array(intensity.toString),
+					   "partitions" -> Array("1")))
   }
 
   "MapTest" should "run map successfully." in {

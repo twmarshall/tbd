@@ -305,6 +305,46 @@ class ModListNode[T, U] (
     }
   }
 
+  def sortJoinMerge[V]
+      (that: ModListNode[T, V],
+       memo: Memoizer[Changeable[ModListNode[T, (U, V)]]])
+      (implicit c: Context, ordering: Ordering[T])
+        : Changeable[ModListNode[T, (U, V)]] = {
+    if (value._1 == that.value._1) {
+      val newNext = mod {
+	read(nextMod) {
+	  case null => write[ModListNode[T, (U, V)]](null)
+	  case next =>
+	    read(that.nextMod) {
+	      case null => write[ModListNode[T, (U, V)]](null)
+	      case thatNext =>
+		memo(next, thatNext) {
+		  next.sortJoinMerge(thatNext, memo)
+		}
+	    }
+	}
+      }
+
+      write(new ModListNode((value._1, (value._2, that.value._2)), newNext))
+    } else if (ordering.lt(value._1, that.value._1)) {
+      read(nextMod) {
+	case null => write[ModListNode[T, (U, V)]](null)
+	case next =>
+	  memo(next, that) {
+	    next.sortJoinMerge(that, memo)
+	  }
+      }
+    } else {
+      read(that.nextMod) {
+	case null => write[ModListNode[T, (U, V)]](null)
+	case thatNext =>
+	  memo(this, thatNext) {
+	    this.sortJoinMerge(thatNext, memo)
+	  }
+      }
+    }
+  }
+
   def split(
       memo: Memoizer[ModListNode.ChangeableTuple[T, U]],
       pred: ((T, U)) => Boolean)

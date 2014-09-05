@@ -49,11 +49,14 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
 
       case "rbk" => new ReduceByKeyAlgorithm(conf, listConf)
 
-      case "split" =>
-        new SplitAlgorithm(conf, listConf)
-
       case "sort" =>
         new SortAlgorithm(conf, listConf)
+
+      case "sjoin" =>
+	new SortJoinAlgorithm(conf, listConf)
+
+      case "split" =>
+        new SplitAlgorithm(conf, listConf)
 
       case "wc" =>
 	if (listConf.chunkSize > 1)

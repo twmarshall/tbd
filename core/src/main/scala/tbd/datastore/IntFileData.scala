@@ -26,7 +26,7 @@ class IntFileData(
   var lines = io.Source.fromFile(fileName).getLines().toBuffer
 
   def generate() {
-    while (lines.head.startsWith("generated")) {
+    while (lines.size > 0 && lines.head.startsWith("generated")) {
       val split = lines.head.drop(11).dropRight(1).split(",")
       assert(split.size == 2)
       table += ((split(0).toInt, split(1).toInt))

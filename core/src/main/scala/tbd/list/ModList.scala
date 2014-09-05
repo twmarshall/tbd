@@ -295,6 +295,37 @@ class ModList[T, U](
     )*/
   }
 
+  def sortJoin[V]
+      (_that: AdjustableList[T, V])
+      (implicit c: Context, ordering: Ordering[T]): AdjustableList[T, (U, V)] = {
+    assert(_that.isInstanceOf[ModList[T, V]])
+    val that = _that.asInstanceOf[ModList[T, V]]
+
+    def comparator(pair1: (T, _), pair2: (T, _)) = {
+      ordering.lt(pair1._1, pair2._1)
+    }
+
+    val thisSorted = this.sort(comparator)
+    val thatSorted = that.sort(comparator)
+
+    val memo = makeMemoizer[Changeable[ModListNode[T, (U, V)]]]()
+    new ModList(
+      mod {
+	read(thisSorted.head) {
+	  case null => write(null)
+	  case thisHead =>
+	    read(thatSorted.head) {
+	      case null => write(null)
+	      case thatHead =>
+		memo(thisHead, thatHead) {
+		  thisHead.sortJoinMerge(thatHead, memo)
+		}
+	    }
+	}
+      }
+    )
+  }
+
   def split(
       pred: ((T, U)) => Boolean)
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = {

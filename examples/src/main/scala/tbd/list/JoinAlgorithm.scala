@@ -19,16 +19,18 @@ import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
 import tbd.Context
-import tbd.datastore.IntData
+import tbd.datastore.{IntData, IntFileData}
 import tbd.list._
 
 class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
   val input = ListInput[Int, Int](listConf)
-  val data = new IntData(input, count, mutations)
+  val data = new IntData(input, count, mutations, "data.txt")
+  //val data = new IntFileData(input, "data.txt")
 
   val input2 = ListInput[Int, Int](listConf)
-  val data2 = new IntData(input2, count)
+  val data2 = new IntData(input2, count, mutations, "data2.txt")
+  //val data2 = new IntFileData(input2, "data2.txt")
 
   def generateNaive() = {
     data.generate()
@@ -56,12 +58,10 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def checkOutput(
       input: Map[Int, Int],
       output: AdjustableList[Int, (Int, Int)]): Boolean = {
-    val sortedOutput = output.toBuffer().map(_._2).sortWith(_._1 < _._1)
+    val sortedOutput = output.toBuffer().sortWith(_._1 < _._1)
     val answer = naiveHelper(input, data2.table)
-    val sortedAnswer = answer.values.toBuffer.sortWith(_._1 < _._1)
+    val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
 
-    //println(sortedAnswer)
-    //println(sortedOutput)
     sortedAnswer == sortedOutput
   }
 
@@ -121,5 +121,66 @@ class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val list2 = input2.getAdjustableList().asInstanceOf[ChunkList[Int, Int]]
 
     list.join(list2)
+  }
+}
+
+class SortJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
+    extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
+  val input = ListInput[Int, Int](listConf)
+  val data = new IntData(input, count, mutations, "data.txt")
+  //val data = new IntFileData(input, "data.txt")
+
+  val input2 = ListInput[Int, Int](listConf)
+  val data2 = new IntData(input2, count, mutations, "data2.txt")
+  //val data2 = new IntFileData(input2, "data2.txt")
+
+  def generateNaive() = {
+    data.generate()
+    data2.generate()
+    data2.load()
+  }
+
+  def runNaive() {
+    naiveHelper(data.table, data2.table)
+  }
+
+  private def naiveHelper(input: Map[Int, Int], input2: Map[Int, Int]) = {
+    val sorted1 = input.toSeq.sortWith(_._1 < _._1)
+    val sorted2 = input2.toSeq.sortWith(_._1 < _._1)
+
+    val output = Map[Int, (Int, Int)]()
+    def merge(one: Seq[(Int, Int)], two: Seq[(Int, Int)]) {
+      if (one.size > 0 && two.size > 0) {
+	if (one.head._1 == two.head._1) {
+	  output(one.head._1) = (one.head._2, two.head._2)
+	  merge(one.tail, two.tail)
+	} else if (one.head._1 < two.head._1) {
+	  merge(one.tail, two)
+	} else {
+	  merge(one, two.tail)
+	}
+      }
+    }
+
+    merge(sorted1, sorted2)
+
+    output
+  }
+
+  def checkOutput(
+      input: Map[Int, Int],
+      output: AdjustableList[Int, (Int, Int)]): Boolean = {
+    val sortedOutput = output.toBuffer().sortWith(_._1 < _._1)
+    val answer = naiveHelper(input, data2.table)
+    val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
+
+    sortedAnswer == sortedOutput
+  }
+
+  def run(implicit c: Context): AdjustableList[Int, (Int, Int)] = {
+    val list = input.getAdjustableList()
+    val list2 = input2.getAdjustableList().asInstanceOf[ModList[Int, Int]]
+
+    list.sortJoin(list2)
   }
 }

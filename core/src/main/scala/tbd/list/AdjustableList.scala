@@ -97,6 +97,13 @@ trait AdjustableList[T, U] {
      (implicit c: Context): AdjustableList[T, U]
 
   /**
+   * Performs a join by sorting the input lists and then merging them.
+   */
+  def sortJoin[V]
+      (that: AdjustableList[T, V])
+      (implicit c: Context, ordering: Ordering[T]): AdjustableList[T, (U, V)]
+
+  /**
    * Returns a tuple of two AdjustableList, whereas the first AdjustableList
    * containins all of the elements from this AdjustableList that satisfy the
    * given predicate, and the second AdjustableList contains all other elements.
