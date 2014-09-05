@@ -247,7 +247,8 @@ class ModList[T, U](
      (implicit c: Context): ModList[T, U] = {
     val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
     val memo2 = makeMemoizer[Changeable[ModListNode[T, U]]]()
-    val memoizers = Map[(T, U), Memoizer[ModListNode.ChangeableTuple[T, U]]]()
+    val memoizers = Map[(T, U), (Memoizer[ModListNode.ChangeableTuple[T, U]],
+				 Modizer2[ModListNode[T, U], ModListNode[T, U]])]()
 
     val sorted = mod {
       read(head) {
@@ -306,7 +307,9 @@ class ModList[T, U](
     }
 
     val thisSorted = this.sort(comparator)
+    //println("thisSorted = " + thisSorted.toBuffer)
     val thatSorted = that.sort(comparator)
+    //println("thatSorted = " + thatSorted.toBuffer)
 
     val memo = makeMemoizer[Changeable[ModListNode[T, (U, V)]]]()
     new ModList(
@@ -330,17 +333,18 @@ class ModList[T, U](
       pred: ((T, U)) => Boolean)
      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = {
     val memo = makeMemoizer[ModListNode.ChangeableTuple[T, U]]()
+    val modizer = makeModizer2[ModListNode[T, U], ModListNode[T, U]]()
 
-    val result = mod2({
+    val result = modizer(head.id) {
       read_2(head) {
 	case null =>
 	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
 	case node =>
 	  memo(node) {
-	    node.split(memo, pred)
+	    node.split(pred, memo, modizer)
 	  }
       }
-    }, head.id)
+    }
 
     (new ModList(result._1), new ModList(result._2))
   }

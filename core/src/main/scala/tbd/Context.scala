@@ -61,5 +61,4 @@ class Context(val id: String, val worker: Worker) {
   var nextMemoId = 0
 
   val allocations = Map[Any, Dest[Any]]()
-  val allocations2 = Map[Any, Dest[Any]]()
 }

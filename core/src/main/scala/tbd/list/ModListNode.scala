@@ -262,22 +262,26 @@ class ModListNode[T, U] (
   def sort(
       toAppend: Mod[ModListNode[T, U]],
       comparator: ((T, U), (T, U)) => Boolean,
-      memoizers: Map[(T, U), Memoizer[ModListNode.ChangeableTuple[T, U]]],
+      memoizers: Map[(T, U), (Memoizer[ModListNode.ChangeableTuple[T, U]],
+			      Modizer2[ModListNode[T, U], ModListNode[T, U]])],
       memo: Memoizer[Mod[ModListNode[T, U]]],
       memo2: Memoizer[Changeable[ModListNode[T, U]]])
      (implicit c: Context): Changeable[ModListNode[T, U]] = {
     val (smaller, greater) = mod2 {
       if (!memoizers.contains(value)) {
-	memoizers(value) = makeMemoizer[ModListNode.ChangeableTuple[T, U]]()
+	memoizers(value) = (makeMemoizer[ModListNode.ChangeableTuple[T, U]](),
+			    makeModizer2[ModListNode[T, U], ModListNode[T, U]])
       }
 
-      val memoSplit = memoizers(value)
+      val (splitMemo, splitModizer) = memoizers(value)
       read_2(nextMod) {
 	case null =>
 	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
         case nextNode =>
-	  memoSplit(nextNode) {
-	    nextNode.split(memoSplit, (cv: (T, U)) => { comparator(cv, value) })
+	  splitMemo(nextNode) {
+	    nextNode.split((cv: (T, U)) => { comparator(cv, value) },
+			   splitMemo,
+			   splitModizer)
 	  }
       }
     }
@@ -345,33 +349,34 @@ class ModListNode[T, U] (
     }
   }
 
-  def split(
-      memo: Memoizer[ModListNode.ChangeableTuple[T, U]],
-      pred: ((T, U)) => Boolean)
-     (implicit c: Context): ModListNode.ChangeableTuple[T, U] = {
+  def split
+      (pred: ((T, U)) => Boolean,
+       memo: Memoizer[ModListNode.ChangeableTuple[T, U]],
+       modizer: Modizer2[ModListNode[T, U], ModListNode[T, U]])
+      (implicit c: Context): ModListNode.ChangeableTuple[T, U] = {
     def readNext(nextMod: Mod[ModListNode[T, U]]) = {
       read_2(nextMod) {
         case null =>
 	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
         case next =>
           memo(next) {
-	    next.split(memo, pred)
+	    next.split(pred, memo, modizer)
           }
       }
     }
 
     if(pred(value)) {
       val (matchMod, diffChangeable) =
-	modLeft({
+	modizer.left(nextMod.id) {
 	  readNext(nextMod)
-	}, nextMod.id)
+	}
 
       writeLeft(new ModListNode(value, matchMod), diffChangeable)
     } else {
       val (matchChangeable, diffMod) =
-	modRight({
+	modizer.right(nextMod.id) {
 	  readNext(nextMod)
-	}, nextMod.id)
+	}
 
       writeRight(matchChangeable, new ModListNode(value, diffMod))
     }
