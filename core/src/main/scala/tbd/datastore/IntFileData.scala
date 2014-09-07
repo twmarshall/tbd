@@ -25,6 +25,8 @@ class IntFileData(
   ) extends Data[Int] {
   var lines = io.Source.fromFile(fileName).getLines().toBuffer
 
+  val file = "data.txt"
+
   def generate() {
     while (lines.size > 0 && lines.head.startsWith("generated")) {
       val split = lines.head.drop(11).dropRight(1).split(",")

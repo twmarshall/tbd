@@ -27,7 +27,7 @@ class IntData(
 
   val rand = new scala.util.Random()
 
-  override val file = _file
+  val file = _file
 
   def generate() {
     while (table.size < count) {

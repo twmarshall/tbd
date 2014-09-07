@@ -32,6 +32,8 @@ class GraphData(
 
   val rand = new scala.util.Random()
 
+  val file = "data.txt"
+
   def generate() {
     /*val lines = io.Source.fromFile("graph.txt").getLines
     for (line <- lines) {

@@ -22,9 +22,9 @@ import scala.collection.mutable.Map
 trait Data[Input] {
   val table = Map[Int, Input]()
 
-  val file: String = "data.txt"
+  val file: String
 
-  private val output = new PrintWriter(new File(file))
+  private lazy val output = new PrintWriter(new File(file))
 
   // Fills in 'table' with the initial data set. This must be the first method
   // called on a new Data object.

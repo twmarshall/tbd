@@ -31,6 +31,8 @@ class StringData(
 
   val rand = new scala.util.Random()
 
+  val file = "data.txt"
+
   private def loadChunks(
       chunks: ArrayBuffer[String]) {
     val elems = scala.xml.XML.loadFile("wiki.xml")
