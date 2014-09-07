@@ -58,7 +58,29 @@ class ModListNode[T, U] (
       memo: Memoizer[Changeable[ModListNode[V, W]]],
       modizer: Modizer[ModListNode[V, W]])
      (implicit c: Context): Changeable[ModListNode[V, W]] = {
-    var tail = modizer(nextMod.id) {
+    var mapped = f(value)
+
+    if (mapped.size > 0) {
+      var tail = modizer(nextMod.id) {
+	read(nextMod) {
+	  case null =>
+	    write[ModListNode[V, W]](null)
+	  case next =>
+            memo(next) {
+              next.flatMap(f, memo, modizer)
+            }
+	}
+      }
+
+      while (mapped.size > 1) {
+	tail = mod {
+	  write(new ModListNode[V, W](mapped.head, tail))
+	}
+	mapped = mapped.tail
+      }
+
+      write(new ModListNode[V, W](mapped.head, tail))
+    } else {
       read(nextMod) {
 	case null =>
 	  write[ModListNode[V, W]](null)
@@ -68,17 +90,6 @@ class ModListNode[T, U] (
           }
       }
     }
-
-    var mapped = f(value)
-
-    while (mapped.size > 1) {
-      tail = mod {
-	write(new ModListNode[V, W](mapped.head, tail))
-      }
-      mapped = mapped.tail
-    }
-
-    write(new ModListNode[V, W](mapped.head, tail))
   }
 
   def loopJoin[V](

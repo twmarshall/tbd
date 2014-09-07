@@ -51,11 +51,12 @@ class GraphData(
       }
     }*/
 
-    var sum = 0.0
     for (i <- 1 to count) {
       table(i) = generateEdges(1 to count)
-      sum += table(i).size
+      log(i + " -> " + table(i).mkString(","))
     }
+
+    log("---")
   }
 
   private def generateEdges(keys: Iterable[Int] = table.keys) = {
@@ -73,9 +74,7 @@ class GraphData(
 
   def load() {
     for ((key, value) <- table) {
-      if (value.size > 0) {
-	input.put(key, value)
-      }
+      input.put(key, value)
     }
   }
 
@@ -83,43 +82,12 @@ class GraphData(
   }
 
   def update(n: Int) {
-    for (i <- 1 to n) {
-      mutations(rand.nextInt(mutations.size)) match {
-	case "insert" => addValue()
-	case "remove" => removeValue()
-	case "update" => updateValue()
-      }
-    }
-  }
-
-  private def addValue() {
-    var key = rand.nextInt(maxKey)
-    while (table.contains(key)) {
-      key = rand.nextInt(maxKey)
-    }
-    table(key) = generateEdges()
-    input.put(key, table(key))
-  }
-
-  private def removeValue() {
-    if (table.size > 0) {
-      var key = rand.nextInt(maxKey)
-      while (!table.contains(key)) {
-	key = rand.nextInt(maxKey)
-      }
-      table -= key
-      input.remove(key)
-    } else {
-      addValue()
-    }
-  }
-
-  private def updateValue() {
     var key = rand.nextInt(maxKey)
     while (!table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
     table(key) = generateEdges()
+    log(key + " -> " + table(key).mkString(","))
     input.update(key, table(key))
   }
 

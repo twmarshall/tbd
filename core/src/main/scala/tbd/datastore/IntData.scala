@@ -15,21 +15,19 @@
  */
 package tbd.datastore
 
-import java.io._
-
 import tbd.Input
 
 class IntData(
     input: Input[Int, Int],
     count: Int,
     mutations: Array[String] = Array("insert", "update", "remove"),
-    file: String = "data.txt"
+    _file: String = "data.txt"
   ) extends Data[Int] {
   val maxKey = count * 10
 
   val rand = new scala.util.Random()
 
-  val output = new PrintWriter(new File(file))
+  override val file = _file
 
   def generate() {
     while (table.size < count) {
@@ -110,9 +108,4 @@ class IntData(
   }
 
   def hasUpdates() = true
-
-  private def log(s: String) {
-    output.print(s + "\n")
-    output.flush()
-  }
 }

@@ -15,11 +15,16 @@
  */
 package tbd.datastore
 
+import java.io._
 import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
 trait Data[Input] {
   val table = Map[Int, Input]()
+
+  val file: String = "data.txt"
+
+  private val output = new PrintWriter(new File(file))
 
   // Fills in 'table' with the initial data set. This must be the first method
   // called on a new Data object.
@@ -37,4 +42,9 @@ trait Data[Input] {
 
   // Returns true if this Data can generate more updates.
   def hasUpdates(): Boolean
+
+  protected def log(s: String) {
+    output.print(s + "\n")
+    output.flush()
+  }
 }
