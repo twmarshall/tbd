@@ -77,7 +77,7 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     check
   }
 
-  val iters = 1
+  val iters = 2
   def run(implicit c: Context) = {
     val links = input.getAdjustableList()
     var ranks = links.mapValues(value => 1.0)
@@ -90,7 +90,7 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
       val reduced = contribs.reduceByKey(_ + _, (pair1, pair2) => pair1._1 < pair2._1)
 
-      ranks = reduced.map(pair => (pair._1, .15 + .85 * pair._2))
+      ranks = reduced.mapValues(.15 + .85 * _)
     }
 
     ranks

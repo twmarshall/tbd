@@ -256,7 +256,7 @@ class ModList[T, U]
 	      node.reduceByKey(f, node.value._1, null.asInstanceOf[U], memo)
 	    }
 	}
-      }
+      }, true
     )
   }
 
@@ -325,20 +325,16 @@ class ModList[T, U]
     }
 
     val thisSorted =
-      if (this.sorted) {
-	println("skipped sort!")
+      if (this.sorted)
 	this
-      }
-    else
-      this.sort(comparator)
+      else
+	this.sort(comparator)
+
     val thatSorted =
-	if (that.sorted) {
-	  println("skipped sort!")
-	  that
-	}
-	else
-	  that.sort(comparator)
-    //println("thatSorted = " + thatSorted.toBuffer)
+      if (that.sorted)
+	that
+      else
+	that.sort(comparator)
 
     val memo = makeMemoizer[Changeable[ModListNode[T, (U, V)]]]()
     new ModList(
