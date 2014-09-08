@@ -360,12 +360,10 @@ object TBD {
   }
 
   def makeMemoizer[T](dummy: Boolean = false)(implicit c: Context): Memoizer[T] = {
-    c.nextMemoId += 1
-
     if(dummy) {
-      new DummyMemoizer[T](c, c.nextMemoId)
+      new DummyMemoizer[T](c)
     } else {
-      new Memoizer[T](c, c.nextMemoId)
+      new Memoizer[T](c)
     }
   }
 

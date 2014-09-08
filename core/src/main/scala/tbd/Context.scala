@@ -56,7 +56,4 @@ class Context(val id: String, val worker: Worker) {
 
   // A unique id to assign to workers forked from this context.
   var workerId = 0
-
-  // A unique id to assign to memo objects created from this context.
-  var nextMemoId = 0
 }

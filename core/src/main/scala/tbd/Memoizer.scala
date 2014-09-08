@@ -15,17 +15,19 @@
  */
 package tbd
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
 import tbd.ddg.MemoNode
 import tbd.master.Master
 import tbd.macros.{TbdMacros, functionToInvoke}
-import tbd.ddg.FunctionTag
+import tbd.ddg.{FunctionTag, Timestamp}
 import tbd.worker.Worker
 
-class Memoizer[T](c: Context, memoId: Int) {
+class Memoizer[T](c: Context) {
+  val memoTable = Map[Seq[Any], ArrayBuffer[MemoNode]]()
+
   import c.worker.context.dispatcher
   import scala.language.experimental.macros
 
@@ -33,29 +35,26 @@ class Memoizer[T](c: Context, memoId: Int) {
   def apply(args: Any*)(func: => T): T = macro TbdMacros.memoMacro[T]
 
   def applyInternal(
-      args: Seq[_],
+      signature: Seq[_],
       func: => T,
       funcId: Int,
       freeTerms: List[(String, Any)]): T = {
 
-    import c._
-    val signature = memoId +: args
-
     var found = false
     var ret = null.asInstanceOf[T]
-    if (!initialRun && !updated(args) && worker.memoTable.contains(signature)) {
+    if (!c.initialRun && !updated(signature) && memoTable.contains(signature)) {
         // Search through the memo entries matching this signature to see if
         // there's one in the right time range.
-        for (memoNode <- worker.memoTable(signature)) {
+        for (memoNode <- memoTable(signature)) {
           val timestamp = memoNode.timestamp
-          if (!found && timestamp > reexecutionStart &&
-	      timestamp < reexecutionEnd &&
+          if (!found && timestamp > c.reexecutionStart &&
+	      timestamp < c.reexecutionEnd &&
 	      memoNode.matchableInEpoch <= Master.epoch) {
 
-            updateChangeables(memoNode, worker, currentDest, currentDest2)
+            updateChangeables(memoNode, c.worker, c.currentDest, c.currentDest2)
 
             found = true
-            worker.ddg.attachSubtree(currentParent, memoNode)
+            c.worker.ddg.attachSubtree(c.currentParent, memoNode)
 
 	    memoNode.matchableInEpoch = Master.epoch + 1
             ret = memoNode.value.asInstanceOf[T]
@@ -63,9 +62,9 @@ class Memoizer[T](c: Context, memoId: Int) {
 	    // This ensures that we won't match anything under the currently
 	    // reexecuting read that comes before this memo node, since then
 	    // the timestamps would be out of order.
-	    reexecutionStart = memoNode.endTime
+	    c.reexecutionStart = memoNode.endTime
 
-            val future = worker.propagate(timestamp,
+            val future = c.worker.propagate(timestamp,
                                           memoNode.endTime)
             Await.result(future, DURATION)
 	}
@@ -73,21 +72,21 @@ class Memoizer[T](c: Context, memoId: Int) {
     }
 
     if (!found) {
-      val memoNode = worker.ddg.addMemo(currentParent, signature,
-                                        FunctionTag(funcId, freeTerms))
-      val outerParent = currentParent
-      currentParent = memoNode
+      val memoNode = c.worker.ddg.addMemo(c.currentParent, signature, this,
+                                          FunctionTag(funcId, freeTerms))
+      val outerParent = c.currentParent
+      c.currentParent = memoNode
       val value = func
-      currentParent = outerParent
-      memoNode.currentDest = currentDest
-      memoNode.currentDest2 = currentDest2
-      memoNode.endTime = worker.ddg.nextTimestamp(memoNode)
+      c.currentParent = outerParent
+      memoNode.currentDest = c.currentDest
+      memoNode.currentDest2 = c.currentDest2
+      memoNode.endTime = c.worker.ddg.nextTimestamp(memoNode)
       memoNode.value = value
 
-      if (worker.memoTable.contains(signature)) {
-        worker.memoTable(signature) += memoNode
+      if (memoTable.contains(signature)) {
+        memoTable(signature) += memoNode
       } else {
-        worker.memoTable += (signature -> ArrayBuffer(memoNode))
+        memoTable += (signature -> ArrayBuffer(memoNode))
       }
 
       ret = value
@@ -155,9 +154,20 @@ class Memoizer[T](c: Context, memoId: Int) {
       }
     }
   }
+
+  def removeEntry(timestamp: Timestamp, signature: Seq[_]) {
+    var toRemove: MemoNode = null
+    for (memoNode <- memoTable(signature)) {
+      if (toRemove == null && memoNode.timestamp == timestamp) {
+        toRemove = memoNode
+      }
+    }
+
+    memoTable(signature) -= toRemove
+  }
 }
 
-class DummyMemoizer[T](c: Context, memoId: Int) extends Memoizer[T](c, memoId) {
+class DummyMemoizer[T](c: Context) extends Memoizer[T](c) {
   override def applyInternal(
       args: Seq[_],
       func: => T,

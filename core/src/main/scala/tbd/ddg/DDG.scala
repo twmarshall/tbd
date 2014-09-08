@@ -19,7 +19,7 @@ import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import scala.collection.mutable.{Map, MutableList, Set, TreeSet}
 
-import tbd.{Changeable, Dest, Mod}
+import tbd.{Changeable, Dest, Memoizer, Mod}
 import tbd.Constants._
 import tbd.master.Master
 import tbd.worker.Worker
@@ -121,6 +121,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
   def addMemo(
       parent: Node,
       signature: Seq[Any],
+      memoizer: Memoizer[_],
       funcTag: FunctionTag): MemoNode = {
     val timestamp = nextTimestamp(parent)
 
@@ -130,7 +131,7 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
       null
     }
 
-    val memoNode = new MemoNode(parent, timestamp, signature, tag)
+    val memoNode = new MemoNode(parent, timestamp, signature, memoizer, tag)
 
     parent.addChild(memoNode)
     memoNode
@@ -235,19 +236,8 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
       val readNode = node.asInstanceOf[ReadNode]
       reads(readNode.mod.id) -= readNode
     } else if (node.isInstanceOf[MemoNode]) {
-      val signature = node.asInstanceOf[MemoNode].signature
-
-      var toRemove: MemoNode = null
-      for (memoNode <- worker.memoTable(signature)) {
-        if (toRemove == null && memoNode.timestamp == node.timestamp) {
-          toRemove = memoNode
-        }
-      }
-
-      worker.memoTable(signature) -= toRemove
-      if (worker.memoTable(signature).size == 0) {
-	worker.memoTable -= signature
-      }
+      val memoNode = node.asInstanceOf[MemoNode]
+      memoNode.memoizer.removeEntry(memoNode.timestamp, memoNode.signature)
     }
 
     node.updated = false

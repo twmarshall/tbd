@@ -20,7 +20,7 @@ import akka.pattern.ask
 import scala.collection.mutable.MutableList
 import scala.concurrent.Await
 
-import tbd.{Changeable, Dest, Mod}
+import tbd.{Changeable, Dest, Memoizer, Mod}
 import tbd.Constants._
 import tbd.master.Main
 import tbd.messages._
@@ -148,6 +148,7 @@ class MemoNode(
     _parent: Node,
     _timestamp: Timestamp,
     val signature: Seq[Any],
+    val memoizer: Memoizer[_],
     _memoTag: Tag.Memo) extends Node(_parent, _timestamp, _memoTag) {
 
   var value: Any = null

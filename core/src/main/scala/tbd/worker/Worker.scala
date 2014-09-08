@@ -36,7 +36,6 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
   import context.dispatcher
 
   val ddg = new DDG(log, id, this)
-  val memoTable = Map[Seq[Any], ArrayBuffer[MemoNode]]()
 
   private val c = new Context(id, this)
 
