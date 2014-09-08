@@ -119,8 +119,8 @@ class ReduceByKeyTest(input: ListInput[Int, Int])
   }
 }
 
-class SortTest(input: ListInput[Int, Double])
-    extends Adjustable[AdjustableList[Int, Double]] {
+class SortTest(input: ListInput[String, String])
+    extends Adjustable[AdjustableList[String, String]] {
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
     list.sort((pair1, pair2) => {
@@ -308,15 +308,16 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"SortTest" should "only reexecute the least possible" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Double](new ListConf(chunkSize = 1, partitions = 1))
-    for (i <- List(10, 5, 6, 1, 7, 4, 8, 3, 2, 9)) {
+    val input = ListInput[String, String](new ListConf(chunkSize = 1, partitions = 1))
+    for (i <- List("m", "q", "s", "c", "v", "i", "f", "o", "n", "b", "r", "a",
+		   "p", "g", "h", "t", "l", "u")) {
       input.put(i, i)
     }
     val output = mutator.run(new SortTest(input))
     println(output.toBuffer)
 
     println("\npropagating")
-    input.update(1, 8.5)
+    input.remove("q")
     mutator.propagate()
     println(output.toBuffer)
   }*/
