@@ -45,12 +45,13 @@ class ListReduceTest(input: ListInput[Int, Int])
   }
 }
 
-class ListSortTest[T](input: ListInput[T, Int])
-    extends Adjustable[AdjustableList[T, Int]] {
+class ListSortTest
+    (input: ListInput[Int, Int])
+  extends Adjustable[AdjustableList[Int, Int]] {
 
   def run(implicit c: Context) = {
     val modList = input.getAdjustableList()
-    modList.sort((a, b) => a._2 < b._2)
+    modList.mergesort()
   }
 }
 
@@ -146,27 +147,27 @@ class ListTests extends FlatSpec with Matchers {
 
   "ListSortTest" should "return the sorted list" in {
     val mutator = new Mutator()
-    val input = ListInput[String, Int](ListConf(partitions = 1))
-    input.put("one", 0)
-    input.put("two", 3)
-    input.put("three", 2)
-    input.put("four", 4)
-    input.put("five", 1)
+    val input = ListInput[Int, Int](ListConf(partitions = 1))
+    input.put(0, 0)
+    input.put(3, 3)
+    input.put(2, 2)
+    input.put(4, 4)
+    input.put(1, 1)
     val output = mutator.run(new ListSortTest(input))
 
     output.toBuffer().map(_._2) should be (Buffer(0, 1, 2, 3, 4))
 
-    input.put("six", 5)
+    input.put(5, 5)
     mutator.propagate()
     output.toBuffer().map(_._2) should be (Buffer(0, 1, 2, 3, 4, 5))
 
-    input.put("seven", -1)
+    input.put(-1, -1)
     mutator.propagate()
     output.toBuffer().map(_._2) should be (Buffer(-1, 0, 1, 2, 3, 4, 5))
 
-    input.update("two", 5)
+    input.remove(3)
     mutator.propagate()
-    output.toBuffer().map(_._2) should be (Buffer(-1, 0, 1, 2, 4, 5, 5))
+    output.toBuffer().map(_._2) should be (Buffer(-1, 0, 1, 2, 4, 5))
 
     mutator.shutdown()
   }

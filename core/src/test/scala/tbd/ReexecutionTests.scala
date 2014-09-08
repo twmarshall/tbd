@@ -112,10 +112,7 @@ class ReduceByKeyTest(input: ListInput[Int, Int])
     val list = input.getAdjustableList()
     val mapped = list.flatMap(mapper)
     println("mapped")
-    mapped.reduceByKey(_ + _, (pair1, pair2) => {
-      println("comparing " + pair1 + " " + pair2)
-      pair1._1 < pair2._1
-    })
+    mapped.reduceByKey(_ + _)
   }
 }
 
@@ -123,10 +120,7 @@ class SortTest(input: ListInput[String, String])
     extends Adjustable[AdjustableList[String, String]] {
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    list.sort((pair1, pair2) => {
-      println("      comparing " + pair1 + " " + pair2)
-      pair1._2 < pair2._2
-    })
+    list.quicksort()
   }
 }
 

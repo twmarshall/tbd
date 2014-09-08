@@ -194,31 +194,13 @@ class ChunkList[T, U](
     )
   }
 
-  def reduce(
-      f: ((T, U), (T, U)) => (T, U))
-     (implicit c: Context): Mod[(T, U)] = ???
+  override def mergesort()
+      (implicit c: Context,
+       ordering: Ordering[T]): ChunkList[T, U] = {
+    def comparator(pair1: (T, U), pair2: (T, U)) = {
+      ordering.lt(pair1._1, pair2._1)
+    }
 
-  def reduceByKey(
-      f: (U, U) => U,
-      comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): ChunkList[T, U] = {
-    val sorted = this.sort(comparator)
-
-    new ChunkList(
-      mod {
-	read(sorted.head) {
-	  case null =>
-	    write(null)
-	  case node =>
-	    node.reduceByKey(f, node.chunk.head._1, null.asInstanceOf[U])
-	}
-      }, conf
-    )
-  }
-
-  def sort(
-      comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): ChunkList[T, U] = {
     def mapper(chunk: Vector[(T, U)]) = {
       val tail = mod({
 	write(new ChunkListNode[T, U]((chunk.toBuffer.sortWith(comparator).toVector), mod({ write(null) })))
@@ -249,6 +231,28 @@ class ChunkList[T, U](
         read(reduced) {
           case (key, list) => read(list.head) { write(_) }
         }
+      }, conf
+    )
+  }
+
+  def reduce(
+      f: ((T, U), (T, U)) => (T, U))
+     (implicit c: Context): Mod[(T, U)] = ???
+
+  override def reduceByKey
+      (f: (U, U) => U)
+      (implicit c: Context,
+       ordering: Ordering[T]): ChunkList[T, U] = {
+    val sorted = this.mergesort()
+
+    new ChunkList(
+      mod {
+	read(sorted.head) {
+	  case null =>
+	    write(null)
+	  case node =>
+	    node.reduceByKey(f, node.chunk.head._1, null.asInstanceOf[U])
+	}
       }, conf
     )
   }

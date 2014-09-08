@@ -23,12 +23,6 @@ import tbd._
 import tbd.datastore.{IntData, IntFileData}
 import tbd.list._
 
-object SortAlgorithm {
-  def predicate(a: (Int, Int), b: (Int, Int)): Boolean = {
-    a._1 < b._1
-  }
-}
-
 class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ListInput[Int, Int](listConf)
@@ -66,6 +60,6 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def run(implicit c: Context): AdjustableList[Int, Int] = {
     val pages = input.getAdjustableList()
 
-    pages.sort(SortAlgorithm.predicate)
+    pages.mergesort()
   }
 }

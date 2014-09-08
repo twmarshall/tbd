@@ -95,27 +95,18 @@ class PartitionedChunkList[T, U](
     new PartitionedChunkList(innerMap(0), conf)
   }
 
-  def reduce(
-      f: ((T, U), (T, U)) => (T, U))
-     (implicit c: Context): Mod[(T, U)] = ???
-
-  def reduceByKey(
-      f: (U, U) => U,
-      comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): PartitionedChunkList[T, U] = ???
-
-  def sort(
-      comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): PartitionedChunkList[T, U] = {
+  override def mergesort()
+      (implicit c: Context,
+       ordering: Ordering[T]): PartitionedChunkList[T, U] = {
     def innerSort(i: Int)(implicit c: Context): ChunkList[T, U] = {
       if (i < partitions.size) {
         val (sortedPartition, sortedRest) = par {
-          c => partitions(i).sort(comparator)(c)
+          c => partitions(i).mergesort()(c, ordering)
         } and {
           c => innerSort(i + 1)(c)
         }
 
-	sortedPartition.merge(sortedRest, comparator)
+	sortedPartition.merge(sortedRest, (pair1, pair2) => ordering.lt(pair1._1, pair2._1))
       } else {
 	new ChunkList[T, U](mod { write[ChunkListNode[T, U]](null) }, conf)
       }
@@ -124,6 +115,10 @@ class PartitionedChunkList[T, U](
     // TODO: make the output have as many partitions as this list.
     new PartitionedChunkList[T, U](Buffer(innerSort(0)), conf)
   }
+
+  def reduce(
+      f: ((T, U), (T, U)) => (T, U))
+     (implicit c: Context): Mod[(T, U)] = ???
 
   def sortJoin[V]
       (that: AdjustableList[T, V])

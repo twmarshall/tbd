@@ -90,6 +90,48 @@ class PartitionedModList[T, U](
     new PartitionedModList(innerMap(0))
   }
 
+  override def mergesort()
+      (implicit c: Context,
+       ordering: Ordering[T]): PartitionedModList[T, U] = {
+    def innerSort(i: Int)(implicit c: Context): ModList[T, U] = {
+      if (i < partitions.size) {
+        val (sortedPartition, sortedRest) = par {
+          c => partitions(i).mergesort()(c, ordering)
+        } and {
+          c => innerSort(i + 1)(c)
+        }
+
+	sortedPartition.merge(sortedRest, (pair1, pair2) => ordering.lt(pair1._1, pair2._1))
+      } else {
+        new ModList[T, U](mod { write[ModListNode[T, U]](null) })
+      }
+    }
+
+    // TODO: make the output have as many partitions as this list.
+    new PartitionedModList(Buffer(innerSort(0)))
+  }
+
+  override def quicksort()
+      (implicit c: Context,
+       ordering: Ordering[T]): PartitionedModList[T, U] = {
+    def innerSort(i: Int)(implicit c: Context): ModList[T, U] = {
+      if (i < partitions.size) {
+        val (sortedPartition, sortedRest) = par {
+          c => partitions(i).quicksort()(c, ordering)
+        } and {
+          c => innerSort(i + 1)(c)
+        }
+
+	sortedPartition.merge(sortedRest, (pair1, pair2) => ordering.lt(pair1._1, pair2._1))
+      } else {
+        new ModList[T, U](mod { write[ModListNode[T, U]](null) })
+      }
+    }
+
+    // TODO: make the output have as many partitions as this list.
+    new PartitionedModList(Buffer(innerSort(0)))
+  }
+
   def reduce(
       f: ((T, U), (T, U)) => (T, U))
      (implicit c: Context): Mod[(T, U)] = {
@@ -121,32 +163,6 @@ class PartitionedModList[T, U](
     }
 
     innerReduce(0)
-  }
-
-  def reduceByKey(
-      f: (U, U) => U,
-      comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): PartitionedModList[T, U] = ???
-
-  def sort(
-      comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): PartitionedModList[T, U] = {
-    def innerSort(i: Int)(implicit c: Context): ModList[T, U] = {
-      if (i < partitions.size) {
-        val (sortedPartition, sortedRest) = par {
-          c => partitions(i).sort(comparator)(c)
-        } and {
-          c => innerSort(i + 1)(c)
-        }
-
-	sortedPartition.merge(sortedRest, comparator)
-      } else {
-        new ModList[T, U](mod { write[ModListNode[T, U]](null) })
-      }
-    }
-
-    // TODO: make the output have as many partitions as this list.
-    new PartitionedModList(Buffer(innerSort(0)))
   }
 
   def sortJoin[V]

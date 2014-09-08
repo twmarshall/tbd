@@ -64,6 +64,6 @@ class ReduceByKeyAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
     val mapped = list.flatMap(mapper)
-    mapped.reduceByKey(_ + _, _._1 < _._1)
+    mapped.reduceByKey(_ + _)
   }
 }
