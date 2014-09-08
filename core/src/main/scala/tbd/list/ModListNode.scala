@@ -305,7 +305,7 @@ class ModListNode[T, U] (
       }
 
       val (splitMemo, splitModizer) = memoizers(value)
-      read_2(nextMod) {
+      read2(nextMod) {
 	case null =>
 	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
         case nextNode =>
@@ -386,7 +386,7 @@ class ModListNode[T, U] (
        modizer: Modizer2[ModListNode[T, U], ModListNode[T, U]])
       (implicit c: Context): ModListNode.ChangeableTuple[T, U] = {
     def readNext(nextMod: Mod[ModListNode[T, U]]) = {
-      read_2(nextMod) {
+      read2(nextMod) {
         case null =>
 	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
         case next =>

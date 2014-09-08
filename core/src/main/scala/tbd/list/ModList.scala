@@ -362,7 +362,7 @@ class ModList[T, U]
     val modizer = makeModizer2[ModListNode[T, U], ModListNode[T, U]]()
 
     val result = modizer(head.id) {
-      read_2(head) {
+      read2(head) {
 	case null =>
 	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
 	case node =>

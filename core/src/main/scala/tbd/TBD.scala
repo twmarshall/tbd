@@ -66,15 +66,15 @@ object TBD {
     changeable
   }
 
-  @functionToInvoke("read_2Internal")
-  def read_2[T, U, V](
+  @functionToInvoke("read2Internal")
+  def read2[T, U, V](
       mod: Mod[T])
      (reader: T => (Changeable[U], Changeable[V]))
      (implicit c: Context):
     (Changeable[U], Changeable[V]) =
       macro TbdMacros.readMacro[(Changeable[U], Changeable[V])]
 
-  def read_2Internal[T, U, V](
+  def read2Internal[T, U, V](
       mod: Mod[T],
       reader: T => (Changeable[U], Changeable[V]),
       c: Context,
@@ -99,16 +99,6 @@ object TBD {
     readNode.currentDest2 = c.currentDest2
 
     changeables
-  }
-
-  def read2[T, V, U](
-      a: Mod[T],
-      b: Mod[V])
-     (reader: (T, V) => (Changeable[U]))
-     (implicit c: Context): Changeable[U] = {
-    readInternal(a, (a: T) => {
-        readInternal(b, (b: V) => { reader(a, b) }, c, -1, List[(String, Any)]())
-    }, c, -1, List[(String, Any)]())
   }
 
   def makeModizer[T]() = new Modizer[T]()
