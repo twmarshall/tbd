@@ -21,56 +21,38 @@ import tbd.ddg.FunctionTag
 import tbd.macros.{TbdMacros, functionToInvoke}
 
 class Modizer[T] {
-  val allocations = Map[Any, Dest[Any]]()
+  val allocations = Map[Any, Dest[T]]()
 
   import scala.language.experimental.macros
 
   @functionToInvoke("applyInternal")
-  def apply(key: Any)(initializer: => Changeable[T])
-    (implicit c: Context): Mod[T] = macro TbdMacros.modizerMacro[Mod[T]]
+  def apply
+      (key: Any)
+      (initializer: => Changeable[T])
+      (implicit c: Context): Mod[T] = macro TbdMacros.modizerMacro[Mod[T]]
 
-  def applyInternal(
-      key: Any,
-      initializer: => Changeable[T],
-      c: Context,
-      readerId: Int,
-      freeTerms: List[(String, Any)]) = {
-    val oldCurrentDest = c.currentDest
-
-    c.currentDest =
-      if (key != null) {
-	if (allocations.contains(key)) {
-	  allocations(key)
-	} else {
-	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
-	  allocations(key) = dest
-	  dest
-	}
+  def applyInternal
+      (key: Any,
+       initializer: => Changeable[T],
+       c: Context,
+       readerId: Int,
+       freeTerms: List[(String, Any)]) = {
+    val dest =
+      if (allocations.contains(key)) {
+	allocations(key)
       } else {
-	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	val dest = new Dest[T](c.worker.datastoreRef)
+	allocations(key) = dest
+	dest
       }
 
-    val modNode = c.worker.ddg.addMod(c.currentDest.mod, null, c.currentParent,
-                                      FunctionTag(readerId, freeTerms))
-
-    val outerReader = c.currentParent
-    c.currentParent = modNode
-
-    initializer
-
-    c.currentParent = outerReader
-    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
-
-    val mod = c.currentDest.mod
-    c.currentDest = oldCurrentDest
-
-    mod.asInstanceOf[Mod[T]]
+    TBD.modWithDest(initializer, dest, c, readerId, freeTerms)
   }
 }
 
 class Modizer2[T, U] {
-  val allocations = Map[Any, Dest[Any]]()
-  val allocations2 = Map[Any, Dest[Any]]()
+  val allocations = Map[Any, Dest[T]]()
+  val allocations2 = Map[Any, Dest[U]]()
 
   import scala.language.experimental.macros
 
@@ -81,68 +63,39 @@ class Modizer2[T, U] {
       (implicit c: Context): (Mod[T], Mod[U]) =
     macro TbdMacros.modizerMacro[(Mod[T], Mod[U])]
 
-  def applyInternal(
-      key: Any,
-      initializer: => (Changeable[T], Changeable[U]),
-      c: Context,
-      readerId: Int,
-      freeTerms: List[(String, Any)]) = {
-    val oldCurrentDest = c.currentDest
-
-    c.currentDest =
-      if (key != null) {
-	if (allocations.contains(key)) {
-	  if (c.initialRun) {
-	    println("WARNING - keyed allocation matched during initial run!")
-	  }
-
-	  allocations(key)
-	} else {
-	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
-	  allocations(key) = dest
-	  dest
+  def applyInternal
+      (key: Any,
+       initializer: => (Changeable[T], Changeable[U]),
+       c: Context,
+       readerId: Int,
+       freeTerms: List[(String, Any)]) = {
+    val dest1 =
+      if (allocations.contains(key)) {
+	if (c.initialRun) {
+	  println("WARNING - keyed allocation matched during initial run!")
 	}
+
+	allocations(key)
       } else {
-	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	val dest = new Dest[T](c.worker.datastoreRef)
+	allocations(key) = dest
+	dest
       }
 
-    val oldCurrentDest2 = c.currentDest2
-
-    c.currentDest2 =
-      if (key != null) {
-	if (allocations2.contains(key)) {
-	  if (c.initialRun) {
-	    println("WARNING - keyed allocation matched during initial run!")
-	  }
-
-	  allocations2(key)
-	} else {
-	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
-	  allocations2(key) = dest
-	  dest
+    val dest2 =
+      if (allocations2.contains(key)) {
+	if (c.initialRun) {
+	  println("WARNING - keyed allocation matched during initial run!")
 	}
+
+	allocations2(key)
       } else {
-	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	val dest = new Dest[U](c.worker.datastoreRef)
+	allocations2(key) = dest
+	dest
       }
 
-    val modNode = c.worker.ddg.addMod(c.currentDest.mod, c.currentDest2.mod,
-                                      c.currentParent,
-                                      FunctionTag(readerId, freeTerms))
-
-    val outerReader = c.currentParent
-    c.currentParent = modNode
-
-    initializer
-
-    c.currentParent = outerReader
-    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
-
-    val mod = c.currentDest.mod
-    c.currentDest = oldCurrentDest
-    val mod2 = c.currentDest2.mod
-    c.currentDest2 = oldCurrentDest2
-
-    (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
+    TBD.mod2WithDests(initializer, dest1, dest2, c, readerId, freeTerms)
   }
 
   @functionToInvoke("modLeftInternal")
@@ -158,94 +111,48 @@ class Modizer2[T, U] {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
-
-    val oldCurrentDest = c.currentDest
-    c.currentDest =
-      if (key != null) {
-	if (allocations.contains(key)) {
-	  if (c.initialRun) {
-	    println("WARNING - keyed allocation matched during initial run!")
-	  }
-
-	  allocations(key)
-	} else {
-	  val dest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
-	  allocations(key) = dest
-	  dest
+    val dest =
+      if (allocations.contains(key)) {
+	if (c.initialRun) {
+	  println("WARNING - keyed allocation matched during initial run!")
 	}
+
+	allocations(key)
       } else {
-	new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	val dest = new Dest[T](c.worker.datastoreRef)
+	allocations(key) = dest
+	dest
       }
 
-    val modNode = c.worker.ddg.addMod(c.currentDest.mod, null,
-                                      c.currentParent,
-                                      FunctionTag(readerId, freeTerms))
-    modNode.currentDest2 = c.currentDest2
-
-    val outerReader = c.currentParent
-    c.currentParent = modNode
-
-    initializer
-
-    c.currentParent = outerReader
-    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
-
-    val mod = c.currentDest.mod
-    c.currentDest = oldCurrentDest
-
-    (mod.asInstanceOf[Mod[T]],
-     new Changeable(c.currentDest2.mod.asInstanceOf[Mod[U]]))
+    TBD.modLeftWithDest(initializer, dest, c, readerId, freeTerms)
   }
 
   @functionToInvoke("modRightInternal")
-  def right[T, U]
+  def right
       (key: Any)
       (initializer: => (Changeable[T], Changeable[U]))
       (implicit c: Context):
     (Changeable[T], Mod[U]) = macro TbdMacros.modizerMacro[(Changeable[T], Mod[U])]
 
-  def modRightInternal[T, U]
+  def modRightInternal
       (key: Any,
        initializer: => (Changeable[T], Changeable[U]),
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
-    val oldCurrentDest2 = c.currentDest2
-    c.currentDest2 =
-      if (key != null) {
-	if (allocations2.contains(key)) {
-	  if (c.initialRun) {
-	    println("WARNING - keyed allocation matched during initial run!")
-	  }
-
-	  allocations2(key)
-	} else {
-	  val dest = new Dest[U](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
-	  allocations2(key) = dest
-	  dest
+    val dest =
+      if (allocations2.contains(key)) {
+	if (c.initialRun) {
+	  println("WARNING - keyed allocation matched during initial run!")
 	}
+
+	allocations2(key)
       } else {
-	new Dest[U](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+	val dest = new Dest[U](c.worker.datastoreRef)
+	allocations2(key) = dest
+	dest
       }
 
-    val modNode = c.worker.ddg.addMod(null,
-                                      c.currentDest2.mod,
-                                      c.currentParent,
-                                      FunctionTag(readerId, freeTerms))
-    modNode.currentDest = c.currentDest
-
-    val outerReader = c.currentParent
-    c.currentParent = modNode
-
-    initializer
-
-    c.currentParent = outerReader
-    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
-
-    val mod2 = c.currentDest2.mod
-    c.currentDest2 = oldCurrentDest2
-
-    (new Changeable(c.currentDest.mod.asInstanceOf[Mod[T]]),
-     mod2.asInstanceOf[Mod[U]])
+    TBD.modRightWithDest(initializer, dest, c, readerId, freeTerms)
   }
 }

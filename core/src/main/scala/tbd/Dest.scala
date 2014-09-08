@@ -27,7 +27,7 @@ import tbd.worker.Worker
 
 class Dest[T](datastoreRef: ActorRef) {
   val modFuture = datastoreRef ? CreateModMessage(null)
-  var mod = Await.result(modFuture.mapTo[Mod[T]], DURATION)
+  val mod = Await.result(modFuture.mapTo[Mod[T]], DURATION)
 
   override def toString(): String = {
     "Dest(" + mod.id + ")"

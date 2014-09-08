@@ -114,10 +114,19 @@ object TBD {
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
+    modWithDest(initializer, new Dest[T](c.worker.datastoreRef), c, readerId, freeTerms)
+  }
+
+  def modWithDest[T](
+      initializer: => Changeable[T],
+      dest: Dest[T],
+      c: Context,
+      readerId: Int,
+      freeTerms: List[(String, Any)]): Mod[T] = {
 
     val oldCurrentDest = c.currentDest
 
-    c.currentDest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+    c.currentDest = dest.asInstanceOf[Dest[Any]]
 
     val modNode = c.worker.ddg.addMod(c.currentDest.mod, null, c.currentParent,
                                       FunctionTag(readerId, freeTerms))
@@ -137,23 +146,37 @@ object TBD {
   }
 
   @functionToInvoke("mod2Internal")
-  def mod2[T, U](
-    initializer: => (Changeable[T], Changeable[U]))
-   (implicit c: Context): (Mod[T], Mod[U]) = macro TbdMacros.modMacro[(Mod[T], Mod[U])]
+  def mod2[T, U]
+      (initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Mod[T], Mod[U]) =
+    macro TbdMacros.modMacro[(Mod[T], Mod[U])]
 
-  def mod2Internal[T, U](
-      initializer: => (Changeable[T], Changeable[U]),
-      c: Context,
-      readerId: Int,
-      freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
+  def mod2Internal[T, U]
+      (initializer: => (Changeable[T], Changeable[U]),
+       c: Context,
+       readerId: Int,
+       freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
+    mod2WithDests(
+      initializer,
+      new Dest[T](c.worker.datastoreRef),
+      new Dest[U](c.worker.datastoreRef),
+      c,
+      readerId,
+      freeTerms)
+  }
 
+  def mod2WithDests[T, U]
+      (initializer: => (Changeable[T], Changeable[U]),
+       dest1: Dest[T],
+       dest2: Dest[U],
+       c: Context,
+       readerId: Int,
+       freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
     val oldCurrentDest = c.currentDest
-
-    c.currentDest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+    c.currentDest = dest1.asInstanceOf[Dest[Any]]
 
     val oldCurrentDest2 = c.currentDest2
-
-    c.currentDest2 = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+    c.currentDest2 = dest2.asInstanceOf[Dest[Any]]
 
     val modNode = c.worker.ddg.addMod(c.currentDest.mod, c.currentDest2.mod,
                                       c.currentParent,
@@ -176,19 +199,33 @@ object TBD {
   }
 
   @functionToInvoke("modLeftInternal")
-  def modLeft[T, U](
-      initializer: => (Changeable[T], Changeable[U]))
-     (implicit c: Context):
-    (Mod[T], Changeable[U]) = macro TbdMacros.modMacro[(Mod[T], Changeable[U])]
+  def modLeft[T, U]
+      (initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Mod[T], Changeable[U]) =
+    macro TbdMacros.modMacro[(Mod[T], Changeable[U])]
 
-  def modLeftInternal[T, U](
-      initializer: => (Changeable[T], Changeable[U]),
-      c: Context,
-      readerId: Int,
-      freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
+  def modLeftInternal[T, U]
+      (initializer: => (Changeable[T], Changeable[U]),
+       c: Context,
+       readerId: Int,
+       freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
+    modLeftWithDest(
+      initializer,
+      new Dest[T](c.worker.datastoreRef),
+      c,
+      readerId,
+      freeTerms)
+  }
+
+  def modLeftWithDest[T, U]
+      (initializer: => (Changeable[T], Changeable[U]),
+       dest: Dest[T],
+       c: Context,
+       readerId: Int,
+       freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
 
     val oldCurrentDest = c.currentDest
-    c.currentDest = new Dest[T](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+    c.currentDest = dest.asInstanceOf[Dest[Any]]
 
     val modNode = c.worker.ddg.addMod(c.currentDest.mod, null,
                                       c.currentParent,
@@ -211,18 +248,32 @@ object TBD {
   }
 
   @functionToInvoke("modRightInternal")
-  def modRight[T, U](
-      initializer: => (Changeable[T], Changeable[U]))
-     (implicit c: Context):
-    (Changeable[T], Mod[U]) = macro TbdMacros.modMacro[(Changeable[T], Mod[U])]
+  def modRight[T, U]
+      (initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Changeable[T], Mod[U]) =
+    macro TbdMacros.modMacro[(Changeable[T], Mod[U])]
 
-  def modRightInternal[T, U](
-      initializer: => (Changeable[T], Changeable[U]),
-      c: Context,
-      readerId: Int,
-      freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
+  def modRightInternal[T, U]
+      (initializer: => (Changeable[T], Changeable[U]),
+       c: Context,
+       readerId: Int,
+       freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
+    modRightWithDest(
+      initializer,
+      new Dest[U](c.worker.datastoreRef),
+      c,
+      readerId,
+      freeTerms)
+  }
+
+  def modRightWithDest[T, U]
+      (initializer: => (Changeable[T], Changeable[U]),
+       dest: Dest[U],
+       c: Context,
+       readerId: Int,
+       freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
     val oldCurrentDest2 = c.currentDest2
-    c.currentDest2 = new Dest[U](c.worker.datastoreRef).asInstanceOf[Dest[Any]]
+    c.currentDest2 = dest.asInstanceOf[Dest[Any]]
 
     val modNode = c.worker.ddg.addMod(null,
                                       c.currentDest2.mod,
