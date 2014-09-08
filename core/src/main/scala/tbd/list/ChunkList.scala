@@ -92,24 +92,23 @@ class ChunkList[T, U](
     )
   }
 
-  def merge(
-      that: ChunkList[T, U],
-      comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): ChunkList[T, U] = {
-    merge(that, comparator, makeMemoizer[Changeable[ChunkListNode[T, U]]](), makeModizer[ChunkListNode[T, U]]())
+  def merge
+      (that: ChunkList[T, U])
+      (implicit c: Context,
+       ordering: Ordering[T]): ChunkList[T, U] = {
+    merge(that, makeMemoizer[Changeable[ChunkListNode[T, U]]](), makeModizer[ChunkListNode[T, U]]())
   }
 
-  def merge(
-      that: ChunkList[T, U],
-      comparator: ((T, U), (T, U)) => Boolean,
-      memo: Memoizer[Changeable[ChunkListNode[T, U]]],
-      modizer: Modizer[ChunkListNode[T, U]])
-     (implicit c: Context): ChunkList[T, U] = {
+  def merge
+      (that: ChunkList[T, U],
+       memo: Memoizer[Changeable[ChunkListNode[T, U]]],
+       modizer: Modizer[ChunkListNode[T, U]])
+      (implicit c: Context,
+       ordering: Ordering[T]): ChunkList[T, U] = {
 
     def innerMerge(
         one: ChunkListNode[T, U],
         two: ChunkListNode[T, U],
-        comparator: ((T, U), (T, U)) => Boolean,
         _oneRemaining: Vector[(T, U)],
         _twoRemaining: Vector[(T, U)],
         memo: Memoizer[Changeable[ChunkListNode[T, U]]],
@@ -131,7 +130,7 @@ class ChunkList[T, U](
       var j = 0
       var newChunk = Vector[(T, U)]()
       while (i < oneRemaining.size && j < twoRemaining.size) {
-	if (comparator(oneRemaining(i), twoRemaining(j))) {
+	if (ordering.lt(oneRemaining(i)._1, twoRemaining(j)._1)) {
 	  newChunk :+= oneRemaining(i)
 	  i += 1
 	} else {
@@ -151,7 +150,7 @@ class ChunkList[T, U](
 	    read(two.nextMod) {
 	      case twoNode =>
 		memo(null, twoNode, newOneRemaining, newTwoRemaining) {
-		  innerMerge(null, twoNode, comparator, newOneRemaining, newTwoRemaining, memo, modizer)
+		  innerMerge(null, twoNode, newOneRemaining, newTwoRemaining, memo, modizer)
 		}
 	    }
 	  }
@@ -160,13 +159,13 @@ class ChunkList[T, U](
 	    case oneNode =>
 	      if (two == null) {
 		memo(oneNode, null, newOneRemaining, newTwoRemaining) {
-		  innerMerge(oneNode, null, comparator, newOneRemaining, newTwoRemaining, memo, modizer)
+		  innerMerge(oneNode, null, newOneRemaining, newTwoRemaining, memo, modizer)
 		}
 	      } else {
 		read(two.nextMod) {
 		  case twoNode =>
 		    memo(oneNode, twoNode, newOneRemaining, newTwoRemaining) {
-		      innerMerge(oneNode, twoNode, comparator, newOneRemaining, newTwoRemaining, memo, modizer)
+		      innerMerge(oneNode, twoNode, newOneRemaining, newTwoRemaining, memo, modizer)
 		    }
 		}
 	      }
@@ -186,7 +185,7 @@ class ChunkList[T, U](
 	      case null => write(node)
 	      case thatNode =>
 		memo(node, thatNode) {
-		  innerMerge(node, thatNode, comparator, Vector[(T, U)](), Vector[(T, U)](), memo, modizer)
+		  innerMerge(node, thatNode, Vector[(T, U)](), Vector[(T, U)](), memo, modizer)
 		}
 	    }
 	}
@@ -218,7 +217,7 @@ class ChunkList[T, U](
 	 makeModizer[ChunkListNode[T, U]]())
       }
 
-      val merged = pair2._2.merge(pair1._2, comparator, memoizer, modizer)
+      val merged = pair2._2.merge(pair1._2, memoizer, modizer)
 
       (pair1._1 + pair2._1, merged)
     }

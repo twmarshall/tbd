@@ -106,7 +106,7 @@ class PartitionedChunkList[T, U](
           c => innerSort(i + 1)(c)
         }
 
-	sortedPartition.merge(sortedRest, (pair1, pair2) => ordering.lt(pair1._1, pair2._1))
+	sortedPartition.merge(sortedRest)
       } else {
 	new ChunkList[T, U](mod { write[ChunkListNode[T, U]](null) }, conf)
       }

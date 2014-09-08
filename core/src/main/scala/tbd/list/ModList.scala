@@ -107,20 +107,20 @@ class ModList[T, U]
     )
   }
 
-  def merge(
-      that: ModList[T, U],
-      comparator: ((T, U), (T, U)) => Boolean)
-     (implicit c: Context): ModList[T, U] = {
-    merge(that, comparator, makeMemoizer[Changeable[ModListNode[T, U]]](),
+  def merge
+      (that: ModList[T, U])
+      (implicit c: Context,
+       ordering: Ordering[T]): ModList[T, U] = {
+    merge(that, makeMemoizer[Changeable[ModListNode[T, U]]](),
 	  makeModizer[ModListNode[T, U]]())
   }
 
-  def merge(
-      that: ModList[T, U],
-      comparator: ((T, U), (T, U)) => Boolean,
-      memo: Memoizer[Changeable[ModListNode[T, U]]],
-      modizer: Modizer[ModListNode[T, U]])
-     (implicit c: Context): ModList[T, U] = {
+  def merge
+      (that: ModList[T, U],
+       memo: Memoizer[Changeable[ModListNode[T, U]]],
+       modizer: Modizer[ModListNode[T, U]])
+      (implicit c: Context,
+       ordering: Ordering[T]): ModList[T, U] = {
     new ModList(
       modizer(head.id) {
 	read(head) {
@@ -132,7 +132,7 @@ class ModList[T, U]
 		write(node)
 	      case thatNode =>
 		memo(node, thatNode) {
-		  node.merge(thatNode, comparator, memo, modizer)
+		  node.merge(thatNode, memo, modizer)
 		}
 	    }
 	}
@@ -161,7 +161,7 @@ class ModList[T, U]
       val merged = memo(pair1, pair2) {
         val memoizer = makeMemoizer[Changeable[ModListNode[T, U]]](false)
 	val modizer = makeModizer[ModListNode[T, U]]()
-	pair2._2.merge(pair1._2, (pair1, pair2) => ordering.lt(pair1._1, pair2._1), memoizer, modizer)
+	pair2._2.merge(pair1._2, memoizer, modizer)
       }
 
       //println("merged - " + merged)
@@ -324,10 +324,6 @@ class ModList[T, U]
       (implicit c: Context, ordering: Ordering[T]): AdjustableList[T, (U, V)] = {
     assert(_that.isInstanceOf[ModList[T, V]])
     val that = _that.asInstanceOf[ModList[T, V]]
-
-    def comparator(pair1: (T, _), pair2: (T, _)) = {
-      ordering.lt(pair1._1, pair2._1)
-    }
 
     val thisSorted =
       if (this.sorted)

@@ -56,9 +56,8 @@ trait AdjustableList[T, U] {
      (implicit c: Context): AdjustableList[V, W]
 
   /**
-   * Returns an AdjustableList mapping each key from the two lists such that
-   * the comparator returns true to a pair containing the corresponding values
-   * from each list.
+   * Returns an AdjustableList mapping each key that is present in both lists
+   * to a pair containing the corresponding values from each list.
    *
    * Generally only defined where the type of that matches this.
    */
