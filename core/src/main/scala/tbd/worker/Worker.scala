@@ -62,10 +62,10 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
 	    c.reexecutionStart = readNode.timestamp
 	    val oldEnd = c.reexecutionEnd
 	    c.reexecutionEnd = readNode.endTime
-            val oldCurrentDest = c.currentDest
-            c.currentDest = readNode.currentDest
-	    val oldCurrentDest2 = c.currentDest2
-	    c.currentDest2 = readNode.currentDest2
+            val oldCurrentDest = c.currentMod
+            c.currentMod = readNode.currentMod
+	    val oldCurrentDest2 = c.currentMod2
+	    c.currentMod2 = readNode.currentMod2
 
             readNode.updated = false
             readNode.reader(newValue)
@@ -73,8 +73,8 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
 	    c.currentParent = oldCurrentParent
 	    c.reexecutionStart = oldStart
 	    c.reexecutionEnd = oldEnd
-            c.currentDest = oldCurrentDest
-	    c.currentDest2 = oldCurrentDest2
+            c.currentMod = oldCurrentDest
+	    c.currentMod2 = oldCurrentDest2
 
             for (node <- toCleanup) {
               if (node.parent == null) {

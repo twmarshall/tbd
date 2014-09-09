@@ -60,8 +60,8 @@ object TBD {
     c.currentParent = outerReader
 
     readNode.endTime = c.worker.ddg.nextTimestamp(readNode)
-    readNode.currentDest = c.currentDest
-    readNode.currentDest2 = c.currentDest2
+    readNode.currentMod = c.currentMod
+    readNode.currentMod2 = c.currentMod2
 
     changeable
   }
@@ -95,8 +95,8 @@ object TBD {
     c.currentParent = outerReader
 
     readNode.endTime = c.worker.ddg.nextTimestamp(readNode)
-    readNode.currentDest = c.currentDest
-    readNode.currentDest2 = c.currentDest2
+    readNode.currentMod = c.currentMod
+    readNode.currentMod2 = c.currentMod2
 
     changeables
   }
@@ -114,21 +114,24 @@ object TBD {
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
-    modWithDest(initializer, new Dest[T](c.worker.datastoreRef), c, readerId, freeTerms)
+    val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
+    val mod1 = Await.result(modFuture.mapTo[Mod[T]], DURATION)
+
+    modWithDest(initializer, mod1, c, readerId, freeTerms)
   }
 
   def modWithDest[T](
       initializer: => Changeable[T],
-      dest: Dest[T],
+      mod1: Mod[T],
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
 
-    val oldCurrentDest = c.currentDest
+    val oldCurrentDest = c.currentMod
 
-    c.currentDest = dest.asInstanceOf[Dest[Any]]
+    c.currentMod = mod1.asInstanceOf[Mod[Any]]
 
-    val modNode = c.worker.ddg.addMod(c.currentDest.mod, null, c.currentParent,
+    val modNode = c.worker.ddg.addMod(c.currentMod, null, c.currentParent,
                                       FunctionTag(readerId, freeTerms))
 
     val outerReader = c.currentParent
@@ -139,8 +142,8 @@ object TBD {
     c.currentParent = outerReader
     modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
 
-    val mod = c.currentDest.mod
-    c.currentDest = oldCurrentDest
+    val mod = c.currentMod
+    c.currentMod = oldCurrentDest
 
     mod.asInstanceOf[Mod[T]]
   }
@@ -156,29 +159,29 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
-    mod2WithDests(
-      initializer,
-      new Dest[T](c.worker.datastoreRef),
-      new Dest[U](c.worker.datastoreRef),
-      c,
-      readerId,
-      freeTerms)
+    val modFutureLeft = c.worker.datastoreRef ? CreateModMessage(null)
+    val modFutureRight = c.worker.datastoreRef ? CreateModMessage(null)
+
+    val modLeft = Await.result(modFutureLeft.mapTo[Mod[T]], DURATION)
+    val modRight = Await.result(modFutureRight.mapTo[Mod[U]], DURATION)
+
+    mod2WithDests(initializer, modLeft, modRight, c, readerId, freeTerms)
   }
 
   def mod2WithDests[T, U]
       (initializer: => (Changeable[T], Changeable[U]),
-       dest1: Dest[T],
-       dest2: Dest[U],
+       modLeft: Mod[T],
+       modRight: Mod[U],
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
-    val oldCurrentDest = c.currentDest
-    c.currentDest = dest1.asInstanceOf[Dest[Any]]
+    val oldCurrentDest = c.currentMod
+    c.currentMod = modLeft.asInstanceOf[Mod[Any]]
 
-    val oldCurrentDest2 = c.currentDest2
-    c.currentDest2 = dest2.asInstanceOf[Dest[Any]]
+    val oldCurrentDest2 = c.currentMod2
+    c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
-    val modNode = c.worker.ddg.addMod(c.currentDest.mod, c.currentDest2.mod,
+    val modNode = c.worker.ddg.addMod(c.currentMod, c.currentMod2,
                                       c.currentParent,
                                       FunctionTag(readerId, freeTerms))
 
@@ -190,10 +193,10 @@ object TBD {
     c.currentParent = outerReader
     modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
 
-    val mod = c.currentDest.mod
-    c.currentDest = oldCurrentDest
-    val mod2 = c.currentDest2.mod
-    c.currentDest2 = oldCurrentDest2
+    val mod = c.currentMod
+    c.currentMod = oldCurrentDest
+    val mod2 = c.currentMod2
+    c.currentMod2 = oldCurrentDest2
 
     (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
   }
@@ -209,28 +212,27 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
-    modLeftWithDest(
-      initializer,
-      new Dest[T](c.worker.datastoreRef),
-      c,
-      readerId,
-      freeTerms)
+    val modFutureLeft = c.worker.datastoreRef ? CreateModMessage(null)
+    val modLeft = Await.result(modFutureLeft.mapTo[Mod[T]], DURATION)
+
+    modLeftWithDest(initializer, modLeft, c, readerId, freeTerms)
   }
 
   def modLeftWithDest[T, U]
       (initializer: => (Changeable[T], Changeable[U]),
-       dest: Dest[T],
+       modLeft: Mod[T],
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
 
-    val oldCurrentDest = c.currentDest
-    c.currentDest = dest.asInstanceOf[Dest[Any]]
+    val oldCurrentDest = c.currentMod
+    c.currentMod = modLeft.asInstanceOf[Mod[Any]]
 
-    val modNode = c.worker.ddg.addMod(c.currentDest.mod, null,
+    val modNode = c.worker.ddg.addMod(c.currentMod,
+				      null,
                                       c.currentParent,
                                       FunctionTag(readerId, freeTerms))
-    modNode.currentDest2 = c.currentDest2
+    modNode.currentMod2 = c.currentMod2
 
     val outerReader = c.currentParent
     c.currentParent = modNode
@@ -240,11 +242,11 @@ object TBD {
     c.currentParent = outerReader
     modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
 
-    val mod = c.currentDest.mod
-    c.currentDest = oldCurrentDest
+    val mod = c.currentMod
+    c.currentMod = oldCurrentDest
 
     (mod.asInstanceOf[Mod[T]],
-     new Changeable(c.currentDest2.mod.asInstanceOf[Mod[U]]))
+     new Changeable(c.currentMod2.asInstanceOf[Mod[U]]))
   }
 
   @functionToInvoke("modRightInternal")
@@ -258,28 +260,26 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
-    modRightWithDest(
-      initializer,
-      new Dest[U](c.worker.datastoreRef),
-      c,
-      readerId,
-      freeTerms)
+    val modFutureRight = c.worker.datastoreRef ? CreateModMessage(null)
+    val modRight = Await.result(modFutureRight.mapTo[Mod[U]], DURATION)
+
+    modRightWithDest(initializer, modRight, c, readerId, freeTerms)
   }
 
   def modRightWithDest[T, U]
       (initializer: => (Changeable[T], Changeable[U]),
-       dest: Dest[U],
+       modRight: Mod[U],
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
-    val oldCurrentDest2 = c.currentDest2
-    c.currentDest2 = dest.asInstanceOf[Dest[Any]]
+    val oldCurrentDest2 = c.currentMod2
+    c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
     val modNode = c.worker.ddg.addMod(null,
-                                      c.currentDest2.mod,
+                                      c.currentMod2,
                                       c.currentParent,
                                       FunctionTag(readerId, freeTerms))
-    modNode.currentDest = c.currentDest
+    modNode.currentMod = c.currentMod
 
     val outerReader = c.currentParent
     c.currentParent = modNode
@@ -289,20 +289,20 @@ object TBD {
     c.currentParent = outerReader
     modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
 
-    val mod2 = c.currentDest2.mod
-    c.currentDest2 = oldCurrentDest2
+    val mod2 = c.currentMod2
+    c.currentMod2 = oldCurrentDest2
 
-    (new Changeable(c.currentDest.mod.asInstanceOf[Mod[T]]),
+    (new Changeable(c.currentMod.asInstanceOf[Mod[T]]),
      mod2.asInstanceOf[Mod[U]])
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
     import c.worker.context.dispatcher
 
-    val awaiting = c.currentDest.mod.update(value)
+    val awaiting = c.currentMod.update(value)
     Await.result(Future.sequence(awaiting), DURATION)
 
-    val changeable = new Changeable(c.currentDest.mod)
+    val changeable = new Changeable(c.currentMod)
 
     if (Main.debug) {
       val writeNode = c.worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
@@ -320,14 +320,14 @@ object TBD {
      (implicit c: Context): (Changeable[T], Changeable[U]) = {
     import c.worker.context.dispatcher
 
-    val awaiting = c.currentDest.mod.update(value)
-    val awaiting2 = c.currentDest2.mod.update(value2)
+    val awaiting = c.currentMod.update(value)
+    val awaiting2 = c.currentMod2.update(value2)
     Await.result(Future.sequence(awaiting), DURATION)
     Await.result(Future.sequence(awaiting2), DURATION)
 
     if (Main.debug) {
-      val writeNode = c.worker.ddg.addWrite(c.currentDest.mod.asInstanceOf[Mod[Any]],
-                                            c.currentDest2.mod.asInstanceOf[Mod[Any]],
+      val writeNode = c.worker.ddg.addWrite(c.currentMod.asInstanceOf[Mod[Any]],
+                                            c.currentMod2.asInstanceOf[Mod[Any]],
                                             c.currentParent)
 
       writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
@@ -342,15 +342,15 @@ object TBD {
      (implicit c: Context): (Changeable[T], Changeable[U]) = {
     import c.worker.context.dispatcher
 
-    if (changeable.mod != c.currentDest2.mod) {
-      println("WARNING - mod parameter to writeLeft doesn't match currentDest2")
+    if (changeable.mod != c.currentMod2) {
+      println("WARNING - mod parameter to writeLeft doesn't match currentMod2")
     }
 
-    val awaiting = c.currentDest.mod.update(value)
+    val awaiting = c.currentMod.update(value)
     Await.result(Future.sequence(awaiting), DURATION)
 
     if (Main.debug) {
-      val writeNode = c.worker.ddg.addWrite(c.currentDest.mod.asInstanceOf[Mod[Any]],
+      val writeNode = c.worker.ddg.addWrite(c.currentMod.asInstanceOf[Mod[Any]],
                                             null,
                                             c.currentParent)
 
@@ -366,16 +366,16 @@ object TBD {
      (implicit c: Context): (Changeable[T], Changeable[U]) = {
     import c.worker.context.dispatcher
 
-    if (changeable.mod != c.currentDest.mod) {
-      println("WARNING - mod parameter to writeRight doesn't match currentDest")
+    if (changeable.mod != c.currentMod) {
+      println("WARNING - mod parameter to writeRight doesn't match currentMod")
     }
 
-    val awaiting = c.currentDest2.mod.update(value2)
+    val awaiting = c.currentMod2.update(value2)
     Await.result(Future.sequence(awaiting), DURATION)
 
     if (Main.debug) {
       val writeNode = c.worker.ddg.addWrite(null,
-                                            c.currentDest2.mod.asInstanceOf[Mod[Any]],
+                                            c.currentMod2.asInstanceOf[Mod[Any]],
                                             c.currentParent)
 
       writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
@@ -386,8 +386,8 @@ object TBD {
 
   private def write2Helper[T, U](
       c: Context): (Changeable[T], Changeable[U]) = {
-    (new Changeable(c.currentDest.mod).asInstanceOf[Changeable[T]],
-     new Changeable(c.currentDest2.mod).asInstanceOf[Changeable[U]])
+    (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
+     new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
   }
 
   @functionToInvoke("parInternal")

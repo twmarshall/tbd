@@ -15,13 +15,17 @@
  */
 package tbd
 
+import akka.pattern.ask
 import scala.collection.mutable.Map
+import scala.concurrent.Await
 
+import tbd.Constants._
 import tbd.ddg.FunctionTag
 import tbd.macros.{TbdMacros, functionToInvoke}
+import tbd.messages._
 
 class Modizer[T] {
-  val allocations = Map[Any, Dest[T]]()
+  val allocations = Map[Any, Mod[T]]()
 
   import scala.language.experimental.macros
 
@@ -37,22 +41,23 @@ class Modizer[T] {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]) = {
-    val dest =
+    val mod1 =
       if (allocations.contains(key)) {
 	allocations(key)
       } else {
-	val dest = new Dest[T](c.worker.datastoreRef)
-	allocations(key) = dest
-	dest
+	val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
+	val mod1 = Await.result(modFuture.mapTo[Mod[T]], DURATION)
+	allocations(key) = mod1
+	mod1
       }
 
-    TBD.modWithDest(initializer, dest, c, readerId, freeTerms)
+    TBD.modWithDest(initializer, mod1, c, readerId, freeTerms)
   }
 }
 
 class Modizer2[T, U] {
-  val allocations = Map[Any, Dest[T]]()
-  val allocations2 = Map[Any, Dest[U]]()
+  val allocations = Map[Any, Mod[T]]()
+  val allocations2 = Map[Any, Mod[U]]()
 
   import scala.language.experimental.macros
 
@@ -69,7 +74,7 @@ class Modizer2[T, U] {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]) = {
-    val dest1 =
+    val modLeft =
       if (allocations.contains(key)) {
 	if (c.initialRun) {
 	  println("WARNING - keyed allocation matched during initial run!")
@@ -77,12 +82,13 @@ class Modizer2[T, U] {
 
 	allocations(key)
       } else {
-	val dest = new Dest[T](c.worker.datastoreRef)
-	allocations(key) = dest
-	dest
+	val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
+	val modLeft = Await.result(modFuture.mapTo[Mod[T]], DURATION)
+	allocations(key) = modLeft
+	modLeft
       }
 
-    val dest2 =
+    val modRight =
       if (allocations2.contains(key)) {
 	if (c.initialRun) {
 	  println("WARNING - keyed allocation matched during initial run!")
@@ -90,12 +96,13 @@ class Modizer2[T, U] {
 
 	allocations2(key)
       } else {
-	val dest = new Dest[U](c.worker.datastoreRef)
-	allocations2(key) = dest
-	dest
+	val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
+	val modRight = Await.result(modFuture.mapTo[Mod[U]], DURATION)
+	allocations2(key) = modRight
+	modRight
       }
 
-    TBD.mod2WithDests(initializer, dest1, dest2, c, readerId, freeTerms)
+    TBD.mod2WithDests(initializer, modLeft, modRight, c, readerId, freeTerms)
   }
 
   @functionToInvoke("modLeftInternal")
@@ -111,7 +118,7 @@ class Modizer2[T, U] {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
-    val dest =
+    val modLeft =
       if (allocations.contains(key)) {
 	if (c.initialRun) {
 	  println("WARNING - keyed allocation matched during initial run!")
@@ -119,12 +126,13 @@ class Modizer2[T, U] {
 
 	allocations(key)
       } else {
-	val dest = new Dest[T](c.worker.datastoreRef)
-	allocations(key) = dest
-	dest
+	val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
+	val modLeft = Await.result(modFuture.mapTo[Mod[T]], DURATION)
+	allocations(key) = modLeft
+	modLeft
       }
 
-    TBD.modLeftWithDest(initializer, dest, c, readerId, freeTerms)
+    TBD.modLeftWithDest(initializer, modLeft, c, readerId, freeTerms)
   }
 
   @functionToInvoke("modRightInternal")
@@ -140,7 +148,7 @@ class Modizer2[T, U] {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
-    val dest =
+    val modRight =
       if (allocations2.contains(key)) {
 	if (c.initialRun) {
 	  println("WARNING - keyed allocation matched during initial run!")
@@ -148,11 +156,12 @@ class Modizer2[T, U] {
 
 	allocations2(key)
       } else {
-	val dest = new Dest[U](c.worker.datastoreRef)
-	allocations2(key) = dest
-	dest
+	val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
+	val modRight = Await.result(modFuture.mapTo[Mod[U]], DURATION)
+	allocations2(key) = modRight
+	modRight
       }
 
-    TBD.modRightWithDest(initializer, dest, c, readerId, freeTerms)
+    TBD.modRightWithDest(initializer, modRight, c, readerId, freeTerms)
   }
 }

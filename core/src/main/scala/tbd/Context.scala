@@ -46,13 +46,13 @@ class Context(val id: String, val worker: Worker) {
   // reexecuted.
   var reexecutionEnd: Timestamp = _
 
-  // The destination created by the most recent (in scope) call to mod. This is
+  // The mod created by the most recent (in scope) call to mod. This is
   // what a call to write will write to.
-  var currentDest: Dest[Any] = _
+  var currentMod: Mod[Any] = _
 
-  // The second destination created by the most recent call to mod2, if there
+  // The second mod created by the most recent call to mod2, if there
   // is one.
-  var currentDest2: Dest[Any] = _
+  var currentMod2: Mod[Any] = _
 
   // A unique id to assign to workers forked from this context.
   var workerId = 0

@@ -51,7 +51,7 @@ class Memoizer[T](c: Context) {
 	      timestamp < c.reexecutionEnd &&
 	      memoNode.matchableInEpoch <= Master.epoch) {
 
-            updateChangeables(memoNode, c.worker, c.currentDest, c.currentDest2)
+            updateChangeables(memoNode, c.worker, c.currentMod, c.currentMod2)
 
             found = true
             c.worker.ddg.attachSubtree(c.currentParent, memoNode)
@@ -78,8 +78,8 @@ class Memoizer[T](c: Context) {
       c.currentParent = memoNode
       val value = func
       c.currentParent = outerParent
-      memoNode.currentDest = c.currentDest
-      memoNode.currentDest2 = c.currentDest2
+      memoNode.currentMod = c.currentMod
+      memoNode.currentMod2 = c.currentMod2
       memoNode.endTime = c.worker.ddg.nextTimestamp(memoNode)
       memoNode.value = value
 
@@ -112,45 +112,45 @@ class Memoizer[T](c: Context) {
   private def updateChangeables(
       memoNode: MemoNode,
       worker: Worker,
-      currentDest: Dest[Any],
-      currentDest2: Dest[Any]) {
-    if (memoNode.currentDest != currentDest &&
+      currentMod: Mod[Any],
+      currentMod2: Mod[Any]) {
+    if (memoNode.currentMod != currentMod &&
 	memoNode.value.isInstanceOf[Changeable[_]]) {
       val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
 
-      val awaiting = currentDest.mod.update(changeable.mod.read())
+      val awaiting = currentMod.update(changeable.mod.read())
       Await.result(Future.sequence(awaiting), DURATION)
 
-      worker.ddg.replaceDests(memoNode,
-			      memoNode.currentDest,
-			      currentDest)
+      worker.ddg.replaceMods(memoNode,
+			     memoNode.currentMod,
+			     currentMod)
     }
 
     if (memoNode.value.isInstanceOf[Tuple2[_, _]]) {
       val tuple = memoNode.value.asInstanceOf[Tuple2[Any, Any]]
 
       if (tuple._1.isInstanceOf[Changeable[_]] &&
-	  memoNode.currentDest != currentDest) {
+	  memoNode.currentMod != currentMod) {
         val changeable = tuple._1.asInstanceOf[Changeable[Any]]
 
-        val awaiting = currentDest.mod.update(changeable.mod.read())
+        val awaiting = currentMod.update(changeable.mod.read())
         Await.result(Future.sequence(awaiting), DURATION)
 
-        worker.ddg.replaceDests(memoNode,
-			        memoNode.currentDest,
-			        currentDest)
+        worker.ddg.replaceMods(memoNode,
+			       memoNode.currentMod,
+			       currentMod)
       }
 
       if (tuple._2.isInstanceOf[Changeable[_]] &&
-	  memoNode.currentDest2 != currentDest2) {
+	  memoNode.currentMod2 != currentMod2) {
         val changeable = tuple._2.asInstanceOf[Changeable[Any]]
 
-        val awaiting = currentDest2.mod.update(changeable.mod.read())
+        val awaiting = currentMod2.update(changeable.mod.read())
         Await.result(Future.sequence(awaiting), DURATION)
 
-        worker.ddg.replaceDests(memoNode,
-			        memoNode.currentDest2,
-			        currentDest2)
+        worker.ddg.replaceMods(memoNode,
+			       memoNode.currentMod2,
+			       currentMod2)
       }
     }
   }

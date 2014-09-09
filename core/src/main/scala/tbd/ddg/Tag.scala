@@ -50,10 +50,10 @@ object Tag {
    */
   case class Memo(val function: FunctionTag, val args: Seq[Any]) extends Tag
   /*
-   * A mod tag, consisting of a list of created dests and the tag of the
+   * A mod tag, consisting of a list of created mods and the tag of the
    * function invoked.
    */
-  case class Mod(val dests: List[ModId], val initializer: FunctionTag) extends Tag
+  case class Mod(val mods: List[ModId], val initializer: FunctionTag) extends Tag
   /*
    * A par tag, consisting of two function tags for the two invoked functions.
    */
@@ -82,8 +82,8 @@ object Tag {
           "\n" + formatFunctionTag(funcTag) +
           "\nSignature:" + signature.foldLeft("")(_ + "\n   " + _)
       }
-      case Tag.Mod(dest, initializer) => {
-          "Mod id " + dest.reduceLeft(_ + ", " + _) +
+      case Tag.Mod(mod, initializer) => {
+          "Mod id " + mod.reduceLeft(_ + ", " + _) +
           "\nInitializer " + formatFunctionTag(initializer)
       }
       case Tag.Par(fun1, fun2) => {

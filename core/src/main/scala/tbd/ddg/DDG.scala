@@ -19,7 +19,7 @@ import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import scala.collection.mutable.{Map, MutableList, Set, TreeSet}
 
-import tbd.{Changeable, Dest, Memoizer, Mod}
+import tbd.{Changeable, Memoizer, Mod}
 import tbd.Constants._
 import tbd.master.Master
 import tbd.worker.Worker
@@ -262,18 +262,17 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
   }
 
   /**
-   * Replaces all of the dests equal to dest1 with dest2 and all mods equal to
-   * dest1.mod with dest2.mod in the subtree rooted at node. This is called when
-   * a memo match is made where the memo node has a dest that's different from
-   * the currentDest.
+   * Replaces all of the mods equal to mod1 with mod2 in the subtree rooted at
+   * node. This is called when a memo match is made where the memo node has a
+   * currentMod that's different from the Context's currentMod.
    */
-  def replaceDests(node: Node, dest1: Dest[Any], dest2: Dest[Any]) {
+  def replaceMods(node: Node, mod1: Mod[Any], mod2: Mod[Any]) {
     if (node.isInstanceOf[MemoNode]) {
       val memoNode = node.asInstanceOf[MemoNode]
       if (memoNode.value.isInstanceOf[Changeable[_]]) {
 	val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
-	if (changeable.mod == dest1.mod) {
-	  changeable.mod = dest2.mod
+	if (changeable.mod == mod1) {
+	  changeable.mod = mod2
 	}
       }
 
@@ -282,34 +281,34 @@ class DDG(log: LoggingAdapter, id: String, worker: Worker) {
 
         if (tuple._1.isInstanceOf[Changeable[_]]) {
 	  val changeable = tuple._1.asInstanceOf[Changeable[Any]]
-	  if (changeable.mod == dest1.mod) {
-	    changeable.mod = dest2.mod
+	  if (changeable.mod == mod1) {
+	    changeable.mod = mod2
 	  }
         }
 
         if (tuple._2.isInstanceOf[Changeable[_]]) {
 	  val changeable = tuple._2.asInstanceOf[Changeable[Any]]
-	  if (changeable.mod == dest1.mod) {
-	    changeable.mod = dest2.mod
+	  if (changeable.mod == mod1) {
+	    changeable.mod = mod2
 	  }
         }
       }
     }
 
-    if (node.currentDest == dest1) {
-      node.currentDest = dest2
+    if (node.currentMod == mod1) {
+      node.currentMod = mod2
 
-      // Because reads and memos must have as their currentDest the mod
-      // that is closest in enclosing scope, a node that doesn't have dest1 as
-      // its dest can't have any children that have dest1 either.
+      // Because reads and memos must have as their currentMod the mod
+      // that is closest in enclosing scope, a node that doesn't have mod1 as
+      // its mod can't have any children that have mod1 either.
       for (child <- node.children) {
-	replaceDests(child, dest1, dest2)
+	replaceMods(child, mod1, mod2)
       }
-    } else if(node.currentDest2 == dest1) {
-      node.currentDest2 = dest2
+    } else if(node.currentMod2 == mod1) {
+      node.currentMod2 = mod2
 
       for (child <- node.children) {
-	replaceDests(child, dest1, dest2)
+	replaceMods(child, mod1, mod2)
       }
     }
   }

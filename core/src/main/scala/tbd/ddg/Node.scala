@@ -20,7 +20,7 @@ import akka.pattern.ask
 import scala.collection.mutable.MutableList
 import scala.concurrent.Await
 
-import tbd.{Changeable, Dest, Memoizer, Mod}
+import tbd.{Changeable, Memoizer, Mod}
 import tbd.Constants._
 import tbd.master.Main
 import tbd.messages._
@@ -56,9 +56,9 @@ abstract class Node(
   // that it won't be matched again in this round of change propagation.
   var matchableInEpoch = 0
 
-  var currentDest: Dest[Any] = null
+  var currentMod: Mod[Any] = null
 
-  var currentDest2: Dest[Any] = null
+  var currentMod2: Mod[Any] = null
 
   def addChild(child: Node) {
     children += child
@@ -167,7 +167,7 @@ class RootNode(id: String) extends Node(null, null, Tag.Root()) {
 
 class ModNode(_parent: Node, _timestamp: Timestamp, _modTag: Tag.Mod) extends Node(_parent, _timestamp, _modTag) {
   override def toString(prefix: String) = {
-    prefix + "ModNode dest=(" + _modTag.dests.foldLeft("")(_ + ", " + _) + ")" +
+    prefix + "ModNode mods=(" + _modTag.mods.foldLeft("")(_ + ", " + _) + ")" +
     super.toString(prefix)
   }
 }
