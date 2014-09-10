@@ -45,8 +45,7 @@ class Modizer[T] {
       if (allocations.contains(key)) {
 	allocations(key)
       } else {
-	val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
-	val mod1 = Await.result(modFuture.mapTo[Mod[T]], DURATION)
+	val mod1 = new Mod[T]()
 	allocations(key) = mod1
 	mod1
       }
@@ -82,8 +81,7 @@ class Modizer2[T, U] {
 
 	allocations(key)
       } else {
-	val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
-	val modLeft = Await.result(modFuture.mapTo[Mod[T]], DURATION)
+	val modLeft = new Mod[T]()
 	allocations(key) = modLeft
 	modLeft
       }
@@ -96,8 +94,7 @@ class Modizer2[T, U] {
 
 	allocations2(key)
       } else {
-	val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
-	val modRight = Await.result(modFuture.mapTo[Mod[U]], DURATION)
+	val modRight = new Mod[U]()
 	allocations2(key) = modRight
 	modRight
       }
@@ -126,8 +123,7 @@ class Modizer2[T, U] {
 
 	allocations(key)
       } else {
-	val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
-	val modLeft = Await.result(modFuture.mapTo[Mod[T]], DURATION)
+	val modLeft = new Mod[T]()
 	allocations(key) = modLeft
 	modLeft
       }
@@ -156,8 +152,7 @@ class Modizer2[T, U] {
 
 	allocations2(key)
       } else {
-	val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
-	val modRight = Await.result(modFuture.mapTo[Mod[U]], DURATION)
+	val modRight = new Mod[U]()
 	allocations2(key) = modRight
 	modRight
       }

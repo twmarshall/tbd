@@ -31,8 +31,9 @@ object Datastore {
     Props(classOf[Datastore], storeType, cacheSize)
 
   def createMod[T](value: T): Mod[T] = {
-    val future = datastoreRef ? CreateModMessage(value)
-    Await.result(future, DURATION).asInstanceOf[Mod[T]]
+    val mod = new Mod[T]()
+    mod.update(value)
+    mod
   }
 
   def getMod(modId: ModId, workerRef: ActorRef = null): Any = {
@@ -52,6 +53,10 @@ object Datastore {
 
   def removeMod(modId: ModId) {
     datastoreRef ! RemoveModMessage(modId)
+  }
+
+  def newModId(): Future[ModId] = {
+    (datastoreRef ? CreateModMessage(null)).mapTo[ModId]
   }
 }
 
@@ -79,15 +84,15 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
   private var deleteCount = 0
 
   private var nextModId = 0
-  def createMod[T](value: T): Mod[T] = {
+  private def createMod(value: Any): ModId = {
     createCount += 1
 
-    val mod = new Mod[T](new ModId("d." + nextModId))
+    val modId = new ModId("d." + nextModId)
     nextModId += 1
 
-    store.put(mod.id, value)
+    store.put(modId, value)
 
-    mod
+    modId
   }
 
   def getMod(modId: ModId, workerRef: ActorRef = null): Any = {

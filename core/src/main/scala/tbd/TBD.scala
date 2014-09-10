@@ -114,8 +114,9 @@ object TBD {
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
-    val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
-    val mod1 = Await.result(modFuture.mapTo[Mod[T]], DURATION)
+    //val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
+    //val mod1 = Await.result(modFuture.mapTo[Mod[T]], DURATION)
+    val mod1 = new Mod[T]()
 
     modWithDest(initializer, mod1, c, readerId, freeTerms)
   }
@@ -159,13 +160,7 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
-    val modFutureLeft = c.worker.datastoreRef ? CreateModMessage(null)
-    val modFutureRight = c.worker.datastoreRef ? CreateModMessage(null)
-
-    val modLeft = Await.result(modFutureLeft.mapTo[Mod[T]], DURATION)
-    val modRight = Await.result(modFutureRight.mapTo[Mod[U]], DURATION)
-
-    mod2WithDests(initializer, modLeft, modRight, c, readerId, freeTerms)
+    mod2WithDests(initializer, new Mod[T](), new Mod[U](), c, readerId, freeTerms)
   }
 
   def mod2WithDests[T, U]
@@ -212,10 +207,7 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
-    val modFutureLeft = c.worker.datastoreRef ? CreateModMessage(null)
-    val modLeft = Await.result(modFutureLeft.mapTo[Mod[T]], DURATION)
-
-    modLeftWithDest(initializer, modLeft, c, readerId, freeTerms)
+    modLeftWithDest(initializer, new Mod[T](), c, readerId, freeTerms)
   }
 
   def modLeftWithDest[T, U]
@@ -260,10 +252,7 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
-    val modFutureRight = c.worker.datastoreRef ? CreateModMessage(null)
-    val modRight = Await.result(modFutureRight.mapTo[Mod[U]], DURATION)
-
-    modRightWithDest(initializer, modRight, c, readerId, freeTerms)
+    modRightWithDest(initializer, new Mod[U](), c, readerId, freeTerms)
   }
 
   def modRightWithDest[T, U]

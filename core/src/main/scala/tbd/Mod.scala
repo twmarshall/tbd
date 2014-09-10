@@ -26,7 +26,9 @@ import tbd.datastore.Datastore
 import tbd.master.Main
 import tbd.messages._
 
-class Mod[T](val id: ModId) extends Serializable {
+class Mod[T] extends Serializable {
+  val idFuture = Datastore.newModId()
+  lazy val id = Await.result(idFuture, DURATION)
 
   def read(workerRef: ActorRef = null): T = {
     Datastore.getMod(id, workerRef).asInstanceOf[T]
