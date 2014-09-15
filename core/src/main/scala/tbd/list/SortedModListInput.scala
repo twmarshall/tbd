@@ -44,7 +44,7 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
 	val newTail = Datastore.createMod[ModListNode[T, U]](null)
 	val newNode = new ModListNode((key, value), newTail)
 
-	val futures = Datastore.updateMod(tailMod.id, newNode)
+        val futures = tailMod.update(newNode)
 
 	nodes += ((key, tailMod))
 	tailMod = newTail
@@ -53,11 +53,11 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
       case Some(nextPair) =>
 	val (nextKey, nextMod) = nextPair
 
-	val nextNode = Datastore.getMod(nextMod.id).asInstanceOf[ModListNode[T, U]]
+        val nextNode = nextMod.read()
 	val newNextMod = Datastore.createMod[ModListNode[T, U]](nextNode)
 
 	val newNode = new ModListNode((key, value), newNextMod)
-	val futures = Datastore.updateMod(nextMod.id, newNode)
+        val futures = nextMod.update(newNode)
 
 	nodes += ((nextKey, newNextMod))
 	nodes += ((key, nextMod))
@@ -67,17 +67,17 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
   }
 
   def update(key: T, value: U) {
-    val nextMod = Datastore.getMod(nodes(key).id).asInstanceOf[ModListNode[T, U]].nextMod
+    val nextMod = nodes(key).read().nextMod
     val newNode = new ModListNode((key, value), nextMod)
 
-    var futures = Datastore.updateMod(nodes(key).id, newNode)
+    val futures = nodes(key).update(newNode)
 
     Await.result(Future.sequence(futures), DURATION)
   }
 
   def remove(key: T) {
-    val node = Datastore.getMod(nodes(key).id).asInstanceOf[ModListNode[T, U]]
-    val nextNode = Datastore.getMod(node.nextMod.id).asInstanceOf[ModListNode[T, U]]
+    val node = nodes(key).read()
+    val nextNode = node.nextMod.read()
 
     if (nextNode == null) {
       // We're removing the last element in the last.
@@ -87,7 +87,7 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
       nodes += ((nextNode.value._1, nodes(key)))
     }
 
-    val futures = Datastore.updateMod(nodes(key).id, nextNode)
+    val futures = nodes(key).update(nextNode)
 
     nodes -= key
 

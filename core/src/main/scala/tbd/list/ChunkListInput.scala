@@ -39,8 +39,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
   val list = new ChunkList[T, U](lastNodeMod, conf)
 
   def put(key: T, value: U) {
-    val lastNode = Datastore.getMod(lastNodeMod.id)
-      .asInstanceOf[ChunkListNode[T, U]]
+    val lastNode = lastNodeMod.read()
 
     val newNode =
       if (lastNode == null) {
@@ -69,12 +68,12 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
 
     nodes(key) = lastNodeMod
 
-    val futures = Datastore.updateMod(lastNodeMod.id, newNode)
+    val futures = lastNodeMod.update(newNode)
     Await.result(Future.sequence(futures), DURATION)
   } //ensuring(isValid())
 
   def update(key: T, value: U) {
-    val node = Datastore.getMod(nodes(key).id).asInstanceOf[ChunkListNode[T, U]]
+    val node = nodes(key).read()
 
     var oldValue: U = null.asInstanceOf[U]
     val newChunk = node.chunk.map{ case (_key, _value) => {
@@ -89,13 +88,12 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
     val newSize = node.size + conf.chunkSizer(value) - conf.chunkSizer(oldValue)
     val newNode = new ChunkListNode(newChunk, node.nextMod, newSize)
 
-    val futures = Datastore.updateMod(nodes(key).id, newNode)
+    val futures = nodes(key).update(newNode)
     Await.result(Future.sequence(futures), DURATION)
   } //ensuring(isValid())
 
   def remove(key: T) {
-    val node = Datastore.getMod(nodes(key).id)
-      .asInstanceOf[ChunkListNode[T, U]]
+    val node = nodes(key).read()
 
     var oldValue: U = null.asInstanceOf[U]
     val newChunk = node.chunk.filter{ case (_key, _value) => {
@@ -109,8 +107,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
 
     val newNode =
       if (newChunk.size == 0) {
-        val nextNode = Datastore.getMod(node.nextMod.id)
-          .asInstanceOf[ChunkListNode[T, U]]
+        val nextNode = node.nextMod.read()
 
         if (nextNode == null) {
           if (previous(key) == null) {
@@ -132,8 +129,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
             previous(k) = previous(key)
           }
 
-          val nextNextNode = Datastore.getMod(nextNode.nextMod.id)
-            .asInstanceOf[ChunkListNode[T, U]]
+          val nextNextNode = nextNode.nextMod.read()
           if (nextNextNode != null) {
             for ((k, v) <- nextNextNode.chunk) {
               previous(k) = nodes(key)
@@ -147,7 +143,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
         new ChunkListNode(newChunk, node.nextMod, newSize)
       }
 
-    val futures = Datastore.updateMod(nodes(key).id, newNode)
+    val futures = nodes(key).update(newNode)
     nodes -= key
     Await.result(Future.sequence(futures), DURATION)
   } //ensuring(isValid())
@@ -160,8 +156,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
     var previousMod: Mod[ChunkListNode[T, U]] = null
     var previousNode: ChunkListNode[T, U] = null
     var mod = list.head
-    var node = Datastore.getMod(mod.id)
-      .asInstanceOf[ChunkListNode[T, U]]
+    var node = mod.read()
 
     var valid = true
     while (node != null) {
@@ -177,8 +172,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
       previousMod = mod
       previousNode = node
       mod = node.nextMod
-      node = Datastore.getMod(mod.id)
-        .asInstanceOf[ChunkListNode[T, U]]
+      node = mod.read()
     }
 
     valid

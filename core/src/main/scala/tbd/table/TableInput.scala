@@ -35,7 +35,7 @@ class TableInput[T, U] extends Input[T, U] {
   }
 
   def update(key: T, value: U) {
-    val futures = Datastore.updateMod(table.table(key).id, value)
+    val futures = table.table(key).update(value)
     Await.result(Future.sequence(futures), DURATION)
   }
 

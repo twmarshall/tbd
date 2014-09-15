@@ -30,6 +30,10 @@ object Datastore {
   def props(storeType: String, cacheSize: Int): Props =
     Props(classOf[Datastore], storeType, cacheSize)
 
+  def addDependency(modId: ModId, workerRef: ActorRef) {
+    datastoreRef ! AddDependencyMessage(modId, workerRef)
+  }
+
   def createMod[T](value: T): Mod[T] = {
     val mod = new Mod[T]()
     mod.update(value)
@@ -135,6 +139,14 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
   }
 
   def receive = {
+    case AddDependencyMessage(modId: ModId, workerRef: ActorRef) => {
+      if (dependencies.contains(modId)) {
+	dependencies(modId) += workerRef
+      } else {
+	dependencies(modId) = Set(workerRef)
+      }
+    }
+
     case CreateModMessage(value: Any) => {
       sender ! createMod(value)
     }

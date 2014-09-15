@@ -30,12 +30,19 @@ class Mod[T] extends Serializable {
   val idFuture = Datastore.newModId()
   lazy val id = Await.result(idFuture, DURATION)
 
+  var value: T = null.asInstanceOf[T]
+
   def read(workerRef: ActorRef = null): T = {
-    Datastore.getMod(id, workerRef).asInstanceOf[T]
+    if (workerRef != null) {
+      Datastore.addDependency(id, workerRef)
+    }
+    value
   }
 
   def update(_value: T): ArrayBuffer[Future[String]] = {
-    Datastore.updateMod(id, _value)
+    val futures = Datastore.updateMod(id, _value)
+    value = _value
+    futures
   }
 
   override def equals(obj: Any): Boolean = {

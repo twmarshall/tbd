@@ -25,6 +25,7 @@ import tbd.Constants._
 import tbd.ddg.Node
 
 // Datastore
+case class AddDependencyMessage(modId: ModId, workerRef: ActorRef)
 case class CreateModMessage(value: Any)
 case class GetModMessage(modId: ModId, workerRef: ActorRef)
 case class UpdateModMessage(modId: ModId, value: Any)
