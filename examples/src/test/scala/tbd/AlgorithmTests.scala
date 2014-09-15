@@ -75,7 +75,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
 
   "SortTest" should "run sort successfully." in {
     Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("sort"),
-					   "chunkSizes" -> Array("1", "4"),
+					   "chunkSizes" -> Array("1"),
 					   "counts" -> Array(intensity.toString),
 					   "partitions" -> Array("1", "4")))
   }

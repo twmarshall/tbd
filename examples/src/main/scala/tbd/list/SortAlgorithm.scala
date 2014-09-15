@@ -51,8 +51,8 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val sortedOutput = output.toBuffer()
     val answer = naiveHelper(input)
 
-    println(sortedOutput)
-    println(answer.toBuffer)
+    //println(sortedOutput)
+    //println(answer.toBuffer)
 
     sortedOutput == answer.toBuffer
   }
@@ -60,6 +60,6 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def run(implicit c: Context): AdjustableList[Int, Int] = {
     val pages = input.getAdjustableList()
 
-    pages.mergesort()
+    pages.quicksort()
   }
 }
