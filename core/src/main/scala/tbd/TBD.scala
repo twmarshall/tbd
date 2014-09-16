@@ -17,7 +17,6 @@ package tbd
 
 import akka.pattern.ask
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.{Await, Future}
 
 import tbd.macros.{TbdMacros, functionToInvoke}
 
@@ -114,9 +113,7 @@ object TBD {
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
-    //val modFuture = c.worker.datastoreRef ? CreateModMessage(null)
-    //val mod1 = Await.result(modFuture.mapTo[Mod[T]], DURATION)
-    val mod1 = new Mod[T]()
+    val mod1 = new Mod[T](c.newModId())
 
     modWithDest(initializer, mod1, c, readerId, freeTerms)
   }
@@ -127,7 +124,6 @@ object TBD {
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
-
     val oldCurrentDest = c.currentMod
 
     c.currentMod = mod1.asInstanceOf[Mod[Any]]
@@ -160,7 +156,13 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
-    mod2WithDests(initializer, new Mod[T](), new Mod[U](), c, readerId, freeTerms)
+    mod2WithDests(
+      initializer,
+      new Mod[T](c.newModId()),
+      new Mod[U](c.newModId()),
+      c,
+      readerId,
+      freeTerms)
   }
 
   def mod2WithDests[T, U]
@@ -207,7 +209,7 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
-    modLeftWithDest(initializer, new Mod[T](), c, readerId, freeTerms)
+    modLeftWithDest(initializer, new Mod[T](c.newModId()), c, readerId, freeTerms)
   }
 
   def modLeftWithDest[T, U]
@@ -252,7 +254,7 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
-    modRightWithDest(initializer, new Mod[U](), c, readerId, freeTerms)
+    modRightWithDest(initializer, new Mod[U](c.newModId()), c, readerId, freeTerms)
   }
 
   def modRightWithDest[T, U]
@@ -288,8 +290,12 @@ object TBD {
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
     import c.worker.context.dispatcher
 
-    val awaiting = c.currentMod.update(value)
-    Await.result(Future.sequence(awaiting), DURATION)
+    val awaiting = c.currentMod.update(value, c.worker.self)
+    c.pending += awaiting
+    if (c.worker.ddg.reads.contains(c.currentMod.id)) {
+      c.worker.ddg.modUpdated(c.currentMod.id)
+      c.updatedMods += c.currentMod.id
+    }
 
     val changeable = new Changeable(c.currentMod)
 
@@ -309,10 +315,20 @@ object TBD {
      (implicit c: Context): (Changeable[T], Changeable[U]) = {
     import c.worker.context.dispatcher
 
-    val awaiting = c.currentMod.update(value)
-    val awaiting2 = c.currentMod2.update(value2)
-    Await.result(Future.sequence(awaiting), DURATION)
-    Await.result(Future.sequence(awaiting2), DURATION)
+    val awaiting = c.currentMod.update(value, c.worker.self)
+    val awaiting2 = c.currentMod2.update(value2, c.worker.self)
+    c.pending += awaiting
+    c.pending += awaiting2
+
+    if (c.worker.ddg.reads.contains(c.currentMod.id)) {
+      c.updatedMods += c.currentMod.id
+      c.worker.ddg.modUpdated(c.currentMod.id)
+    }
+
+    if (c.worker.ddg.reads.contains(c.currentMod2.id)) {
+      c.updatedMods += c.currentMod2.id
+      c.worker.ddg.modUpdated(c.currentMod2.id)
+    }
 
     if (Main.debug) {
       val writeNode = c.worker.ddg.addWrite(c.currentMod.asInstanceOf[Mod[Any]],
@@ -335,8 +351,12 @@ object TBD {
       println("WARNING - mod parameter to writeLeft doesn't match currentMod2")
     }
 
-    val awaiting = c.currentMod.update(value)
-    Await.result(Future.sequence(awaiting), DURATION)
+    val awaiting = c.currentMod.update(value, c.worker.self)
+    c.pending += awaiting
+    if (c.worker.ddg.reads.contains(c.currentMod.id)) {
+      c.updatedMods += c.currentMod.id
+      c.worker.ddg.modUpdated(c.currentMod.id)
+    }
 
     if (Main.debug) {
       val writeNode = c.worker.ddg.addWrite(c.currentMod.asInstanceOf[Mod[Any]],
@@ -359,8 +379,12 @@ object TBD {
       println("WARNING - mod parameter to writeRight doesn't match currentMod")
     }
 
-    val awaiting = c.currentMod2.update(value2)
-    Await.result(Future.sequence(awaiting), DURATION)
+    val awaiting = c.currentMod2.update(value2, c.worker.self)
+    c.pending += awaiting
+    if (c.worker.ddg.reads.contains(c.currentMod2.id)) {
+      c.updatedMods += c.currentMod2.id
+      c.worker.ddg.modUpdated(c.currentMod2.id)
+    }
 
     if (Main.debug) {
       val writeNode = c.worker.ddg.addWrite(null,

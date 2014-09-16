@@ -36,7 +36,7 @@ class TableInput[T, U] extends Input[T, U] {
 
   def update(key: T, value: U) {
     val futures = table.table(key).update(value)
-    Await.result(Future.sequence(futures), DURATION)
+    Await.result(futures, DURATION)
   }
 
   def remove(key: T) = ???

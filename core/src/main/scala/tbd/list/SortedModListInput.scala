@@ -49,7 +49,7 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
 	nodes += ((key, tailMod))
 	tailMod = newTail
 
-	Await.result(Future.sequence(futures), DURATION)
+	Await.result(futures, DURATION)
       case Some(nextPair) =>
 	val (nextKey, nextMod) = nextPair
 
@@ -62,7 +62,7 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
 	nodes += ((nextKey, newNextMod))
 	nodes += ((key, nextMod))
 
-	Await.result(Future.sequence(futures), DURATION)
+	Await.result(futures, DURATION)
     }
   }
 
@@ -72,7 +72,7 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
 
     val futures = nodes(key).update(newNode)
 
-    Await.result(Future.sequence(futures), DURATION)
+    Await.result(futures, DURATION)
   }
 
   def remove(key: T) {
@@ -91,7 +91,7 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
 
     nodes -= key
 
-    Await.result(Future.sequence(futures), DURATION)
+    Await.result(futures, DURATION)
   }
 
   def contains(key: T): Boolean = {

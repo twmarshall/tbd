@@ -69,7 +69,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
     nodes(key) = lastNodeMod
 
     val futures = lastNodeMod.update(newNode)
-    Await.result(Future.sequence(futures), DURATION)
+    Await.result(futures, DURATION)
   } //ensuring(isValid())
 
   def update(key: T, value: U) {
@@ -89,7 +89,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
     val newNode = new ChunkListNode(newChunk, node.nextMod, newSize)
 
     val futures = nodes(key).update(newNode)
-    Await.result(Future.sequence(futures), DURATION)
+    Await.result(futures, DURATION)
   } //ensuring(isValid())
 
   def remove(key: T) {
@@ -145,7 +145,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
 
     val futures = nodes(key).update(newNode)
     nodes -= key
-    Await.result(Future.sequence(futures), DURATION)
+    Await.result(futures, DURATION)
   } //ensuring(isValid())
 
   def contains(key: T): Boolean = {

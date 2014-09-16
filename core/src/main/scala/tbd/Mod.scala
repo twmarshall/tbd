@@ -26,23 +26,26 @@ import tbd.datastore.Datastore
 import tbd.master.Main
 import tbd.messages._
 
-class Mod[T] extends Serializable {
-  val idFuture = Datastore.newModId()
-  lazy val id = Await.result(idFuture, DURATION)
-
+class Mod[T](val id: ModId) extends Serializable {
   var value: T = null.asInstanceOf[T]
 
   def read(workerRef: ActorRef = null): T = {
     if (workerRef != null) {
       Datastore.addDependency(id, workerRef)
     }
+
     value
   }
 
-  def update(_value: T): ArrayBuffer[Future[String]] = {
-    val futures = Datastore.updateMod(id, _value)
-    value = _value
-    futures
+  def update(_value: T, workerRef: ActorRef = null): Future[String] = {
+    if (value != _value) {
+      val future = Datastore.modUpdated(id, workerRef)
+      value = _value
+      future
+    } else {
+      import scala.concurrent.ExecutionContext.Implicits.global
+      Future { "done" }
+    }
   }
 
   override def equals(obj: Any): Boolean = {

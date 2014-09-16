@@ -45,7 +45,7 @@ class Modizer[T] {
       if (allocations.contains(key)) {
 	allocations(key)
       } else {
-	val mod1 = new Mod[T]()
+	val mod1 = new Mod[T](c.newModId())
 	allocations(key) = mod1
 	mod1
       }
@@ -81,7 +81,7 @@ class Modizer2[T, U] {
 
 	allocations(key)
       } else {
-	val modLeft = new Mod[T]()
+	val modLeft = new Mod[T](c.newModId())
 	allocations(key) = modLeft
 	modLeft
       }
@@ -94,7 +94,7 @@ class Modizer2[T, U] {
 
 	allocations2(key)
       } else {
-	val modRight = new Mod[U]()
+	val modRight = new Mod[U](c.newModId())
 	allocations2(key) = modRight
 	modRight
       }
@@ -123,7 +123,7 @@ class Modizer2[T, U] {
 
 	allocations(key)
       } else {
-	val modLeft = new Mod[T]()
+	val modLeft = new Mod[T](c.newModId())
 	allocations(key) = modLeft
 	modLeft
       }
@@ -152,7 +152,7 @@ class Modizer2[T, U] {
 
 	allocations2(key)
       } else {
-	val modRight = new Mod[U]()
+	val modRight = new Mod[U](c.newModId())
 	allocations2(key) = modRight
 	modRight
       }

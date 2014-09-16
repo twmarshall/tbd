@@ -119,7 +119,11 @@ class Memoizer[T](c: Context) {
       val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
 
       val awaiting = currentMod.update(changeable.mod.read())
-      Await.result(Future.sequence(awaiting), DURATION)
+      c.pending += awaiting
+      if (c.worker.ddg.reads.contains(currentMod.id)) {
+        c.worker.ddg.modUpdated(currentMod.id)
+        c.updatedMods += currentMod.id
+      }
 
       worker.ddg.replaceMods(memoNode,
 			     memoNode.currentMod,
@@ -134,7 +138,11 @@ class Memoizer[T](c: Context) {
         val changeable = tuple._1.asInstanceOf[Changeable[Any]]
 
         val awaiting = currentMod.update(changeable.mod.read())
-        Await.result(Future.sequence(awaiting), DURATION)
+        c.pending += awaiting
+        if (c.worker.ddg.reads.contains(currentMod.id)) {
+          c.worker.ddg.modUpdated(currentMod.id)
+          c.updatedMods += currentMod.id
+        }
 
         worker.ddg.replaceMods(memoNode,
 			       memoNode.currentMod,
@@ -146,7 +154,11 @@ class Memoizer[T](c: Context) {
         val changeable = tuple._2.asInstanceOf[Changeable[Any]]
 
         val awaiting = currentMod2.update(changeable.mod.read())
-        Await.result(Future.sequence(awaiting), DURATION)
+        c.pending += awaiting
+        if (c.worker.ddg.reads.contains(currentMod2.id)) {
+          c.worker.ddg.modUpdated(currentMod2.id)
+          c.updatedMods += currentMod2.id
+        }
 
         worker.ddg.replaceMods(memoNode,
 			       memoNode.currentMod2,

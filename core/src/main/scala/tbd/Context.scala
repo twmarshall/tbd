@@ -16,7 +16,7 @@
 package tbd
 
 import akka.event.Logging
-import scala.collection.mutable.{Set, Map}
+import scala.collection.mutable.{Buffer, Set, Map}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
@@ -56,4 +56,13 @@ class Context(val id: String, val worker: Worker) {
 
   // A unique id to assign to workers forked from this context.
   var workerId = 0
+
+  private var nextModId = 0
+
+  val pending = Buffer[Future[String]]()
+
+  def newModId(): ModId = {
+    nextModId += 1
+    id + "." + nextModId
+  }
 }

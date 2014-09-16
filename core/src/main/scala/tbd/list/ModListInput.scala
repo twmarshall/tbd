@@ -42,7 +42,7 @@ class ModListInput[T, U] extends ListInput[T, U] {
     nodes(key) = tailMod
     tailMod = newTail
 
-    Await.result(Future.sequence(futures), DURATION)
+    Await.result(futures, DURATION)
   }
 
   def update(key: T, value: U) {
@@ -51,7 +51,7 @@ class ModListInput[T, U] extends ListInput[T, U] {
 
     val futures = nodes(key).update(newNode)
 
-    Await.result(Future.sequence(futures), DURATION)
+    Await.result(futures, DURATION)
   }
 
   def remove(key: T) {
@@ -70,7 +70,7 @@ class ModListInput[T, U] extends ListInput[T, U] {
 
     nodes -= key
 
-    Await.result(Future.sequence(futures), DURATION)
+    Await.result(futures, DURATION)
   }
 
   def contains(key: T): Boolean = {

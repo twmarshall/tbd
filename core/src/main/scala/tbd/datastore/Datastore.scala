@@ -30,37 +30,20 @@ object Datastore {
   def props(storeType: String, cacheSize: Int): Props =
     Props(classOf[Datastore], storeType, cacheSize)
 
-  def addDependency(modId: ModId, workerRef: ActorRef) {
-    datastoreRef ! AddDependencyMessage(modId, workerRef)
-  }
-
+  var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
-    val mod = new Mod[T]()
+    val mod = new Mod[T]("d." + nextModId)
+    nextModId += 1
     mod.update(value)
     mod
   }
 
-  def getMod(modId: ModId, workerRef: ActorRef = null): Any = {
-    val future = datastoreRef ? GetModMessage(modId, workerRef)
-    val ret = Await.result(future, DURATION)
-
-    ret match {
-      case NullMessage => null
-      case x => x
-    }
+  def addDependency(modId: ModId, workerRef: ActorRef) {
+    datastoreRef ! AddDependencyMessage(modId, workerRef)
   }
 
-  def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
-    val futuresFuture = datastoreRef ? UpdateModMessage(modId, value)
-    Await.result(futuresFuture.mapTo[ArrayBuffer[Future[String]]], DURATION)
-  }
-
-  def removeMod(modId: ModId) {
-    datastoreRef ! RemoveModMessage(modId)
-  }
-
-  def newModId(): Future[ModId] = {
-    (datastoreRef ? CreateModMessage(null)).mapTo[ModId]
+  def modUpdated(modId: ModId, worker: ActorRef): Future[String] = {
+    (datastoreRef ? UpdatedModMessage(modId, worker)).mapTo[String]
   }
 }
 
@@ -80,62 +63,22 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
 
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  // Analytics
-  private var startTime = System.currentTimeMillis()
-  private var createCount = 0
-  private var updateCount = 0
-  private var getCount = 0
-  private var deleteCount = 0
-
-  private var nextModId = 0
-  private def createMod(value: Any): ModId = {
-    createCount += 1
-
-    val modId = new ModId("d." + nextModId)
-    nextModId += 1
-
-    store.put(modId, value)
-
-    modId
-  }
-
-  def getMod(modId: ModId, workerRef: ActorRef = null): Any = {
-    getCount += 1
-
-    if (workerRef != null) {
-      if (dependencies.contains(modId)) {
-	dependencies(modId) += workerRef
-      } else {
-	dependencies(modId) = Set(workerRef)
-      }
-    }
-
-    store.get(modId)
-  }
-
-  def updateMod(modId: ModId, value: Any): ArrayBuffer[Future[String]] = {
-    updateCount += 1
+  def modUpdated(modId: ModId, worker: ActorRef, respondTo: ActorRef) {
     val futures = ArrayBuffer[Future[String]]()
 
-    if (value != getMod(modId)) {
-      store.put(modId, value)
-
-      if (dependencies.contains(modId)) {
-	for (workerRef <- dependencies(modId)) {
+    if (dependencies.contains(modId)) {
+      for (workerRef <- dependencies(modId)) {
+        if (workerRef != worker) {
 	  val finished = Promise[String]()
 	  workerRef ! ModUpdatedMessage(modId, finished)
 	  futures += finished.future
-	}
+        }
       }
     }
 
-    futures
-  }
-
-  def removeMod(modId: ModId) {
-    deleteCount += 1
-
-    store.remove(modId)
+    Future.sequence(futures).onComplete {
+      case value => respondTo ! "done"
+    }
   }
 
   def receive = {
@@ -147,51 +90,15 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
       }
     }
 
-    case CreateModMessage(value: Any) => {
-      sender ! createMod(value)
+    case UpdatedModMessage(modId: ModId, worker: ActorRef) => {
+      modUpdated(modId, worker, sender)
     }
 
-    case CreateModMessage(null) => {
-      sender ! createMod(null)
-    }
-
-    case GetModMessage(modId: ModId, workerRef: ActorRef) => {
-      val ret = getMod(modId, workerRef)
-
-      if (ret == null) {
-	sender ! NullMessage
-      } else {
-	sender ! ret
-      }
-    }
-
-    case GetModMessage(modId: ModId, null) => {
-      val ret = getMod(modId, null)
-
-      if (ret == null) {
-	sender ! NullMessage
-      } else {
-	sender ! ret
-      }
-    }
-
-    case UpdateModMessage(modId: ModId, value: Any) => {
-      sender ! updateMod(modId, value)
-    }
-
-    case UpdateModMessage(modId: ModId, null) => {
-      sender ! updateMod(modId, null)
-    }
-
-    case RemoveModMessage(modId) => {
-      removeMod(modId)
+    case UpdatedModMessage(modId: ModId, null) => {
+      modUpdated(modId, null, sender)
     }
 
     case CleanupMessage => {
-      val elapsed = (System.currentTimeMillis() - startTime) / 1000.0
-      log.info("Shutting down. reads/s = " + getCount / elapsed +
-	       ", write/s = " + updateCount / elapsed + " deletes/s = " +
-	       deleteCount / elapsed + ", creates/s = " + createCount / elapsed)
       store.shutdown()
       sender ! "done"
     }

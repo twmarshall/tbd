@@ -84,6 +84,9 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
           } else {
             val parNode = node.asInstanceOf[ParNode]
 
+            Await.result(Future.sequence(c.pending), DURATION)
+            c.pending.clear()
+
             val future1 = parNode.workerRef1 ? PropagateMessage
             val future2 = parNode.workerRef2 ? PropagateMessage
 
@@ -114,6 +117,8 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
 
     case RunTaskMessage(adjust: Adjustable[_]) => {
       sender ! adjust.run(c)
+      Await.result(Future.sequence(c.pending), DURATION)
+      c.pending.clear()
     }
 
     case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {
@@ -132,6 +137,9 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
       val future = propagate()
       future.onComplete((t: Try[Boolean]) => {
 	c.updatedMods.clear()
+
+        Await.result(Future.sequence(c.pending), DURATION)
+        c.pending.clear()
 
         respondTo ! "done"
       })
