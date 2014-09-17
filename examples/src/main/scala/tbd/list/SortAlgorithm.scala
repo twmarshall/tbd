@@ -42,7 +42,7 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   private def naiveHelper(input: Map[Int, Int]) = {
-    input map { TreeSet(_) } reduce((one, two) => one ++ two)
+    input.toBuffer.sortWith(_._1 < _._1)
   }
 
   def checkOutput(
