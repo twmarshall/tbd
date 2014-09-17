@@ -37,21 +37,35 @@ class ModListInput[T, U] extends ListInput[T, U] {
     val newTail = Datastore.createMod[ModListNode[T, U]](null)
     val newNode = new ModListNode((key, value), newTail)
 
-    val futures = tailMod.update(newNode)
+    val future = tailMod.update(newNode)
 
     nodes(key) = tailMod
     tailMod = newTail
 
-    Await.result(futures, DURATION)
+    Await.result(future, DURATION)
+  }
+
+  def putAfter(key: T, pair: (T, U)) {
+    val before = nodes(key).read()
+
+    val newNode = new ModListNode(pair, before.nextMod)
+    val newNodeMod = Datastore.createMod(newNode)
+
+    val newBefore = new ModListNode(before.value, newNodeMod)
+    val future = nodes(key).update(newBefore)
+
+    nodes(pair._1) = newNodeMod
+
+    Await.result(future, DURATION)
   }
 
   def update(key: T, value: U) {
     val nextMod = nodes(key).read().nextMod
     val newNode = new ModListNode((key, value), nextMod)
 
-    val futures = nodes(key).update(newNode)
+    val future = nodes(key).update(newNode)
 
-    Await.result(futures, DURATION)
+    Await.result(future, DURATION)
   }
 
   def remove(key: T) {
@@ -66,11 +80,11 @@ class ModListInput[T, U] extends ListInput[T, U] {
       nodes(nextNode.value._1) = nodes(key)
     }
 
-    val futures = nodes(key).update(nextNode)
+    val future = nodes(key).update(nextNode)
 
     nodes -= key
 
-    Await.result(futures, DURATION)
+    Await.result(future, DURATION)
   }
 
   def contains(key: T): Boolean = {

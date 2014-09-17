@@ -40,6 +40,20 @@ class PartitionedChunkListInput[T, U](conf: ListConf)
     partitionModifiers(putInto).put(key, value)
   }
 
+  def putAfter(key: T, newPair: (T, U)) {
+    var found = false
+    for (partitionModifier <- partitionModifiers) {
+      if (!found && partitionModifier.contains(key)) {
+        partitionModifier.putAfter(key, newPair)
+        found = true
+      }
+    }
+
+    if (!found) {
+      println("Warning: tried to putAfter nonexistant key " + key)
+    }
+  }
+
   def update(key: T, value: U) {
     var found = false
     for (partitionModifier <- partitionModifiers) {
@@ -49,9 +63,9 @@ class PartitionedChunkListInput[T, U](conf: ListConf)
       }
     }
 
-   if (!found) {
-     println("Warning: tried to update nonexistant key " + key)
-   }
+    if (!found) {
+      println("Warning: tried to update nonexistant key " + key)
+    }
   }
 
   def remove(key: T) {

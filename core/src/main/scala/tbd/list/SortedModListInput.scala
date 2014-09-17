@@ -44,12 +44,12 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
 	val newTail = Datastore.createMod[ModListNode[T, U]](null)
 	val newNode = new ModListNode((key, value), newTail)
 
-        val futures = tailMod.update(newNode)
+        val future = tailMod.update(newNode)
 
 	nodes += ((key, tailMod))
 	tailMod = newTail
 
-	Await.result(futures, DURATION)
+	Await.result(future, DURATION)
       case Some(nextPair) =>
 	val (nextKey, nextMod) = nextPair
 
@@ -57,22 +57,28 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
 	val newNextMod = Datastore.createMod[ModListNode[T, U]](nextNode)
 
 	val newNode = new ModListNode((key, value), newNextMod)
-        val futures = nextMod.update(newNode)
+        val future = nextMod.update(newNode)
 
 	nodes += ((nextKey, newNextMod))
 	nodes += ((key, nextMod))
 
-	Await.result(futures, DURATION)
+	Await.result(future, DURATION)
     }
+  }
+
+  // Note: doesn't really make sense to allow random insertions into a sorted
+  // list, so we just ignore the key.
+  def putAfter(key: T, newPair: (T, U)) {
+    put(newPair._1, newPair._2)
   }
 
   def update(key: T, value: U) {
     val nextMod = nodes(key).read().nextMod
     val newNode = new ModListNode((key, value), nextMod)
 
-    val futures = nodes(key).update(newNode)
+    val future = nodes(key).update(newNode)
 
-    Await.result(futures, DURATION)
+    Await.result(future, DURATION)
   }
 
   def remove(key: T) {
@@ -87,11 +93,11 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
       nodes += ((nextNode.value._1, nodes(key)))
     }
 
-    val futures = nodes(key).update(nextNode)
+    val future = nodes(key).update(nextNode)
 
     nodes -= key
 
-    Await.result(futures, DURATION)
+    Await.result(future, DURATION)
   }
 
   def contains(key: T): Boolean = {

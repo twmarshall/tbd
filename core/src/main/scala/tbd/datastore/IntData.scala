@@ -15,10 +15,10 @@
  */
 package tbd.datastore
 
-import tbd.Input
+import tbd.list.ListInput
 
 class IntData(
-    input: Input[Int, Int],
+    input: ListInput[Int, Int],
     count: Int,
     mutations: Array[String] = Array("insert", "update", "remove"),
     _file: String = "data.txt"
@@ -67,7 +67,17 @@ class IntData(
     while (table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-    input.put(key, value)
+
+    if (table.size > 0) {
+      var insertAfter = rand.nextInt(maxKey)
+      while (!table.contains(insertAfter)) {
+        insertAfter = rand.nextInt(maxKey)
+      }
+
+      input.putAfter(insertAfter, (key, value))
+    } else {
+      input.put(key, value)
+    }
 
     log("adding " + (key, value))
 
@@ -97,6 +107,7 @@ class IntData(
       while (!table.contains(key)) {
 	key = rand.nextInt(maxKey)
       }
+
       log("updating " + (key, value))
 
       input.update(key, value)

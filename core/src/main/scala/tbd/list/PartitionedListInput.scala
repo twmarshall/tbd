@@ -44,9 +44,21 @@ class PartitionedListInput[T, U](conf: ListConf) extends ListInput[T, U] {
     partitionModifiers(putInto).put(key, value)
   }
 
-  override def update(key: T, value: U) {
-    var futures = ArrayBuffer[Future[String]]()
+  def putAfter(key: T, newPair: (T, U)) {
+    var found = false
+    for (partitionModifier <- partitionModifiers) {
+      if (!found && partitionModifier.contains(key)) {
+        partitionModifier.putAfter(key, newPair)
+        found = true
+      }
+    }
 
+    if (!found) {
+      println("Warning: tried to putAfter nonexistant key " + key)
+    }
+  }
+
+  override def update(key: T, value: U) {
     var found = false
     for (partitionModifier <- partitionModifiers) {
       if (!found && partitionModifier.contains(key)) {
@@ -56,15 +68,11 @@ class PartitionedListInput[T, U](conf: ListConf) extends ListInput[T, U] {
     }
 
    if (!found) {
-     println("Warning: tried to update nonexistant key")
+     println("Warning: tried to update nonexistant key " + key)
    }
-
-    Await.result(Future.sequence(futures), DURATION)
   }
 
   override def remove(key: T) {
-    var futures = ArrayBuffer[Future[String]]()
-
     var found = false
     for (partitionModifier <- partitionModifiers) {
       if (!found && partitionModifier.contains(key)) {
@@ -72,8 +80,6 @@ class PartitionedListInput[T, U](conf: ListConf) extends ListInput[T, U] {
         found = true
       }
     }
-
-    Await.result(Future.sequence(futures), DURATION)
   }
 
   override def getAdjustableList(): AdjustableList[T, U] = {

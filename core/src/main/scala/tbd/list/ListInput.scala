@@ -42,5 +42,7 @@ object ListInput {
 }
 
 trait ListInput[T, U] extends Input[T, U] {
+  def putAfter(key: T, newPair: (T, U))
+
   def getAdjustableList(): AdjustableList[T, U]
 }

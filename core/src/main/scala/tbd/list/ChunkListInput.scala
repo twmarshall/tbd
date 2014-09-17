@@ -68,9 +68,64 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
 
     nodes(key) = lastNodeMod
 
-    val futures = lastNodeMod.update(newNode)
-    Await.result(futures, DURATION)
+    val future = lastNodeMod.update(newNode)
+    Await.result(future, DURATION)
   } //ensuring(isValid())
+
+  private def calculateSize(chunk: Vector[(T, U)]) = {
+    chunk.aggregate(0)((sum: Int, pair: (T, U)) => sum + conf.chunkSizer(pair), _ + _)
+  }
+
+  def putAfter(key: T, newPair: (T, U)) {
+    val insertIntoMod = nodes(key)
+    val insertInto = nodes(key).read()
+    val newSize = insertInto.size + conf.chunkSizer(newPair._2)
+
+    var found = false
+    val newChunk = insertInto.chunk.flatMap((pair: (T, U)) => {
+      if (pair._1 == key) {
+        found = true
+        Vector(pair, newPair)
+      } else {
+        Vector(pair)
+      }
+    })
+
+    val newNode =
+      if (newSize > conf.chunkSize) {
+        val (newChunk1, newChunk2) = newChunk.splitAt(insertInto.chunk.size / 2)
+
+        val size1 = calculateSize(newChunk1)
+        val size2 = calculateSize(newChunk2)
+
+        val newNode2 = new ChunkListNode(newChunk2, insertInto.nextMod, size1)
+        val newNodeMod2 = Datastore.createMod(newNode2)
+
+        newChunk2.foreach {
+          case (_key, _value) =>
+            nodes(_key) = newNodeMod2
+            previous(_key) = insertIntoMod
+        }
+
+        if (newChunk1.contains(newPair)) {
+          nodes(newPair._1) = insertIntoMod
+          previous(newPair._1) = previous(insertInto.chunk.head._1)
+        }
+
+        new ChunkListNode(newChunk1, newNodeMod2, size2)
+      } else {
+        nodes(newPair._1) = insertIntoMod
+        previous(newPair._1) = previous(insertInto.chunk.head._1)
+
+        new ChunkListNode(
+          newChunk,
+          insertInto.nextMod,
+          insertInto.size + conf.chunkSizer(newPair))
+      }
+
+    val future = insertIntoMod.update(newNode)
+    Await.result(future, DURATION)
+  }
 
   def update(key: T, value: U) {
     val node = nodes(key).read()
@@ -88,8 +143,8 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
     val newSize = node.size + conf.chunkSizer(value) - conf.chunkSizer(oldValue)
     val newNode = new ChunkListNode(newChunk, node.nextMod, newSize)
 
-    val futures = nodes(key).update(newNode)
-    Await.result(futures, DURATION)
+    val future = nodes(key).update(newNode)
+    Await.result(future, DURATION)
   } //ensuring(isValid())
 
   def remove(key: T) {
@@ -143,9 +198,9 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
         new ChunkListNode(newChunk, node.nextMod, newSize)
       }
 
-    val futures = nodes(key).update(newNode)
+    val future = nodes(key).update(newNode)
     nodes -= key
-    Await.result(futures, DURATION)
+    Await.result(future, DURATION)
   } //ensuring(isValid())
 
   def contains(key: T): Boolean = {

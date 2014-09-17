@@ -33,7 +33,7 @@ class MutatorTests extends FlatSpec with Matchers {
   def runTest
       (mutator: Mutator,
        adjustable: Adjustable[AdjustableList[Int, Int]],
-       input: Input[Int, Int],
+       input: ListInput[Int, Int],
        sorted: Boolean) {
 
     def check(output: AdjustableList[Int, Int], data: IntData): Boolean = {
