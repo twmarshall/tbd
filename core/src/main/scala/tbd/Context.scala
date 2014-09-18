@@ -16,23 +16,24 @@
 package tbd
 
 import akka.event.Logging
-import scala.collection.mutable.{Buffer, Set, Map}
-import scala.concurrent.{Await, Future}
+import scala.collection.mutable.{Buffer, Set}
+import scala.concurrent.Future
 
 import tbd.Constants._
-import tbd.ddg.{Node, Timestamp}
-import tbd.master.Main
+import tbd.ddg.{DDG, Node, Timestamp}
 import tbd.worker.Worker
 
 class Context(val id: String, val worker: Worker) {
   import worker.context.dispatcher
 
+  val log = Logging(worker.context.system, "TBD" + id)
+
+  val ddg = new DDG(id)
+
   var initialRun = true
 
   // The Node representing the currently executing reader.
-  var currentParent: Node = worker.ddg.root
-
-  val log = Logging(worker.context.system, "TBD" + id)
+  var currentParent: Node = ddg.root
 
   // Contains a list of mods that have been updated since the last run of change
   // propagation, to determine when memo matches can be made.

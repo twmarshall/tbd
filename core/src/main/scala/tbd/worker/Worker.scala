@@ -35,24 +35,22 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  val ddg = new DDG(log, id, this)
-
   private val c = new Context(id, this)
 
   def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
                 end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
     Future {
-      var option = ddg.updated.find((node: Node) =>
+      var option = c.ddg.updated.find((node: Node) =>
         node.timestamp > start && node.timestamp < end)
       while (!option.isEmpty) {
         val node = option.get
-        ddg.updated -= node
+        c.ddg.updated -= node
 
         if (node.updated) {
           if (node.isInstanceOf[ReadNode]) {
             val readNode = node.asInstanceOf[ReadNode]
 
-            val toCleanup = ddg.cleanupRead(readNode)
+            val toCleanup = c.ddg.cleanupRead(readNode)
 
             val newValue = readNode.mod.read()
 
@@ -78,7 +76,7 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
 
             for (node <- toCleanup) {
               if (node.parent == null) {
-                ddg.cleanupSubtree(node)
+                c.ddg.cleanupSubtree(node)
               }
             }
           } else {
@@ -98,7 +96,7 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
           }
         }
 
-        option = ddg.updated.find((node: Node) =>
+        option = c.ddg.updated.find((node: Node) =>
           node.timestamp > start && node.timestamp < end)
       }
 
@@ -109,7 +107,7 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
 
   def receive = {
     case ModUpdatedMessage(modId: ModId, finished: Future[_]) => {
-      ddg.modUpdated(modId)
+      c.ddg.modUpdated(modId)
       c.updatedMods += modId
 
       parent ! PebbleMessage(self, modId, finished)
@@ -122,7 +120,7 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {
-      val newPebble = ddg.parUpdated(workerRef)
+      val newPebble = c.ddg.parUpdated(workerRef)
 
       if (newPebble) {
         parent ! PebbleMessage(self, modId, finished)
@@ -146,16 +144,16 @@ class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
     }
 
     case GetDDGMessage => {
-      sender ! ddg
+      sender ! c.ddg
     }
 
     case DDGToStringMessage(prefix: String) => {
-      sender ! ddg.toString(prefix)
+      sender ! c.ddg.toString(prefix)
     }
 
     case CleanupWorkerMessage => {
       val futures = Set[Future[Any]]()
-      for ((actorRef, parNode) <- ddg.pars) {
+      for ((actorRef, parNode) <- c.ddg.pars) {
         futures += actorRef ? CleanupWorkerMessage
         actorRef ! akka.actor.PoisonPill
       }

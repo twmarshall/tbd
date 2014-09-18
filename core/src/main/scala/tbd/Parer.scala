@@ -53,7 +53,7 @@ class Parer[T](one: Context => T, id1: Int, closedTerms1: List[(String, Any)]) {
     val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
     val twoFuture = workerRef2 ? RunTaskMessage(adjust2)
 
-    c.worker.ddg.addPar(workerRef1, workerRef2, c.currentParent,
+    c.ddg.addPar(workerRef1, workerRef2, c.currentParent,
                       FunctionTag(id1, closedTerms1),
                       FunctionTag(id2, closedTerms2))
 

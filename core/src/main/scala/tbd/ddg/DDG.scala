@@ -16,15 +16,13 @@
 package tbd.ddg
 
 import akka.actor.ActorRef
-import akka.event.LoggingAdapter
 import scala.collection.mutable.{Map, MutableList, Set, TreeSet}
 
 import tbd.{Changeable, Memoizer, Mod}
 import tbd.Constants._
 import tbd.master.Master
-import tbd.worker.Worker
 
-class DDG(log: LoggingAdapter, id: String, worker: Worker) {
+class DDG(id: String) {
   var root = new RootNode(id)
   val reads = Map[ModId, Set[ReadNode]]()
   val pars = Map[ActorRef, ParNode]()

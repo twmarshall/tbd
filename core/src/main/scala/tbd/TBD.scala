@@ -47,7 +47,7 @@ object TBD {
 
     val value = mod.read(c.worker.self)
 
-    val readNode = c.worker.ddg.addRead(
+    val readNode = c.ddg.addRead(
         mod.asInstanceOf[Mod[Any]], value, c.currentParent,
         reader.asInstanceOf[Any => Changeable[Any]],
         FunctionTag(readerId, freeTerms))
@@ -58,7 +58,7 @@ object TBD {
     val changeable = reader(value)
     c.currentParent = outerReader
 
-    readNode.endTime = c.worker.ddg.nextTimestamp(readNode)
+    readNode.endTime = c.ddg.nextTimestamp(readNode)
     readNode.currentMod = c.currentMod
     readNode.currentMod2 = c.currentMod2
 
@@ -82,7 +82,7 @@ object TBD {
 
     val value = mod.read(c.worker.self)
 
-    val readNode = c.worker.ddg.addRead(mod.asInstanceOf[Mod[Any]], value,
+    val readNode = c.ddg.addRead(mod.asInstanceOf[Mod[Any]], value,
                                         c.currentParent,
                                         reader.asInstanceOf[Any => Changeable[Any]],
                                         FunctionTag(readerId, freeTerms))
@@ -93,7 +93,7 @@ object TBD {
     val changeables = reader(value)
     c.currentParent = outerReader
 
-    readNode.endTime = c.worker.ddg.nextTimestamp(readNode)
+    readNode.endTime = c.ddg.nextTimestamp(readNode)
     readNode.currentMod = c.currentMod
     readNode.currentMod2 = c.currentMod2
 
@@ -128,7 +128,7 @@ object TBD {
 
     c.currentMod = mod1.asInstanceOf[Mod[Any]]
 
-    val modNode = c.worker.ddg.addMod(c.currentMod, null, c.currentParent,
+    val modNode = c.ddg.addMod(c.currentMod, null, c.currentParent,
                                       FunctionTag(readerId, freeTerms))
 
     val outerReader = c.currentParent
@@ -137,7 +137,7 @@ object TBD {
     initializer
 
     c.currentParent = outerReader
-    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
+    modNode.endTime = c.ddg.nextTimestamp(modNode)
 
     val mod = c.currentMod
     c.currentMod = oldCurrentDest
@@ -178,7 +178,7 @@ object TBD {
     val oldCurrentDest2 = c.currentMod2
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
-    val modNode = c.worker.ddg.addMod(c.currentMod, c.currentMod2,
+    val modNode = c.ddg.addMod(c.currentMod, c.currentMod2,
                                       c.currentParent,
                                       FunctionTag(readerId, freeTerms))
 
@@ -188,7 +188,7 @@ object TBD {
     initializer
 
     c.currentParent = outerReader
-    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
+    modNode.endTime = c.ddg.nextTimestamp(modNode)
 
     val mod = c.currentMod
     c.currentMod = oldCurrentDest
@@ -222,7 +222,7 @@ object TBD {
     val oldCurrentDest = c.currentMod
     c.currentMod = modLeft.asInstanceOf[Mod[Any]]
 
-    val modNode = c.worker.ddg.addMod(c.currentMod,
+    val modNode = c.ddg.addMod(c.currentMod,
 				      null,
                                       c.currentParent,
                                       FunctionTag(readerId, freeTerms))
@@ -234,7 +234,7 @@ object TBD {
     initializer
 
     c.currentParent = outerReader
-    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
+    modNode.endTime = c.ddg.nextTimestamp(modNode)
 
     val mod = c.currentMod
     c.currentMod = oldCurrentDest
@@ -266,7 +266,7 @@ object TBD {
     val oldCurrentDest2 = c.currentMod2
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
-    val modNode = c.worker.ddg.addMod(null,
+    val modNode = c.ddg.addMod(null,
                                       c.currentMod2,
                                       c.currentParent,
                                       FunctionTag(readerId, freeTerms))
@@ -278,7 +278,7 @@ object TBD {
     initializer
 
     c.currentParent = outerReader
-    modNode.endTime = c.worker.ddg.nextTimestamp(modNode)
+    modNode.endTime = c.ddg.nextTimestamp(modNode)
 
     val mod2 = c.currentMod2
     c.currentMod2 = oldCurrentDest2
@@ -292,18 +292,18 @@ object TBD {
 
     val awaiting = c.currentMod.update(value, c.worker.self)
     c.pending += awaiting
-    if (c.worker.ddg.reads.contains(c.currentMod.id)) {
-      c.worker.ddg.modUpdated(c.currentMod.id)
+    if (c.ddg.reads.contains(c.currentMod.id)) {
+      c.ddg.modUpdated(c.currentMod.id)
       c.updatedMods += c.currentMod.id
     }
 
     val changeable = new Changeable(c.currentMod)
 
     if (Main.debug) {
-      val writeNode = c.worker.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
+      val writeNode = c.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
                                             null,
                                             c.currentParent)
-      writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
+      writeNode.endTime = c.ddg.nextTimestamp(writeNode)
     }
 
     changeable.asInstanceOf[Changeable[T]]
@@ -320,22 +320,22 @@ object TBD {
     c.pending += awaiting
     c.pending += awaiting2
 
-    if (c.worker.ddg.reads.contains(c.currentMod.id)) {
+    if (c.ddg.reads.contains(c.currentMod.id)) {
       c.updatedMods += c.currentMod.id
-      c.worker.ddg.modUpdated(c.currentMod.id)
+      c.ddg.modUpdated(c.currentMod.id)
     }
 
-    if (c.worker.ddg.reads.contains(c.currentMod2.id)) {
+    if (c.ddg.reads.contains(c.currentMod2.id)) {
       c.updatedMods += c.currentMod2.id
-      c.worker.ddg.modUpdated(c.currentMod2.id)
+      c.ddg.modUpdated(c.currentMod2.id)
     }
 
     if (Main.debug) {
-      val writeNode = c.worker.ddg.addWrite(c.currentMod.asInstanceOf[Mod[Any]],
+      val writeNode = c.ddg.addWrite(c.currentMod.asInstanceOf[Mod[Any]],
                                             c.currentMod2.asInstanceOf[Mod[Any]],
                                             c.currentParent)
 
-      writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
+      writeNode.endTime = c.ddg.nextTimestamp(writeNode)
     }
 
     write2Helper(c)
@@ -353,17 +353,17 @@ object TBD {
 
     val awaiting = c.currentMod.update(value, c.worker.self)
     c.pending += awaiting
-    if (c.worker.ddg.reads.contains(c.currentMod.id)) {
+    if (c.ddg.reads.contains(c.currentMod.id)) {
       c.updatedMods += c.currentMod.id
-      c.worker.ddg.modUpdated(c.currentMod.id)
+      c.ddg.modUpdated(c.currentMod.id)
     }
 
     if (Main.debug) {
-      val writeNode = c.worker.ddg.addWrite(c.currentMod.asInstanceOf[Mod[Any]],
+      val writeNode = c.ddg.addWrite(c.currentMod.asInstanceOf[Mod[Any]],
                                             null,
                                             c.currentParent)
 
-      writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
+      writeNode.endTime = c.ddg.nextTimestamp(writeNode)
     }
 
     write2Helper(c)
@@ -381,17 +381,17 @@ object TBD {
 
     val awaiting = c.currentMod2.update(value2, c.worker.self)
     c.pending += awaiting
-    if (c.worker.ddg.reads.contains(c.currentMod2.id)) {
+    if (c.ddg.reads.contains(c.currentMod2.id)) {
       c.updatedMods += c.currentMod2.id
-      c.worker.ddg.modUpdated(c.currentMod2.id)
+      c.ddg.modUpdated(c.currentMod2.id)
     }
 
     if (Main.debug) {
-      val writeNode = c.worker.ddg.addWrite(null,
+      val writeNode = c.ddg.addWrite(null,
                                             c.currentMod2.asInstanceOf[Mod[Any]],
                                             c.currentParent)
 
-      writeNode.endTime = c.worker.ddg.nextTimestamp(writeNode)
+      writeNode.endTime = c.ddg.nextTimestamp(writeNode)
     }
 
     write2Helper(c)
