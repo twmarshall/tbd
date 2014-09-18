@@ -18,7 +18,8 @@ package tbd.list
 import tbd.Input
 
 object ListInput {
-  def apply[T, U](conf: ListConf = new ListConf())(implicit ordering: Ordering[T]): ListInput[T, U] = {
+  def apply[T, U](conf: ListConf = new ListConf())
+      (implicit ordering: Ordering[T]): ListInput[T, U] = {
     if (conf.sorted) {
       assert(conf.chunkSize == 1 && conf.partitions == 1)
       new SortedModListInput()

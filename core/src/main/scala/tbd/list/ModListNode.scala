@@ -25,15 +25,12 @@ object ModListNode {
   type ChangeableTuple[T, U] = (Changeable[ModListNode[T, U]], Changeable[ModListNode[T, U]])
 }
 
-class ModListNode[T, U] (
-    var value: (T, U),
-    val nextMod: Mod[ModListNode[T, U]]
-  ) extends Serializable {
+class ModListNode[T, U]
+    (var value: (T, U),
+     val nextMod: Mod[ModListNode[T, U]]) extends Serializable {
 
-  def filter(
-      pred: ((T, U)) => Boolean,
-      memo: Memoizer[Mod[ModListNode[T, U]]])
-     (implicit c: Context): Changeable[ModListNode[T, U]] = {
+  def filter(pred: ((T, U)) => Boolean, memo: Memoizer[Mod[ModListNode[T, U]]])
+      (implicit c: Context): Changeable[ModListNode[T, U]] = {
     def readNext = {
       read(nextMod) {
 	case null => write[ModListNode[T, U]](null)
@@ -53,11 +50,11 @@ class ModListNode[T, U] (
     }
   }
 
-  def flatMap[V, W](
-      f: ((T, U)) => Iterable[(V, W)],
-      memo: Memoizer[Changeable[ModListNode[V, W]]],
-      modizer: Modizer[ModListNode[V, W]])
-     (implicit c: Context): Changeable[ModListNode[V, W]] = {
+  def flatMap[V, W]
+      (f: ((T, U)) => Iterable[(V, W)],
+       memo: Memoizer[Changeable[ModListNode[V, W]]],
+       modizer: Modizer[ModListNode[V, W]])
+      (implicit c: Context): Changeable[ModListNode[V, W]] = {
     var mapped = f(value)
 
     if (mapped.size > 0) {
@@ -92,10 +89,10 @@ class ModListNode[T, U] (
     }
   }
 
-  def loopJoin[V](
-      that: ModList[T, V],
-      memo: Memoizer[Changeable[ModListNode[T, (U, V)]]])
-     (implicit c: Context): Changeable[ModListNode[T, (U, V)]] = {
+  def loopJoin[V]
+      (that: ModList[T, V],
+       memo: Memoizer[Changeable[ModListNode[T, (U, V)]]])
+      (implicit c: Context): Changeable[ModListNode[T, (U, V)]] = {
     val newNextMod = mod {
       read(nextMod) {
 	case null =>
@@ -118,11 +115,11 @@ class ModListNode[T, U] (
 
   // Iterates over the second join list, testing each element for equality
   // with a single element from the first list.
-  private def joinHelper[V](
-      thatValue: (T, V),
-      tail: Mod[ModListNode[T, (V, U)]],
-      memo: Memoizer[Changeable[ModListNode[T, (V, U)]]])
-     (implicit c: Context): Changeable[ModListNode[T, (V, U)]] = {
+  private def joinHelper[V]
+      (thatValue: (T, V),
+       tail: Mod[ModListNode[T, (V, U)]],
+       memo: Memoizer[Changeable[ModListNode[T, (V, U)]]])
+      (implicit c: Context): Changeable[ModListNode[T, (V, U)]] = {
     if (thatValue._1 == value._1) {
       val newValue = (value._1, (thatValue._2, value._2))
 
@@ -154,11 +151,11 @@ class ModListNode[T, U] (
     }
   }
 
-  def map[V, W](
-      f: ((T, U)) => (V, W),
-      memo: Memoizer[Changeable[ModListNode[V, W]]],
-      modizer: Modizer[ModListNode[V, W]])
-     (implicit c: Context): Changeable[ModListNode[V, W]] = {
+  def map[V, W]
+      (f: ((T, U)) => (V, W),
+       memo: Memoizer[Changeable[ModListNode[V, W]]],
+       modizer: Modizer[ModListNode[V, W]])
+      (implicit c: Context): Changeable[ModListNode[V, W]] = {
     val newNextMod = modizer(nextMod.id) {
       read(nextMod) {
 	case null =>
@@ -173,11 +170,11 @@ class ModListNode[T, U] (
     write(new ModListNode[V, W](f(value), newNextMod))
   }
 
-  def mapValues[V](
-      f: U => V,
-      memo: Memoizer[Changeable[ModListNode[T, V]]],
-      modizer: Modizer[ModListNode[T, V]])
-     (implicit c: Context): Changeable[ModListNode[T, V]] = {
+  def mapValues[V]
+      (f: U => V,
+       memo: Memoizer[Changeable[ModListNode[T, V]]],
+       modizer: Modizer[ModListNode[T, V]])
+      (implicit c: Context): Changeable[ModListNode[T, V]] = {
     val newNextMod = modizer(nextMod.id) {
       read(nextMod) {
 	case null =>
@@ -233,10 +230,10 @@ class ModListNode[T, U] (
     }
   }
 
-  private def mergeTail(
-      memo: Memoizer[Changeable[ModListNode[T, U]]],
-      modizer: Modizer[ModListNode[T, U]])
-     (implicit c: Context): Changeable[ModListNode[T, U]] = {
+  private def mergeTail
+      (memo: Memoizer[Changeable[ModListNode[T, U]]],
+       modizer: Modizer[ModListNode[T, U]])
+      (implicit c: Context): Changeable[ModListNode[T, U]] = {
     val newNextMod = modizer(value) {
       read(nextMod) {
 	case null =>
@@ -251,12 +248,12 @@ class ModListNode[T, U] (
     write(new ModListNode[T, U](value, newNextMod))
   }
 
-  def reduceByKey(
-      f: (U, U) => U,
-      previousKey: T,
-      runningValue: U,
-      memo: Memoizer[Changeable[ModListNode[T, U]]])
-     (implicit c: Context): Changeable[ModListNode[T, U]] = {
+  def reduceByKey
+      (f: (U, U) => U,
+       previousKey: T,
+       runningValue: U,
+       memo: Memoizer[Changeable[ModListNode[T, U]]])
+      (implicit c: Context): Changeable[ModListNode[T, U]] = {
     if (value._1 == previousKey) {
       val newRunningValue =
 	if (runningValue == null)

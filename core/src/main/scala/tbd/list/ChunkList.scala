@@ -21,13 +21,12 @@ import tbd._
 import tbd.Constants.ModId
 import tbd.TBD._
 
-class ChunkList[T, U](
-    val head: Mod[ChunkListNode[T, U]],
-    conf: ListConf) extends AdjustableList[T, U] {
+class ChunkList[T, U]
+    (val head: Mod[ChunkListNode[T, U]],
+     conf: ListConf) extends AdjustableList[T, U] {
 
-  override def chunkMap[V, W](
-      f: (Vector[(T, U)]) => (V, W))
-     (implicit c: Context): ModList[V, W] = {
+  override def chunkMap[V, W](f: (Vector[(T, U)]) => (V, W))
+      (implicit c: Context): ModList[V, W] = {
     val memo = makeMemoizer[Mod[ModListNode[V, W]]]()
 
     new ModList(
@@ -40,13 +39,11 @@ class ChunkList[T, U](
     )
   }
 
-  def filter(
-      pred: ((T, U)) => Boolean)
-     (implicit c: Context): ChunkList[T, U] = ???
+  def filter(pred: ((T, U)) => Boolean)
+      (implicit c: Context): ChunkList[T, U] = ???
 
-  def flatMap[V, W](
-      f: ((T, U)) => Iterable[(V, W)])
-     (implicit c: Context): ChunkList[V, W] = {
+  def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
+      (implicit c: Context): ChunkList[V, W] = {
     val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
 
     new ChunkList(
@@ -59,9 +56,8 @@ class ChunkList[T, U](
     )
   }
 
-  def join[V](
-      _that: AdjustableList[T, V])
-     (implicit c: Context): ChunkList[T, (U, V)] = {
+  def join[V](_that: AdjustableList[T, V])
+      (implicit c: Context): ChunkList[T, (U, V)] = {
     assert(_that.isInstanceOf[ChunkList[T, V]])
     val that = _that.asInstanceOf[ChunkList[T, V]]
 
@@ -77,9 +73,8 @@ class ChunkList[T, U](
     )
   }
 
-  def map[V, W](
-      f: ((T, U)) => (V, W))
-     (implicit c: Context): ChunkList[V, W] = {
+  def map[V, W](f: ((T, U)) => (V, W))
+      (implicit c: Context): ChunkList[V, W] = {
     val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
 
     new ChunkList(
@@ -92,8 +87,7 @@ class ChunkList[T, U](
     )
   }
 
-  def merge
-      (that: ChunkList[T, U])
+  def merge(that: ChunkList[T, U])
       (implicit c: Context,
        ordering: Ordering[T]): ChunkList[T, U] = {
     merge(that, makeMemoizer[Changeable[ChunkListNode[T, U]]](), makeModizer[ChunkListNode[T, U]]())
@@ -106,51 +100,52 @@ class ChunkList[T, U](
       (implicit c: Context,
        ordering: Ordering[T]): ChunkList[T, U] = {
 
-    def innerMerge(
-        one: ChunkListNode[T, U],
-        two: ChunkListNode[T, U],
-        _oneRemaining: Vector[(T, U)],
-        _twoRemaining: Vector[(T, U)],
-        memo: Memoizer[Changeable[ChunkListNode[T, U]]],
-        modizer: Modizer[ChunkListNode[T, U]])
-       (implicit c: Context): Changeable[ChunkListNode[T, U]] = {
-      val oneRemaining =
+    def innerMerge
+        (one: ChunkListNode[T, U],
+         two: ChunkListNode[T, U],
+         _oneR: Vector[(T, U)],
+         _twoR: Vector[(T, U)],
+         memo: Memoizer[Changeable[ChunkListNode[T, U]]],
+         modizer: Modizer[ChunkListNode[T, U]])
+        (implicit c: Context): Changeable[ChunkListNode[T, U]] = {
+      val oneR =
 	if (one == null)
-	  _oneRemaining
+	  _oneR
 	else
-	  _oneRemaining ++ one.chunk
+	  _oneR ++ one.chunk
 
-      val twoRemaining =
+      val twoR =
 	if (two == null)
-	  _twoRemaining
+	  _twoR
 	else
-	  _twoRemaining ++ two.chunk
+	  _twoR ++ two.chunk
 
       var i = 0
       var j = 0
       var newChunk = Vector[(T, U)]()
-      while (i < oneRemaining.size && j < twoRemaining.size) {
-	if (ordering.lt(oneRemaining(i)._1, twoRemaining(j)._1)) {
-	  newChunk :+= oneRemaining(i)
+      while (i < oneR.size && j < twoR.size) {
+	if (ordering.lt(oneR(i)._1, twoR(j)._1)) {
+	  newChunk :+= oneR(i)
 	  i += 1
 	} else {
-	  newChunk :+= twoRemaining(j)
+	  newChunk :+= twoR(j)
 	  j += 1
 	}
       }
 
-      val newOneRemaining = oneRemaining.drop(i)
-      val newTwoRemaining = twoRemaining.drop(j)
+      val newOneR = oneR.drop(i)
+      val newTwoR = twoR.drop(j)
 
       val newNext = mod {
 	if (one == null) {
 	  if (two == null) {
-	      write(new ChunkListNode(newOneRemaining ++ newTwoRemaining, createMod[ChunkListNode[T, U]](null)))
+            val newTail = createMod[ChunkListNode[T, U]](null)
+	    write(new ChunkListNode(newOneR ++ newTwoR, newTail))
 	  } else {
 	    read(two.nextMod) {
 	      case twoNode =>
-		memo(null, twoNode, newOneRemaining, newTwoRemaining) {
-		  innerMerge(null, twoNode, newOneRemaining, newTwoRemaining, memo, modizer)
+		memo(null, twoNode, newOneR, newTwoR) {
+		  innerMerge(null, twoNode, newOneR, newTwoR, memo, modizer)
 		}
 	    }
 	  }
@@ -158,14 +153,14 @@ class ChunkList[T, U](
 	  read(one.nextMod) {
 	    case oneNode =>
 	      if (two == null) {
-		memo(oneNode, null, newOneRemaining, newTwoRemaining) {
-		  innerMerge(oneNode, null, newOneRemaining, newTwoRemaining, memo, modizer)
+		memo(oneNode, null, newOneR, newTwoR) {
+		  innerMerge(oneNode, null, newOneR, newTwoR, memo, modizer)
 		}
 	      } else {
 		read(two.nextMod) {
 		  case twoNode =>
-		    memo(oneNode, twoNode, newOneRemaining, newTwoRemaining) {
-		      innerMerge(oneNode, twoNode, newOneRemaining, newTwoRemaining, memo, modizer)
+		    memo(oneNode, twoNode, newOneR, newTwoR) {
+		      innerMerge(oneNode, twoNode, newOneR, newTwoR, memo, modizer)
 		    }
 		}
 	      }
@@ -185,7 +180,8 @@ class ChunkList[T, U](
 	      case null => write(node)
 	      case thatNode =>
 		memo(node, thatNode) {
-		  innerMerge(node, thatNode, Vector[(T, U)](), Vector[(T, U)](), memo, modizer)
+                  val empty = Vector[(T, U)]()
+		  innerMerge(node, thatNode, empty, empty, memo, modizer)
 		}
 	    }
 	}
@@ -234,12 +230,10 @@ class ChunkList[T, U](
     )
   }
 
-  def reduce(
-      f: ((T, U), (T, U)) => (T, U))
-     (implicit c: Context): Mod[(T, U)] = ???
+  def reduce(f: ((T, U), (T, U)) => (T, U))
+      (implicit c: Context): Mod[(T, U)] = ???
 
-  override def reduceByKey
-      (f: (U, U) => U)
+  override def reduceByKey(f: (U, U) => U)
       (implicit c: Context,
        ordering: Ordering[T]): ChunkList[T, U] = {
     val sorted = this.mergesort()
@@ -256,13 +250,11 @@ class ChunkList[T, U](
     )
   }
 
-  def sortJoin[V]
-      (that: AdjustableList[T, V])
+  def sortJoin[V](that: AdjustableList[T, V])
       (implicit c: Context, ordering: Ordering[T]): AdjustableList[T, (U, V)] = ???
 
-  def split(
-      pred: ((T, U)) => Boolean)
-     (implicit c: Context): (ChunkList[T, U], ChunkList[T, U]) = ???
+  def split(pred: ((T, U)) => Boolean)
+      (implicit c: Context): (ChunkList[T, U], ChunkList[T, U]) = ???
 
   /* Meta functions */
   def toBuffer(): Buffer[(T, U)] = {

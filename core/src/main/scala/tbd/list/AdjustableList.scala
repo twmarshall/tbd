@@ -15,11 +15,9 @@
  */
 package tbd.list
 
-import akka.actor.ActorRef
-import scala.collection.mutable.{Buffer, Set}
+import scala.collection.mutable.Buffer
 
 import tbd.{Context, Mod}
-import tbd.datastore.Datastore
 
 /**
  * A linked list made up of modifiables. The classes that implement this trait
@@ -35,25 +33,22 @@ trait AdjustableList[T, U] {
    * function to each chunk of this AdjustableList. Only defined for chunked
    * lists.
    */
-  def chunkMap[V, W](
-      f: (Vector[(T, U)]) => (V, W))
-     (implicit c: Context): AdjustableList[V, W] = ???
+  def chunkMap[V, W](f: (Vector[(T, U)]) => (V, W))
+      (implicit c: Context): AdjustableList[V, W] = ???
 
   /**
    * Returns a AdjustableList containing all of the elements from this
    * AdjustableList that satisfy the given predicate.
    */
-  def filter(
-      pred: ((T, U)) => Boolean)
-     (implicit c: Context): AdjustableList[T, U]
+  def filter(pred: ((T, U)) => Boolean)
+      (implicit c: Context): AdjustableList[T, U]
 
   /**
    * Returns an AdjustableList containing each element produced by applying
    * the mapping function to each element of this list.
    */
-  def flatMap[V, W](
-      f: ((T, U)) => Iterable[(V, W)])
-     (implicit c: Context): AdjustableList[V, W]
+  def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
+      (implicit c: Context): AdjustableList[V, W]
 
   /**
    * Returns an AdjustableList mapping each key that is present in both lists
@@ -61,17 +56,15 @@ trait AdjustableList[T, U] {
    *
    * Generally only defined where the type of that matches this.
    */
-  def join[V](
-      that: AdjustableList[T, V])
-     (implicit c: Context): AdjustableList[T, (U, V)]
+  def join[V](that: AdjustableList[T, V])
+      (implicit c: Context): AdjustableList[T, (U, V)]
 
   /**
    * Returns a AdjustableList containing the results of applying the given
    * function to each of the elements of this AdjustableList.
    */
-  def map[V, W](
-      f: ((T, U)) => (V, W))
-     (implicit c: Context): AdjustableList[V, W]
+  def map[V, W](f: ((T, U)) => (V, W))
+      (implicit c: Context): AdjustableList[V, W]
 
   /**
    * Returns a AdjustableList containing the results of applying the given
@@ -79,8 +72,7 @@ trait AdjustableList[T, U] {
    *
    * Unlike map, if this is sorted, the output will be too.
    */
-  def mapValues[V]
-      (f: U => V)
+  def mapValues[V](f: U => V)
       (implicit c: Context): AdjustableList[T, V] = ???
 
   /**
@@ -100,23 +92,20 @@ trait AdjustableList[T, U] {
   /**
    * Reduces all elements in the list using f, in an unspecified order.
    */
-  def reduce(
-      f: ((T, U), (T, U)) => (T, U))
-     (implicit c: Context): Mod[(T, U)]
+  def reduce(f: ((T, U), (T, U)) => (T, U))
+      (implicit c: Context): Mod[(T, U)]
 
   /**
    * Reduces all elements with the same key using f.
    */
-  def reduceByKey
-      (f: (U, U) => U)
+  def reduceByKey(f: (U, U) => U)
       (implicit c: Context,
        ordering: Ordering[T]): AdjustableList[T, U] = ???
 
   /**
    * Performs a join by sorting the input lists and then merging them.
    */
-  def sortJoin[V]
-      (that: AdjustableList[T, V])
+  def sortJoin[V](that: AdjustableList[T, V])
       (implicit c: Context, ordering: Ordering[T]): AdjustableList[T, (U, V)]
 
   /**
@@ -124,9 +113,8 @@ trait AdjustableList[T, U] {
    * containins all of the elements from this AdjustableList that satisfy the
    * given predicate, and the second AdjustableList contains all other elements.
    */
-  def split(
-      pred: ((T, U)) => Boolean)
-     (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U])
+  def split(pred: ((T, U)) => Boolean)
+      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U])
 
   /* Meta functions */
   def toBuffer(): Buffer[(T, U)]

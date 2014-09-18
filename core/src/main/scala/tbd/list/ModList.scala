@@ -15,7 +15,7 @@
  */
 package tbd.list
 
-import scala.collection.mutable.{ArrayBuffer, Buffer, Map}
+import scala.collection.mutable.{Buffer, Map}
 
 import tbd._
 import tbd.Constants.ModId
@@ -26,9 +26,8 @@ class ModList[T, U]
      val sorted: Boolean = false)
   extends AdjustableList[T, U] {
 
-  def filter(
-      pred: ((T, U)) => Boolean)
-     (implicit c: Context): ModList[T, U] = {
+  def filter(pred: ((T, U)) => Boolean)
+      (implicit c: Context): ModList[T, U] = {
     val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
 
     new ModList(
@@ -41,9 +40,8 @@ class ModList[T, U]
     )
   }
 
-  def flatMap[V, W](
-      f: ((T, U)) => Iterable[(V, W)])
-     (implicit c: Context): ModList[V, W] = {
+  def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
+      (implicit c: Context): ModList[V, W] = {
     val memo = makeMemoizer[Changeable[ModListNode[V, W]]]()
     val modizer = makeModizer[ModListNode[V, W]]()
 
@@ -57,9 +55,8 @@ class ModList[T, U]
     )
   }
 
-  def join[V](
-      _that: AdjustableList[T, V])
-     (implicit c: Context): ModList[T, (U, V)] = {
+  def join[V](_that: AdjustableList[T, V])
+      (implicit c: Context): ModList[T, (U, V)] = {
     assert(_that.isInstanceOf[ModList[T, V]])
     val that = _that.asInstanceOf[ModList[T, V]]
 
@@ -75,9 +72,8 @@ class ModList[T, U]
     )
   }
 
-  def map[V, W](
-      f: ((T, U)) => (V, W))
-     (implicit c: Context): ModList[V, W] = {
+  def map[V, W](f: ((T, U)) => (V, W))
+      (implicit c: Context): ModList[V, W] = {
     val memo = makeMemoizer[Changeable[ModListNode[V, W]]]()
     val modizer = makeModizer[ModListNode[V, W]]()
 
@@ -91,8 +87,7 @@ class ModList[T, U]
     )
   }
 
-  override def mapValues[V]
-      (f: U => V)
+  override def mapValues[V](f: U => V)
       (implicit c: Context): ModList[T, V] = {
     val memo = makeMemoizer[Changeable[ModListNode[T, V]]]()
     val modizer = makeModizer[ModListNode[T, V]]()
@@ -107,8 +102,7 @@ class ModList[T, U]
     )
   }
 
-  def merge
-      (that: ModList[T, U])
+  def merge(that: ModList[T, U])
       (implicit c: Context,
        ordering: Ordering[T]): ModList[T, U] = {
     merge(that, makeMemoizer[Changeable[ModListNode[T, U]]](),
@@ -199,9 +193,8 @@ class ModList[T, U]
     new ModList(sorted, true)
   }
 
-  def reduce(
-      f: ((T, U), (T, U)) => (T, U))
-     (implicit c: Context): Mod[(T, U)] = {
+  def reduce(f: ((T, U), (T, U)) => (T, U))
+      (implicit c: Context): Mod[(T, U)] = {
 
     // Each round we need a hasher and a memo, and we need to guarantee that the
     // same hasher and memo are used for a given round during change propagation,
@@ -219,11 +212,11 @@ class ModList[T, U]
 	}
     }
 
-    def randomReduceList(
-        head: ModListNode[T, U],
-        nextMod: ModListNode[T, U],
-        round: Int,
-        roundMemoizer: RoundMemoizer)
+    def randomReduceList
+        (head: ModListNode[T, U],
+         nextMod: ModListNode[T, U],
+         round: Int,
+         roundMemoizer: RoundMemoizer)
         (implicit c: Context): Changeable[(T, U)] = {
       val tuple = roundMemoizer.getTuple()
 
@@ -247,14 +240,13 @@ class ModList[T, U]
       // id.hashCode() % 3 == 0
     }
 
-    def halfList(
-        acc: (T, U),
-        node: ModListNode[T, U],
-        round: Int,
-        hasher: Hasher,
-        memo: Memoizer[Mod[ModListNode[T, U]]]
-      )
-      (implicit c: Context): Changeable[ModListNode[T, U]] = {
+    def halfList
+        (acc: (T, U),
+         node: ModListNode[T, U],
+         round: Int,
+         hasher: Hasher,
+         memo: Memoizer[Mod[ModListNode[T, U]]])
+        (implicit c: Context): Changeable[ModListNode[T, U]] = {
       val newAcc = f(acc, node.value)
 
       if(binaryHash(node.nextMod.id, round, hasher)) {
@@ -298,8 +290,7 @@ class ModList[T, U]
     }
   }
 
-  override def reduceByKey
-      (f: (U, U) => U)
+  override def reduceByKey(f: (U, U) => U)
       (implicit c: Context,
        ordering: Ordering[T]): ModList[T, U] = {
     val sorted = this.quicksort()
@@ -319,8 +310,7 @@ class ModList[T, U]
     )
   }
 
-  def sortJoin[V]
-      (_that: AdjustableList[T, V])
+  def sortJoin[V](_that: AdjustableList[T, V])
       (implicit c: Context, ordering: Ordering[T]): AdjustableList[T, (U, V)] = {
     assert(_that.isInstanceOf[ModList[T, V]])
     val that = _that.asInstanceOf[ModList[T, V]]
@@ -355,9 +345,8 @@ class ModList[T, U]
     )
   }
 
-  def split(
-      pred: ((T, U)) => Boolean)
-     (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = {
+  def split(pred: ((T, U)) => Boolean)
+      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = {
     val memo = makeMemoizer[ModListNode.ChangeableTuple[T, U]]()
     val modizer = makeModizer2[ModListNode[T, U], ModListNode[T, U]]()
 
@@ -376,7 +365,7 @@ class ModList[T, U]
   }
 
   def toBuffer(): Buffer[(T, U)] = {
-    val buf = ArrayBuffer[(T, U)]()
+    val buf = Buffer[(T, U)]()
     var node = head.read()
     while (node != null) {
       buf += node.value

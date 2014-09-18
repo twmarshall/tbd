@@ -23,15 +23,15 @@ import tbd.TBD._
 
 // The default value of zero for size works because size is only ever
 // accessed by the Modifier, which will set it appropriately.
-class ChunkListNode[T, U](
-    val chunk: Vector[(T, U)],
-    val nextMod: Mod[ChunkListNode[T, U]],
-    val size: Int = 0) extends Serializable {
+class ChunkListNode[T, U]
+    (val chunk: Vector[(T, U)],
+     val nextMod: Mod[ChunkListNode[T, U]],
+     val size: Int = 0) extends Serializable {
 
-  def chunkMap[V, W](
-      f: (Vector[(T, U)]) => (V, W),
-      memo: Memoizer[Mod[ModListNode[V, W]]])
-     (implicit c: Context): Changeable[ModListNode[V, W]] = {
+  def chunkMap[V, W]
+      (f: (Vector[(T, U)]) => (V, W),
+       memo: Memoizer[Mod[ModListNode[V, W]]])
+      (implicit c: Context): Changeable[ModListNode[V, W]] = {
     val newNextMod = memo(nextMod) {
       mod {
         read(nextMod)(next => {
@@ -46,11 +46,11 @@ class ChunkListNode[T, U](
     write(new ModListNode[V, W](f(chunk), newNextMod))
   }
 
-  def flatMap[V, W](
-      f: ((T, U)) => Iterable[(V, W)],
-      chunkSize: Int,
-      memo: Memoizer[Changeable[ChunkListNode[V, W]]])
-     (implicit c: Context): Changeable[ChunkListNode[V, W]] = {
+  def flatMap[V, W]
+      (f: ((T, U)) => Iterable[(V, W)],
+       chunkSize: Int,
+       memo: Memoizer[Changeable[ChunkListNode[V, W]]])
+      (implicit c: Context): Changeable[ChunkListNode[V, W]] = {
     var tail = mod {
       read(nextMod) {
 	case null => write[ChunkListNode[V, W]](null)
@@ -74,10 +74,10 @@ class ChunkListNode[T, U](
     write(new ChunkListNode[V, W](mapped, tail))
   }
 
-  def loopJoin[V](
-      that: ChunkList[T, V],
-      memo: Memoizer[Changeable[ChunkListNode[T, (U, V)]]])
-     (implicit c: Context): Changeable[ChunkListNode[T, (U, V)]] = {
+  def loopJoin[V]
+      (that: ChunkList[T, V],
+       memo: Memoizer[Changeable[ChunkListNode[T, (U, V)]]])
+      (implicit c: Context): Changeable[ChunkListNode[T, (U, V)]] = {
     val newNext = mod {
       read(nextMod) {
 	case null =>
@@ -108,11 +108,11 @@ class ChunkListNode[T, U](
 
   // Iterates over the second join list, testing each element for equality
   // with a single element from the first list.
-  private def joinHelper[V](
-      thatValue: (T, V),
-      tail: Mod[ChunkListNode[T, (V, U)]],
-      memo: Memoizer[Changeable[ChunkListNode[T, (V, U)]]])
-     (implicit c: Context): Changeable[ChunkListNode[T, (V, U)]] = {
+  private def joinHelper[V]
+      (thatValue: (T, V),
+       tail: Mod[ChunkListNode[T, (V, U)]],
+       memo: Memoizer[Changeable[ChunkListNode[T, (V, U)]]])
+      (implicit c: Context): Changeable[ChunkListNode[T, (V, U)]] = {
     var newChunk = Vector[(T, (V, U))]()
     for (value <- chunk) {
       if (thatValue._1 == value._1) {
@@ -146,10 +146,10 @@ class ChunkListNode[T, U](
     }
   }
 
-  def map[V, W](
-      f: ((T, U)) => (V, W),
-      memo: Memoizer[Changeable[ChunkListNode[V, W]]])
-     (implicit c: Context): Changeable[ChunkListNode[V, W]] = {
+  def map[V, W]
+      (f: ((T, U)) => (V, W),
+       memo: Memoizer[Changeable[ChunkListNode[V, W]]])
+      (implicit c: Context): Changeable[ChunkListNode[V, W]] = {
     val newChunk = chunk.map(f)
     val newNext = mod {
       read(nextMod) {
@@ -164,11 +164,11 @@ class ChunkListNode[T, U](
     write(new ChunkListNode[V, W](newChunk, newNext))
   }
 
-  def reduceByKey(
-      f: (U, U) => U,
-      previousKey: T,
-      runningValue: U)
-     (implicit c: Context): Changeable[ChunkListNode[T, U]] = {
+  def reduceByKey
+      (f: (U, U) => U,
+       previousKey: T,
+       runningValue: U)
+      (implicit c: Context): Changeable[ChunkListNode[T, U]] = {
     var remaining = chunk
     var reduced = Buffer[(T, U)]()
 
