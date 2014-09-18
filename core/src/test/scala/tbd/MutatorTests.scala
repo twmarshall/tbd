@@ -82,7 +82,7 @@ class MutatorTests extends FlatSpec with Matchers {
 	val mutator = new Mutator()
 
 	val conf = new ListConf(partitions = partitions, chunkSize = chunkSize)
-	val input = ListInput[Int, Int](conf)
+	val input = ListInput[Int, Int](mutator, conf)
 	runTest(mutator, new ListTest(input), input, false)
 
 	mutator.shutdown()
@@ -93,7 +93,7 @@ class MutatorTests extends FlatSpec with Matchers {
   "SortedListTests" should "update the sorted AdjustableList correctly" in {
     val mutator = new Mutator()
     val conf = new ListConf(partitions = 1, chunkSize = 1, sorted = true)
-    val input = ListInput[Int, Int](conf)
+    val input = ListInput[Int, Int](mutator, conf)
     runTest(mutator, new ListTest(input), input, true)
 
     mutator.shutdown()

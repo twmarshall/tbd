@@ -16,15 +16,21 @@
 package tbd
 
 import akka.pattern.ask
+import scala.collection.mutable.Buffer
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
+import tbd.datastore.Datastore
 import tbd.ddg.DDG
 import tbd.master.Main
 import tbd.messages._
 
 class Mutator(aMain: Main = null) {
+  import scala.concurrent.ExecutionContext.Implicits.global
+
   var launchedMain = false
+
+  val futures = Buffer[Future[String]]()
 
   val main =
     if (aMain == null) {
@@ -37,7 +43,22 @@ class Mutator(aMain: Main = null) {
   val idFuture = main.masterRef ? RegisterMutatorMessage
   val id = Await.result(idFuture, DURATION).asInstanceOf[Int]
 
+  var nextModId = 0
+  def createMod[T](value: T): Mod[T] = {
+    val mod = new Mod[T]("d." + nextModId)
+    nextModId += 1
+    futures += mod.update(value)
+    mod
+  }
+
+  def updateMod[T](mod: Mod[T], value: T) {
+    futures += mod.update(value)
+  }
+
   def run[T](adjust: Adjustable[T]): T = {
+    Await.result(Future.sequence(futures), DURATION)
+    futures.clear()
+
     val future = main.masterRef ? RunMessage(adjust, id)
     val resultFuture =
       Await.result(future, DURATION).asInstanceOf[Future[Any]]
@@ -46,6 +67,9 @@ class Mutator(aMain: Main = null) {
   }
 
   def propagate() {
+    Await.result(Future.sequence(futures), DURATION)
+    futures.clear()
+
     val future = main.masterRef ? PropagateMessage
     Await.result(future, DURATION)
   }

@@ -17,21 +17,21 @@ package tbd.table
 
 import scala.concurrent.{Await, Future}
 
+import tbd.{Input, Mutator}
 import tbd.Constants._
-import tbd.Input
 import tbd.datastore.Datastore
 
 object TableInput {
-  def apply[T, U]() = new TableInput[T, U]
+  def apply[T, U](mutator: Mutator) = new TableInput[T, U](mutator)
 }
 
-class TableInput[T, U] extends Input[T, U] {
+class TableInput[T, U](mutator: Mutator) extends Input[T, U] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   val table = new ModTable[T, U]()
 
   def put(key: T, value: U) {
-    table.table(key) = Datastore.createMod(value)
+    table.table(key) = mutator.createMod(value)
   }
 
   def update(key: T, value: U) {

@@ -17,7 +17,9 @@ package tbd.list
 
 import scala.collection.mutable.ArrayBuffer
 
-class PartitionedChunkListInput[T, U](conf: ListConf)
+import tbd.Mutator
+
+class PartitionedChunkListInput[T, U](mutator: Mutator, conf: ListConf)
     extends ListInput[T, U] {
 
   val partitionModifiers = ArrayBuffer[ChunkListInput[T, U]]()
@@ -26,7 +28,7 @@ class PartitionedChunkListInput[T, U](conf: ListConf)
   private def initialize(): PartitionedChunkList[T, U] = {
     val partitions = new ArrayBuffer[ChunkList[T, U]]()
     for (i <- 1 to conf.partitions) {
-      val chunkListModifier = new ChunkListInput[T, U](conf)
+      val chunkListModifier = new ChunkListInput[T, U](mutator, conf)
       partitionModifiers += chunkListModifier
       partitions += chunkListModifier.list
     }

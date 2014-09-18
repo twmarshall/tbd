@@ -34,7 +34,7 @@ object MapAlgorithm {
 
 class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = ListInput[Int, String](listConf)
+  val input = ListInput[Int, String](mutator, listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 

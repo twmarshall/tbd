@@ -20,18 +20,19 @@ import akka.pattern.ask
 import scala.collection.mutable.Map
 import scala.concurrent.{Await, Future}
 
-import tbd.Mod
+import tbd.{Mod, Mutator}
 import tbd.Constants._
 import tbd.datastore.Datastore
 
-class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
+class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
+    extends ListInput[T, U] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  protected var tailMod = Datastore.createMod[ChunkListNode[T, U]](null)
+  protected var tailMod = mutator.createMod[ChunkListNode[T, U]](null)
 
   // Contains the last ChunkListNode before the tail node. If the list is empty,
   // the contents of this mod will be null.
-  protected var lastNodeMod = Datastore.createMod[ChunkListNode[T, U]](null)
+  protected var lastNodeMod = mutator.createMod[ChunkListNode[T, U]](null)
 
   val nodes = Map[T, Mod[ChunkListNode[T, U]]]()
   val previous = Map[T, Mod[ChunkListNode[T, U]]]()
@@ -50,7 +51,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
 
         new ChunkListNode(chunk, tailMod, size)
       } else if (lastNode.size >= conf.chunkSize) {
-        val newTailMod = Datastore.createMod[ChunkListNode[T, U]](null)
+        val newTailMod = mutator.createMod[ChunkListNode[T, U]](null)
         val chunk = Vector[(T, U)]((key -> value))
         previous(key) = lastNodeMod
 
@@ -99,7 +100,7 @@ class ChunkListInput[T, U](conf: ListConf) extends ListInput[T, U] {
         val size2 = calculateSize(newChunk2)
 
         val newNode2 = new ChunkListNode(newChunk2, insertInto.nextMod, size1)
-        val newNodeMod2 = Datastore.createMod(newNode2)
+        val newNodeMod2 = mutator.createMod(newNode2)
 
         newChunk2.foreach {
           case (_key, _value) =>

@@ -161,7 +161,7 @@ class ModNoDestTest(input: TableInput[Int, Int])
 class ChangePropagationTests extends FlatSpec with Matchers {
   "PropagationOrderTest" should "reexecute reads in the correct order" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     val test = new PropagationOrderTest(input)
     val output = mutator.run(test)
@@ -175,7 +175,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
 
   "PropagationOrderTest2" should "reexecute map in the correct order" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](new ListConf(partitions = 1))
+    val input = ListInput[Int, Int](mutator, new ListConf(partitions = 1))
 
     for (i <- 0 to 100) {
       input.put(i, i)
@@ -194,7 +194,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
 
   "ParTest" should "do something" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     val output = mutator.run(new ParTest(input))
     output.read() should be (4)
@@ -209,7 +209,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
 
   "ModNoDestTest" should "update the dests for the memo matches" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     input.put(2, 2)
     input.put(3, 3)

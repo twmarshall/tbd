@@ -402,7 +402,7 @@ class NoDestTest2(input: TableInput[Int, Int])
 class MemoTests extends FlatSpec with Matchers {
   "MemoTest" should "find the memo match" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     input.put(2, 10)
     val test = new MemoTest(input)
@@ -475,7 +475,7 @@ class MemoTests extends FlatSpec with Matchers {
 
   "AlreadyMatchedTest" should "only reuse the memo entry once" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     input.put(2, 10)
     val test = new AlreadyMatchedTest(input)
@@ -495,7 +495,7 @@ class MemoTests extends FlatSpec with Matchers {
 
   "OutOfScopeTest" should "not memo match outside of the reexecuted read" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     input.put(2, 2)
     val test = new OutOfScopeTest(input)
@@ -513,7 +513,7 @@ class MemoTests extends FlatSpec with Matchers {
 
   "MatchingSignaturesTest" should "find both memo matches" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     input.put(2, 2)
     val test = new MatchingSignaturesTest(input)
@@ -532,7 +532,7 @@ class MemoTests extends FlatSpec with Matchers {
 
   "MatchParentTest" should "not match the parent" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     input.put(2, 2)
     input.put(3, 3)
@@ -557,7 +557,7 @@ class MemoTests extends FlatSpec with Matchers {
 
   "PropagateThroughMemoTest" should "only reexecute the read once" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     input.put(2, 2)
     input.put(3, 3)
@@ -575,7 +575,7 @@ class MemoTests extends FlatSpec with Matchers {
 
   "RepeatRunsTest" should "memo match in multiple runs of propagation" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     input.put(2, 2)
     val test = new RepeatRunsTest(input)
@@ -599,7 +599,7 @@ class MemoTests extends FlatSpec with Matchers {
 
   "OutOfOrderMatchTest" should "not memo match if a later match has been made" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     input.put(2, 2)
     input.put(3, 3)
@@ -618,7 +618,7 @@ class MemoTests extends FlatSpec with Matchers {
 
   "NoDestTest" should "update the mod when making the memo match" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     input.put(2, 2)
     input.put(3, 3)
@@ -637,7 +637,7 @@ class MemoTests extends FlatSpec with Matchers {
 
   "NoDestTest2" should "write the matched value into the mod" in {
     val mutator = new Mutator()
-    val input = TableInput[Int, Int]()
+    val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     input.put(2, 2)
     input.put(3, 3)

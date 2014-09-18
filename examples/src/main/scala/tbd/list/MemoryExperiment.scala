@@ -34,7 +34,7 @@ object MemoryExperiment {
   def main(args: Array[String]) {
     val max = 1000
     val mutator = new Mutator()
-    val list = ListInput[Int, String](new ListConf(partitions = 4))
+    val list = ListInput[Int, String](mutator, new ListConf(partitions = 4))
     val input = new StringData(list, max, Array("insert", "remove", "update"), false)
 
     for (i <- 0 to max) {

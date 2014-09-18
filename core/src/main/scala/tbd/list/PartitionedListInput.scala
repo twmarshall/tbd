@@ -18,10 +18,12 @@ package tbd.list
 import scala.collection.mutable.ArrayBuffer
 import scala.concurrent.{Await, Future}
 
+import tbd.Mutator
 import tbd.Constants._
 import tbd.datastore.Datastore
 
-class PartitionedListInput[T, U](conf: ListConf) extends ListInput[T, U] {
+class PartitionedListInput[T, U](mutator: Mutator, conf: ListConf)
+    extends ListInput[T, U] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
   val partitionModifiers = ArrayBuffer[ModListInput[T, U]]()
@@ -30,7 +32,7 @@ class PartitionedListInput[T, U](conf: ListConf) extends ListInput[T, U] {
   private def initialize(): PartitionedModList[T, U] = {
     val partitions = new ArrayBuffer[ModList[T, U]]()
     for (i <- 1 to conf.partitions) {
-      val modListModifier = new ModListInput[T, U]()
+      val modListModifier = new ModListInput[T, U](mutator)
       partitionModifiers += modListModifier
       partitions += modListModifier.modList
     }

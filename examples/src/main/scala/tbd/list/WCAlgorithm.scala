@@ -75,7 +75,7 @@ object WCAlgorithm {
 
 class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
-  val input = ListInput[Int, String](listConf)
+  val input = ListInput[Int, String](mutator, listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
@@ -122,7 +122,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
 class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
-  val input = ListInput[Int, String](listConf)
+  val input = ListInput[Int, String](mutator, listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 

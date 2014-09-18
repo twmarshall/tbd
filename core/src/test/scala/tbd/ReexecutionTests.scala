@@ -143,9 +143,9 @@ class ReexecutionTests extends FlatSpec with Matchers {
     val mutator = new Mutator()
     val conf = new ListConf(partitions = 1, chunkSize = 2)
 
-    val input = ListInput[Int, Int](conf)
+    val input = ListInput[Int, Int](mutator, conf)
 
-    val input2 = ListInput[Int, Int](conf)
+    val input2 = ListInput[Int, Int](mutator, conf)
     //input2.put(0, 0)
     //input2.put(2, 2)
     input.put(4, 4)
@@ -177,7 +177,7 @@ class ReexecutionTests extends FlatSpec with Matchers {
   /*"FlatMapTest" should "only reexecute the necessary parts" in {
     val mutator = new Mutator()
     val conf = new ListConf(partitions = 1, chunkSize = 1)
-    val input = ListInput[Int, Int](conf)
+    val input = ListInput[Int, Int](mutator, conf)
 
     for (i <- List(1, 6, 2)) {
       input.put(i, i)
@@ -194,13 +194,13 @@ class ReexecutionTests extends FlatSpec with Matchers {
   /*"JoinTest" should "only reexecute the necessary parts" in {
     val mutator = new Mutator()
     val conf = new ListConf(partitions = 1, chunkSize = 1)
-    val input = ListInput[Int, Int](conf)
+    val input = ListInput[Int, Int](mutator, conf)
 
     for (i <- List(1, 8, 3, 4, 6, 10, 5)) {
       input.put(i, i)
     }
 
-    val input2 = ListInput[Int, Int](conf)
+    val input2 = ListInput[Int, Int](mutator, conf)
 
     for (i <- List(1, 4, 5, 2, 7, 8)) {
       input2.put(i, i * 2)
@@ -216,7 +216,7 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"MapReduceTest" should "only reexecute the necessary parts" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](new ListConf(partitions = 1, chunkSize = 1))
+    val input = ListInput[Int, Int](mutator, new ListConf(partitions = 1, chunkSize = 1))
     for (i <- List(6, 2, 7, 3, 8, 1, 5, 10)) {
       input.put(i, i)
     }
@@ -233,7 +233,7 @@ class ReexecutionTests extends FlatSpec with Matchers {
     val mutator = new Mutator()
     val conf = new ListConf(partitions = 1, chunkSize = 1)
 
-    val input = ListInput[Int, Int](conf)
+    val input = ListInput[Int, Int](mutator, conf)
     /*input.put(1, 1)
     input.put(5, 5)
     input.put(6, 6)
@@ -242,7 +242,7 @@ class ReexecutionTests extends FlatSpec with Matchers {
     input.put(1, 1)
     input.put(6, 6)
 
-    val input2 = ListInput[Int, Int](conf)
+    val input2 = ListInput[Int, Int](mutator, conf)
     /*input2.put(2, 2)
     input2.put(3, 3)
     input2.put(4, 4)
@@ -269,7 +269,7 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"ReduceTest" should "reexecute only the necessary reduce steps" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](new ListConf(partitions = 1))
+    val input = ListInput[Int, Int](mutator, new ListConf(partitions = 1))
     for (i <- 1 to 16) {
       input.put(i, i)
     }
@@ -286,7 +286,7 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"ReduceByKeyTest" should "reexecute only the necessary parts" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](new ListConf(partitions = 1, chunkSize = 1))
+    val input = ListInput[Int, Int](mutator, new ListConf(partitions = 1, chunkSize = 1))
     for (i <- List(1, 2, 3, 4)) {
       input.put(i, i)
     }
@@ -296,7 +296,7 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"SortTest" should "only reexecute the least possible" in {
     val mutator = new Mutator()
-    val input = ListInput[String, String](new ListConf(chunkSize = 1, partitions = 1))
+    val input = ListInput[String, String](mutator, new ListConf(chunkSize = 1, partitions = 1))
     for (i <- List("m", "q", "s", "c", "v", "i", "f", "o", "n", "b", "r", "a",
 		   "p", "g", "h", "t", "l", "u")) {
       input.put(i, i)
@@ -312,7 +312,7 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"SplitTest" should " asdf" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](new ListConf(chunkSize = 1, partitions = 1))
+    val input = ListInput[Int, Int](mutator, new ListConf(chunkSize = 1, partitions = 1))
     input.put(5, 5)
     input.put(3, 3)
     input.put(6, 6)

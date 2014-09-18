@@ -30,14 +30,6 @@ object Datastore {
   def props(storeType: String, cacheSize: Int): Props =
     Props(classOf[Datastore], storeType, cacheSize)
 
-  var nextModId = 0
-  def createMod[T](value: T): Mod[T] = {
-    val mod = new Mod[T]("d." + nextModId)
-    nextModId += 1
-    mod.update(value)
-    mod
-  }
-
   def addDependency(modId: ModId, workerRef: ActorRef) {
     datastoreRef ! AddDependencyMessage(modId, workerRef)
   }

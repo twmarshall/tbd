@@ -24,11 +24,11 @@ import tbd.list._
 
 class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
-  val input = ListInput[Int, Int](listConf)
+  val input = ListInput[Int, Int](mutator, listConf)
   val data = new IntData(input, count, mutations, "data.txt")
   //val data = new IntFileData(input, "data.txt")
 
-  val input2 = ListInput[Int, Int](listConf)
+  val input2 = ListInput[Int, Int](mutator, listConf)
   val data2 = new IntData(input2, count, mutations, "data2.txt")
   //val data2 = new IntFileData(input2, "data2.txt")
 
@@ -75,10 +75,10 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
 class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
-  val input = ListInput[Int, Int](listConf)
+  val input = ListInput[Int, Int](mutator, listConf)
   val data = new IntData(input, count, mutations)
 
-  val input2 = ListInput[Int, Int](listConf)
+  val input2 = ListInput[Int, Int](mutator, listConf)
   val data2 = new IntData(input2, count)
 
   def generateNaive() = {
@@ -126,11 +126,11 @@ class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
 class SortJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
-  val input = ListInput[Int, Int](listConf)
+  val input = ListInput[Int, Int](mutator, listConf)
   val data = new IntData(input, count, mutations, "data.txt")
   //val data = new IntFileData(input, "data.txt")
 
-  val input2 = ListInput[Int, Int](listConf)
+  val input2 = ListInput[Int, Int](mutator, listConf)
   val data2 = new IntData(input2, count, mutations, "data2.txt")
   //val data2 = new IntFileData(input2, "data2.txt")
 

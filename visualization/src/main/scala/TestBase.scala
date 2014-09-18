@@ -33,7 +33,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
 
   private val mutator = new Mutator()
   private val listConf = algorithm.getListConf()
-  private val input = ListInput[Int, Int](listConf)
+  private val input = ListInput[Int, Int](mutator, listConf)
 
   //Counter keeping track of mutation rounds.
   protected var mutationCounter = 0

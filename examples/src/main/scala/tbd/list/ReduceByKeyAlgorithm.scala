@@ -24,7 +24,7 @@ import tbd.list._
 
 class ReduceByKeyAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = ListInput[Int, Int](listConf)
+  val input = ListInput[Int, Int](mutator, listConf)
 
   val data = new IntData(input, count, mutations)
 

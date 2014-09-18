@@ -34,7 +34,7 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, SplitAlgorithm.SplitResult](_conf, _listConf) {
   import SplitAlgorithm._
 
-  val input = ListInput[Int, String](listConf)
+  val input = ListInput[Int, String](mutator, listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 

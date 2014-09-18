@@ -45,7 +45,7 @@ class WCTest(input: ListInput[Int, String])
 class WordcountTests extends FlatSpec with Matchers {
   "WCAdjust" should "return the corrent word count" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, String]()
+    val input = ListInput[Int, String](mutator)
     val test = new WCTest(input)
 
     input.put(1, "apple boy apple cat cat cat")

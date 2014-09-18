@@ -15,27 +15,27 @@
  */
 package tbd.list
 
-import tbd.Input
+import tbd.{Input, Mutator}
 
 object ListInput {
-  def apply[T, U](conf: ListConf = new ListConf())
+  def apply[T, U](mutator: Mutator, conf: ListConf = new ListConf())
       (implicit ordering: Ordering[T]): ListInput[T, U] = {
     if (conf.sorted) {
       assert(conf.chunkSize == 1 && conf.partitions == 1)
-      new SortedModListInput()
+      new SortedModListInput(mutator)
     }
     else {
       if (conf.partitions == 1) {
 	if (conf.chunkSize > 1) {
-	  new ChunkListInput(conf)
+	  new ChunkListInput(mutator, conf)
 	} else {
-	  new ModListInput()
+	  new ModListInput(mutator)
 	}
       } else {
 	if (conf.chunkSize > 1) {
-	  new PartitionedChunkListInput(conf)
+	  new PartitionedChunkListInput(mutator, conf)
 	} else {
-	  new PartitionedListInput(conf)
+	  new PartitionedListInput(mutator, conf)
 	}
       }
     }

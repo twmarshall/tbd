@@ -20,21 +20,21 @@ import akka.pattern.ask
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-import tbd.Mod
+import tbd.{Mod, Mutator}
 import tbd.Constants._
 import tbd.datastore.Datastore
 
-class ModListInput[T, U] extends ListInput[T, U] {
+class ModListInput[T, U](mutator: Mutator) extends ListInput[T, U] {
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  private var tailMod = Datastore.createMod[ModListNode[T, U]](null)
+  private var tailMod = mutator.createMod[ModListNode[T, U]](null)
 
   val nodes = Map[T, Mod[ModListNode[T, U]]]()
 
   val modList = new ModList[T, U](tailMod)
 
   def put(key: T, value: U) {
-    val newTail = Datastore.createMod[ModListNode[T, U]](null)
+    val newTail = mutator.createMod[ModListNode[T, U]](null)
     val newNode = new ModListNode((key, value), newTail)
 
     val future = tailMod.update(newNode)
@@ -49,7 +49,7 @@ class ModListInput[T, U] extends ListInput[T, U] {
     val before = nodes(key).read()
 
     val newNode = new ModListNode(pair, before.nextMod)
-    val newNodeMod = Datastore.createMod(newNode)
+    val newNodeMod = mutator.createMod(newNode)
 
     val newBefore = new ModListNode(before.value, newNodeMod)
     val future = nodes(key).update(newBefore)

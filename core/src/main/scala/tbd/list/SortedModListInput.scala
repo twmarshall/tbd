@@ -21,16 +21,16 @@ import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.{Await, ExecutionContext, Future}
 
-import tbd.Mod
+import tbd.{Mod, Mutator}
 import tbd.Constants._
 import tbd.datastore.Datastore
 
-class SortedModListInput[T, U](implicit ordering: Ordering[T])
+class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
   extends ListInput[T, U] {
 
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  private var tailMod = Datastore.createMod[ModListNode[T, U]](null)
+  private var tailMod = mutator.createMod[ModListNode[T, U]](null)
 
   var nodes = TreeMap[T, Mod[ModListNode[T, U]]]()
 
@@ -41,7 +41,7 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
 
     nextOption match {
       case None =>
-	val newTail = Datastore.createMod[ModListNode[T, U]](null)
+	val newTail = mutator.createMod[ModListNode[T, U]](null)
 	val newNode = new ModListNode((key, value), newTail)
 
         val future = tailMod.update(newNode)
@@ -54,7 +54,7 @@ class SortedModListInput[T, U](implicit ordering: Ordering[T])
 	val (nextKey, nextMod) = nextPair
 
         val nextNode = nextMod.read()
-	val newNextMod = Datastore.createMod[ModListNode[T, U]](nextNode)
+	val newNextMod = mutator.createMod[ModListNode[T, U]](nextNode)
 
 	val newNode = new ModListNode((key, value), newNextMod)
         val future = nextMod.update(newNode)
