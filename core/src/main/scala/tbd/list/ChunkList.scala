@@ -122,16 +122,27 @@ class ChunkList[T, U]
 
       var i = 0
       var j = 0
-      var newChunk = Vector[(T, U)]()
-      while (i < oneR.size && j < twoR.size) {
-	if (ordering.lt(oneR(i)._1, twoR(j)._1)) {
-	  newChunk :+= oneR(i)
-	  i += 1
+      val newChunk =
+	if (oneR.size == 0) {
+	  j = twoR.size
+	  twoR
+	} else if (twoR.size == 0) {
+	  i = oneR.size
+	  oneR
 	} else {
-	  newChunk :+= twoR(j)
-	  j += 1
+	  val buf = Buffer[(T, U)]()
+	  while (i < oneR.size && j < twoR.size) {
+	    if (ordering.lt(oneR(i)._1, twoR(j)._1)) {
+	      buf += oneR(i)
+	      i += 1
+	    } else {
+	      buf += twoR(j)
+	      j += 1
+	    }
+	  }
+
+	  buf.toVector
 	}
-      }
 
       val newOneR = oneR.drop(i)
       val newTwoR = twoR.drop(j)
