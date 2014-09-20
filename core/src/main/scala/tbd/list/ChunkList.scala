@@ -150,8 +150,13 @@ class ChunkList[T, U]
       val newNext = mod {
 	if (one == null) {
 	  if (two == null) {
-            val newTail = createMod[ChunkListNode[T, U]](null)
-	    write(new ChunkListNode(newOneR ++ newTwoR, newTail))
+            val rest = newOneR ++ newTwoR
+            if (rest.size > 0) {
+              val newTail = createMod[ChunkListNode[T, U]](null)
+	      write(new ChunkListNode(rest, newTail))
+            } else {
+              write[ChunkListNode[T, U]](null)
+            }
 	  } else {
 	    read(two.nextMod) {
 	      case twoNode =>
@@ -179,7 +184,11 @@ class ChunkList[T, U]
 	}
       }
 
-      write(new ChunkListNode(newChunk, newNext))
+      if (newChunk.size == 0) {
+        write[ChunkListNode[T, U]](null)
+      } else {
+        write(new ChunkListNode(newChunk, newNext))
+      }
     }
 
     new ChunkList(
