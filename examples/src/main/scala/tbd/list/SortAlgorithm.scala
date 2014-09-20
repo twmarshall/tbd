@@ -92,8 +92,8 @@ class MergeSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val sortedOutput = output.toBuffer()
     val answer = naiveHelper(input)
 
-    println(sortedOutput)
-    println(answer.toBuffer)
+    //println(sortedOutput)
+    //println(answer.toBuffer)
 
     sortedOutput == answer.toBuffer
   }
