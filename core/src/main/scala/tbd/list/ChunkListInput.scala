@@ -99,7 +99,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
         val size1 = calculateSize(newChunk1)
         val size2 = calculateSize(newChunk2)
 
-        val newNode2 = new ChunkListNode(newChunk2, insertInto.nextMod, size1)
+        val newNode2 = new ChunkListNode(newChunk2, insertInto.nextMod, size2)
         val newNodeMod2 = mutator.createMod(newNode2)
 
         newChunk2.foreach {
@@ -113,7 +113,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
           previous(newPair._1) = previous(insertInto.chunk.head._1)
         }
 
-        new ChunkListNode(newChunk1, newNodeMod2, size2)
+        new ChunkListNode(newChunk1, newNodeMod2, size1)
       } else {
         nodes(newPair._1) = insertIntoMod
         previous(newPair._1) = previous(insertInto.chunk.head._1)
