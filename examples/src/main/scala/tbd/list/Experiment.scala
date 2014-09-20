@@ -45,12 +45,15 @@ class Experiment(conf: Map[String, _], listConf: ListConf) {
       case "map" =>
 	new MapAlgorithm(conf, listConf)
 
+      case "msort" =>
+        new MergeSortAlgorithm(conf, listConf)
+
       case "pgrank" => new PageRankAlgorithm(conf, listConf)
 
-      case "rbk" => new ReduceByKeyAlgorithm(conf, listConf)
+      case "qsort" =>
+        new QuickSortAlgorithm(conf, listConf)
 
-      case "sort" =>
-        new SortAlgorithm(conf, listConf)
+      case "rbk" => new ReduceByKeyAlgorithm(conf, listConf)
 
       case "sjoin" =>
 	new SortJoinAlgorithm(conf, listConf)
@@ -135,8 +138,9 @@ object Experiment {
   val usage ="""Usage: run.sh [OPTION]...
 
 Options:
-  -a, --algorithms s,s,...   Algorithms to run, where s could be: map,nmap,
-                               pmap,mpmap,mmap,filter,etc.
+  -a, --algorithms s,s,...   Algorithms to run, where s could be: filter,
+                               flatMap, join, map, msort, pgrank, qsort, rbk,
+                               sjoin, split, or wc.
   -c, --check                Turns output checking on, for debugging.
   -f, --file                 File to read the workload from. If none is
                                specified, the data will be randomly generated.

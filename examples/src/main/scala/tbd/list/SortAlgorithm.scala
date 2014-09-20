@@ -23,7 +23,7 @@ import tbd._
 import tbd.datastore.{IntData, IntFileData}
 import tbd.list._
 
-class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
+class QuickSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ListInput[Int, Int](mutator, listConf)
 
@@ -61,5 +61,46 @@ class SortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val pages = input.getAdjustableList()
 
     pages.quicksort()
+  }
+}
+
+class MergeSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
+    extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
+  val input = ListInput[Int, Int](mutator, listConf)
+
+  val data =
+    if (Experiment.file != "")
+      new IntFileData(input, Experiment.file)
+    else
+      new IntData(input, count, mutations)
+
+  def generateNaive() {
+    data.generate()
+  }
+
+  def runNaive() {
+    naiveHelper(data.table)
+  }
+
+  private def naiveHelper(input: Map[Int, Int]) = {
+    input.toBuffer.sortWith(_._1 < _._1)
+  }
+
+  def checkOutput(
+      input: Map[Int, Int],
+      output: AdjustableList[Int, Int]) = {
+    val sortedOutput = output.toBuffer()
+    val answer = naiveHelper(input)
+
+    println(sortedOutput)
+    println(answer.toBuffer)
+
+    sortedOutput == answer.toBuffer
+  }
+
+  def run(implicit c: Context): AdjustableList[Int, Int] = {
+    val pages = input.getAdjustableList()
+
+    pages.mergesort()
   }
 }
