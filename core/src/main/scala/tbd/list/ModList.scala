@@ -168,6 +168,7 @@ class ModList[T, U]
     new ModList(
       mod {
         read(reduced) {
+	  case null => write(null)
           case (key, list) => read(list.head) { write(_) }
         }
       }, true
