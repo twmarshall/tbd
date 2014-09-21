@@ -16,6 +16,7 @@
 package tbd.list
 
 import scala.collection.immutable.TreeMap
+import scala.collection.mutable.Map
 
 import tbd.{Mod, Mutator}
 
@@ -27,6 +28,25 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
   var nodes = TreeMap[T, Mod[ModListNode[T, U]]]()
 
   val modList = new ModList[T, U](tailMod, true)
+
+  def load(data: Map[T, U]) {
+    var sortedData = data.toBuffer.sortWith {
+      (pair1: (T, U), pair2: (T, U)) => !ordering.lt(pair1._1, pair2._1)
+    }
+
+    var tail = mutator.createMod[ModListNode[T, U]](null)
+    val newTail = tail
+
+    while (sortedData.size > 1) {
+      tail = mutator.createMod(new ModListNode(sortedData.head, tail))
+      nodes += ((sortedData.head._1, tail))
+      sortedData = sortedData.tail
+    }
+
+    mutator.updateMod(tailMod, new ModListNode(sortedData.head, tail))
+    nodes += ((sortedData.head._1, tailMod))
+    tailMod = newTail
+  }
 
   def put(key: T, value: U) {
     val nextOption = nodes.find { case (_key, _value) => ordering.lt(key, _key) }

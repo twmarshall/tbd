@@ -26,6 +26,21 @@ class ModListInput[T, U](mutator: Mutator) extends ListInput[T, U] {
 
   val modList = new ModList[T, U](tailMod)
 
+  def load(data: Map[T, U]) {
+    var tail = mutator.createMod[ModListNode[T, U]](null)
+    val newTail = tail
+
+    for ((key, value) <- data) {
+      tail = mutator.createMod(new ModListNode((key, value), tail))
+      nodes(key) = tail
+    }
+
+    val head = tail.read()
+    mutator.updateMod(tailMod, tail.read())
+    nodes(head.value._1) = tailMod
+    tailMod = newTail
+  }
+
   def put(key: T, value: U) {
     val newTail = mutator.createMod[ModListNode[T, U]](null)
     val newNode = new ModListNode((key, value), newTail)

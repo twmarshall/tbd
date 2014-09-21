@@ -32,6 +32,66 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
 
   val list = new ChunkList[T, U](lastNodeMod, conf)
 
+  def load(data: Map[T, U]) {
+    var chunk = Vector[(T, U)]()
+    var lastChunk: Vector[(T, U)] = null
+    var newLastNodeMod: Mod[ChunkListNode[T, U]] = null
+
+    var size = 0
+    var tail = tailMod
+    for ((key, value) <- data) {
+      chunk :+= ((key, value))
+      size += conf.chunkSizer(value)
+
+      if (size >= conf.chunkSize) {
+	val newNode = new ChunkListNode(chunk, tail, size)
+	tail = mutator.createMod(newNode)
+	for ((k, v) <- chunk) {
+	  nodes(k) = tail
+	}
+
+	if (lastChunk != null) {
+	  for ((k, v) <- lastChunk) {
+	    previous(k) = tail
+	  }
+	}
+
+	if (newLastNodeMod == null) {
+	  newLastNodeMod = tail
+	}
+
+	lastChunk = chunk
+	chunk = Vector[(T, U)]()
+	size  = 0
+      }
+    }
+
+    if (size > 0) {
+      for ((k, v) <- chunk) {
+	nodes(k) = lastNodeMod
+	previous(k) = null
+      }
+
+      if (lastChunk != null) {
+	for ((k, v) <- lastChunk) {
+	  previous(k) = lastNodeMod
+	}
+      }
+
+      mutator.updateMod(lastNodeMod, new ChunkListNode(chunk, tail, size))
+    } else {
+      val head = tail.read()
+      for ((k, v) <- head.chunk) {
+	nodes(k) = lastNodeMod
+	previous(k) = null
+      }
+
+      mutator.updateMod(lastNodeMod, head)
+    }
+
+    lastNodeMod = newLastNodeMod
+  }
+
   def put(key: T, value: U) {
     val lastNode = lastNodeMod.read()
 

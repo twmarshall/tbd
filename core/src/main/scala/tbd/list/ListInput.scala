@@ -15,6 +15,8 @@
  */
 package tbd.list
 
+import scala.collection.mutable.Map
+
 import tbd.{Input, Mutator}
 
 object ListInput {
@@ -35,7 +37,7 @@ object ListInput {
 	if (conf.chunkSize > 1) {
 	  new PartitionedChunkListInput(mutator, conf)
 	} else {
-	  new PartitionedListInput(mutator, conf)
+	  new PartitionedModListInput(mutator, conf)
 	}
       }
     }
@@ -43,6 +45,10 @@ object ListInput {
 }
 
 trait ListInput[T, U] extends Input[T, U] {
+  // Inserts all of the elements from data into this ListInput. Assumes that
+  // the list is currently empty.
+  def load(data: Map[T, U])
+
   def putAfter(key: T, newPair: (T, U))
 
   def getAdjustableList(): AdjustableList[T, U]

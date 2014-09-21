@@ -15,19 +15,19 @@
  */
 package tbd.list
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{Buffer, Map}
 
 import tbd.Mutator
 import tbd.Constants._
 import tbd.datastore.Datastore
 
-class PartitionedListInput[T, U](mutator: Mutator, conf: ListConf)
+class PartitionedModListInput[T, U](mutator: Mutator, conf: ListConf)
     extends ListInput[T, U] {
-  val partitionModifiers = ArrayBuffer[ModListInput[T, U]]()
+  val partitionModifiers = Buffer[ModListInput[T, U]]()
   val partitionedModList = initialize()
 
   private def initialize(): PartitionedModList[T, U] = {
-    val partitions = new ArrayBuffer[ModList[T, U]]()
+    val partitions = Buffer[ModList[T, U]]()
     for (i <- 1 to conf.partitions) {
       val modListModifier = new ModListInput[T, U](mutator)
       partitionModifiers += modListModifier
@@ -37,8 +37,18 @@ class PartitionedListInput[T, U](mutator: Mutator, conf: ListConf)
     new PartitionedModList[T, U](partitions)
   }
 
+  def load(data: Map[T, U]) {
+    val groups = data.grouped((data.size.toDouble / conf.partitions).ceil.toInt)
+
+    var i = 0
+    for (group <- groups) {
+      partitionModifiers(i).load(group)
+      i += 1
+    }
+  }
+
   private var putInto = 0
-  override def put(key: T, value: U) {
+  def put(key: T, value: U) {
     putInto = (putInto + 1) % conf.partitions
     partitionModifiers(putInto).put(key, value)
   }

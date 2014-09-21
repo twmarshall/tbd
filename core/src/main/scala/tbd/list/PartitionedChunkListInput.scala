@@ -15,18 +15,18 @@
  */
 package tbd.list
 
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.{Buffer, Map}
 
 import tbd.Mutator
 
 class PartitionedChunkListInput[T, U](mutator: Mutator, conf: ListConf)
     extends ListInput[T, U] {
 
-  val partitionModifiers = ArrayBuffer[ChunkListInput[T, U]]()
+  val partitionModifiers = Buffer[ChunkListInput[T, U]]()
   val list = initialize()
 
   private def initialize(): PartitionedChunkList[T, U] = {
-    val partitions = new ArrayBuffer[ChunkList[T, U]]()
+    val partitions = Buffer[ChunkList[T, U]]()
     for (i <- 1 to conf.partitions) {
       val chunkListModifier = new ChunkListInput[T, U](mutator, conf)
       partitionModifiers += chunkListModifier
@@ -34,6 +34,16 @@ class PartitionedChunkListInput[T, U](mutator: Mutator, conf: ListConf)
     }
 
     new PartitionedChunkList[T, U](partitions, conf)
+  }
+
+  def load(data: Map[T, U]) {
+    val groups = data.grouped((data.size.toDouble / conf.partitions).ceil.toInt)
+
+    var i = 0
+    for (group <- groups) {
+      partitionModifiers(i).load(group)
+      i += 1
+    }
   }
 
   private var putInto = 0

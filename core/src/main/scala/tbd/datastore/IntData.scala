@@ -43,9 +43,7 @@ class IntData(
   }
 
   def load() {
-    for (pair <- table) {
-      input.put(pair._1, pair._2)
-    }
+    input.load(table)
   }
 
   def clearValues() {}
