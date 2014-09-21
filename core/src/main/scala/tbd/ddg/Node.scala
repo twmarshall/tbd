@@ -20,7 +20,7 @@ import akka.pattern.ask
 import scala.collection.mutable.MutableList
 import scala.concurrent.Await
 
-import tbd.{Changeable, Memoizer, Mod}
+import tbd._
 import tbd.Constants._
 import tbd.master.Main
 import tbd.messages._
@@ -165,7 +165,13 @@ class RootNode(id: String) extends Node(null, null, Tag.Root()) {
   }
 }
 
-class ModNode(_parent: Node, _timestamp: Timestamp, _modTag: Tag.Mod) extends Node(_parent, _timestamp, _modTag) {
+class ModNode
+    (val modizer: Modizer[Any],
+     val key: Any,
+     _parent: Node,
+     _timestamp: Timestamp,
+     _modTag: Tag.Mod) extends Node(_parent, _timestamp, _modTag) {
+  
   override def toString(prefix: String) = {
     prefix + "ModNode mods=(" + _modTag.mods.foldLeft("")(_ + ", " + _) + ")" +
     super.toString(prefix)

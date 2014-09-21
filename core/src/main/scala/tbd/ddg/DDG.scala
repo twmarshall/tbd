@@ -18,7 +18,7 @@ package tbd.ddg
 import akka.actor.ActorRef
 import scala.collection.mutable.{Map, MutableList, Set, TreeSet}
 
-import tbd.{Changeable, Memoizer, Mod}
+import tbd._
 import tbd.Constants._
 import tbd.master.Master
 
@@ -58,7 +58,13 @@ class DDG(id: String) {
     readNode
   }
 
-  def addMod(mod: Mod[Any], mod2: Mod[Any], parent: Node, funcTag: FunctionTag): ModNode = {
+  def addMod
+      (mod: Mod[Any],
+       mod2: Mod[Any],
+       parent: Node,
+       modizer: Modizer[Any],
+       key: Any,
+       funcTag: FunctionTag): ModNode = {
     val timestamp = nextTimestamp(parent)
 
     val tag = if(tbd.master.Main.debug) {
@@ -69,7 +75,7 @@ class DDG(id: String) {
     } else {
       null
     }
-    val modNode = new ModNode(parent, timestamp, tag)
+    val modNode = new ModNode(modizer, key, parent, timestamp, tag)
 
     parent.addChild(modNode)
 
@@ -230,12 +236,16 @@ class DDG(id: String) {
   }
 
   private def cleanup(node: Node) {
-    if (node.isInstanceOf[ReadNode]) {
-      val readNode = node.asInstanceOf[ReadNode]
-      reads(readNode.mod.id) -= readNode
-    } else if (node.isInstanceOf[MemoNode]) {
-      val memoNode = node.asInstanceOf[MemoNode]
-      memoNode.memoizer.removeEntry(memoNode.timestamp, memoNode.signature)
+    node match {
+      case readNode: ReadNode =>
+	reads(readNode.mod.id) -= readNode
+      case memoNode: MemoNode =>
+	memoNode.memoizer.removeEntry(memoNode.timestamp, memoNode.signature)
+      case modNode: ModNode =>
+	if (modNode.modizer != null) {
+	  modNode.modizer.remove(modNode.key)
+	}
+      case _ =>
     }
 
     node.updated = false

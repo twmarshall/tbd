@@ -53,7 +53,7 @@ class ModListNode[T, U]
   def flatMap[V, W]
       (f: ((T, U)) => Iterable[(V, W)],
        memo: Memoizer[Changeable[ModListNode[V, W]]],
-       modizer: Modizer[ModListNode[V, W]])
+       modizer: Modizer1[ModListNode[V, W]])
       (implicit c: Context): Changeable[ModListNode[V, W]] = {
     var mapped = f(value)
 
@@ -154,7 +154,7 @@ class ModListNode[T, U]
   def map[V, W]
       (f: ((T, U)) => (V, W),
        memo: Memoizer[Changeable[ModListNode[V, W]]],
-       modizer: Modizer[ModListNode[V, W]])
+       modizer: Modizer1[ModListNode[V, W]])
       (implicit c: Context): Changeable[ModListNode[V, W]] = {
     val newNextMod = modizer(nextMod.id) {
       read(nextMod) {
@@ -173,7 +173,7 @@ class ModListNode[T, U]
   def mapValues[V]
       (f: U => V,
        memo: Memoizer[Changeable[ModListNode[T, V]]],
-       modizer: Modizer[ModListNode[T, V]])
+       modizer: Modizer1[ModListNode[T, V]])
       (implicit c: Context): Changeable[ModListNode[T, V]] = {
     val newNextMod = modizer(nextMod.id) {
       read(nextMod) {
@@ -192,7 +192,7 @@ class ModListNode[T, U]
   def merge
       (that: ModListNode[T, U],
        memo: Memoizer[Changeable[ModListNode[T, U]]],
-       modizer: Modizer[ModListNode[T, U]])
+       modizer: Modizer1[ModListNode[T, U]])
       (implicit c: Context,
        ordering: Ordering[T]): Changeable[ModListNode[T, U]] = {
     if (ordering.lt(value._1, that.value._1)) {
@@ -232,7 +232,7 @@ class ModListNode[T, U]
 
   private def mergeTail
       (memo: Memoizer[Changeable[ModListNode[T, U]]],
-       modizer: Modizer[ModListNode[T, U]])
+       modizer: Modizer1[ModListNode[T, U]])
       (implicit c: Context): Changeable[ModListNode[T, U]] = {
     val newNextMod = modizer(value) {
       read(nextMod) {

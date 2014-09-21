@@ -112,7 +112,7 @@ class ModList[T, U]
   def merge
       (that: ModList[T, U],
        memo: Memoizer[Changeable[ModListNode[T, U]]],
-       modizer: Modizer[ModListNode[T, U]])
+       modizer: Modizer1[ModListNode[T, U]])
       (implicit c: Context,
        ordering: Ordering[T]): ModList[T, U] = {
     new ModList(

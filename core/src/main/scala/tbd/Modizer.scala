@@ -24,10 +24,18 @@ import tbd.ddg.FunctionTag
 import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.messages._
 
-class Modizer[T] {
+trait Modizer[T] {
+  def remove(key: Any)
+}
+
+class Modizer1[T] extends Modizer[T] {
   val allocations = Map[Any, Mod[T]]()
 
   import scala.language.experimental.macros
+
+  def remove(key: Any) {
+    allocations -= key
+  }
 
   @functionToInvoke("applyInternal")
   def apply
@@ -50,15 +58,20 @@ class Modizer[T] {
 	mod1
       }
 
-    TBD.modWithDest(initializer, mod1, c, readerId, freeTerms)
+    TBD.modWithDest(initializer, mod1, this, key, c, readerId, freeTerms)
   }
 }
 
-class Modizer2[T, U] {
+class Modizer2[T, U] extends Modizer[(T, U)] {
   val allocations = Map[Any, Mod[T]]()
   val allocations2 = Map[Any, Mod[U]]()
 
   import scala.language.experimental.macros
+
+  def remove(key: Any) {
+    allocations -= key
+    allocations2 -= key
+  }
 
   @functionToInvoke("applyInternal")
   def apply
@@ -99,7 +112,7 @@ class Modizer2[T, U] {
 	modRight
       }
 
-    TBD.mod2WithDests(initializer, modLeft, modRight, c, readerId, freeTerms)
+    TBD.mod2WithDests(initializer, modLeft, modRight, this, key, c, readerId, freeTerms)
   }
 
   @functionToInvoke("modLeftInternal")
@@ -128,7 +141,7 @@ class Modizer2[T, U] {
 	modLeft
       }
 
-    TBD.modLeftWithDest(initializer, modLeft, c, readerId, freeTerms)
+    TBD.modLeftWithDest(initializer, modLeft, this, key, c, readerId, freeTerms)
   }
 
   @functionToInvoke("modRightInternal")
@@ -157,6 +170,6 @@ class Modizer2[T, U] {
 	modRight
       }
 
-    TBD.modRightWithDest(initializer, modRight, c, readerId, freeTerms)
+    TBD.modRightWithDest(initializer, modRight, this, key, c, readerId, freeTerms)
   }
 }

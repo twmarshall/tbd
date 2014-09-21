@@ -100,7 +100,7 @@ object TBD {
     changeables
   }
 
-  def makeModizer[T]() = new Modizer[T]()
+  def makeModizer[T]() = new Modizer1[T]()
 
   def makeModizer2[T, U]() = new Modizer2[T, U]()
 
@@ -115,12 +115,14 @@ object TBD {
       freeTerms: List[(String, Any)]): Mod[T] = {
     val mod1 = new Mod[T](c.newModId())
 
-    modWithDest(initializer, mod1, c, readerId, freeTerms)
+    modWithDest(initializer, mod1, null, null, c, readerId, freeTerms)
   }
 
   def modWithDest[T](
       initializer: => Changeable[T],
       mod1: Mod[T],
+      modizer: Modizer1[T],
+      key: Any,
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
@@ -128,8 +130,13 @@ object TBD {
 
     c.currentMod = mod1.asInstanceOf[Mod[Any]]
 
-    val modNode = c.ddg.addMod(c.currentMod, null, c.currentParent,
-                                      FunctionTag(readerId, freeTerms))
+    val modNode = c.ddg.addMod(
+      c.currentMod,
+      null,
+      c.currentParent,
+      modizer.asInstanceOf[Modizer[Any]],
+      key,
+      FunctionTag(readerId, freeTerms))
 
     val outerReader = c.currentParent
     c.currentParent = modNode
@@ -160,6 +167,8 @@ object TBD {
       initializer,
       new Mod[T](c.newModId()),
       new Mod[U](c.newModId()),
+      null,
+      null,
       c,
       readerId,
       freeTerms)
@@ -169,6 +178,8 @@ object TBD {
       (initializer: => (Changeable[T], Changeable[U]),
        modLeft: Mod[T],
        modRight: Mod[U],
+       modizer: Modizer2[T, U],
+       key: Any,
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
@@ -178,9 +189,13 @@ object TBD {
     val oldCurrentDest2 = c.currentMod2
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
-    val modNode = c.ddg.addMod(c.currentMod, c.currentMod2,
-                                      c.currentParent,
-                                      FunctionTag(readerId, freeTerms))
+    val modNode = c.ddg.addMod(
+      c.currentMod,
+      c.currentMod2,
+      c.currentParent,
+      modizer.asInstanceOf[Modizer[Any]],
+      key,
+      FunctionTag(readerId, freeTerms))
 
     val outerReader = c.currentParent
     c.currentParent = modNode
@@ -209,12 +224,14 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
-    modLeftWithDest(initializer, new Mod[T](c.newModId()), c, readerId, freeTerms)
+    modLeftWithDest(initializer, new Mod[T](c.newModId()), null, null, c, readerId, freeTerms)
   }
 
   def modLeftWithDest[T, U]
       (initializer: => (Changeable[T], Changeable[U]),
        modLeft: Mod[T],
+       modizer: Modizer2[T, U],
+       key: Any,
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
@@ -222,10 +239,14 @@ object TBD {
     val oldCurrentDest = c.currentMod
     c.currentMod = modLeft.asInstanceOf[Mod[Any]]
 
-    val modNode = c.ddg.addMod(c.currentMod,
-				      null,
-                                      c.currentParent,
-                                      FunctionTag(readerId, freeTerms))
+    val modNode = c.ddg.addMod(
+      c.currentMod,
+      null,
+      c.currentParent,
+      modizer.asInstanceOf[Modizer[Any]],
+      key,
+      FunctionTag(readerId, freeTerms))
+
     modNode.currentMod2 = c.currentMod2
 
     val outerReader = c.currentParent
@@ -254,22 +275,28 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
-    modRightWithDest(initializer, new Mod[U](c.newModId()), c, readerId, freeTerms)
+    modRightWithDest(initializer, new Mod[U](c.newModId()), null, null, c, readerId, freeTerms)
   }
 
   def modRightWithDest[T, U]
       (initializer: => (Changeable[T], Changeable[U]),
        modRight: Mod[U],
+       modizer: Modizer2[T, U],
+       key: Any,
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
     val oldCurrentDest2 = c.currentMod2
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
-    val modNode = c.ddg.addMod(null,
-                                      c.currentMod2,
-                                      c.currentParent,
-                                      FunctionTag(readerId, freeTerms))
+    val modNode = c.ddg.addMod(
+      null,
+      c.currentMod2,
+      c.currentParent,
+      modizer.asInstanceOf[Modizer[Any]],
+      key,
+      FunctionTag(readerId, freeTerms))
+
     modNode.currentMod = c.currentMod
 
     val outerReader = c.currentParent
@@ -300,9 +327,10 @@ object TBD {
     val changeable = new Changeable(c.currentMod)
 
     if (Main.debug) {
-      val writeNode = c.ddg.addWrite(changeable.mod.asInstanceOf[Mod[Any]],
-                                            null,
-                                            c.currentParent)
+      val writeNode = c.ddg.addWrite(
+        changeable.mod.asInstanceOf[Mod[Any]],
+        null,
+        c.currentParent)
       writeNode.endTime = c.ddg.nextTimestamp(writeNode)
     }
 
@@ -331,9 +359,10 @@ object TBD {
     }
 
     if (Main.debug) {
-      val writeNode = c.ddg.addWrite(c.currentMod.asInstanceOf[Mod[Any]],
-                                            c.currentMod2.asInstanceOf[Mod[Any]],
-                                            c.currentParent)
+      val writeNode = c.ddg.addWrite(
+	c.currentMod.asInstanceOf[Mod[Any]],
+        c.currentMod2.asInstanceOf[Mod[Any]],
+        c.currentParent)
 
       writeNode.endTime = c.ddg.nextTimestamp(writeNode)
     }
@@ -359,9 +388,10 @@ object TBD {
     }
 
     if (Main.debug) {
-      val writeNode = c.ddg.addWrite(c.currentMod.asInstanceOf[Mod[Any]],
-                                            null,
-                                            c.currentParent)
+      val writeNode = c.ddg.addWrite(
+	c.currentMod.asInstanceOf[Mod[Any]],
+        null,
+        c.currentParent)
 
       writeNode.endTime = c.ddg.nextTimestamp(writeNode)
     }
@@ -387,9 +417,10 @@ object TBD {
     }
 
     if (Main.debug) {
-      val writeNode = c.ddg.addWrite(null,
-                                            c.currentMod2.asInstanceOf[Mod[Any]],
-                                            c.currentParent)
+      val writeNode = c.ddg.addWrite(
+        null,
+        c.currentMod2.asInstanceOf[Mod[Any]],
+        c.currentParent)
 
       writeNode.endTime = c.ddg.nextTimestamp(writeNode)
     }
