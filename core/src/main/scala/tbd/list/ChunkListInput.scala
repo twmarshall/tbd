@@ -15,19 +15,12 @@
  */
 package tbd.list
 
-import akka.actor.ActorRef
-import akka.pattern.ask
 import scala.collection.mutable.Map
-import scala.concurrent.{Await, Future}
 
 import tbd.{Mod, Mutator}
-import tbd.Constants._
-import tbd.datastore.Datastore
 
 class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
     extends ListInput[T, U] {
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   protected var tailMod = mutator.createMod[ChunkListNode[T, U]](null)
 
   // Contains the last ChunkListNode before the tail node. If the list is empty,
@@ -69,8 +62,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
 
     nodes(key) = lastNodeMod
 
-    val future = lastNodeMod.update(newNode)
-    Await.result(future, DURATION)
+    mutator.updateMod(lastNodeMod, newNode)
   } //ensuring(isValid())
 
   private def calculateSize(chunk: Vector[(T, U)]) = {
@@ -124,8 +116,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
           insertInto.size + conf.chunkSizer(newPair))
       }
 
-    val future = insertIntoMod.update(newNode)
-    Await.result(future, DURATION)
+    mutator.updateMod(insertIntoMod, newNode)
   }
 
   def update(key: T, value: U) {
@@ -144,8 +135,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
     val newSize = node.size + conf.chunkSizer(value) - conf.chunkSizer(oldValue)
     val newNode = new ChunkListNode(newChunk, node.nextMod, newSize)
 
-    val future = nodes(key).update(newNode)
-    Await.result(future, DURATION)
+    mutator.updateMod(nodes(key), newNode)
   } //ensuring(isValid())
 
   def remove(key: T) {
@@ -199,9 +189,8 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
         new ChunkListNode(newChunk, node.nextMod, newSize)
       }
 
-    val future = nodes(key).update(newNode)
+    mutator.updateMod(nodes(key), newNode)
     nodes -= key
-    Await.result(future, DURATION)
   } //ensuring(isValid())
 
   def contains(key: T): Boolean = {

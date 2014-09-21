@@ -15,18 +15,11 @@
  */
 package tbd.list
 
-import akka.actor.ActorRef
-import akka.pattern.ask
-import scala.collection.mutable.{ArrayBuffer, Map}
-import scala.concurrent.{Await, ExecutionContext, Future}
+import scala.collection.mutable.Map
 
 import tbd.{Mod, Mutator}
-import tbd.Constants._
-import tbd.datastore.Datastore
 
 class ModListInput[T, U](mutator: Mutator) extends ListInput[T, U] {
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   private var tailMod = mutator.createMod[ModListNode[T, U]](null)
 
   val nodes = Map[T, Mod[ModListNode[T, U]]]()
@@ -37,12 +30,10 @@ class ModListInput[T, U](mutator: Mutator) extends ListInput[T, U] {
     val newTail = mutator.createMod[ModListNode[T, U]](null)
     val newNode = new ModListNode((key, value), newTail)
 
-    val future = tailMod.update(newNode)
+    mutator.updateMod(tailMod, newNode)
 
     nodes(key) = tailMod
     tailMod = newTail
-
-    Await.result(future, DURATION)
   }
 
   def putAfter(key: T, pair: (T, U)) {
@@ -52,20 +43,16 @@ class ModListInput[T, U](mutator: Mutator) extends ListInput[T, U] {
     val newNodeMod = mutator.createMod(newNode)
 
     val newBefore = new ModListNode(before.value, newNodeMod)
-    val future = nodes(key).update(newBefore)
+    mutator.updateMod(nodes(key), newBefore)
 
     nodes(pair._1) = newNodeMod
-
-    Await.result(future, DURATION)
   }
 
   def update(key: T, value: U) {
     val nextMod = nodes(key).read().nextMod
     val newNode = new ModListNode((key, value), nextMod)
 
-    val future = nodes(key).update(newNode)
-
-    Await.result(future, DURATION)
+    mutator.updateMod(nodes(key), newNode)
   }
 
   def remove(key: T) {
@@ -80,11 +67,9 @@ class ModListInput[T, U](mutator: Mutator) extends ListInput[T, U] {
       nodes(nextNode.value._1) = nodes(key)
     }
 
-    val future = nodes(key).update(nextNode)
+    mutator.updateMod(nodes(key), nextNode)
 
     nodes -= key
-
-    Await.result(future, DURATION)
   }
 
   def contains(key: T): Boolean = {

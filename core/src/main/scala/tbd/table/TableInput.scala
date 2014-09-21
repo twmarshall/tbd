@@ -15,19 +15,13 @@
  */
 package tbd.table
 
-import scala.concurrent.{Await, Future}
-
 import tbd.{Input, Mutator}
-import tbd.Constants._
-import tbd.datastore.Datastore
 
 object TableInput {
   def apply[T, U](mutator: Mutator) = new TableInput[T, U](mutator)
 }
 
 class TableInput[T, U](mutator: Mutator) extends Input[T, U] {
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   val table = new ModTable[T, U]()
 
   def put(key: T, value: U) {
@@ -35,8 +29,7 @@ class TableInput[T, U](mutator: Mutator) extends Input[T, U] {
   }
 
   def update(key: T, value: U) {
-    val future = table.table(key).update(value)
-    Await.result(future, DURATION)
+    mutator.updateMod(table.table(key), value)
   }
 
   def remove(key: T) = ???

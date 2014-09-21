@@ -15,20 +15,12 @@
  */
 package tbd.list
 
-import akka.actor.ActorRef
-import akka.pattern.ask
 import scala.collection.immutable.TreeMap
-import scala.collection.mutable.{ArrayBuffer, Map}
-import scala.concurrent.{Await, ExecutionContext, Future}
 
 import tbd.{Mod, Mutator}
-import tbd.Constants._
-import tbd.datastore.Datastore
 
 class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
   extends ListInput[T, U] {
-
-  import scala.concurrent.ExecutionContext.Implicits.global
 
   private var tailMod = mutator.createMod[ModListNode[T, U]](null)
 
@@ -44,12 +36,10 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
 	val newTail = mutator.createMod[ModListNode[T, U]](null)
 	val newNode = new ModListNode((key, value), newTail)
 
-        val future = tailMod.update(newNode)
+	mutator.updateMod(tailMod, newNode)
 
 	nodes += ((key, tailMod))
 	tailMod = newTail
-
-	Await.result(future, DURATION)
       case Some(nextPair) =>
 	val (nextKey, nextMod) = nextPair
 
@@ -57,12 +47,10 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
 	val newNextMod = mutator.createMod[ModListNode[T, U]](nextNode)
 
 	val newNode = new ModListNode((key, value), newNextMod)
-        val future = nextMod.update(newNode)
+	mutator.updateMod(nextMod, newNode)
 
 	nodes += ((nextKey, newNextMod))
 	nodes += ((key, nextMod))
-
-	Await.result(future, DURATION)
     }
   }
 
@@ -76,9 +64,7 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
     val nextMod = nodes(key).read().nextMod
     val newNode = new ModListNode((key, value), nextMod)
 
-    val future = nodes(key).update(newNode)
-
-    Await.result(future, DURATION)
+    mutator.updateMod(nodes(key), newNode)
   }
 
   def remove(key: T) {
@@ -93,11 +79,9 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
       nodes += ((nextNode.value._1, nodes(key)))
     }
 
-    val future = nodes(key).update(nextNode)
+    mutator.updateMod(nodes(key), nextNode)
 
     nodes -= key
-
-    Await.result(future, DURATION)
   }
 
   def contains(key: T): Boolean = {
