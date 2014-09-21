@@ -19,6 +19,7 @@ import java.io.Serializable
 import scala.collection.mutable.Buffer
 
 import tbd._
+import tbd.Constants.ModId
 import tbd.TBD._
 
 // The default value of zero for size works because size is only ever
@@ -144,6 +145,25 @@ class ChunkListNode[T, U]
 	  }
       }
     }
+  }
+
+  def keyedChunkMap[V, W]
+      (f: (Vector[(T, U)], ModId) => (V, W),
+       memo: Memoizer[Mod[ModListNode[V, W]]],
+       thisId: ModId)
+      (implicit c: Context): Changeable[ModListNode[V, W]] = {
+    val newNextMod = memo(nextMod) {
+      mod {
+        read(nextMod)(next => {
+          if (next != null && next.chunk.size > 0)
+            next.keyedChunkMap(f, memo, nextMod.id)
+          else
+            write[ModListNode[V, W]](null)
+        })
+      }
+    }
+
+    write(new ModListNode[V, W](f(chunk, thisId), newNextMod))
   }
 
   def map[V, W]

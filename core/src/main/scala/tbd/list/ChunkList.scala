@@ -73,6 +73,20 @@ class ChunkList[T, U]
     )
   }
 
+  def keyedChunkMap[V, W](f: (Vector[(T, U)], ModId) => (V, W))
+      (implicit c: Context): ModList[V, W] = {
+    val memo = makeMemoizer[Mod[ModListNode[V, W]]]()
+
+    new ModList(
+      mod {
+        read(head) {
+	  case null => write[ModListNode[V, W]](null)
+	  case node => node.keyedChunkMap(f, memo, head.id)
+        }
+      }
+    )
+  }
+
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): ChunkList[V, W] = {
     val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
@@ -90,13 +104,12 @@ class ChunkList[T, U]
   def merge(that: ChunkList[T, U])
       (implicit c: Context,
        ordering: Ordering[T]): ChunkList[T, U] = {
-    merge(that, makeMemoizer[Changeable[ChunkListNode[T, U]]](), makeModizer[ChunkListNode[T, U]]())
+    merge(that, makeMemoizer[Changeable[ChunkListNode[T, U]]]())
   }
 
   def merge
       (that: ChunkList[T, U],
-       memo: Memoizer[Changeable[ChunkListNode[T, U]]],
-       modizer: Modizer[ChunkListNode[T, U]])
+       memo: Memoizer[Changeable[ChunkListNode[T, U]]])
       (implicit c: Context,
        ordering: Ordering[T]): ChunkList[T, U] = {
 
@@ -105,8 +118,7 @@ class ChunkList[T, U]
          two: ChunkListNode[T, U],
          _oneR: Vector[(T, U)],
          _twoR: Vector[(T, U)],
-         memo: Memoizer[Changeable[ChunkListNode[T, U]]],
-         modizer: Modizer[ChunkListNode[T, U]])
+         memo: Memoizer[Changeable[ChunkListNode[T, U]]])
         (implicit c: Context): Changeable[ChunkListNode[T, U]] = {
       val oneR =
 	if (one == null)
@@ -161,7 +173,7 @@ class ChunkList[T, U]
 	    read(two.nextMod) {
 	      case twoNode =>
 		memo(null, twoNode, newOneR, newTwoR) {
-		  innerMerge(null, twoNode, newOneR, newTwoR, memo, modizer)
+		  innerMerge(null, twoNode, newOneR, newTwoR, memo)
 		}
 	    }
 	  }
@@ -170,13 +182,13 @@ class ChunkList[T, U]
 	    case oneNode =>
 	      if (two == null) {
 		memo(oneNode, null, newOneR, newTwoR) {
-		  innerMerge(oneNode, null, newOneR, newTwoR, memo, modizer)
+		  innerMerge(oneNode, null, newOneR, newTwoR, memo)
 		}
 	      } else {
 		read(two.nextMod) {
 		  case twoNode =>
 		    memo(oneNode, twoNode, newOneR, newTwoR) {
-		      innerMerge(oneNode, twoNode, newOneR, newTwoR, memo, modizer)
+		      innerMerge(oneNode, twoNode, newOneR, newTwoR, memo)
 		    }
 		}
 	      }
@@ -199,9 +211,9 @@ class ChunkList[T, U]
 	    read(that.head) {
 	      case null => write(node)
 	      case thatNode =>
-		memo(node, thatNode) {
-                  val empty = Vector[(T, U)]()
-		  innerMerge(node, thatNode, empty, empty, memo, modizer)
+                val empty = Vector[(T, U)]()
+		memo(node, thatNode, empty, empty) {
+		  innerMerge(node, thatNode, empty, empty, memo)
 		}
 	    }
 	}
@@ -216,29 +228,28 @@ class ChunkList[T, U]
       ordering.lt(pair1._1, pair2._1)
     }
 
-    def mapper(chunk: Vector[(T, U)]) = {
-      val tail = mod({
+    val modizer = makeModizer[ChunkListNode[T, U]]()
+    def mapper(chunk: Vector[(T, U)], key: ModId) = {
+      val tail = modizer(key) {
 	write(new ChunkListNode[T, U]((chunk.toBuffer.sortWith(comparator).toVector), mod({ write(null) })))
-      })
+      }
 
       ("", new ChunkList(tail, conf))
     }
 
-    val memo = makeMemoizer[(Memoizer[Changeable[ChunkListNode[T, U]]],
-			     Modizer[ChunkListNode[T, U]])]()
+    val memo = makeMemoizer[ChunkList[T, U]]()
 
     def reducer(pair1: (String, ChunkList[T, U]), pair2: (String, ChunkList[T, U])) = {
-      val (memoizer, modizer) = memo(pair1, pair2) {
-        (makeMemoizer[Changeable[ChunkListNode[T, U]]](),
-	 makeModizer[ChunkListNode[T, U]]())
-      }
+      val merged = memo(pair1._2, pair2._2) {
+        val memoizer = makeMemoizer[Changeable[ChunkListNode[T, U]]]()
 
-      val merged = pair2._2.merge(pair1._2, memoizer, modizer)
+	pair2._2.merge(pair1._2, memoizer)
+      }
 
       (pair1._1 + pair2._1, merged)
     }
 
-    val mapped = chunkMap(mapper)
+    val mapped = keyedChunkMap(mapper)
     val reduced = mapped.reduce(reducer)
 
     new ChunkList(
@@ -288,5 +299,12 @@ class ChunkList[T, U]
     buf
   }
 
-  override def toString = head.toString
+  override def equals(that: Any): Boolean = {
+    that match {
+      case thatList: ChunkList[T, U] => head == thatList.head
+      case _ => false
+    }
+  }
+
+  override def toString = "ChunkList[" + head.toString + "]"
 }

@@ -85,6 +85,14 @@ class MergeTest(input: ListInput[Int, Int], input2: ListInput[Int, Int])
   }
 }
 
+class MergeSortTest(input: ListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit c: Context) = {
+    val list = input.getAdjustableList()
+    list.mergesort()
+  }
+}
+
 class ReduceTest(input: ListInput[Int, Int])
     extends Adjustable[Mod[(Int, Int)]] {
   def run(implicit c: Context) = {
@@ -265,6 +273,21 @@ class ReexecutionTests extends FlatSpec with Matchers {
     mutator.propagate()
     println(output)
     println(output.toBuffer)
+  }*/
+
+  /*"MergeSortTest" should "reexecute only the necessary steps" in {
+    val mutator = new Mutator()
+    val input = ListInput[Int, Int](mutator, new ListConf(partitions = 1, chunkSize = 2))
+    for (i <- List(25, 20, 27, 4, 32, 10, 28, 22, 11, 3, 2, 31, 15, 1, 16, 17, 0, 30, 9, 24, 8, 34, 35, 5, 23, 6, 33)) {
+      input.put(i, i)
+    }
+    println("input = " + input.getAdjustableList())
+    val output = mutator.run(new MergeSortTest(input))
+    println(output)
+    println("\n\n\n\n\n\n\n\n\npropagating")
+    input.remove(2)
+    mutator.propagate()
+    println(output)
   }*/
 
   /*"ReduceTest" should "reexecute only the necessary reduce steps" in {
