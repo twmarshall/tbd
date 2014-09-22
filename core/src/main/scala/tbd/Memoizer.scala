@@ -176,6 +176,10 @@ class Memoizer[T](c: Context) {
     }
 
     memoTable(signature) -= toRemove
+
+    if (memoTable(signature).size == 0) {
+      memoTable -= signature
+    }
   }
 }
 
