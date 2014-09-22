@@ -27,11 +27,11 @@ import tbd.ddg.{DDG, Node, MemoNode, ParNode, ReadNode, Timestamp}
 import tbd.messages._
 
 object Worker {
-  def props(id: String, datastoreRef: ActorRef, parent: ActorRef): Props =
-    Props(classOf[Worker], id, datastoreRef, parent)
+  def props(id: String, parent: ActorRef): Props =
+    Props(classOf[Worker], id, parent)
 }
 
-class Worker(val id: String, val datastoreRef: ActorRef, parent: ActorRef)
+class Worker(val id: String, parent: ActorRef)
   extends Actor with ActorLogging {
   import context.dispatcher
 

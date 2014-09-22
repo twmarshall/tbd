@@ -23,18 +23,16 @@ import scala.util.{Failure, Success, Try}
 
 import tbd.{Adjustable, TBD}
 import tbd.Constants._
-import tbd.datastore.Datastore
 import tbd.messages._
 import tbd.worker.Worker
 
 object Master {
-  def props(datastoreRef: ActorRef): Props =
-    Props(classOf[Master], datastoreRef)
+  def props(): Props = Props(classOf[Master])
 
   var epoch = 0
 }
 
-class Master(datastoreRef: ActorRef) extends Actor with ActorLogging {
+class Master extends Actor with ActorLogging {
   import context.dispatcher
   log.info("Master launced.")
 
@@ -49,7 +47,7 @@ class Master(datastoreRef: ActorRef) extends Actor with ActorLogging {
     case RunMessage(adjust: Adjustable[_], mutatorId: Int) => {
       log.debug("RunMessage")
 
-      val workerProps = Worker.props("w0", datastoreRef, self)
+      val workerProps = Worker.props("w0", self)
       workerRef = context.actorOf(workerProps, "worker" + mutatorId)
       workers(mutatorId) = workerRef
 
@@ -101,7 +99,6 @@ class Master(datastoreRef: ActorRef) extends Actor with ActorLogging {
     }
 
     case CleanupMessage => {
-      Await.result((datastoreRef ? CleanupMessage), DURATION)
       sender ! "done"
     }
 

@@ -19,7 +19,6 @@ import scala.collection.mutable.{Buffer, Map}
 
 import tbd.Mutator
 import tbd.Constants._
-import tbd.datastore.Datastore
 
 class PartitionedModListInput[T, U](mutator: Mutator, conf: ListConf)
     extends ListInput[T, U] {

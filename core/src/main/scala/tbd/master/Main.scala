@@ -23,7 +23,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import tbd.Constants._
-import tbd.datastore.Datastore
+import tbd.datastore.DependencyManager
 import tbd.messages._
 
 object Main {
@@ -42,11 +42,13 @@ class Main(storeType: String = "memory", cacheSize: Int = 10000) {
                            ConfigFactory.load.getConfig("master"))
   Main.id += 1
 
-  val datastoreRef = system.actorOf(Datastore.props(storeType, cacheSize),
-				    "datastore")
-  Datastore.datastoreRef = datastoreRef
+  val managerRef = system.actorOf(
+    DependencyManager.props(storeType, cacheSize),
+    "dependencyManager")
 
-  val masterRef = system.actorOf(Master.props(datastoreRef), "master")
+  DependencyManager.managerRef = managerRef
+
+  val masterRef = system.actorOf(Master.props(), "master")
 
   def shutdown() {
     Await.result((masterRef ? CleanupMessage), DURATION)

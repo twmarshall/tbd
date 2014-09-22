@@ -20,7 +20,6 @@ import scala.collection.mutable.Buffer
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.datastore.Datastore
 import tbd.ddg.DDG
 import tbd.master.Main
 import tbd.messages._

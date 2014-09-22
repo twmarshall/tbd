@@ -22,7 +22,7 @@ import scala.collection.mutable.{ArrayBuffer, Set}
 import scala.concurrent.{Await, Future, Lock, Promise}
 
 import tbd.Constants._
-import tbd.datastore.Datastore
+import tbd.datastore.DependencyManager
 import tbd.master.Main
 import tbd.messages._
 
@@ -31,7 +31,7 @@ class Mod[T](val id: ModId) extends Serializable {
 
   def read(workerRef: ActorRef = null): T = {
     if (workerRef != null) {
-      Datastore.addDependency(id, workerRef)
+      DependencyManager.addDependency(id, workerRef)
     }
 
     value
@@ -39,7 +39,7 @@ class Mod[T](val id: ModId) extends Serializable {
 
   def update(_value: T, workerRef: ActorRef = null): Future[String] = {
     if (value != _value) {
-      val future = Datastore.modUpdated(id, workerRef)
+      val future = DependencyManager.modUpdated(id, workerRef)
       value = _value
       future
     } else {

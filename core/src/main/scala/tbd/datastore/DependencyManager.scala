@@ -24,22 +24,22 @@ import tbd.{Mod}
 import tbd.Constants._
 import tbd.messages._
 
-object Datastore {
-  var datastoreRef: ActorRef = null
+object DependencyManager {
+  var managerRef: ActorRef = null
 
   def props(storeType: String, cacheSize: Int): Props =
-    Props(classOf[Datastore], storeType, cacheSize)
+    Props(classOf[DependencyManager], storeType, cacheSize)
 
   def addDependency(modId: ModId, workerRef: ActorRef) {
-    datastoreRef ! AddDependencyMessage(modId, workerRef)
+    managerRef ! AddDependencyMessage(modId, workerRef)
   }
 
   def modUpdated(modId: ModId, worker: ActorRef): Future[String] = {
-    (datastoreRef ? UpdatedModMessage(modId, worker)).mapTo[String]
+    (managerRef ? UpdatedModMessage(modId, worker)).mapTo[String]
   }
 }
 
-class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLogging {
+class DependencyManager(storeType: String, cacheSize: Int) extends Actor with ActorLogging {
   import context.dispatcher
 
   val store =
@@ -96,7 +96,7 @@ class Datastore(storeType: String, cacheSize: Int) extends Actor with ActorLoggi
     }
 
     case x => {
-      log.warning("Datastore actor received unhandled message " +
+      log.warning("DependencyManager actor received unhandled message " +
                   x + " from " + sender)
     }
   }
