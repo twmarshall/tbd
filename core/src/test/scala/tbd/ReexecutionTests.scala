@@ -74,6 +74,17 @@ class MapReduceTest(input: ListInput[Int, Int])
   }
 }
 
+class MapTest(input: ListInput[Int, Int])
+    extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit c: Context) = {
+    val list = input.getAdjustableList()
+
+    list.map(pair => {
+      (pair._1, pair._2 * 2)
+    })
+  }
+}
+
 class MergeTest(input: ListInput[Int, Int], input2: ListInput[Int, Int])
     extends Adjustable[AdjustableList[Int, Int]] {
   def run(implicit c: Context) = {
@@ -235,6 +246,25 @@ class ReexecutionTests extends FlatSpec with Matchers {
     println("propagate")
     input.update(7, 8)
     mutator.propagate()
+  }*/
+
+  /*"MapTest" should "only reexecute the necessary parts" in {
+    val mutator = new Mutator()
+    val input = ListInput[Int, Int](mutator, new ListConf(partitions = 1, chunkSize = 1))
+    for (i <- List(6, 2, 9, 3, 5, 4, 1)) {
+      input.put(i, i)
+    }
+    println(input.getAdjustableList())
+    val output = mutator.run(new MapTest(input))
+    println(output)
+
+    println("\npropagate")
+    input.remove(4)
+    input.putAfter(6, (4, 4))
+    //input.update(2, 3)
+    mutator.propagate()
+    println(output)
+
   }*/
 
   /*"MergeTest" should "asdf" in {
