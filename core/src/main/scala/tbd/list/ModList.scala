@@ -178,16 +178,11 @@ class ModList[T, U]
   override def quicksort()
       (implicit c: Context,
        ordering: Ordering[T]): ModList[T, U] = {
-    val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
-    val memo2 = makeMemoizer[Changeable[ModListNode[T, U]]]()
-    val memoizers = Map[(T, U), (Memoizer[ModListNode.ChangeableTuple[T, U]],
-				 Modizer2[ModListNode[T, U], ModListNode[T, U]])]()
-
     val sorted = mod {
       read(head) {
         case null => write[ModListNode[T, U]](null)
         case node =>
-	  node.quicksort(createMod(null), memoizers, memo, memo2)
+	  node.quicksort(createMod(null))
       }
     }
 
