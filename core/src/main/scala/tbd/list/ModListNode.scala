@@ -314,26 +314,22 @@ class ModListNode[T, U]
       }
     }
 
-    val greaterSorted = memo(greater) {
-      mod {
-        read(greater) {
-	  case null =>
-	    read(toAppend) { write(_) }
-	  case greater =>
-	    greater.quicksort(toAppend, memoizers, memo, memo2)
-        }
+    val greaterSorted = mod {
+      read(greater) {
+	case null =>
+	  read(toAppend) { write(_) }
+	case greater =>
+	  greater.quicksort(toAppend, memoizers, memo, memo2)
       }
     }
 
-    memo2(smaller) {
-      val mid = new ModListNode(value, greaterSorted)
+    val mid = new ModListNode(value, greaterSorted)
 
-      read(smaller) {
-	case null =>
-	  write(mid)
-	case smallerNode =>
-	  smallerNode.quicksort(createMod(mid), memoizers, memo, memo2)
-      }
+    read(smaller) {
+      case null =>
+	write(mid)
+      case smallerNode =>
+	smallerNode.quicksort(createMod(mid), memoizers, memo, memo2)
     }
   }
 
