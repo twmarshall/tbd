@@ -20,6 +20,7 @@ import scala.collection.mutable.Buffer
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
+import tbd.datastore.DependencyManager
 import tbd.ddg.DDG
 import tbd.master.Main
 import tbd.messages._
@@ -46,12 +47,17 @@ class Mutator(aMain: Main = null) {
   def createMod[T](value: T): Mod[T] = {
     val mod = new Mod[T]("d." + nextModId)
     nextModId += 1
-    futures += mod.update(value)
+    if (mod.update(value)) {
+      futures += DependencyManager.modUpdated(mod.id)
+    }
+
     mod
   }
 
   def updateMod[T](mod: Mod[T], value: T) {
-    futures += mod.update(value)
+    if (mod.update(value)) {
+      futures += DependencyManager.modUpdated(mod.id)
+    }
   }
 
   def run[T](adjust: Adjustable[T]): T = {

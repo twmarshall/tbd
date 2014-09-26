@@ -22,6 +22,7 @@ import tbd.Constants._
 import tbd.ddg.MemoNode
 import tbd.master.Master
 import tbd.macros.{TbdMacros, functionToInvoke}
+import tbd.datastore.DependencyManager
 import tbd.ddg.{FunctionTag, Timestamp}
 import tbd.worker.Worker
 
@@ -51,7 +52,7 @@ class Memoizer[T](c: Context) {
 	      timestamp < c.reexecutionEnd &&
 	      memoNode.matchableInEpoch <= Master.epoch) {
 
-            updateChangeables(memoNode, c.worker, c.currentMod, c.currentMod2)
+            updateChangeables(memoNode, c.currentMod, c.currentMod2)
 
             found = true
             c.ddg.attachSubtree(c.currentParent, memoNode)
@@ -73,7 +74,7 @@ class Memoizer[T](c: Context) {
 
     if (!found) {
       val memoNode = c.ddg.addMemo(c.currentParent, signature, this,
-                                          FunctionTag(funcId, freeTerms))
+                                   FunctionTag(funcId, freeTerms))
       val outerParent = c.currentParent
       c.currentParent = memoNode
       val value = func
@@ -111,23 +112,24 @@ class Memoizer[T](c: Context) {
 
   private def updateChangeables(
       memoNode: MemoNode,
-      worker: Worker,
       currentMod: Mod[Any],
       currentMod2: Mod[Any]) {
     if (memoNode.currentMod != currentMod &&
 	memoNode.value.isInstanceOf[Changeable[_]]) {
       val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
 
-      val awaiting = currentMod.update(changeable.mod.read())
-      c.pending += awaiting
-      if (c.ddg.reads.contains(currentMod.id)) {
-        c.ddg.modUpdated(currentMod.id)
-        c.updatedMods += currentMod.id
+      if (currentMod.update(changeable.mod.read())) {
+	c.pending += DependencyManager.modUpdated(currentMod.id, c.worker.self)
+	if (c.ddg.reads.contains(currentMod.id)) {
+          c.ddg.modUpdated(currentMod.id)
+          c.updatedMods += currentMod.id
+	}
       }
 
-      c.ddg.replaceMods(memoNode,
-			     memoNode.currentMod,
-			     currentMod)
+      c.ddg.replaceMods(
+	memoNode,
+	memoNode.currentMod,
+	currentMod)
     }
 
     if (memoNode.value.isInstanceOf[Tuple2[_, _]]) {
@@ -137,32 +139,36 @@ class Memoizer[T](c: Context) {
 	  memoNode.currentMod != currentMod) {
         val changeable = tuple._1.asInstanceOf[Changeable[Any]]
 
-        val awaiting = currentMod.update(changeable.mod.read())
-        c.pending += awaiting
-        if (c.ddg.reads.contains(currentMod.id)) {
-          c.ddg.modUpdated(currentMod.id)
-          c.updatedMods += currentMod.id
-        }
+        if (currentMod.update(changeable.mod.read())) {
+          c.pending += DependencyManager.modUpdated(currentMod.id, c.worker.self)
+          if (c.ddg.reads.contains(currentMod.id)) {
+            c.ddg.modUpdated(currentMod.id)
+            c.updatedMods += currentMod.id
+          }
+	}
 
-        c.ddg.replaceMods(memoNode,
-			       memoNode.currentMod,
-			       currentMod)
+        c.ddg.replaceMods(
+	  memoNode,
+	  memoNode.currentMod,
+	  currentMod)
       }
 
       if (tuple._2.isInstanceOf[Changeable[_]] &&
 	  memoNode.currentMod2 != currentMod2) {
         val changeable = tuple._2.asInstanceOf[Changeable[Any]]
 
-        val awaiting = currentMod2.update(changeable.mod.read())
-        c.pending += awaiting
-        if (c.ddg.reads.contains(currentMod2.id)) {
-          c.ddg.modUpdated(currentMod2.id)
-          c.updatedMods += currentMod2.id
-        }
+        if (currentMod2.update(changeable.mod.read())) {
+          c.pending += DependencyManager.modUpdated(currentMod2.id, c.worker.self)
+          if (c.ddg.reads.contains(currentMod2.id)) {
+            c.ddg.modUpdated(currentMod2.id)
+            c.updatedMods += currentMod2.id
+          }
+	}
 
-        c.ddg.replaceMods(memoNode,
-			       memoNode.currentMod2,
-			       currentMod2)
+        c.ddg.replaceMods(
+	  memoNode,
+	  memoNode.currentMod2,
+	  currentMod2)
       }
     }
   }

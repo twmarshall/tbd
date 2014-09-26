@@ -34,7 +34,7 @@ object DependencyManager {
     managerRef ! AddDependencyMessage(modId, workerRef)
   }
 
-  def modUpdated(modId: ModId, worker: ActorRef): Future[String] = {
+  def modUpdated(modId: ModId, worker: ActorRef = null): Future[String] = {
     (managerRef ? UpdatedModMessage(modId, worker)).mapTo[String]
   }
 }

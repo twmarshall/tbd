@@ -37,14 +37,12 @@ class Mod[T](val id: ModId) extends Serializable {
     value
   }
 
-  def update(_value: T, workerRef: ActorRef = null): Future[String] = {
+  def update(_value: T): Boolean = {
     if (value != _value) {
-      val future = DependencyManager.modUpdated(id, workerRef)
       value = _value
-      future
+      true
     } else {
-      import scala.concurrent.ExecutionContext.Implicits.global
-      Future { "done" }
+      false
     }
   }
 

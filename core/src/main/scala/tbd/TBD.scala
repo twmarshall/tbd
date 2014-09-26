@@ -23,6 +23,7 @@ import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.Constants._
 import tbd.master.Main
 import tbd.messages._
+import tbd.datastore.DependencyManager
 import tbd.ddg.FunctionTag
 import tbd.TBD._
 
@@ -317,11 +318,13 @@ object TBD {
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
     import c.worker.context.dispatcher
 
-    val awaiting = c.currentMod.update(value, c.worker.self)
-    c.pending += awaiting
-    if (c.ddg.reads.contains(c.currentMod.id)) {
-      c.ddg.modUpdated(c.currentMod.id)
-      c.updatedMods += c.currentMod.id
+    if (c.currentMod.update(value) && !c.initialRun) {
+      c.pending += DependencyManager.modUpdated(c.currentMod.id, c.worker.self)
+
+      if (c.ddg.reads.contains(c.currentMod.id)) {
+	c.updatedMods += c.currentMod.id
+	c.ddg.modUpdated(c.currentMod.id)
+      }
     }
 
     val changeable = new Changeable(c.currentMod)
@@ -343,19 +346,22 @@ object TBD {
      (implicit c: Context): (Changeable[T], Changeable[U]) = {
     import c.worker.context.dispatcher
 
-    val awaiting = c.currentMod.update(value, c.worker.self)
-    val awaiting2 = c.currentMod2.update(value2, c.worker.self)
-    c.pending += awaiting
-    c.pending += awaiting2
-
-    if (c.ddg.reads.contains(c.currentMod.id)) {
-      c.updatedMods += c.currentMod.id
-      c.ddg.modUpdated(c.currentMod.id)
+    if (c.currentMod.update(value) && !c.initialRun) {
+      c.pending += DependencyManager.modUpdated(c.currentMod.id, c.worker.self)
+      
+      if (c.ddg.reads.contains(c.currentMod.id)) {
+	c.updatedMods += c.currentMod.id
+	c.ddg.modUpdated(c.currentMod.id)
+      }
     }
 
-    if (c.ddg.reads.contains(c.currentMod2.id)) {
-      c.updatedMods += c.currentMod2.id
-      c.ddg.modUpdated(c.currentMod2.id)
+    if (c.currentMod2.update(value2) && !c.initialRun) {
+      c.pending += DependencyManager.modUpdated(c.currentMod2.id, c.worker.self)
+      
+      if (c.ddg.reads.contains(c.currentMod2.id)) {
+	c.updatedMods += c.currentMod2.id
+	c.ddg.modUpdated(c.currentMod2.id)
+      }
     }
 
     if (Main.debug) {
@@ -380,11 +386,13 @@ object TBD {
       println("WARNING - mod parameter to writeLeft doesn't match currentMod2")
     }
 
-    val awaiting = c.currentMod.update(value, c.worker.self)
-    c.pending += awaiting
-    if (c.ddg.reads.contains(c.currentMod.id)) {
-      c.updatedMods += c.currentMod.id
-      c.ddg.modUpdated(c.currentMod.id)
+    if (c.currentMod.update(value) && !c.initialRun) {
+      c.pending += DependencyManager.modUpdated(c.currentMod.id, c.worker.self)
+
+      if (c.ddg.reads.contains(c.currentMod.id)) {
+	c.updatedMods += c.currentMod.id
+	c.ddg.modUpdated(c.currentMod.id)
+      }
     }
 
     if (Main.debug) {
@@ -409,11 +417,13 @@ object TBD {
       println("WARNING - mod parameter to writeRight doesn't match currentMod")
     }
 
-    val awaiting = c.currentMod2.update(value2, c.worker.self)
-    c.pending += awaiting
-    if (c.ddg.reads.contains(c.currentMod2.id)) {
-      c.updatedMods += c.currentMod2.id
-      c.ddg.modUpdated(c.currentMod2.id)
+    if (c.currentMod2.update(value2) && !c.initialRun) {
+      c.pending += DependencyManager.modUpdated(c.currentMod2.id, c.worker.self)
+
+      if (c.ddg.reads.contains(c.currentMod2.id)) {
+	c.updatedMods += c.currentMod2.id
+	c.ddg.modUpdated(c.currentMod2.id)
+      }
     }
 
     if (Main.debug) {
