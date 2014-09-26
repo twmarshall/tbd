@@ -73,11 +73,11 @@ class ListSortTest()
   }
 
   def getResult(output:  AdjustableList[Int, Int]): Seq[Int] = {
-    output.toBuffer().map(_._2)
+    output.toBuffer().map(_._1)
   }
 
   def getExpectedResult(input: Map[Int, Int]): Seq[Int] = {
-    input.values.toBuffer.sortWith(_ < _)
+    input.keys.toBuffer.sortWith(_ < _)
   }
 }
 

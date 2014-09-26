@@ -58,7 +58,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
   //Adds a random value with any free key.
   def addValue() {
     val newValue = rand.nextInt(maxValue)
-    val newKey =
+    /*val newKey =
       if(freeList.size == 0 || rand.nextInt(2) == 1) {
         keyCounter += 1
         keyCounter
@@ -66,7 +66,11 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
         var (head::tail) = freeList
         freeList = tail
         head
-      }
+      }*/
+    var newKey = rand.nextInt(maxValue)
+    while (table.contains(newKey)) {
+      newKey = rand.nextInt(maxValue)
+    }
 
     addValue(newKey, newValue)
   }

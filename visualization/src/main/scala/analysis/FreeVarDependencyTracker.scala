@@ -33,15 +33,16 @@ class FreeVarDependencyTracker extends DependencyTracker {
 
     //Insert single edges for each node.
     ddg.nodes.foreach(node => {
+
       var dependencies = node.tag match {
         case Tag.Read(_, fun) => fun.freeVars
         case Tag.Par(fun1, fun2) => fun1.freeVars ::: fun2.freeVars
         case Tag.Mod(_, fun) => fun.freeVars
         case Tag.Memo(fun, _) => fun.freeVars
-        case _ => List[(String, Any)]()
+        case _ => null
       }
 
-      if(!dependencies.isEmpty) {
+      if(dependencies != null) {
         val parent = ddg.getCallParent(node)
         if(!invDeps.contains(parent)) {
           invDeps(parent) = List()
