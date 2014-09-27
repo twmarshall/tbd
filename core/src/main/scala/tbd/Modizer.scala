@@ -52,12 +52,17 @@ class Modizer1[T] extends Modizer[T] {
   }
 }
 
-class DebugModizer1[T] extends Modizer1[T] {
+class DebugModizer1[T] extends Modizer[T] {
   import scala.language.experimental.macros
 
+  val allocations = Map[Any, Mod[T]]()
+
+  def remove(key: Any) {
+    allocations -= key
+  }
+
   @functionToInvoke("applyInternal")
-  override def apply
-      (key: Any)
+  def apply(key: Any)
       (initializer: => Changeable[T])
       (implicit c: Context): Mod[T] = macro TbdMacros.modizerMacro[Mod[T]]
 

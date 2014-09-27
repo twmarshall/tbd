@@ -223,13 +223,14 @@ object DebugTBD {
   }
 
   @functionToInvoke("parInternal")
-  def par[T](one: Context => T): Parer[T] = macro TbdMacros.parOneMacro[Parer[T]]
+  def par[T](one: Context => T): Parer[T] =
+	macro TbdMacros.parOneMacro[Parer[T]]
 
   def parInternal[T](
       one: Context => T,
       id: Int,
-      closedTerms: List[(String, Any)]): Parer[T] = {
-    TBD.parInternal(one, id, closedTerms)
+      closedTerms: List[(String, Any)]): DebugParer[T] = {
+    new DebugParer(one, id, closedTerms)
   }
 
   def makeMemoizer[T](dummy: Boolean = false)(implicit c: Context): Memoizer[T] = {

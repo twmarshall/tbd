@@ -34,10 +34,10 @@ object Node {
   }
 }
 
-abstract class Node(
-    var parent: Node,
-    val timestamp: Timestamp,
-    var tag: Tag) {
+abstract class Node
+    (var parent: Node,
+     val timestamp: Timestamp,
+     var tag: Tag) {
   var endTime: Timestamp = null
   var stacktrace =
     if (Main.debug)
@@ -91,34 +91,33 @@ class ReadNode
     (val mod: Mod[Any],
      _parent: Node,
      _timestamp: Timestamp,
-     val reader: Any => Changeable[Any])
-  extends Node(_parent, _timestamp, null) {
+     val reader: Any => Changeable[Any]) extends Node(_parent, _timestamp, null) {
 
   override def toString(prefix: String) = {
-    prefix + this + " modId=(" + mod.id + ") " + " time=" + timestamp + " to " + endTime +
-      " value=" + mod + " updated=(" + updated + ")" + super.toString(prefix)
+    prefix + this + " modId=(" + mod.id + ") " + " time=" + timestamp + " to " +
+      endTime + " value=" + mod + " updated=(" + updated + ")" +
+      super.toString(prefix)
   }
 }
 
-class WriteNode(
-    val mod: Mod[Any],
-    val mod2: Mod[Any],
-    _parent: Node,
-    _timestamp: Timestamp,
-    _writeTag: Tag.Write) extends Node(_parent, _timestamp, _writeTag) {
+class WriteNode
+    (val mod: Mod[Any],
+     val mod2: Mod[Any],
+     _parent: Node,
+     _timestamp: Timestamp,
+     _writeTag: Tag.Write) extends Node(_parent, _timestamp, _writeTag) {
 
   override def toString(prefix: String) = {
-    prefix + "WriteNode modId=(" + //mod.id + ") " +
+    prefix + "WriteNode modId=(" + mod.id + ") " +
       " value=" + mod + " time=" + timestamp + super.toString(prefix)
   }
 }
 
-class ParNode(
-    val workerRef1: ActorRef,
-    val workerRef2: ActorRef,
-    _parent: Node,
-    _timestamp: Timestamp,
-    _parTag: Tag.Par) extends Node(_parent, _timestamp, _parTag) {
+class ParNode
+    (val workerRef1: ActorRef,
+     val workerRef2: ActorRef,
+     _parent: Node,
+     _timestamp: Timestamp) extends Node(_parent, _timestamp, null) {
 
   var pebble1 = false
   var pebble2 = false
@@ -143,12 +142,12 @@ class ParNode(
   }
 }
 
-class MemoNode(
-    _parent: Node,
-    _timestamp: Timestamp,
-    val signature: Seq[Any],
-    val memoizer: Memoizer[_],
-    _memoTag: Tag.Memo) extends Node(_parent, _timestamp, _memoTag) {
+class MemoNode
+    (_parent: Node,
+     _timestamp: Timestamp,
+     val signature: Seq[Any],
+     val memoizer: Memoizer[_],
+     _memoTag: Tag.Memo) extends Node(_parent, _timestamp, _memoTag) {
 
   var value: Any = null
 
@@ -169,7 +168,7 @@ class ModNode
      val key: Any,
      _parent: Node,
      _timestamp: Timestamp) extends Node(_parent, _timestamp, null) {
-  
+
   override def toString(prefix: String) = {
     prefix + "ModNode mods=(" +
       tag.asInstanceOf[Tag.Mod].mods.foldLeft("")(_ + ", " + _) + ")" +

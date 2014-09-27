@@ -83,24 +83,20 @@ class DDG(id: String) {
     writeNode
   }
 
-  def addPar(workerRef1: ActorRef,
-             workerRef2: ActorRef,
-             parent: Node,
-             fun1: FunctionTag,
-             fun2: FunctionTag) {
+  def addPar
+      (workerRef1: ActorRef,
+       workerRef2: ActorRef,
+       parent: Node): ParNode = {
     val timestamp = nextTimestamp(parent)
 
-    val parNode = if(tbd.master.Main.debug) {
-      new ParNode(workerRef1, workerRef2, parent, timestamp,
-                              Tag.Par(fun1, fun2))
-    } else {
-      new ParNode(workerRef1, workerRef2, parent, timestamp, null)
-    }
+    val parNode = new ParNode(workerRef1, workerRef2, parent, timestamp)
 
     parent.addChild(parNode)
 
     pars(workerRef1) = parNode
     pars(workerRef2) = parNode
+
+    parNode
   }
 
   def addMemo(

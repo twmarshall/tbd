@@ -23,20 +23,10 @@ import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.Constants._
 import tbd.messages._
 import tbd.worker.Worker
-import tbd.ddg.FunctionTag
+import tbd.ddg.{FunctionTag, ParNode, Tag}
 
-class Parer[T](one: Context => T, id1: Int, closedTerms1: List[(String, Any)]) {
-  import scala.language.experimental.macros
-
-  @functionToInvoke("parTwoInternal")
-  def and[U](two: Context => U)(implicit c: Context): (T, U) = macro TbdMacros.parTwoMacro[(T, U)]
-
-  def parTwoInternal[U](
-      two: Context => U,
-      c: Context,
-      id2: Int,
-      closedTerms2: List[(String, Any)]): (T, U) = {
-
+class Parer[T](one: Context => T) {
+  def and[U](two: Context => U)(implicit c: Context): (T, U) = {
     val workerProps1 = Worker.props(c.id + "-" + c.workerId, c.worker.self)
     val workerRef1 = c.worker.context.system.actorOf(workerProps1, c.id + "-" + c.workerId)
     c.workerId += 1
@@ -51,12 +41,35 @@ class Parer[T](one: Context => T, id1: Int, closedTerms1: List[(String, Any)]) {
     val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
     val twoFuture = workerRef2 ? RunTaskMessage(adjust2)
 
-    c.ddg.addPar(workerRef1, workerRef2, c.currentParent,
-                      FunctionTag(id1, closedTerms1),
-                      FunctionTag(id2, closedTerms2))
+    c.ddg.addPar(workerRef1, workerRef2, c.currentParent)
 
     val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]
+    (oneRet, twoRet)
+  }
+}
+
+class DebugParer[T]
+    (one: Context => T,
+     id1: Int,
+     closedTerms1: List[(String, Any)]) extends Parer(one) {
+  import scala.language.experimental.macros
+
+  @functionToInvoke("parTwoInternal")
+  override def and[U](two: Context => U)(implicit c: Context): (T, U) =
+    macro TbdMacros.parTwoMacro[(T, U)]
+
+  def parTwoInternal[U](
+      two: Context => U,
+      c: Context,
+      id2: Int,
+      closedTerms2: List[(String, Any)]): (T, U) = {
+    val (oneRet, twoRet) = super.and(two)(c)
+
+    val parNode = c.currentParent.children.last.asInstanceOf[ParNode]
+    val tag = Tag.Par(FunctionTag(id1, closedTerms1), FunctionTag(id2, closedTerms2))
+    parNode.tag = tag
+
     (oneRet, twoRet)
   }
 }

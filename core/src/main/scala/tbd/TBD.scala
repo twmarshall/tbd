@@ -299,14 +299,8 @@ object TBD {
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
   }
 
-  @functionToInvoke("parInternal")
-  def par[T](one: Context => T): Parer[T] = macro TbdMacros.parOneMacro[Parer[T]]
-
-  def parInternal[T](
-      one: Context => T,
-      id: Int,
-      closedTerms: List[(String, Any)]): Parer[T] = {
-    new Parer(one, id, closedTerms)
+  def par[T](one: Context => T): Parer[T] = {
+    new Parer(one)
   }
 
   def makeMemoizer[T](dummy: Boolean = false)(implicit c: Context): Memoizer[T] = {
