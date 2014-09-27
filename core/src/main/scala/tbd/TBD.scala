@@ -83,7 +83,9 @@ object TBD {
 
   @functionToInvoke("modInternal")
   def mod[T](initializer: => Changeable[T])
-     (implicit c: Context): Mod[T] = macro TbdMacros.modMacro[Mod[T]]
+     (implicit c: Context): Mod[T] = {
+    modInternal(initializer, c, 0, null)
+  }
 
   def modInternal[T](
       initializer: => Changeable[T],
@@ -292,8 +294,6 @@ object TBD {
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
-    import c.worker.context.dispatcher
-
     if (c.currentMod.update(value) && !c.initialRun) {
       c.pending += DependencyManager.modUpdated(c.currentMod.id, c.worker.self)
 
@@ -303,65 +303,11 @@ object TBD {
       }
     }
 
-    val changeable = new Changeable(c.currentMod)
-
-    if (Main.debug) {
-      val writeNode = c.ddg.addWrite(
-        changeable.mod.asInstanceOf[Mod[Any]],
-        null,
-        c.currentParent)
-      writeNode.endTime = c.ddg.nextTimestamp(writeNode)
-    }
-
-    changeable.asInstanceOf[Changeable[T]]
+    (new Changeable(c.currentMod)).asInstanceOf[Changeable[T]]
   }
 
-  def write2[T, U](
-      value: T,
-      value2: U)
-     (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    import c.worker.context.dispatcher
-
-    if (c.currentMod.update(value) && !c.initialRun) {
-      c.pending += DependencyManager.modUpdated(c.currentMod.id, c.worker.self)
-      
-      if (c.ddg.reads.contains(c.currentMod.id)) {
-	c.updatedMods += c.currentMod.id
-	c.ddg.modUpdated(c.currentMod.id)
-      }
-    }
-
-    if (c.currentMod2.update(value2) && !c.initialRun) {
-      c.pending += DependencyManager.modUpdated(c.currentMod2.id, c.worker.self)
-      
-      if (c.ddg.reads.contains(c.currentMod2.id)) {
-	c.updatedMods += c.currentMod2.id
-	c.ddg.modUpdated(c.currentMod2.id)
-      }
-    }
-
-    if (Main.debug) {
-      val writeNode = c.ddg.addWrite(
-	c.currentMod.asInstanceOf[Mod[Any]],
-        c.currentMod2.asInstanceOf[Mod[Any]],
-        c.currentParent)
-
-      writeNode.endTime = c.ddg.nextTimestamp(writeNode)
-    }
-
-    write2Helper(c)
-  }
-
-  def writeLeft[T, U](
-      value: T,
-      changeable: Changeable[U])
-     (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    import c.worker.context.dispatcher
-
-    if (changeable.mod != c.currentMod2) {
-      println("WARNING - mod parameter to writeLeft doesn't match currentMod2")
-    }
-
+  def write2[T, U](value: T, value2: U)
+      (implicit c: Context): (Changeable[T], Changeable[U]) = {
     if (c.currentMod.update(value) && !c.initialRun) {
       c.pending += DependencyManager.modUpdated(c.currentMod.id, c.worker.self)
 
@@ -369,28 +315,6 @@ object TBD {
 	c.updatedMods += c.currentMod.id
 	c.ddg.modUpdated(c.currentMod.id)
       }
-    }
-
-    if (Main.debug) {
-      val writeNode = c.ddg.addWrite(
-	c.currentMod.asInstanceOf[Mod[Any]],
-        null,
-        c.currentParent)
-
-      writeNode.endTime = c.ddg.nextTimestamp(writeNode)
-    }
-
-    write2Helper(c)
-  }
-
-  def writeRight[T, U](
-      changeable: Changeable[T],
-      value2: U)
-     (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    import c.worker.context.dispatcher
-
-    if (changeable.mod != c.currentMod) {
-      println("WARNING - mod parameter to writeRight doesn't match currentMod")
     }
 
     if (c.currentMod2.update(value2) && !c.initialRun) {
@@ -402,20 +326,36 @@ object TBD {
       }
     }
 
-    if (Main.debug) {
-      val writeNode = c.ddg.addWrite(
-        null,
-        c.currentMod2.asInstanceOf[Mod[Any]],
-        c.currentParent)
-
-      writeNode.endTime = c.ddg.nextTimestamp(writeNode)
-    }
-
-    write2Helper(c)
+    (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
+     new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
   }
 
-  private def write2Helper[T, U](
-      c: Context): (Changeable[T], Changeable[U]) = {
+  def writeLeft[T, U](value: T, changeable: Changeable[U])
+      (implicit c: Context): (Changeable[T], Changeable[U]) = {
+    if (c.currentMod.update(value) && !c.initialRun) {
+      c.pending += DependencyManager.modUpdated(c.currentMod.id, c.worker.self)
+
+      if (c.ddg.reads.contains(c.currentMod.id)) {
+	c.updatedMods += c.currentMod.id
+	c.ddg.modUpdated(c.currentMod.id)
+      }
+    }
+
+    (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
+     new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
+  }
+
+  def writeRight[T, U](changeable: Changeable[T], value2: U)
+      (implicit c: Context): (Changeable[T], Changeable[U]) = {
+    if (c.currentMod2.update(value2) && !c.initialRun) {
+      c.pending += DependencyManager.modUpdated(c.currentMod2.id, c.worker.self)
+
+      if (c.ddg.reads.contains(c.currentMod2.id)) {
+	c.updatedMods += c.currentMod2.id
+	c.ddg.modUpdated(c.currentMod2.id)
+      }
+    }
+
     (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
   }

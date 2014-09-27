@@ -138,22 +138,64 @@ object DebugTBD {
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
-    TBD.write(value)
+    val changeable = TBD.write(value)
+    val writeNode = c.ddg.addWrite(
+      changeable.mod.asInstanceOf[Mod[Any]],
+      null,
+      c.currentParent)
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode)
+
+    changeable
   }
 
   def write2[T, U](value: T, value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    TBD.write2(value, value2)
+    val changeables = TBD.write2(value, value2)
+
+    val writeNode = c.ddg.addWrite(
+      c.currentMod.asInstanceOf[Mod[Any]],
+      c.currentMod2.asInstanceOf[Mod[Any]],
+      c.currentParent)
+
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode)
+
+    changeables
   }
 
   def writeLeft[T, U](value: T, changeable: Changeable[U])
      (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    TBD.writeLeft(value, changeable)
+    if (changeable.mod != c.currentMod2) {
+      println("WARNING - mod parameter to writeLeft doesn't match currentMod2")
+    }
+
+    val changeables = TBD.writeLeft(value, changeable)
+
+    val writeNode = c.ddg.addWrite(
+      c.currentMod.asInstanceOf[Mod[Any]],
+      null,
+      c.currentParent)
+
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode)
+
+    changeables
   }
 
   def writeRight[T, U](changeable: Changeable[T], value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    TBD.writeRight(changeable, value2)
+    if (changeable.mod != c.currentMod) {
+      println("WARNING - mod parameter to writeRight doesn't match currentMod")
+    }
+
+    val changeables = TBD.writeRight(changeable, value2)
+
+    val writeNode = c.ddg.addWrite(
+      null,
+      c.currentMod2.asInstanceOf[Mod[Any]],
+      c.currentParent)
+
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode)
+
+    changeables
   }
 
   @functionToInvoke("parInternal")
