@@ -168,11 +168,11 @@ class ModNode
     (val modizer: Modizer[Any],
      val key: Any,
      _parent: Node,
-     _timestamp: Timestamp,
-     _modTag: Tag.Mod) extends Node(_parent, _timestamp, _modTag) {
+     _timestamp: Timestamp) extends Node(_parent, _timestamp, null) {
   
   override def toString(prefix: String) = {
-    prefix + "ModNode mods=(" + _modTag.mods.foldLeft("")(_ + ", " + _) + ")" +
-    super.toString(prefix)
+    prefix + "ModNode mods=(" +
+      tag.asInstanceOf[Tag.Mod].mods.foldLeft("")(_ + ", " + _) + ")" +
+      super.toString(prefix)
   }
 }

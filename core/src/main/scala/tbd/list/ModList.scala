@@ -182,7 +182,7 @@ class ModList[T, U]
       read(head) {
         case null => write[ModListNode[T, U]](null)
         case node =>
-	  node.quicksort(createMod(null))
+	  node.quicksort(mod { write(null) })
       }
     }
 
@@ -265,7 +265,7 @@ class ModList[T, U]
       } else {
         read(node.nextMod) {
           case null =>
-	    val tail = createMod[ModListNode[T, U]](null)
+	    val tail = mod[ModListNode[T, U]] { write(null) }
             write(new ModListNode(newAcc, tail))
           case next =>
 	    halfList(newAcc, next, round, hasher, memo)

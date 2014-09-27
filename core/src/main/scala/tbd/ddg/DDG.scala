@@ -52,23 +52,12 @@ class DDG(id: String) {
   }
 
   def addMod
-      (mod: Mod[Any],
-       mod2: Mod[Any],
-       parent: Node,
+      (parent: Node,
        modizer: Modizer[Any],
-       key: Any,
-       funcTag: FunctionTag): ModNode = {
+       key: Any): ModNode = {
     val timestamp = nextTimestamp(parent)
 
-    val tag = if(tbd.master.Main.debug) {
-      val reads = List(mod, mod2).filter(_ != null).map(x => {
-        x.id
-      }).toList
-      Tag.Mod(reads, funcTag)
-    } else {
-      null
-    }
-    val modNode = new ModNode(modizer, key, parent, timestamp, tag)
+    val modNode = new ModNode(modizer, key, parent, timestamp)
 
     parent.addChild(modNode)
 
@@ -77,7 +66,6 @@ class DDG(id: String) {
 
   def addWrite[T](mod: Mod[Any], mod2: Mod[Any], parent: Node): WriteNode = {
     val timestamp = nextTimestamp(parent)
-
 
     val tag = if(tbd.master.Main.debug) {
       val writes = List(mod, mod2).filter(_ != null).map((x: Mod[Any]) => {

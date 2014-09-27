@@ -81,87 +81,57 @@ object TBD {
 
   def makeModizer2[T, U]() = new Modizer2[T, U]()
 
-  @functionToInvoke("modInternal")
   def mod[T](initializer: => Changeable[T])
      (implicit c: Context): Mod[T] = {
-    modInternal(initializer, c, 0, null)
-  }
-
-  def modInternal[T](
-      initializer: => Changeable[T],
-      c: Context,
-      readerId: Int,
-      freeTerms: List[(String, Any)]): Mod[T] = {
     val mod1 = new Mod[T](c.newModId())
 
-    modWithDest(initializer, mod1, null, null, c, readerId, freeTerms)
+    modInternal(initializer, mod1, null, null, c)
   }
 
-  def modWithDest[T](
-      initializer: => Changeable[T],
-      mod1: Mod[T],
-      modizer: Modizer1[T],
-      key: Any,
-      c: Context,
-      readerId: Int,
-      freeTerms: List[(String, Any)]): Mod[T] = {
-    val oldCurrentDest = c.currentMod
+  def modInternal[T]
+      (initializer: => Changeable[T],
+       mod1: Mod[T],
+       modizer: Modizer[T],
+       key: Any,
+       c: Context): Mod[T] = {
+    val outerCurrentMod = c.currentMod
 
     c.currentMod = mod1.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
-      c.currentMod,
-      null,
       c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
-      key,
-      FunctionTag(readerId, freeTerms))
+      key)
 
-    val outerReader = c.currentParent
+    val outerParent = c.currentParent
     c.currentParent = modNode
 
     initializer
 
-    c.currentParent = outerReader
     modNode.endTime = c.ddg.nextTimestamp(modNode)
 
+    c.currentParent = outerParent
     val mod = c.currentMod
-    c.currentMod = oldCurrentDest
+    c.currentMod = outerCurrentMod
 
     mod.asInstanceOf[Mod[T]]
   }
 
-  @functionToInvoke("mod2Internal")
-  def mod2[T, U]
-      (initializer: => (Changeable[T], Changeable[U]))
-      (implicit c: Context): (Mod[T], Mod[U]) =
-    macro TbdMacros.modMacro[(Mod[T], Mod[U])]
+  def mod2[T, U](initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Mod[T], Mod[U]) = {
+    val mod1 = new Mod[T](c.newModId())
+    val mod2 = new Mod[U](c.newModId())
 
-  def mod2Internal[T, U]
-      (initializer: => (Changeable[T], Changeable[U]),
-       c: Context,
-       readerId: Int,
-       freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
-    mod2WithDests(
-      initializer,
-      new Mod[T](c.newModId()),
-      new Mod[U](c.newModId()),
-      null,
-      null,
-      c,
-      readerId,
-      freeTerms)
+    mod2Internal(initializer, mod1, mod2, null, null, c)
   }
 
-  def mod2WithDests[T, U]
+  def mod2Internal[T, U]
       (initializer: => (Changeable[T], Changeable[U]),
        modLeft: Mod[T],
        modRight: Mod[U],
        modizer: Modizer2[T, U],
        key: Any,
-       c: Context,
-       readerId: Int,
-       freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
+       c: Context): (Mod[T], Mod[U]) = {
     val oldCurrentDest = c.currentMod
     c.currentMod = modLeft.asInstanceOf[Mod[Any]]
 
@@ -169,12 +139,9 @@ object TBD {
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
-      c.currentMod,
-      c.currentMod2,
       c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
-      key,
-      FunctionTag(readerId, freeTerms))
+      key)
 
     val outerReader = c.currentParent
     c.currentParent = modNode
@@ -192,39 +159,25 @@ object TBD {
     (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
   }
 
-  @functionToInvoke("modLeftInternal")
-  def modLeft[T, U]
-      (initializer: => (Changeable[T], Changeable[U]))
-      (implicit c: Context): (Mod[T], Changeable[U]) =
-    macro TbdMacros.modMacro[(Mod[T], Changeable[U])]
-
-  def modLeftInternal[T, U]
-      (initializer: => (Changeable[T], Changeable[U]),
-       c: Context,
-       readerId: Int,
-       freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
-    modLeftWithDest(initializer, new Mod[T](c.newModId()), null, null, c, readerId, freeTerms)
+  def modLeft[T, U](initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Mod[T], Changeable[U]) = {
+    modLeftInternal(initializer, new Mod[T](c.newModId()), null, null, c)
   }
 
-  def modLeftWithDest[T, U]
+  def modLeftInternal[T, U]
       (initializer: => (Changeable[T], Changeable[U]),
        modLeft: Mod[T],
        modizer: Modizer2[T, U],
        key: Any,
-       c: Context,
-       readerId: Int,
-       freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
+       c: Context): (Mod[T], Changeable[U]) = {
 
     val oldCurrentDest = c.currentMod
     c.currentMod = modLeft.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
-      c.currentMod,
-      null,
       c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
-      key,
-      FunctionTag(readerId, freeTerms))
+      key)
 
     modNode.currentMod2 = c.currentMod2
 
@@ -243,38 +196,24 @@ object TBD {
      new Changeable(c.currentMod2.asInstanceOf[Mod[U]]))
   }
 
-  @functionToInvoke("modRightInternal")
-  def modRight[T, U]
-      (initializer: => (Changeable[T], Changeable[U]))
-      (implicit c: Context): (Changeable[T], Mod[U]) =
-    macro TbdMacros.modMacro[(Changeable[T], Mod[U])]
-
-  def modRightInternal[T, U]
-      (initializer: => (Changeable[T], Changeable[U]),
-       c: Context,
-       readerId: Int,
-       freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
-    modRightWithDest(initializer, new Mod[U](c.newModId()), null, null, c, readerId, freeTerms)
+  def modRight[T, U](initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Changeable[T], Mod[U]) = {
+    modRightInternal(initializer, new Mod[U](c.newModId()), null, null, c)
   }
 
-  def modRightWithDest[T, U]
+  def modRightInternal[T, U]
       (initializer: => (Changeable[T], Changeable[U]),
        modRight: Mod[U],
        modizer: Modizer2[T, U],
        key: Any,
-       c: Context,
-       readerId: Int,
-       freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
+       c: Context): (Changeable[T], Mod[U]) = {
     val oldCurrentDest2 = c.currentMod2
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
-      null,
-      c.currentMod2,
       c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
-      key,
-      FunctionTag(readerId, freeTerms))
+      key)
 
     modNode.currentMod = c.currentMod
 

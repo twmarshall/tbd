@@ -321,7 +321,7 @@ class ModListNode[T, U]
       case null =>
 	write(mid)
       case smallerNode =>
-	smallerNode.quicksort(createMod(mid))
+	smallerNode.quicksort(mod { write(mid) })
     }
   }
 

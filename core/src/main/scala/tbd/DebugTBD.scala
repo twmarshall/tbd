@@ -24,7 +24,7 @@ import tbd.Constants._
 import tbd.master.Main
 import tbd.messages._
 import tbd.datastore.DependencyManager
-import tbd.ddg.{FunctionTag, Tag}
+import tbd.ddg._
 import tbd.TBD._
 
 object DebugTBD {
@@ -79,9 +79,9 @@ object DebugTBD {
     changeable
   }
 
-  def makeModizer[T]() = TBD.makeModizer[T]()
+  def makeModizer[T]() = new DebugModizer1[T]()
 
-  def makeModizer2[T, U]() = TBD.makeModizer2[T, U]()
+  def makeModizer2[T, U]() = new DebugModizer2[T, U]()
 
   @functionToInvoke("modInternal")
   def mod[T](initializer: => Changeable[T])
@@ -92,7 +92,13 @@ object DebugTBD {
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
-    TBD.modInternal(initializer, c, readerId, freeTerms)
+    val mod = TBD.mod(initializer)(c)
+
+    val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
+    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    modNode.tag = tag
+
+    mod
   }
 
   @functionToInvoke("mod2Internal")
@@ -106,7 +112,13 @@ object DebugTBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
-    TBD.mod2Internal(initializer, c, readerId, freeTerms)
+    val (mod1, mod2) = TBD.mod2(initializer)(c)
+
+    val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
+    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    modNode.tag = tag
+
+    (mod1, mod2)
   }
 
   @functionToInvoke("modLeftInternal")
@@ -120,7 +132,13 @@ object DebugTBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
-    TBD.modLeftInternal(initializer, c, readerId, freeTerms)
+    val (mod, changeable) = TBD.modLeft(initializer)(c)
+
+    val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
+    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    modNode.tag = tag
+
+    (mod, changeable)
   }
 
   @functionToInvoke("modRightInternal")
@@ -134,7 +152,13 @@ object DebugTBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
-    TBD.modRightInternal(initializer, c, readerId, freeTerms)
+    val (changeable, mod) = TBD.modRight(initializer)(c)
+
+    val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
+    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    modNode.tag = tag
+
+    (changeable, mod)
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
@@ -210,9 +234,5 @@ object DebugTBD {
 
   def makeMemoizer[T](dummy: Boolean = false)(implicit c: Context): Memoizer[T] = {
     TBD.makeMemoizer[T](dummy)
-  }
-
-  def createMod[T](value: T)(implicit c: Context): Mod[T] = {
-    TBD.createMod[T](value)
   }
 }

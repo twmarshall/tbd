@@ -20,7 +20,7 @@ import scala.collection.mutable.Map
 import scala.concurrent.Await
 
 import tbd.Constants._
-import tbd.ddg.FunctionTag
+import tbd.ddg.{FunctionTag, ModNode, Tag}
 import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.messages._
 
@@ -31,14 +31,32 @@ trait Modizer[T] {
 class Modizer1[T] extends Modizer[T] {
   val allocations = Map[Any, Mod[T]]()
 
-  import scala.language.experimental.macros
-
   def remove(key: Any) {
     allocations -= key
   }
 
-  @functionToInvoke("applyInternal")
   def apply
+      (key: Any)
+      (initializer: => Changeable[T])
+      (implicit c: Context): Mod[T] = {
+    val mod1 =
+      if (allocations.contains(key)) {
+	allocations(key)
+      } else {
+	val mod1 = new Mod[T](c.newModId())
+	allocations(key) = mod1
+	mod1
+      }
+
+    TBD.modInternal(initializer, mod1, this, key, c)
+  }
+}
+
+class DebugModizer1[T] extends Modizer1[T] {
+  import scala.language.experimental.macros
+
+  @functionToInvoke("applyInternal")
+  override def apply
       (key: Any)
       (initializer: => Changeable[T])
       (implicit c: Context): Mod[T] = macro TbdMacros.modizerMacro[Mod[T]]
@@ -58,7 +76,13 @@ class Modizer1[T] extends Modizer[T] {
 	mod1
       }
 
-    TBD.modWithDest(initializer, mod1, this, key, c, readerId, freeTerms)
+    val mod = TBD.modInternal(initializer, mod1, this, key, c)
+
+    val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
+    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    modNode.tag = tag
+
+    mod
   }
 }
 
@@ -73,8 +97,67 @@ class Modizer2[T, U] extends Modizer[(T, U)] {
     allocations2 -= key
   }
 
-  @functionToInvoke("applyInternal")
   def apply
+      (key: Any)
+      (initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Mod[T], Mod[U]) = {
+    val modLeft =
+      if (allocations.contains(key)) {
+	allocations(key)
+      } else {
+	val modLeft = new Mod[T](c.newModId())
+	allocations(key) = modLeft
+	modLeft
+      }
+
+    val modRight =
+      if (allocations2.contains(key)) {
+	allocations2(key)
+      } else {
+	val modRight = new Mod[U](c.newModId())
+	allocations2(key) = modRight
+	modRight
+      }
+
+    TBD.mod2Internal(initializer, modLeft, modRight, this, key, c)
+  }
+
+  def left(key: Any)
+      (initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Mod[T], Changeable[U]) = {
+    val modLeft =
+      if (allocations.contains(key)) {
+	allocations(key)
+      } else {
+	val modLeft = new Mod[T](c.newModId())
+	allocations(key) = modLeft
+	modLeft
+      }
+
+    TBD.modLeftInternal(initializer, modLeft, this, key, c)
+  }
+
+  def right(key: Any)
+      (initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Changeable[T], Mod[U]) = {
+    val modRight =
+      if (allocations2.contains(key)) {
+	allocations2(key)
+      } else {
+	val modRight = new Mod[U](c.newModId())
+	allocations2(key) = modRight
+	modRight
+      }
+
+    TBD.modRightInternal(initializer, modRight, this, key, c)
+  }
+}
+
+class DebugModizer2[T, U] extends Modizer2[T, U] {
+  import scala.language.experimental.macros
+
+  @functionToInvoke("applyInternal")
+  override def apply
       (key: Any)
       (initializer: => (Changeable[T], Changeable[U]))
       (implicit c: Context): (Mod[T], Mod[U]) =
@@ -112,15 +195,20 @@ class Modizer2[T, U] extends Modizer[(T, U)] {
 	modRight
       }
 
-    TBD.mod2WithDests(initializer, modLeft, modRight, this, key, c, readerId, freeTerms)
+    val (mod1, mod2) = TBD.mod2Internal(initializer, modLeft, modRight, this, key, c)
+
+    val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
+    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    modNode.tag = tag
+
+    (mod1, mod2)
   }
 
   @functionToInvoke("modLeftInternal")
-  def left
-      (key: Any)
+  override def left(key: Any)
       (initializer: => (Changeable[T], Changeable[U]))
-      (implicit c: Context):
-    (Mod[T], Changeable[U]) = macro TbdMacros.modizerMacro[(Mod[T], Changeable[U])]
+      (implicit c: Context): (Mod[T], Changeable[U]) =
+    macro TbdMacros.modizerMacro[(Mod[T], Changeable[U])]
 
   def modLeftInternal
       (key: Any,
@@ -141,15 +229,20 @@ class Modizer2[T, U] extends Modizer[(T, U)] {
 	modLeft
       }
 
-    TBD.modLeftWithDest(initializer, modLeft, this, key, c, readerId, freeTerms)
+    val (mod, changeable) = TBD.modLeftInternal(initializer, modLeft, this, key, c)
+
+    val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
+    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    modNode.tag = tag
+
+    (mod, changeable)
   }
 
   @functionToInvoke("modRightInternal")
-  def right
-      (key: Any)
+  override def right(key: Any)
       (initializer: => (Changeable[T], Changeable[U]))
-      (implicit c: Context):
-    (Changeable[T], Mod[U]) = macro TbdMacros.modizerMacro[(Changeable[T], Mod[U])]
+      (implicit c: Context): (Changeable[T], Mod[U]) =
+    macro TbdMacros.modizerMacro[(Changeable[T], Mod[U])]
 
   def modRightInternal
       (key: Any,
@@ -170,6 +263,12 @@ class Modizer2[T, U] extends Modizer[(T, U)] {
 	modRight
       }
 
-    TBD.modRightWithDest(initializer, modRight, this, key, c, readerId, freeTerms)
+    val (changeable, mod) = TBD.modRightInternal(initializer, modRight, this, key, c)
+
+    val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
+    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    modNode.tag = tag
+
+    (changeable, mod)
   }
 }
