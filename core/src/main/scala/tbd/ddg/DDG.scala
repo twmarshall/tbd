@@ -99,20 +99,13 @@ class DDG(id: String) {
     parNode
   }
 
-  def addMemo(
-      parent: Node,
-      signature: Seq[Any],
-      memoizer: Memoizer[_],
-      funcTag: FunctionTag): MemoNode = {
+  def addMemo
+      (parent: Node,
+       signature: Seq[Any],
+       memoizer: Memoizer[_]): MemoNode = {
     val timestamp = nextTimestamp(parent)
 
-    val tag = if(tbd.master.Main.debug) {
-      Tag.Memo(funcTag, signature)
-    } else {
-      null
-    }
-
-    val memoNode = new MemoNode(parent, timestamp, signature, memoizer, tag)
+    val memoNode = new MemoNode(parent, timestamp, signature, memoizer)
 
     parent.addChild(memoNode)
     memoNode

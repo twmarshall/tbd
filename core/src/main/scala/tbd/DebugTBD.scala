@@ -233,7 +233,8 @@ object DebugTBD {
     new DebugParer(one, id, closedTerms)
   }
 
-  def makeMemoizer[T](dummy: Boolean = false)(implicit c: Context): Memoizer[T] = {
-    TBD.makeMemoizer[T](dummy)
+  def makeMemoizer[T](dummy: Boolean = false)
+      (implicit c: Context): DebugMemoizer[T] = {
+    new DebugMemoizer[T](c)
   }
 }

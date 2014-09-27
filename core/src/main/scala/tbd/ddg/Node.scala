@@ -108,7 +108,7 @@ class WriteNode
      _writeTag: Tag.Write) extends Node(_parent, _timestamp, _writeTag) {
 
   override def toString(prefix: String) = {
-    prefix + "WriteNode modId=(" + mod.id + ") " +
+    prefix + "WriteNode modId=(" + //mod.id + ") " +
       " value=" + mod + " time=" + timestamp + super.toString(prefix)
   }
 }
@@ -146,8 +146,7 @@ class MemoNode
     (_parent: Node,
      _timestamp: Timestamp,
      val signature: Seq[Any],
-     val memoizer: Memoizer[_],
-     _memoTag: Tag.Memo) extends Node(_parent, _timestamp, _memoTag) {
+     val memoizer: Memoizer[_]) extends Node(_parent, _timestamp, null) {
 
   var value: Any = null
 

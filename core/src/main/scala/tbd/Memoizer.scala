@@ -23,24 +23,15 @@ import tbd.ddg.MemoNode
 import tbd.master.Master
 import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.datastore.DependencyManager
-import tbd.ddg.{FunctionTag, Timestamp}
+import tbd.ddg.{FunctionTag, MemoNode, Tag, Timestamp}
 import tbd.worker.Worker
 
 class Memoizer[T](c: Context) {
   val memoTable = Map[Seq[Any], ArrayBuffer[MemoNode]]()
 
   import c.worker.context.dispatcher
-  import scala.language.experimental.macros
 
-  @functionToInvoke("applyInternal")
-  def apply(args: Any*)(func: => T): T = macro TbdMacros.memoMacro[T]
-
-  def applyInternal(
-      signature: Seq[_],
-      func: => T,
-      funcId: Int,
-      freeTerms: List[(String, Any)]): T = {
-
+  def apply(signature: Any*)(func: => T): T = {
     var found = false
     var ret = null.asInstanceOf[T]
     if (!c.initialRun && !updated(signature) && memoTable.contains(signature)) {
@@ -73,8 +64,8 @@ class Memoizer[T](c: Context) {
     }
 
     if (!found) {
-      val memoNode = c.ddg.addMemo(c.currentParent, signature, this,
-                                   FunctionTag(funcId, freeTerms))
+      val memoNode = c.ddg.addMemo(c.currentParent, signature, this)
+
       val outerParent = c.currentParent
       c.currentParent = memoNode
       val value = func
@@ -189,12 +180,29 @@ class Memoizer[T](c: Context) {
   }
 }
 
-class DummyMemoizer[T](c: Context) extends Memoizer[T](c) {
-  override def applyInternal(
-      args: Seq[_],
+class DebugMemoizer[T](c: Context) extends Memoizer[T](c) {
+  import scala.language.experimental.macros
+
+  @functionToInvoke("applyInternal")
+  override def apply(args: Any*)(func: => T): T = macro TbdMacros.memoMacro[T]
+
+  def applyInternal(
+      signature: Seq[_],
       func: => T,
-      fundId: Int,
+      funcId: Int,
       freeTerms: List[(String, Any)]): T = {
+    val ret = super.apply(signature)(func)
+
+    val memoNode = c.currentParent.children.last.asInstanceOf[MemoNode]
+    val tag = Tag.Memo(FunctionTag(funcId, freeTerms), signature)
+    memoNode.tag = tag
+
+    ret
+  }
+}
+
+class DummyMemoizer[T](c: Context) extends Memoizer[T](c) {
+  override def apply(signature: Any*)(func: => T): T = {
     func
   }
 }
