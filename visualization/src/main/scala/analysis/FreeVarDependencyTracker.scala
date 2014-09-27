@@ -33,7 +33,6 @@ class FreeVarDependencyTracker extends DependencyTracker {
 
     //Insert single edges for each node.
     ddg.nodes.foreach(node => {
-
       var dependencies = node.tag match {
         case Tag.Read(_, fun) => fun.freeVars
         case Tag.Par(fun1, fun2) => fun1.freeVars ::: fun2.freeVars

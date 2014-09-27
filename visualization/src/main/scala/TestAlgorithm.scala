@@ -21,7 +21,7 @@ import scala.collection.mutable.Map
 
 import tbd._
 import tbd.list._
-import tbd.TBD._
+import tbd.DebugTBD._
 
 /*
  * Trait for test algorithms to run with the visualizer.

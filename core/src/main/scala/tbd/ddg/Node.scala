@@ -37,7 +37,7 @@ object Node {
 abstract class Node(
     var parent: Node,
     val timestamp: Timestamp,
-    val tag: Tag) {
+    var tag: Tag) {
   var endTime: Timestamp = null
   var stacktrace =
     if (Main.debug)
@@ -87,13 +87,12 @@ abstract class Node(
   }
 }
 
-class ReadNode(
-    val mod: Mod[Any],
-    _parent: Node,
-    _timestamp: Timestamp,
-    val reader: Any => Changeable[Any],
-    _readTag: Tag.Read)
-      extends Node(_parent, _timestamp, _readTag) {
+class ReadNode
+    (val mod: Mod[Any],
+     _parent: Node,
+     _timestamp: Timestamp,
+     val reader: Any => Changeable[Any])
+  extends Node(_parent, _timestamp, null) {
 
   override def toString(prefix: String) = {
     prefix + this + " modId=(" + mod.id + ") " + " time=" + timestamp + " to " + endTime +
@@ -109,7 +108,7 @@ class WriteNode(
     _writeTag: Tag.Write) extends Node(_parent, _timestamp, _writeTag) {
 
   override def toString(prefix: String) = {
-    prefix + "WriteNode modId=(" + mod.id + ") " +
+    prefix + "WriteNode modId=(" + //mod.id + ") " +
       " value=" + mod + " time=" + timestamp + super.toString(prefix)
   }
 }

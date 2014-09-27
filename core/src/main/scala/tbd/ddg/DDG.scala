@@ -16,7 +16,7 @@
 package tbd.ddg
 
 import akka.actor.ActorRef
-import scala.collection.mutable.{Map, MutableList, Set, TreeSet}
+import scala.collection.mutable.{Buffer, Map, MutableList, Set, TreeSet}
 
 import tbd._
 import tbd.Constants._
@@ -24,35 +24,28 @@ import tbd.master.Master
 
 class DDG(id: String) {
   var root = new RootNode(id)
-  val reads = Map[ModId, Set[ReadNode]]()
+  val reads = Map[ModId, Buffer[ReadNode]]()
   val pars = Map[ActorRef, ParNode]()
 
   var updated = TreeSet[Node]()((new TimestampOrdering()).reverse)
 
   val ordering = new Ordering()
 
-  def addRead(
-      mod: Mod[Any],
-      value: Any,
-      parent: Node,
-      reader: Any => Changeable[Any],
-      funcTag: FunctionTag): ReadNode = {
+  def addRead
+      (mod: Mod[Any],
+       value: Any,
+       parent: Node,
+       reader: Any => Changeable[Any]): ReadNode = {
     val timestamp = nextTimestamp(parent)
 
-    val readNode = if(tbd.master.Main.debug) {
-      new ReadNode(mod, parent, timestamp,
-                   reader, Tag.Read(value, funcTag)(mod.id))
-    } else {
-      new ReadNode(mod, parent, timestamp,
-                   reader, null)
-    }
+    val readNode = new ReadNode(mod, parent, timestamp, reader)
 
     parent.addChild(readNode)
 
     if (reads.contains(mod.id)) {
-      reads(mod.id) += readNode.asInstanceOf[ReadNode]
+      reads(mod.id) :+= readNode.asInstanceOf[ReadNode]
     } else {
-      reads(mod.id) = Set(readNode.asInstanceOf[ReadNode])
+      reads(mod.id) = Buffer(readNode.asInstanceOf[ReadNode])
     }
 
     readNode

@@ -24,76 +24,52 @@ import tbd.Constants._
 import tbd.master.Main
 import tbd.messages._
 import tbd.datastore.DependencyManager
-import tbd.ddg.FunctionTag
+import tbd.ddg.{FunctionTag, Tag}
 import tbd.TBD._
 
 object TBD {
-
   import scala.language.experimental.macros
 
-  @functionToInvoke("readInternal")
-  def read[T, U](
-      mod: Mod[T])
-     (reader: T => Changeable[U])
-     (implicit c: Context):
-    Changeable[U] =
-      macro TbdMacros.readMacro[Changeable[U]]
-
-  def readInternal[T, U](
-      mod: Mod[T],
-      reader: T => Changeable[U],
-      c: Context,
-      readerId: Int,
-      freeTerms: List[(String, Any)]): Changeable[U] = {
-
+  def read[T, U](mod: Mod[T])
+      (reader: T => Changeable[U])
+      (implicit c: Context): Changeable[U] = {
     val value = mod.read(c.worker.self)
 
     val readNode = c.ddg.addRead(
-        mod.asInstanceOf[Mod[Any]], value, c.currentParent,
-        reader.asInstanceOf[Any => Changeable[Any]],
-        FunctionTag(readerId, freeTerms))
+      mod.asInstanceOf[Mod[Any]],
+      value,
+      c.currentParent,
+      reader.asInstanceOf[Any => Changeable[Any]])
 
     val outerReader = c.currentParent
     c.currentParent = readNode
 
     val changeable = reader(value)
-    c.currentParent = outerReader
 
+    c.currentParent = outerReader
     readNode.endTime = c.ddg.nextTimestamp(readNode)
     readNode.currentMod = c.currentMod
-    readNode.currentMod2 = c.currentMod2
 
     changeable
   }
 
-  @functionToInvoke("read2Internal")
-  def read2[T, U, V](
-      mod: Mod[T])
-     (reader: T => (Changeable[U], Changeable[V]))
-     (implicit c: Context):
-    (Changeable[U], Changeable[V]) =
-      macro TbdMacros.readMacro[(Changeable[U], Changeable[V])]
-
-  def read2Internal[T, U, V](
-      mod: Mod[T],
-      reader: T => (Changeable[U], Changeable[V]),
-      c: Context,
-      readerId: Int,
-      freeTerms: List[(String, Any)]): (Changeable[U], Changeable[V]) = {
-
+  def read2[T, U, V](mod: Mod[T])
+      (reader: T => (Changeable[U], Changeable[V]))
+      (implicit c: Context): (Changeable[U], Changeable[V]) = {
     val value = mod.read(c.worker.self)
 
-    val readNode = c.ddg.addRead(mod.asInstanceOf[Mod[Any]], value,
-                                        c.currentParent,
-                                        reader.asInstanceOf[Any => Changeable[Any]],
-                                        FunctionTag(readerId, freeTerms))
+    val readNode = c.ddg.addRead(
+      mod.asInstanceOf[Mod[Any]],
+      value,
+      c.currentParent,
+      reader.asInstanceOf[Any => Changeable[Any]])
 
     val outerReader = c.currentParent
     c.currentParent = readNode
 
     val changeables = reader(value)
-    c.currentParent = outerReader
 
+    c.currentParent = outerReader
     readNode.endTime = c.ddg.nextTimestamp(readNode)
     readNode.currentMod = c.currentMod
     readNode.currentMod2 = c.currentMod2

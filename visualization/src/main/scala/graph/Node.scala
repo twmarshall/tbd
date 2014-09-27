@@ -28,7 +28,8 @@ class Node(ddgNode: ddg.Node) {
   val stacktrace = ddgNode.stacktrace
 
   override def toString = {
-    tag.toString()
+    //tag.toString()
+    ddgNode.toString("")
   }
 
   //Gets a string identifying the nodes type.
