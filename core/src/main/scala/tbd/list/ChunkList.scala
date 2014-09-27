@@ -164,7 +164,7 @@ class ChunkList[T, U]
 	  if (two == null) {
             val rest = newOneR ++ newTwoR
             if (rest.size > 0) {
-              val newTail = createMod[ChunkListNode[T, U]](null)
+              val newTail = mod[ChunkListNode[T, U]]{ write(null) }
 	      write(new ChunkListNode(rest, newTail))
             } else {
               write[ChunkListNode[T, U]](null)

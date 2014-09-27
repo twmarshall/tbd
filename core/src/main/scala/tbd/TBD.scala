@@ -316,10 +316,4 @@ object TBD {
       new Memoizer[T](c)
     }
   }
-
-  def createMod[T](value: T)(implicit c: Context): Mod[T] = {
-    mod {
-      write(value)
-    }
-  }
 }
