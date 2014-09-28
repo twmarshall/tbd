@@ -24,6 +24,8 @@ import tbd.master.Master
 
 class DDG(id: String) {
   var root = new RootNode(id)
+  root.tag = Tag.Root()
+
   val reads = Map[ModId, Buffer[ReadNode]]()
   val pars = Map[ActorRef, ParNode]()
 
@@ -76,7 +78,8 @@ class DDG(id: String) {
       null
     }
 
-    val writeNode = new WriteNode(mod, mod2, parent, timestamp, tag)
+    val writeNode = new WriteNode(mod, mod2, parent, timestamp)
+    writeNode.tag = tag
 
     parent.addChild(writeNode)
 
@@ -120,13 +123,12 @@ class DDG(id: String) {
   }
 
   def modUpdated(modId: ModId) {
-    assert(reads.contains(modId))
     for (readNode <- reads(modId)) {
       if (!readNode.updated) {
         updated += readNode
-      }
 
-      readNode.updated = true
+	readNode.updated = true
+      }
     }
   }
 
