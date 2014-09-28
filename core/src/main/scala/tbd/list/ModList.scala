@@ -28,7 +28,7 @@ class ModList[T, U]
 
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): ModList[T, U] = {
-    val memo = makeMemoizer[Mod[ModListNode[T, U]]]()
+    val memo = new Memoizer[Mod[ModListNode[T, U]]]()
 
     new ModList(
       mod {
@@ -42,8 +42,8 @@ class ModList[T, U]
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): ModList[V, W] = {
-    val memo = makeMemoizer[Changeable[ModListNode[V, W]]]()
-    val modizer = makeModizer[ModListNode[V, W]]()
+    val memo = new Memoizer[Changeable[ModListNode[V, W]]]()
+    val modizer = new Modizer1[ModListNode[V, W]]()
 
     new ModList(
       modizer(head.id) {
@@ -60,7 +60,7 @@ class ModList[T, U]
     assert(_that.isInstanceOf[ModList[T, V]])
     val that = _that.asInstanceOf[ModList[T, V]]
 
-    val memo = makeMemoizer[Changeable[ModListNode[T, (U ,V)]]]()
+    val memo = new Memoizer[Changeable[ModListNode[T, (U ,V)]]]()
 
     new ModList(
       mod {
@@ -74,8 +74,8 @@ class ModList[T, U]
 
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): ModList[V, W] = {
-    val memo = makeMemoizer[Changeable[ModListNode[V, W]]]()
-    val modizer = makeModizer[ModListNode[V, W]]()
+    val memo = new Memoizer[Changeable[ModListNode[V, W]]]()
+    val modizer = new Modizer1[ModListNode[V, W]]()
 
     new ModList(
       modizer(head.id) {
@@ -89,8 +89,8 @@ class ModList[T, U]
 
   override def mapValues[V](f: U => V)
       (implicit c: Context): ModList[T, V] = {
-    val memo = makeMemoizer[Changeable[ModListNode[T, V]]]()
-    val modizer = makeModizer[ModListNode[T, V]]()
+    val memo = new Memoizer[Changeable[ModListNode[T, V]]]()
+    val modizer = new Modizer1[ModListNode[T, V]]()
 
     new ModList(
       modizer(head.id) {
@@ -105,8 +105,8 @@ class ModList[T, U]
   def merge(that: ModList[T, U])
       (implicit c: Context,
        ordering: Ordering[T]): ModList[T, U] = {
-    merge(that, makeMemoizer[Changeable[ModListNode[T, U]]](),
-	  makeModizer[ModListNode[T, U]]())
+    merge(that, new Memoizer[Changeable[ModListNode[T, U]]](),
+	  new Modizer1[ModListNode[T, U]]())
   }
 
   def merge
@@ -137,7 +137,7 @@ class ModList[T, U]
   override def mergesort()
       (implicit c: Context,
        ordering: Ordering[T]): ModList[T, U] = {
-    val modizer = makeModizer[ModListNode[T, U]]()
+    val modizer = new Modizer1[ModListNode[T, U]]()
     def mapper(pair: (T, U)) = {
       val tail = modizer(pair._1) {
 	write(new ModListNode[T, U](pair, modizer(pair._1 + "null") { write(null) }))
@@ -146,15 +146,15 @@ class ModList[T, U]
       ("" + pair._1, new ModList(tail))
     }
 
-    val memo = makeMemoizer[ModList[T, U]](false)
+    val memo = new Memoizer[ModList[T, U]]()
 
     def reducer(pair1: (String, ModList[T, U]), pair2: (String, ModList[T, U])) = {
       //println("merging " + pair2._2)
       //println(" and " + pair1._2)
 
       val merged = memo(pair1, pair2) {
-        val memoizer = makeMemoizer[Changeable[ModListNode[T, U]]](false)
-	val modizer = makeModizer[ModListNode[T, U]]()
+        val memoizer = new Memoizer[Changeable[ModListNode[T, U]]]()
+	val modizer = new Modizer1[ModListNode[T, U]]()
 	pair2._2.merge(pair1._2, memoizer, modizer)
       }
 
@@ -196,14 +196,14 @@ class ModList[T, U]
     // same hasher and memo are used for a given round during change propagation,
     // even if the first mod of the list is deleted.
     class RoundMemoizer {
-      val memo = makeMemoizer[(Hasher,
+      val memo = new Memoizer[(Hasher,
                                Memoizer[Mod[ModListNode[T, U]]],
                                RoundMemoizer)]()
 
       def getTuple() =
         memo() {
           (new Hasher(2, 4),
-           makeMemoizer[Mod[ModListNode[T, U]]](),
+           new Memoizer[Mod[ModListNode[T, U]]](),
            new RoundMemoizer())
 	}
     }
@@ -291,7 +291,7 @@ class ModList[T, U]
        ordering: Ordering[T]): ModList[T, U] = {
     val sorted = this.quicksort()
 
-    val memo = makeMemoizer[Changeable[ModListNode[T, U]]]()
+    val memo = new Memoizer[Changeable[ModListNode[T, U]]]()
     new ModList(
       mod {
 	read(sorted.head) {
@@ -323,7 +323,7 @@ class ModList[T, U]
       else
 	that.mergesort()
 
-    val memo = makeMemoizer[Changeable[ModListNode[T, (U, V)]]]()
+    val memo = new Memoizer[Changeable[ModListNode[T, (U, V)]]]()
     new ModList(
       mod {
 	read(thisSorted.head) {
@@ -343,8 +343,8 @@ class ModList[T, U]
 
   def split(pred: ((T, U)) => Boolean)
       (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = {
-    val memo = makeMemoizer[ModListNode.ChangeableTuple[T, U]]()
-    val modizer = makeModizer2[ModListNode[T, U], ModListNode[T, U]]()
+    val memo = new Memoizer[ModListNode.ChangeableTuple[T, U]]()
+    val modizer = new Modizer2[ModListNode[T, U], ModListNode[T, U]]()
 
     val result = modizer(head.id) {
       read2(head) {

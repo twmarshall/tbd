@@ -34,7 +34,7 @@ class MemoTest(input: TableInput[Int, Int])
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
-    val memo = makeMemoizer[Mod[Int]]()
+    val memo = new Memoizer[Mod[Int]]()
 
     mod {
       read(one) {
@@ -83,7 +83,7 @@ class AlreadyMatchedTest(input: TableInput[Int, Int])
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
-    val memo = makeMemoizer[Changeable[Int]]()
+    val memo = new Memoizer[Changeable[Int]]()
 
     mod {
       read(one) {
@@ -120,7 +120,7 @@ class OutOfScopeTest(input: TableInput[Int, Int])
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
-    val memo = makeMemoizer[Changeable[Int]]()
+    val memo = new Memoizer[Changeable[Int]]()
 
     mod {
       read(one) {
@@ -152,7 +152,7 @@ class MatchingSignaturesTest(input: TableInput[Int, Int])
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
-    val memo = makeMemoizer[Changeable[Int]]()
+    val memo = new Memoizer[Changeable[Int]]()
 
     mod {
       read(one) {
@@ -191,7 +191,7 @@ class MatchParentTest(input: TableInput[Int, Int])
     val one = table.get(1)
     val two = table.get(2)
     val three = table.get(3)
-    val memo = makeMemoizer[Unit]()
+    val memo = new Memoizer[Unit]()
 
     mod {
       read(one) {
@@ -229,7 +229,7 @@ class PropagateThroughMemoTest(input: TableInput[Int, Int])
     val one = table.get(1)
     val two = table.get(2)
     val three = table.get(3)
-    val memo = makeMemoizer[Mod[Int]]()
+    val memo = new Memoizer[Mod[Int]]()
 
     mod {
       read(one) {
@@ -262,7 +262,7 @@ class RepeatRunsTest(input: TableInput[Int, Int])
     val table = input.getTable()
     val one = table.get(1)
     val two = table.get(2)
-    val memo = makeMemoizer[Changeable[Int]]()
+    val memo = new Memoizer[Changeable[Int]]()
 
     mod {
       read(one) {
@@ -291,7 +291,7 @@ class OutOfOrderMatchTest(input: TableInput[Int, Int])
     val one = table.get(1)
     val two = table.get(2)
     val three = table.get(3)
-    val memo = makeMemoizer[Unit]()
+    val memo = new Memoizer[Unit]()
 
     mod {
       read(one) {
@@ -326,7 +326,7 @@ class NoDestTest(input: TableInput[Int, Int])
     val two = table.get(2)
     val three = table.get(3)
     val four = table.get(4)
-    val memo = makeMemoizer[Changeable[Int]]()
+    val memo = new Memoizer[Changeable[Int]]()
 
     def memoTwo = {
       memo(two) {
@@ -360,7 +360,7 @@ class NoDestTest2(input: TableInput[Int, Int])
     val two = table.get(2)
     val three = table.get(3)
     val five = table.get(5)
-    val memo = makeMemoizer[Changeable[Int]]()
+    val memo = new Memoizer[Changeable[Int]]()
 
     def memoTwo = {
       memo(two) {

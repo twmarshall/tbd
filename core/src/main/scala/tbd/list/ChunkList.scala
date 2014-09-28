@@ -27,7 +27,7 @@ class ChunkList[T, U]
 
   override def chunkMap[V, W](f: (Vector[(T, U)]) => (V, W))
       (implicit c: Context): ModList[V, W] = {
-    val memo = makeMemoizer[Mod[ModListNode[V, W]]]()
+    val memo = new Memoizer[Mod[ModListNode[V, W]]]()
 
     new ModList(
       mod {
@@ -44,7 +44,7 @@ class ChunkList[T, U]
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): ChunkList[V, W] = {
-    val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
+    val memo = new Memoizer[Changeable[ChunkListNode[V, W]]]()
 
     new ChunkList(
       mod {
@@ -61,7 +61,7 @@ class ChunkList[T, U]
     assert(_that.isInstanceOf[ChunkList[T, V]])
     val that = _that.asInstanceOf[ChunkList[T, V]]
 
-    val memo = makeMemoizer[Changeable[ChunkListNode[T, (U ,V)]]]()
+    val memo = new Memoizer[Changeable[ChunkListNode[T, (U ,V)]]]()
 
     new ChunkList(
       mod {
@@ -75,7 +75,7 @@ class ChunkList[T, U]
 
   def keyedChunkMap[V, W](f: (Vector[(T, U)], ModId) => (V, W))
       (implicit c: Context): ModList[V, W] = {
-    val memo = makeMemoizer[Mod[ModListNode[V, W]]]()
+    val memo = new Memoizer[Mod[ModListNode[V, W]]]()
 
     new ModList(
       mod {
@@ -89,7 +89,7 @@ class ChunkList[T, U]
 
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): ChunkList[V, W] = {
-    val memo = makeMemoizer[Changeable[ChunkListNode[V, W]]]()
+    val memo = new Memoizer[Changeable[ChunkListNode[V, W]]]()
 
     new ChunkList(
       mod {
@@ -104,7 +104,7 @@ class ChunkList[T, U]
   def merge(that: ChunkList[T, U])
       (implicit c: Context,
        ordering: Ordering[T]): ChunkList[T, U] = {
-    merge(that, makeMemoizer[Changeable[ChunkListNode[T, U]]]())
+    merge(that, new Memoizer[Changeable[ChunkListNode[T, U]]]())
   }
 
   def merge
@@ -228,7 +228,7 @@ class ChunkList[T, U]
       ordering.lt(pair1._1, pair2._1)
     }
 
-    val modizer = makeModizer[ChunkListNode[T, U]]()
+    val modizer = new Modizer1[ChunkListNode[T, U]]()
     def mapper(chunk: Vector[(T, U)], key: ModId) = {
       val tail = modizer(key) {
 	write(new ChunkListNode[T, U]((chunk.toBuffer.sortWith(comparator).toVector), mod({ write(null) })))
@@ -237,11 +237,11 @@ class ChunkList[T, U]
       ("", new ChunkList(tail, conf))
     }
 
-    val memo = makeMemoizer[ChunkList[T, U]]()
+    val memo = new Memoizer[ChunkList[T, U]]()
 
     def reducer(pair1: (String, ChunkList[T, U]), pair2: (String, ChunkList[T, U])) = {
       val merged = memo(pair1._2, pair2._2) {
-        val memoizer = makeMemoizer[Changeable[ChunkListNode[T, U]]]()
+        val memoizer = new Memoizer[Changeable[ChunkListNode[T, U]]]()
 
 	pair2._2.merge(pair1._2, memoizer)
       }

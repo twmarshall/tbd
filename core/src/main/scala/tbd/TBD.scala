@@ -77,10 +77,6 @@ object TBD {
     changeables
   }
 
-  def makeModizer[T]() = new Modizer1[T]()
-
-  def makeModizer2[T, U]() = new Modizer2[T, U]()
-
   def mod[T](initializer: => Changeable[T])
      (implicit c: Context): Mod[T] = {
     val mod1 = new Mod[T](c.newModId())
@@ -301,13 +297,5 @@ object TBD {
 
   def par[T](one: Context => T): Parer[T] = {
     new Parer(one)
-  }
-
-  def makeMemoizer[T](dummy: Boolean = false)(implicit c: Context): Memoizer[T] = {
-    if(dummy) {
-      new DummyMemoizer[T](c)
-    } else {
-      new Memoizer[T](c)
-    }
   }
 }

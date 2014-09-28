@@ -104,7 +104,7 @@ class ModListNode[T, U]
       }
     }
 
-    val memo2 = makeMemoizer[Changeable[ModListNode[T, (U, V)]]]()
+    val memo2 = new Memoizer[Changeable[ModListNode[T, (U, V)]]]()
     read(that.head) {
       case null =>
 	read(newNextMod) { write(_) }
@@ -291,8 +291,8 @@ class ModListNode[T, U]
       (implicit c: Context,
        ordering: Ordering[T]): Changeable[ModListNode[T, U]] = {
     val (smaller, greater) = mod2 {
-      val splitMemo = makeMemoizer[ModListNode.ChangeableTuple[T, U]]()
-      val splitModizer = makeModizer2[ModListNode[T, U], ModListNode[T, U]]()
+      val splitMemo = new Memoizer[ModListNode.ChangeableTuple[T, U]]()
+      val splitModizer = new Modizer2[ModListNode[T, U], ModListNode[T, U]]()
 
       read2(nextMod) {
 	case null =>

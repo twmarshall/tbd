@@ -28,7 +28,6 @@ import tbd.ddg._
 import tbd.TBD._
 
 object DebugTBD {
-
   import scala.language.experimental.macros
 
   @functionToInvoke("readInternal")
@@ -78,10 +77,6 @@ object DebugTBD {
 
     changeable
   }
-
-  def makeModizer[T]() = new DebugModizer1[T]()
-
-  def makeModizer2[T, U]() = new DebugModizer2[T, U]()
 
   @functionToInvoke("modInternal")
   def mod[T](initializer: => Changeable[T])
@@ -231,10 +226,5 @@ object DebugTBD {
       id: Int,
       closedTerms: List[(String, Any)]): DebugParer[T] = {
     new DebugParer(one, id, closedTerms)
-  }
-
-  def makeMemoizer[T](dummy: Boolean = false)
-      (implicit c: Context): DebugMemoizer[T] = {
-    new DebugMemoizer[T](c)
   }
 }

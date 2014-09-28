@@ -26,7 +26,7 @@ import tbd.datastore.DependencyManager
 import tbd.ddg.{FunctionTag, MemoNode, Tag, Timestamp}
 import tbd.worker.Worker
 
-class Memoizer[T](c: Context) {
+class Memoizer[T](implicit c: Context) {
   val memoTable = Map[Seq[Any], ArrayBuffer[MemoNode]]()
 
   import c.worker.context.dispatcher
@@ -180,7 +180,7 @@ class Memoizer[T](c: Context) {
   }
 }
 
-class DebugMemoizer[T](c: Context) extends Memoizer[T](c) {
+class DebugMemoizer[T](implicit c: Context) extends Memoizer[T]()(c) {
   import scala.language.experimental.macros
 
   @functionToInvoke("applyInternal")
@@ -201,7 +201,7 @@ class DebugMemoizer[T](c: Context) extends Memoizer[T](c) {
   }
 }
 
-class DummyMemoizer[T](c: Context) extends Memoizer[T](c) {
+class DummyMemoizer[T](implicit c: Context) extends Memoizer[T]()(c) {
   override def apply(signature: Any*)(func: => T): T = {
     func
   }

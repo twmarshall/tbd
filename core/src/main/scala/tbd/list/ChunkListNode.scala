@@ -97,12 +97,12 @@ class ChunkListNode[T, U]
 	var tail = newNext
 	for (i <- 0 until chunk.size - 1) {
 	  tail = mod {
-	    val memo2 = makeMemoizer[Changeable[ChunkListNode[T, (U, V)]]]()
+	    val memo2 = new Memoizer[Changeable[ChunkListNode[T, (U, V)]]]()
 	    node.joinHelper(chunk(i),  tail, memo2)
 	  }
 	}
 
-	val memo2 = makeMemoizer[Changeable[ChunkListNode[T, (U, V)]]]()
+	val memo2 = new Memoizer[Changeable[ChunkListNode[T, (U, V)]]]()
 	node.joinHelper(chunk(chunk.size - 1), tail, memo2)
     }
   }

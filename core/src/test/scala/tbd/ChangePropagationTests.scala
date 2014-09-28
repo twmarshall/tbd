@@ -134,7 +134,7 @@ class ModNoDestTest(input: TableInput[Int, Int])
   }
 
   def run(implicit c: Context) = {
-    val memo = makeMemoizer[Changeable[Int]]()
+    val memo = new Memoizer[Changeable[Int]]()
 
     mod {
       read(one)(oneValue => {
