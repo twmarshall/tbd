@@ -39,6 +39,29 @@ class Ordering {
     newTimestamp
   }
 
+  def append(): Timestamp = {
+    val newTimestamp =
+      if (base.previous.size > 31) {
+	val newSublist = sublistAppend()
+	newSublist.append()
+      } else {
+	base.previous.append()
+      }
+
+    newTimestamp
+  }
+
+  private def sublistAppend(): Sublist = {
+    val previous = base.previous
+    val newSublist = new Sublist(previous.id + 1, base)
+    newSublist.previous = previous
+
+    previous.next = newSublist
+    base.previous = newSublist
+
+    newSublist
+  }
+
   private def sublistAfter(s: Sublist): Sublist = {
     var node = s.next
     while (node != base) {
@@ -46,7 +69,11 @@ class Ordering {
       node = node.next
     }
     val newSublist = new Sublist(s.id + 1, s.next)
+    newSublist.previous = s
+
     s.next = newSublist
+    newSublist.next.previous = newSublist
+
     newSublist
     /*val previous =
       if (s == null) {

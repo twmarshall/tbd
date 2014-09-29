@@ -24,8 +24,8 @@ class OrderingTests extends FlatSpec with Matchers {
     var previous: Timestamp = null
     for (timestamp <- timestamps) {
       if (previous != null) {
-	      assert(previous < timestamp)
-	      assert(timestamp > previous)
+	assert(previous < timestamp)
+	assert(timestamp > previous)
       }
       previous = timestamp
     }
@@ -139,6 +139,33 @@ class OrderingTests extends FlatSpec with Matchers {
       val t5 = ordering.after(tuple._3)
 
       checkOrdering(List(t2, tuple._1, t3, t1, t4, tuple._3, t5))
+    }
+  }
+
+  it should "append correctly" in {
+    for (i <- fillNums) {
+      val ordering = new Ordering()
+      val (start, middle, end) = fill(ordering, i)
+
+      val t1 = ordering.append()
+      val t2 = ordering.after(end)
+      val t3 = ordering.after(t1)
+
+      checkOrdering(List(start, middle, end, t2, t1, t3))
+
+      var appended: Timestamp = null
+      var lastAppended: Timestamp = null
+      for (j <- 1 to 5) {
+	appended = ordering.append()
+
+	if (lastAppended != null) {
+	  checkOrdering(List(start, middle, end, lastAppended, appended))
+	} else {
+	  checkOrdering(List(start, middle, end, appended))
+	}
+
+	lastAppended = appended
+      }
     }
   }
 }

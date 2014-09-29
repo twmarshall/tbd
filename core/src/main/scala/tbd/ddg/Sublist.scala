@@ -20,6 +20,7 @@ class Sublist(var id: Int, var next: Sublist) {
 
   var base: Timestamp = new Timestamp(this, 0, null)
   base.next = base
+  base.previous = base
 
   var size = 0
 
@@ -39,6 +40,18 @@ class Sublist(var id: Int, var next: Sublist) {
                       (previous.time + previous.next.time) / 2,
                       previous.next)
       }
+
+    newTimestamp.previous = previous
+    previous.next = newTimestamp
+    newTimestamp.next.previous = newTimestamp
+    size += 1
+
+    newTimestamp
+  }
+
+  def append(): Timestamp = {
+    val previous = base.previous
+    val newTimestamp = new Timestamp(this, previous.time + 1, base)
 
     newTimestamp.previous = previous
     previous.next = newTimestamp
