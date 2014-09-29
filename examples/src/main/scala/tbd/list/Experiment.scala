@@ -22,118 +22,6 @@ import scala.concurrent.duration._
 import tbd.{Constants, Mutator}
 import tbd.list.ListConf
 
-class Experiment(conf: Map[String, _], listConf: ListConf) {
-  val algorithm = conf("algorithms")
-  val count = conf("counts").asInstanceOf[String].toInt
-  val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
-  var runs = conf("runs").asInstanceOf[Array[String]]
-
-  def run(): Map[String, Double] = {
-    val results = Map[String, Double]()
-
-    val alg = algorithm match {
-      case "filter" => new FilterAlgorithm(conf, listConf)
-
-      case "flatMap" => new FlatMapAlgorithm(conf, listConf)
-
-      case "join" =>
-	if (listConf.chunkSize > 1)
-	  new ChunkJoinAlgorithm(conf, listConf)
-	else
-	  new JoinAlgorithm(conf, listConf)
-
-      case "map" =>
-	new MapAlgorithm(conf, listConf)
-
-      case "msort" =>
-        new MergeSortAlgorithm(conf, listConf)
-
-      case "pgrank" => new PageRankAlgorithm(conf, listConf)
-
-      case "qsort" =>
-        new QuickSortAlgorithm(conf, listConf)
-
-      case "rbk" => new ReduceByKeyAlgorithm(conf, listConf)
-
-      case "sjoin" =>
-	new SortJoinAlgorithm(conf, listConf)
-
-      case "split" =>
-        new SplitAlgorithm(conf, listConf)
-
-      case "wc" =>
-	if (listConf.chunkSize > 1)
-	  new ChunkWCAlgorithm(conf, listConf)
-	else
-	  new WCAlgorithm(conf, listConf)
-    }
-
-    // Naive run.
-    val (naive, naiveLoad) = alg.naive()
-    results("naive") = naive
-    results("naive-load") = naiveLoad
-
-    // Initial run.
-    val (initial, initialLoad) = alg.initial()
-    results("initial") = initial
-    results("initial-load") = initialLoad
-
-    if (Experiment.verbosity > 1) {
-      if (alg.mapCount != 0) {
-	println("map count = " + alg.mapCount)
-	alg.mapCount = 0
-      }
-      if (alg.reduceCount != 0) {
-	println("reduce count = " + alg.reduceCount)
-	alg.reduceCount = 0
-      }
-      println("starting prop")
-    }
-
-    if (Experiment.file == "") {
-      for (run <- runs) {
-	run match {
-	  case "naive" | "initial" =>
-	  case run =>
-	    val updateCount =
-	      if (run.toDouble < 1)
-		 (run.toDouble * count).toInt
-	      else
-		run.toInt
-
-	    val pair = alg.update(updateCount)
-            results(run) = pair._1
-	    results(run + "-load") = pair._2
-	}
-      }
-    } else {
-      var r = 1
-      runs = Array("naive", "initial")
-
-      while (alg.data.hasUpdates()) {
-	val pair = alg.update(-1)
-        results(r + "") = pair._1
-	results(r + "-load") = pair._2
-	runs :+= r + ""
-	r += 1
-      }
-
-      Experiment.confs("runs") = runs
-    }
-
-    if (Experiment.verbosity > 1) {
-      if (alg.mapCount != 0)
-	println("map count = " + alg.mapCount)
-      if (alg.reduceCount != 0)
-	println("reduce count = " + alg.reduceCount)
-    }
-
-    alg.shutdown()
-
-    results
-  }
-}
-
 object Experiment {
   val usage ="""Usage: run.sh [OPTION]...
 
@@ -163,7 +51,6 @@ Options:
   -v, --verbosity            Adjusts the amount of output, with 0 indicating no
                                output. (default: '1')
   --repeat n                 Number of times to repeat each experiment.
-  --memoized true,false      Should memoization be used?
   --load                     If specified, loading times will be included in
                                formatted output.
   --store type               The type of datastore to use, either 'memory' or
@@ -173,8 +60,6 @@ Options:
   """
 
   var repeat = 3
-
-  var inputSize = 0
 
   var verbosity = 1
 
@@ -192,7 +77,6 @@ Options:
                   ("partitions" -> Array("8")),
                   ("runs" -> Array("naive", "initial", ".01", ".05", ".1")),
                   ("output" -> Array("algorithms", "runs", "counts")),
-		  ("memoized" -> Array("true")),
 		  ("store" -> Array("memory")))
 
   val allResults = Map[Map[String, _], Map[String, Double]]()
@@ -215,7 +99,7 @@ Options:
       print(chart + "\t")
       for (line <- confs(lines)) {
         print(line + "\t")
-
+	print("no gc\t")
 	if (displayLoad) {
 	  print("load\t")
 	}
@@ -228,6 +112,7 @@ Options:
         for (line <- confs(lines)) {
           var total = 0.0
 	  var loadTotal = 0.0
+	  var noGCTotal = 0.0
           var repeat = 0
 
           for ((conf, results) <- allResults) {
@@ -236,6 +121,7 @@ Options:
                   conf(x) == xValue) {
                 total += results(chart)
 		loadTotal += results(chart + "-load")
+		noGCTotal += results(chart + "-nogc")
                 repeat += 1
               }
             } else if (lines == "runs") {
@@ -243,6 +129,7 @@ Options:
                   conf(charts) == chart) {
                 total += results(line)
 		loadTotal += results(line + "-load")
+		noGCTotal += results(line + "-nogc")
                 repeat += 1
               }
             } else if (x == "runs") {
@@ -250,6 +137,7 @@ Options:
                   conf(lines) == line) {
                 total += results(xValue)
 		loadTotal += results(xValue + "-load")
+		noGCTotal += results(xValue + "-nogc")
                 repeat += 1
               }
             } else {
@@ -258,6 +146,7 @@ Options:
           }
 
           print("\t" + round(total / repeat))
+	  print("\t" + round(noGCTotal / repeat))
 	  if (displayLoad) {
 	    print("\t" + round(loadTotal / repeat))
 	  }
@@ -309,9 +198,6 @@ Options:
 	  i += 1
         case "--repeat" =>
           repeat = args(i + 1).toInt
-	  i += 1
-        case "--memoized" =>
-          confs("memoized") = args(i + 1).split(",")
 	  i += 1
 	case "--load" =>
 	  displayLoad = true
@@ -370,32 +256,64 @@ Options:
 	  for (chunkSize <- confs("chunkSizes")) {
             for (count <- confs("counts")) {
               for (partitions <- confs("partitions")) {
-		for (memoized <- confs("memoized")) {
-		  val conf = Map(("algorithms" -> algorithm),
-				 ("cacheSizes" -> cacheSize),
-				 ("chunkSizes" -> chunkSize),
-				 ("counts" -> count),
-				 ("mutations" -> confs("mutations")),
-				 ("partitions" -> partitions),
-				 ("runs" -> confs("runs")),
-				 ("repeat" -> i),
-				 ("memoized" -> memoized),
-				 ("store" -> confs("store")(0)))
+		val conf = Map(("algorithms" -> algorithm),
+			       ("cacheSizes" -> cacheSize),
+			       ("chunkSizes" -> chunkSize),
+			       ("counts" -> count),
+			       ("mutations" -> confs("mutations")),
+			       ("partitions" -> partitions),
+			       ("runs" -> confs("runs")),
+			       ("repeat" -> i),
+			       ("store" -> confs("store")(0)))
 
-		  val listConf = new ListConf("", partitions.toInt,
-					      chunkSize.toInt, _ => 1)
+		val listConf = new ListConf("", partitions.toInt,
+					    chunkSize.toInt, _ => 1)
 
-		  val experiment = new Experiment(conf, listConf)
+		val alg = algorithm match {
+		  case "filter" => new FilterAlgorithm(conf, listConf)
 
-		  val results = experiment.run()
+		  case "flatMap" => new FlatMapAlgorithm(conf, listConf)
 
-		  if (verbosity > 0) {
-		    println(results)
-		  }
+		  case "join" =>
+		    if (listConf.chunkSize > 1)
+		      new ChunkJoinAlgorithm(conf, listConf)
+		    else
+		      new JoinAlgorithm(conf, listConf)
 
-		  if (i != 0) {
-		    Experiment.allResults += (conf -> results)
-		  }
+		  case "map" =>
+		    new MapAlgorithm(conf, listConf)
+
+		  case "msort" =>
+		    new MergeSortAlgorithm(conf, listConf)
+
+		  case "pgrank" => new PageRankAlgorithm(conf, listConf)
+
+		  case "qsort" =>
+		    new QuickSortAlgorithm(conf, listConf)
+
+		  case "rbk" => new ReduceByKeyAlgorithm(conf, listConf)
+
+		  case "sjoin" =>
+		    new SortJoinAlgorithm(conf, listConf)
+
+		  case "split" =>
+		    new SplitAlgorithm(conf, listConf)
+
+		  case "wc" =>
+		    if (listConf.chunkSize > 1)
+		      new ChunkWCAlgorithm(conf, listConf)
+		    else
+		      new WCAlgorithm(conf, listConf)
+		}
+
+		val results = alg.run()
+
+		if (verbosity > 0) {
+		  println(results)
+		}
+
+		if (i != 0) {
+		  Experiment.allResults += (conf -> results)
 		}
 	      }
             }

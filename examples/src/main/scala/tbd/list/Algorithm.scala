@@ -33,7 +33,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
   val mutations = conf("mutations").asInstanceOf[Array[String]]
   val partition = conf("partitions").asInstanceOf[String].toInt
-  //val memoized = conf("memoized") == "true"
+  var runs = conf("runs").asInstanceOf[Array[String]]
   val store = conf("store").asInstanceOf[String]
 
   val main = new Main(store, cacheSize)
@@ -48,7 +48,16 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
 
   var naiveLoadElapsed: Long = 0
 
-  def naive(): (Long, Long) = {
+  protected def generateNaive()
+
+  protected def runNaive(): Any
+
+  protected def checkOutput(table: Map[Int, Input], output: Output): Boolean
+
+  def run(): Map[String, Double] = {
+    val results = Map[String, Double]()
+
+    // Naive run.
     if (Experiment.verbosity > 1) {
       println("Naive load.")
     }
@@ -56,23 +65,83 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
     val beforeLoad = System.currentTimeMillis()
     generateNaive()
     naiveLoadElapsed = System.currentTimeMillis() - beforeLoad
+    results("naive-load") = naiveLoadElapsed
 
     if (Experiment.verbosity > 1) {
       println("Naive run.")
     }
 
+    val gcBefore = getGCTime()
     val before = System.currentTimeMillis()
     runNaive()
-    val elapsed = System.currentTimeMillis() - before
+    results("naive") = System.currentTimeMillis() - before
+    results("naive-nogc") = results("naive") - (getGCTime() - gcBefore)
 
-    (elapsed, naiveLoadElapsed)
+    // Initial run.
+    val (initialTime, initialLoad, initialNoGC) = initial()
+    results("initial") = initialTime
+    results("initial-load") = initialLoad
+    results("initial-nogc") = initialNoGC
+
+    if (Experiment.verbosity > 1) {
+      if (mapCount != 0) {
+	println("map count = " + mapCount)
+	mapCount = 0
+      }
+      if (reduceCount != 0) {
+	println("reduce count = " + reduceCount)
+	reduceCount = 0
+      }
+      println("starting prop")
+    }
+
+    if (Experiment.file == "") {
+      for (run <- runs) {
+	run match {
+	  case "naive" | "initial" =>
+	  case run =>
+	    val updateCount =
+	      if (run.toDouble < 1)
+		 (run.toDouble * count).toInt
+	      else
+		run.toInt
+
+	    val (updateTime, updateLoad, updateNoGC) = update(updateCount)
+            results(run) = updateTime
+	    results(run + "-load") = updateLoad
+	    results(run + "-nogc") = updateNoGC
+	}
+      }
+    } else {
+      var r = 1
+      runs = Array("naive", "initial")
+
+      while (data.hasUpdates()) {
+	val (updateTime, updateLoad, updateNoGC) = update(-1)
+        results(r + "") = updateTime
+	results(r + "-load") = updateLoad
+	results(r + "-nogc") = updateNoGC
+	runs :+= r + ""
+	r += 1
+      }
+
+      Experiment.confs("runs") = runs
+    }
+
+    if (Experiment.verbosity > 1) {
+      if (mapCount != 0)
+	println("map count = " + mapCount)
+      if (reduceCount != 0)
+	println("reduce count = " + reduceCount)
+    }
+
+    mutator.shutdown()
+    main.shutdown()
+
+    results
   }
 
-  protected def generateNaive()
-
-  protected def runNaive(): Any
-
-  def initial(): (Long, Long) = {
+  def initial() = {
     if (Experiment.verbosity > 1) {
       println("Initial load.")
     }
@@ -89,45 +158,59 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
       println("Initial run.")
     }
 
+    val gcBefore = getGCTime()
     val before = System.currentTimeMillis()
     output = mutator.run[Output](this)
     val elapsed = System.currentTimeMillis() - before
+    val noGCElapsed = elapsed - (getGCTime() - gcBefore)
 
     if (Experiment.check) {
       assert(checkOutput(data.table, output))
     }
 
-    (elapsed, loadElapsed)
+    (elapsed, loadElapsed, noGCElapsed)
   }
 
-  protected def checkOutput(table: Map[Int, Input], output: Output): Boolean
-
-  def update(count: Int): (Long, Long) = {
+  def update(count: Int) = {
     if (Experiment.verbosity > 1) {
       println("Updating " + count)
     }
 
     val beforeLoad = System.currentTimeMillis()
     data.update(count)
-
     val loadElapsed = System.currentTimeMillis() - beforeLoad
 
     if (Experiment.verbosity > 1) {
       println("Running change propagation.")
     }
+
+    val gcBefore = getGCTime()
     val before = System.currentTimeMillis()
     mutator.propagate()
     val elapsed = System.currentTimeMillis() - before
+    val noGCElapsed = elapsed - (getGCTime() - gcBefore)
 
     if (Experiment.check) {
       assert(checkOutput(data.table, output))
     }
 
-    (elapsed, loadElapsed)
+    (elapsed, loadElapsed, noGCElapsed)
   }
 
-  def shutdown() {
-    mutator.shutdown()
-    main.shutdown()
+  private def getGCTime(): Long = {
+    var garbageCollectionTime: Long = 0
+
+    val iter = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans().iterator()
+    while (iter.hasNext()) {
+      val gc = iter.next()
+
+      val time = gc.getCollectionTime()
+
+      if(time >= 0) {
+        garbageCollectionTime += time
+      }
+    }
+
+    garbageCollectionTime
   }
 }
