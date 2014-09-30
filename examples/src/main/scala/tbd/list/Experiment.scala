@@ -304,6 +304,9 @@ Options:
 		      new ChunkWCAlgorithm(conf, listConf)
 		    else
 		      new WCAlgorithm(conf, listConf)
+
+                  case "wsort" =>
+                    new WikiSortAlgorithm(conf, listConf)
 		}
 
 		val results = alg.run()
