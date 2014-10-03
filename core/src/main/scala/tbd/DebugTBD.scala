@@ -222,13 +222,13 @@ object DebugTBD {
   }
 
   @functionToInvoke("parInternal")
-  def par[T](one: Context => T): Parer[T] =
-	macro TbdMacros.parOneMacro[Parer[T]]
+  def par[T](one: Context => T): Parizer[T] =
+	macro TbdMacros.parOneMacro[Parizer[T]]
 
   def parInternal[T](
       one: Context => T,
       id: Int,
-      closedTerms: List[(String, Any)]): DebugParer[T] = {
-    new DebugParer(one, id, closedTerms)
+      closedTerms: List[(String, Any)]): DebugParizer[T] = {
+    new DebugParizer(one, id, closedTerms)
   }
 }

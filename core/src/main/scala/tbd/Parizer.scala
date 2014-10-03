@@ -25,7 +25,7 @@ import tbd.messages._
 import tbd.worker.Worker
 import tbd.ddg.{FunctionTag, ParNode, Tag}
 
-class Parer[T](one: Context => T) {
+class Parizer[T](one: Context => T) {
   def and[U](two: Context => U)(implicit c: Context): (T, U) = {
     val workerProps1 = Worker.props(c.id + "-" + c.workerId, c.worker.self)
     val workerRef1 = c.worker.context.system.actorOf(workerProps1, c.id + "-" + c.workerId)
@@ -49,10 +49,10 @@ class Parer[T](one: Context => T) {
   }
 }
 
-class DebugParer[T]
+class DebugParizer[T]
     (one: Context => T,
      id1: Int,
-     closedTerms1: List[(String, Any)]) extends Parer(one) {
+     closedTerms1: List[(String, Any)]) extends Parizer(one) {
   import scala.language.experimental.macros
 
   @functionToInvoke("parTwoInternal")

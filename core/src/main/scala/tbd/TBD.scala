@@ -301,7 +301,7 @@ object TBD {
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
   }
 
-  def par[T](one: Context => T): Parer[T] = {
-    new Parer(one)
+  def par[T](one: Context => T): Parizer[T] = {
+    new Parizer(one)
   }
 }
