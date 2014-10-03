@@ -39,7 +39,8 @@ object TBD {
       mod.asInstanceOf[Mod[Any]],
       value,
       c.currentParent,
-      reader.asInstanceOf[Any => Changeable[Any]])
+      reader.asInstanceOf[Any => Changeable[Any]],
+      c.initialRun)
 
     val outerReader = c.currentParent
     c.currentParent = readNode
@@ -62,7 +63,8 @@ object TBD {
       mod.asInstanceOf[Mod[Any]],
       value,
       c.currentParent,
-      reader.asInstanceOf[Any => Changeable[Any]])
+      reader.asInstanceOf[Any => Changeable[Any]],
+      c.initialRun)
 
     val outerReader = c.currentParent
     c.currentParent = readNode
@@ -97,7 +99,8 @@ object TBD {
     val modNode = c.ddg.addMod(
       c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
-      key)
+      key,
+      c.initialRun)
 
     val outerParent = c.currentParent
     c.currentParent = modNode
@@ -137,7 +140,8 @@ object TBD {
     val modNode = c.ddg.addMod(
       c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
-      key)
+      key,
+      c.initialRun)
 
     val outerReader = c.currentParent
     c.currentParent = modNode
@@ -173,7 +177,8 @@ object TBD {
     val modNode = c.ddg.addMod(
       c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
-      key)
+      key,
+      c.initialRun)
 
     modNode.currentMod2 = c.currentMod2
 
@@ -209,7 +214,8 @@ object TBD {
     val modNode = c.ddg.addMod(
       c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
-      key)
+      key,
+      c.initialRun)
 
     modNode.currentMod = c.currentMod
 

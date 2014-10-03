@@ -64,7 +64,7 @@ class Memoizer[T](implicit c: Context) {
     }
 
     if (!found) {
-      val memoNode = c.ddg.addMemo(c.currentParent, signature, this)
+      val memoNode = c.ddg.addMemo(c.currentParent, signature, this, c.initialRun)
 
       val outerParent = c.currentParent
       c.currentParent = memoNode

@@ -37,8 +37,13 @@ class DDG(id: String) {
       (mod: Mod[Any],
        value: Any,
        parent: Node,
-       reader: Any => Changeable[Any]): ReadNode = {
-    val timestamp = nextTimestamp(parent)
+       reader: Any => Changeable[Any],
+       initialRun: Boolean): ReadNode = {
+    val timestamp =
+      if (initialRun)
+	ordering.append()
+      else
+	nextTimestamp(parent)
 
     val readNode = new ReadNode(mod, parent, timestamp, reader)
 
@@ -56,8 +61,13 @@ class DDG(id: String) {
   def addMod
       (parent: Node,
        modizer: Modizer[Any],
-       key: Any): ModNode = {
-    val timestamp = nextTimestamp(parent)
+       key: Any,
+       initialRun: Boolean): ModNode = {
+    val timestamp =
+      if (initialRun)
+	ordering.append()
+      else
+	nextTimestamp(parent)
 
     val modNode = new ModNode(modizer, key, parent, timestamp)
 
@@ -66,8 +76,16 @@ class DDG(id: String) {
     modNode
   }
 
-  def addWrite[T](mod: Mod[Any], mod2: Mod[Any], parent: Node): WriteNode = {
-    val timestamp = nextTimestamp(parent)
+  def addWrite[T]
+      (mod: Mod[Any],
+       mod2: Mod[Any],
+       parent: Node,
+       initialRun: Boolean): WriteNode = {
+    val timestamp =
+      if (initialRun)
+	ordering.append()
+      else
+	nextTimestamp(parent)
 
     val tag = if(tbd.master.Main.debug) {
       val writes = List(mod, mod2).filter(_ != null).map((x: Mod[Any]) => {
@@ -89,8 +107,13 @@ class DDG(id: String) {
   def addPar
       (workerRef1: ActorRef,
        workerRef2: ActorRef,
-       parent: Node): ParNode = {
-    val timestamp = nextTimestamp(parent)
+       parent: Node,
+       initialRun: Boolean): ParNode = {
+    val timestamp =
+      if (initialRun)
+	ordering.append()
+      else
+	nextTimestamp(parent)
 
     val parNode = new ParNode(workerRef1, workerRef2, parent, timestamp)
 
@@ -105,8 +128,13 @@ class DDG(id: String) {
   def addMemo
       (parent: Node,
        signature: Seq[Any],
-       memoizer: Memoizer[_]): MemoNode = {
-    val timestamp = nextTimestamp(parent)
+       memoizer: Memoizer[_],
+       initialRun: Boolean): MemoNode = {
+    val timestamp =
+      if (initialRun)
+	ordering.append()
+      else
+	nextTimestamp(parent)
 
     val memoNode = new MemoNode(parent, timestamp, signature, memoizer)
 

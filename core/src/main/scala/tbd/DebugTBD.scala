@@ -161,7 +161,8 @@ object DebugTBD {
     val writeNode = c.ddg.addWrite(
       changeable.mod.asInstanceOf[Mod[Any]],
       null,
-      c.currentParent)
+      c.currentParent,
+      c.initialRun)
     writeNode.endTime = c.ddg.nextTimestamp(writeNode)
 
     changeable
@@ -174,7 +175,8 @@ object DebugTBD {
     val writeNode = c.ddg.addWrite(
       c.currentMod.asInstanceOf[Mod[Any]],
       c.currentMod2.asInstanceOf[Mod[Any]],
-      c.currentParent)
+      c.currentParent,
+      c.initialRun)
 
     writeNode.endTime = c.ddg.nextTimestamp(writeNode)
 
@@ -192,7 +194,8 @@ object DebugTBD {
     val writeNode = c.ddg.addWrite(
       c.currentMod.asInstanceOf[Mod[Any]],
       null,
-      c.currentParent)
+      c.currentParent,
+      c.initialRun)
 
     writeNode.endTime = c.ddg.nextTimestamp(writeNode)
 
@@ -210,7 +213,8 @@ object DebugTBD {
     val writeNode = c.ddg.addWrite(
       null,
       c.currentMod2.asInstanceOf[Mod[Any]],
-      c.currentParent)
+      c.currentParent,
+      c.initialRun)
 
     writeNode.endTime = c.ddg.nextTimestamp(writeNode)
 
