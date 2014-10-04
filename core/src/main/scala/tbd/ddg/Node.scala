@@ -36,7 +36,7 @@ object Node {
 
 abstract class Node
     (var parent: Node,
-     val timestamp: Timestamp) {
+     var timestamp: Timestamp) {
   var endTime: Timestamp = null
   var stacktrace =
     if (Main.debug)
@@ -97,7 +97,7 @@ class MemoNode
   var value: Any = null
 
   override def toString(prefix: String) = {
-    prefix + "MemoNode time=" + timestamp + " to " + endTime + " signature=" + signature +
+    prefix + this + " time=" + timestamp + " to " + endTime + " signature=" + signature +
       super.toString(prefix)
   }
 }
@@ -115,7 +115,8 @@ class ModNode
       else
 	""
 
-    prefix + "ModNode " + mods + super.toString(prefix)
+    prefix + this + " " + mods + " time=" + timestamp + " to " + endTime +
+      super.toString(prefix)
   }
 }
 

@@ -18,14 +18,18 @@ package tbd.ddg
 object Timestamp {
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
-  val MAX_TIMESTAMP = new Timestamp(new Sublist(Int.MaxValue, null), Int.MaxValue, null)
+  val MAX_TIMESTAMP = new Timestamp(new Sublist(Int.MaxValue, null), Int.MaxValue, null, null)
 
   // A dummy timestamp which all real Timestamps are greater than.
-  val MIN_TIMESTAMP = new Timestamp(new Sublist(-1, null), -1, null)
+  val MIN_TIMESTAMP = new Timestamp(new Sublist(-1, null), -1, null, null)
 }
 
-class Timestamp(var sublist: Sublist, var time: Double, var next: Timestamp) {
-  var previous: Timestamp = null
+class Timestamp
+    (var sublist: Sublist,
+     var time: Double,
+     var next: Timestamp,
+     val node: Node) {
+  var previous: Timestamp = _
 
   def <(that: Timestamp): Boolean = {
     if (sublist == that.sublist) {
@@ -41,6 +45,29 @@ class Timestamp(var sublist: Sublist, var time: Double, var next: Timestamp) {
     } else {
       sublist.id > that.sublist.id
     }
+  }
+
+  def >=(that: Timestamp): Boolean = {
+    if (sublist == that.sublist) {
+      time >= that.time
+    } else {
+      sublist.id > that.sublist.id
+    }
+  }
+
+  def <=(that: Timestamp): Boolean = {
+    if (sublist == that.sublist) {
+      time <= that.time
+    } else {
+      sublist.id < that.sublist.id
+    }
+  }
+
+  def getNext(): Timestamp = {
+    if (next != sublist.base)
+      next
+    else
+      sublist.next.base.next
   }
 
   override def equals(obj: Any): Boolean = {

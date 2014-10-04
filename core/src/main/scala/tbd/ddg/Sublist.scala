@@ -18,13 +18,13 @@ package tbd.ddg
 class Sublist(var id: Int, var next: Sublist) {
   var previous: Sublist = null
 
-  var base: Timestamp = new Timestamp(this, 0, null)
+  var base: Timestamp = new Timestamp(this, 0, null, null)
   base.next = base
   base.previous = base
 
   var size = 0
 
-  def after(t: Timestamp): Timestamp = {
+  def after(t: Timestamp, node: Node): Timestamp = {
     val previous =
       if (t == null) {
         base
@@ -34,11 +34,13 @@ class Sublist(var id: Int, var next: Sublist) {
 
     val newTimestamp =
       if (previous.next == base) {
-        new Timestamp(this, previous.time + 1, base)
+        new Timestamp(this, previous.time + 1, base, node)
       } else {
-        new Timestamp(this,
-                      (previous.time + previous.next.time) / 2,
-                      previous.next)
+        new Timestamp(
+	  this,
+          (previous.time + previous.next.time) / 2,
+          previous.next,
+	  node)
       }
 
     newTimestamp.previous = previous
@@ -49,9 +51,9 @@ class Sublist(var id: Int, var next: Sublist) {
     newTimestamp
   }
 
-  def append(): Timestamp = {
+  def append(node: Node): Timestamp = {
     val previous = base.previous
-    val newTimestamp = new Timestamp(this, previous.time + 1, base)
+    val newTimestamp = new Timestamp(this, previous.time + 1, base, node)
 
     newTimestamp.previous = previous
     previous.next = newTimestamp

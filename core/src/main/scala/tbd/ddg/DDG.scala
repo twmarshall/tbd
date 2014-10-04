@@ -39,13 +39,13 @@ class DDG(id: String) {
        parent: Node,
        reader: Any => Changeable[Any],
        initialRun: Boolean): ReadNode = {
+    val readNode = new ReadNode(mod, parent, null, reader)
     val timestamp =
       if (initialRun)
-	ordering.append()
+	ordering.append(readNode)
       else
-	nextTimestamp(parent)
-
-    val readNode = new ReadNode(mod, parent, timestamp, reader)
+	nextTimestamp(parent, readNode)
+    readNode.timestamp = timestamp
 
     parent.addChild(readNode)
 
@@ -63,13 +63,13 @@ class DDG(id: String) {
        modizer: Modizer[Any],
        key: Any,
        initialRun: Boolean): ModNode = {
+    val modNode = new ModNode(modizer, key, parent, null)
     val timestamp =
       if (initialRun)
-	ordering.append()
+	ordering.append(modNode)
       else
-	nextTimestamp(parent)
-
-    val modNode = new ModNode(modizer, key, parent, timestamp)
+	nextTimestamp(parent, modNode)
+    modNode.timestamp = timestamp
 
     parent.addChild(modNode)
 
@@ -81,11 +81,13 @@ class DDG(id: String) {
        mod2: Mod[Any],
        parent: Node,
        initialRun: Boolean): WriteNode = {
+    val writeNode = new WriteNode(mod, mod2, parent, null)
     val timestamp =
       if (initialRun)
-	ordering.append()
+	ordering.append(writeNode)
       else
-	nextTimestamp(parent)
+	nextTimestamp(parent, writeNode)
+    writeNode.timestamp = timestamp
 
     val tag = if(tbd.master.Main.debug) {
       val writes = List(mod, mod2).filter(_ != null).map((x: Mod[Any]) => {
@@ -96,7 +98,6 @@ class DDG(id: String) {
       null
     }
 
-    val writeNode = new WriteNode(mod, mod2, parent, timestamp)
     writeNode.tag = tag
 
     parent.addChild(writeNode)
@@ -109,13 +110,13 @@ class DDG(id: String) {
        workerRef2: ActorRef,
        parent: Node,
        initialRun: Boolean): ParNode = {
+    val parNode = new ParNode(workerRef1, workerRef2, parent, null)
     val timestamp =
       if (initialRun)
-	ordering.append()
+	ordering.append(parNode)
       else
-	nextTimestamp(parent)
-
-    val parNode = new ParNode(workerRef1, workerRef2, parent, timestamp)
+	nextTimestamp(parent, parNode)
+    parNode.timestamp = timestamp
 
     parent.addChild(parNode)
 
@@ -130,23 +131,23 @@ class DDG(id: String) {
        signature: Seq[Any],
        memoizer: Memoizer[_],
        initialRun: Boolean): MemoNode = {
+    val memoNode = new MemoNode(parent, null, signature, memoizer)
     val timestamp =
       if (initialRun)
-	ordering.append()
+	ordering.append(memoNode)
       else
-	nextTimestamp(parent)
-
-    val memoNode = new MemoNode(parent, timestamp, signature, memoizer)
+	nextTimestamp(parent, memoNode)
+    memoNode.timestamp = timestamp
 
     parent.addChild(memoNode)
     memoNode
   }
 
-  def nextTimestamp(parent: Node): Timestamp = {
+  def nextTimestamp(parent: Node, node: Node): Timestamp = {
     if (parent.children.size == 0) {
-      ordering.after(parent.timestamp)
+      ordering.after(parent.timestamp, node)
     } else {
-      ordering.after(parent.children.last.endTime)
+      ordering.after(parent.children.last.endTime, node)
     }
   }
 
@@ -179,50 +180,14 @@ class DDG(id: String) {
     }
   }
 
-  /**
-   * Called before a read is reexecuted, the descendents of this node are
-   * cleaned up, up to the first memo nodes, which are returned so that
-   * they can be reattached or cleaned up later.
-   */
-  def cleanupRead(subtree: Node): MutableList[Node] = {
-    val ret = new MutableList[Node]()
-
+  // Called before a read is reexecuted, this node is detached from its
+  // children.
+  def cleanupRead(subtree: Node) {
     for (child <- subtree.children) {
       child.parent = null
     }
 
-    ret ++= subtree.children
-
     subtree.children.clear()
-
-    ret
-  }
-
-  def cleanupSubtree(subtree: Node) {
-    for (child <- subtree.children) {
-      cleanupSubtree(child)
-    }
-
-    cleanup(subtree)
-  }
-
-  private def cleanup(node: Node) {
-    node match {
-      case readNode: ReadNode =>
-	reads(readNode.mod.id) -= readNode
-      case memoNode: MemoNode =>
-	memoNode.memoizer.removeEntry(memoNode.timestamp, memoNode.signature)
-      case modNode: ModNode =>
-	if (modNode.modizer != null) {
-	  modNode.modizer.remove(modNode.key)
-	}
-      case _ =>
-    }
-
-    node.updated = false
-    ordering.remove(node.timestamp)
-
-    node.children.clear()
   }
 
   def attachSubtree(parent: Node, subtree: Node) {

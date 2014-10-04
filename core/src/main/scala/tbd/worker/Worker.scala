@@ -19,7 +19,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import scala.collection.mutable.{ArrayBuffer, Map, MutableList, Set}
 import scala.concurrent.{Await, Future, Promise}
-import scala.util.Try
+import scala.util.{Failure, Success, Try}
 
 import tbd.Constants._
 import tbd.{Adjustable, Context}
@@ -50,14 +50,14 @@ class Worker(val id: String, parent: ActorRef)
           if (node.isInstanceOf[ReadNode]) {
             val readNode = node.asInstanceOf[ReadNode]
 
-            val toCleanup = c.ddg.cleanupRead(readNode)
+            c.ddg.cleanupRead(readNode)
 
             val newValue = readNode.mod.read()
 
 	    val oldCurrentParent = c.currentParent
             c.currentParent = readNode
 	    val oldStart = c.reexecutionStart
-	    c.reexecutionStart = readNode.timestamp
+	    c.reexecutionStart = readNode.timestamp.getNext()
 	    val oldEnd = c.reexecutionEnd
 	    c.reexecutionEnd = readNode.endTime
             val oldCurrentDest = c.currentMod
@@ -68,17 +68,15 @@ class Worker(val id: String, parent: ActorRef)
             readNode.updated = false
             readNode.reader(newValue)
 
+	    if (c.reexecutionStart < c.reexecutionEnd) {
+	      c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
+	    }
+
 	    c.currentParent = oldCurrentParent
 	    c.reexecutionStart = oldStart
 	    c.reexecutionEnd = oldEnd
             c.currentMod = oldCurrentDest
 	    c.currentMod2 = oldCurrentDest2
-
-            for (node <- toCleanup) {
-              if (node.parent == null) {
-                c.ddg.cleanupSubtree(node)
-              }
-            }
           } else {
             val parNode = node.asInstanceOf[ParNode]
 
@@ -102,7 +100,6 @@ class Worker(val id: String, parent: ActorRef)
 
       true
     }
-
   }
 
   def receive = {
@@ -133,14 +130,17 @@ class Worker(val id: String, parent: ActorRef)
       c.initialRun = false
       val respondTo = sender
       val future = propagate()
-      future.onComplete((t: Try[Boolean]) => {
-	c.updatedMods.clear()
+      future onComplete {
+	case Success(t) =>
+	  c.updatedMods.clear()
 
-        Await.result(Future.sequence(c.pending), DURATION)
-        c.pending.clear()
+          Await.result(Future.sequence(c.pending), DURATION)
+          c.pending.clear()
 
-        respondTo ! "done"
-      })
+          respondTo ! "done"
+	case Failure(e) =>
+	  e.printStackTrace()
+      }
     }
 
     case GetDDGMessage => {

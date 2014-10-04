@@ -35,44 +35,49 @@ class Memoizer[T](implicit c: Context) {
     var found = false
     var ret = null.asInstanceOf[T]
     if (!c.initialRun && !updated(signature) && memoTable.contains(signature)) {
-        // Search through the memo entries matching this signature to see if
-        // there's one in the right time range.
-        for (memoNode <- memoTable(signature)) {
-          val timestamp = memoNode.timestamp
-          if (!found && timestamp > c.reexecutionStart &&
-	      timestamp < c.reexecutionEnd &&
-	      memoNode.matchableInEpoch <= Master.epoch) {
+      // Search through the memo entries matching this signature to see if
+      // there's one in the right time range.
+      for (memoNode <- memoTable(signature)) {
+        val timestamp = memoNode.timestamp
+        if (!found && timestamp >= c.reexecutionStart &&
+	    timestamp < c.reexecutionEnd &&
+	    memoNode.matchableInEpoch <= Master.epoch) {
 
-            updateChangeables(memoNode, c.currentMod, c.currentMod2)
+          updateChangeables(memoNode, c.currentMod, c.currentMod2)
 
-            found = true
-            c.ddg.attachSubtree(c.currentParent, memoNode)
+          found = true
 
-	    memoNode.matchableInEpoch = Master.epoch + 1
-            ret = memoNode.value.asInstanceOf[T]
+	  if (c.reexecutionStart < memoNode.timestamp) {
+	    c.ddg.ordering.splice(c.reexecutionStart, memoNode.timestamp, c)
+	  }
 
-	    // This ensures that we won't match anything under the currently
-	    // reexecuting read that comes before this memo node, since then
-	    // the timestamps would be out of order.
-	    c.reexecutionStart = memoNode.endTime
+	  // This ensures that we won't match anything under the currently
+	  // reexecuting read that comes before this memo node, since then
+	  // the timestamps would be out of order.
+	  c.reexecutionStart = memoNode.endTime.getNext()
 
-            val future = c.worker.propagate(timestamp,
-                                          memoNode.endTime)
-            Await.result(future, DURATION)
+          c.ddg.attachSubtree(c.currentParent, memoNode)
+
+	  memoNode.matchableInEpoch = Master.epoch + 1
+          ret = memoNode.value.asInstanceOf[T]
+
+	  val future = c.worker.propagate(timestamp, memoNode.endTime)
+          Await.result(future, DURATION)
 	}
       }
     }
 
     if (!found) {
       val memoNode = c.ddg.addMemo(c.currentParent, signature, this, c.initialRun)
-
       val outerParent = c.currentParent
       c.currentParent = memoNode
+
       val value = func
+
       c.currentParent = outerParent
       memoNode.currentMod = c.currentMod
       memoNode.currentMod2 = c.currentMod2
-      memoNode.endTime = c.ddg.nextTimestamp(memoNode)
+      memoNode.endTime = c.ddg.nextTimestamp(memoNode, memoNode)
       memoNode.value = value
 
       if (memoTable.contains(signature)) {
@@ -166,6 +171,7 @@ class Memoizer[T](implicit c: Context) {
 
   def removeEntry(timestamp: Timestamp, signature: Seq[_]) {
     var toRemove: MemoNode = null
+
     for (memoNode <- memoTable(signature)) {
       if (toRemove == null && memoNode.timestamp == timestamp) {
         toRemove = memoNode

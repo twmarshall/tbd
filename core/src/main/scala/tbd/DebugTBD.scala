@@ -163,7 +163,7 @@ object DebugTBD {
       null,
       c.currentParent,
       c.initialRun)
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode)
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode)
 
     changeable
   }
@@ -178,7 +178,7 @@ object DebugTBD {
       c.currentParent,
       c.initialRun)
 
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode)
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode)
 
     changeables
   }
@@ -197,7 +197,7 @@ object DebugTBD {
       c.currentParent,
       c.initialRun)
 
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode)
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode)
 
     changeables
   }
@@ -216,7 +216,7 @@ object DebugTBD {
       c.currentParent,
       c.initialRun)
 
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode)
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode)
 
     changeables
   }

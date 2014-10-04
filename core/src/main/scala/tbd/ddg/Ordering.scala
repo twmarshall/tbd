@@ -21,7 +21,7 @@ class Ordering {
   base.next = new Sublist(1, base)
   base.previous = base.next
 
-  def after(t: Timestamp): Timestamp = {
+  def after(t: Timestamp, node: Node): Timestamp = {
     val previousSublist =
       if (t == null) {
         base.next
@@ -29,7 +29,7 @@ class Ordering {
         t.sublist
       }
 
-    val newTimestamp = previousSublist.after(t)
+    val newTimestamp = previousSublist.after(t, node)
     if (previousSublist.size > 63) {
       val newSublist = sublistAfter(previousSublist)
       assert(previousSublist.id != newSublist.id)
@@ -39,13 +39,13 @@ class Ordering {
     newTimestamp
   }
 
-  def append(): Timestamp = {
+  def append(node: Node): Timestamp = {
     val newTimestamp =
       if (base.previous.size > 31) {
 	val newSublist = sublistAppend()
-	newSublist.append()
+	newSublist.append(node)
       } else {
-	base.previous.append()
+	base.previous.append(node)
       }
 
     newTimestamp
@@ -123,6 +123,80 @@ class Ordering {
 
   def remove(t: Timestamp) {
     t.sublist.remove(t)
+
+    if (t.sublist.size == 0) {
+      t.sublist.previous.next = t.sublist.next
+      t.sublist.next.previous = t.sublist.previous
+    }
+  }
+
+  def splice(start: Timestamp, end: Timestamp, c: tbd.Context) {
+    var time = start
+    while (time < end) {
+      val node = time.node
+
+      if (time == node.timestamp) {
+	node match {
+	  case readNode: ReadNode =>
+	    c.ddg.reads(readNode.mod.id) -= readNode
+	  case memoNode: MemoNode =>
+	    memoNode.memoizer.removeEntry(memoNode.timestamp, memoNode.signature)
+	    memoNode.matchableInEpoch = tbd.master.Master.epoch + 1
+	  case modNode: ModNode =>
+	    if (modNode.modizer != null) {
+	      modNode.modizer.remove(modNode.key)
+	    }
+	  case _ =>
+	}
+	node.updated = false
+
+	node.parent = null
+	node.children.clear()
+
+	if (node.endTime > end) {
+	  remove(node.endTime)
+	}
+      }
+
+      time = time.getNext()
+    }
+
+    if (start.sublist == end.sublist) {
+      start.previous.next = end
+      end.previous = start.previous
+    } else {
+      val startSublist =
+	if (start.previous == start.sublist.base) {
+	  start.sublist.previous
+	} else {
+	  start.previous.next = start.sublist.base
+	  start.sublist.base.previous = start.previous
+
+	  var size = 0
+	  var stamp = start.sublist.base.next
+	  while (stamp != start.sublist.base) {
+	    size += 1
+	    stamp = stamp.next
+	  }
+	  start.sublist.size = size
+
+	  start.sublist
+	}
+
+      end.previous = end.sublist.base
+      end.sublist.base.next = end
+
+      var size = 0
+      var stamp = end.sublist.base.next
+      while (stamp != end.sublist.base) {
+	size += 1
+	stamp = stamp.next
+      }
+      end.sublist.size = size
+
+      startSublist.next = end.sublist
+      end.sublist.previous = startSublist
+    }
   }
 
   override def toString = {
