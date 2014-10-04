@@ -39,7 +39,7 @@ class DDG(id: String) {
        parent: Node,
        reader: Any => Changeable[Any],
        initialRun: Boolean): ReadNode = {
-    val readNode = new ReadNode(mod, parent, null, reader)
+    val readNode = new ReadNode(mod, reader)
     val timestamp =
       if (initialRun)
 	ordering.append(readNode)
@@ -63,7 +63,7 @@ class DDG(id: String) {
        modizer: Modizer[Any],
        key: Any,
        initialRun: Boolean): ModNode = {
-    val modNode = new ModNode(modizer, key, parent, null)
+    val modNode = new ModNode(modizer, key)
     val timestamp =
       if (initialRun)
 	ordering.append(modNode)
@@ -81,7 +81,7 @@ class DDG(id: String) {
        mod2: Mod[Any],
        parent: Node,
        initialRun: Boolean): WriteNode = {
-    val writeNode = new WriteNode(mod, mod2, parent, null)
+    val writeNode = new WriteNode(mod, mod2)
     val timestamp =
       if (initialRun)
 	ordering.append(writeNode)
@@ -110,7 +110,7 @@ class DDG(id: String) {
        workerRef2: ActorRef,
        parent: Node,
        initialRun: Boolean): ParNode = {
-    val parNode = new ParNode(workerRef1, workerRef2, parent, null)
+    val parNode = new ParNode(workerRef1, workerRef2)
     val timestamp =
       if (initialRun)
 	ordering.append(parNode)
@@ -131,7 +131,7 @@ class DDG(id: String) {
        signature: Seq[Any],
        memoizer: Memoizer[_],
        initialRun: Boolean): MemoNode = {
-    val memoNode = new MemoNode(parent, null, signature, memoizer)
+    val memoNode = new MemoNode(signature, memoizer)
     val timestamp =
       if (initialRun)
 	ordering.append(memoNode)
@@ -180,29 +180,8 @@ class DDG(id: String) {
     }
   }
 
-  // Called before a read is reexecuted, this node is detached from its
-  // children.
-  def cleanupRead(subtree: Node) {
-    for (child <- subtree.children) {
-      child.parent = null
-    }
-
-    subtree.children.clear()
-  }
-
   def attachSubtree(parent: Node, subtree: Node) {
-    if (subtree.parent != null) {
-      subtree.parent.removeChild(subtree)
-
-      var oldParent = subtree.parent
-      while (oldParent != null) {
-        oldParent.matchableInEpoch = Master.epoch + 1
-        oldParent = oldParent.parent
-      }
-    }
-
     parent.addChild(subtree)
-    subtree.parent = parent
   }
 
   /**

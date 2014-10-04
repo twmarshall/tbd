@@ -34,10 +34,10 @@ object Node {
   }
 }
 
-abstract class Node
-    (var parent: Node,
-     var timestamp: Timestamp) {
-  var endTime: Timestamp = null
+abstract class Node {
+  var timestamp: Timestamp = _
+  var endTime: Timestamp = _
+
   var stacktrace =
     if (Main.debug)
       Thread.currentThread().getStackTrace()
@@ -89,10 +89,8 @@ abstract class Node
 }
 
 class MemoNode
-    (_parent: Node,
-     _timestamp: Timestamp,
-     val signature: Seq[Any],
-     val memoizer: Memoizer[_]) extends Node(_parent, _timestamp) {
+    (val signature: Seq[Any],
+     val memoizer: Memoizer[_]) extends Node {
 
   var value: Any = null
 
@@ -104,9 +102,7 @@ class MemoNode
 
 class ModNode
     (val modizer: Modizer[Any],
-     val key: Any,
-     _parent: Node,
-     _timestamp: Timestamp) extends Node(_parent, _timestamp) {
+     val key: Any) extends Node {
 
   override def toString(prefix: String) = {
     val mods =
@@ -122,9 +118,7 @@ class ModNode
 
 class ParNode
     (val workerRef1: ActorRef,
-     val workerRef2: ActorRef,
-     _parent: Node,
-     _timestamp: Timestamp) extends Node(_parent, _timestamp) {
+     val workerRef2: ActorRef) extends Node {
 
   var pebble1 = false
   var pebble2 = false
@@ -151,9 +145,7 @@ class ParNode
 
 class ReadNode
     (val mod: Mod[Any],
-     _parent: Node,
-     _timestamp: Timestamp,
-     val reader: Any => Changeable[Any]) extends Node(_parent, _timestamp) {
+     val reader: Any => Changeable[Any]) extends Node {
 
   override def toString(prefix: String) = {
     prefix + this + " modId=(" + mod.id + ") " + " time=" + timestamp + " to " +
@@ -162,7 +154,7 @@ class ReadNode
   }
 }
 
-class RootNode(id: String) extends Node(null, null) {
+class RootNode(id: String) extends Node {
   override def toString(prefix: String) = {
     prefix + "RootNode id=(" + id + ")" + super.toString(prefix)
   }
@@ -170,9 +162,7 @@ class RootNode(id: String) extends Node(null, null) {
 
 class WriteNode
     (val mod: Mod[Any],
-     val mod2: Mod[Any],
-     _parent: Node,
-     _timestamp: Timestamp) extends Node(_parent, _timestamp) {
+     val mod2: Mod[Any]) extends Node {
 
   override def toString(prefix: String) = {
     prefix + "WriteNode modId=(" + mod.id + ") " +
