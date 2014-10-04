@@ -18,12 +18,9 @@ package tbd
 import akka.pattern.ask
 import scala.concurrent.Await
 
-import tbd.macros.{TbdMacros, functionToInvoke}
-
 import tbd.Constants._
-import tbd.messages._
+import tbd.messages.RunTaskMessage
 import tbd.worker.Worker
-import tbd.ddg.{FunctionTag, ParNode, Tag}
 
 class Parizer[T](one: Context => T) {
   def and[U](two: Context => U)(implicit c: Context): (T, U) = {
@@ -45,31 +42,6 @@ class Parizer[T](one: Context => T) {
 
     val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]
-    (oneRet, twoRet)
-  }
-}
-
-class DebugParizer[T]
-    (one: Context => T,
-     id1: Int,
-     closedTerms1: List[(String, Any)]) extends Parizer(one) {
-  import scala.language.experimental.macros
-
-  @functionToInvoke("parTwoInternal")
-  override def and[U](two: Context => U)(implicit c: Context): (T, U) =
-    macro TbdMacros.parTwoMacro[(T, U)]
-
-  def parTwoInternal[U](
-      two: Context => U,
-      c: Context,
-      id2: Int,
-      closedTerms2: List[(String, Any)]): (T, U) = {
-    val (oneRet, twoRet) = super.and(two)(c)
-
-    val parNode = c.currentParent.children.last.asInstanceOf[ParNode]
-    val tag = Tag.Par(FunctionTag(id1, closedTerms1), FunctionTag(id2, closedTerms2))
-    parNode.tag = tag
-
     (oneRet, twoRet)
   }
 }

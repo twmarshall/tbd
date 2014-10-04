@@ -18,17 +18,31 @@ Build with SBT (you don't need to install SBT on your machine)
 This will create the script bin/experiment.sh which can be used to run the
 performance experiments.
 
-## Debuggins
+## Debugging
 
-To turn on debug log output, edit core/src/main/resources/common.conf, changing
+To turn on Akka debug log output, edit core/src/main/resources/common.conf, changing
 loglevel to "DEBUG".
 
-To turn on more useful DDG output, edit core/src/main/scala/tbd/master/Main.scala,
-changing 'val debug' to 'true'.
+To turn on more useful DDG output, or to run the visualizer, 
+edit core/src/main/scala/tbd/master/Main.scala, changing 'val debug' to 'true'.
+You must also change the imports at the top of any source files containing 
+self-adjusting code from:
+
+```
+import tbd._
+import tbd.TBD._
+```
+
+to
+
+```
+import tbd.debug._
+import tbd.debug.TBD._
+```
 
 ## Visualizing
 
-The visualizer can be used to visualize traces and dependencies. Furthermore, the visualizer can be used to calculate intrinsic trace distance.
+The visualizer can be used to visualize traces and dependencies. Furthermore, the visualizer can be used to calculate intrinsic trace distance. Make sure to turn on debugging, as described above, to use the visualizer.
 
 ```
 > sbt/sbt

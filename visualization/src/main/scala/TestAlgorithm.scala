@@ -19,9 +19,9 @@ package tbd.visualization
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
 
-import tbd._
+import tbd.debug._
 import tbd.list._
-import tbd.DebugTBD._
+import tbd.debug.TBD._
 
 /*
  * Trait for test algorithms to run with the visualizer.

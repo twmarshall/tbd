@@ -19,12 +19,9 @@ import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.ddg.MemoNode
-import tbd.master.Master
-import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.datastore.DependencyManager
-import tbd.ddg.{FunctionTag, MemoNode, Tag, Timestamp}
-import tbd.worker.Worker
+import tbd.ddg.{MemoNode, Timestamp}
+import tbd.master.Master
 
 class Memoizer[T](implicit c: Context) {
   val memoTable = Map[Seq[Any], ArrayBuffer[MemoNode]]()
@@ -173,27 +170,6 @@ class Memoizer[T](implicit c: Context) {
     if (memoTable(signature).size == 0) {
       memoTable -= signature
     }
-  }
-}
-
-class DebugMemoizer[T](implicit c: Context) extends Memoizer[T]()(c) {
-  import scala.language.experimental.macros
-
-  @functionToInvoke("applyInternal")
-  override def apply(args: Any*)(func: => T): T = macro TbdMacros.memoMacro[T]
-
-  def applyInternal(
-      signature: Seq[_],
-      func: => T,
-      funcId: Int,
-      freeTerms: List[(String, Any)]): T = {
-    val ret = super.apply(signature)(func)
-
-    val memoNode = c.currentParent.children.last.asInstanceOf[MemoNode]
-    val tag = Tag.Memo(FunctionTag(funcId, freeTerms), signature)
-    memoNode.tag = tag
-
-    ret
   }
 }
 

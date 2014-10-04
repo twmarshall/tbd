@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package tbd
+package tbd.list
 
 class Hasher(
   k: Int,

@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd
+package tbd.debug
 
 import akka.pattern.ask
 import scala.collection.mutable.ListBuffer
 
-import tbd.macros.{TbdMacros, functionToInvoke}
-
 import tbd.Constants._
-import tbd.master.Main
-import tbd.messages._
-import tbd.datastore.DependencyManager
+import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.ddg._
-import tbd.TBD._
 
-object DebugTBD {
+object TBD {
   import scala.language.experimental.macros
+
+  type Adjustable[T] = tbd.Adjustable[T]
+  type Changeable[T] = tbd.Changeable[T]
+  type Context = tbd.Context
+  type Mod[T] = tbd.Mod[T]
 
   @functionToInvoke("readInternal")
   def read[T, U](
@@ -46,7 +46,7 @@ object DebugTBD {
       freeTerms: List[(String, Any)]): Changeable[U] = {
     val tag = Tag.Read(mod.read(), FunctionTag(readerId, freeTerms))(mod.id)
 
-    val changeable = TBD.read(mod)(reader)(c)
+    val changeable = tbd.TBD.read(mod)(reader)(c)
 
     val readNode = c.ddg.reads(mod.id).last
     readNode.tag = tag
@@ -70,7 +70,7 @@ object DebugTBD {
       freeTerms: List[(String, Any)]): (Changeable[U], Changeable[V]) = {
     val tag = Tag.Read(mod.read(), FunctionTag(readerId, freeTerms))(mod.id)
 
-    val changeable = TBD.read2(mod)(reader)(c)
+    val changeable = tbd.TBD.read2(mod)(reader)(c)
 
     val readNode = c.ddg.reads(mod.id).last
     readNode.tag = tag
@@ -87,7 +87,7 @@ object DebugTBD {
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
-    val mod = TBD.mod(initializer)(c)
+    val mod = tbd.TBD.mod(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
@@ -107,7 +107,7 @@ object DebugTBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
-    val (mod1, mod2) = TBD.mod2(initializer)(c)
+    val (mod1, mod2) = tbd.TBD.mod2(initializer)(c)
 
     val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
@@ -127,7 +127,7 @@ object DebugTBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
-    val (mod, changeable) = TBD.modLeft(initializer)(c)
+    val (mod, changeable) = tbd.TBD.modLeft(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
@@ -147,7 +147,7 @@ object DebugTBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
-    val (changeable, mod) = TBD.modRight(initializer)(c)
+    val (changeable, mod) = tbd.TBD.modRight(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
@@ -157,7 +157,7 @@ object DebugTBD {
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
-    val changeable = TBD.write(value)
+    val changeable = tbd.TBD.write(value)
     val writeNode = c.ddg.addWrite(
       changeable.mod.asInstanceOf[Mod[Any]],
       null,
@@ -169,7 +169,7 @@ object DebugTBD {
 
   def write2[T, U](value: T, value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    val changeables = TBD.write2(value, value2)
+    val changeables = tbd.TBD.write2(value, value2)
 
     val writeNode = c.ddg.addWrite(
       c.currentMod.asInstanceOf[Mod[Any]],
@@ -187,7 +187,7 @@ object DebugTBD {
       println("WARNING - mod parameter to writeLeft doesn't match currentMod2")
     }
 
-    val changeables = TBD.writeLeft(value, changeable)
+    val changeables = tbd.TBD.writeLeft(value, changeable)
 
     val writeNode = c.ddg.addWrite(
       c.currentMod.asInstanceOf[Mod[Any]],
@@ -205,7 +205,7 @@ object DebugTBD {
       println("WARNING - mod parameter to writeRight doesn't match currentMod")
     }
 
-    val changeables = TBD.writeRight(changeable, value2)
+    val changeables = tbd.TBD.writeRight(changeable, value2)
 
     val writeNode = c.ddg.addWrite(
       null,
@@ -224,7 +224,7 @@ object DebugTBD {
   def parInternal[T](
       one: Context => T,
       id: Int,
-      closedTerms: List[(String, Any)]): DebugParizer[T] = {
-    new DebugParizer(one, id, closedTerms)
+      closedTerms: List[(String, Any)]): Parizer[T] = {
+    new Parizer(one, id, closedTerms)
   }
 }
