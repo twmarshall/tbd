@@ -64,7 +64,7 @@ class Modizer1[T] extends Modizer[T] {
   }
 }
 
-class DebugModizer2[T, U] extends Modizer2[T, U] {
+class Modizer2[T, U] extends tbd.Modizer2[T, U] {
   import scala.language.experimental.macros
 
   @functionToInvoke("applyInternal")
