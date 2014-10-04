@@ -189,50 +189,57 @@ class DDG(id: String) {
    * node. This is called when a memo match is made where the memo node has a
    * currentMod that's different from the Context's currentMod.
    */
-  def replaceMods(node: Node, mod1: Mod[Any], mod2: Mod[Any]) {
-    if (node.isInstanceOf[MemoNode]) {
-      val memoNode = node.asInstanceOf[MemoNode]
-      if (memoNode.value.isInstanceOf[Changeable[_]]) {
-	val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
-	if (changeable.mod == mod1) {
-	  changeable.mod = mod2
+  def replaceMods(_node: Node, mod1: Mod[Any], mod2: Mod[Any]): Buffer[Node] = {
+    val buf = Buffer[Node]()
+
+    var time = _node.timestamp
+    while (time < _node.endTime) {
+      val node = time.node
+
+      if (node.currentMod == mod1) {
+	if (node.timestamp == time) {
+
+	  buf += time.node
+	  process(node, mod1, mod2)
+
+	  node.currentMod = mod2
 	}
+      } else if (node.currentMod2 == mod1) {
+	if (node.timestamp == time) {
+	  buf += time.node
+	  process(node, mod1, mod2)
+
+	  node.currentMod2 = mod2
+	}
+      } else {
+	time = node.endTime
       }
 
-      if (memoNode.value.isInstanceOf[Tuple2[_, _]]) {
-        val tuple = memoNode.value.asInstanceOf[Tuple2[Any, Any]]
-
-        if (tuple._1.isInstanceOf[Changeable[_]]) {
-	  val changeable = tuple._1.asInstanceOf[Changeable[Any]]
-	  if (changeable.mod == mod1) {
-	    changeable.mod = mod2
-	  }
-        }
-
-        if (tuple._2.isInstanceOf[Changeable[_]]) {
-	  val changeable = tuple._2.asInstanceOf[Changeable[Any]]
-	  if (changeable.mod == mod1) {
-	    changeable.mod = mod2
-	  }
-        }
-      }
+      time = time.getNext()
     }
 
-    if (node.currentMod == mod1) {
-      node.currentMod = mod2
+    buf
+  }
 
-      // Because reads and memos must have as their currentMod the mod
-      // that is closest in enclosing scope, a node that doesn't have mod1 as
-      // its mod can't have any children that have mod1 either.
-      for (child <- node.children) {
-	replaceMods(child, mod1, mod2)
-      }
-    } else if(node.currentMod2 == mod1) {
-      node.currentMod2 = mod2
+  private def process(node: Node, mod1: Mod[Any], mod2: Mod[Any]) {
+    node match {
+      case memoNode: MemoNode =>
+	memoNode.value match {
+	  case changeable: Changeable[Any] =>
+	    if (changeable.mod == mod1) {
+	      changeable.mod = mod2
+	    }
+	  case (c1: Changeable[Any], c2: Changeable[Any]) =>
+	    if (c1.mod == mod1) {
+	      c1.mod = mod2
+	    }
 
-      for (child <- node.children) {
-	replaceMods(child, mod1, mod2)
-      }
+	    if (c2.mod == mod1) {
+	      c2.mod = mod2
+	    }
+	  case _ =>
+	}
+      case _ =>
     }
   }
 

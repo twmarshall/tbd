@@ -63,6 +63,10 @@ class Memoizer[T](implicit c: Context) {
 
 	  val future = c.worker.propagate(timestamp, memoNode.endTime)
           Await.result(future, DURATION)
+	  future onComplete {
+	    case scala.util.Failure(e) => e.printStackTrace()
+	    case _ =>
+	  }
 	}
       }
     }
@@ -110,62 +114,47 @@ class Memoizer[T](implicit c: Context) {
       memoNode: MemoNode,
       currentMod: Mod[Any],
       currentMod2: Mod[Any]) {
-    if (memoNode.currentMod != currentMod &&
-	memoNode.value.isInstanceOf[Changeable[_]]) {
-      val changeable = memoNode.value.asInstanceOf[Changeable[Any]]
 
-      if (currentMod.update(changeable.mod.read())) {
-	c.pending += DependencyManager.modUpdated(currentMod.id, c.worker.self)
-	if (c.ddg.reads.contains(currentMod.id)) {
-          c.ddg.modUpdated(currentMod.id)
-          c.updatedMods += currentMod.id
-	}
-      }
+    memoNode.value match {
+      case changeable: Changeable[Any] =>
+	if (memoNode.currentMod != currentMod) {
+	  if (currentMod.update(changeable.mod.read())) {
+	    c.pending += DependencyManager.modUpdated(currentMod.id, c.worker.self)
+	    if (c.ddg.reads.contains(currentMod.id)) {
+              c.ddg.modUpdated(currentMod.id)
+              c.updatedMods += currentMod.id
+	    }
+	  }
 
-      c.ddg.replaceMods(
-	memoNode,
-	memoNode.currentMod,
-	currentMod)
-    }
-
-    if (memoNode.value.isInstanceOf[Tuple2[_, _]]) {
-      val tuple = memoNode.value.asInstanceOf[Tuple2[Any, Any]]
-
-      if (tuple._1.isInstanceOf[Changeable[_]] &&
-	  memoNode.currentMod != currentMod) {
-        val changeable = tuple._1.asInstanceOf[Changeable[Any]]
-
-        if (currentMod.update(changeable.mod.read())) {
-          c.pending += DependencyManager.modUpdated(currentMod.id, c.worker.self)
-          if (c.ddg.reads.contains(currentMod.id)) {
-            c.ddg.modUpdated(currentMod.id)
-            c.updatedMods += currentMod.id
-          }
+	  c.ddg.replaceMods(memoNode, memoNode.currentMod, currentMod)
 	}
 
-        c.ddg.replaceMods(
-	  memoNode,
-	  memoNode.currentMod,
-	  currentMod)
-      }
+      case (c1: Changeable[Any], c2: Changeable[Any]) =>
+	if (memoNode.currentMod != currentMod) {
+          if (currentMod.update(c1.mod.read())) {
+            c.pending += DependencyManager.modUpdated(currentMod.id, c.worker.self)
+            if (c.ddg.reads.contains(currentMod.id)) {
+              c.ddg.modUpdated(currentMod.id)
+              c.updatedMods += currentMod.id
+            }
+	  }
 
-      if (tuple._2.isInstanceOf[Changeable[_]] &&
-	  memoNode.currentMod2 != currentMod2) {
-        val changeable = tuple._2.asInstanceOf[Changeable[Any]]
-
-        if (currentMod2.update(changeable.mod.read())) {
-          c.pending += DependencyManager.modUpdated(currentMod2.id, c.worker.self)
-          if (c.ddg.reads.contains(currentMod2.id)) {
-            c.ddg.modUpdated(currentMod2.id)
-            c.updatedMods += currentMod2.id
-          }
+          c.ddg.replaceMods(memoNode, memoNode.currentMod, currentMod)
 	}
 
-        c.ddg.replaceMods(
-	  memoNode,
-	  memoNode.currentMod2,
-	  currentMod2)
-      }
+	if (memoNode.currentMod2 != currentMod2) {
+          if (currentMod2.update(c2.mod.read())) {
+            c.pending += DependencyManager.modUpdated(currentMod2.id, c.worker.self)
+            if (c.ddg.reads.contains(currentMod2.id)) {
+              c.ddg.modUpdated(currentMod2.id)
+              c.updatedMods += currentMod2.id
+            }
+	  }
+
+          c.ddg.replaceMods(memoNode, memoNode.currentMod2, currentMod2)
+	}
+
+      case _ =>
     }
   }
 
