@@ -150,8 +150,6 @@ class Ordering {
 	}
 	node.updated = false
 
-	node.children.clear()
-
 	if (node.endTime > end) {
 	  remove(node.endTime)
 	}

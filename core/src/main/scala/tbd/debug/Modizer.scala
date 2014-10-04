@@ -57,7 +57,7 @@ class Modizer1[T] extends Modizer[T] {
     val mod = tbd.TBD.modInternal(initializer, mod1, this, key, c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
-    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    val modNode = c.currentTime.node
     modNode.tag = tag
 
     mod
@@ -110,7 +110,7 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
       tbd.TBD.mod2Internal(initializer, modLeft, modRight, this, key, c)
 
     val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
-    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    val modNode = c.currentTime.node
     modNode.tag = tag
 
     (mod1, mod2)
@@ -145,7 +145,7 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
       tbd.TBD.modLeftInternal(initializer, modLeft, this, key, c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
-    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    val modNode = c.currentTime.node
     modNode.tag = tag
 
     (mod, changeable)
@@ -180,7 +180,7 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
       tbd.TBD.modRightInternal(initializer, modRight, this, key, c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
-    val modNode = c.currentParent.children.last.asInstanceOf[ModNode]
+    val modNode = c.currentTime.node
     modNode.tag = tag
 
     (changeable, mod)

@@ -36,7 +36,7 @@ class Parizer[T]
       closedTerms2: List[(String, Any)]): (T, U) = {
     val (oneRet, twoRet) = super.and(two)(c)
 
-    val parNode = c.currentParent.children.last.asInstanceOf[ParNode]
+    val parNode = c.currentTime.node
     val tag = Tag.Par(FunctionTag(id1, closedTerms1), FunctionTag(id2, closedTerms2))
     parNode.tag = tag
 

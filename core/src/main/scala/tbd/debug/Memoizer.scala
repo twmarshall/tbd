@@ -36,7 +36,7 @@ class Memoizer[T](implicit c: Context) extends tbd.Memoizer[T]()(c) {
       freeTerms: List[(String, Any)]): T = {
     val ret = super.apply(signature)(func)
 
-    val memoNode = c.currentParent.children.last.asInstanceOf[MemoNode]
+    val memoNode = c.currentTime.node
     val tag = Tag.Memo(FunctionTag(funcId, freeTerms), signature)
     memoNode.tag = tag
 
