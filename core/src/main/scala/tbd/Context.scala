@@ -47,6 +47,8 @@ class Context(val id: String, val worker: Worker) {
   // reexecuted.
   var reexecutionEnd: Timestamp = _
 
+  var currentTime: Timestamp = ddg.ordering.base.next.base
+
   // The mod created by the most recent (in scope) call to mod. This is
   // what a call to write will write to.
   var currentMod: Mod[Any] = _

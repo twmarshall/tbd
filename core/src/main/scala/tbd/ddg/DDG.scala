@@ -36,18 +36,13 @@ class DDG(id: String) {
   def addRead
       (mod: Mod[Any],
        value: Any,
-       parent: Node,
        reader: Any => Changeable[Any],
-       initialRun: Boolean): ReadNode = {
+       c: Context): ReadNode = {
     val readNode = new ReadNode(mod, reader)
-    val timestamp =
-      if (initialRun)
-	ordering.append(readNode)
-      else
-	nextTimestamp(parent, readNode)
+    val timestamp = nextTimestamp(c.currentParent, readNode, c)
     readNode.timestamp = timestamp
 
-    parent.addChild(readNode)
+    c.currentParent.addChild(readNode)
 
     if (reads.contains(mod.id)) {
       reads(mod.id) :+= readNode.asInstanceOf[ReadNode]
@@ -59,19 +54,14 @@ class DDG(id: String) {
   }
 
   def addMod
-      (parent: Node,
-       modizer: Modizer[Any],
+      (modizer: Modizer[Any],
        key: Any,
-       initialRun: Boolean): ModNode = {
+       c: Context): ModNode = {
     val modNode = new ModNode(modizer, key)
-    val timestamp =
-      if (initialRun)
-	ordering.append(modNode)
-      else
-	nextTimestamp(parent, modNode)
+    val timestamp = nextTimestamp(c.currentParent, modNode, c)
     modNode.timestamp = timestamp
 
-    parent.addChild(modNode)
+    c.currentParent.addChild(modNode)
 
     modNode
   }
@@ -79,14 +69,9 @@ class DDG(id: String) {
   def addWrite[T]
       (mod: Mod[Any],
        mod2: Mod[Any],
-       parent: Node,
-       initialRun: Boolean): WriteNode = {
+       c: Context): WriteNode = {
     val writeNode = new WriteNode(mod, mod2)
-    val timestamp =
-      if (initialRun)
-	ordering.append(writeNode)
-      else
-	nextTimestamp(parent, writeNode)
+    val timestamp = nextTimestamp(c.currentParent, writeNode, c)
     writeNode.timestamp = timestamp
 
     val tag = if(tbd.master.Main.debug) {
@@ -100,7 +85,7 @@ class DDG(id: String) {
 
     writeNode.tag = tag
 
-    parent.addChild(writeNode)
+    c.currentParent.addChild(writeNode)
 
     writeNode
   }
@@ -108,17 +93,12 @@ class DDG(id: String) {
   def addPar
       (workerRef1: ActorRef,
        workerRef2: ActorRef,
-       parent: Node,
-       initialRun: Boolean): ParNode = {
+       c: Context): ParNode = {
     val parNode = new ParNode(workerRef1, workerRef2)
-    val timestamp =
-      if (initialRun)
-	ordering.append(parNode)
-      else
-	nextTimestamp(parent, parNode)
+    val timestamp = nextTimestamp(c.currentParent, parNode, c)
     parNode.timestamp = timestamp
 
-    parent.addChild(parNode)
+    c.currentParent.addChild(parNode)
 
     pars(workerRef1) = parNode
     pars(workerRef2) = parNode
@@ -127,28 +107,27 @@ class DDG(id: String) {
   }
 
   def addMemo
-      (parent: Node,
-       signature: Seq[Any],
+      (signature: Seq[Any],
        memoizer: Memoizer[_],
-       initialRun: Boolean): MemoNode = {
+       c: Context): MemoNode = {
     val memoNode = new MemoNode(signature, memoizer)
-    val timestamp =
-      if (initialRun)
-	ordering.append(memoNode)
-      else
-	nextTimestamp(parent, memoNode)
+    val timestamp = nextTimestamp(c.currentParent, memoNode, c)
     memoNode.timestamp = timestamp
 
-    parent.addChild(memoNode)
+    c.currentParent.addChild(memoNode)
     memoNode
   }
 
-  def nextTimestamp(parent: Node, node: Node): Timestamp = {
-    if (parent.children.size == 0) {
-      ordering.after(parent.timestamp, node)
-    } else {
-      ordering.after(parent.children.last.endTime, node)
-    }
+  def nextTimestamp(parent: Node, node: Node, c: Context): Timestamp = {
+    val time =
+      if (c.initialRun)
+	ordering.append(node)
+      else
+	ordering.after(c.currentTime, node)
+
+    c.currentTime = time
+
+    time
   }
 
   def modUpdated(modId: ModId) {

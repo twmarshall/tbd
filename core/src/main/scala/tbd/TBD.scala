@@ -38,9 +38,8 @@ object TBD {
     val readNode = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
       value,
-      c.currentParent,
       reader.asInstanceOf[Any => Changeable[Any]],
-      c.initialRun)
+      c)
 
     val outerReader = c.currentParent
     c.currentParent = readNode
@@ -48,7 +47,7 @@ object TBD {
     val changeable = reader(value)
 
     c.currentParent = outerReader
-    readNode.endTime = c.ddg.nextTimestamp(readNode, readNode)
+    readNode.endTime = c.ddg.nextTimestamp(readNode, readNode, c)
     readNode.currentMod = c.currentMod
 
     changeable
@@ -62,9 +61,8 @@ object TBD {
     val readNode = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
       value,
-      c.currentParent,
       reader.asInstanceOf[Any => Changeable[Any]],
-      c.initialRun)
+      c)
 
     val outerReader = c.currentParent
     c.currentParent = readNode
@@ -72,7 +70,7 @@ object TBD {
     val changeables = reader(value)
 
     c.currentParent = outerReader
-    readNode.endTime = c.ddg.nextTimestamp(readNode, readNode)
+    readNode.endTime = c.ddg.nextTimestamp(readNode, readNode, c)
     readNode.currentMod = c.currentMod
     readNode.currentMod2 = c.currentMod2
 
@@ -97,17 +95,16 @@ object TBD {
     c.currentMod = mod1.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
-      c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
       key,
-      c.initialRun)
+      c)
 
     val outerParent = c.currentParent
     c.currentParent = modNode
 
     initializer
 
-    modNode.endTime = c.ddg.nextTimestamp(modNode, modNode)
+    modNode.endTime = c.ddg.nextTimestamp(modNode, modNode, c)
 
     c.currentParent = outerParent
     val mod = c.currentMod
@@ -138,10 +135,9 @@ object TBD {
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
-      c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
       key,
-      c.initialRun)
+      c)
 
     val outerReader = c.currentParent
     c.currentParent = modNode
@@ -149,7 +145,7 @@ object TBD {
     initializer
 
     c.currentParent = outerReader
-    modNode.endTime = c.ddg.nextTimestamp(modNode, modNode)
+    modNode.endTime = c.ddg.nextTimestamp(modNode, modNode, c)
 
     val mod = c.currentMod
     c.currentMod = oldCurrentDest
@@ -175,10 +171,9 @@ object TBD {
     c.currentMod = modLeft.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
-      c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
       key,
-      c.initialRun)
+      c)
 
     modNode.currentMod2 = c.currentMod2
 
@@ -188,7 +183,7 @@ object TBD {
     initializer
 
     c.currentParent = outerReader
-    modNode.endTime = c.ddg.nextTimestamp(modNode, modNode)
+    modNode.endTime = c.ddg.nextTimestamp(modNode, modNode, c)
 
     val mod = c.currentMod
     c.currentMod = oldCurrentDest
@@ -212,10 +207,9 @@ object TBD {
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
-      c.currentParent,
       modizer.asInstanceOf[Modizer[Any]],
       key,
-      c.initialRun)
+      c)
 
     modNode.currentMod = c.currentMod
 
@@ -225,7 +219,7 @@ object TBD {
     initializer
 
     c.currentParent = outerReader
-    modNode.endTime = c.ddg.nextTimestamp(modNode, modNode)
+    modNode.endTime = c.ddg.nextTimestamp(modNode, modNode, c)
 
     val mod2 = c.currentMod2
     c.currentMod2 = oldCurrentDest2

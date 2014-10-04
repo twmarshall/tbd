@@ -65,6 +65,9 @@ class Worker(val id: String, parent: ActorRef)
 	    val oldCurrentDest2 = c.currentMod2
 	    c.currentMod2 = readNode.currentMod2
 
+	    val oldCurrentTime = c.currentTime
+	    c.currentTime = readNode.timestamp
+
             readNode.updated = false
             readNode.reader(newValue)
 
@@ -77,6 +80,7 @@ class Worker(val id: String, parent: ActorRef)
 	    c.reexecutionEnd = oldEnd
             c.currentMod = oldCurrentDest
 	    c.currentMod2 = oldCurrentDest2
+	    c.currentTime = oldCurrentTime
           } else {
             val parNode = node.asInstanceOf[ParNode]
 

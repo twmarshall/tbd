@@ -41,7 +41,7 @@ class Parizer[T](one: Context => T) {
     val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
     val twoFuture = workerRef2 ? RunTaskMessage(adjust2)
 
-    c.ddg.addPar(workerRef1, workerRef2, c.currentParent, c.initialRun)
+    c.ddg.addPar(workerRef1, workerRef2, c)
 
     val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]

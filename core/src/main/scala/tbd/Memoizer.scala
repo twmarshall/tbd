@@ -55,6 +55,7 @@ class Memoizer[T](implicit c: Context) {
 	  // reexecuting read that comes before this memo node, since then
 	  // the timestamps would be out of order.
 	  c.reexecutionStart = memoNode.endTime.getNext()
+	  c.currentTime = memoNode.endTime
 
           c.ddg.attachSubtree(c.currentParent, memoNode)
 
@@ -72,7 +73,7 @@ class Memoizer[T](implicit c: Context) {
     }
 
     if (!found) {
-      val memoNode = c.ddg.addMemo(c.currentParent, signature, this, c.initialRun)
+      val memoNode = c.ddg.addMemo(signature, this, c)
       val outerParent = c.currentParent
       c.currentParent = memoNode
 
@@ -81,7 +82,7 @@ class Memoizer[T](implicit c: Context) {
       c.currentParent = outerParent
       memoNode.currentMod = c.currentMod
       memoNode.currentMod2 = c.currentMod2
-      memoNode.endTime = c.ddg.nextTimestamp(memoNode, memoNode)
+      memoNode.endTime = c.ddg.nextTimestamp(memoNode, memoNode, c)
       memoNode.value = value
 
       if (memoTable.contains(signature)) {
