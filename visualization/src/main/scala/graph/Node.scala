@@ -23,9 +23,7 @@ import tbd.ddg
  * Is created by copying all necessary properties of the TBD ddg node.
  */
 class Node(ddgNode: ddg.Node) {
-  var tag = TBD.tags(ddgNode)
-  val internalId = ddgNode.internalId
-  val stacktrace = ddgNode.stacktrace
+  val (internalId, tag, stacktrace) = TBD.nodes(ddgNode)
 
   override def toString = {
     //tag.toString()

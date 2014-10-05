@@ -16,7 +16,7 @@
 package tbd.debug
 
 import tbd.Context
-import tbd.ddg.{FunctionTag, ParNode, Tag}
+import tbd.ddg.{FunctionTag, Node, ParNode, Tag}
 import tbd.macros.{TbdMacros, functionToInvoke}
 
 class Parizer[T]
@@ -34,11 +34,13 @@ class Parizer[T]
       c: Context,
       id2: Int,
       closedTerms2: List[(String, Any)]): (T, U) = {
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
     val (oneRet, twoRet) = super.and(two)(c)
 
     val parNode = c.currentTime.node
     val tag = Tag.Par(FunctionTag(id1, closedTerms1), FunctionTag(id2, closedTerms2))
-    TBD.tags(parNode) = tag
+    TBD.nodes(parNode) = (internalId, tag, stack)
 
     (oneRet, twoRet)
   }

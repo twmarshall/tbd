@@ -28,7 +28,7 @@ import tbd.messages._
 object Node {
   var id = 0
 
-  def getId(): Integer = {
+  def getId(): Int = {
     id = id + 1
     id
   }
@@ -36,17 +36,10 @@ object Node {
 
 abstract class Node {
   var timestamp: Timestamp = _
+
   var endTime: Timestamp = _
 
-  var stacktrace =
-    if (Main.debug)
-      Thread.currentThread().getStackTrace()
-    else
-      null
-
   var updated = false
-
-  val internalId = Node.getId()
 
   var currentMod: Mod[Any] = null
 

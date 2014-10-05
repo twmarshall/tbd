@@ -20,7 +20,7 @@ import scala.concurrent.{Await, Future}
 
 import tbd.Context
 import tbd.Constants._
-import tbd.ddg.{FunctionTag, MemoNode, Tag, Timestamp}
+import tbd.ddg.{FunctionTag, MemoNode, Node, Tag, Timestamp}
 import tbd.macros.{TbdMacros, functionToInvoke}
 
 class Memoizer[T](implicit c: Context) extends tbd.Memoizer[T]()(c) {
@@ -34,11 +34,13 @@ class Memoizer[T](implicit c: Context) extends tbd.Memoizer[T]()(c) {
       func: => T,
       funcId: Int,
       freeTerms: List[(String, Any)]): T = {
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
     val ret = super.apply(signature)(func)
 
     val memoNode = c.currentTime.node
     val tag = Tag.Memo(FunctionTag(funcId, freeTerms), signature)
-    TBD.tags(memoNode) = tag
+    TBD.nodes(memoNode) = (internalId, tag, stack)
 
     ret
   }

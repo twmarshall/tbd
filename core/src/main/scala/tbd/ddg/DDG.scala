@@ -27,7 +27,7 @@ import tbd.messages.DDGToStringMessage
 
 class DDG(id: String) {
   var root = new RootNode(id)
-  debug.TBD.tags(root) = Tag.Root()
+  debug.TBD.nodes(root) = (Node.getId(), Tag.Root(), null)
 
   val reads = Map[ModId, Buffer[ReadNode]]()
   val pars = Map[ActorRef, ParNode]()

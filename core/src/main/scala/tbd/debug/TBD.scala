@@ -30,7 +30,7 @@ object TBD {
   type Context = tbd.Context
   type Mod[T] = tbd.Mod[T]
 
-  val tags = Map[Node, Tag]()
+  val nodes = Map[Node, (Int, Tag, Array[StackTraceElement])]()
 
   @functionToInvoke("readInternal")
   def read[T, U]
@@ -45,12 +45,14 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): Changeable[U] = {
+    val internalId = Node.getId()
     val tag = Tag.Read(mod.read(), FunctionTag(readerId, freeTerms))(mod.id)
+    val stack = Thread.currentThread().getStackTrace()
 
     val changeable = tbd.TBD.read(mod)(reader)(c)
 
     val readNode = c.ddg.reads(mod.id).last
-    tags(readNode) = tag
+    nodes(readNode) = (internalId, tag, stack)
 
     changeable
   }
@@ -68,12 +70,14 @@ object TBD {
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): (Changeable[U], Changeable[V]) = {
+    val internalId = Node.getId()
     val tag = Tag.Read(mod.read(), FunctionTag(readerId, freeTerms))(mod.id)
+    val stack = Thread.currentThread().getStackTrace()
 
     val changeable = tbd.TBD.read2(mod)(reader)(c)
 
     val readNode = c.ddg.reads(mod.id).last
-    tags(readNode) = tag
+    nodes(readNode) = (internalId, tag, stack)
 
     changeable
   }
@@ -87,11 +91,14 @@ object TBD {
       c: Context,
       readerId: Int,
       freeTerms: List[(String, Any)]): Mod[T] = {
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
+
     val mod = tbd.TBD.mod(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    tags(modNode) = tag
+    nodes(modNode) = (internalId, tag, stack)
 
     mod
   }
@@ -107,11 +114,14 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Mod[U]) = {
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
+
     val (mod1, mod2) = tbd.TBD.mod2(initializer)(c)
 
     val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    tags(modNode) = tag
+    nodes(modNode) = (internalId, tag, stack)
 
     (mod1, mod2)
   }
@@ -127,11 +137,14 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
+
     val (mod, changeable) = tbd.TBD.modLeft(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    tags(modNode) = tag
+    nodes(modNode) = (internalId, tag, stack)
 
     (mod, changeable)
   }
@@ -147,16 +160,21 @@ object TBD {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
     val (changeable, mod) = tbd.TBD.modRight(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    tags(modNode) = tag
+    nodes(modNode) = (internalId, tag, stack)
 
     (changeable, mod)
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
+
     val changeable = tbd.TBD.write(value)
     val mod = changeable.mod.asInstanceOf[Mod[Any]]
 
@@ -165,13 +183,16 @@ object TBD {
 
     val writes = List(SingleWriteTag(mod.id, mod.read()))
     val tag = Tag.Write(writes)
-    tags(writeNode) = tag
+    nodes(writeNode) = (internalId, tag, stack)
 
     changeable
   }
 
   def write2[T, U](value: T, value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
+
     val changeables = tbd.TBD.write2(value, value2)
     val mod1 = c.currentMod.asInstanceOf[Mod[Any]]
     val mod2 = c.currentMod2.asInstanceOf[Mod[Any]]
@@ -184,13 +205,16 @@ object TBD {
       SingleWriteTag(mod1.id, mod1.read()),
       SingleWriteTag(mod1.id, mod1.read()))
     val tag = Tag.Write(writes)
-    tags(writeNode) = tag
+    nodes(writeNode) = (internalId, tag, stack)
 
     changeables
   }
 
   def writeLeft[T, U](value: T, changeable: Changeable[U])
      (implicit c: Context): (Changeable[T], Changeable[U]) = {
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
+
     if (changeable.mod != c.currentMod2) {
       println("WARNING - mod parameter to writeLeft doesn't match currentMod2")
     }
@@ -204,13 +228,16 @@ object TBD {
 
     val writes = List(SingleWriteTag(mod.id, mod.read()))
     val tag = Tag.Write(writes)
-    tags(writeNode) = tag
+    nodes(writeNode) = (internalId, tag, stack)
 
     changeables
   }
 
   def writeRight[T, U](changeable: Changeable[T], value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
+
     if (changeable.mod != c.currentMod) {
       println("WARNING - mod parameter to writeRight doesn't match currentMod")
     }
@@ -224,7 +251,7 @@ object TBD {
 
     val writes = List(SingleWriteTag(mod2.id, mod2.read()))
     val tag = Tag.Write(writes)
-    tags(writeNode) = tag
+    nodes(writeNode) = (internalId, tag, stack)
 
     changeables
   }

@@ -21,7 +21,7 @@ import scala.concurrent.Await
 
 import tbd._
 import tbd.Constants._
-import tbd.ddg.{FunctionTag, ModNode, Tag}
+import tbd.ddg.{FunctionTag, ModNode, Node, Tag}
 import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.messages._
 
@@ -54,11 +54,13 @@ class Modizer1[T] extends Modizer[T] {
 	mod1
       }
 
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
     val mod = tbd.TBD.modInternal(initializer, mod1, this, key, c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    TBD.tags(modNode) = tag
+    TBD.nodes(modNode) = (internalId, tag, stack)
 
     mod
   }
@@ -106,12 +108,14 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
 	modRight
       }
 
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
     val (mod1, mod2) =
       tbd.TBD.mod2Internal(initializer, modLeft, modRight, this, key, c)
 
     val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    TBD.tags(modNode) = tag
+    TBD.nodes(modNode) = (internalId, tag, stack)
 
     (mod1, mod2)
   }
@@ -141,12 +145,14 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
 	modLeft
       }
 
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
     val (mod, changeable) =
       tbd.TBD.modLeftInternal(initializer, modLeft, this, key, c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    TBD.tags(modNode) = tag
+    TBD.nodes(modNode) = (internalId, tag, stack)
 
     (mod, changeable)
   }
@@ -176,12 +182,14 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
 	modRight
       }
 
+    val internalId = Node.getId()
+    val stack = Thread.currentThread().getStackTrace()
     val (changeable, mod) =
       tbd.TBD.modRightInternal(initializer, modRight, this, key, c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    TBD.tags(modNode) = tag
+    TBD.nodes(modNode) = (internalId, tag, stack)
 
     (changeable, mod)
   }
