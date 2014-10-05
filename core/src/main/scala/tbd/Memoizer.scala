@@ -54,8 +54,6 @@ class Memoizer[T](implicit c: Context) {
 	  c.reexecutionStart = memoNode.endTime.getNext()
 	  c.currentTime = memoNode.endTime
 
-          c.ddg.attachSubtree(c.currentParent, memoNode)
-
 	  memoNode.matchableInEpoch = Master.epoch + 1
           ret = memoNode.value.asInstanceOf[T]
 

@@ -16,11 +16,14 @@
 package tbd.ddg
 
 import akka.actor.ActorRef
+import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Map, MutableList, Set, TreeSet}
+import scala.concurrent.Await
 
 import tbd._
 import tbd.Constants._
 import tbd.master.Master
+import tbd.messages.DDGToStringMessage
 
 class DDG(id: String) {
   var root = new RootNode(id)
@@ -42,8 +45,6 @@ class DDG(id: String) {
     val timestamp = nextTimestamp(c.currentParent, readNode, c)
     readNode.timestamp = timestamp
 
-    c.currentParent.addChild(readNode)
-
     if (reads.contains(mod.id)) {
       reads(mod.id) :+= readNode.asInstanceOf[ReadNode]
     } else {
@@ -61,8 +62,6 @@ class DDG(id: String) {
     val timestamp = nextTimestamp(c.currentParent, modNode, c)
     modNode.timestamp = timestamp
 
-    c.currentParent.addChild(modNode)
-
     modNode
   }
 
@@ -74,8 +73,6 @@ class DDG(id: String) {
     val timestamp = nextTimestamp(c.currentParent, writeNode, c)
     writeNode.timestamp = timestamp
 
-    c.currentParent.addChild(writeNode)
-
     writeNode
   }
 
@@ -86,8 +83,6 @@ class DDG(id: String) {
     val parNode = new ParNode(workerRef1, workerRef2)
     val timestamp = nextTimestamp(c.currentParent, parNode, c)
     parNode.timestamp = timestamp
-
-    c.currentParent.addChild(parNode)
 
     pars(workerRef1) = parNode
     pars(workerRef2) = parNode
@@ -103,7 +98,6 @@ class DDG(id: String) {
     val timestamp = nextTimestamp(c.currentParent, memoNode, c)
     memoNode.timestamp = timestamp
 
-    c.currentParent.addChild(memoNode)
     memoNode
   }
 
@@ -146,10 +140,6 @@ class DDG(id: String) {
       parNode.pebble2 = true
       ret
     }
-  }
-
-  def attachSubtree(parent: Node, subtree: Node) {
-    parent.addChild(subtree)
   }
 
   /**
@@ -211,11 +201,45 @@ class DDG(id: String) {
     }
   }
 
-  override def toString = {
-    root.toString("")
-  }
+  override def toString = toString("")
 
   def toString(prefix: String): String = {
-    root.toString(prefix)
+    val out = new StringBuffer("")
+    def innerToString(node: Node, prefix: String) {
+      val thisString = node match {
+	case memo: MemoNode =>
+	  prefix + memo + " time=" + memo.timestamp + " to " + memo.endTime +
+	  " signature=" + memo.signature
+	case mod: ModNode =>
+	  prefix + mod + " time=" + mod.timestamp + " to " + mod.endTime
+	case par: ParNode =>
+	  val future1 = par.workerRef1 ? DDGToStringMessage(prefix + "|")
+	  val future2 = par.workerRef2 ? DDGToStringMessage(prefix + "|")
+
+	  val output1 = Await.result(future1, DURATION).asInstanceOf[String]
+	  val output2 = Await.result(future2, DURATION).asInstanceOf[String]
+
+	  prefix + par + " time=" + par.timestamp + " pebbles=(" + par.pebble1 +
+	  ", " + par.pebble2 + ")\n" + output1 + "\n" + output2
+	case read: ReadNode =>
+	  prefix + read + " modId=(" + read.mod.id + ") " + " time=" +
+	  read.timestamp + " to " + read.endTime + " value=" + read.mod +
+	  " updated=(" + read.updated + ")"
+	case root: RootNode =>
+	  prefix + "RootNode id=(" + root.id + ")"
+	case write: WriteNode =>
+	  prefix + write + " modId=(" + write.mod.id + ") " +
+	  " value=" + write.mod + " time=" + write.timestamp
+	case _ => ""
+      }
+      out.append(thisString + "\n")
+
+      for (child <- ordering.getChildren(node)) {
+	innerToString(child, prefix + "-")
+      }
+    }
+    innerToString(root, prefix)
+
+    out.toString
   }
 }

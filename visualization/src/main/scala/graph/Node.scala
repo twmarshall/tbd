@@ -29,7 +29,7 @@ class Node(ddgNode: ddg.Node) {
 
   override def toString = {
     //tag.toString()
-    ddgNode.toString("")
+    ddgNode.toString
   }
 
   //Gets a string identifying the nodes type.

@@ -44,8 +44,6 @@ abstract class Node {
     else
       null
 
-  var children = MutableList[Node]()
-
   var updated = false
 
   val internalId = Node.getId()
@@ -59,30 +57,8 @@ abstract class Node {
 
   var currentMod2: Mod[Any] = null
 
-  def addChild(child: Node) {
-    children += child
-  }
-
-  def removeChild(child: Node) {
-    children = children.filter(_ != child)
-  }
-
   override def equals(obj: Any): Boolean = {
     obj.isInstanceOf[Node] && obj.asInstanceOf[Node].timestamp == timestamp
-  }
-
-  def toString(prefix: String): String = {
-    if (children.isEmpty) {
-	    ""
-    } else if (children.size == 1) {
-	    "\n" + children.head.toString(prefix + "-")
-    } else {
-      var ret = ""
-      for (child <- children) {
-        ret += "\n" + child.toString(prefix + "-")
-      }
-      ret
-    }
   }
 }
 
@@ -91,22 +67,9 @@ class MemoNode
      val memoizer: Memoizer[_]) extends Node {
 
   var value: Any = null
-
-  override def toString(prefix: String) = {
-    prefix + this + " time=" + timestamp + " to " + endTime + " signature=" + signature +
-      super.toString(prefix)
-  }
 }
 
-class ModNode
-    (val modizer: Modizer[Any],
-     val key: Any) extends Node {
-
-  override def toString(prefix: String) = {
-    prefix + this + " time=" + timestamp + " to " + endTime +
-      super.toString(prefix)
-  }
-}
+class ModNode(val modizer: Modizer[Any], val key: Any) extends Node
 
 class ParNode
     (val workerRef1: ActorRef,
@@ -114,17 +77,6 @@ class ParNode
 
   var pebble1 = false
   var pebble2 = false
-
-  override def toString(prefix: String) = {
-    val future1 = workerRef1 ? DDGToStringMessage(prefix + "|")
-    val future2 = workerRef2 ? DDGToStringMessage(prefix + "|")
-
-    val output1 = Await.result(future1, DURATION).asInstanceOf[String]
-    val output2 = Await.result(future2, DURATION).asInstanceOf[String]
-
-    prefix + "ParNode time=" + timestamp + " pebbles=(" + pebble1 + ", " +
-      pebble2 + ")\n" + output1 + "\n" + output2 + super.toString(prefix)
-  }
 
   def getFirstSubtree() = {
     Await.result(workerRef1 ? GetDDGMessage, DURATION).asInstanceOf[DDG]
@@ -135,29 +87,9 @@ class ParNode
   }
 }
 
-class ReadNode
-    (val mod: Mod[Any],
-     val reader: Any => Changeable[Any]) extends Node {
+class ReadNode(val mod: Mod[Any], val reader: Any => Changeable[Any])
+  extends Node
 
-  override def toString(prefix: String) = {
-    prefix + this + " modId=(" + mod.id + ") " + " time=" + timestamp + " to " +
-      endTime + " value=" + mod + " updated=(" + updated + ")" +
-      super.toString(prefix)
-  }
-}
+class RootNode(val id: String) extends Node
 
-class RootNode(id: String) extends Node {
-  override def toString(prefix: String) = {
-    prefix + "RootNode id=(" + id + ")" + super.toString(prefix)
-  }
-}
-
-class WriteNode
-    (val mod: Mod[Any],
-     val mod2: Mod[Any]) extends Node {
-
-  override def toString(prefix: String) = {
-    prefix + "WriteNode modId=(" + mod.id + ") " +
-      " value=" + mod + " time=" + timestamp + super.toString(prefix)
-  }
-}
+class WriteNode(val mod: Mod[Any], val mod2: Mod[Any]) extends Node

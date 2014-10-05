@@ -50,8 +50,6 @@ class Worker(val id: String, parent: ActorRef)
           if (node.isInstanceOf[ReadNode]) {
             val readNode = node.asInstanceOf[ReadNode]
 
-            readNode.children.clear()
-
             val newValue = readNode.mod.read()
 
 	    val oldCurrentParent = c.currentParent
