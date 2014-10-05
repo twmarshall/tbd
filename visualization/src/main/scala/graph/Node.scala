@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package tbd.visualization.graph
 
+import tbd.debug.TBD
 import tbd.ddg
 
 /*
@@ -23,7 +23,7 @@ import tbd.ddg
  * Is created by copying all necessary properties of the TBD ddg node.
  */
 class Node(ddgNode: ddg.Node) {
-  var tag = ddgNode.tag
+  var tag = TBD.tags(ddgNode)
   val internalId = ddgNode.internalId
   val stacktrace = ddgNode.stacktrace
 

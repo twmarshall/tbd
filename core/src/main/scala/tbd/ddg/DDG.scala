@@ -24,7 +24,7 @@ import tbd.master.Master
 
 class DDG(id: String) {
   var root = new RootNode(id)
-  root.tag = Tag.Root()
+  debug.TBD.tags(root) = Tag.Root()
 
   val reads = Map[ModId, Buffer[ReadNode]]()
   val pars = Map[ActorRef, ParNode]()
@@ -73,17 +73,6 @@ class DDG(id: String) {
     val writeNode = new WriteNode(mod, mod2)
     val timestamp = nextTimestamp(c.currentParent, writeNode, c)
     writeNode.timestamp = timestamp
-
-    val tag = if(tbd.master.Main.debug) {
-      val writes = List(mod, mod2).filter(_ != null).map((x: Mod[Any]) => {
-        SingleWriteTag(x.id, x.read())
-      }).toList
-      Tag.Write(writes)
-    } else {
-      null
-    }
-
-    writeNode.tag = tag
 
     c.currentParent.addChild(writeNode)
 

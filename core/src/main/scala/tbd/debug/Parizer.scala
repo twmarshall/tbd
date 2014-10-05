@@ -38,7 +38,7 @@ class Parizer[T]
 
     val parNode = c.currentTime.node
     val tag = Tag.Par(FunctionTag(id1, closedTerms1), FunctionTag(id2, closedTerms2))
-    parNode.tag = tag
+    TBD.tags(parNode) = tag
 
     (oneRet, twoRet)
   }

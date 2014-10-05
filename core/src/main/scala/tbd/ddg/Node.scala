@@ -59,8 +59,6 @@ abstract class Node {
 
   var currentMod2: Mod[Any] = null
 
-  var tag: Tag = _
-
   def addChild(child: Node) {
     children += child
   }
@@ -105,13 +103,7 @@ class ModNode
      val key: Any) extends Node {
 
   override def toString(prefix: String) = {
-    val mods =
-      if (tag != null)
-	"mods=(" + tag.asInstanceOf[Tag.Mod].mods.foldLeft("")(_ + ", " + _) + ")"
-      else
-	""
-
-    prefix + this + " " + mods + " time=" + timestamp + " to " + endTime +
+    prefix + this + " time=" + timestamp + " to " + endTime +
       super.toString(prefix)
   }
 }

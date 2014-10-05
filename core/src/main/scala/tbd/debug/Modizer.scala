@@ -58,7 +58,7 @@ class Modizer1[T] extends Modizer[T] {
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    modNode.tag = tag
+    TBD.tags(modNode) = tag
 
     mod
   }
@@ -111,7 +111,7 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
 
     val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    modNode.tag = tag
+    TBD.tags(modNode) = tag
 
     (mod1, mod2)
   }
@@ -146,7 +146,7 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    modNode.tag = tag
+    TBD.tags(modNode) = tag
 
     (mod, changeable)
   }
@@ -181,7 +181,7 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    modNode.tag = tag
+    TBD.tags(modNode) = tag
 
     (changeable, mod)
   }

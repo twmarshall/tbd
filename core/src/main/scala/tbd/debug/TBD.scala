@@ -16,7 +16,7 @@
 package tbd.debug
 
 import akka.pattern.ask
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, Map}
 
 import tbd.Constants._
 import tbd.macros.{TbdMacros, functionToInvoke}
@@ -30,37 +30,37 @@ object TBD {
   type Context = tbd.Context
   type Mod[T] = tbd.Mod[T]
 
-  @functionToInvoke("readInternal")
-  def read[T, U](
-      mod: Mod[T])
-     (reader: T => Changeable[U])
-     (implicit c: Context):
-    Changeable[U] =
-      macro TbdMacros.readMacro[Changeable[U]]
+  val tags = Map[Node, Tag]()
 
-  def readInternal[T, U](
-      mod: Mod[T],
-      reader: T => Changeable[U],
-      c: Context,
-      readerId: Int,
-      freeTerms: List[(String, Any)]): Changeable[U] = {
+  @functionToInvoke("readInternal")
+  def read[T, U]
+      (mod: Mod[T])
+      (reader: T => Changeable[U])
+      (implicit c: Context): Changeable[U] =
+    macro TbdMacros.readMacro[Changeable[U]]
+
+  def readInternal[T, U]
+      (mod: Mod[T],
+       reader: T => Changeable[U],
+       c: Context,
+       readerId: Int,
+       freeTerms: List[(String, Any)]): Changeable[U] = {
     val tag = Tag.Read(mod.read(), FunctionTag(readerId, freeTerms))(mod.id)
 
     val changeable = tbd.TBD.read(mod)(reader)(c)
 
     val readNode = c.ddg.reads(mod.id).last
-    readNode.tag = tag
+    tags(readNode) = tag
 
     changeable
   }
 
   @functionToInvoke("read2Internal")
-  def read2[T, U, V](
-      mod: Mod[T])
-     (reader: T => (Changeable[U], Changeable[V]))
-     (implicit c: Context):
-    (Changeable[U], Changeable[V]) =
-      macro TbdMacros.readMacro[(Changeable[U], Changeable[V])]
+  def read2[T, U, V]
+      (mod: Mod[T])
+      (reader: T => (Changeable[U], Changeable[V]))
+      (implicit c: Context): (Changeable[U], Changeable[V]) =
+    macro TbdMacros.readMacro[(Changeable[U], Changeable[V])]
 
   def read2Internal[T, U, V](
       mod: Mod[T],
@@ -73,7 +73,7 @@ object TBD {
     val changeable = tbd.TBD.read2(mod)(reader)(c)
 
     val readNode = c.ddg.reads(mod.id).last
-    readNode.tag = tag
+    tags(readNode) = tag
 
     changeable
   }
@@ -91,7 +91,7 @@ object TBD {
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    modNode.tag = tag
+    tags(modNode) = tag
 
     mod
   }
@@ -111,7 +111,7 @@ object TBD {
 
     val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    modNode.tag = tag
+    tags(modNode) = tag
 
     (mod1, mod2)
   }
@@ -131,7 +131,7 @@ object TBD {
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    modNode.tag = tag
+    tags(modNode) = tag
 
     (mod, changeable)
   }
@@ -151,18 +151,21 @@ object TBD {
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    modNode.tag = tag
+    tags(modNode) = tag
 
     (changeable, mod)
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
     val changeable = tbd.TBD.write(value)
-    val writeNode = c.ddg.addWrite(
-      changeable.mod.asInstanceOf[Mod[Any]],
-      null,
-      c)
+    val mod = changeable.mod.asInstanceOf[Mod[Any]]
+
+    val writeNode = c.ddg.addWrite(mod, null, c)
     writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode, c)
+
+    val writes = List(SingleWriteTag(mod.id, mod.read()))
+    val tag = Tag.Write(writes)
+    tags(writeNode) = tag
 
     changeable
   }
@@ -170,13 +173,18 @@ object TBD {
   def write2[T, U](value: T, value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
     val changeables = tbd.TBD.write2(value, value2)
+    val mod1 = c.currentMod.asInstanceOf[Mod[Any]]
+    val mod2 = c.currentMod2.asInstanceOf[Mod[Any]]
 
-    val writeNode = c.ddg.addWrite(
-      c.currentMod.asInstanceOf[Mod[Any]],
-      c.currentMod2.asInstanceOf[Mod[Any]],
-      c)
+    val writeNode = c.ddg.addWrite(mod1, mod2, c)
 
     writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode, c)
+
+    val writes = List(
+      SingleWriteTag(mod1.id, mod1.read()),
+      SingleWriteTag(mod1.id, mod1.read()))
+    val tag = Tag.Write(writes)
+    tags(writeNode) = tag
 
     changeables
   }
@@ -188,13 +196,15 @@ object TBD {
     }
 
     val changeables = tbd.TBD.writeLeft(value, changeable)
+    val mod = c.currentMod.asInstanceOf[Mod[Any]]
 
-    val writeNode = c.ddg.addWrite(
-      c.currentMod.asInstanceOf[Mod[Any]],
-      null,
-      c)
+    val writeNode = c.ddg.addWrite(mod, null, c)
 
     writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode, c)
+
+    val writes = List(SingleWriteTag(mod.id, mod.read()))
+    val tag = Tag.Write(writes)
+    tags(writeNode) = tag
 
     changeables
   }
@@ -206,13 +216,15 @@ object TBD {
     }
 
     val changeables = tbd.TBD.writeRight(changeable, value2)
+    val mod2 = c.currentMod2.asInstanceOf[Mod[Any]]
 
-    val writeNode = c.ddg.addWrite(
-      null,
-      c.currentMod2.asInstanceOf[Mod[Any]],
-      c)
+    val writeNode = c.ddg.addWrite(null, mod2, c)
 
     writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode, c)
+
+    val writes = List(SingleWriteTag(mod2.id, mod2.read()))
+    val tag = Tag.Write(writes)
+    tags(writeNode) = tag
 
     changeables
   }
