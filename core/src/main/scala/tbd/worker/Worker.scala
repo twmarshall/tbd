@@ -46,52 +46,51 @@ class Worker(val id: String, parent: ActorRef)
         val node = option.get
         c.ddg.updated -= node
 
-        if (node.updated) {
-          if (node.isInstanceOf[ReadNode]) {
-            val readNode = node.asInstanceOf[ReadNode]
+	node match {
+	  case readNode: ReadNode =>
+            if (readNode.updated) {
+              val newValue = readNode.mod.read()
 
-            val newValue = readNode.mod.read()
+	      val oldStart = c.reexecutionStart
+	      c.reexecutionStart = readNode.timestamp.getNext()
+	      val oldEnd = c.reexecutionEnd
+	      c.reexecutionEnd = readNode.endTime
+              val oldCurrentDest = c.currentMod
+              c.currentMod = readNode.currentMod
+	      val oldCurrentDest2 = c.currentMod2
+	      c.currentMod2 = readNode.currentMod2
 
-	    val oldStart = c.reexecutionStart
-	    c.reexecutionStart = readNode.timestamp.getNext()
-	    val oldEnd = c.reexecutionEnd
-	    c.reexecutionEnd = readNode.endTime
-            val oldCurrentDest = c.currentMod
-            c.currentMod = readNode.currentMod
-	    val oldCurrentDest2 = c.currentMod2
-	    c.currentMod2 = readNode.currentMod2
+	      val oldCurrentTime = c.currentTime
+	      c.currentTime = readNode.timestamp
 
-	    val oldCurrentTime = c.currentTime
-	    c.currentTime = readNode.timestamp
+              readNode.updated = false
+              readNode.reader(newValue)
 
-            readNode.updated = false
-            readNode.reader(newValue)
+	      if (c.reexecutionStart < c.reexecutionEnd) {
+		c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
+	      }
 
-	    if (c.reexecutionStart < c.reexecutionEnd) {
-	      c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
+	      c.reexecutionStart = oldStart
+	      c.reexecutionEnd = oldEnd
+              c.currentMod = oldCurrentDest
+	      c.currentMod2 = oldCurrentDest2
+	      c.currentTime = oldCurrentTime
 	    }
+	  case parNode: ParNode =>
+	    if (parNode.updated) {
+              Await.result(Future.sequence(c.pending), DURATION)
+              c.pending.clear()
 
-	    c.reexecutionStart = oldStart
-	    c.reexecutionEnd = oldEnd
-            c.currentMod = oldCurrentDest
-	    c.currentMod2 = oldCurrentDest2
-	    c.currentTime = oldCurrentTime
-          } else {
-            val parNode = node.asInstanceOf[ParNode]
+              val future1 = parNode.workerRef1 ? PropagateMessage
+              val future2 = parNode.workerRef2 ? PropagateMessage
 
-            Await.result(Future.sequence(c.pending), DURATION)
-            c.pending.clear()
+              parNode.pebble1 = false
+              parNode.pebble2 = false
 
-            val future1 = parNode.workerRef1 ? PropagateMessage
-            val future2 = parNode.workerRef2 ? PropagateMessage
-
-            parNode.pebble1 = false
-            parNode.pebble2 = false
-
-            Await.result(future1, DURATION)
-            Await.result(future2, DURATION)
-          }
-        }
+              Await.result(future1, DURATION)
+              Await.result(future2, DURATION)
+            }
+	}
 
         option = c.ddg.updated.find((node: Node) =>
           node.timestamp > start && node.timestamp < end)

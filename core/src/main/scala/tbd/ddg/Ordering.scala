@@ -141,15 +141,17 @@ class Ordering {
 	node match {
 	  case readNode: ReadNode =>
 	    c.ddg.reads(readNode.mod.id) -= readNode
+	    readNode.updated = false
 	  case memoNode: MemoNode =>
 	    memoNode.memoizer.removeEntry(memoNode.timestamp, memoNode.signature)
 	  case modNode: ModNode =>
 	    if (modNode.modizer != null) {
 	      modNode.modizer.remove(modNode.key)
 	    }
+	  case parNode: ParNode =>
+	    parNode.updated = false
 	  case _ =>
 	}
-	node.updated = false
 
 	if (node.endTime > end) {
 	  remove(node.endTime)

@@ -17,12 +17,10 @@ package tbd.ddg
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import scala.collection.mutable.MutableList
 import scala.concurrent.Await
 
 import tbd._
 import tbd.Constants._
-import tbd.master.Main
 import tbd.messages._
 
 object Node {
@@ -38,8 +36,6 @@ abstract class Node {
   var timestamp: Timestamp = _
 
   var endTime: Timestamp = _
-
-  var updated = false
 
   var currentMod: Mod[Any] = null
 
@@ -59,6 +55,8 @@ class ParNode
     (val workerRef1: ActorRef,
      val workerRef2: ActorRef) extends Node {
 
+  var updated = false
+
   var pebble1 = false
   var pebble2 = false
 
@@ -72,7 +70,9 @@ class ParNode
 }
 
 class ReadNode(val mod: Mod[Any], val reader: Any => Changeable[Any])
-  extends Node
+  extends Node {
+  var updated = false
+}
 
 class RootNode(val id: String) extends Node
 
