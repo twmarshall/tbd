@@ -255,6 +255,7 @@ class ChunkList[T, U]
     new ChunkList(
       mod {
         read(reduced) {
+	  case null => write(null)
           case (key, list) => read(list.head) { write(_) }
         }
       }, conf
