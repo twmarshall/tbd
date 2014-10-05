@@ -16,7 +16,11 @@
 
 package tbd.visualization.graph
 
+import akka.pattern.ask
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
+import scala.concurrent.Await
+
+import tbd.Constants._
 import tbd.visualization.analysis.MethodInfo
 
 /*
@@ -81,8 +85,11 @@ object DDG {
        node: tbd.ddg.Node): Seq[tbd.ddg.Node] = {
     node match {
       case parNode: tbd.ddg.ParNode =>
-	val ddg1 = parNode.getFirstSubtree()
-	val ddg2 = parNode.getSecondSubtree()
+	val f1 = parNode.workerRef1 ? tbd.messages.GetDDGMessage
+	val ddg1 = Await.result(f1.mapTo[tbd.ddg.DDG], DURATION)
+	val f2 = parNode.workerRef2 ? tbd.messages.GetDDGMessage
+	val ddg2 = Await.result(f2.mapTo[tbd.ddg.DDG], DURATION)
+
         ddg1.ordering.getChildren(ddg1.root) ++
         ddg2.ordering.getChildren(ddg2.root)
       case _ => ddg.ordering.getChildren(node)

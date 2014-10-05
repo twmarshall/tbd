@@ -59,14 +59,6 @@ class ParNode
 
   var pebble1 = false
   var pebble2 = false
-
-  def getFirstSubtree() = {
-    Await.result(workerRef1 ? GetDDGMessage, DURATION).asInstanceOf[DDG]
-  }
-
-  def getSecondSubtree() = {
-    Await.result(workerRef2 ? GetDDGMessage, DURATION).asInstanceOf[DDG]
-  }
 }
 
 class ReadNode(val mod: Mod[Any], val reader: Any => Changeable[Any])
