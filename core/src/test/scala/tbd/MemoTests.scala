@@ -410,52 +410,12 @@ class MemoTests extends FlatSpec with Matchers {
     output.read() should be (12)
     test.count should be (1)
 
-    val root = new MockRootNode(List(
-      new MockModNode(List(
-        new MockReadNode(List(
-          new MockMemoNode(List(
-            new MockModNode(List(
-              new MockReadNode(List())
-            ))
-          )),
-          new MockReadNode(List())
-        ))
-      ))
-    ))
-
-    val ddg = mutator.getDDG()
-
-    if (!Main.debug) {
-      assert(root.isEqual(ddg.root))
-    }
-
     // Change the mod not read by the memoized function,
     // check that it isn't called.
     input.update(1, 3)
     mutator.propagate()
     output.read() should be (14)
     test.count should be (1)
-
-    val root2 = new MockRootNode(List(
-      new MockModNode(List(
-        new MockReadNode(List(
-          new MockModNode(List(
-            new MockReadNode(List())
-          )),
-          new MockMemoNode(List(
-            new MockModNode(List(
-              new MockReadNode(List())
-            ))
-          )),
-          new MockReadNode(List())
-        ))
-      ))
-    ))
-
-    val ddg2 = mutator.getDDG()
-    if (!Main.debug) {
-      assert(root2.isEqual(ddg2.root))
-    }
 
     // Change the other mod, the memoized function should
     // be called.
@@ -464,11 +424,6 @@ class MemoTests extends FlatSpec with Matchers {
     mutator.propagate()
     output.read() should be (11)
     test.count should be (2)
-
-    val ddg3 = mutator.getDDG()
-    if (!Main.debug) {
-      assert(root.isEqual(ddg3.root))
-    }
 
     mutator.shutdown()
   }
