@@ -51,10 +51,6 @@ abstract class Node {
   var currentMod: Mod[Any] = null
 
   var currentMod2: Mod[Any] = null
-
-  override def equals(obj: Any): Boolean = {
-    obj.isInstanceOf[Node] && obj.asInstanceOf[Node].timestamp == timestamp
-  }
 }
 
 class MemoNode
