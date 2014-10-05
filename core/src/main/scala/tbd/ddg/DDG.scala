@@ -42,7 +42,7 @@ class DDG(id: String) {
        reader: Any => Changeable[Any],
        c: Context): ReadNode = {
     val readNode = new ReadNode(mod, reader)
-    val timestamp = nextTimestamp(c.currentParent, readNode, c)
+    val timestamp = nextTimestamp(readNode, c)
     readNode.timestamp = timestamp
 
     if (reads.contains(mod.id)) {
@@ -59,7 +59,7 @@ class DDG(id: String) {
        key: Any,
        c: Context): ModNode = {
     val modNode = new ModNode(modizer, key)
-    val timestamp = nextTimestamp(c.currentParent, modNode, c)
+    val timestamp = nextTimestamp(modNode, c)
     modNode.timestamp = timestamp
 
     modNode
@@ -70,7 +70,7 @@ class DDG(id: String) {
        mod2: Mod[Any],
        c: Context): WriteNode = {
     val writeNode = new WriteNode(mod, mod2)
-    val timestamp = nextTimestamp(c.currentParent, writeNode, c)
+    val timestamp = nextTimestamp(writeNode, c)
     writeNode.timestamp = timestamp
 
     writeNode
@@ -81,7 +81,7 @@ class DDG(id: String) {
        workerRef2: ActorRef,
        c: Context): ParNode = {
     val parNode = new ParNode(workerRef1, workerRef2)
-    val timestamp = nextTimestamp(c.currentParent, parNode, c)
+    val timestamp = nextTimestamp(parNode, c)
     parNode.timestamp = timestamp
 
     pars(workerRef1) = parNode
@@ -95,13 +95,13 @@ class DDG(id: String) {
        memoizer: Memoizer[_],
        c: Context): MemoNode = {
     val memoNode = new MemoNode(signature, memoizer)
-    val timestamp = nextTimestamp(c.currentParent, memoNode, c)
+    val timestamp = nextTimestamp(memoNode, c)
     memoNode.timestamp = timestamp
 
     memoNode
   }
 
-  def nextTimestamp(parent: Node, node: Node, c: Context): Timestamp = {
+  def nextTimestamp(node: Node, c: Context): Timestamp = {
     val time =
       if (c.initialRun)
 	ordering.append(node)

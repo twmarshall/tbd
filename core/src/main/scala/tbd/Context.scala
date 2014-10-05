@@ -32,9 +32,6 @@ class Context(val id: String, val worker: Worker) {
 
   var initialRun = true
 
-  // The Node representing the currently executing reader.
-  var currentParent: Node = ddg.root
-
   // Contains a list of mods that have been updated since the last run of change
   // propagation, to determine when memo matches can be made.
   val updatedMods = Set[ModId]()

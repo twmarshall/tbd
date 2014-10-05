@@ -39,7 +39,7 @@ class Parizer[T](one: Context => T) {
     val twoFuture = workerRef2 ? RunTaskMessage(adjust2)
 
     val parNode = c.ddg.addPar(workerRef1, workerRef2, c)
-    parNode.endTime = c.ddg.nextTimestamp(parNode, parNode, c)
+    parNode.endTime = c.ddg.nextTimestamp(parNode, c)
 
     val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]

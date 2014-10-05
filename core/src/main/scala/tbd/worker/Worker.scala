@@ -52,8 +52,6 @@ class Worker(val id: String, parent: ActorRef)
 
             val newValue = readNode.mod.read()
 
-	    val oldCurrentParent = c.currentParent
-            c.currentParent = readNode
 	    val oldStart = c.reexecutionStart
 	    c.reexecutionStart = readNode.timestamp.getNext()
 	    val oldEnd = c.reexecutionEnd
@@ -73,7 +71,6 @@ class Worker(val id: String, parent: ActorRef)
 	      c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
 	    }
 
-	    c.currentParent = oldCurrentParent
 	    c.reexecutionStart = oldStart
 	    c.reexecutionEnd = oldEnd
             c.currentMod = oldCurrentDest

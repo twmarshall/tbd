@@ -69,15 +69,12 @@ class Memoizer[T](implicit c: Context) {
 
     if (!found) {
       val memoNode = c.ddg.addMemo(signature, this, c)
-      val outerParent = c.currentParent
-      c.currentParent = memoNode
 
       val value = func
 
-      c.currentParent = outerParent
       memoNode.currentMod = c.currentMod
       memoNode.currentMod2 = c.currentMod2
-      memoNode.endTime = c.ddg.nextTimestamp(memoNode, memoNode, c)
+      memoNode.endTime = c.ddg.nextTimestamp(memoNode, c)
       memoNode.value = value
 
       if (memoTable.contains(signature)) {

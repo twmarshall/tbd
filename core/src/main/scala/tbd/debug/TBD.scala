@@ -161,7 +161,7 @@ object TBD {
     val mod = changeable.mod.asInstanceOf[Mod[Any]]
 
     val writeNode = c.ddg.addWrite(mod, null, c)
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode, c)
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
 
     val writes = List(SingleWriteTag(mod.id, mod.read()))
     val tag = Tag.Write(writes)
@@ -178,7 +178,7 @@ object TBD {
 
     val writeNode = c.ddg.addWrite(mod1, mod2, c)
 
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode, c)
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
 
     val writes = List(
       SingleWriteTag(mod1.id, mod1.read()),
@@ -200,7 +200,7 @@ object TBD {
 
     val writeNode = c.ddg.addWrite(mod, null, c)
 
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode, c)
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
 
     val writes = List(SingleWriteTag(mod.id, mod.read()))
     val tag = Tag.Write(writes)
@@ -220,7 +220,7 @@ object TBD {
 
     val writeNode = c.ddg.addWrite(null, mod2, c)
 
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode, writeNode, c)
+    writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
 
     val writes = List(SingleWriteTag(mod2.id, mod2.read()))
     val tag = Tag.Write(writes)
