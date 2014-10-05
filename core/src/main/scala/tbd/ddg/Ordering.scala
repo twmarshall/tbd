@@ -15,6 +15,8 @@
  */
 package tbd.ddg
 
+import scala.collection.mutable.Buffer
+
 class Ordering {
   val maxSize = Int.MaxValue / 2
   var base = new Sublist(0, null)
@@ -194,6 +196,28 @@ class Ordering {
       startSublist.next = end.sublist
       end.sublist.previous = startSublist
     }
+  }
+
+  def getChildren(node: Node): Buffer[Node] = {
+    val children = Buffer[Node]()
+
+    node match {
+      case root: RootNode =>
+	var time = base.next.base.getNext()
+	while (time != base.base) {
+	  children += time.node
+	  time = time.node.endTime.getNext()
+	}
+      case node: Node =>
+	var time = node.timestamp.getNext()
+
+	while (time < node.endTime) {
+	  children += time.node
+	  time = time.node.endTime.getNext()
+	}
+    }
+
+    children
   }
 
   override def toString = {

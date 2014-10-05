@@ -35,7 +35,7 @@ object QuickVisualizer {
   def show(ddg: tbd.ddg.DDG) {
     val view = new SingleView()
     view.addResult(ExperimentResult(0, Map(),
-        List(), List(), List(), graph.DDG.create(ddg.root)))
+        List(), List(), List(), graph.DDG.create(ddg)))
   }
   def show(ddg: DDG) {
     val view = new SingleView()

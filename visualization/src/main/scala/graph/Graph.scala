@@ -60,33 +60,41 @@ class DDG(val root: Node) extends Graph {
 //for ourselfs, without creating memory leaks or accessing disposed mods.
 object DDG {
   //Recursivley creates a visualizer DDG from a TBD DDG.
-  def create(root: tbd.ddg.RootNode): DDG = {
+  def create(ddg: tbd.ddg.DDG): DDG = {
 
-    val newNode = new Node(root)
+    val newNode = new Node(ddg.root)
     val result = new DDG(newNode)
 
     result.nodes += newNode
     result.adj += (newNode -> new ArrayBuffer[Edge]())
 
-    getChildren(root).foreach(x => {
-      append(newNode, x, result)
+    getChildren(ddg, ddg.root).foreach(x => {
+      append(ddg, newNode, x, result)
     })
 
     result
   }
 
   //Fetches child nodes for a given node. Takes extra care of par nodes.
-  private def getChildren(node: tbd.ddg.Node): Seq[tbd.ddg.Node] = {
+  private def getChildren
+      (ddg: tbd.ddg.DDG,
+       node: tbd.ddg.Node): Seq[tbd.ddg.Node] = {
     node match {
       case parNode: tbd.ddg.ParNode =>
-        Seq(parNode.getFirstSubtree().root.children(0),
-        parNode.getSecondSubtree().root.children(0))
-      case _ => node.children
+	val ddg1 = parNode.getFirstSubtree()
+	val ddg2 = parNode.getSecondSubtree()
+        ddg1.ordering.getChildren(ddg1.root) ++
+        ddg2.ordering.getChildren(ddg2.root)
+      case _ => ddg.ordering.getChildren(node)
     }
   }
 
   //Recursivley creates a visualizer DDG from a TBD DDG.
-  private def append(node: Node, ddgNode: tbd.ddg.Node, result: DDG): Unit = {
+  private def append
+      (ddg: tbd.ddg.DDG,
+       node: Node,
+       ddgNode: tbd.ddg.Node,
+       result: DDG): Unit = {
     val newNode = new Node(ddgNode)
 
     result.nodes += newNode
@@ -94,8 +102,8 @@ object DDG {
     result.adj(node) += new Edge.Control(node, newNode)
     result.adj(newNode) += new Edge.InverseControl(newNode, node)
 
-    getChildren(ddgNode).foreach(x => {
-      append(newNode, x, result)
+    getChildren(ddg, ddgNode).foreach(x => {
+      append(ddg, newNode, x, result)
     })
   }
 }
