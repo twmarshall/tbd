@@ -28,8 +28,6 @@ import tbd.worker.Worker
 
 object Master {
   def props(): Props = Props(classOf[Master])
-
-  var epoch = 0
 }
 
 class Master extends Actor with ActorLogging {
@@ -59,7 +57,6 @@ class Master extends Actor with ActorLogging {
     case PropagateMessage => {
       log.info("Master actor initiating change propagation.")
 
-      Master.epoch += 1
       val future = workerRef ? PropagateMessage
       val respondTo = sender
       future.onComplete((_try: Try[Any]) => {

@@ -48,11 +48,6 @@ abstract class Node {
 
   val internalId = Node.getId()
 
-  // The earliest epoch in which this node may be matched, if it is a MemoNode.
-  // This is increased above the current epoch whenever the node is matched, so
-  // that it won't be matched again in this round of change propagation.
-  var matchableInEpoch = 0
-
   var currentMod: Mod[Any] = null
 
   var currentMod2: Mod[Any] = null

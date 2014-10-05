@@ -143,7 +143,6 @@ class Ordering {
 	    c.ddg.reads(readNode.mod.id) -= readNode
 	  case memoNode: MemoNode =>
 	    memoNode.memoizer.removeEntry(memoNode.timestamp, memoNode.signature)
-	    memoNode.matchableInEpoch = tbd.master.Master.epoch + 1
 	  case modNode: ModNode =>
 	    if (modNode.modizer != null) {
 	      modNode.modizer.remove(modNode.key)

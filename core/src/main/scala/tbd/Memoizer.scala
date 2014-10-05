@@ -37,9 +37,7 @@ class Memoizer[T](implicit c: Context) {
       for (memoNode <- memoTable(signature)) {
         val timestamp = memoNode.timestamp
         if (!found && timestamp >= c.reexecutionStart &&
-	    timestamp < c.reexecutionEnd &&
-	    memoNode.matchableInEpoch <= Master.epoch) {
-
+	    timestamp < c.reexecutionEnd) {
           updateChangeables(memoNode, c.currentMod, c.currentMod2)
 
           found = true
@@ -54,7 +52,6 @@ class Memoizer[T](implicit c: Context) {
 	  c.reexecutionStart = memoNode.endTime.getNext()
 	  c.currentTime = memoNode.endTime
 
-	  memoNode.matchableInEpoch = Master.epoch + 1
           ret = memoNode.value.asInstanceOf[T]
 
 	  val future = c.worker.propagate(timestamp, memoNode.endTime)
