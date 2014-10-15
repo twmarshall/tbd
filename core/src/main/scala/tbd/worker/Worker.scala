@@ -27,15 +27,15 @@ import tbd.ddg.{DDG, Node, MemoNode, ParNode, ReadNode, Timestamp}
 import tbd.messages._
 
 object Worker {
-  def props(id: String, parent: ActorRef): Props =
-    Props(classOf[Worker], id, parent)
+  def props(id: String, parent: ActorRef, datastore: ActorRef): Props =
+    Props(classOf[Worker], id, parent, datastore)
 }
 
-class Worker(val id: String, parent: ActorRef)
+class Worker(val id: String, parent: ActorRef, datastore: ActorRef)
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val c = new Context(id, this)
+  private val c = new Context(id, this, datastore)
 
   def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
                 end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
@@ -49,7 +49,7 @@ class Worker(val id: String, parent: ActorRef)
 	node match {
 	  case readNode: ReadNode =>
             if (readNode.updated) {
-              val newValue = readNode.mod.read()
+              val newValue = c.read(readNode.mod)
 
 	      val oldStart = c.reexecutionStart
 	      c.reexecutionStart = readNode.timestamp.getNext()

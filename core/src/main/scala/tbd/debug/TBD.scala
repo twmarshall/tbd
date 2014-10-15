@@ -46,7 +46,7 @@ object TBD {
        readerId: Int,
        freeTerms: List[(String, Any)]): Changeable[U] = {
     val internalId = Node.getId()
-    val tag = Tag.Read(mod.read(), FunctionTag(readerId, freeTerms))(mod.id)
+    val tag = Tag.Read(c.read(mod), FunctionTag(readerId, freeTerms))(mod.id)
     val stack = Thread.currentThread().getStackTrace()
 
     val changeable = tbd.TBD.read(mod)(reader)(c)
@@ -71,7 +71,7 @@ object TBD {
       readerId: Int,
       freeTerms: List[(String, Any)]): (Changeable[U], Changeable[V]) = {
     val internalId = Node.getId()
-    val tag = Tag.Read(mod.read(), FunctionTag(readerId, freeTerms))(mod.id)
+    val tag = Tag.Read(c.read(mod), FunctionTag(readerId, freeTerms))(mod.id)
     val stack = Thread.currentThread().getStackTrace()
 
     val changeable = tbd.TBD.read2(mod)(reader)(c)
@@ -181,7 +181,7 @@ object TBD {
     val writeNode = c.ddg.addWrite(mod, null, c)
     writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
 
-    val writes = List(SingleWriteTag(mod.id, mod.read()))
+    val writes = List(SingleWriteTag(mod.id, c.read(mod)))
     val tag = Tag.Write(writes)
     nodes(writeNode) = (internalId, tag, stack)
 
@@ -202,8 +202,8 @@ object TBD {
     writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
 
     val writes = List(
-      SingleWriteTag(mod1.id, mod1.read()),
-      SingleWriteTag(mod1.id, mod1.read()))
+      SingleWriteTag(mod1.id, c.read(mod1)),
+      SingleWriteTag(mod1.id, c.read(mod1)))
     val tag = Tag.Write(writes)
     nodes(writeNode) = (internalId, tag, stack)
 
@@ -226,7 +226,7 @@ object TBD {
 
     writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
 
-    val writes = List(SingleWriteTag(mod.id, mod.read()))
+    val writes = List(SingleWriteTag(mod.id, c.read(mod)))
     val tag = Tag.Write(writes)
     nodes(writeNode) = (internalId, tag, stack)
 
@@ -249,7 +249,7 @@ object TBD {
 
     writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
 
-    val writes = List(SingleWriteTag(mod2.id, mod2.read()))
+    val writes = List(SingleWriteTag(mod2.id, c.read(mod2)))
     val tag = Tag.Write(writes)
     nodes(writeNode) = (internalId, tag, stack)
 

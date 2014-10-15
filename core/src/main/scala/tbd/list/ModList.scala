@@ -360,12 +360,12 @@ class ModList[T, U]
     (new ModList(result._1), new ModList(result._2))
   }
 
-  def toBuffer(): Buffer[(T, U)] = {
+  def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
     val buf = Buffer[(T, U)]()
-    var node = head.read()
+    var node = mutator.read(head)
     while (node != null) {
       buf += node.value
-      node = node.nextMod.read()
+      node = mutator.read(node.nextMod)
     }
 
     buf

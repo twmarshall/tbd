@@ -108,7 +108,7 @@ class Memoizer[T](implicit c: Context) {
     memoNode.value match {
       case changeable: Changeable[Any] =>
 	if (memoNode.currentMod != currentMod) {
-	  if (currentMod.update(changeable.mod.read())) {
+	  if (c.update(currentMod, c.read(changeable.mod))) {
 	    c.pending += DependencyManager.modUpdated(currentMod.id, c.worker.self)
 	    if (c.ddg.reads.contains(currentMod.id)) {
               c.ddg.modUpdated(currentMod.id)
@@ -121,7 +121,7 @@ class Memoizer[T](implicit c: Context) {
 
       case (c1: Changeable[Any], c2: Changeable[Any]) =>
 	if (memoNode.currentMod != currentMod) {
-          if (currentMod.update(c1.mod.read())) {
+          if (c.update(currentMod, c.read(c1.mod))) {
             c.pending += DependencyManager.modUpdated(currentMod.id, c.worker.self)
             if (c.ddg.reads.contains(currentMod.id)) {
               c.ddg.modUpdated(currentMod.id)
@@ -133,7 +133,7 @@ class Memoizer[T](implicit c: Context) {
 	}
 
 	if (memoNode.currentMod2 != currentMod2) {
-          if (currentMod2.update(c2.mod.read())) {
+          if (c.update(currentMod2, c.read(c2.mod))) {
             c.pending += DependencyManager.modUpdated(currentMod2.id, c.worker.self)
             if (c.ddg.reads.contains(currentMod2.id)) {
               c.ddg.modUpdated(currentMod2.id)

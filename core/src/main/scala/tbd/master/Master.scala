@@ -27,10 +27,10 @@ import tbd.messages._
 import tbd.worker.Worker
 
 object Master {
-  def props(): Props = Props(classOf[Master])
+  def props(datastore: ActorRef): Props = Props(classOf[Master], datastore)
 }
 
-class Master extends Actor with ActorLogging {
+class Master(val datastore: ActorRef) extends Actor with ActorLogging {
   import context.dispatcher
   log.info("Master launced.")
 
@@ -45,7 +45,7 @@ class Master extends Actor with ActorLogging {
     case RunMessage(adjust: Adjustable[_], mutatorId: Int) => {
       log.debug("RunMessage")
 
-      val workerProps = Worker.props("w0", self)
+      val workerProps = Worker.props("w0", self, datastore)
       workerRef = context.actorOf(workerProps, "worker" + mutatorId)
       workers(mutatorId) = workerRef
 

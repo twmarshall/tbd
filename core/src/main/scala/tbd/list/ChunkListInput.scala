@@ -80,7 +80,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
 
       mutator.updateMod(lastNodeMod, new ChunkListNode(chunk, tail, size))
     } else {
-      val head = tail.read()
+      val head = mutator.read(tail)
       for ((k, v) <- head.chunk) {
 	nodes(k) = lastNodeMod
 	previous(k) = null
@@ -93,7 +93,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
   }
 
   def put(key: T, value: U) {
-    val lastNode = lastNodeMod.read()
+    val lastNode = mutator.read(lastNodeMod)
 
     val newNode =
       if (lastNode == null) {
@@ -131,7 +131,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
 
   def putAfter(key: T, newPair: (T, U)) {
     val insertIntoMod = nodes(key)
-    val insertInto = nodes(key).read()
+    val insertInto = mutator.read(nodes(key))
     val newSize = insertInto.size + conf.chunkSizer(newPair._2)
 
     var found = false
@@ -180,7 +180,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
   }
 
   def update(key: T, value: U) {
-    val node = nodes(key).read()
+    val node = mutator.read(nodes(key))
 
     var oldValue: U = null.asInstanceOf[U]
     val newChunk = node.chunk.map{ case (_key, _value) => {
@@ -199,7 +199,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
   } //ensuring(isValid())
 
   def remove(key: T) {
-    val node = nodes(key).read()
+    val node = mutator.read(nodes(key))
 
     var oldValue: U = null.asInstanceOf[U]
     val newChunk = node.chunk.filter{ case (_key, _value) => {
@@ -213,7 +213,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
 
     val newNode =
       if (newChunk.size == 0) {
-        val nextNode = node.nextMod.read()
+        val nextNode = mutator.read(node.nextMod)
 
         if (nextNode == null) {
           if (previous(key) == null) {
@@ -235,7 +235,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
             previous(k) = previous(key)
           }
 
-          val nextNextNode = nextNode.nextMod.read()
+          val nextNextNode = mutator.read(nextNode.nextMod)
           if (nextNextNode != null) {
             for ((k, v) <- nextNextNode.chunk) {
               previous(k) = nodes(key)
@@ -261,7 +261,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
     var previousMod: Mod[ChunkListNode[T, U]] = null
     var previousNode: ChunkListNode[T, U] = null
     var mod = list.head
-    var node = mod.read()
+    var node = mutator.read(mod)
 
     var valid = true
     while (node != null) {
@@ -277,7 +277,7 @@ class ChunkListInput[T, U](mutator: Mutator, conf: ListConf)
       previousMod = mod
       previousNode = node
       mod = node.nextMod
-      node = mod.read()
+      node = mutator.read(mod)
     }
 
     valid

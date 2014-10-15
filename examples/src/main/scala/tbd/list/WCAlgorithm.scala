@@ -98,7 +98,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
       table: Map[Int, String],
       output: Mod[(Int, HashMap[String, Int])]) = {
     val answer = naiveHelper(table.values)
-    output.read()._2 == answer
+    mutator.read(output)._2 == answer
   }
 
   def mapper(pair: (Int, String)) = {
@@ -145,7 +145,7 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
       table: Map[Int, String],
       output: Mod[(Int, HashMap[String, Int])]) = {
     val answer = naiveHelper(table.values)
-    output.read()._2 == answer
+    mutator.read(output)._2 == answer
   }
 
   def chunkMapper(chunk: Vector[(Int, String)]) = {

@@ -35,8 +35,8 @@ class ModListInput[T, U](mutator: Mutator) extends ListInput[T, U] {
       nodes(key) = tail
     }
 
-    val head = tail.read()
-    mutator.updateMod(tailMod, tail.read())
+    val head = mutator.read(tail)
+    mutator.updateMod(tailMod, mutator.read(tail))
     nodes(head.value._1) = tailMod
     tailMod = newTail
   }
@@ -52,7 +52,7 @@ class ModListInput[T, U](mutator: Mutator) extends ListInput[T, U] {
   }
 
   def putAfter(key: T, pair: (T, U)) {
-    val before = nodes(key).read()
+    val before = mutator.read(nodes(key))
 
     val newNode = new ModListNode(pair, before.nextMod)
     val newNodeMod = mutator.createMod(newNode)
@@ -64,15 +64,15 @@ class ModListInput[T, U](mutator: Mutator) extends ListInput[T, U] {
   }
 
   def update(key: T, value: U) {
-    val nextMod = nodes(key).read().nextMod
+    val nextMod = mutator.read(nodes(key)).nextMod
     val newNode = new ModListNode((key, value), nextMod)
 
     mutator.updateMod(nodes(key), newNode)
   }
 
   def remove(key: T) {
-    val node = nodes(key).read()
-    val nextNode = node.nextMod.read()
+    val node = mutator.read(nodes(key))
+    val nextNode = mutator.read(node.nextMod)
 
     if (nextNode == null) {
       // We're removing the last element in the last.

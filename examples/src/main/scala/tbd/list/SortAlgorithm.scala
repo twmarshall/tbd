@@ -48,7 +48,7 @@ class QuickSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def checkOutput(
       input: Map[Int, Int],
       output: AdjustableList[Int, Int]) = {
-    val sortedOutput = output.toBuffer()
+    val sortedOutput = output.toBuffer(mutator)
     val answer = naiveHelper(input)
 
     //println(sortedOutput)
@@ -89,7 +89,7 @@ class MergeSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def checkOutput(
       input: Map[Int, Int],
       output: AdjustableList[Int, Int]) = {
-    val sortedOutput = output.toBuffer()
+    val sortedOutput = output.toBuffer(mutator)
     val answer = naiveHelper(input)
 
     //println(sortedOutput)

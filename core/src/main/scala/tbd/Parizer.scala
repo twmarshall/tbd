@@ -24,14 +24,16 @@ import tbd.worker.Worker
 
 class Parizer[T](one: Context => T) {
   def and[U](two: Context => U)(implicit c: Context): (T, U) = {
-    val workerProps1 = Worker.props(c.id + "-" + c.workerId, c.worker.self)
+    val id1 = c.id + "-" + c.workerId
+    val workerProps1 = Worker.props(id1, c.worker.self, c.datastore)
     val workerRef1 = c.worker.context.system.actorOf(workerProps1, c.id + "-" + c.workerId)
     c.workerId += 1
 
     val adjust1 = new Adjustable[T] { def run(implicit c: Context) = one(c) }
     val oneFuture = workerRef1 ? RunTaskMessage(adjust1)
 
-    val workerProps2 = Worker.props(c.id + "-" + c.workerId, c.worker.self)
+    val id2 = c.id + "-" + c.workerId
+    val workerProps2 = Worker.props(id2, c.worker.self, c.datastore)
     val workerRef2 = c.worker.context.system.actorOf(workerProps2, c.id + "-" + c.workerId)
     c.workerId += 1
 

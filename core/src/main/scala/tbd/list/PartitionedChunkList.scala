@@ -120,11 +120,11 @@ class PartitionedChunkList[T, U]
     (PartitionedChunkList[T, U], PartitionedChunkList[T, U]) = ???
 
   /* Meta Operations */
-  def toBuffer(): Buffer[(T, U)] = {
+  def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
     val buf = Buffer[(T, U)]()
 
     for (partition <- partitions) {
-      buf ++= partition.toBuffer()
+      buf ++= partition.toBuffer(mutator)
     }
 
     buf

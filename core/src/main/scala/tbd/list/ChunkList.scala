@@ -289,12 +289,12 @@ class ChunkList[T, U]
       (implicit c: Context): (ChunkList[T, U], ChunkList[T, U]) = ???
 
   /* Meta functions */
-  def toBuffer(): Buffer[(T, U)] = {
+  def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
     val buf = Buffer[(T, U)]()
-    var node = head.read()
+    var node = mutator.read(head)
     while (node != null) {
       buf ++= node.chunk
-      node = node.nextMod.read()
+      node = mutator.read(node.nextMod)
     }
 
     buf

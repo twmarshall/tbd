@@ -159,7 +159,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
       mutationCounter += 1
 
       val input = table.toMap
-      val result = algorithm.getResult(output)
+      val result = algorithm.getResult(output, mutator)
       val expectedResult = algorithm.getExpectedResult(table)
 
       val ddg = graph.DDG.create(mutator.getDDG())

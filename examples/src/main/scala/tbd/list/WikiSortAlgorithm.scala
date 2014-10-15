@@ -50,7 +50,7 @@ class WikiSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     //println(output.toBuffer)
     //println(answer.toBuffer)
 
-    output.toBuffer == answer.toBuffer.sortWith(_._1 < _._1)
+    output.toBuffer(mutator) == answer.toBuffer.sortWith(_._1 < _._1)
   }
 
   def mapper(pair: (Int, String)) = {

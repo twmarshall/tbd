@@ -407,14 +407,14 @@ class MemoTests extends FlatSpec with Matchers {
     input.put(2, 10)
     val test = new MemoTest(input)
     val output = mutator.run(test)
-    output.read() should be (12)
+    mutator.read(output) should be (12)
     test.count should be (1)
 
     // Change the mod not read by the memoized function,
     // check that it isn't called.
     input.update(1, 3)
     mutator.propagate()
-    output.read() should be (14)
+    mutator.read(output) should be (14)
     test.count should be (1)
 
     // Change the other mod, the memoized function should
@@ -422,7 +422,7 @@ class MemoTests extends FlatSpec with Matchers {
     input.update(1, 2)
     input.update(2, 8)
     mutator.propagate()
-    output.read() should be (11)
+    mutator.read(output) should be (11)
     test.count should be (2)
 
     mutator.shutdown()
@@ -435,13 +435,13 @@ class MemoTests extends FlatSpec with Matchers {
     input.put(2, 10)
     val test = new AlreadyMatchedTest(input)
     val output = mutator.run(test)
-    output.read() should be (11)
+    mutator.read(output) should be (11)
     test.count1 should be (0)
     test.count2 should be (1)
 
     input.update(1, 3)
     mutator.propagate()
-    output.read() should be (11)
+    mutator.read(output) should be (11)
     test.count1 should be (0)
     test.count2 should be (2)
 
@@ -580,12 +580,12 @@ class MemoTests extends FlatSpec with Matchers {
     input.put(4, 4)
     val test = new NoDestTest(input)
     val output = mutator.run(test)
-    output.read() should be (3)
+    mutator.read(output) should be (3)
 
     input.update(1, 2)
     input.update(4, 5)
     mutator.propagate()
-    output.read() should be (5)
+    mutator.read(output) should be (5)
 
     mutator.shutdown()
   }
@@ -599,11 +599,11 @@ class MemoTests extends FlatSpec with Matchers {
     input.put(5, 5)
     val test = new NoDestTest2(input)
     val output = mutator.run(test)
-    output.read() should be (3)
+    mutator.read(output) should be (3)
 
     input.update(1, 2)
     input.update(5, 10)
     mutator.propagate()
-    output.read() should be (10)
+    mutator.read(output) should be (10)
   }
 }

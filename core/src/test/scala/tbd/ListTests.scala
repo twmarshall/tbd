@@ -73,24 +73,24 @@ class ListTests extends FlatSpec with Matchers {
     val f = (pair: (String, Int)) => (pair._1, pair._2 * 2)
     val output = mutator.run(new ListMapTest(f, input))
     // (1 * 2), (2 * 2)
-    output.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(2, 4))
+    output.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(2, 4))
 
     input.update("one", 5)
     mutator.propagate()
     // (5 * 2), (2 * 2)
-    output.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(4, 10))
+    output.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(4, 10))
 
     input.put("three", 4)
     mutator.propagate()
     // (5 * 2), (2 * 2), (4 * 2)
-    output.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(4, 8, 10))
+    output.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(4, 8, 10))
 
     input.update("three", 3)
     input.update("one", -2)
     input.put("four", 6)
     mutator.propagate()
     // (-2 * 2), (2 * 2), (3 * 2), (6 * 2)
-    output.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(-4, 4, 6, 12))
+    output.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(-4, 4, 6, 12))
 
     input.put("five", 9)
     input.update("five", 8)
@@ -99,7 +99,7 @@ class ListTests extends FlatSpec with Matchers {
     input.put("seven", 5)
     mutator.propagate()
     // (-2 * 2), (2 * 2), (3 * 2), (3 * 2), (8 * 2), (10 * 2), (5 * 2)
-    output.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(-4, 4, 6, 6, 10, 16, 20))
+    output.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(-4, 4, 6, 6, 10, 16, 20))
 
     mutator.shutdown()
   }
@@ -111,36 +111,36 @@ class ListTests extends FlatSpec with Matchers {
     input.put(2, 2)
     val output = mutator.run(new ListReduceTest(input))
     // 1 + 2 = 3
-    output.read()._2 should be (3)
+    mutator.read(output)._2 should be (3)
 
     input.put(3, 3)
     mutator.propagate()
     // 1 + 2 + 3 = 6
-    output.read()._2 should be (6)
+    mutator.read(output)._2 should be (6)
 
     input.update(1, 4)
     mutator.propagate()
     // 4 + 2 + 3 = 9
-    output.read()._2 should be (9)
+    mutator.read(output)._2 should be (9)
 
     input.update(3, 2)
     input.update(1, 7)
     mutator.propagate()
     // 7 + 2 + 2 = 11
-    output.read()._2 should be (11)
+    mutator.read(output)._2 should be (11)
 
     input.put(4, -1)
     input.put(5, 10)
     mutator.propagate()
     // 7 + 2 + 2 - 1 + 10 = 20
-    output.read()._2 should be (20)
+    mutator.read(output)._2 should be (20)
 
     input.put(6, -3)
     input.update(4, 3)
     input.update(3, 5)
     mutator.propagate()
     // 7 + 2 + 5 + 3 + 10 - 3 = 24
-    output.read()._2 should be (24)
+    mutator.read(output)._2 should be (24)
 
     mutator.shutdown()
   }
@@ -155,19 +155,19 @@ class ListTests extends FlatSpec with Matchers {
     input.put(1, 1)
     val output = mutator.run(new ListSortTest(input))
 
-    output.toBuffer().map(_._2) should be (Buffer(0, 1, 2, 3, 4))
+    output.toBuffer(mutator).map(_._2) should be (Buffer(0, 1, 2, 3, 4))
 
     input.put(5, 5)
     mutator.propagate()
-    output.toBuffer().map(_._2) should be (Buffer(0, 1, 2, 3, 4, 5))
+    output.toBuffer(mutator).map(_._2) should be (Buffer(0, 1, 2, 3, 4, 5))
 
     input.put(-1, -1)
     mutator.propagate()
-    output.toBuffer().map(_._2) should be (Buffer(-1, 0, 1, 2, 3, 4, 5))
+    output.toBuffer(mutator).map(_._2) should be (Buffer(-1, 0, 1, 2, 3, 4, 5))
 
     input.remove(3)
     mutator.propagate()
-    output.toBuffer().map(_._2) should be (Buffer(-1, 0, 1, 2, 4, 5))
+    output.toBuffer(mutator).map(_._2) should be (Buffer(-1, 0, 1, 2, 4, 5))
 
     mutator.shutdown()
   }
@@ -179,40 +179,40 @@ class ListTests extends FlatSpec with Matchers {
     input.put(2, 2)
     val output = mutator.run(new ListSplitTest(input))
 
-    output._1.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(0, 2))
-    output._2.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer())
+    output._1.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(0, 2))
+    output._2.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer())
 
     input.put(3, 1)
     mutator.propagate()
 
-    output._1.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(0, 2))
-    output._2.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(1))
+    output._1.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(0, 2))
+    output._2.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(1))
 
     input.update(2, 3)
     input.put(4, 4)
     mutator.propagate()
 
-    output._1.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(0, 4))
-    output._2.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(1, 3))
+    output._1.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(0, 4))
+    output._2.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(1, 3))
 
     input.put(7, -1)
     mutator.propagate()
 
-    output._1.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(0, 4))
-    output._2.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(-1, 1, 3))
+    output._1.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(0, 4))
+    output._2.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(-1, 1, 3))
 
     input.update(2, 5)
     mutator.propagate()
 
-    output._1.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(0, 4))
-    output._2.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(-1, 1, 5))
+    output._1.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(0, 4))
+    output._2.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(-1, 1, 5))
 
 
     input.update(4, 7)
     mutator.propagate()
 
-    output._1.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(0))
-    output._2.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(-1, 1, 5, 7))
+    output._1.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(0))
+    output._2.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(-1, 1, 5, 7))
 
 
     input.update(2, 4)
@@ -220,15 +220,15 @@ class ListTests extends FlatSpec with Matchers {
     input.update(7, 8)
     mutator.propagate()
 
-    output._1.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(0, 2, 4, 8))
-    output._2.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(1))
+    output._1.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(0, 2, 4, 8))
+    output._2.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(1))
 
     input.remove(4)
     input.remove(3)
     mutator.propagate()
 
-    output._1.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer(0, 4, 8))
-    output._2.toBuffer().map(_._2).sortWith(_ < _) should be (Buffer())
+    output._1.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(0, 4, 8))
+    output._2.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer())
 
 
     mutator.shutdown()

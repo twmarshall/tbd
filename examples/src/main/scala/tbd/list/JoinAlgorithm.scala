@@ -58,7 +58,7 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def checkOutput(
       input: Map[Int, Int],
       output: AdjustableList[Int, (Int, Int)]): Boolean = {
-    val sortedOutput = output.toBuffer().sortWith(_._1 < _._1)
+    val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
     val answer = naiveHelper(input, data2.table)
     val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
 
@@ -107,7 +107,7 @@ class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def checkOutput(
       input: Map[Int, Int],
       output: AdjustableList[Int, (Int, Int)]): Boolean = {
-    val sortedOutput = output.toBuffer().map(_._2).sortWith(_._1 < _._1)
+    val sortedOutput = output.toBuffer(mutator).map(_._2).sortWith(_._1 < _._1)
     val answer = naiveHelper(input, data2.table)
     val sortedAnswer = answer.values.toBuffer.sortWith(_._1 < _._1)
 
@@ -170,7 +170,7 @@ class SortJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   def checkOutput(
       input: Map[Int, Int],
       output: AdjustableList[Int, (Int, Int)]): Boolean = {
-    val sortedOutput = output.toBuffer().sortWith(_._1 < _._1)
+    val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
     val answer = naiveHelper(input, data2.table)
     val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
 

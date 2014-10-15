@@ -64,7 +64,7 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val epsilon = 0.000001
   def checkOutput(table: Map[Int, Array[Int]], output: AdjustableList[Int, Double]) = {
-    val out = output.toBuffer()
+    val out = output.toBuffer(mutator)
     val answer = naiveHelper(table)
 
     var check = out.size == answer.size

@@ -47,16 +47,27 @@ class Mutator(aMain: Main = null) {
   def createMod[T](value: T): Mod[T] = {
     val mod = new Mod[T]("d." + nextModId)
     nextModId += 1
-    if (mod.update(value)) {
-      futures += DependencyManager.modUpdated(mod.id)
-    }
+
+    main.datastore ! UpdateModMessage(mod.id, value)
+
+    futures += DependencyManager.modUpdated(mod.id)
 
     mod
   }
 
   def updateMod[T](mod: Mod[T], value: T) {
-    if (mod.update(value)) {
-      futures += DependencyManager.modUpdated(mod.id)
+    main.datastore ! UpdateModMessage(mod.id, value)
+
+    futures += DependencyManager.modUpdated(mod.id)
+  }
+
+  def read[T](mod: Mod[T]): T = {
+    val future = main.datastore ? GetModMessage(mod.id)
+    val ret = Await.result(future, DURATION)
+
+    ret match {
+      case NullMessage => null.asInstanceOf[T]
+      case x: T => x
     }
   }
 

@@ -17,7 +17,7 @@ package tbd.list
 
 import scala.collection.mutable.Buffer
 
-import tbd.{Context, Mod}
+import tbd.{Context, Mod, Mutator}
 
 /**
  * A linked list made up of modifiables. The classes that implement this trait
@@ -117,5 +117,5 @@ trait AdjustableList[T, U] {
       (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U])
 
   /* Meta functions */
-  def toBuffer(): Buffer[(T, U)]
+  def toBuffer(mutator: Mutator): Buffer[(T, U)]
 }

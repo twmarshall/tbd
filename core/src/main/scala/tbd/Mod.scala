@@ -29,23 +29,6 @@ import tbd.messages._
 class Mod[T](val id: ModId) extends Serializable {
   var value: T = null.asInstanceOf[T]
 
-  def read(workerRef: ActorRef = null): T = {
-    if (workerRef != null) {
-      DependencyManager.addDependency(id, workerRef)
-    }
-
-    value
-  }
-
-  def update(_value: T): Boolean = {
-    if (value != _value) {
-      value = _value
-      true
-    } else {
-      false
-    }
-  }
-
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[Mod[T]]) {
       false

@@ -63,7 +63,7 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
       case Some(nextPair) =>
 	val (nextKey, nextMod) = nextPair
 
-        val nextNode = nextMod.read()
+        val nextNode = mutator.read(nextMod)
 	val newNextMod = mutator.createMod[ModListNode[T, U]](nextNode)
 
 	val newNode = new ModListNode((key, value), newNextMod)
@@ -81,15 +81,15 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
   }
 
   def update(key: T, value: U) {
-    val nextMod = nodes(key).read().nextMod
+    val nextMod = mutator.read(nodes(key)).nextMod
     val newNode = new ModListNode((key, value), nextMod)
 
     mutator.updateMod(nodes(key), newNode)
   }
 
   def remove(key: T) {
-    val node = nodes(key).read()
-    val nextNode = node.nextMod.read()
+    val node = mutator.read(nodes(key))
+    val nextNode = mutator.read(node.nextMod)
 
     if (nextNode == null) {
       // We're removing the last element in the last.

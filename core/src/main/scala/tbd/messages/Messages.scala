@@ -30,6 +30,10 @@ case class UpdatedModMessage(modId: ModId, worker: ActorRef)
 case class RemoveModMessage(modId: ModId)
 
 // Datastore
+case class GetModMessage(modId: ModId)
+case class UpdateModMessage(modId: ModId, value: Any)
+case class NullMessage()
+
 case class DBPutMessage(key: ModId, value: Any)
 case class DBGetMessage(key: ModId)
 case class DBDeleteMessage(key: ModId)

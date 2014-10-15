@@ -41,9 +41,9 @@ class MutatorTests extends FlatSpec with Matchers {
 
       val sortedOutput =
 	if (sorted)
-	  output.toBuffer
+	  output.toBuffer(mutator)
 	else
-	  output.toBuffer.sortWith(_._1 < _._1)
+	  output.toBuffer(mutator).sortWith(_._1 < _._1)
 
       sortedOutput == sortedAnswer
     }

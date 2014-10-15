@@ -15,15 +15,19 @@
  */
 package tbd
 
+import akka.actor.ActorRef
 import akka.event.Logging
+import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Set}
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
+import tbd.datastore.DependencyManager
 import tbd.ddg.{DDG, Node, Timestamp}
+import tbd.messages._
 import tbd.worker.Worker
 
-class Context(val id: String, val worker: Worker) {
+class Context(val id: String, val worker: Worker, val datastore: ActorRef) {
   import worker.context.dispatcher
 
   val log = Logging(worker.context.system, "TBD" + id)
@@ -64,5 +68,24 @@ class Context(val id: String, val worker: Worker) {
   def newModId(): ModId = {
     nextModId += 1
     id + "." + nextModId
+  }
+
+  def read[T](mod: Mod[T], workerRef: ActorRef = null): T = {
+    if (workerRef != null) {
+      DependencyManager.addDependency(mod.id, workerRef)
+    }
+
+    val future = datastore ? GetModMessage(mod.id)
+    val ret = Await.result(future, DURATION)
+
+    ret match {
+      case NullMessage => null.asInstanceOf[T]
+      case x: T => x
+    }
+  }
+
+  def update[T](mod: Mod[T], value: T) = {
+    datastore ! UpdateModMessage(mod.id, value)
+    true
   }
 }

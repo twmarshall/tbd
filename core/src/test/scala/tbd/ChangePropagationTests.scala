@@ -197,12 +197,12 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     val input = TableInput[Int, Int](mutator)
     input.put(1, 1)
     val output = mutator.run(new ParTest(input))
-    output.read() should be (4)
+    mutator.read(output) should be (4)
 
     input.update(1, 2)
     mutator.propagate()
 
-    output.read() should be (6)
+    mutator.read(output) should be (6)
 
     mutator.shutdown()
   }
@@ -218,17 +218,17 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     input.put(6, 6)
     input.put(7, 7)
     val output = mutator.run(new ModNoDestTest(input))
-    output.read() should be (6)
+    mutator.read(output) should be (6)
 
     input.update(1, 2)
     input.update(4, 5)
     mutator.propagate()
-    output.read() should be (7)
+    mutator.read(output) should be (7)
 
     input.update(1, 1)
     input.update(7, 8)
     mutator.propagate()
-    output.read() should be (8)
+    mutator.read(output) should be (8)
 
     mutator.shutdown()
   }

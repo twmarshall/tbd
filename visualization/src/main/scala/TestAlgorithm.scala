@@ -19,6 +19,7 @@ package tbd.visualization
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
 
+import tbd.Mutator
 import tbd.debug._
 import tbd.list._
 import tbd.debug.TBD._
@@ -29,7 +30,7 @@ import tbd.debug.TBD._
 trait TestAlgorithm[TbdOutputType, NativeOutputType]
     extends Adjustable[TbdOutputType] {
   //Reads the output and returns the result
-  def getResult(output: TbdOutputType): NativeOutputType
+  def getResult(output: TbdOutputType, mutator: Mutator): NativeOutputType
   //Processes the input in a conventional way to generate verification output.
   def getExpectedResult(input: Map[Int, Int]): NativeOutputType
   //Returns the list conf for the algorithm, so we can enforce a
@@ -53,8 +54,8 @@ class ListReduceSumTest()
       })
   }
 
-  def getResult(output: Mod[(Int, Int)]): Int = {
-    output.read()._2
+  def getResult(output: Mod[(Int, Int)], mutator: Mutator): Int = {
+    mutator.read(output)._2
   }
 
   def getExpectedResult(input: Map[Int, Int]): Int = {
@@ -72,8 +73,10 @@ class ListSortTest()
     modList.quicksort()
   }
 
-  def getResult(output:  AdjustableList[Int, Int]): Seq[Int] = {
-    output.toBuffer().map(_._1)
+  def getResult
+      (output:  AdjustableList[Int, Int],
+       mutator: Mutator): Seq[Int] = {
+    output.toBuffer(mutator).map(_._1)
   }
 
   def getExpectedResult(input: Map[Int, Int]): Seq[Int] = {
@@ -94,9 +97,11 @@ class ListSplitTest()
     modList.split((a) => a._2 % 2 == 0)
   }
 
-  def getResult(output:  (AdjustableList[Int, Int], AdjustableList[Int, Int])):
-      (Seq[Int], Seq[Int]) = {
-    (output._1.toBuffer().map(_._2), output._2.toBuffer().map(_._2))
+  def getResult
+      (output:  (AdjustableList[Int, Int], AdjustableList[Int, Int]),
+       mutator: Mutator): (Seq[Int], Seq[Int]) = {
+    (output._1.toBuffer(mutator).map(_._2),
+     output._2.toBuffer(mutator).map(_._2))
   }
 
   def getExpectedResult(input: Map[Int, Int]): (Seq[Int], Seq[Int]) = {
@@ -112,8 +117,10 @@ class ListMapTest()
     modList.map((a) => (a._1, a._2 * 2))
   }
 
-  def getResult(output: AdjustableList[Int, Int]): Seq[Int] = {
-    output.toBuffer().map(_._2).sortWith(_ < _)
+  def getResult
+      (output: AdjustableList[Int, Int],
+       mutator: Mutator): Seq[Int] = {
+    output.toBuffer(mutator).map(_._2).sortWith(_ < _)
   }
 
   def getExpectedResult(input: Map[Int, Int]): Seq[Int] = {
@@ -144,8 +151,8 @@ class ModDepTest()
     }
   }
 
-  def getResult(output: Mod[Int]): Int = {
-    output.read()
+  def getResult(output: Mod[Int], mutator: Mutator): Int = {
+    mutator.read(output)
   }
 
   def getExpectedResult(input: Map[Int, Int]): Int = {
@@ -161,8 +168,8 @@ class WordCountTest()
     mapped.reduce((pair1, pair2) => (pair1._1, pair1._2 + pair2._2))
   }
 
-  def getResult(output: Mod[(Int, Int)]): Int = {
-    output.read()._2
+  def getResult(output: Mod[(Int, Int)], mutator: Mutator): Int = {
+    mutator.read(output)._2
   }
 
   def getExpectedResult(input: Map[Int, Int]): Int = {

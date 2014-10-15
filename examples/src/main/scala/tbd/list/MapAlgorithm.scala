@@ -53,7 +53,7 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def checkOutput(table: Map[Int, String], output: AdjustableList[Int, Int]) = {
-    val sortedOutput = output.toBuffer().map(_._2).sortWith(_ < _)
+    val sortedOutput = output.toBuffer(mutator).map(_._2).sortWith(_ < _)
     val answer = naiveHelper(table.values)
 
     sortedOutput == answer.asInstanceOf[GenIterable[Int]].toBuffer.sortWith(_ < _)
