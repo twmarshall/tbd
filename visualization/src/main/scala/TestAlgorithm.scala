@@ -152,3 +152,20 @@ class ModDepTest()
     input.head._2 + 15
   }
 }
+
+class WordCountTest()
+    extends TestAlgorithm[Mod[(Int, Int)], Int] {
+  def run(implicit c: Context): Mod[(Int, Int)] = {
+    val modList = input.getAdjustableList()
+    val mapped = modList.map((a) => (a._1, a._2 * 2))
+    mapped.reduce((pair1, pair2) => (pair1._1, pair1._2 + pair2._2))
+  }
+
+  def getResult(output: Mod[(Int, Int)]): Int = {
+    output.read()._2
+  }
+
+  def getExpectedResult(input: Map[Int, Int]): Int = {
+    input.values.map(_ * 2).reduce(_ + _)
+  }
+}

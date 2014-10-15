@@ -99,6 +99,7 @@ object Main {
       case "split" => create(new ListSplitTest())
       case "map" => create(new ListMapTest())
       case "modDependency" => create(new ModDepTest())
+      case "wc" => create(new WordCountTest())
     }
 
     main.run()
