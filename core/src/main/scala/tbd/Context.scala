@@ -22,7 +22,6 @@ import scala.collection.mutable.{Buffer, Set}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.datastore.DependencyManager
 import tbd.ddg.{DDG, Node, Timestamp}
 import tbd.messages._
 import tbd.worker.Worker
@@ -71,11 +70,7 @@ class Context(val id: String, val worker: Worker, val datastore: ActorRef) {
   }
 
   def read[T](mod: Mod[T], workerRef: ActorRef = null): T = {
-    if (workerRef != null) {
-      DependencyManager.addDependency(mod.id, workerRef)
-    }
-
-    val future = datastore ? GetModMessage(mod.id)
+    val future = datastore ? GetModMessage(mod.id, workerRef)
     val ret = Await.result(future, DURATION)
 
     ret match {
@@ -84,8 +79,17 @@ class Context(val id: String, val worker: Worker, val datastore: ActorRef) {
     }
   }
 
-  def update[T](mod: Mod[T], value: T) = {
-    datastore ! UpdateModMessage(mod.id, value)
-    true
+  def update[T](mod: Mod[T], value: T) {
+    val message = UpdateModMessage(mod.id, value, worker.self)
+    val future = (datastore ? message).mapTo[String]
+
+    if (!initialRun) {
+      pending += future
+
+      if (ddg.reads.contains(mod.id)) {
+	updatedMods += mod.id
+	ddg.modUpdated(mod.id)
+      }
+    }
   }
 }

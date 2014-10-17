@@ -20,7 +20,6 @@ import scala.collection.mutable.Buffer
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.datastore.DependencyManager
 import tbd.ddg.DDG
 import tbd.master.Main
 import tbd.messages._
@@ -48,21 +47,19 @@ class Mutator(aMain: Main = null) {
     val mod = new Mod[T]("d." + nextModId)
     nextModId += 1
 
-    main.datastore ! UpdateModMessage(mod.id, value)
-
-    futures += DependencyManager.modUpdated(mod.id)
+    val message = UpdateModMessage(mod.id, value, null)
+    futures += (main.datastore ? message).mapTo[String]
 
     mod
   }
 
   def updateMod[T](mod: Mod[T], value: T) {
-    main.datastore ! UpdateModMessage(mod.id, value)
-
-    futures += DependencyManager.modUpdated(mod.id)
+    val message = UpdateModMessage(mod.id, value, null)
+    futures += (main.datastore ? message).mapTo[String]
   }
 
   def read[T](mod: Mod[T]): T = {
-    val future = main.datastore ? GetModMessage(mod.id)
+    val future = main.datastore ? GetModMessage(mod.id, null)
     val ret = Await.result(future, DURATION)
 
     ret match {

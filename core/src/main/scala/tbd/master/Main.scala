@@ -23,7 +23,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import tbd.Constants._
-import tbd.datastore.{Datastore, DependencyManager}
+import tbd.datastore.Datastore
 import tbd.messages._
 
 object Main {
@@ -41,12 +41,6 @@ class Main(storeType: String = "memory", cacheSize: Int = 10000) {
   val system = ActorSystem("masterSystem" + Main.id,
                            ConfigFactory.load.getConfig("master"))
   Main.id += 1
-
-  val managerRef = system.actorOf(
-    DependencyManager.props(storeType, cacheSize),
-    "dependencyManager")
-
-  DependencyManager.managerRef = managerRef
 
   val datastore = system.actorOf(Datastore.props(), "datastore")
 

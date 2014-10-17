@@ -22,13 +22,10 @@ import scala.collection.mutable.{ArrayBuffer, Set}
 import scala.concurrent.{Await, Future, Lock, Promise}
 
 import tbd.Constants._
-import tbd.datastore.DependencyManager
 import tbd.master.Main
 import tbd.messages._
 
 class Mod[T](val id: ModId) extends Serializable {
-  var value: T = null.asInstanceOf[T]
-
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[Mod[T]]) {
       false

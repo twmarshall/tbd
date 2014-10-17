@@ -24,14 +24,9 @@ import tbd.{Adjustable, Changeable, TBD}
 import tbd.Constants._
 import tbd.ddg.Node
 
-// Dependency Manager
-case class AddDependencyMessage(modId: ModId, workerRef: ActorRef)
-case class UpdatedModMessage(modId: ModId, worker: ActorRef)
-case class RemoveModMessage(modId: ModId)
-
 // Datastore
-case class GetModMessage(modId: ModId)
-case class UpdateModMessage(modId: ModId, value: Any)
+case class GetModMessage(modId: ModId, worker: ActorRef)
+case class UpdateModMessage(modId: ModId, value: Any, worker: ActorRef)
 case class NullMessage()
 
 case class DBPutMessage(key: ModId, value: Any)
