@@ -16,11 +16,11 @@
 package tbd.examples.list
 
 import scala.collection.{GenIterable, GenMap, Seq}
-import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.{Await, Future}
+import scala.collection.mutable.Map
+import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
+import scala.concurrent.forkjoin.ForkJoinPool
 
 import tbd._
-import tbd.Constants._
 import tbd.datastore.StringData
 import tbd.list._
 
@@ -36,46 +36,31 @@ object MapAlgorithm {
 
 class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
-  import scala.concurrent.ExecutionContext.Implicits.global
-
   val input = ListInput[Int, String](mutator, listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
-  //var naiveTable: GenIterable[String] = _
-  var naiveTable = Buffer[GenIterable[String]]()
+  var naiveTable: ParIterable[String] = _
   def generateNaive() {
     data.generate()
-    var remaining = data.table.values
-    for (i <- 1 to partitions) {
-      naiveTable += remaining.take(data.table.size / partitions)
-      remaining = remaining.takeRight(data.table.size / partitions)
-    }
+    naiveTable = Vector(data.table.values.toSeq: _*).par
+    naiveTable.tasksupport =
+      new ForkJoinTaskSupport(new ForkJoinPool(partitions * 2))
   }
 
   def runNaive() {
     naiveHelper(naiveTable)
   }
 
-  private def naiveHelper
-      (input: Buffer[GenIterable[String]]): Buffer[GenIterable[Int]] = {
-    val futures = Buffer[Future[GenIterable[Int]]]()
-    for (partition <- input) {
-      futures += Future {
-	partition.map(MapAlgorithm.mapper(0, _)._2)
-      }
-    }
-    Await.result(Future.sequence(futures), DURATION)
+  private def naiveHelper(input: GenIterable[String]) = {
+    input.map(MapAlgorithm.mapper(0, _)._2)
   }
 
   def checkOutput(table: Map[Int, String], output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer(mutator).map(_._2).sortWith(_ < _)
-    val answer = naiveHelper(Buffer(table.values))
-    val sortedAnswer = answer.reduce(_ ++ _).toBuffer.sortWith(_ < _)
+    val answer = naiveHelper(table.values)
 
-    //println(sortedOutput)
-    //println(sortedAnswer)
-    sortedOutput == sortedAnswer
+    sortedOutput == answer.toBuffer.sortWith(_ < _)
   }
 
   def mapper(pair: (Int, String)) = {
