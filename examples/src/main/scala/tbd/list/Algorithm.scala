@@ -32,7 +32,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   val cacheSize = conf("cacheSizes").asInstanceOf[String].toInt
   val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
   val mutations = conf("mutations").asInstanceOf[Array[String]]
-  val partition = conf("partitions").asInstanceOf[String].toInt
+  val partitions = conf("partitions").asInstanceOf[String].toInt
   var runs = conf("runs").asInstanceOf[Array[String]]
   val store = conf("store").asInstanceOf[String]
 
