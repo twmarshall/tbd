@@ -28,7 +28,7 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   val data = new IntData(input, count, mutations, "data.txt")
   //val data = new IntFileData(input, "data.txt")
 
-  val input2 = ListInput[Int, Int](mutator, listConf)
+  val input2 = ListInput[Int, Int](mutator, listConf.copy(partitions = 1))
   val data2 = new IntData(input2, count, mutations, "data2.txt")
   //val data2 = new IntFileData(input2, "data2.txt")
 
