@@ -16,8 +16,10 @@
 package tbd.examples.list
 
 import scala.collection.{GenIterable, GenMap}
-import scala.collection.mutable.Map
 import scala.collection.immutable.HashMap
+import scala.collection.mutable.Map
+import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
+import scala.concurrent.forkjoin.ForkJoinPool
 
 import tbd._
 import tbd.datastore.StringData
@@ -79,10 +81,12 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
-  var naiveTable: GenIterable[String] = _
+  var naiveTable: ParIterable[String] = _
   def generateNaive() {
     data.generate()
     naiveTable = Vector(data.table.values.toSeq: _*).par
+    naiveTable.tasksupport =
+      new ForkJoinTaskSupport(new ForkJoinPool(partitions * 2))
   }
 
   def runNaive() {
@@ -126,10 +130,12 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
-  var naiveTable: GenIterable[String] = _
+  var naiveTable: ParIterable[String] = _
   def generateNaive() {
     data.generate()
     naiveTable = Vector(data.table.values.toSeq: _*).par
+    naiveTable.tasksupport =
+      new ForkJoinTaskSupport(new ForkJoinPool(partitions * 2))
   }
 
   def runNaive() {
