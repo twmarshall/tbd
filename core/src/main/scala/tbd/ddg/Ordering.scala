@@ -164,6 +164,14 @@ class Ordering {
     if (start.sublist == end.sublist) {
       start.previous.next = end
       end.previous = start.previous
+
+      var size = 0
+      var stamp = start.sublist.base.next
+      while (stamp != start.sublist.base) {
+	size += 1
+	stamp = stamp.next
+      }
+      start.sublist.size = size
     } else {
       val startSublist =
 	if (start.previous == start.sublist.base) {
