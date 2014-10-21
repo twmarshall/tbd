@@ -52,8 +52,8 @@ class MemoNode
 class ModNode(val modizer: Modizer[Any], val key: Any) extends Node
 
 class ParNode
-    (val workerRef1: ActorRef,
-     val workerRef2: ActorRef) extends Node {
+    (val taskRef1: ActorRef,
+     val taskRef2: ActorRef) extends Node {
 
   var updated = false
 

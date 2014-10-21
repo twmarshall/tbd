@@ -43,7 +43,7 @@ class Datastore extends Actor with ActorLogging {
   def updateMod
       (modId: ModId,
        value: Any,
-       worker: ActorRef,
+       task: ActorRef,
        respondTo: ActorRef) {
     val futures = Buffer[Future[String]]()
 
@@ -52,10 +52,10 @@ class Datastore extends Actor with ActorLogging {
       mods(modId) = value
 
       if (dependencies.contains(modId)) {
-	for (workerRef <- dependencies(modId)) {
-          if (workerRef != worker) {
+	for (taskRef <- dependencies(modId)) {
+          if (taskRef != task) {
 	    val finished = Promise[String]()
-	    workerRef ! ModUpdatedMessage(modId, finished)
+	    taskRef ! ModUpdatedMessage(modId, finished)
 	    futures += finished.future
           }
 	}
@@ -68,26 +68,26 @@ class Datastore extends Actor with ActorLogging {
   }
 
   def receive = {
-    case GetModMessage(modId: ModId, workerRef: ActorRef) =>
+    case GetModMessage(modId: ModId, taskRef: ActorRef) =>
       sender ! getMod(modId)
 
       if (dependencies.contains(modId)) {
-	dependencies(modId) += workerRef
+	dependencies(modId) += taskRef
       } else {
-	dependencies(modId) = Set(workerRef)
+	dependencies(modId) = Set(taskRef)
       }
 
     case GetModMessage(modId: ModId, null) =>
       sender ! getMod(modId)
 
-    case UpdateModMessage(modId: ModId, value: Any, worker: ActorRef) =>
-      updateMod(modId, value, worker, sender)
+    case UpdateModMessage(modId: ModId, value: Any, task: ActorRef) =>
+      updateMod(modId, value, task, sender)
 
     case UpdateModMessage(modId: ModId, value: Any, null) =>
       updateMod(modId, value, null, sender)
 
-    case UpdateModMessage(modId: ModId, null, worker: ActorRef) =>
-      updateMod(modId, null, worker, sender)
+    case UpdateModMessage(modId: ModId, null, task: ActorRef) =>
+      updateMod(modId, null, task, sender)
 
     case UpdateModMessage(modId: ModId, null, null) =>
       updateMod(modId, null, null, sender)

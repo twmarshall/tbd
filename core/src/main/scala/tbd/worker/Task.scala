@@ -26,12 +26,12 @@ import tbd.{Adjustable, Context}
 import tbd.ddg.{DDG, Node, MemoNode, ParNode, ReadNode, Timestamp}
 import tbd.messages._
 
-object Worker {
+object Task {
   def props(id: String, parent: ActorRef, datastore: ActorRef): Props =
-    Props(classOf[Worker], id, parent, datastore)
+    Props(classOf[Task], id, parent, datastore)
 }
 
-class Worker(val id: String, parent: ActorRef, datastore: ActorRef)
+class Task(val id: String, parent: ActorRef, datastore: ActorRef)
   extends Actor with ActorLogging {
   import context.dispatcher
 
@@ -81,8 +81,8 @@ class Worker(val id: String, parent: ActorRef, datastore: ActorRef)
               Await.result(Future.sequence(c.pending), DURATION)
               c.pending.clear()
 
-              val future1 = parNode.workerRef1 ? PropagateMessage
-              val future2 = parNode.workerRef2 ? PropagateMessage
+              val future1 = parNode.taskRef1 ? PropagateMessage
+              val future2 = parNode.taskRef2 ? PropagateMessage
 
               parNode.pebble1 = false
               parNode.pebble2 = false
@@ -114,8 +114,8 @@ class Worker(val id: String, parent: ActorRef, datastore: ActorRef)
       c.pending.clear()
     }
 
-    case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {
-      val newPebble = c.ddg.parUpdated(workerRef)
+    case PebbleMessage(taskRef: ActorRef, modId: ModId, finished: Promise[String]) => {
+      val newPebble = c.ddg.parUpdated(taskRef)
 
       if (newPebble) {
         parent ! PebbleMessage(self, modId, finished)
@@ -149,10 +149,10 @@ class Worker(val id: String, parent: ActorRef, datastore: ActorRef)
       sender ! c.ddg.toString(prefix)
     }
 
-    case CleanupWorkerMessage => {
+    case CleanupTaskMessage => {
       val futures = Set[Future[Any]]()
       for ((actorRef, parNode) <- c.ddg.pars) {
-        futures += actorRef ? CleanupWorkerMessage
+        futures += actorRef ? CleanupTaskMessage
         actorRef ! akka.actor.PoisonPill
       }
 

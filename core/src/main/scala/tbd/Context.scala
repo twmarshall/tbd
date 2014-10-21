@@ -24,12 +24,12 @@ import scala.concurrent.{Await, Future}
 import tbd.Constants._
 import tbd.ddg.{DDG, Node, Timestamp}
 import tbd.messages._
-import tbd.worker.Worker
+import tbd.worker.Task
 
-class Context(val id: String, val worker: Worker, val datastore: ActorRef) {
-  import worker.context.dispatcher
+class Context(val id: String, val task: Task, val datastore: ActorRef) {
+  import task.context.dispatcher
 
-  val log = Logging(worker.context.system, "TBD" + id)
+  val log = Logging(task.context.system, "TBD" + id)
 
   val ddg = new DDG(id)
 
@@ -57,8 +57,8 @@ class Context(val id: String, val worker: Worker, val datastore: ActorRef) {
   // is one.
   var currentMod2: Mod[Any] = _
 
-  // A unique id to assign to workers forked from this context.
-  var workerId = 0
+  // A unique id to assign to tasks forked from this context.
+  var taskId = 0
 
   private var nextModId = 0
 
@@ -69,8 +69,8 @@ class Context(val id: String, val worker: Worker, val datastore: ActorRef) {
     id + "." + nextModId
   }
 
-  def read[T](mod: Mod[T], workerRef: ActorRef = null): T = {
-    val future = datastore ? GetModMessage(mod.id, workerRef)
+  def read[T](mod: Mod[T], taskRef: ActorRef = null): T = {
+    val future = datastore ? GetModMessage(mod.id, taskRef)
     val ret = Await.result(future, DURATION)
 
     ret match {
@@ -80,7 +80,7 @@ class Context(val id: String, val worker: Worker, val datastore: ActorRef) {
   }
 
   def update[T](mod: Mod[T], value: T) {
-    val message = UpdateModMessage(mod.id, value, worker.self)
+    val message = UpdateModMessage(mod.id, value, task.self)
     val future = (datastore ? message).mapTo[String]
 
     if (!initialRun) {

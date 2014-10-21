@@ -17,7 +17,6 @@ package tbd.master
 
 import akka.actor.{ActorRef, ActorSystem, Props}
 import akka.pattern.ask
-import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -33,7 +32,8 @@ object Main {
 
   def main(args: Array[String]) {
     val main = new Main()
-    println("New master started at: akka.tcp://" + main.system.name + "@127.0.0.1:2552")
+    println("New master started at: akka.tcp://" + main.system.name +
+	    "@127.0.0.1:2552/user/master")
   }
 }
 

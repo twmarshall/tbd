@@ -32,7 +32,7 @@ object TBD {
   def read[T, U](mod: Mod[T])
       (reader: T => Changeable[U])
       (implicit c: Context): Changeable[U] = {
-    val value = c.read(mod, c.worker.self)
+    val value = c.read(mod, c.task.self)
 
     val readNode = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
@@ -51,7 +51,7 @@ object TBD {
   def read2[T, U, V](mod: Mod[T])
       (reader: T => (Changeable[U], Changeable[V]))
       (implicit c: Context): (Changeable[U], Changeable[V]) = {
-    val value = c.read(mod, c.worker.self)
+    val value = c.read(mod, c.task.self)
 
     val readNode = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],

@@ -77,15 +77,15 @@ class DDG(id: String) {
   }
 
   def addPar
-      (workerRef1: ActorRef,
-       workerRef2: ActorRef,
+      (taskRef1: ActorRef,
+       taskRef2: ActorRef,
        c: Context): ParNode = {
-    val parNode = new ParNode(workerRef1, workerRef2)
+    val parNode = new ParNode(taskRef1, taskRef2)
     val timestamp = nextTimestamp(parNode, c)
     parNode.timestamp = timestamp
 
-    pars(workerRef1) = parNode
-    pars(workerRef2) = parNode
+    pars(taskRef1) = parNode
+    pars(taskRef2) = parNode
 
     parNode
   }
@@ -124,14 +124,14 @@ class DDG(id: String) {
   }
 
   // Pebbles a par node. Returns true iff the pebble did not already exist.
-  def parUpdated(workerRef: ActorRef): Boolean = {
-    val parNode = pars(workerRef)
+  def parUpdated(taskRef: ActorRef): Boolean = {
+    val parNode = pars(taskRef)
     if (!parNode.pebble1 && !parNode.pebble2) {
       updated += parNode
       parNode.updated = true
     }
 
-    if (parNode.workerRef1 == workerRef) {
+    if (parNode.taskRef1 == taskRef) {
       val ret = !parNode.pebble1
       parNode.pebble1 = true
       ret
@@ -213,8 +213,8 @@ class DDG(id: String) {
 	case mod: ModNode =>
 	  prefix + mod + " time=" + mod.timestamp + " to " + mod.endTime
 	case par: ParNode =>
-	  val future1 = par.workerRef1 ? DDGToStringMessage(prefix + "|")
-	  val future2 = par.workerRef2 ? DDGToStringMessage(prefix + "|")
+	  val future1 = par.taskRef1 ? DDGToStringMessage(prefix + "|")
+	  val future2 = par.taskRef2 ? DDGToStringMessage(prefix + "|")
 
 	  val output1 = Await.result(future1, DURATION).asInstanceOf[String]
 	  val output2 = Await.result(future2, DURATION).asInstanceOf[String]

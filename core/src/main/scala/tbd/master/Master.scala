@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 import tbd.{Adjustable, TBD}
 import tbd.Constants._
 import tbd.messages._
-import tbd.worker.Worker
+import tbd.worker.Task
 
 object Master {
   def props(datastore: ActorRef): Props = Props(classOf[Master], datastore)
@@ -34,22 +34,22 @@ class Master(val datastore: ActorRef) extends Actor with ActorLogging {
   import context.dispatcher
   log.info("Master launced.")
 
-  private var workerRef: ActorRef = null
+  private var taskRef: ActorRef = null
 
   private var nextMutatorId = 0
 
-  // Maps mutatorIds to their corresponding workers.
-  private val workers = Map[Int, ActorRef]()
+  // Maps mutatorIds to their corresponding tasks.
+  private val tasks = Map[Int, ActorRef]()
 
   def receive = {
     case RunMessage(adjust: Adjustable[_], mutatorId: Int) => {
       log.debug("RunMessage")
 
-      val workerProps = Worker.props("w0", self, datastore)
-      workerRef = context.actorOf(workerProps, "worker" + mutatorId)
-      workers(mutatorId) = workerRef
+      val taskProps = Task.props("w0", self, datastore)
+      taskRef = context.actorOf(taskProps, "task" + mutatorId)
+      tasks(mutatorId) = taskRef
 
-      val resultFuture = workerRef ? RunTaskMessage(adjust)
+      val resultFuture = taskRef ? RunTaskMessage(adjust)
 
       sender ! resultFuture
     }
@@ -57,16 +57,16 @@ class Master(val datastore: ActorRef) extends Actor with ActorLogging {
     case PropagateMessage => {
       log.info("Master actor initiating change propagation.")
 
-      val future = workerRef ? PropagateMessage
+      val future = taskRef ? PropagateMessage
       val respondTo = sender
       future.onComplete((_try: Try[Any]) => {
-	//log.debug("DDG: {}\n\n", Await.result(workerRef ? DDGToStringMessage(""),
+	//log.debug("DDG: {}\n\n", Await.result(taskRef ? DDGToStringMessage(""),
         //                                      DURATION).asInstanceOf[String])
         respondTo ! "done"
       })
     }
 
-    case PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String]) => {
+    case PebbleMessage(taskRef: ActorRef, modId: ModId, finished: Promise[String]) => {
       finished.success("done")
     }
 
@@ -76,20 +76,20 @@ class Master(val datastore: ActorRef) extends Actor with ActorLogging {
     }
 
     case GetMutatorDDGMessage(mutatorId: Int) => {
-      if (workers.contains(mutatorId)) {
-        val future = workers(mutatorId) ? GetDDGMessage
+      if (tasks.contains(mutatorId)) {
+        val future = tasks(mutatorId) ? GetDDGMessage
         sender ! Await.result(future, DURATION)
       }
     }
 
     case ShutdownMutatorMessage(mutatorId: Int) => {
-      if (workers.contains(mutatorId)) {
-        log.debug("Sending CleanupWorkerMessage to " + workers(mutatorId))
-        val future = workers(mutatorId) ? CleanupWorkerMessage
+      if (tasks.contains(mutatorId)) {
+        log.debug("Sending CleanupTaskMessage to " + tasks(mutatorId))
+        val future = tasks(mutatorId) ? CleanupTaskMessage
         Await.result(future, DURATION)
 
-        context.stop(workers(mutatorId))
-        workers -= mutatorId
+        context.stop(tasks(mutatorId))
+        tasks -= mutatorId
       }
 
       sender ! "done"
@@ -97,6 +97,10 @@ class Master(val datastore: ActorRef) extends Actor with ActorLogging {
 
     case CleanupMessage => {
       sender ! "done"
+    }
+
+    case RegisterWorkerMessage(worker: ActorRef) => {
+      println(worker)
     }
 
     case x => {

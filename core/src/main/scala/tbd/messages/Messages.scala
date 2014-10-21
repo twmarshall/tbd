@@ -25,8 +25,8 @@ import tbd.Constants._
 import tbd.ddg.Node
 
 // Datastore
-case class GetModMessage(modId: ModId, worker: ActorRef)
-case class UpdateModMessage(modId: ModId, value: Any, worker: ActorRef)
+case class GetModMessage(modId: ModId, task: ActorRef)
+case class UpdateModMessage(modId: ModId, value: Any, task: ActorRef)
 case class NullMessage()
 
 case class DBPutMessage(key: ModId, value: Any)
@@ -43,10 +43,13 @@ case class ShutdownMutatorMessage(mutatorId: Int)
 case class CleanupMessage()
 
 // Worker
+case class RegisterWorkerMessage(worker: ActorRef)
+
+// Task
 case class ModUpdatedMessage(modId: ModId, finished: Promise[String])
-case class PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String])
+case class PebbleMessage(taskRef: ActorRef, modId: ModId, finished: Promise[String])
 case class PropagateMessage()
 case class RunTaskMessage(adjust: Adjustable[_])
 case class GetDDGMessage()
 case class DDGToStringMessage(prefix: String)
-case class CleanupWorkerMessage()
+case class CleanupTaskMessage()
