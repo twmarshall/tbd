@@ -22,11 +22,28 @@ import tbd._
 import tbd.datastore.IntData
 import tbd.list._
 
+object ReduceByKeyAlgorithm {
+  def mapper(pair: (Int, Int)) = {
+    List(pair, (pair._1 * 2, pair._2), (pair._1 * 3, pair._2))
+  }
+}
+
+class ReduceByKeyAdjust(list: AdjustableList[Int, Int])
+  extends Adjustable[AdjustableList[Int, Int]] {
+
+  def run(implicit c: Context) = {
+    val mapped = list.flatMap(ReduceByKeyAlgorithm.mapper)
+    mapped.reduceByKey(_ + _)
+  }
+}
+
 class ReduceByKeyAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ListInput[Int, Int](mutator, listConf)
 
   val data = new IntData(input, count, mutations)
+
+  val adjust = new ReduceByKeyAdjust(input.getAdjustableList())
 
   def generateNaive() {
     data.generate()
@@ -38,7 +55,7 @@ class ReduceByKeyAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   private def naiveHelper(input: Map[Int, Int]) = {
     val mapped = Buffer[(Int, Int)]()
-    input.foreach(pair => mapped ++= mapper(pair))
+    input.foreach(pair => mapped ++= ReduceByKeyAlgorithm.mapper(pair))
 
     val reduced = Map[Int, Int]()
     for ((key, value) <- mapped) {
@@ -54,16 +71,5 @@ class ReduceByKeyAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
 
     sortedOutput == sortedAnswer
-  }
-
-  def mapper(pair: (Int, Int)) = {
-    mapCount += 1
-    List(pair, (pair._1 * 2, pair._2), (pair._1 * 3, pair._2))
-  }
-
-  def run(implicit c: Context) = {
-    val list = input.getAdjustableList()
-    val mapped = list.flatMap(mapper)
-    mapped.reduceByKey(_ + _)
   }
 }

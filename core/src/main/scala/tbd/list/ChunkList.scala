@@ -15,6 +15,7 @@
  */
 package tbd.list
 
+import java.io.Serializable
 import scala.collection.mutable.Buffer
 
 import tbd._
@@ -23,7 +24,7 @@ import tbd.TBD._
 
 class ChunkList[T, U]
     (val head: Mod[ChunkListNode[T, U]],
-     conf: ListConf) extends AdjustableList[T, U] {
+     conf: ListConf) extends AdjustableList[T, U] with Serializable {
 
   override def chunkMap[V, W](f: (Vector[(T, U)]) => (V, W))
       (implicit c: Context): ModList[V, W] = {
@@ -291,10 +292,12 @@ class ChunkList[T, U]
   /* Meta functions */
   def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
     val buf = Buffer[(T, U)]()
-    var node = mutator.read(head)
-    while (node != null) {
-      buf ++= node.chunk
-      node = mutator.read(node.nextMod)
+    if (head != null) {
+      var node = mutator.read(head)
+      while (node != null) {
+	buf ++= node.chunk
+	node = mutator.read(node.nextMod)
+      }
     }
 
     buf

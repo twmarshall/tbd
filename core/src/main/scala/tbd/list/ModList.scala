@@ -15,6 +15,7 @@
  */
 package tbd.list
 
+import java.io.Serializable
 import scala.collection.mutable.{Buffer, Map}
 
 import tbd._
@@ -24,7 +25,7 @@ import tbd.TBD._
 class ModList[T, U]
     (val head: Mod[ModListNode[T, U]],
      val sorted: Boolean = false)
-  extends AdjustableList[T, U] {
+  extends AdjustableList[T, U] with Serializable {
 
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): ModList[T, U] = {

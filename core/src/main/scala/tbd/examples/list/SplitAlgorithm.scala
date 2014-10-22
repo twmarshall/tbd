@@ -17,35 +17,40 @@ package tbd.examples.list
 
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
-import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
-import scala.concurrent.forkjoin.ForkJoinPool
 
 import tbd._
 import tbd.datastore.StringData
 import tbd.list._
 
-object MapAlgorithm {
-  def mapper(pair: (Int, String)): (Int, Int) = {
-    var count = 0
-    for (word <- pair._2.split("\\W+")) {
-      count += 1
-    }
-    (pair._1, count)
+object SplitAlgorithm {
+  def predicate(pair: (Int, String)): Boolean = {
+    pair._2.length % 2 == 0
+  }
+
+  type SplitResult = (AdjustableList[Int, String], AdjustableList[Int, String])
+}
+
+class SplitAdjust(list: AdjustableList[Int, String])
+  extends Adjustable[SplitAlgorithm.SplitResult] {
+
+  def run(implicit c: Context) = {
+    list.split((pair: (Int, String)) => SplitAlgorithm.predicate(pair))
   }
 }
 
-class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
+class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
+    extends Algorithm[String, SplitAlgorithm.SplitResult](_conf, _listConf) {
+
   val input = ListInput[Int, String](mutator, listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
-  var naiveTable: ParIterable[String] = _
+  val adjust = new SplitAdjust(input.getAdjustableList())
+
+  var naiveTable: GenIterable[String] = _
   def generateNaive() {
     data.generate()
     naiveTable = Vector(data.table.values.toSeq: _*).par
-    naiveTable.tasksupport =
-      new ForkJoinTaskSupport(new ForkJoinPool(partitions * 2))
   }
 
   def runNaive() {
@@ -53,23 +58,18 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   private def naiveHelper(input: GenIterable[String]) = {
-    input.map(MapAlgorithm.mapper(0, _)._2)
+    input.partition(value => {
+      SplitAlgorithm.predicate((0, value))
+    })
   }
 
-  def checkOutput(table: Map[Int, String], output: AdjustableList[Int, Int]) = {
-    val sortedOutput = output.toBuffer(mutator).map(_._2).sortWith(_ < _)
-    val answer = naiveHelper(table.values)
+  def checkOutput(input: Map[Int, String], output: SplitAlgorithm.SplitResult): Boolean = {
+    val sortedOutputA = output._1.toBuffer(mutator).map(_._2).sortWith(_ < _)
+    val sortedOutputB = output._2.toBuffer(mutator).map(_._2).sortWith(_ < _)
 
-    sortedOutput == answer.toBuffer.sortWith(_ < _)
-  }
+    val answer = naiveHelper(input.values)
 
-  def mapper(pair: (Int, String)) = {
-    mapCount += 1
-    MapAlgorithm.mapper(pair)
-  }
-
-  def run(implicit c: Context) = {
-    val pages = input.getAdjustableList()
-    pages.map(mapper)
+    sortedOutputA == answer._1.toBuffer.sortWith(_ < _)
+    sortedOutputB == answer._2.toBuffer.sortWith(_ < _)
   }
 }

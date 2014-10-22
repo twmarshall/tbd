@@ -15,6 +15,7 @@
  */
 package tbd.list
 
+import java.io.Serializable
 import scala.collection.mutable.Buffer
 
 import tbd._
@@ -22,7 +23,7 @@ import tbd.TBD._
 
 class PartitionedChunkList[T, U]
     (val partitions: Buffer[ChunkList[T, U]],
-     conf: ListConf) extends AdjustableList[T, U] {
+     conf: ListConf) extends AdjustableList[T, U] with Serializable {
 
   override def chunkMap[V, W](f: (Vector[(T, U)]) => (V, W))
       (implicit c: Context): PartitionedModList[V, W] = {

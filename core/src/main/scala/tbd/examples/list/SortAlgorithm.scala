@@ -23,9 +23,18 @@ import tbd._
 import tbd.datastore.{IntData, IntFileData}
 import tbd.list._
 
+class QuickSortAdjust(list: AdjustableList[Int, Int])
+  extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit c: Context) = {
+    list.quicksort()
+  }
+}
+
 class QuickSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ListInput[Int, Int](mutator, listConf)
+
+  val adjust = new QuickSortAdjust(input.getAdjustableList())
 
   val data =
     if (Experiment.file != "")
@@ -56,11 +65,12 @@ class QuickSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
     sortedOutput == answer.toBuffer
   }
+}
 
-  def run(implicit c: Context): AdjustableList[Int, Int] = {
-    val pages = input.getAdjustableList()
-
-    pages.quicksort()
+class MergeSortAdjust(list: AdjustableList[Int, Int])
+  extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit c: Context) = {
+    list.mergesort()
   }
 }
 
@@ -68,6 +78,8 @@ class MergeSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ListInput[Int, Int](mutator, listConf)
 
+  val adjust = new MergeSortAdjust(input.getAdjustableList())
+
   val data =
     if (Experiment.file != "")
       new IntFileData(input, Experiment.file)
@@ -96,11 +108,5 @@ class MergeSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     //println(answer.toBuffer)
 
     sortedOutput == answer.toBuffer
-  }
-
-  def run(implicit c: Context): AdjustableList[Int, Int] = {
-    val pages = input.getAdjustableList()
-
-    pages.mergesort()
   }
 }

@@ -28,11 +28,21 @@ object FilterAlgorithm {
   }
 }
 
+class FilterAdjust(list: AdjustableList[Int, Int])
+  extends Adjustable[AdjustableList[Int, Int]] {
+
+  def run(implicit c: Context) = {
+    list.filter(FilterAlgorithm.predicate)
+  }
+}
+
 class FilterAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ListInput[Int, Int](mutator, listConf)
 
   val data = new IntData(input, count, mutations)
+
+  val adjust = new FilterAdjust(input.getAdjustableList())
 
   var naiveTable: GenIterable[Int] = _
   def generateNaive() {
@@ -53,13 +63,5 @@ class FilterAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val answer = naiveHelper(table.values)
 
     sortedOutput == answer.toBuffer.sortWith(_ < _)
-  }
-
-  def filterer(pair: (Int, Int)) =
-    FilterAlgorithm.predicate(pair)
-
-  def run(implicit c: Context): AdjustableList[Int, Int] = {
-    val pages = input.getAdjustableList()
-    pages.filter(filterer)
   }
 }

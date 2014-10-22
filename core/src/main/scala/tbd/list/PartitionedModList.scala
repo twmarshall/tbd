@@ -15,14 +15,15 @@
  */
 package tbd.list
 
+import java.io.Serializable
 import scala.collection.mutable.Buffer
 
 import tbd._
 import tbd.TBD._
 
-class PartitionedModList[T, U](
-    val partitions: Buffer[ModList[T, U]]
-  ) extends AdjustableList[T, U] {
+class PartitionedModList[T, U]
+    (val partitions: Buffer[ModList[T, U]])
+  extends AdjustableList[T, U] with Serializable {
 
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): PartitionedModList[T, U] = {

@@ -22,7 +22,6 @@ import scala.collection.mutable.{ArrayBuffer, Set}
 import scala.concurrent.{Await, Future, Lock, Promise}
 
 import tbd.Constants._
-import tbd.master.Main
 import tbd.messages._
 
 class Mod[T](val id: ModId) extends Serializable {

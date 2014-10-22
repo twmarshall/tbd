@@ -17,95 +17,72 @@ package tbd.master
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
-import scala.collection.mutable.{ArrayBuffer, Map}
+import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
 import tbd.{Adjustable, TBD}
 import tbd.Constants._
+import tbd.datastore.Datastore
 import tbd.messages._
-import tbd.worker.Task
+import tbd.worker.{Task, Worker}
 
 object Master {
-  def props(datastore: ActorRef): Props = Props(classOf[Master], datastore)
+  def props(): Props = Props(classOf[Master])
 }
 
-class Master(val datastore: ActorRef) extends Actor with ActorLogging {
+class Master extends Actor with ActorLogging {
   import context.dispatcher
+
   log.info("Master launced.")
 
-  private var taskRef: ActorRef = null
+  val datastore = context.actorOf(Datastore.props(), "datastore")
 
   private var nextMutatorId = 0
 
-  // Maps mutatorIds to their corresponding tasks.
-  private val tasks = Map[Int, ActorRef]()
+  private val workers = Buffer[ActorRef]()
+
+  // Maps mutatorIds to the Worker the mutator's computation was launched on.
+  private val mutators = Map[Int, ActorRef]()
 
   def receive = {
-    case RunMessage(adjust: Adjustable[_], mutatorId: Int) => {
-      log.debug("RunMessage")
+    case GetModMessage(modId: ModId, null) =>
+      (datastore ? GetModMessage(modId, null)) pipeTo sender
 
-      val taskProps = Task.props("w0", self, datastore)
-      taskRef = context.actorOf(taskProps, "task" + mutatorId)
-      tasks(mutatorId) = taskRef
+    case GetMutatorDDGMessage(mutatorId: Int) =>
+      (mutators(mutatorId) ? GetMutatorDDGMessage(mutatorId)) pipeTo sender
 
-      val resultFuture = taskRef ? RunTaskMessage(adjust)
-
-      sender ! resultFuture
-    }
-
-    case PropagateMessage => {
+    case PropagateMutatorMessage(mutatorId: Int) =>
       log.info("Master actor initiating change propagation.")
 
-      val future = taskRef ? PropagateMessage
-      val respondTo = sender
-      future.onComplete((_try: Try[Any]) => {
-	//log.debug("DDG: {}\n\n", Await.result(taskRef ? DDGToStringMessage(""),
-        //                                      DURATION).asInstanceOf[String])
-        respondTo ! "done"
-      })
-    }
+      (workers(0) ? PropagateMutatorMessage(mutatorId)) pipeTo sender
 
-    case PebbleMessage(taskRef: ActorRef, modId: ModId, finished: Promise[String]) => {
-      finished.success("done")
-    }
-
-    case RegisterMutatorMessage => {
+    case RegisterMutatorMessage =>
       sender ! nextMutatorId
       nextMutatorId += 1
-    }
 
-    case GetMutatorDDGMessage(mutatorId: Int) => {
-      if (tasks.contains(mutatorId)) {
-        val future = tasks(mutatorId) ? GetDDGMessage
-        sender ! Await.result(future, DURATION)
-      }
-    }
+    case RegisterWorkerMessage(worker: ActorRef) =>
+      log.info("Registering " + worker)
+      workers += worker
+      sender ! datastore
 
-    case ShutdownMutatorMessage(mutatorId: Int) => {
-      if (tasks.contains(mutatorId)) {
-        log.debug("Sending CleanupTaskMessage to " + tasks(mutatorId))
-        val future = tasks(mutatorId) ? CleanupTaskMessage
-        Await.result(future, DURATION)
+    case RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int) =>
+      log.debug("RunMessage")
 
-        context.stop(tasks(mutatorId))
-        tasks -= mutatorId
-      }
+      mutators(mutatorId) = workers(0)
+      (workers(0) ? RunMutatorMessage(adjust, mutatorId)) pipeTo sender
 
-      sender ! "done"
-    }
+    case ShutdownMutatorMessage(mutatorId: Int) =>
+      (mutators(mutatorId) ? ShutdownMutatorMessage(mutatorId)) pipeTo sender
 
-    case CleanupMessage => {
-      sender ! "done"
-    }
+    case UpdateModMessage(modId: ModId, value: Any, null) =>
+      (datastore ? UpdateModMessage(modId, value, null)) pipeTo sender
 
-    case RegisterWorkerMessage(worker: ActorRef) => {
-      println(worker)
-    }
+    case UpdateModMessage(modId: ModId, null, null) =>
+      (datastore ? UpdateModMessage(modId, null, null)) pipeTo sender
 
-    case x => {
+    case x =>
       log.warning("Master actor received unhandled message " +
 		  x + " from " + sender + " " + x.getClass)
-    }
   }
 }

@@ -16,7 +16,7 @@
 package tbd.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.pattern.ask
+import akka.pattern.{ask, pipe}
 import scala.collection.mutable.{ArrayBuffer, Map, MutableList, Set}
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -81,8 +81,8 @@ class Task(val id: String, parent: ActorRef, datastore: ActorRef)
               Await.result(Future.sequence(c.pending), DURATION)
               c.pending.clear()
 
-              val future1 = parNode.taskRef1 ? PropagateMessage
-              val future2 = parNode.taskRef2 ? PropagateMessage
+              val future1 = parNode.taskRef1 ? PropagateTaskMessage
+              val future2 = parNode.taskRef2 ? PropagateTaskMessage
 
               parNode.pebble1 = false
               parNode.pebble2 = false
@@ -101,30 +101,27 @@ class Task(val id: String, parent: ActorRef, datastore: ActorRef)
   }
 
   def receive = {
-    case ModUpdatedMessage(modId: ModId, finished: Future[_]) => {
+    case ModUpdatedMessage(modId: ModId) =>
       c.ddg.modUpdated(modId)
       c.updatedMods += modId
 
-      parent ! PebbleMessage(self, modId, finished)
-    }
+      (parent ? PebbleMessage(self, modId)) pipeTo sender
 
-    case RunTaskMessage(adjust: Adjustable[_]) => {
+    case RunTaskMessage(adjust: Adjustable[_]) =>
       sender ! adjust.run(c)
       Await.result(Future.sequence(c.pending), DURATION)
       c.pending.clear()
-    }
 
-    case PebbleMessage(taskRef: ActorRef, modId: ModId, finished: Promise[String]) => {
+    case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       val newPebble = c.ddg.parUpdated(taskRef)
 
       if (newPebble) {
-        parent ! PebbleMessage(self, modId, finished)
+        (parent ? PebbleMessage(self, modId)) pipeTo sender
       } else {
-        finished.success("done")
+	sender ! "done"
       }
-    }
 
-    case PropagateMessage => {
+    case PropagateTaskMessage =>
       c.initialRun = false
       val respondTo = sender
       val future = propagate()
@@ -139,32 +136,20 @@ class Task(val id: String, parent: ActorRef, datastore: ActorRef)
 	case Failure(e) =>
 	  e.printStackTrace()
       }
-    }
 
-    case GetDDGMessage => {
+    case GetTaskDDGMessage =>
       sender ! c.ddg
-    }
 
-    case DDGToStringMessage(prefix: String) => {
-      sender ! c.ddg.toString(prefix)
-    }
-
-    case CleanupTaskMessage => {
+    case ShutdownTaskMessage =>
       val futures = Set[Future[Any]]()
       for ((actorRef, parNode) <- c.ddg.pars) {
-        futures += actorRef ? CleanupTaskMessage
+        futures += actorRef ? ShutdownTaskMessage
         actorRef ! akka.actor.PoisonPill
       }
 
-      for (future <- futures) {
-        Await.result(future, DURATION)
-      }
+      Future.sequence(futures) pipeTo sender
 
-      sender ! "done"
-    }
-
-    case x => {
+    case x =>
       log.warning(id + " received unhandled message " + x + " from " + sender)
-    }
   }
 }

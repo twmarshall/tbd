@@ -17,7 +17,6 @@ package tbd.messages
 
 import akka.actor.ActorRef
 import scala.collection.mutable.Set
-import scala.concurrent.Promise
 import scala.language.existentials
 
 import tbd.{Adjustable, Changeable, TBD}
@@ -37,19 +36,19 @@ case class DBShutdownMessage()
 
 // Master
 case class RegisterMutatorMessage()
-case class RunMessage(adjust: Adjustable[_], mutatorId: Int)
+case class RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int)
+case class PropagateMutatorMessage(mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
 case class ShutdownMutatorMessage(mutatorId: Int)
-case class CleanupMessage()
 
 // Worker
 case class RegisterWorkerMessage(worker: ActorRef)
+case class GetDatastoreMessage()
 
 // Task
-case class ModUpdatedMessage(modId: ModId, finished: Promise[String])
-case class PebbleMessage(taskRef: ActorRef, modId: ModId, finished: Promise[String])
-case class PropagateMessage()
+case class ModUpdatedMessage(modId: ModId)
+case class PebbleMessage(taskRef: ActorRef, modId: ModId)
+case class PropagateTaskMessage()
 case class RunTaskMessage(adjust: Adjustable[_])
-case class GetDDGMessage()
-case class DDGToStringMessage(prefix: String)
-case class CleanupTaskMessage()
+case class GetTaskDDGMessage()
+case class ShutdownTaskMessage()

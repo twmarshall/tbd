@@ -12,21 +12,22 @@ Build with SBT (you don't need to install SBT on your machine)
 ## Experiment
 ```
 >sbt/sbt
-> mkexamples
+> mkrun
 ```
 
 This will create the script bin/experiment.sh which can be used to run the
 performance experiments.
 
+To run in cluster mode, 'mkrun' will also create the script bin/master.sh
+which can be used to launch a master. This script will print out a URL of
+the form 'akka.tcp://...' which can then be passed to the bin/worker.sh
+script as its only argument. Then, you can run bin/experiment.sh with
+the '--master' flag with this URL.
+
 ## Debugging
 
-To turn on Akka debug log output, edit core/src/main/resources/common.conf, changing
-loglevel to "DEBUG".
-
-To turn on more useful DDG output, or to run the visualizer, 
-edit core/src/main/scala/tbd/master/Main.scala, changing 'val debug' to 'true'.
-You must also change the imports at the top of any source files containing 
-self-adjusting code from:
+To turn on debugging output from the library, you can change the imports at 
+the top of any source files containing self-adjusting code from:
 
 ```
 import tbd._
@@ -39,6 +40,9 @@ to
 import tbd.debug._
 import tbd.debug.TBD._
 ```
+
+This is required to make the visualizer work, for example modifying ModList.scala and
+ModListNode.scala.
 
 ## Visualizing
 
@@ -66,7 +70,7 @@ To call a quick visualizer from within your code (for debugging), use:
 tbd.visualization.QuickVisualizer.show(mutator.getDDG())
 ```
 
-*Short explanation for visualizer UI*
+*Visualizer UI*
 
 Select mutation round from combo box.
 Click node for details in lower panel

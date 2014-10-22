@@ -69,6 +69,10 @@ Options:
 
   var file = ""
 
+  var master = ""
+
+  var port = 2252
+
   val confs = Map(("algorithms" -> Array("map")),
                   ("cacheSizes" -> Array("100000")),
                   ("counts" -> Array("1000")),
@@ -207,6 +211,9 @@ Options:
 	case "--cacheSizes" =>
 	  confs("cacheSizes") = args(i + 1).split(",")
 	  i += 1
+	case "--master" =>
+	  master = args(i + 1)
+	  i += 1
         case _ =>
           println("Unknown option " + args(i * 2) + "\n" + usage)
           sys.exit()
@@ -304,9 +311,6 @@ Options:
 		      new ChunkWCAlgorithm(conf, listConf)
 		    else
 		      new WCAlgorithm(conf, listConf)
-
-                  case "wsort" =>
-                    new WikiSortAlgorithm(conf, listConf)
 		}
 
 		val results = alg.run()

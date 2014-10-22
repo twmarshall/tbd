@@ -28,11 +28,21 @@ object FlatMapAlgorithm {
   }
 }
 
+class FlatMapAdjust(list: AdjustableList[Int, Int])
+  extends Adjustable[AdjustableList[Int, Int]] {
+
+  def run(implicit c: Context) = {
+    list.flatMap(FlatMapAlgorithm.mapper)
+  }
+}
+
 class FlatMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ListInput[Int, Int](mutator, listConf)
 
   val data = new IntData(input, count, mutations)
+
+  val adjust = new FlatMapAdjust(input.getAdjustableList())
 
   var naiveTable: GenIterable[Int] = _
   def generateNaive() {
@@ -53,15 +63,5 @@ class FlatMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val answer = naiveHelper(table.values)
 
     sortedOutput == answer.map(_._2).toBuffer.sortWith(_ < _)
-  }
-
-  def mapper(pair: (Int, Int)) = {
-    mapCount += 1
-    FlatMapAlgorithm.mapper(pair)
-  }
-
-  def run(implicit c: Context) = {
-    val pages = input.getAdjustableList()
-    pages.flatMap(mapper)
   }
 }

@@ -16,8 +16,9 @@
 package tbd.datastore
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.Future
 
 import tbd.Constants._
 import tbd.messages._
@@ -54,9 +55,7 @@ class Datastore extends Actor with ActorLogging {
       if (dependencies.contains(modId)) {
 	for (taskRef <- dependencies(modId)) {
           if (taskRef != task) {
-	    val finished = Promise[String]()
-	    taskRef ! ModUpdatedMessage(modId, finished)
-	    futures += finished.future
+	    futures += (taskRef ? ModUpdatedMessage(modId)).mapTo[String]
           }
 	}
       }
