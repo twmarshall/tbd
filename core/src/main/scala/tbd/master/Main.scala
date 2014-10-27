@@ -15,10 +15,12 @@
  */
 package tbd.master
 
+import tbd.Constants.localhost
+
 object Main {
   def main(args: Array[String]) {
     val connector = MasterConnector()
     println("New master started at: akka.tcp://" + connector.system.name +
-	    "@127.0.0.1:2552/user/master")
+	    "@" + localhost + ":2552/user/master")
   }
 }
