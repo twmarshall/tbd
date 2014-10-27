@@ -27,7 +27,8 @@ object Main {
         descr = "The ip address to bind to.")
       val port = opt[Int]("port", 'p', default = Some(2552),
         descr = "The port to bind to.")
-      val logging = opt[String]("log", 'l', default = Some("WARNING"))
+      val logging = opt[String]("log", 'l', default = Some("WARNING"),
+        descr = "The logging level. Options are DEBUG, INFO, or WARNING")
     }
 
     val ip = Conf.ip.get.get
