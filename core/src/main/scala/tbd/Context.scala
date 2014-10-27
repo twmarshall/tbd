@@ -73,10 +73,10 @@ class Context(val id: String, val task: Task, val datastore: ActorRef) {
     val future = datastore ? GetModMessage(mod.id, taskRef)
     val ret = Await.result(future, DURATION)
 
-    ret match {
-      case NullMessage => null.asInstanceOf[T]
-      case x: T => x
-    }
+    (ret match {
+      case NullMessage => null
+      case x => x
+    }).asInstanceOf[T]
   }
 
   def update[T](mod: Mod[T], value: T) {

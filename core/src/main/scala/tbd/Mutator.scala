@@ -63,10 +63,10 @@ class Mutator(_connector: MasterConnector = null) {
     val future = masterRef ? GetModMessage(mod.id, null)
     val ret = Await.result(future, DURATION)
 
-    ret match {
-      case NullMessage => null.asInstanceOf[T]
-      case x: T => x
-    }
+    (ret match {
+      case NullMessage => null
+      case x => x
+    }).asInstanceOf[T]
   }
 
   def run[T](adjust: Adjustable[T]): T = {
