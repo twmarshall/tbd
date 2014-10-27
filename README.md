@@ -1,4 +1,4 @@
-TBD
+ThomasDB
 ===========
 
 Build with SBT (you don't need to install SBT on your machine)
