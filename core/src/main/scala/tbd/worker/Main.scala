@@ -30,7 +30,8 @@ object Main {
         descr = "The ip address to bind to.")
       val port = opt[Int]("port", 'p', default = Some(2553),
         descr = "The port to bind to.")
-      val logging = opt[String]("log", 'l', default = Some("WARNING"))
+      val logging = opt[String]("log", 'l', default = Some("WARNING"),
+        descr = "The logging level. Options are DEBUG, INFO, or WARNING")
 
       val master = trailArg[String](required = true)
     }
