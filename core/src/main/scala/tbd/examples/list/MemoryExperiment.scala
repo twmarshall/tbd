@@ -16,42 +16,92 @@
 package tbd.examples.list
 
 import scala.collection.mutable.Map
+import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
+import scala.concurrent.forkjoin.ForkJoinPool
+import scala.collection.immutable.HashMap
+import akka.util.Timeout
+import scala.collection.mutable.{ArrayBuffer, Map}
+import scala.concurrent.duration._
 
 import tbd._
 import tbd.datastore.StringData
 import tbd.list._
 
 class MemoryExperiment(input: ListInput[Int, String])
-    extends Adjustable[AdjustableList[Int, String]] {
-  val partitions = 4
+    extends Adjustable[Mod[(Int, HashMap[String, Int])]] {
+  def mapper(pair: (Int, String)) = {
+    (pair._1, WCAlgorithm.wordcount(pair._2))
+  }
+
+  def reducer(
+      pair1: (Int, HashMap[String, Int]),
+      pair2: (Int, HashMap[String, Int])) = {
+    (pair1._1, WCAlgorithm.reduce(pair1._2, pair2._2))
+   }
+
+  def chunkMapper(chunk: Vector[(Int, String)]) = {
+    var counts = Map[String, Int]()
+
+    for (page <- chunk) {
+      counts = WCAlgorithm.mutableWordcount(page._2, counts)
+    }
+
+    (0, HashMap(counts.toSeq: _*))
+  }
+
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
-    list.map((x: (Int, String)) => x)
+    val counts = list.chunkMap(chunkMapper)
+    counts.reduce(reducer)
   }
 }
 
 object MemoryExperiment {
-  def main(args: Array[String]) {
-    val max = 1000
-    val mutator = new Mutator()
-    val list = ListInput[Int, String](mutator, new ListConf(partitions = 4))
-    val input = new StringData(list, max, Array("insert", "remove", "update"), false)
+  def generate(count: Int) = {
+  var vec = Vector[String]().par
+    while (vec.size < count) {
+      val elems = scala.xml.XML.loadFile("wiki.xml")
 
-    for (i <- 0 to max) {
-      input.addValue()
+      (elems \\ "elem").map(elem => {
+        (elem \\ "value").map(value => {
+        if (vec.size < count) {
+	  vec :+= value.text
+	  }
+        })
+      })
     }
+    vec
+  }
 
-    val output = mutator.run(new MemoryExperiment(list))
+  def main(args: Array[String]) {
+    Constants.DURATION = 1000.seconds
+    Constants.TIMEOUT = Timeout(1000.seconds)
+    for (max <- List(110000,130000,150000)) {
+      println(max)
+      val input = generate(max)
 
-    val rand = new scala.util.Random()
-    var i = 0
-    while (i < 1000) {
-      input.update(100)
+      //val output = input.aggregate(Map[String, Int]())((x, line) =>
+      //  WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
 
-      println("starting propagating")
-      mutator.propagate()
-      println("done propagating")
-      i += 1
+      /*val mutator = new Mutator()
+      val list = ListInput[Int, String](mutator, new ListConf(partitions = 4, chunkSize = 100))
+      val input = new StringData(list, max, Array("insert", "remove", "update"), false)
+      input.generate()
+      input.load()
+      input.clearValues()
+      val output = mutator.run(new MemoryExperiment(list))
+
+      val rand = new scala.util.Random()
+      var i = 0
+      while (i < 1) {
+        input.update(1)
+
+        mutator.propagate()
+        i += 1
+      }
+      mutator.shutdown()*/
+
+      println("done")
     }
   }
 }
