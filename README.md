@@ -21,7 +21,7 @@ performance experiments.
 To run in cluster mode, 'mkrun' will also create the script bin/master.sh
 which can be used to launch a master. This script will print out a URL of
 the form 'akka.tcp://...' which can then be passed to the bin/worker.sh
-script as its only argument. Then, you can run bin/experiment.sh with
+script as a required trailing argument. Then, you can run bin/experiment.sh with
 the '--master' flag with this URL.
 
 ## Debugging
