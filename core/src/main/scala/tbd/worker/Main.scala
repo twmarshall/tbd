@@ -26,7 +26,8 @@ import tbd.messages._
 object Main {
   def main(args: Array[String]) {
     object Conf extends ScallopConf(args) {
-      val ip = opt[String]("ip", 'i', default = Some(localhost))
+      val ip = opt[String]("ip", 'i', default = Some(localhost),
+        descr = "The ip address to bind to.")
       val port = opt[Int]("port", 'p', default = Some(2553),
         descr = "The port to bind to.")
       val logging = opt[String]("log", 'l', default = Some("WARNING"))
