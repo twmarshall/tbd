@@ -46,9 +46,11 @@ object MasterConnector {
       (singleNode: Boolean = true,
        storeType: String = "memory",
        cacheSize: Int = 10000,
+       ip: String = "127.0.0.1",
        port: Int = 2552) = {
-    val conf = akkaConf + """
-      akka.remote.netty.tcp.port = """ + port + """
+    val conf = akkaConf + s"""
+      akka.remote.netty.tcp.hostname = $ip
+      akka.remote.netty.tcp.port = $port
     """
     val masterAkkaConf = ConfigFactory.parseString(conf)
 

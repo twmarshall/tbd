@@ -15,12 +15,23 @@
  */
 package tbd.master
 
+import org.rogach.scallop._
+
 import tbd.Constants.localhost
 
 object Main {
   def main(args: Array[String]) {
-    val connector = MasterConnector()
+
+    object Conf extends ScallopConf(args) {
+      val ip = opt[String]("ip", 'i', default = Some(localhost))
+      val port = opt[Int]("port", 'p', default = Some(2552))
+    }
+
+    val ip = Conf.ip.get.get
+    val port = Conf.port.get.get
+
+    val connector = MasterConnector(ip = ip, port = port)
     println("New master started at: akka.tcp://" + connector.system.name +
-	    "@" + localhost + ":2552/user/master")
+	    "@" + ip + ":" + port + "/user/master")
   }
 }
