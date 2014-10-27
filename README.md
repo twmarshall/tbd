@@ -11,7 +11,7 @@ Build with SBT (you don't need to install SBT on your machine)
 
 ## Experiment
 ```
->sbt/sbt
+> sbt/sbt
 > mkrun
 ```
 
