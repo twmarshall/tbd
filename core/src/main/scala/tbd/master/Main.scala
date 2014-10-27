@@ -24,7 +24,8 @@ object Main {
 
     object Conf extends ScallopConf(args) {
       val ip = opt[String]("ip", 'i', default = Some(localhost))
-      val port = opt[Int]("port", 'p', default = Some(2552))
+      val port = opt[Int]("port", 'p', default = Some(2552),
+        descr = "The port to bind to.")
       val logging = opt[String]("log", 'l', default = Some("WARNING"))
     }
 
