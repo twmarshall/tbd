@@ -183,17 +183,17 @@ class DDG(id: String) {
     node match {
       case memoNode: MemoNode =>
 	memoNode.value match {
-	  case changeable: Changeable[Any] =>
+	  case changeable: Changeable[_] =>
 	    if (changeable.mod == mod1) {
-	      changeable.mod = mod2
+	      changeable.asInstanceOf[Changeable[Any]].mod = mod2
 	    }
-	  case (c1: Changeable[Any], c2: Changeable[Any]) =>
+	  case (c1: Changeable[_], c2: Changeable[_]) =>
 	    if (c1.mod == mod1) {
-	      c1.mod = mod2
+	      c1.asInstanceOf[Changeable[Any]].mod = mod2
 	    }
 
 	    if (c2.mod == mod1) {
-	      c2.mod = mod2
+	      c2.asInstanceOf[Changeable[Any]].mod = mod2
 	    }
 	  case _ =>
 	}
