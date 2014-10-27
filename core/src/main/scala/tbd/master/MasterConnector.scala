@@ -47,8 +47,11 @@ object MasterConnector {
        storeType: String = "memory",
        cacheSize: Int = 10000,
        ip: String = "127.0.0.1",
-       port: Int = 2552) = {
+       port: Int = 2552,
+       logging: String = "WARNING") = {
     val conf = akkaConf + s"""
+      akka.loglevel = $logging
+
       akka.remote.netty.tcp.hostname = $ip
       akka.remote.netty.tcp.port = $port
     """

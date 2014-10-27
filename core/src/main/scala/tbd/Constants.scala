@@ -30,8 +30,6 @@ object Constants {
   val localhost = InetAddress.getLocalHost.getHostAddress
 
   val akkaConf = s"""
-    akka.loglevel = WARNING
-
     akka.actor.provider = akka.remote.RemoteActorRefProvider
 
     akka.remote.enabled-transports = [akka.remote.netty.tcp]

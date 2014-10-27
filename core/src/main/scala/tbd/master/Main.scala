@@ -25,12 +25,14 @@ object Main {
     object Conf extends ScallopConf(args) {
       val ip = opt[String]("ip", 'i', default = Some(localhost))
       val port = opt[Int]("port", 'p', default = Some(2552))
+      val logging = opt[String]("log", 'l', default = Some("WARNING"))
     }
 
     val ip = Conf.ip.get.get
     val port = Conf.port.get.get
+    val logging = Conf.logging.get.get
 
-    val connector = MasterConnector(ip = ip, port = port)
+    val connector = MasterConnector(ip = ip, port = port, logging = logging)
     println("New master started at: akka.tcp://" + connector.system.name +
 	    "@" + ip + ":" + port + "/user/master")
   }

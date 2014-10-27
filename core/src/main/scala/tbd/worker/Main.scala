@@ -28,14 +28,19 @@ object Main {
     object Conf extends ScallopConf(args) {
       val ip = opt[String]("ip", 'i', default = Some(localhost))
       val port = opt[Int]("port", 'p', default = Some(2553))
+      val logging = opt[String]("log", 'l', default = Some("WARNING"))
+
       val master = trailArg[String](required = true)
     }
 
     val ip = Conf.ip.get.get
     val port = Conf.port.get.get
     val master = Conf.master.get.get
+    val logging = Conf.logging.get.get
 
     val conf = akkaConf + s"""
+      akka.loglevel = $logging
+
       akka.remote.netty.tcp.hostname = $ip
       akka.remote.netty.tcp.port = $port
     """
