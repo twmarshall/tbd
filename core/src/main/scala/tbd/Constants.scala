@@ -32,6 +32,8 @@ object Constants {
   val akkaConf = """
     akka.actor.provider = akka.remote.RemoteActorRefProvider
 
+    akka.log-dead-letters = off
+
     akka.remote.enabled-transports = [akka.remote.netty.tcp]
   """
 }

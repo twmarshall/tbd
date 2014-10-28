@@ -29,15 +29,17 @@ object Main {
         descr = "The ip address to bind to.")
       val port = opt[Int]("port", 'p', default = Some(2552),
         descr = "The port to bind to.")
-      val logging = opt[String]("log", 'l', default = Some("WARNING"),
-        descr = "The logging level. Options are DEBUG, INFO, or WARNING")
+      val logging = opt[String]("log", 'l', default = Some("INFO"),
+        descr = "The logging level. Options, by increasing verbosity, are " +
+        "OFF, WARNING, INFO, or DEBUG")
     }
 
     val ip = Conf.ip.get.get
     val port = Conf.port.get.get
     val logging = Conf.logging.get.get
 
-    val connector = MasterConnector(ip = ip, port = port, logging = logging)
+    val connector = MasterConnector(ip = ip, port = port, logging = logging,
+      singleNode = false)
     println("New master started at: akka.tcp://" + connector.system.name +
 	    "@" + ip + ":" + port + "/user/master")
   }

@@ -53,26 +53,28 @@ class Master extends Actor with ActorLogging {
       (mutators(mutatorId) ? GetMutatorDDGMessage(mutatorId)) pipeTo sender
 
     case PropagateMutatorMessage(mutatorId: Int) =>
-      log.info("Master actor initiating change propagation.")
+      log.info("Initiating change propagation for mutator " + mutatorId)
 
       (workers(0) ? PropagateMutatorMessage(mutatorId)) pipeTo sender
 
     case RegisterMutatorMessage =>
+      log.info("Registering mutator " + nextMutatorId)
       sender ! nextMutatorId
       nextMutatorId += 1
 
     case RegisterWorkerMessage(worker: ActorRef) =>
-      log.info("Registering " + worker)
+      log.info("Registering worker at " + worker)
       workers += worker
       sender ! datastore
 
     case RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int) =>
-      log.debug("RunMessage")
+      log.info("Starting initial run for mutator " + mutatorId)
 
       mutators(mutatorId) = workers(0)
       (workers(0) ? RunMutatorMessage(adjust, mutatorId)) pipeTo sender
 
     case ShutdownMutatorMessage(mutatorId: Int) =>
+      log.info("Shutting down mutator " + mutatorId)
       (mutators(mutatorId) ? ShutdownMutatorMessage(mutatorId)) pipeTo sender
 
     case UpdateModMessage(modId: ModId, value: Any, null) =>
