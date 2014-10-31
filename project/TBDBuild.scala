@@ -1,5 +1,7 @@
 import sbt._
 import Keys._
+import sbtassembly.Plugin._
+import AssemblyKeys._
 
 object TBDBuild extends Build {
   val buildOrganization = "edu.cmu.cs"
@@ -16,6 +18,22 @@ object TBDBuild extends Build {
   )
 
   val mavenResolver = "Maven Central Server" at "http://central.maven.org/maven2"
+  val localResolver = "Local Maven Repository" at "file://"+Path.userHome.absolutePath+"/.m2/repository"
+
+  val reefVerMvn = "0.8"
+  val reefVer = "0.9-SNAPSHOT"
+  val reefVer2 = "0.10-incubating-SNAPSHOT"
+  val hadoopVer = "2.2.0"
+  val hadoopVer2 = "2.4.0"
+
+  val reefDeps = Seq (
+    "org.apache.reef" % "reef-common" % reefVer2,
+    "org.apache.reef" % "reef-runtime-local" % reefVer2,
+    "org.apache.reef" % "reef-runtime-yarn" % reefVer2,
+    "org.apache.reef" % "reef-checkpoint" % reefVer2,
+    "org.apache.reef" % "reef-io" % reefVer2,
+    "org.apache.reef" % "reef-annotations" % reefVer2
+  )
 
   val commonDeps = Seq (
     "berkeleydb"                  % "je"                   % "3.2.76",
@@ -33,11 +51,12 @@ object TBDBuild extends Build {
 
   val mkrun = TaskKey[File]("mkrun")
   val mkvisualization = TaskKey[File]("mkvisualization")
+  val mkreef = TaskKey[File]("mkreef")
 
   lazy val root = Project (
     "root",
     file(".")
-  ) aggregate(macros, core, visualization)
+  ) aggregate(macros, core, visualization, reef)
 
   lazy val core = Project (
     "core",
@@ -71,6 +90,29 @@ object TBDBuild extends Build {
       }
     )
   ) dependsOn(macros)
+
+  lazy val reef = Project (
+    "reef",
+    file("reef"),
+    settings = buildSettings ++ assemblySettings ++ Seq (
+      libraryDependencies ++= reefDeps,
+      resolvers += localResolver,
+      javaOptions += "-Xss128M",
+      mkreef := {
+        val classpath = (fullClasspath in Runtime).value.files.absString
+        val template = """#!/bin/sh
+        java -Xmx2g -Xss4m -classpath "%s" %s $@
+        """
+
+        val reef = template.format(classpath, "tbd.reef.TBDReefYarn")
+        val reefOut = baseDirectory.value / "../bin/reef.sh"
+        IO.write(reefOut, reef)
+        reefOut.setExecutable(true)
+
+        reefOut
+      }
+    )
+  ) dependsOn(core)
 
   lazy val visualization = Project(
     "visualization",
