@@ -55,10 +55,12 @@ class DDG(id: String) {
   }
 
   def addMod
-      (modizer: Modizer[Any],
+      (modId1: ModId,
+       modId2: ModId,
+       modizer: Modizer[Any],
        key: Any,
        c: Context): ModNode = {
-    val modNode = new ModNode(modizer, key)
+    val modNode = new ModNode(modId1, modId2, modizer, key)
     val timestamp = nextTimestamp(modNode, c)
     modNode.timestamp = timestamp
 

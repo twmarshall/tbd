@@ -49,7 +49,11 @@ class MemoNode
   var value: Any = null
 }
 
-class ModNode(val modizer: Modizer[Any], val key: Any) extends Node
+class ModNode
+    (val modId1: ModId,
+     val modId2: ModId,
+     val modizer: Modizer[Any],
+     val key: Any) extends Node
 
 class ParNode
     (val taskRef1: ActorRef,

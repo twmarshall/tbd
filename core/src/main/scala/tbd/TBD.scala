@@ -84,6 +84,8 @@ object TBD {
     c.currentMod = mod1.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
+      mod1.id,
+      null,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
@@ -120,6 +122,8 @@ object TBD {
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
+      modLeft.id,
+      modRight.id,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
@@ -152,6 +156,8 @@ object TBD {
     c.currentMod = modLeft.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
+      modLeft.id,
+      null,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
@@ -184,6 +190,8 @@ object TBD {
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
+      null,
+      modRight.id,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)

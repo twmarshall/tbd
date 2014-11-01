@@ -17,6 +17,8 @@ package tbd.ddg
 
 import scala.collection.mutable.Buffer
 
+import tbd.Constants.ModId
+
 class Ordering {
   val maxSize = Int.MaxValue / 2
   var base = new Sublist(0, null)
@@ -132,6 +134,32 @@ class Ordering {
     }
   }
 
+  def getMods(): Iterable[ModId] = {
+    val mods = Buffer[ModId]()
+
+    var time = base.next.base.next
+    while (time < base.previous.base.previous) {
+      val node = time.node
+
+      if (time == node.timestamp) {
+	node match {
+	  case modNode: ModNode =>
+	    if (modNode.modId1 != null) {
+	      mods += modNode.modId1
+	    }
+	    if (modNode.modId2 != null) {
+	      mods += modNode.modId2
+	    }
+	  case _ =>
+	}
+      }
+
+      time = time.getNext()
+    }
+
+    mods
+  }
+
   def splice(start: Timestamp, end: Timestamp, c: tbd.Context) {
     var time = start
     while (time < end) {
@@ -146,8 +174,25 @@ class Ordering {
 	    memoNode.memoizer.removeEntry(memoNode.timestamp, memoNode.signature)
 	  case modNode: ModNode =>
 	    if (modNode.modizer != null) {
-	      modNode.modizer.remove(modNode.key)
+	      if (modNode.modizer.remove(modNode.key, c)) {
+		if (modNode.modId1 != null) {
+		  c.remove(modNode.modId1)
+		}
+
+		if (modNode.modId2 != null) {
+		  c.remove(modNode.modId2)
+		}
+	      }
+	    } else {
+	      if (modNode.modId1 != null) {
+		c.remove(modNode.modId1)
+	      }
+
+	      if (modNode.modId2 != null) {
+		c.remove(modNode.modId2)
+	      }
 	    }
+
 	  case parNode: ParNode =>
 	    parNode.updated = false
 	  case _ =>

@@ -26,6 +26,7 @@ import tbd.ddg.Node
 // Datastore
 case class GetModMessage(modId: ModId, task: ActorRef)
 case class UpdateModMessage(modId: ModId, value: Any, task: ActorRef)
+case class RemoveModsMessage(mods: Iterable[ModId])
 case class NullMessage()
 
 case class DBPutMessage(key: ModId, value: Any)

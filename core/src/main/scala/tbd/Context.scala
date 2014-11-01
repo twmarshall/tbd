@@ -64,6 +64,8 @@ class Context(val id: String, val task: Task, val datastore: ActorRef) {
 
   val pending = Buffer[Future[String]]()
 
+  var epoch = 0
+
   def newModId(): ModId = {
     nextModId += 1
     id + "." + nextModId
@@ -91,5 +93,10 @@ class Context(val id: String, val task: Task, val datastore: ActorRef) {
 	ddg.modUpdated(mod.id)
       }
     }
+  }
+
+  def remove[T](modId: ModId) {
+    val future = (datastore ? RemoveModsMessage(Buffer(modId)))
+    Await.result(future, DURATION)
   }
 }

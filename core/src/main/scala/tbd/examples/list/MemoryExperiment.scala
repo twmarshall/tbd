@@ -76,14 +76,14 @@ object MemoryExperiment {
   def main(args: Array[String]) {
     Constants.DURATION = 1000.seconds
     Constants.TIMEOUT = Timeout(1000.seconds)
-    for (max <- List(110000,130000,150000)) {
+    for (max <- List(1000)) {
       println(max)
-      val input = generate(max)
+      //val input = generate(max)
 
       //val output = input.aggregate(Map[String, Int]())((x, line) =>
       //  WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
 
-      /*val mutator = new Mutator()
+      val mutator = new Mutator()
       val list = ListInput[Int, String](mutator, new ListConf(partitions = 4, chunkSize = 100))
       val input = new StringData(list, max, Array("insert", "remove", "update"), false)
       input.generate()
@@ -93,13 +93,14 @@ object MemoryExperiment {
 
       val rand = new scala.util.Random()
       var i = 0
-      while (i < 1) {
+      while (i < 500) {
+	println(i)
         input.update(1)
 
         mutator.propagate()
         i += 1
       }
-      mutator.shutdown()*/
+      mutator.shutdown()
 
       println("done")
     }

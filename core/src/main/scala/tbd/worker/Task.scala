@@ -123,6 +123,8 @@ class Task(val id: String, parent: ActorRef, datastore: ActorRef)
 
     case PropagateTaskMessage =>
       c.initialRun = false
+      c.epoch += 1
+
       val respondTo = sender
       val future = propagate()
       future onComplete {

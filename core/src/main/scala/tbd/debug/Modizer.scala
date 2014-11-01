@@ -25,17 +25,11 @@ import tbd.ddg.{FunctionTag, ModNode, Node, Tag}
 import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.messages._
 
-class Modizer1[T] extends Modizer[T] {
+class Modizer1[T] extends tbd.Modizer1[T] {
   import scala.language.experimental.macros
 
-  val allocations = Map[Any, Mod[T]]()
-
-  def remove(key: Any) {
-    allocations -= key
-  }
-
   @functionToInvoke("applyInternal")
-  def apply(key: Any)
+  override def apply(key: Any)
       (initializer: => Changeable[T])
       (implicit c: Context): Mod[T] = macro TbdMacros.modizerMacro[Mod[T]]
 
@@ -45,18 +39,10 @@ class Modizer1[T] extends Modizer[T] {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]) = {
-    val mod1 =
-      if (allocations.contains(key)) {
-	allocations(key)
-      } else {
-	val mod1 = new Mod[T](c.newModId())
-	allocations(key) = mod1
-	mod1
-      }
-
     val internalId = Node.getId()
     val stack = Thread.currentThread().getStackTrace()
-    val mod = tbd.TBD.modInternal(initializer, mod1, this, key, c)
+
+    val mod = super.apply(key)(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
@@ -82,36 +68,18 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]) = {
-    val modLeft =
-      if (allocations.contains(key)) {
-	if (c.initialRun) {
-	  println("WARNING - keyed allocation matched during initial run!")
-	}
+    if (allocations.contains(key) && c.initialRun) {
+      println("WARNING - keyed allocation matched during initial run!")
+    }
 
-	allocations(key)
-      } else {
-	val modLeft = new Mod[T](c.newModId())
-	allocations(key) = modLeft
-	modLeft
-      }
-
-    val modRight =
-      if (allocations2.contains(key)) {
-	if (c.initialRun) {
-	  println("WARNING - keyed allocation matched during initial run!")
-	}
-
-	allocations2(key)
-      } else {
-	val modRight = new Mod[U](c.newModId())
-	allocations2(key) = modRight
-	modRight
-      }
+    if (allocations2.contains(key) && c.initialRun) {
+      println("WARNING - keyed allocation matched during initial run!")
+    }
 
     val internalId = Node.getId()
     val stack = Thread.currentThread().getStackTrace()
     val (mod1, mod2) =
-      tbd.TBD.mod2Internal(initializer, modLeft, modRight, this, key, c)
+      super.apply(key)(initializer)(c)
 
     val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
@@ -132,23 +100,14 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
-    val modLeft =
-      if (allocations.contains(key)) {
-	if (c.initialRun) {
-	  println("WARNING - keyed allocation matched during initial run!")
-	}
-
-	allocations(key)
-      } else {
-	val modLeft = new Mod[T](c.newModId())
-	allocations(key) = modLeft
-	modLeft
-      }
+    if (allocations.contains(key) && c.initialRun) {
+      println("WARNING - keyed allocation matched during initial run!")
+    }
 
     val internalId = Node.getId()
     val stack = Thread.currentThread().getStackTrace()
     val (mod, changeable) =
-      tbd.TBD.modLeftInternal(initializer, modLeft, this, key, c)
+      super.left(key)(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
@@ -169,23 +128,14 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
        c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
-    val modRight =
-      if (allocations2.contains(key)) {
-	if (c.initialRun) {
-	  println("WARNING - keyed allocation matched during initial run!")
-	}
-
-	allocations2(key)
-      } else {
-	val modRight = new Mod[U](c.newModId())
-	allocations2(key) = modRight
-	modRight
-      }
+    if (allocations2.contains(key) && c.initialRun) {
+      println("WARNING - keyed allocation matched during initial run!")
+    }
 
     val internalId = Node.getId()
     val stack = Thread.currentThread().getStackTrace()
     val (changeable, mod) =
-      tbd.TBD.modRightInternal(initializer, modRight, this, key, c)
+      super.right(key)(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node

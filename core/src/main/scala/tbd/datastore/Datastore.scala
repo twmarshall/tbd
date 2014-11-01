@@ -48,7 +48,6 @@ class Datastore extends Actor with ActorLogging {
        respondTo: ActorRef) {
     val futures = Buffer[Future[String]]()
 
-
     if (!mods.contains(modId) || mods(modId) != value) {
       mods(modId) = value
 
@@ -90,6 +89,14 @@ class Datastore extends Actor with ActorLogging {
 
     case UpdateModMessage(modId: ModId, null, null) =>
       updateMod(modId, null, null, sender)
+
+    case RemoveModsMessage(modIds: Iterable[ModId]) =>
+      for (modId <- modIds) {
+	mods -= modId
+	dependencies -= modId
+      }
+
+      sender ! "done"
 
     case x =>
       log.warning("Datastore actor received unhandled message " +
