@@ -19,10 +19,15 @@ import tbd.master.Master;
 import tbd.master.MasterConnector;
 import tbd.worker.Worker;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 /**
  * A 'hello REEF' Task.
  */
 public final class TBDMasterTask implements Task {
+  
+  private static final Logger LOG = Logger.getLogger(TBDMasterTask.class.getName());
   
   @Inject
   TBDMasterTask() {
@@ -30,17 +35,52 @@ public final class TBDMasterTask implements Task {
 
   @Override
   public final byte[] call(final byte[] memento) {
-    System.out.println("start instatiation");
+    LOG.log(Level.INFO, "start instatiation");
     
     //option 1
-    String[] args = new String[] {};
+    String[] args = new String[] {"-i", "127.0.0.1", "-p", "2552"};
     Main.main(args);
     
+    LOG.log(Level.INFO, "master start loop");
+    
+    /*
+    while (true){
+      
+    }
+    */
+    
+    try {
+      Thread.sleep(30000);
+    } catch (InterruptedException e) {
+      LOG.log(Level.INFO, "master sleep interrupted");
+    }
+    
+    /*
+    Thread one = new Thread() {
+      public void run() {
+        try {
+          LOG.log(Level.INFO, "master thread sleep");
+          Thread.sleep(30000);
+        } catch(InterruptedException v) {
+          LOG.log(Level.INFO, "master thread sleep interrupt");
+        }
+      }  
+    };
+    one.start();
+    try {
+      one.join();
+    } catch (InterruptedException e) {
+      LOG.log(Level.INFO, "master join interrupt");
+    }
+    */
+    
+    /*
     try {
       this.wait();
     } catch (InterruptedException e) {
-      System.out.println("master wait exception");
+      LOG.log(Level.INFO,"master wait exception");
     }
+    */
     
     //option 2
     /*
@@ -82,7 +122,7 @@ public final class TBDMasterTask implements Task {
     }
     */
 
-    System.out.println("end instantiation");
+    LOG.log(Level.INFO, "end instantiation");
     return null;
   }
 }

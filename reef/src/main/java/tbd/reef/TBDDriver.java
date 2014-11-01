@@ -23,11 +23,16 @@ import org.apache.reef.wake.time.Clock;
 import org.apache.reef.wake.time.event.StartTime;
 import org.apache.reef.wake.time.event.StopTime;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import javax.inject.Inject;
 
 @Unit
 public final class TBDDriver {
 
+  private static final Logger LOG = Logger.getLogger(TBDDriver.class.getName());
+  
   private final EvaluatorRequestor requestor;
 
   private final int numEvaluators=2;
@@ -51,7 +56,7 @@ public final class TBDDriver {
   @Inject
   public TBDDriver(final EvaluatorRequestor requestor) {
     this.requestor = requestor;
-    System.out.println("Instantiated 'TBDDriver'");
+    LOG.log(Level.INFO, "Instantiated 'TBDDriver'");
   }
 
   /**
@@ -60,7 +65,7 @@ public final class TBDDriver {
   public final class StartHandler implements EventHandler<StartTime> {
     @Override
     public void onNext(final StartTime startTime) {
-      System.out.println("TIME: Start Driver.");
+      LOG.log(Level.INFO, "TIME: Start Driver.");
       
       
       
@@ -69,7 +74,7 @@ public final class TBDDriver {
           .setMemory(64)
           .setNumberOfCores(1)
           .build());
-      System.out.println("Requested Evaluators.");
+      LOG.log(Level.INFO, "Requested Evaluators.");
     }
   }
 
@@ -79,11 +84,11 @@ public final class TBDDriver {
   public final class EvaluatorAllocatedHandler implements EventHandler<AllocatedEvaluator> {
     @Override
     public void onNext(final AllocatedEvaluator allocatedEvaluator) {
-      System.out.println("TIME: Evaluator Allocated " + allocatedEvaluator.getId());
-      System.out.println("Evaluator descriptor: " + allocatedEvaluator.getEvaluatorDescriptor());
-      System.out.println("Node descriptor" + allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor());
-      System.out.println("Socket address" + allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress());
-      System.out.println("Host name" + allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress().getHostName());
+      LOG.log(Level.INFO, "TIME: Evaluator Allocated {0}", allocatedEvaluator.getId());
+      LOG.log(Level.INFO, "Evaluator descriptor: {0}", allocatedEvaluator.getEvaluatorDescriptor());
+      LOG.log(Level.INFO, "Node descriptor {0}", allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor());
+      LOG.log(Level.INFO, "Socket address {0}", allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress());
+      LOG.log(Level.INFO, "Host name {0}", allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress().getHostName());
     	
       final int nEval;
       final boolean masterEval;
@@ -115,9 +120,9 @@ public final class TBDDriver {
             .set(ContextConfiguration.IDENTIFIER, contextId)
             .build());
         allocatedEvaluator.submitContext(contextConfigBuilder.build());
-        System.out.println("Submit context " + contextId + " to evaluator " + allocatedEvaluator.getId());
+        LOG.log(Level.INFO, "Submit context {0} to evaluator {1}", new Object[]{contextId, allocatedEvaluator.getId()});
       } else {
-        System.out.println("Close Evaluator " + allocatedEvaluator.getId());
+        LOG.log(Level.INFO, "Close Evaluator {0}", allocatedEvaluator.getId());
         allocatedEvaluator.close();
       }
     }
@@ -129,7 +134,7 @@ public final class TBDDriver {
   public final class ActiveContextHandler implements EventHandler<ActiveContext> {
     @Override
     public void onNext(final ActiveContext context) {
-      System.out.println("TIME: Active Context " + context.getId());
+      LOG.log(Level.INFO, "TIME: Active Context {0}", context.getId());
       
       final String contextId = context.getId();
       final String character = contextId.split("_")[1];
@@ -153,12 +158,12 @@ public final class TBDDriver {
             .set(TaskConfiguration.TASK, TBDMasterTask.class)
             .build();
         context.submitTask(taskConfiguration);
-        System.out.println("Submit  " + taskId + " to context " + contextId);
+        LOG.log(Level.INFO, "Submit {0} to context {1}", new Object[]{taskId, contextId});
       } else if (workerCtxt) {
         contexts.put(contextId, context);
-        System.out.println("Context active: " + contextId);
+        LOG.log(Level.INFO, "Context active: {0}", contextId);
       } else {
-        System.out.println("Close context " + contextId.split("_")[1] + ": " + contextId);
+        LOG.log(Level.INFO, "Close context {0} : {1}", new Object[]{contextId.split("_")[1], contextId});
         context.close();
       }
       
@@ -176,7 +181,7 @@ public final class TBDDriver {
   public final class RunningTaskHandler implements EventHandler<RunningTask> {
     @Override
     public void onNext(final RunningTask task) {
-      System.out.println("TIME: Running Task " + task.getId());
+      LOG.log(Level.INFO, "TIME: Running Task {0}", task.getId());
       
       final String contextId = task.getActiveContext().getId();
       final String character = contextId.split("_")[1];
@@ -194,7 +199,7 @@ public final class TBDDriver {
     @Override
     public void onNext(final CompletedTask completedTask) {
 
-      System.out.println(completedTask.getActiveContext().getEvaluatorDescriptor());
+      LOG.log(Level.INFO, completedTask.getActiveContext().getEvaluatorDescriptor());
       completedTask.getActiveContext().close();
     }
   }
@@ -202,7 +207,7 @@ public final class TBDDriver {
   public final class StopHandler implements EventHandler<StopTime> {
     @Override
     public void onNext(final StopTime stopTime) {
-      System.out.println("TIME: Stop Driver");
+      LOG.log(Level.INFO, "TIME: Stop Driver");
     }
   }
   */
@@ -219,11 +224,11 @@ public final class TBDDriver {
               .set(TaskConfiguration.TASK, TBDWorkerTask.class)
               .build();
           context.submitTask(taskConfiguration);
-          System.out.println("Submit  " + taskId + " to context " + contextId);
+          LOG.log(Level.INFO, "Submit {0} to context {1}", new Object[]{taskId, contextId});
         }
       }
     } else {
-      System.out.println("Sleep: wait worker contexts");
+      LOG.log(Level.INFO, "Sleep: wait worker contexts");
       /*
       Clock.scheduleAlarm(CHECK_UP_INTERVAL,
           new EventHandler<Alarm>() {
@@ -238,7 +243,7 @@ public final class TBDDriver {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
         e.printStackTrace();
-        System.out.println("Sleep exception.");
+        LOG.log(Level.INFO, "Sleep exception.");
       }
       waitAndSubmitWorkerTasks();
     }

@@ -8,23 +8,26 @@ import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.exceptions.BindException;
 import org.apache.reef.tang.exceptions.InjectionException;
 
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 public final class TBDReefYarn {
 
-  private static final int JOB_TIMEOUT = 30000; // 30 sec.
+  private static final Logger LOG = Logger.getLogger(TBDReefYarn.class.getName());
+  private static final int JOB_TIMEOUT = 120000; // 30 sec.
 
   /**
    * @return the configuration of the REEF driver.
    */
   private static Configuration getDriverConfiguration() {
-    System.out.println();
-    System.out.println("DriverConfig TBDReefYarn.class.getProtectionDomain(): "+TBDReefYarn.class.getProtectionDomain());
-    System.out.println("DriverConfig TBDReefYarn.class.getProtectionDomain().getCodeSource(): "
-        +TBDReefYarn.class.getProtectionDomain().getCodeSource());
-    System.out.println("DriverConfig TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation(): "
-        +TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation());
-    System.out.println("DriverConfig TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile(): "
-        +TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile());
-    System.out.println();
+    LOG.log(Level.INFO, "DriverConfig TBDReefYarn.class.getProtectionDomain(): {0}", 
+        TBDReefYarn.class.getProtectionDomain());
+    LOG.log(Level.INFO, "DriverConfig TBDReefYarn.class.getProtectionDomain().getCodeSource(): {0}", 
+        TBDReefYarn.class.getProtectionDomain().getCodeSource());
+    LOG.log(Level.INFO, "DriverConfig TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation(): {0}", 
+        TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation());
+    LOG.log(Level.INFO, "DriverConfig TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile(): {0}",
+        TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile());
     
     return DriverConfiguration.CONF
         .set(DriverConfiguration.GLOBAL_LIBRARIES, TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile())
@@ -45,10 +48,10 @@ public final class TBDReefYarn {
    */
   public static void main(final String[] args) throws BindException, InjectionException {
     
-    System.out.println("Client started");
+    LOG.log(Level.INFO, "Client started");
     final LauncherStatus status = DriverLauncher
         .getLauncher(YarnClientConfiguration.CONF.build())
         .run(getDriverConfiguration(), JOB_TIMEOUT);
-    System.out.println("REEF job completed: "+status);
+    LOG.log(Level.INFO, "REEF job completed: "+status);
   }
 }
