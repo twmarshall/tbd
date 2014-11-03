@@ -35,33 +35,16 @@ class Worker(masterRef: ActorRef) extends Actor with ActorLogging {
   private val datastore = Await.result(
     (masterRef ? RegisterWorkerMessage(self)).mapTo[ActorRef], DURATION)
 
-  val tasks = Map[Int, ActorRef]()
-
   def receive = {
-    case GetMutatorDDGMessage(mutatorId: Int) =>
-      (tasks(mutatorId) ? GetTaskDDGMessage) pipeTo sender
-
-    case RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int) =>
-      log.info("Starting initial run for mutator " + mutatorId)
-      val taskProps = Task.props("t0", self, datastore)
-      val taskRef = context.actorOf(taskProps, "task")
-      (taskRef ? RunTaskMessage(adjust)) pipeTo sender
-      tasks(mutatorId) = taskRef
-
-    case PropagateMutatorMessage(mutatorId: Int) =>
-      log.info("Initiating change propagation for mutator " + mutatorId)
-      (tasks(mutatorId) ? PropagateTaskMessage) pipeTo sender
-
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       sender ! "done"
 
-    case ShutdownMutatorMessage(mutatorId: Int) =>
-      log.info("Shutting down mutator " + mutatorId)
-      val future = tasks(mutatorId) ? ShutdownTaskMessage
-      Await.result(future, DURATION)
+    case ScheduleTaskMessage(id: String, parent: ActorRef) =>
+      log.debug("Scheduling task " + id)
+      val taskProps = Task.props(id, parent, datastore, masterRef)
+      val taskRef = context.actorOf(taskProps, id)
 
-      context.stop(tasks(mutatorId))
-      sender ! "done"
+      sender ! taskRef
 
     case x => println("Worker received unhandled message " + x)
   }

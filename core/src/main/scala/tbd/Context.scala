@@ -26,7 +26,11 @@ import tbd.ddg.{DDG, Node, Timestamp}
 import tbd.messages._
 import tbd.worker.Task
 
-class Context(val id: String, val task: Task, val datastore: ActorRef) {
+class Context
+    (val id: String,
+     val task: Task,
+     val datastore: ActorRef,
+     val masterRef: ActorRef) {
   import task.context.dispatcher
 
   val log = Logging(task.context.system, "TBD" + id)

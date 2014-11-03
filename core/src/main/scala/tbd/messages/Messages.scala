@@ -40,6 +40,7 @@ case class RegisterMutatorMessage()
 case class RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int)
 case class PropagateMutatorMessage(mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
+case class ScheduleTaskMessage(id: String, parent: ActorRef)
 case class ShutdownMutatorMessage(mutatorId: Int)
 
 // Worker
