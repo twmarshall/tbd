@@ -14,7 +14,7 @@ import java.util.logging.Logger;
 public final class TBDReefYarn {
 
   private static final Logger LOG = Logger.getLogger(TBDReefYarn.class.getName());
-  private static final int JOB_TIMEOUT = 120000; // 30 sec.
+  private static final int JOB_TIMEOUT = 600000; // 300 sec.
 
   /**
    * @return the configuration of the REEF driver.

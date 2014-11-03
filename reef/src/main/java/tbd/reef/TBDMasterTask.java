@@ -6,6 +6,7 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
+import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.task.Task;
 
 import com.typesafe.config.Config;
@@ -29,19 +30,28 @@ public final class TBDMasterTask implements Task {
   
   private static final Logger LOG = Logger.getLogger(TBDMasterTask.class.getName());
   
+  private final String masterIP;
+  private final String masterPort;
+  
   @Inject
-  TBDMasterTask() {
+  TBDMasterTask(@Parameter(TBDDriver.HostIP.class) final String ip, @Parameter(TBDDriver.HostPort.class) final String port) {
+    masterIP = ip;
+    masterPort = port;
   }
 
   @Override
   public final byte[] call(final byte[] memento) {
     LOG.log(Level.INFO, "start instatiation");
+    LOG.log(Level.INFO, "master IP: {0}", masterIP);
+    LOG.log(Level.INFO, "master port: {0}", masterPort);
+    
     
     //option 1
-    String[] args = new String[] {"-i", "127.0.0.1", "-p", "2552"};
+    //String[] args = new String[] {"-i", "127.0.0.1", "-p", "2552"};
+    String[] args = new String[] {"-i", masterIP, "-p", masterPort};
     Main.main(args);
     
-    LOG.log(Level.INFO, "master start loop");
+    LOG.log(Level.INFO, "master sleep");
     
     /*
     while (true){
@@ -50,7 +60,7 @@ public final class TBDMasterTask implements Task {
     */
     
     try {
-      Thread.sleep(30000);
+      Thread.sleep(400000);
     } catch (InterruptedException e) {
       LOG.log(Level.INFO, "master sleep interrupted");
     }

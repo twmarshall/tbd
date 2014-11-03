@@ -16,6 +16,8 @@ import org.apache.reef.driver.task.TaskConfiguration;
 import org.apache.reef.tang.Configuration;
 import org.apache.reef.tang.JavaConfigurationBuilder;
 import org.apache.reef.tang.Tang;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
 import org.apache.reef.tang.annotations.Unit;
 import org.apache.reef.wake.EventHandler;
 import org.apache.reef.wake.time.event.Alarm;
@@ -43,11 +45,27 @@ public final class TBDDriver {
   private boolean masterEvalAlloced = false;
   private boolean masterSubmitted = false;
   
-  private String masterIP;
+  private String masterIP = "";
+  private final Integer masterPort = 2552;
+  private String masterAkka = "";
   
   private Map<String, ActiveContext> contexts = new HashMap<String, ActiveContext>();
+  private Map<String, String> ctxt2ip = new HashMap<String, String>();
+  private Map<String, Integer> ctxt2port = new HashMap<String, Integer>();
   private Map<String, String> ctxt2akka = new HashMap<String, String>();
 
+  @NamedParameter(doc = "IP address", short_name = "ip", default_value = "127.0.0.1")
+  final class HostIP implements Name<String> {
+  }
+  
+  @NamedParameter(doc = "port number", short_name = "port", default_value = "2552")
+  final class HostPort implements Name<String> {
+  }
+  
+  @NamedParameter(doc = "master akka", short_name = "master", default_value = "akka.tcp://masterSystem0@127.0.0.1:2552/user/master")
+  final class MasterAkka implements Name<String> {
+  }
+  
   /**
    * Job driver constructor - instantiated via TANG.
    *
@@ -71,7 +89,7 @@ public final class TBDDriver {
       
       TBDDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
           .setNumber(2)
-          .setMemory(64)
+          .setMemory(1024)
           .setNumberOfCores(1)
           .build());
       LOG.log(Level.INFO, "Requested Evaluators.");
@@ -90,6 +108,8 @@ public final class TBDDriver {
       LOG.log(Level.INFO, "Socket address {0}", allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress());
       LOG.log(Level.INFO, "Host name {0}", allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress().getHostName());
     	
+      final String socketAddr = allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress().toString();
+      final String hostIP = socketAddr.substring(socketAddr.indexOf("/")+1, socketAddr.indexOf(":"));
       final int nEval;
       final boolean masterEval;
       final boolean workerEval;
@@ -102,6 +122,8 @@ public final class TBDDriver {
         if (masterEval) {
           ++numEvalAlloced;
           masterEvalAlloced = true;
+          masterIP = hostIP;
+          masterAkka = "akka.tcp://masterSystem0@" + hostIP + ":" + masterPort + "/user/master";
         } else if (workerEval) {
           ++numEvalAlloced;
         }
@@ -111,10 +133,13 @@ public final class TBDDriver {
       if (legalEval) {
         String contextId = "";
         if (masterEval) {
-          contextId = String.format("context_master_%06d", 0);
+          contextId = String.format("context_master_%06d", nEval-1);
         } else if (workerEval) {
-          contextId = String.format("context_worker_%06d", nEval);
+          contextId = String.format("context_worker_%06d", nEval-1);
         }
+        ctxt2ip.put(contextId, hostIP);
+        ctxt2port.put(contextId, masterPort+nEval-1);
+        
         final JavaConfigurationBuilder contextConfigBuilder = Tang.Factory.getTang().newConfigurationBuilder();
         contextConfigBuilder.addConfiguration(ContextConfiguration.CONF
             .set(ContextConfiguration.IDENTIFIER, contextId)
@@ -153,11 +178,25 @@ public final class TBDDriver {
       if (masterCtxt) {
         contexts.put(contextId, context);
         final String taskId = String.format("task_master_%06d", 0);
+        
+        final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
+        cb.addConfiguration(
+            TaskConfiguration.CONF
+                .set(TaskConfiguration.IDENTIFIER, taskId)
+                .set(TaskConfiguration.TASK, TBDMasterTask.class)
+                .build()
+        );
+        cb.bindNamedParameter(HostIP.class, masterIP);
+        cb.bindNamedParameter(HostPort.class, masterPort.toString());
+        context.submitTask(cb.build());
+        
+        /*
         final Configuration taskConfiguration = TaskConfiguration.CONF
             .set(TaskConfiguration.IDENTIFIER, taskId)
             .set(TaskConfiguration.TASK, TBDMasterTask.class)
             .build();
         context.submitTask(taskConfiguration);
+        */
         LOG.log(Level.INFO, "Submit {0} to context {1}", new Object[]{taskId, contextId});
       } else if (workerCtxt) {
         contexts.put(contextId, context);
@@ -219,11 +258,26 @@ public final class TBDDriver {
         ActiveContext context = e.getValue();
         if (contextId.startsWith("context_worker")) {
           final String taskId = contextId.replaceFirst("context", "task");
+          
+          final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
+          cb.addConfiguration(
+              TaskConfiguration.CONF
+                  .set(TaskConfiguration.IDENTIFIER, taskId)
+                  .set(TaskConfiguration.TASK, TBDWorkerTask.class)
+                  .build()
+          );
+          cb.bindNamedParameter(HostIP.class, ctxt2ip.get(contextId));
+          cb.bindNamedParameter(HostPort.class, ctxt2port.get(contextId).toString());
+          cb.bindNamedParameter(MasterAkka.class, masterAkka);
+          context.submitTask(cb.build());
+          
+          /*
           final Configuration taskConfiguration = TaskConfiguration.CONF
               .set(TaskConfiguration.IDENTIFIER, taskId)
               .set(TaskConfiguration.TASK, TBDWorkerTask.class)
               .build();
           context.submitTask(taskConfiguration);
+          */
           LOG.log(Level.INFO, "Submit {0} to context {1}", new Object[]{taskId, contextId});
         }
       }

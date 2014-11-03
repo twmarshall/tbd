@@ -6,6 +6,7 @@ import akka.actor.Props;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
 
+import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.task.Task;
 
 import com.typesafe.config.Config;
@@ -33,13 +34,25 @@ public final class TBDWorkerTask implements Task {
   
   private static final Logger LOG = Logger.getLogger(TBDWorkerTask.class.getName());
   
+  private final String hostIP;
+  private final String hostPort;
+  private final String masterAkka;
+  
   @Inject
-  TBDWorkerTask() {
+  TBDWorkerTask(@Parameter(TBDDriver.HostIP.class) final String ip,
+      @Parameter(TBDDriver.HostPort.class) final String port,
+      @Parameter(TBDDriver.MasterAkka.class) final String master) {
+    hostIP = ip;
+    hostPort = port;
+    masterAkka = master;
   }
 
   @Override
   public final byte[] call(final byte[] memento) {
     LOG.log(Level.INFO, "start instatiation");
+    LOG.log(Level.INFO, "IP: {0}", hostIP);
+    LOG.log(Level.INFO, "port: {0}", hostPort);
+    LOG.log(Level.INFO, "master akka: {0}", masterAkka);
 
     try {
       Thread.sleep(10000);
@@ -48,10 +61,11 @@ public final class TBDWorkerTask implements Task {
     }
     
     //option 1
-    String[] args = new String[] {"akka.tcp://masterSystem0@127.0.0.1:2552/user/master"};
+    //String[] args = new String[] {"akka.tcp://masterSystem0@127.0.0.1:2552/user/master"};
+    String[] args = new String[] {"-i", hostIP, "-p", hostPort, masterAkka};
     Main.main(args);
     
-    LOG.log(Level.INFO, "after call worker main");
+    LOG.log(Level.INFO, "worker sleep");
     
     /*
     while (true){
@@ -61,7 +75,7 @@ public final class TBDWorkerTask implements Task {
     
     
     try {
-      Thread.sleep(30000);
+      Thread.sleep(400000);
     } catch (InterruptedException e) {
       LOG.log(Level.INFO, "worker sleep interrupted");
     }
