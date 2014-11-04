@@ -1,30 +1,23 @@
 package tbd.reef;
 
+import com.microsoft.reef.driver.task.RunningTask;
+import com.microsoft.reef.driver.context.ActiveContext;
+import com.microsoft.reef.driver.context.ContextConfiguration;
+import com.microsoft.reef.driver.evaluator.AllocatedEvaluator;
+import com.microsoft.reef.driver.evaluator.EvaluatorRequest;
+import com.microsoft.reef.driver.evaluator.EvaluatorRequestor;
+import com.microsoft.reef.driver.task.TaskConfiguration;
+import com.microsoft.tang.JavaConfigurationBuilder;
+import com.microsoft.tang.Tang;
+import com.microsoft.tang.annotations.Name;
+import com.microsoft.tang.annotations.NamedParameter;
+import com.microsoft.tang.annotations.Unit;
+import com.microsoft.wake.EventHandler;
+import com.microsoft.wake.time.event.StartTime;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-
-import org.apache.reef.driver.task.CompletedTask;
-import org.apache.reef.driver.task.RunningTask;
-
-import org.apache.reef.driver.context.ActiveContext;
-import org.apache.reef.driver.context.ContextConfiguration;
-import org.apache.reef.driver.evaluator.AllocatedEvaluator;
-import org.apache.reef.driver.evaluator.EvaluatorRequest;
-import org.apache.reef.driver.evaluator.EvaluatorRequestor;
-import org.apache.reef.driver.task.TaskConfiguration;
-import org.apache.reef.tang.Configuration;
-import org.apache.reef.tang.JavaConfigurationBuilder;
-import org.apache.reef.tang.Tang;
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
-import org.apache.reef.tang.annotations.Unit;
-import org.apache.reef.wake.EventHandler;
-import org.apache.reef.wake.time.event.Alarm;
-import org.apache.reef.wake.time.Clock;
-import org.apache.reef.wake.time.event.StartTime;
-import org.apache.reef.wake.time.event.StopTime;
-
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -32,40 +25,34 @@ import javax.inject.Inject;
 
 @Unit
 public final class TBDDriver {
-
   private static final Logger LOG = Logger.getLogger(TBDDriver.class.getName());
-  
   private final EvaluatorRequestor requestor;
 
   private final int numWorkers=2;
   private final int numEvaluators=numWorkers+1;
-  
   private int numEvalAlloced = 0;
   private int numWorkerContexts = 0;
   private boolean masterEvalAlloced = false;
-  private boolean masterSubmitted = false;
-  
   private String masterIP = "";
   private final Integer masterPort = 2555;
   private String masterAkka = "";
-  
+
   private Map<String, ActiveContext> contexts = new HashMap<String, ActiveContext>();
   private Map<String, String> ctxt2ip = new HashMap<String, String>();
   private Map<String, Integer> ctxt2port = new HashMap<String, Integer>();
-  private Map<String, String> ctxt2akka = new HashMap<String, String>();
 
   @NamedParameter(doc = "IP address", short_name = "ip", default_value = "127.0.0.1")
   final class HostIP implements Name<String> {
   }
-  
+
   @NamedParameter(doc = "port number", short_name = "port", default_value = "2555")
   final class HostPort implements Name<String> {
   }
-  
+
   @NamedParameter(doc = "master akka", short_name = "master", default_value = "akka.tcp://masterSystem0@127.0.0.1:2555/user/master")
   final class MasterAkka implements Name<String> {
   }
-  
+
   /**
    * Job driver constructor - instantiated via TANG.
    *
@@ -84,9 +71,7 @@ public final class TBDDriver {
     @Override
     public void onNext(final StartTime startTime) {
       LOG.log(Level.INFO, "TIME: Start Driver.");
-      
-      
-      
+
       TBDDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
           .setNumber(numEvaluators)
           .setMemory(1024)
@@ -103,11 +88,8 @@ public final class TBDDriver {
     @Override
     public void onNext(final AllocatedEvaluator allocatedEvaluator) {
       LOG.log(Level.INFO, "TIME: Evaluator Allocated {0}", allocatedEvaluator.getId());
-      LOG.log(Level.INFO, "Evaluator descriptor: {0}", allocatedEvaluator.getEvaluatorDescriptor());
-      LOG.log(Level.INFO, "Node descriptor {0}", allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor());
       LOG.log(Level.INFO, "Socket address {0}", allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress());
-      LOG.log(Level.INFO, "Host name {0}", allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress().getHostName());
-    	
+
       final String socketAddr = allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress().toString();
       final String hostIP = socketAddr.substring(socketAddr.indexOf("/")+1, socketAddr.indexOf(":"));
       final int nEval;
@@ -139,7 +121,7 @@ public final class TBDDriver {
         }
         ctxt2ip.put(contextId, hostIP);
         ctxt2port.put(contextId, masterPort+nEval-1);
-        
+
         final JavaConfigurationBuilder contextConfigBuilder = Tang.Factory.getTang().newConfigurationBuilder();
         contextConfigBuilder.addConfiguration(ContextConfiguration.CONF
             .set(ContextConfiguration.IDENTIFIER, contextId)
@@ -152,7 +134,7 @@ public final class TBDDriver {
       }
     }
   }
-  
+
   /**
    * Receive notification that the Context is active.
    */
@@ -160,16 +142,14 @@ public final class TBDDriver {
     @Override
     public void onNext(final ActiveContext context) {
       LOG.log(Level.INFO, "TIME: Active Context {0}", context.getId());
-      
+
       final String contextId = context.getId();
       final String character = contextId.split("_")[1];
       final boolean masterCtxt = character.equals("master");
       final boolean workerCtxt = character.equals("worker");
-      //final int knownWorkers;
-      
+
       synchronized (TBDDriver.this) {
         if (masterCtxt) {
-          masterSubmitted = true;
         } else if (workerCtxt){
           ++numWorkerContexts;
         }
@@ -189,14 +169,6 @@ public final class TBDDriver {
         cb.bindNamedParameter(HostIP.class, masterIP);
         cb.bindNamedParameter(HostPort.class, masterPort.toString());
         context.submitTask(cb.build());
-        
-        /*
-        final Configuration taskConfiguration = TaskConfiguration.CONF
-            .set(TaskConfiguration.IDENTIFIER, taskId)
-            .set(TaskConfiguration.TASK, TBDMasterTask.class)
-            .build();
-        context.submitTask(taskConfiguration);
-        */
         LOG.log(Level.INFO, "Submit {0} to context {1}", new Object[]{taskId, contextId});
       } else if (workerCtxt) {
         contexts.put(contextId, context);
@@ -205,15 +177,9 @@ public final class TBDDriver {
         LOG.log(Level.INFO, "Close context {0} : {1}", new Object[]{contextId.split("_")[1], contextId});
         context.close();
       }
-      
-      /*
-      if (masterSubmitted && knownWorkers == numWorkers) {
-        
-      }
-      */
     }
   }
-  
+
   /**
    * Receive notification that the Task is running.
    */
@@ -232,25 +198,7 @@ public final class TBDDriver {
       }
     }
   }
-  
-  /*
-  public final class TaskCompletedHandler implements EventHandler<CompletedTask> {
-    @Override
-    public void onNext(final CompletedTask completedTask) {
 
-      LOG.log(Level.INFO, completedTask.getActiveContext().getEvaluatorDescriptor());
-      completedTask.getActiveContext().close();
-    }
-  }
-  
-  public final class StopHandler implements EventHandler<StopTime> {
-    @Override
-    public void onNext(final StopTime stopTime) {
-      LOG.log(Level.INFO, "TIME: Stop Driver");
-    }
-  }
-  */
-  
   private void waitAndSubmitWorkerTasks() {
     if (numWorkerContexts == numWorkers) {
       for (Entry<String, ActiveContext> e : contexts.entrySet()) {
@@ -258,7 +206,6 @@ public final class TBDDriver {
         ActiveContext context = e.getValue();
         if (contextId.startsWith("context_worker")) {
           final String taskId = contextId.replaceFirst("context", "task");
-          
           final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
           cb.addConfiguration(
               TaskConfiguration.CONF
@@ -270,29 +217,11 @@ public final class TBDDriver {
           cb.bindNamedParameter(HostPort.class, ctxt2port.get(contextId).toString());
           cb.bindNamedParameter(MasterAkka.class, masterAkka);
           context.submitTask(cb.build());
-          
-          /*
-          final Configuration taskConfiguration = TaskConfiguration.CONF
-              .set(TaskConfiguration.IDENTIFIER, taskId)
-              .set(TaskConfiguration.TASK, TBDWorkerTask.class)
-              .build();
-          context.submitTask(taskConfiguration);
-          */
           LOG.log(Level.INFO, "Submit {0} to context {1}", new Object[]{taskId, contextId});
         }
       }
     } else {
       LOG.log(Level.INFO, "Sleep: wait worker contexts");
-      /*
-      Clock.scheduleAlarm(CHECK_UP_INTERVAL,
-          new EventHandler<Alarm>() {
-            @Override
-            public void onNext(final Alarm time) {
-              LOG.log(Level.INFO, "Alarm: {0}", time);
-              schedule();
-            }
-          });
-      */
       try {
         Thread.sleep(1000);
       } catch (InterruptedException e) {
