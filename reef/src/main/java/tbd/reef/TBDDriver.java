@@ -58,11 +58,11 @@ public final class TBDDriver {
   final class HostIP implements Name<String> {
   }
   
-  @NamedParameter(doc = "port number", short_name = "port", default_value = "2552")
+  @NamedParameter(doc = "port number", short_name = "port", default_value = "2555")
   final class HostPort implements Name<String> {
   }
   
-  @NamedParameter(doc = "master akka", short_name = "master", default_value = "akka.tcp://masterSystem0@127.0.0.1:2552/user/master")
+  @NamedParameter(doc = "master akka", short_name = "master", default_value = "akka.tcp://masterSystem0@127.0.0.1:2555/user/master")
   final class MasterAkka implements Name<String> {
   }
   
@@ -90,7 +90,7 @@ public final class TBDDriver {
       TBDDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
           .setNumber(numEvaluators)
           .setMemory(1024)
-          .setNumberOfCores(1)
+          .setNumberOfCores(2)
           .build());
       LOG.log(Level.INFO, "Requested Evaluators.");
     }
