@@ -83,3 +83,22 @@ Removed/Added nodes will be highlighted in yellow/red.
 
 Scroll by dragging the mouse.
 Zoom with the scroll wheel. 
+
+## REEF
+```
+> sbt/sbt
+> assembly
+```
+
+This will create the assembly jar file reef/target/scala-2.11/reef-assembly-0.1-SNAPSHOT.jar which can be submitted to REEF to run distributed TBD on HADOOP V2 YARN.
+
+Run cluster mode with REEF on YARN:
+```
+$HADOOP_HOME/bin/yarn jar reef/target/scala-2.11/reef-assembly-0.1-SNAPSHOT.jar tbd.reef.TBDReefYarn
+```
+
+Wait until master akka system ("akka.tcp://masterSystem0@127.0.53.53:2555/user/master" in the following example) is return to client, then submit an experiment to the cluster, and add -c parameter to check correctness of the output:
+```
+bin/experiment.sh -a qsort --chunkSizes 1 --partitions 1 -n 1000 -c --master akka.tcp://masterSystem0@127.0.53.53:2555/user/master
+```
+
