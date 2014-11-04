@@ -37,9 +37,9 @@ public final class TBDDriver {
   
   private final EvaluatorRequestor requestor;
 
-  private final int numEvaluators=2;
-  private final int numWorkers=numEvaluators-1;
-
+  private final int numWorkers=2;
+  private final int numEvaluators=numWorkers+1;
+  
   private int numEvalAlloced = 0;
   private int numWorkerContexts = 0;
   private boolean masterEvalAlloced = false;
@@ -88,7 +88,7 @@ public final class TBDDriver {
       
       
       TBDDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
-          .setNumber(2)
+          .setNumber(numEvaluators)
           .setMemory(1024)
           .setNumberOfCores(1)
           .build());
