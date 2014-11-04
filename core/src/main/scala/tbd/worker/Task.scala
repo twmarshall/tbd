@@ -27,15 +27,23 @@ import tbd.ddg.{DDG, Node, MemoNode, ParNode, ReadNode, Timestamp}
 import tbd.messages._
 
 object Task {
-  def props(id: String, parent: ActorRef, datastore: ActorRef): Props =
-    Props(classOf[Task], id, parent, datastore)
+  def props
+      (id: String,
+       parent: ActorRef,
+       datastore: ActorRef,
+       masterRef: ActorRef): Props =
+    Props(classOf[Task], id, parent, datastore, masterRef)
 }
 
-class Task(val id: String, parent: ActorRef, datastore: ActorRef)
+class Task
+    (val id: String,
+     parent: ActorRef,
+     datastore: ActorRef,
+     masterRef: ActorRef)
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val c = new Context(id, this, datastore)
+  private val c = new Context(id, this, datastore, masterRef)
 
   def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
                 end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
@@ -108,6 +116,7 @@ class Task(val id: String, parent: ActorRef, datastore: ActorRef)
       (parent ? PebbleMessage(self, modId)) pipeTo sender
 
     case RunTaskMessage(adjust: Adjustable[_]) =>
+      log.debug("Starting task.")
       sender ! adjust.run(c)
       Await.result(Future.sequence(c.pending), DURATION)
       c.pending.clear()
@@ -122,7 +131,10 @@ class Task(val id: String, parent: ActorRef, datastore: ActorRef)
       }
 
     case PropagateTaskMessage =>
+      log.debug("Running change propagation.")
       c.initialRun = false
+      c.epoch += 1
+
       val respondTo = sender
       val future = propagate()
       future onComplete {

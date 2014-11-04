@@ -15,7 +15,7 @@
  */
 package tbd.worker
 
-import akka.actor.{Actor, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
 import scala.collection.mutable.Map
 import scala.concurrent.{Await, Promise}
@@ -29,36 +29,22 @@ object Worker {
   def props(masterRef: ActorRef) = Props(classOf[Worker], masterRef)
 }
 
-class Worker(masterRef: ActorRef) extends Actor {
+class Worker(masterRef: ActorRef) extends Actor with ActorLogging {
   import context.dispatcher
 
   private val datastore = Await.result(
     (masterRef ? RegisterWorkerMessage(self)).mapTo[ActorRef], DURATION)
 
-  val tasks = Map[Int, ActorRef]()
-
   def receive = {
-    case GetMutatorDDGMessage(mutatorId: Int) =>
-      (tasks(mutatorId) ? GetTaskDDGMessage) pipeTo sender
-
-    case RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int) =>
-      val taskProps = Task.props("t0", self, datastore)
-      val taskRef = context.actorOf(taskProps, "task")
-      (taskRef ? RunTaskMessage(adjust)) pipeTo sender
-      tasks(mutatorId) = taskRef
-
-    case PropagateMutatorMessage(mutatorId: Int) =>
-      (tasks(mutatorId) ? PropagateTaskMessage) pipeTo sender
-
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       sender ! "done"
 
-    case ShutdownMutatorMessage(mutatorId: Int) =>
-      val future = tasks(mutatorId) ? ShutdownTaskMessage
-      Await.result(future, DURATION)
+    case ScheduleTaskMessage(id: String, parent: ActorRef) =>
+      log.debug("Scheduling task " + id)
+      val taskProps = Task.props(id, parent, datastore, masterRef)
+      val taskRef = context.actorOf(taskProps, id)
 
-      context.stop(tasks(mutatorId))
-      sender ! "done"
+      sender ! taskRef
 
     case x => println("Worker received unhandled message " + x)
   }

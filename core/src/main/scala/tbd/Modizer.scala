@@ -25,14 +25,19 @@ import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.messages._
 
 trait Modizer[T] {
-  def remove(key: Any)
+  def remove(key: Any, c: Context): Boolean
 }
 
 class Modizer1[T] extends Modizer[T] {
-  val allocations = Map[Any, Mod[T]]()
+  val allocations = Map[Any, (Mod[T], Int)]()
 
-  def remove(key: Any) {
-    allocations -= key
+  def remove(key: Any, c: Context): Boolean = {
+    if (allocations(key)._2 < c.epoch) {
+      allocations -= key
+      true
+    } else {
+      false
+    }
   }
 
   def apply
@@ -41,10 +46,12 @@ class Modizer1[T] extends Modizer[T] {
       (implicit c: Context): Mod[T] = {
     val mod1 =
       if (allocations.contains(key)) {
-	allocations(key)
+	allocations(key) = (allocations(key)._1, c.epoch)
+
+	allocations(key)._1
       } else {
 	val mod1 = new Mod[T](c.newModId())
-	allocations(key) = mod1
+	allocations(key) = (mod1, c.epoch)
 	mod1
       }
 
@@ -53,14 +60,30 @@ class Modizer1[T] extends Modizer[T] {
 }
 
 class Modizer2[T, U] extends Modizer[(T, U)] {
-  val allocations = Map[Any, Mod[T]]()
-  val allocations2 = Map[Any, Mod[U]]()
+  val allocations = Map[Any, (Mod[T], Int)]()
+  val allocations2 = Map[Any, (Mod[U], Int)]()
 
   import scala.language.experimental.macros
 
-  def remove(key: Any) {
-    allocations -= key
-    allocations2 -= key
+  def remove(key: Any, c: Context): Boolean = {
+    if (allocations.contains(key)) {
+      if (allocations(key)._2 < c.epoch) {
+	allocations -= key
+	allocations2 -= key
+
+	true
+      } else {
+	false
+      }
+    } else {
+      if (allocations2(key)._2 < c.epoch) {
+	allocations2 -= key
+
+	true
+      } else {
+	false
+      }
+    }
   }
 
   def apply
@@ -69,19 +92,23 @@ class Modizer2[T, U] extends Modizer[(T, U)] {
       (implicit c: Context): (Mod[T], Mod[U]) = {
     val modLeft =
       if (allocations.contains(key)) {
-	allocations(key)
+	allocations(key) = (allocations(key)._1, c.epoch)
+
+	allocations(key)._1
       } else {
 	val modLeft = new Mod[T](c.newModId())
-	allocations(key) = modLeft
+	allocations(key) = (modLeft, c.epoch)
 	modLeft
       }
 
     val modRight =
       if (allocations2.contains(key)) {
-	allocations2(key)
+	allocations2(key) = (allocations2(key)._1, c.epoch)
+
+	allocations2(key)._1
       } else {
 	val modRight = new Mod[U](c.newModId())
-	allocations2(key) = modRight
+	allocations2(key) = (modRight, c.epoch)
 	modRight
       }
 
@@ -93,10 +120,12 @@ class Modizer2[T, U] extends Modizer[(T, U)] {
       (implicit c: Context): (Mod[T], Changeable[U]) = {
     val modLeft =
       if (allocations.contains(key)) {
-	allocations(key)
+	allocations(key) = (allocations(key)._1, c.epoch)
+
+	allocations(key)._1
       } else {
 	val modLeft = new Mod[T](c.newModId())
-	allocations(key) = modLeft
+	allocations(key) = (modLeft, c.epoch)
 	modLeft
       }
 
@@ -108,10 +137,12 @@ class Modizer2[T, U] extends Modizer[(T, U)] {
       (implicit c: Context): (Changeable[T], Mod[U]) = {
     val modRight =
       if (allocations2.contains(key)) {
-	allocations2(key)
+	allocations2(key) = (allocations2(key)._1, c.epoch)
+
+	allocations2(key)._1
       } else {
 	val modRight = new Mod[U](c.newModId())
-	allocations2(key) = modRight
+	allocations2(key) = (modRight, c.epoch)
 	modRight
       }
 

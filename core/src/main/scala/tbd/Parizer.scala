@@ -15,26 +15,29 @@
  */
 package tbd
 
+import akka.actor.ActorRef
 import akka.pattern.ask
+import java.io.Serializable
 import scala.concurrent.Await
 
 import tbd.Constants._
-import tbd.messages.RunTaskMessage
+import tbd.messages._
 import tbd.worker.Task
 
-class Parizer[T](one: Context => T) {
+class Parizer[T](one: Context => T) extends Serializable {
   def and[U](two: Context => U)(implicit c: Context): (T, U) = {
     val id1 = c.id + "-" + c.taskId
-    val taskProps1 = Task.props(id1, c.task.self, c.datastore)
-    val taskRef1 = c.task.context.system.actorOf(taskProps1, c.id + "-" + c.taskId)
+
+    val future1 = c.masterRef ? ScheduleTaskMessage(id1, c.task.self)
+    val taskRef1 = Await.result(future1.mapTo[ActorRef], DURATION)
     c.taskId += 1
 
     val adjust1 = new Adjustable[T] { def run(implicit c: Context) = one(c) }
     val oneFuture = taskRef1 ? RunTaskMessage(adjust1)
 
     val id2 = c.id + "-" + c.taskId
-    val taskProps2 = Task.props(id2, c.task.self, c.datastore)
-    val taskRef2 = c.task.context.system.actorOf(taskProps2, c.id + "-" + c.taskId)
+    val future2 = c.masterRef ? ScheduleTaskMessage(id2, c.task.self)
+    val taskRef2 = Await.result(future2.mapTo[ActorRef], DURATION)
     c.taskId += 1
 
     val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }

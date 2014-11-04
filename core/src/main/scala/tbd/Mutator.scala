@@ -38,14 +38,14 @@ class Mutator(_connector: MasterConnector = null) {
       _connector
     }
 
-  val masterRef = connector.masterRef
+  private val masterRef = connector.masterRef
 
-  val idFuture = masterRef ? RegisterMutatorMessage
-  val id = Await.result(idFuture, DURATION).asInstanceOf[Int]
+  private val id = Await.result(
+    (masterRef ? RegisterMutatorMessage), DURATION).asInstanceOf[Int]
 
   var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
-    val mod = new Mod[T]("d." + nextModId)
+    val mod = new Mod[T]("d." + id + " " + nextModId)
     nextModId += 1
 
     val message = UpdateModMessage(mod.id, value, null)

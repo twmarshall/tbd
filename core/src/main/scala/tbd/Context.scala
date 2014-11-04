@@ -26,7 +26,11 @@ import tbd.ddg.{DDG, Node, Timestamp}
 import tbd.messages._
 import tbd.worker.Task
 
-class Context(val id: String, val task: Task, val datastore: ActorRef) {
+class Context
+    (val id: String,
+     val task: Task,
+     val datastore: ActorRef,
+     val masterRef: ActorRef) {
   import task.context.dispatcher
 
   val log = Logging(task.context.system, "TBD" + id)
@@ -64,6 +68,8 @@ class Context(val id: String, val task: Task, val datastore: ActorRef) {
 
   val pending = Buffer[Future[String]]()
 
+  var epoch = 0
+
   def newModId(): ModId = {
     nextModId += 1
     id + "." + nextModId
@@ -91,5 +97,10 @@ class Context(val id: String, val task: Task, val datastore: ActorRef) {
 	ddg.modUpdated(mod.id)
       }
     }
+  }
+
+  def remove[T](modId: ModId) {
+    val future = (datastore ? RemoveModsMessage(Buffer(modId)))
+    Await.result(future, DURATION)
   }
 }
