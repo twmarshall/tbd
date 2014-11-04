@@ -18,9 +18,19 @@ package tbd.examples.list
 import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
-import tbd.Context
+import tbd.{Adjustable, Context}
 import tbd.datastore.{IntData, IntFileData}
 import tbd.list._
+
+class JoinAdjust
+    (list1: AdjustableList[Int, Int],
+     list2: AdjustableList[Int, Int])
+  extends Adjustable[AdjustableList[Int, (Int, Int)]] {
+
+  def run(implicit c: Context) = {
+    list1.join(list2)
+  }
+}
 
 class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
@@ -28,9 +38,11 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   val data = new IntData(input, count, mutations, "data.txt")
   //val data = new IntFileData(input, "data.txt")
 
-  val input2 = ListInput[Int, Int](mutator, listConf)
+  val input2 = ListInput[Int, Int](mutator, listConf.copy(partitions = 1))
   val data2 = new IntData(input2, count, mutations, "data2.txt")
   //val data2 = new IntFileData(input2, "data2.txt")
+
+  val adjust = new JoinAdjust(input.getAdjustableList(), input2.getAdjustableList())
 
   def generateNaive() = {
     data.generate()
@@ -64,12 +76,15 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
     sortedAnswer == sortedOutput
   }
+}
 
-  def run(implicit c: Context): AdjustableList[Int, (Int, Int)] = {
-    val list = input.getAdjustableList()
-    val list2 = input2.getAdjustableList().asInstanceOf[ModList[Int, Int]]
+class ChunkJoinAdjust
+    (list1: AdjustableList[Int, Int],
+     list2: AdjustableList[Int, Int])
+  extends Adjustable[AdjustableList[Int, (Int, Int)]] {
 
-    list.join(list2)
+  def run(implicit c: Context) = {
+    list1.join(list2)
   }
 }
 
@@ -80,6 +95,8 @@ class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val input2 = ListInput[Int, Int](mutator, listConf)
   val data2 = new IntData(input2, count)
+
+  val adjust = new ChunkJoinAdjust(input.getAdjustableList(), input2.getAdjustableList())
 
   def generateNaive() = {
     data.generate()
@@ -115,12 +132,15 @@ class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     //println(sortedOutput)
     sortedAnswer == sortedOutput
   }
+}
 
-  def run(implicit c: Context): AdjustableList[Int, (Int, Int)] = {
-    val list = input.getAdjustableList()
-    val list2 = input2.getAdjustableList().asInstanceOf[ChunkList[Int, Int]]
+class SortJoinAdjust
+    (list1: AdjustableList[Int, Int],
+     list2: AdjustableList[Int, Int])
+  extends Adjustable[AdjustableList[Int, (Int, Int)]] {
 
-    list.join(list2)
+  def run(implicit c: Context) = {
+    list1.sortJoin(list2)
   }
 }
 
@@ -132,7 +152,9 @@ class SortJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   val input2 = ListInput[Int, Int](mutator, listConf)
   val data2 = new IntData(input2, count, mutations, "data2.txt")
+
   //val data2 = new IntFileData(input2, "data2.txt")
+  val adjust = new SortJoinAdjust(input.getAdjustableList(), input2.getAdjustableList())
 
   def generateNaive() = {
     data.generate()
@@ -175,12 +197,5 @@ class SortJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
 
     sortedAnswer == sortedOutput
-  }
-
-  def run(implicit c: Context): AdjustableList[Int, (Int, Int)] = {
-    val list = input.getAdjustableList()
-    val list2 = input2.getAdjustableList().asInstanceOf[ModList[Int, Int]]
-
-    list.sortJoin(list2)
   }
 }

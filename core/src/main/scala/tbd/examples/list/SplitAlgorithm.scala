@@ -30,13 +30,22 @@ object SplitAlgorithm {
   type SplitResult = (AdjustableList[Int, String], AdjustableList[Int, String])
 }
 
+class SplitAdjust(list: AdjustableList[Int, String])
+  extends Adjustable[SplitAlgorithm.SplitResult] {
+
+  def run(implicit c: Context) = {
+    list.split((pair: (Int, String)) => SplitAlgorithm.predicate(pair))
+  }
+}
+
 class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, SplitAlgorithm.SplitResult](_conf, _listConf) {
-  import SplitAlgorithm._
 
   val input = ListInput[Int, String](mutator, listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
+
+  val adjust = new SplitAdjust(input.getAdjustableList())
 
   var naiveTable: GenIterable[String] = _
   def generateNaive() {
@@ -54,7 +63,7 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     })
   }
 
-  def checkOutput(input: Map[Int, String], output: SplitResult): Boolean = {
+  def checkOutput(input: Map[Int, String], output: SplitAlgorithm.SplitResult): Boolean = {
     val sortedOutputA = output._1.toBuffer(mutator).map(_._2).sortWith(_ < _)
     val sortedOutputB = output._2.toBuffer(mutator).map(_._2).sortWith(_ < _)
 
@@ -62,11 +71,5 @@ class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
     sortedOutputA == answer._1.toBuffer.sortWith(_ < _)
     sortedOutputB == answer._2.toBuffer.sortWith(_ < _)
-  }
-
-  def run(implicit c: Context): SplitResult = {
-    val pages = input.getAdjustableList()
-
-    pages.split((pair: (Int, String)) => SplitAlgorithm.predicate(pair))
   }
 }

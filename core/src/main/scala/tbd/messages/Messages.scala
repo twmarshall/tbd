@@ -17,21 +17,16 @@ package tbd.messages
 
 import akka.actor.ActorRef
 import scala.collection.mutable.Set
-import scala.concurrent.Promise
 import scala.language.existentials
 
 import tbd.{Adjustable, Changeable, TBD}
 import tbd.Constants._
 import tbd.ddg.Node
 
-// Dependency Manager
-case class AddDependencyMessage(modId: ModId, workerRef: ActorRef)
-case class UpdatedModMessage(modId: ModId, worker: ActorRef)
-case class RemoveModMessage(modId: ModId)
-
 // Datastore
-case class GetModMessage(modId: ModId)
-case class UpdateModMessage(modId: ModId, value: Any)
+case class GetModMessage(modId: ModId, task: ActorRef)
+case class UpdateModMessage(modId: ModId, value: Any, task: ActorRef)
+case class RemoveModsMessage(mods: Iterable[ModId])
 case class NullMessage()
 
 case class DBPutMessage(key: ModId, value: Any)
@@ -42,16 +37,20 @@ case class DBShutdownMessage()
 
 // Master
 case class RegisterMutatorMessage()
-case class RunMessage(adjust: Adjustable[_], mutatorId: Int)
+case class RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int)
+case class PropagateMutatorMessage(mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
+case class ScheduleTaskMessage(id: String, parent: ActorRef)
 case class ShutdownMutatorMessage(mutatorId: Int)
-case class CleanupMessage()
 
 // Worker
-case class ModUpdatedMessage(modId: ModId, finished: Promise[String])
-case class PebbleMessage(workerRef: ActorRef, modId: ModId, finished: Promise[String])
-case class PropagateMessage()
+case class RegisterWorkerMessage(worker: ActorRef)
+case class GetDatastoreMessage()
+
+// Task
+case class ModUpdatedMessage(modId: ModId)
+case class PebbleMessage(taskRef: ActorRef, modId: ModId)
+case class PropagateTaskMessage()
 case class RunTaskMessage(adjust: Adjustable[_])
-case class GetDDGMessage()
-case class DDGToStringMessage(prefix: String)
-case class CleanupWorkerMessage()
+case class GetTaskDDGMessage()
+case class ShutdownTaskMessage()

@@ -23,6 +23,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
   Experiment.repeat = 0
   Experiment.verbosity = 0
   Experiment.check = true
+  Experiment.port = 2553
 
   val intensity = 10
 
@@ -52,12 +53,12 @@ class AlgorithmTests extends FlatSpec with Matchers {
 					   "partitions" -> Array("1")))
   }
 
-  "MapTest" should "run map successfully." in {
+  /*"MapTest" should "run map successfully." in {
     Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("map"),
 					   "chunkSizes" -> Array("1", "4"),
 					   "counts" -> Array(intensity.toString),
 					   "partitions" -> Array("1", "4")))
-  }
+  }*/
 
   "PageRankTest" should "run page rank successfully." in {
     Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("pgrank"),
@@ -85,17 +86,17 @@ class AlgorithmTests extends FlatSpec with Matchers {
 					   "partitions" -> Array("1", "4")))
   }
 
-  "SplitTest" should "run split successfully." in {
+  /*"SplitTest" should "run split successfully." in {
     Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("split"),
 					   "chunkSizes" -> Array("1"),
 					   "counts" -> Array(intensity.toString),
 					   "partitions" -> Array("1")))
-  }
+  }*/
 
-  "WordcountTest" should "run wordcount successfully." in {
+  /*"WordcountTest" should "run wordcount successfully." in {
     Experiment.run(Experiment.confs ++ Map("algorithms" -> Array("wc"),
 					   "chunkSizes" -> Array("1", "4"),
 					   "counts" -> Array(intensity.toString),
 					   "partitions" -> Array("1", "4")))
-  }
+  }*/
 }

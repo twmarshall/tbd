@@ -15,6 +15,8 @@
  */
 package tbd
 
-trait Adjustable[T] {
+import java.io.Serializable
+
+trait Adjustable[T] extends Serializable {
   def run(implicit c: Context): T
 }

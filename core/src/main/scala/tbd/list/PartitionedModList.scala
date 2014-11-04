@@ -15,14 +15,15 @@
  */
 package tbd.list
 
+import java.io.Serializable
 import scala.collection.mutable.Buffer
 
 import tbd._
 import tbd.TBD._
 
-class PartitionedModList[T, U](
-    val partitions: Buffer[ModList[T, U]]
-  ) extends AdjustableList[T, U] {
+class PartitionedModList[T, U]
+    (val partitions: Buffer[ModList[T, U]])
+  extends AdjustableList[T, U] with Serializable {
 
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): PartitionedModList[T, U] = {
@@ -63,7 +64,23 @@ class PartitionedModList[T, U](
   }
 
   def join[V](that: AdjustableList[T, V])
-      (implicit c: Context): PartitionedModList[T, (U, V)] = ???
+      (implicit c: Context): PartitionedModList[T, (U, V)] = {
+    def innerJoin(i: Int)(implicit c: Context): Buffer[ModList[T, (U, V)]] = {
+      if (i < partitions.size) {
+	val (joinedPartition, joinedRest) = par {
+	  c => partitions(i).join(that)(c)
+	} and {
+	  c => innerJoin(i + 1)(c)
+	}
+
+	joinedRest += joinedPartition
+      } else {
+	Buffer[ModList[T, (U, V)]]()
+      }
+    }
+
+    new PartitionedModList(innerJoin(0))
+  }
 
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): PartitionedModList[V, W] = {

@@ -85,9 +85,9 @@ object DDG {
        node: tbd.ddg.Node): Seq[tbd.ddg.Node] = {
     node match {
       case parNode: tbd.ddg.ParNode =>
-	val f1 = parNode.workerRef1 ? tbd.messages.GetDDGMessage
+	val f1 = parNode.taskRef1 ? tbd.messages.GetTaskDDGMessage
 	val ddg1 = Await.result(f1.mapTo[tbd.ddg.DDG], DURATION)
-	val f2 = parNode.workerRef2 ? tbd.messages.GetDDGMessage
+	val f2 = parNode.taskRef2 ? tbd.messages.GetTaskDDGMessage
 	val ddg2 = Await.result(f2.mapTo[tbd.ddg.DDG], DURATION)
 
         ddg1.ordering.getChildren(ddg1.root) ++

@@ -15,32 +15,35 @@
  */
 package tbd
 
+import akka.actor.ActorRef
 import akka.pattern.ask
+import java.io.Serializable
 import scala.concurrent.Await
 
 import tbd.Constants._
-import tbd.messages.RunTaskMessage
-import tbd.worker.Worker
+import tbd.messages._
+import tbd.worker.Task
 
-class Parizer[T](one: Context => T) {
+class Parizer[T](one: Context => T) extends Serializable {
   def and[U](two: Context => U)(implicit c: Context): (T, U) = {
-    val id1 = c.id + "-" + c.workerId
-    val workerProps1 = Worker.props(id1, c.worker.self, c.datastore)
-    val workerRef1 = c.worker.context.system.actorOf(workerProps1, c.id + "-" + c.workerId)
-    c.workerId += 1
+    val id1 = c.id + "-" + c.taskId
+
+    val future1 = c.masterRef ? ScheduleTaskMessage(id1, c.task.self)
+    val taskRef1 = Await.result(future1.mapTo[ActorRef], DURATION)
+    c.taskId += 1
 
     val adjust1 = new Adjustable[T] { def run(implicit c: Context) = one(c) }
-    val oneFuture = workerRef1 ? RunTaskMessage(adjust1)
+    val oneFuture = taskRef1 ? RunTaskMessage(adjust1)
 
-    val id2 = c.id + "-" + c.workerId
-    val workerProps2 = Worker.props(id2, c.worker.self, c.datastore)
-    val workerRef2 = c.worker.context.system.actorOf(workerProps2, c.id + "-" + c.workerId)
-    c.workerId += 1
+    val id2 = c.id + "-" + c.taskId
+    val future2 = c.masterRef ? ScheduleTaskMessage(id2, c.task.self)
+    val taskRef2 = Await.result(future2.mapTo[ActorRef], DURATION)
+    c.taskId += 1
 
     val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
-    val twoFuture = workerRef2 ? RunTaskMessage(adjust2)
+    val twoFuture = taskRef2 ? RunTaskMessage(adjust2)
 
-    val parNode = c.ddg.addPar(workerRef1, workerRef2, c)
+    val parNode = c.ddg.addPar(taskRef1, taskRef2, c)
     parNode.endTime = c.ddg.nextTimestamp(parNode, c)
 
     val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]

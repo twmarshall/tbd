@@ -15,8 +15,10 @@
  */
 package tbd.datastore
 
-import akka.actor.{Actor, ActorLogging, Props}
-import scala.collection.mutable.Map
+import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.pattern.ask
+import scala.collection.mutable.{Buffer, Map}
+import scala.concurrent.Future
 
 import tbd.Constants._
 import tbd.messages._
@@ -26,20 +28,75 @@ object Datastore {
 }
 
 class Datastore extends Actor with ActorLogging {
-  val mods = Map[ModId, Any]()
+  import context.dispatcher
 
-  def receive = {
-    case GetModMessage(modId: ModId) =>
-      if (mods(modId) == null)
-        sender ! NullMessage
-      else
-        sender ! mods(modId)
+  private val mods = Map[ModId, Any]()
 
-    case UpdateModMessage(modId: ModId, value: Any) =>
+  private val dependencies = Map[ModId, Set[ActorRef]]()
+
+  def getMod(modId: ModId): Any = {
+    if (mods(modId) == null)
+      NullMessage
+    else
+      mods(modId)
+  }
+
+  def updateMod
+      (modId: ModId,
+       value: Any,
+       task: ActorRef,
+       respondTo: ActorRef) {
+    val futures = Buffer[Future[String]]()
+
+    if (!mods.contains(modId) || mods(modId) != value) {
       mods(modId) = value
 
-    case UpdateModMessage(modId: ModId, null) =>
-      mods(modId) = null
+      if (dependencies.contains(modId)) {
+	for (taskRef <- dependencies(modId)) {
+          if (taskRef != task) {
+	    futures += (taskRef ? ModUpdatedMessage(modId)).mapTo[String]
+          }
+	}
+      }
+    }
+
+    Future.sequence(futures).onComplete {
+      case value => respondTo ! "done"
+    }
+  }
+
+  def receive = {
+    case GetModMessage(modId: ModId, taskRef: ActorRef) =>
+      sender ! getMod(modId)
+
+      if (dependencies.contains(modId)) {
+	dependencies(modId) += taskRef
+      } else {
+	dependencies(modId) = Set(taskRef)
+      }
+
+    case GetModMessage(modId: ModId, null) =>
+      sender ! getMod(modId)
+
+    case UpdateModMessage(modId: ModId, value: Any, task: ActorRef) =>
+      updateMod(modId, value, task, sender)
+
+    case UpdateModMessage(modId: ModId, value: Any, null) =>
+      updateMod(modId, value, null, sender)
+
+    case UpdateModMessage(modId: ModId, null, task: ActorRef) =>
+      updateMod(modId, null, task, sender)
+
+    case UpdateModMessage(modId: ModId, null, null) =>
+      updateMod(modId, null, null, sender)
+
+    case RemoveModsMessage(modIds: Iterable[ModId]) =>
+      for (modId <- modIds) {
+	mods -= modId
+	dependencies -= modId
+      }
+
+      sender ! "done"
 
     case x =>
       log.warning("Datastore actor received unhandled message " +

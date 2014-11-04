@@ -21,10 +21,7 @@ import scala.collection.mutable.ListBuffer
 import tbd.macros.{TbdMacros, functionToInvoke}
 
 import tbd.Constants._
-import tbd.master.Main
 import tbd.messages._
-import tbd.datastore.DependencyManager
-import tbd.ddg.{FunctionTag, Tag}
 import tbd.TBD._
 
 object TBD {
@@ -33,7 +30,7 @@ object TBD {
   def read[T, U](mod: Mod[T])
       (reader: T => Changeable[U])
       (implicit c: Context): Changeable[U] = {
-    val value = c.read(mod, c.worker.self)
+    val value = c.read(mod, c.task.self)
 
     val readNode = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
@@ -52,7 +49,7 @@ object TBD {
   def read2[T, U, V](mod: Mod[T])
       (reader: T => (Changeable[U], Changeable[V]))
       (implicit c: Context): (Changeable[U], Changeable[V]) = {
-    val value = c.read(mod, c.worker.self)
+    val value = c.read(mod, c.task.self)
 
     val readNode = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
@@ -87,6 +84,8 @@ object TBD {
     c.currentMod = mod1.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
+      mod1.id,
+      null,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
@@ -123,6 +122,8 @@ object TBD {
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
+      modLeft.id,
+      modRight.id,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
@@ -155,6 +156,8 @@ object TBD {
     c.currentMod = modLeft.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
+      modLeft.id,
+      null,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
@@ -187,6 +190,8 @@ object TBD {
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
     val modNode = c.ddg.addMod(
+      null,
+      modRight.id,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
@@ -205,37 +210,16 @@ object TBD {
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
-    if (c.update(c.currentMod, value) && !c.initialRun) {
-      c.pending += DependencyManager.modUpdated(c.currentMod.id, c.worker.self)
-
-      if (c.ddg.reads.contains(c.currentMod.id)) {
-	c.updatedMods += c.currentMod.id
-	c.ddg.modUpdated(c.currentMod.id)
-      }
-    }
+    c.update(c.currentMod, value)
 
     (new Changeable(c.currentMod)).asInstanceOf[Changeable[T]]
   }
 
   def write2[T, U](value: T, value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    if (c.update(c.currentMod, value) && !c.initialRun) {
-      c.pending += DependencyManager.modUpdated(c.currentMod.id, c.worker.self)
+    c.update(c.currentMod, value)
 
-      if (c.ddg.reads.contains(c.currentMod.id)) {
-	c.updatedMods += c.currentMod.id
-	c.ddg.modUpdated(c.currentMod.id)
-      }
-    }
-
-    if (c.update(c.currentMod2, value2) && !c.initialRun) {
-      c.pending += DependencyManager.modUpdated(c.currentMod2.id, c.worker.self)
-
-      if (c.ddg.reads.contains(c.currentMod2.id)) {
-	c.updatedMods += c.currentMod2.id
-	c.ddg.modUpdated(c.currentMod2.id)
-      }
-    }
+    c.update(c.currentMod2, value2)
 
     (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
@@ -243,14 +227,7 @@ object TBD {
 
   def writeLeft[T, U](value: T, changeable: Changeable[U])
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    if (c.update(c.currentMod, value) && !c.initialRun) {
-      c.pending += DependencyManager.modUpdated(c.currentMod.id, c.worker.self)
-
-      if (c.ddg.reads.contains(c.currentMod.id)) {
-	c.updatedMods += c.currentMod.id
-	c.ddg.modUpdated(c.currentMod.id)
-      }
-    }
+    c.update(c.currentMod, value)
 
     (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
@@ -258,14 +235,7 @@ object TBD {
 
   def writeRight[T, U](changeable: Changeable[T], value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    if (c.update(c.currentMod2, value2) && !c.initialRun) {
-      c.pending += DependencyManager.modUpdated(c.currentMod2.id, c.worker.self)
-
-      if (c.ddg.reads.contains(c.currentMod2.id)) {
-	c.updatedMods += c.currentMod2.id
-	c.ddg.modUpdated(c.currentMod2.id)
-      }
-    }
+    c.update(c.currentMod2, value2)
 
     (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])

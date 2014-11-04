@@ -21,10 +21,11 @@ import scala.collection.mutable.Map
 import tbd.{Adjustable, Mutator}
 import tbd.datastore.Data
 import tbd.list.ListConf
-import tbd.master.Main
+import tbd.master.MasterConnector
 
-abstract class Algorithm[Input, Output](_conf: Map[String, _],
-    _listConf: ListConf) extends Adjustable[Output] {
+abstract class Algorithm[Input, Output]
+    (_conf: Map[String, _],
+     _listConf: ListConf) {
   val conf = _conf
   val listConf = _listConf
 
@@ -32,14 +33,22 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
   val cacheSize = conf("cacheSizes").asInstanceOf[String].toInt
   val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
   val mutations = conf("mutations").asInstanceOf[Array[String]]
-  val partition = conf("partitions").asInstanceOf[String].toInt
+  val partitions = conf("partitions").asInstanceOf[String].toInt
   var runs = conf("runs").asInstanceOf[Array[String]]
   val store = conf("store").asInstanceOf[String]
 
-  val main = new Main(store, cacheSize)
-  val mutator = new Mutator(main)
+  val connector =
+    if (Experiment.master != "") {
+      MasterConnector(Experiment.master)
+    } else {
+      MasterConnector(port = Experiment.port)
+    }
+
+  val mutator = new Mutator(connector)
 
   var output: Output = null.asInstanceOf[Output]
+
+  def adjust: Adjustable[Output]
 
   var mapCount = 0
   var reduceCount = 0
@@ -136,7 +145,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
     }
 
     mutator.shutdown()
-    main.shutdown()
+    connector.shutdown()
 
     results
   }
@@ -160,7 +169,7 @@ abstract class Algorithm[Input, Output](_conf: Map[String, _],
 
     val gcBefore = getGCTime()
     val before = System.currentTimeMillis()
-    output = mutator.run[Output](this)
+    output = mutator.run[Output](adjust)
     val elapsed = System.currentTimeMillis() - before
     val noGCElapsed = elapsed - (getGCTime() - gcBefore)
 

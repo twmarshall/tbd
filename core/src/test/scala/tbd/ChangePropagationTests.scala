@@ -171,6 +171,8 @@ class ChangePropagationTests extends FlatSpec with Matchers {
     input.update(1, 2)
     mutator.propagate()
     test.num should be (2)
+
+    mutator.shutdown()
   }
 
   "PropagationOrderTest2" should "reexecute map in the correct order" in {

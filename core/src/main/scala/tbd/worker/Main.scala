@@ -13,34 +13,52 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.master
+package tbd.worker
 
+import akka.actor.{Actor, ActorRef, ActorSystem}
+import com.typesafe.config.ConfigFactory
 import org.rogach.scallop._
+import scala.concurrent.Await
 
-import tbd.Constants.localhost
+import tbd.Constants._
+import tbd.messages._
 
 object Main {
   def main(args: Array[String]) {
-
     object Conf extends ScallopConf(args) {
       version("TBD 0.1 (c) 2014 Carnegie Mellon University")
-      banner("Usage: master.sh [options]")
+      banner("Usage: worker.sh [options] master")
       val ip = opt[String]("ip", 'i', default = Some(localhost),
         descr = "The ip address to bind to.")
-      val port = opt[Int]("port", 'p', default = Some(2552),
+      val port = opt[Int]("port", 'p', default = Some(2553),
         descr = "The port to bind to.")
       val logging = opt[String]("log", 'l', default = Some("INFO"),
         descr = "The logging level. Options, by increasing verbosity, are " +
         "OFF, WARNING, INFO, or DEBUG")
+
+      val master = trailArg[String](required = true)
     }
 
     val ip = Conf.ip.get.get
     val port = Conf.port.get.get
+    val master = Conf.master.get.get
     val logging = Conf.logging.get.get
 
-    val connector = MasterConnector(ip = ip, port = port, logging = logging,
-      singleNode = false)
-    println("New master started at: akka.tcp://" + connector.system.name +
-	    "@" + ip + ":" + port + "/user/master")
+    val conf = akkaConf + s"""
+      akka.loglevel = $logging
+
+      akka.remote.netty.tcp.hostname = $ip
+      akka.remote.netty.tcp.port = $port
+    """
+
+    val workerAkkaConf = ConfigFactory.parseString(conf)
+
+    val system = ActorSystem("workerSystem",
+                             ConfigFactory.load(workerAkkaConf))
+    val selection = system.actorSelection(master)
+    val future = selection.resolveOne()
+    val masterRef = Await.result(future.mapTo[ActorRef], DURATION)
+
+    system.actorOf(Worker.props(masterRef), "worker")
   }
 }

@@ -15,6 +15,8 @@
  */
 package tbd
 
+import java.net.InetAddress
+
 import akka.util.Timeout
 import scala.concurrent.duration._
 
@@ -24,4 +26,14 @@ object Constants {
 
   type ModId = String
   type InputId = Int
+
+  val localhost = InetAddress.getLocalHost.getHostAddress
+
+  val akkaConf = """
+    akka.actor.provider = akka.remote.RemoteActorRefProvider
+
+    akka.log-dead-letters = off
+
+    akka.remote.enabled-transports = [akka.remote.netty.tcp]
+  """
 }

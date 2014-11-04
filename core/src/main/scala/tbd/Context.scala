@@ -22,15 +22,18 @@ import scala.collection.mutable.{Buffer, Set}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.datastore.DependencyManager
 import tbd.ddg.{DDG, Node, Timestamp}
 import tbd.messages._
-import tbd.worker.Worker
+import tbd.worker.Task
 
-class Context(val id: String, val worker: Worker, val datastore: ActorRef) {
-  import worker.context.dispatcher
+class Context
+    (val id: String,
+     val task: Task,
+     val datastore: ActorRef,
+     val masterRef: ActorRef) {
+  import task.context.dispatcher
 
-  val log = Logging(worker.context.system, "TBD" + id)
+  val log = Logging(task.context.system, "TBD" + id)
 
   val ddg = new DDG(id)
 
@@ -58,34 +61,46 @@ class Context(val id: String, val worker: Worker, val datastore: ActorRef) {
   // is one.
   var currentMod2: Mod[Any] = _
 
-  // A unique id to assign to workers forked from this context.
-  var workerId = 0
+  // A unique id to assign to tasks forked from this context.
+  var taskId = 0
 
   private var nextModId = 0
 
   val pending = Buffer[Future[String]]()
+
+  var epoch = 0
 
   def newModId(): ModId = {
     nextModId += 1
     id + "." + nextModId
   }
 
-  def read[T](mod: Mod[T], workerRef: ActorRef = null): T = {
-    if (workerRef != null) {
-      DependencyManager.addDependency(mod.id, workerRef)
-    }
-
-    val future = datastore ? GetModMessage(mod.id)
+  def read[T](mod: Mod[T], taskRef: ActorRef = null): T = {
+    val future = datastore ? GetModMessage(mod.id, taskRef)
     val ret = Await.result(future, DURATION)
 
-    ret match {
-      case NullMessage => null.asInstanceOf[T]
-      case x: T => x
+    (ret match {
+      case NullMessage => null
+      case x => x
+    }).asInstanceOf[T]
+  }
+
+  def update[T](mod: Mod[T], value: T) {
+    val message = UpdateModMessage(mod.id, value, task.self)
+    val future = (datastore ? message).mapTo[String]
+
+    if (!initialRun) {
+      pending += future
+
+      if (ddg.reads.contains(mod.id)) {
+	updatedMods += mod.id
+	ddg.modUpdated(mod.id)
+      }
     }
   }
 
-  def update[T](mod: Mod[T], value: T) = {
-    datastore ! UpdateModMessage(mod.id, value)
-    true
+  def remove[T](modId: ModId) {
+    val future = (datastore ? RemoveModsMessage(Buffer(modId)))
+    Await.result(future, DURATION)
   }
 }

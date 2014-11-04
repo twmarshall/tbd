@@ -21,7 +21,10 @@ object TBDBuild extends Build {
     "berkeleydb"                  % "je"                   % "3.2.76",
 
     "com.typesafe.akka"          %% "akka-actor"           % "2.3.2",
+    "com.typesafe.akka"          %% "akka-remote"          % "2.3.2",
     "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
+
+    "org.rogach"                  % "scallop_2.11"         % "0.9.5",
 
     "org.scala-lang"             %% "scala-pickling"       % "0.8.0",
     "org.scalatest"              %% "scalatest"            % "2.1.3" % "test",
@@ -29,13 +32,12 @@ object TBDBuild extends Build {
   )
 
   val mkrun = TaskKey[File]("mkrun")
-  val mkexamples = TaskKey[File]("mkexamples")
   val mkvisualization = TaskKey[File]("mkvisualization")
 
   lazy val root = Project (
     "root",
     file(".")
-  ) aggregate(macros, core, examples, visualization)
+  ) aggregate(macros, core, visualization)
 
   lazy val core = Project (
     "core",
@@ -56,6 +58,16 @@ object TBDBuild extends Build {
         IO.write(masterOut, master)
         masterOut.setExecutable(true)
 
+	val worker = template.format(classpath, "tbd.worker.Main")
+	val workerOut = baseDirectory.value / "../bin/worker.sh"
+	IO.write(workerOut, worker)
+	workerOut.setExecutable(true)
+
+        val experiment = template.format(classpath, "tbd.examples.list.Experiment")
+        val experimentOut = baseDirectory.value / "../bin/experiment.sh"
+        IO.write(experimentOut, experiment)
+        experimentOut.setExecutable(true)
+
         masterOut
       }
     )
@@ -66,8 +78,7 @@ object TBDBuild extends Build {
     file("visualization"),
     settings = buildSettings ++ Seq (
       libraryDependencies ++= (commonDeps
-                          ++ Seq("org.scala-lang" % "scala-swing" % "2.11.0-M7",
-                                 "org.rogach" % "scallop_2.11" % "0.9.5")),
+                          ++ Seq("org.scala-lang" % "scala-swing" % "2.11.0-M7")),
       mkvisualization := {
         val classpath = (fullClasspath in Runtime).value.files.absString
         val template = """#!/bin/sh
@@ -93,30 +104,4 @@ object TBDBuild extends Build {
                                  "org.scala-lang" % "scala-reflect" % "2.11.1"))
     )
   )
-
-  lazy val examples = Project(
-    "examples",
-    file("examples"),
-    settings = buildSettings ++ Seq (
-      libraryDependencies ++= commonDeps,
-      mkexamples := {
-        val classpath = (fullClasspath in Runtime).value.files.absString
-        val template = """#!/bin/sh
-        java -Xmx8g -Xss256m -classpath "%s" %s $@
-        """
-
-        val experiment = template.format(classpath, "tbd.examples.list.Experiment")
-        val experimentOut = baseDirectory.value / "../bin/experiment.sh"
-        IO.write(experimentOut, experiment)
-        experimentOut.setExecutable(true)
-
-        val test = template.format(classpath, "tbd.examples.Test")
-        val testOut = baseDirectory.value / "../bin/test.sh"
-        IO.write(testOut, test)
-        testOut.setExecutable(true)
-
-        experimentOut
-      }
-    )
-  ) dependsOn(core, visualization)
 }

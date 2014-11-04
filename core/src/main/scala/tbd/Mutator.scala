@@ -15,91 +15,86 @@
  */
 package tbd
 
+import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
+import com.typesafe.config.ConfigFactory
 import scala.collection.mutable.Buffer
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.datastore.DependencyManager
 import tbd.ddg.DDG
-import tbd.master.Main
+import tbd.master.MasterConnector
 import tbd.messages._
 
-class Mutator(aMain: Main = null) {
+class Mutator(_connector: MasterConnector = null) {
   import scala.concurrent.ExecutionContext.Implicits.global
-
-  var launchedMain = false
 
   val futures = Buffer[Future[String]]()
 
-  val main =
-    if (aMain == null) {
-      launchedMain = true
-      new Main()
+  val connector =
+    if (_connector == null) {
+      MasterConnector()
     } else {
-      aMain
+      _connector
     }
 
-  val idFuture = main.masterRef ? RegisterMutatorMessage
-  val id = Await.result(idFuture, DURATION).asInstanceOf[Int]
+  private val masterRef = connector.masterRef
+
+  private val id = Await.result(
+    (masterRef ? RegisterMutatorMessage), DURATION).asInstanceOf[Int]
 
   var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
-    val mod = new Mod[T]("d." + nextModId)
+    val mod = new Mod[T]("d." + id + " " + nextModId)
     nextModId += 1
 
-    main.datastore ! UpdateModMessage(mod.id, value)
-
-    futures += DependencyManager.modUpdated(mod.id)
+    val message = UpdateModMessage(mod.id, value, null)
+    futures += (masterRef ? message).mapTo[String]
 
     mod
   }
 
   def updateMod[T](mod: Mod[T], value: T) {
-    main.datastore ! UpdateModMessage(mod.id, value)
-
-    futures += DependencyManager.modUpdated(mod.id)
+    val message = UpdateModMessage(mod.id, value, null)
+    futures += (masterRef ? message).mapTo[String]
   }
 
   def read[T](mod: Mod[T]): T = {
-    val future = main.datastore ? GetModMessage(mod.id)
+    val future = masterRef ? GetModMessage(mod.id, null)
     val ret = Await.result(future, DURATION)
 
-    ret match {
-      case NullMessage => null.asInstanceOf[T]
-      case x: T => x
-    }
+    (ret match {
+      case NullMessage => null
+      case x => x
+    }).asInstanceOf[T]
   }
 
   def run[T](adjust: Adjustable[T]): T = {
     Await.result(Future.sequence(futures), DURATION)
     futures.clear()
 
-    val future = main.masterRef ? RunMessage(adjust, id)
-    val resultFuture =
-      Await.result(future, DURATION).asInstanceOf[Future[Any]]
-
-    Await.result(resultFuture, DURATION).asInstanceOf[T]
+    val future = masterRef ? RunMutatorMessage(adjust, id)
+    Await.result(future, DURATION).asInstanceOf[T]
   }
 
   def propagate() {
     Await.result(Future.sequence(futures), DURATION)
     futures.clear()
 
-    val future = main.masterRef ? PropagateMessage
+    val future = masterRef ? PropagateMutatorMessage(id)
     Await.result(future, DURATION)
   }
 
   def getDDG(): DDG  = {
-    val ddgFuture = main.masterRef ? GetMutatorDDGMessage(id)
+    val ddgFuture = masterRef ? GetMutatorDDGMessage(id)
     Await.result(ddgFuture, DURATION).asInstanceOf[DDG]
   }
 
   def shutdown() {
-    if (launchedMain) {
-      main.shutdown()
-    } else {
-      Await.result(main.masterRef ? ShutdownMutatorMessage(id), DURATION)
+    Await.result(masterRef ? ShutdownMutatorMessage(id), DURATION)
+
+    if (_connector == null) {
+      connector.shutdown()
     }
   }
 }

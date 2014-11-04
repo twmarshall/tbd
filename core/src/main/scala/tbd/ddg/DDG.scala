@@ -23,7 +23,7 @@ import scala.concurrent.Await
 import tbd._
 import tbd.Constants._
 import tbd.master.Master
-import tbd.messages.DDGToStringMessage
+import tbd.messages._
 
 class DDG(id: String) {
   var root = new RootNode(id)
@@ -55,10 +55,12 @@ class DDG(id: String) {
   }
 
   def addMod
-      (modizer: Modizer[Any],
+      (modId1: ModId,
+       modId2: ModId,
+       modizer: Modizer[Any],
        key: Any,
        c: Context): ModNode = {
-    val modNode = new ModNode(modizer, key)
+    val modNode = new ModNode(modId1, modId2, modizer, key)
     val timestamp = nextTimestamp(modNode, c)
     modNode.timestamp = timestamp
 
@@ -77,15 +79,15 @@ class DDG(id: String) {
   }
 
   def addPar
-      (workerRef1: ActorRef,
-       workerRef2: ActorRef,
+      (taskRef1: ActorRef,
+       taskRef2: ActorRef,
        c: Context): ParNode = {
-    val parNode = new ParNode(workerRef1, workerRef2)
+    val parNode = new ParNode(taskRef1, taskRef2)
     val timestamp = nextTimestamp(parNode, c)
     parNode.timestamp = timestamp
 
-    pars(workerRef1) = parNode
-    pars(workerRef2) = parNode
+    pars(taskRef1) = parNode
+    pars(taskRef2) = parNode
 
     parNode
   }
@@ -124,14 +126,14 @@ class DDG(id: String) {
   }
 
   // Pebbles a par node. Returns true iff the pebble did not already exist.
-  def parUpdated(workerRef: ActorRef): Boolean = {
-    val parNode = pars(workerRef)
+  def parUpdated(taskRef: ActorRef): Boolean = {
+    val parNode = pars(taskRef)
     if (!parNode.pebble1 && !parNode.pebble2) {
       updated += parNode
       parNode.updated = true
     }
 
-    if (parNode.workerRef1 == workerRef) {
+    if (parNode.taskRef1 == taskRef) {
       val ret = !parNode.pebble1
       parNode.pebble1 = true
       ret
@@ -183,17 +185,17 @@ class DDG(id: String) {
     node match {
       case memoNode: MemoNode =>
 	memoNode.value match {
-	  case changeable: Changeable[Any] =>
+	  case changeable: Changeable[_] =>
 	    if (changeable.mod == mod1) {
-	      changeable.mod = mod2
+	      changeable.asInstanceOf[Changeable[Any]].mod = mod2
 	    }
-	  case (c1: Changeable[Any], c2: Changeable[Any]) =>
+	  case (c1: Changeable[_], c2: Changeable[_]) =>
 	    if (c1.mod == mod1) {
-	      c1.mod = mod2
+	      c1.asInstanceOf[Changeable[Any]].mod = mod2
 	    }
 
 	    if (c2.mod == mod1) {
-	      c2.mod = mod2
+	      c2.asInstanceOf[Changeable[Any]].mod = mod2
 	    }
 	  case _ =>
 	}
@@ -209,30 +211,31 @@ class DDG(id: String) {
       val thisString = node match {
 	case memo: MemoNode =>
 	  prefix + memo + " time=" + memo.timestamp + " to " + memo.endTime +
-	  " signature=" + memo.signature
+	  " signature=" + memo.signature + "\n"
 	case mod: ModNode =>
-	  prefix + mod + " time=" + mod.timestamp + " to " + mod.endTime
+	  prefix + mod + " time=" + mod.timestamp + " to " + mod.endTime + "\n"
 	case par: ParNode =>
-	  val future1 = par.workerRef1 ? DDGToStringMessage(prefix + "|")
-	  val future2 = par.workerRef2 ? DDGToStringMessage(prefix + "|")
+	  val future1 = par.taskRef1 ? GetTaskDDGMessage
+	  val future2 = par.taskRef2 ? GetTaskDDGMessage
 
-	  val output1 = Await.result(future1, DURATION).asInstanceOf[String]
-	  val output2 = Await.result(future2, DURATION).asInstanceOf[String]
+	  val ddg1 = Await.result(future1.mapTo[DDG], DURATION)
+	  val ddg2 = Await.result(future2.mapTo[DDG], DURATION)
 
 	  prefix + par + " time=" + par.timestamp + " pebbles=(" + par.pebble1 +
-	  ", " + par.pebble2 + ")\n" + output1 + "\n" + output2
+	  ", " + par.pebble2 + ")\n" + ddg1.toString(prefix + "|") +
+	  ddg2.toString(prefix + "|")
 	case read: ReadNode =>
 	  prefix + read + " modId=(" + read.mod.id + ") " + " time=" +
 	  read.timestamp + " to " + read.endTime + " value=" + read.mod +
-	  " updated=(" + read.updated + ")"
+	  " updated=(" + read.updated + ")\n"
 	case root: RootNode =>
-	  prefix + "RootNode id=(" + root.id + ")"
+	  prefix + "RootNode id=(" + root.id + ")\n"
 	case write: WriteNode =>
 	  prefix + write + " modId=(" + write.mod.id + ") " +
-	  " value=" + write.mod + " time=" + write.timestamp
-	case _ => ""
+	  " value=" + write.mod + " time=" + write.timestamp + "\n"
+	case _ => "???"
       }
-      out.append(thisString + "\n")
+      out.append(thisString)
 
       for (child <- ordering.getChildren(node)) {
 	innerToString(child, prefix + "-")

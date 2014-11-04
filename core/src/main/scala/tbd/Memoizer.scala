@@ -19,14 +19,13 @@ import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.datastore.DependencyManager
 import tbd.ddg.{MemoNode, Timestamp}
 import tbd.master.Master
 
 class Memoizer[T](implicit c: Context) {
   val memoTable = Map[Seq[Any], ArrayBuffer[MemoNode]]()
 
-  import c.worker.context.dispatcher
+  import c.task.context.dispatcher
 
   def apply(signature: Any*)(func: => T): T = {
     var found = false
@@ -54,7 +53,7 @@ class Memoizer[T](implicit c: Context) {
 
           ret = memoNode.value.asInstanceOf[T]
 
-	  val future = c.worker.propagate(timestamp, memoNode.endTime)
+	  val future = c.task.propagate(timestamp, memoNode.endTime)
           Await.result(future, DURATION)
 	  future onComplete {
 	    case scala.util.Failure(e) => e.printStackTrace()
@@ -106,40 +105,22 @@ class Memoizer[T](implicit c: Context) {
       currentMod2: Mod[Any]) {
 
     memoNode.value match {
-      case changeable: Changeable[Any] =>
+      case changeable: Changeable[_] =>
 	if (memoNode.currentMod != currentMod) {
-	  if (c.update(currentMod, c.read(changeable.mod))) {
-	    c.pending += DependencyManager.modUpdated(currentMod.id, c.worker.self)
-	    if (c.ddg.reads.contains(currentMod.id)) {
-              c.ddg.modUpdated(currentMod.id)
-              c.updatedMods += currentMod.id
-	    }
-	  }
+	  c.update(currentMod, c.read(changeable.mod))
 
 	  c.ddg.replaceMods(memoNode, memoNode.currentMod, currentMod)
 	}
 
-      case (c1: Changeable[Any], c2: Changeable[Any]) =>
+      case (c1: Changeable[_], c2: Changeable[_]) =>
 	if (memoNode.currentMod != currentMod) {
-          if (c.update(currentMod, c.read(c1.mod))) {
-            c.pending += DependencyManager.modUpdated(currentMod.id, c.worker.self)
-            if (c.ddg.reads.contains(currentMod.id)) {
-              c.ddg.modUpdated(currentMod.id)
-              c.updatedMods += currentMod.id
-            }
-	  }
+          c.update(currentMod, c.read(c1.mod))
 
           c.ddg.replaceMods(memoNode, memoNode.currentMod, currentMod)
 	}
 
 	if (memoNode.currentMod2 != currentMod2) {
-          if (c.update(currentMod2, c.read(c2.mod))) {
-            c.pending += DependencyManager.modUpdated(currentMod2.id, c.worker.self)
-            if (c.ddg.reads.contains(currentMod2.id)) {
-              c.ddg.modUpdated(currentMod2.id)
-              c.updatedMods += currentMod2.id
-            }
-	  }
+          c.update(currentMod2, c.read(c2.mod))
 
           c.ddg.replaceMods(memoNode, memoNode.currentMod2, currentMod2)
 	}

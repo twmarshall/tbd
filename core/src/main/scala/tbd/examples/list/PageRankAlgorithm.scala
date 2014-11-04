@@ -18,15 +18,43 @@ package tbd.examples.list
 import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
-import tbd.Context
+import tbd._
 import tbd.datastore.GraphData
 import tbd.list._
+
+object PageRankAlgorithm {
+  val iters = 2
+}
+
+class PageRankAdjust(links: AdjustableList[Int, Array[Int]])
+  extends Adjustable[AdjustableList[Int, Double]] {
+
+  def run(implicit c: Context) = {
+    var ranks = links.mapValues(value => 1.0)
+
+    for (i <- 1 to PageRankAlgorithm.iters) {
+      val contribs = links.sortJoin(ranks).flatMap { case (page, (links, rank)) =>
+        val size = links.size
+        links.map(url => (url, rank / size))
+      }
+
+      val reduced = contribs.reduceByKey(_ + _)
+
+      ranks = reduced.mapValues(.15 + .85 * _)
+    }
+
+    ranks
+  }
+}
+
 
 class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Array[Int], AdjustableList[Int, Double]](_conf, _listConf) {
   val input = ListInput[Int, Array[Int]](mutator, listConf.copy(sorted = true))
 
   val data = new GraphData(input, count, mutations)
+
+  val adjust = new PageRankAdjust(input.getAdjustableList())
 
   var naiveTable: Map[Int, Array[Int]] = _
   def generateNaive() {
@@ -41,7 +69,7 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   private def naiveHelper(links: Map[Int, Array[Int]]) = {
     var ranks = links.map(pair => (pair._1, 1.0))
 
-    for (i <- 1 to iters) {
+    for (i <- 1 to PageRankAlgorithm.iters) {
       val joined = Map[Int, (Array[Int], Double)]()
       for ((url, rank) <- ranks) {
 	joined(url) = (links(url), rank)
@@ -75,24 +103,5 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     }
 
     check
-  }
-
-  val iters = 2
-  def run(implicit c: Context) = {
-    val links = input.getAdjustableList()
-    var ranks = links.mapValues(value => 1.0)
-
-    for (i <- 1 to iters) {
-      val contribs = links.sortJoin(ranks).flatMap { case (page, (links, rank)) =>
-        val size = links.size
-        links.map(url => (url, rank / size))
-      }
-
-      val reduced = contribs.reduceByKey(_ + _)
-
-      ranks = reduced.mapValues(.15 + .85 * _)
-    }
-
-    ranks
   }
 }

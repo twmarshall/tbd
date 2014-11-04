@@ -19,7 +19,6 @@ import org.scalatest._
 
 import tbd._
 import tbd.ddg.{MemoNode, ReadNode, RootNode}
-import tbd.master.Main
 import tbd.table._
 import tbd.TBD._
 
@@ -605,5 +604,7 @@ class MemoTests extends FlatSpec with Matchers {
     input.update(5, 10)
     mutator.propagate()
     mutator.read(output) should be (10)
+
+    mutator.shutdown()
   }
 }

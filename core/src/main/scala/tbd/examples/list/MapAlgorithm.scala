@@ -17,6 +17,8 @@ package tbd.examples.list
 
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
+import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
+import scala.concurrent.forkjoin.ForkJoinPool
 
 import tbd._
 import tbd.datastore.StringData
@@ -32,16 +34,27 @@ object MapAlgorithm {
   }
 }
 
+class MapAdjust(list: AdjustableList[Int, String])
+  extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit c: Context) = {
+    list.map(MapAlgorithm.mapper)
+  }
+}
+
 class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
   val input = ListInput[Int, String](mutator, listConf)
 
+  val adjust = new MapAdjust(input.getAdjustableList())
+
   val data = new StringData(input, count, mutations, Experiment.check)
 
-  var naiveTable: GenIterable[String] = _
+  var naiveTable: ParIterable[String] = _
   def generateNaive() {
     data.generate()
     naiveTable = Vector(data.table.values.toSeq: _*).par
+    naiveTable.tasksupport =
+      new ForkJoinTaskSupport(new ForkJoinPool(partitions * 2))
   }
 
   def runNaive() {
@@ -56,16 +69,6 @@ class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val sortedOutput = output.toBuffer(mutator).map(_._2).sortWith(_ < _)
     val answer = naiveHelper(table.values)
 
-    sortedOutput == answer.asInstanceOf[GenIterable[Int]].toBuffer.sortWith(_ < _)
-  }
-
-  def mapper(pair: (Int, String)) = {
-    mapCount += 1
-    MapAlgorithm.mapper(pair)
-  }
-
-  def run(implicit c: Context) = {
-    val pages = input.getAdjustableList()
-    pages.map(mapper)
+    sortedOutput == answer.toBuffer.sortWith(_ < _)
   }
 }
