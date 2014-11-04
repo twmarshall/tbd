@@ -41,6 +41,7 @@ object TBDBuild extends Build {
     "core",
     file("core"),
     settings = buildSettings ++ Seq (
+      exportJars:=true,
       libraryDependencies ++= commonDeps,
       resolvers += mavenResolver,
       javaOptions += "-Xss128M",
