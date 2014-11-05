@@ -18,8 +18,9 @@ package tbd.datastore
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
+import tbd.Mod
 import tbd.Constants._
 import tbd.messages._
 
@@ -30,15 +31,37 @@ object Datastore {
 class Datastore extends Actor with ActorLogging {
   import context.dispatcher
 
+  private var workerId: String = _
+
   private val mods = Map[ModId, Any]()
 
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  def getMod(modId: ModId): Any = {
-    if (mods(modId) == null)
-      NullMessage
-    else
-      mods(modId)
+  // Maps logical names of datastores to their references.
+  private val datastores = Map[String, ActorRef]()
+
+  private var nextModId = 0
+
+  def createMod(value: Any): Mod[Any] = {
+    val modId = workerId + ":" + nextModId
+    nextModId += 1
+
+    mods(modId) = value
+
+    new Mod(modId)
+  }
+
+  def getMod(modId: ModId, taskRef: ActorRef): Any = {
+    if (mods.contains(modId)) {
+      if (mods(modId) == null)
+	NullMessage
+      else
+	mods(modId)
+    } else {
+      val workerId = modId.split(":")(0)
+      val future = datastores(workerId) ? GetModMessage(modId, taskRef)
+      Await.result(future, DURATION)
+    }
   }
 
   def updateMod
@@ -66,8 +89,14 @@ class Datastore extends Actor with ActorLogging {
   }
 
   def receive = {
+    case CreateModMessage(value: Any) =>
+      sender ! createMod(value)
+
+    case CreateModMessage(null) =>
+      sender ! createMod(null)
+
     case GetModMessage(modId: ModId, taskRef: ActorRef) =>
-      sender ! getMod(modId)
+      sender ! getMod(modId, taskRef)
 
       if (dependencies.contains(modId)) {
 	dependencies(modId) += taskRef
@@ -76,7 +105,7 @@ class Datastore extends Actor with ActorLogging {
       }
 
     case GetModMessage(modId: ModId, null) =>
-      sender ! getMod(modId)
+      sender ! getMod(modId, null)
 
     case UpdateModMessage(modId: ModId, value: Any, task: ActorRef) =>
       updateMod(modId, value, task, sender)
@@ -97,6 +126,12 @@ class Datastore extends Actor with ActorLogging {
       }
 
       sender ! "done"
+
+    case RegisterDatastoreMessage(workerId: String, datastoreRef: ActorRef) =>
+      datastores(workerId) = datastoreRef
+
+    case SetIdMessage(_workerId: String) =>
+      workerId = _workerId
 
     case x =>
       log.warning("Datastore actor received unhandled message " +

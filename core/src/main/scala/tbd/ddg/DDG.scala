@@ -25,8 +25,8 @@ import tbd.Constants._
 import tbd.master.Master
 import tbd.messages._
 
-class DDG(id: String) {
-  var root = new RootNode(id)
+class DDG {
+  var root = new RootNode()
   debug.TBD.nodes(root) = (Node.getId(), Tag.Root(), null)
 
   val reads = Map[ModId, Buffer[ReadNode]]()
@@ -229,7 +229,7 @@ class DDG(id: String) {
 	  read.timestamp + " to " + read.endTime + " value=" + read.mod +
 	  " updated=(" + read.updated + ")\n"
 	case root: RootNode =>
-	  prefix + "RootNode id=(" + root.id + ")\n"
+	  prefix + "RootNode=" + root + "\n"
 	case write: WriteNode =>
 	  prefix + write + " modId=(" + write.mod.id + ") " +
 	  " value=" + write.mod + " time=" + write.timestamp + "\n"

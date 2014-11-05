@@ -210,16 +210,16 @@ object TBD {
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
-    c.update(c.currentMod, value)
+    c.update(c.currentMod.id, value)
 
     (new Changeable(c.currentMod)).asInstanceOf[Changeable[T]]
   }
 
   def write2[T, U](value: T, value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    c.update(c.currentMod, value)
+    c.update(c.currentMod.id, value)
 
-    c.update(c.currentMod2, value2)
+    c.update(c.currentMod2.id, value2)
 
     (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
@@ -227,7 +227,7 @@ object TBD {
 
   def writeLeft[T, U](value: T, changeable: Changeable[U])
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    c.update(c.currentMod, value)
+    c.update(c.currentMod.id, value)
 
     (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
@@ -235,7 +235,7 @@ object TBD {
 
   def writeRight[T, U](changeable: Changeable[T], value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    c.update(c.currentMod2, value2)
+    c.update(c.currentMod2.id, value2)
 
     (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])

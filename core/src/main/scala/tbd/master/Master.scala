@@ -36,26 +36,41 @@ class Master extends Actor with ActorLogging {
 
   log.info("Master launched.")
 
-  val datastore = context.actorOf(Datastore.props(), "datastore")
-
-  private var nextMutatorId = 0
-
   private val workers = Buffer[ActorRef]()
+
+  // Maps workerIds to Datastores.
+  private val datastoreRefs = Map[String, ActorRef]()
 
   // Maps mutatorIds to the Task the mutator's computation was launched on.
   private val tasks = Map[Int, ActorRef]()
+
+  private var nextMutatorId = 0
+
+  private var nextWorkerId = 0
 
   // The next Worker to schedule a Task on.
   private var nextWorker = 0
 
   def receive = {
-    case RegisterWorkerMessage(worker: ActorRef) =>
-      log.info("Registering worker at " + worker)
-      workers += worker
-      sender ! datastore
+    // Worker
+    case RegisterWorkerMessage(workerRef: ActorRef, datastoreRef: ActorRef) =>
+      log.info("Registering worker at " + workerRef)
 
-    case ScheduleTaskMessage(id: String, parent: ActorRef) =>
-      (workers(nextWorker) ? ScheduleTaskMessage(id, parent)) pipeTo sender
+      workers += workerRef
+
+      val workerId = nextWorkerId + ""
+      datastoreRefs(workerId) = datastoreRef
+
+      sender ! workerId
+      nextWorkerId += 1
+
+      for ((thatWorkerId, thatDatastoreRef) <- datastoreRefs) {
+	thatDatastoreRef ! RegisterDatastoreMessage(workerId, datastoreRef)
+	datastoreRef ! RegisterDatastoreMessage(thatWorkerId, thatDatastoreRef)
+      }
+
+    case ScheduleTaskMessage(parent: ActorRef) =>
+      (workers(nextWorker) ? ScheduleTaskMessage(parent)) pipeTo sender
       nextWorker = (nextWorker + 1) % workers.size
 
     // Mutator
@@ -68,7 +83,7 @@ class Master extends Actor with ActorLogging {
       log.info("Starting initial run for mutator " + mutatorId)
 
       val taskRefFuture = workers(nextWorker) ?
-        ScheduleTaskMessage("t" + mutatorId, workers(nextWorker))
+        ScheduleTaskMessage(workers(nextWorker))
       nextWorker = (nextWorker + 1) % workers.size
       val taskRef = Await.result(taskRefFuture.mapTo[ActorRef], DURATION)
 
@@ -89,14 +104,25 @@ class Master extends Actor with ActorLogging {
       (tasks(mutatorId) ? ShutdownTaskMessage) pipeTo sender
 
     // Datastore
+    case CreateModMessage(value: Any) =>
+      (workers(nextWorker) ? CreateModMessage(value)) pipeTo sender
+      nextWorker = (nextWorker + 1) % workers.size
+
+    case CreateModMessage(null) =>
+      (workers(nextWorker) ? CreateModMessage(null)) pipeTo sender
+      nextWorker = (nextWorker + 1) % workers.size
+
     case GetModMessage(modId: ModId, null) =>
-      (datastore ? GetModMessage(modId, null)) pipeTo sender
+      val workerId = modId.split(":")(0)
+      (datastoreRefs(workerId) ? GetModMessage(modId, null)) pipeTo sender
 
     case UpdateModMessage(modId: ModId, value: Any, null) =>
-      (datastore ? UpdateModMessage(modId, value, null)) pipeTo sender
+      val workerId = modId.split(":")(0)
+      (datastoreRefs(workerId) ? UpdateModMessage(modId, value, null)) pipeTo sender
 
     case UpdateModMessage(modId: ModId, null, null) =>
-      (datastore ? UpdateModMessage(modId, null, null)) pipeTo sender
+      val workerId = modId.split(":")(0)
+      (datastoreRefs(workerId) ? UpdateModMessage(modId, null, null)) pipeTo sender
 
     case x =>
       log.warning("Master actor received unhandled message " +

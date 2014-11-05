@@ -36,7 +36,7 @@ class ModListInput[T, U](mutator: Mutator) extends ListInput[T, U] {
     }
 
     val head = mutator.read(tail)
-    mutator.updateMod(tailMod, mutator.read(tail))
+    mutator.updateMod(tailMod, head)
     nodes(head.value._1) = tailMod
     tailMod = newTail
   }

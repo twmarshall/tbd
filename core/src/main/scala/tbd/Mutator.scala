@@ -45,13 +45,8 @@ class Mutator(_connector: MasterConnector = null) {
 
   var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
-    val mod = new Mod[T]("d." + id + " " + nextModId)
-    nextModId += 1
-
-    val message = UpdateModMessage(mod.id, value, null)
-    futures += (masterRef ? message).mapTo[String]
-
-    mod
+    val message = CreateModMessage(value)
+    Await.result((masterRef ? message).mapTo[Mod[T]], DURATION)
   }
 
   def updateMod[T](mod: Mod[T], value: T) {

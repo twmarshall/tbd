@@ -24,10 +24,13 @@ import tbd.Constants._
 import tbd.ddg.Node
 
 // Datastore
+case class CreateModMessage(value: Any)
 case class GetModMessage(modId: ModId, task: ActorRef)
 case class UpdateModMessage(modId: ModId, value: Any, task: ActorRef)
 case class RemoveModsMessage(mods: Iterable[ModId])
 case class NullMessage()
+case class RegisterDatastoreMessage(id: String, datastoreRef: ActorRef)
+case class SetIdMessage(id: String)
 
 case class DBPutMessage(key: ModId, value: Any)
 case class DBGetMessage(key: ModId)
@@ -40,11 +43,11 @@ case class RegisterMutatorMessage()
 case class RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int)
 case class PropagateMutatorMessage(mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
-case class ScheduleTaskMessage(id: String, parent: ActorRef)
+case class ScheduleTaskMessage(parent: ActorRef)
 case class ShutdownMutatorMessage(mutatorId: Int)
 
 // Worker
-case class RegisterWorkerMessage(worker: ActorRef)
+case class RegisterWorkerMessage(worker: ActorRef, datastoreRef: ActorRef)
 case class GetDatastoreMessage()
 
 // Task

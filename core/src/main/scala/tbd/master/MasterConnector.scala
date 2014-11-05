@@ -16,6 +16,7 @@
 package tbd.master
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 
@@ -66,7 +67,8 @@ object MasterConnector {
     val masterRef = system.actorOf(Master.props(), "master")
 
     if (singleNode) {
-      system.actorOf(Worker.props(masterRef), "worker")
+      val workerRef = system.actorOf(Worker.props(masterRef), "worker")
+      Await.result(workerRef ? "started", DURATION)
     }
 
     new MasterConnector(masterRef, system)

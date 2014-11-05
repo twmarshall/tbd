@@ -27,15 +27,15 @@ import tbd.messages._
 import tbd.worker.Task
 
 class Context
-    (val id: String,
+    (id: String,
      val task: Task,
      val datastore: ActorRef,
      val masterRef: ActorRef) {
   import task.context.dispatcher
 
-  val log = Logging(task.context.system, "TBD" + id)
+  val log = Logging(task.context.system, "Context")
 
-  val ddg = new DDG(id)
+  val ddg = new DDG()
 
   var initialRun = true
 
@@ -61,9 +61,6 @@ class Context
   // is one.
   var currentMod2: Mod[Any] = _
 
-  // A unique id to assign to tasks forked from this context.
-  var taskId = 0
-
   private var nextModId = 0
 
   val pending = Buffer[Future[String]]()
@@ -85,16 +82,16 @@ class Context
     }).asInstanceOf[T]
   }
 
-  def update[T](mod: Mod[T], value: T) {
-    val message = UpdateModMessage(mod.id, value, task.self)
+  def update[T](modId: ModId, value: T) {
+    val message = UpdateModMessage(modId, value, task.self)
     val future = (datastore ? message).mapTo[String]
 
     if (!initialRun) {
       pending += future
 
-      if (ddg.reads.contains(mod.id)) {
-	updatedMods += mod.id
-	ddg.modUpdated(mod.id)
+      if (ddg.reads.contains(modId)) {
+	updatedMods += modId
+	ddg.modUpdated(modId)
       }
     }
   }
