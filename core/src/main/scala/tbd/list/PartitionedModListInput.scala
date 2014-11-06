@@ -17,80 +17,36 @@ package tbd.list
 
 import scala.collection.mutable.{Buffer, Map}
 
-import tbd.Mutator
-import tbd.Constants._
+class PartitionedModListInput[T, U]
+    (partitions: Buffer[ModListInput[T, U]])
+  extends ListInput[T, U] with java.io.Serializable {
 
-class PartitionedModListInput[T, U](mutator: Mutator, conf: ListConf)
-    extends ListInput[T, U] {
-  val partitionModifiers = Buffer[ModListInput[T, U]]()
-  val partitionedModList = initialize()
-
-  private def initialize(): PartitionedModList[T, U] = {
-    val partitions = Buffer[ModList[T, U]]()
-    for (i <- 1 to conf.partitions) {
-      val modListModifier = new ModListInput[T, U](mutator)
-      partitionModifiers += modListModifier
-      partitions += modListModifier.modList
-    }
-
-    new PartitionedModList[T, U](partitions)
+  def put(key: T, value: U) = {
+    partitions(key.hashCode() % partitions.size).put(key, value)
   }
 
-  def load(data: Map[T, U]) {
-    val groups = data.grouped((data.size.toDouble / conf.partitions).ceil.toInt)
+  def update(key: T, value: U) = {
+    partitions(key.hashCode() % partitions.size).update(key, value)
+  }
 
-    var i = 0
-    for (group <- groups) {
-      partitionModifiers(i).load(group)
-      i += 1
+  def remove(key: T) = {
+    partitions(key.hashCode() % partitions.size).remove(key)
+  }
+
+  def load(data: Map[T, U]) = {
+    for ((key, value) <- data) {
+      partitions(key.hashCode() % partitions.size).put(key, value)
     }
   }
 
-  private var putInto = 0
-  def put(key: T, value: U) {
-    putInto = (putInto + 1) % conf.partitions
-    partitionModifiers(putInto).put(key, value)
-  }
+  def putAfter(key: T, newPair: (T, U)) = ???
 
-  def putAfter(key: T, newPair: (T, U)) {
-    var found = false
-    for (partitionModifier <- partitionModifiers) {
-      if (!found && partitionModifier.contains(key)) {
-        partitionModifier.putAfter(key, newPair)
-        found = true
-      }
+  def getAdjustableList(): AdjustableList[T, U] = {
+    val adjustablePartitions = Buffer[ModList[T, U]]()
+    for (partition <- partitions) {
+      adjustablePartitions += partition.getAdjustableList()
     }
 
-    if (!found) {
-      println("Warning: tried to putAfter nonexistant key " + key)
-    }
-  }
-
-  override def update(key: T, value: U) {
-    var found = false
-    for (partitionModifier <- partitionModifiers) {
-      if (!found && partitionModifier.contains(key)) {
-        partitionModifier.update(key, value)
-        found = true
-      }
-    }
-
-   if (!found) {
-     println("Warning: tried to update nonexistant key " + key)
-   }
-  }
-
-  override def remove(key: T) {
-    var found = false
-    for (partitionModifier <- partitionModifiers) {
-      if (!found && partitionModifier.contains(key)) {
-        partitionModifier.remove(key)
-        found = true
-      }
-    }
-  }
-
-  override def getAdjustableList(): AdjustableList[T, U] = {
-    partitionedModList
+    new PartitionedModList(adjustablePartitions)
   }
 }

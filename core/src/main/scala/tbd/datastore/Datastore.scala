@@ -22,6 +22,7 @@ import scala.concurrent.{Await, Future}
 
 import tbd.Mod
 import tbd.Constants._
+import tbd.list._
 import tbd.messages._
 
 object Datastore {
@@ -31,24 +32,34 @@ object Datastore {
 class Datastore extends Actor with ActorLogging {
   import context.dispatcher
 
-  private var workerId: String = _
+  var workerId: String = _
 
   private val mods = Map[ModId, Any]()
+
+  private var nextModId = 0
+
+  private val lists = Map[String, ListInput[Any, Any]]()
+
+  private var nextListId = 0
 
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
   // Maps logical names of datastores to their references.
   private val datastores = Map[String, ActorRef]()
 
-  private var nextModId = 0
+  private var misses = 0
 
-  def createMod(value: Any): Mod[Any] = {
+  def createMod[T](value: T): Mod[T] = {
     val modId = workerId + ":" + nextModId
     nextModId += 1
 
     mods(modId) = value
 
     new Mod(modId)
+  }
+
+  def read[T](mod: Mod[T]): T = {
+    mods(mod.id).asInstanceOf[T]
   }
 
   def getMod(modId: ModId, taskRef: ActorRef): Any = {
@@ -60,8 +71,28 @@ class Datastore extends Actor with ActorLogging {
     } else {
       val workerId = modId.split(":")(0)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)
+
+      /*misses += 1
+      log.info(misses + " misses")*/
+
       Await.result(future, DURATION)
     }
+  }
+
+  def update[T](mod: Mod[T], value: T) {
+    val futures = Buffer[Future[String]]()
+
+    if (!mods.contains(mod.id) || mods(mod.id) != value) {
+      mods(mod.id) = value
+
+      if (dependencies.contains(mod.id)) {
+	for (taskRef <- dependencies(mod.id)) {
+	  futures += (taskRef ? ModUpdatedMessage(mod.id)).mapTo[String]
+	}
+      }
+    }
+
+    Await.result(Future.sequence(futures), DURATION)
   }
 
   def updateMod
@@ -126,6 +157,41 @@ class Datastore extends Actor with ActorLogging {
       }
 
       sender ! "done"
+
+    case CreateListMessage(conf: ListConf) =>
+      val listId = nextListId + ""
+      nextListId += 1
+      lists(listId) =
+	if (conf.chunkSize == 1) {
+	  new ListModifier[Any, Any](this)
+	} else {
+	  new ChunkListModifier[Any, Any](this, conf)
+	}
+
+      sender ! listId
+
+    case GetAdjustableListMessage(listId: String) =>
+      sender ! lists(listId).getAdjustableList()
+
+    case LoadMessage(listId: String, data: Map[Any, Any]) =>
+      lists(listId).load(data)
+      sender ! "okay"
+
+    case PutMessage(listId: String, key: Any, value: Any) =>
+      lists(listId).put(key, value)
+      sender ! "okay"
+
+    case UpdateMessage(listId: String, key: Any, value: Any) =>
+      lists(listId).update(key, value)
+      sender ! "okay"
+
+    case RemoveMessage(listId: String, key: Any) =>
+      lists(listId).remove(key)
+      sender ! "okay"
+
+    case PutAfterMessage(listId: String, key: Any, newPair: (Any, Any)) =>
+      lists(listId).putAfter(key, newPair)
+      sender ! "okay"
 
     case RegisterDatastoreMessage(workerId: String, datastoreRef: ActorRef) =>
       datastores(workerId) = datastoreRef

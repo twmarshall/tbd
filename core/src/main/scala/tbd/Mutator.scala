@@ -25,6 +25,7 @@ import tbd.Constants._
 import tbd.ddg.DDG
 import tbd.master.MasterConnector
 import tbd.messages._
+import tbd.list.{ListConf, ListInput}
 
 class Mutator(_connector: MasterConnector = null) {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -62,6 +63,11 @@ class Mutator(_connector: MasterConnector = null) {
       case NullMessage => null
       case x => x
     }).asInstanceOf[T]
+  }
+
+  def createList[T, U](conf: ListConf = new ListConf()): ListInput[T, U] = {
+    val future = masterRef ? CreateListMessage(conf)
+    Await.result(future.mapTo[ListInput[T, U]], DURATION)
   }
 
   def run[T](adjust: Adjustable[T]): T = {

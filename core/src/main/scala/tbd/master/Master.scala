@@ -25,6 +25,7 @@ import tbd.{Adjustable, TBD}
 import tbd.Constants._
 import tbd.datastore.Datastore
 import tbd.messages._
+import tbd.list._
 import tbd.worker.{Task, Worker}
 
 object Master {
@@ -36,7 +37,7 @@ class Master extends Actor with ActorLogging {
 
   log.info("Master launched.")
 
-  private val workers = Buffer[ActorRef]()
+  private val workers = Map[String, ActorRef]()
 
   // Maps workerIds to Datastores.
   private val datastoreRefs = Map[String, ActorRef]()
@@ -56,9 +57,8 @@ class Master extends Actor with ActorLogging {
     case RegisterWorkerMessage(workerRef: ActorRef, datastoreRef: ActorRef) =>
       log.info("Registering worker at " + workerRef)
 
-      workers += workerRef
-
       val workerId = nextWorkerId + ""
+      workers(workerId) = workerRef
       datastoreRefs(workerId) = datastoreRef
 
       sender ! workerId
@@ -69,8 +69,11 @@ class Master extends Actor with ActorLogging {
 	datastoreRef ! RegisterDatastoreMessage(thatWorkerId, thatDatastoreRef)
       }
 
-    case ScheduleTaskMessage(parent: ActorRef) =>
-      (workers(nextWorker) ? ScheduleTaskMessage(parent)) pipeTo sender
+    case ScheduleTaskMessage(parent: ActorRef, workerId: String) =>
+      (workers(workerId) ? ScheduleTaskMessage(parent)) pipeTo sender
+
+    case ScheduleTaskMessage(parent: ActorRef, null) =>
+      (workers(nextWorker + "") ? ScheduleTaskMessage(parent)) pipeTo sender
       nextWorker = (nextWorker + 1) % workers.size
 
     // Mutator
@@ -82,8 +85,8 @@ class Master extends Actor with ActorLogging {
     case RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int) =>
       log.info("Starting initial run for mutator " + mutatorId)
 
-      val taskRefFuture = workers(nextWorker) ?
-        ScheduleTaskMessage(workers(nextWorker))
+      val taskRefFuture = workers(nextWorker + "") ?
+        ScheduleTaskMessage(workers(nextWorker + ""))
       nextWorker = (nextWorker + 1) % workers.size
       val taskRef = Await.result(taskRefFuture.mapTo[ActorRef], DURATION)
 
@@ -105,11 +108,11 @@ class Master extends Actor with ActorLogging {
 
     // Datastore
     case CreateModMessage(value: Any) =>
-      (workers(nextWorker) ? CreateModMessage(value)) pipeTo sender
+      (workers(nextWorker + "") ? CreateModMessage(value)) pipeTo sender
       nextWorker = (nextWorker + 1) % workers.size
 
     case CreateModMessage(null) =>
-      (workers(nextWorker) ? CreateModMessage(null)) pipeTo sender
+      (workers(nextWorker + "") ? CreateModMessage(null)) pipeTo sender
       nextWorker = (nextWorker + 1) % workers.size
 
     case GetModMessage(modId: ModId, null) =>
@@ -123,6 +126,54 @@ class Master extends Actor with ActorLogging {
     case UpdateModMessage(modId: ModId, null, null) =>
       val workerId = modId.split(":")(0)
       (datastoreRefs(workerId) ? UpdateModMessage(modId, null, null)) pipeTo sender
+
+    case CreateListMessage(conf: ListConf) =>
+      val input =
+	if (conf.chunkSize == 1) {
+	  if (conf.partitions == 1) {
+	    val datastoreRef = datastoreRefs(nextWorker + "")
+	    val future = datastoreRef ? CreateListMessage(conf)
+	    val listId = Await.result(future.mapTo[String], DURATION)
+	    nextWorker = (nextWorker + 1) % workers.size
+
+	    new ModListInput(listId, datastoreRef)
+	  } else {
+	    val partitions = Buffer[ModListInput[Any, Any]]()
+	    for (i <- 1 to conf.partitions) {
+	      val datastoreRef = datastoreRefs(nextWorker + "")
+	      val future = datastoreRef ? CreateListMessage(conf)
+	      val listId = Await.result(future.mapTo[String], DURATION)
+	      nextWorker = (nextWorker + 1) % workers.size
+
+	      partitions += new ModListInput(listId, datastoreRef)
+	    }
+
+	    new PartitionedModListInput(partitions)
+	  }
+	} else {
+	  if (conf.partitions == 1) {
+	    val datastoreRef = datastoreRefs(nextWorker + "")
+	    val future = datastoreRef ? CreateListMessage(conf)
+	    val listId = Await.result(future.mapTo[String], DURATION)
+	    nextWorker = (nextWorker + 1) % workers.size
+
+	    new ChunkListInput2(listId, datastoreRef)
+	  } else {
+	    val partitions = Buffer[ChunkListInput2[Any, Any]]()
+	    for (i <- 1 to conf.partitions) {
+	      val datastoreRef = datastoreRefs(nextWorker + "")
+	      val future = datastoreRef ? CreateListMessage(conf)
+	      val listId = Await.result(future.mapTo[String], DURATION)
+	      nextWorker = (nextWorker + 1) % workers.size
+
+	      partitions += new ChunkListInput2(listId, datastoreRef)
+	    }
+
+	    new PartitionedChunkListInput2(partitions, conf)
+	  }
+	}
+
+      sender ! input
 
     case x =>
       log.warning("Master actor received unhandled message " +

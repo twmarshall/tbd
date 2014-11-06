@@ -47,7 +47,7 @@ class Worker(masterRef: ActorRef) extends Actor with ActorLogging {
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       sender ! "done"
 
-    case ScheduleTaskMessage(parent: ActorRef) =>
+    case ScheduleTaskMessage(parent: ActorRef, _) =>
       log.debug("Scheduling task.")
       val taskId = workerId + ":" + nextTaskId
       val taskProps = Task.props(taskId, parent, datastore, masterRef)

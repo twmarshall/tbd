@@ -16,12 +16,13 @@
 package tbd.messages
 
 import akka.actor.ActorRef
-import scala.collection.mutable.Set
+import scala.collection.mutable.{Map, Set}
 import scala.language.existentials
 
 import tbd.{Adjustable, Changeable, TBD}
 import tbd.Constants._
 import tbd.ddg.Node
+import tbd.list.ListConf
 
 // Datastore
 case class CreateModMessage(value: Any)
@@ -43,8 +44,16 @@ case class RegisterMutatorMessage()
 case class RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int)
 case class PropagateMutatorMessage(mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
-case class ScheduleTaskMessage(parent: ActorRef)
+case class ScheduleTaskMessage(parent: ActorRef, workerId: String = null)
 case class ShutdownMutatorMessage(mutatorId: Int)
+
+case class CreateListMessage(conf: ListConf)
+case class GetAdjustableListMessage(listId: String)
+case class PutMessage(listId: String, key: Any, value: Any)
+case class UpdateMessage(listId: String, key: Any, value: Any)
+case class RemoveMessage(listId: String, key: Any)
+case class PutAfterMessage(listId: String, key: Any, newPair: (Any, Any))
+case class LoadMessage(listId: String, data: Map[Any, Any])
 
 // Worker
 case class RegisterWorkerMessage(worker: ActorRef, datastoreRef: ActorRef)
