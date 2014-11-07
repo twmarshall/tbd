@@ -139,12 +139,16 @@ class Master extends Actor with ActorLogging {
 	    new ModListInput(listId, datastoreRef)
 	  } else {
 	    val partitions = Buffer[ModListInput[Any, Any]]()
+            var index = 0
 	    for (i <- 1 to conf.partitions) {
 	      val datastoreRef = datastoreRefs(nextWorker + "")
-	      val future = datastoreRef ? CreateListMessage(conf)
-	      val listId = Await.result(future.mapTo[String], DURATION)
 	      nextWorker = (nextWorker + 1) % workers.size
 
+	      val future = datastoreRef ?
+                CreateListMessage(conf.copy(partitionIndex = index))
+              index += 1
+
+	      val listId = Await.result(future.mapTo[String], DURATION)
 	      partitions += new ModListInput(listId, datastoreRef)
 	    }
 
@@ -160,11 +164,16 @@ class Master extends Actor with ActorLogging {
 	    new ChunkListInput2(listId, datastoreRef)
 	  } else {
 	    val partitions = Buffer[ChunkListInput2[Any, Any]]()
+            var index = 0
 	    for (i <- 1 to conf.partitions) {
 	      val datastoreRef = datastoreRefs(nextWorker + "")
-	      val future = datastoreRef ? CreateListMessage(conf)
-	      val listId = Await.result(future.mapTo[String], DURATION)
 	      nextWorker = (nextWorker + 1) % workers.size
+
+	      val future = datastoreRef ?
+                CreateListMessage(conf.copy(partitionIndex = index))
+              index += 1
+
+	      val listId = Await.result(future.mapTo[String], DURATION)
 
 	      partitions += new ChunkListInput2(listId, datastoreRef)
 	    }

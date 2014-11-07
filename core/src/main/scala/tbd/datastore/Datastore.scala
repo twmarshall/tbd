@@ -17,6 +17,8 @@ package tbd.datastore
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
+import java.io.{BufferedReader, File, FileReader}
+import java.util.regex.Pattern
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future}
 
@@ -161,12 +163,52 @@ class Datastore extends Actor with ActorLogging {
     case CreateListMessage(conf: ListConf) =>
       val listId = nextListId + ""
       nextListId += 1
-      lists(listId) =
+      val list =
 	if (conf.chunkSize == 1) {
 	  new ListModifier[Any, Any](this)
 	} else {
 	  new ChunkListModifier[Any, Any](this, conf)
 	}
+
+      lists(listId) = list
+
+      if (conf.file != "") {
+	val file = new File("wiki.xml")
+	val fileSize = file.length()
+
+	val in = new BufferedReader(new FileReader("wiki.xml"))
+	val partitionSize = (fileSize / conf.partitions).toInt
+	var buf = new Array[Char](partitionSize)
+
+	in.skip(partitionSize * conf.partitionIndex)
+	in.read(buf)
+
+	val regex = Pattern.compile("""(?s)<key>(.*?)</key>[\s]*?<value>(.*?)</value>""")
+	val str = new String(buf)
+	val matcher = regex.matcher(str)
+
+	var end = 0
+	while (matcher.find()) {
+	  list.put(matcher.group(1), matcher.group(2))
+	  end = matcher.end()
+	}
+
+	if (conf.partitionIndex != conf.partitions - 1) {
+	  var remaining = str.substring(end)
+	  var done = false
+	  while (!done) {
+	    val smallBuf = new Array[Char](64)
+	    in.read(smallBuf)
+
+	    remaining += new String(smallBuf)
+	    val matcher = regex.matcher(remaining)
+	    if (matcher.find()) {
+	      list.put(matcher.group(1), matcher.group(2))
+	      done = true
+	    }
+	  }
+	}
+      }
 
       sender ! listId
 
