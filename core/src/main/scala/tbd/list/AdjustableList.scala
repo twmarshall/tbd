@@ -78,9 +78,8 @@ trait AdjustableList[T, U] {
   /**
    * Sorts the list, using the mergesort algorithm.
    */
-  def mergesort()
-      (implicit c: Context,
-       ordering: Ordering[T]): AdjustableList[T, U] = ???
+  def mergesort(comparator: ((T, U), (T, U)) => Int)
+      (implicit c: Context): AdjustableList[T, U] = ???
 
   /**
    * Sorts the list, using the quicksort algorithm.

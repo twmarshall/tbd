@@ -192,10 +192,11 @@ class ModListNode[T, U]
   def merge
       (that: ModListNode[T, U],
        memo: Memoizer[Changeable[ModListNode[T, U]]],
-       modizer: Modizer1[ModListNode[T, U]])
-      (implicit c: Context,
-       ordering: Ordering[T]): Changeable[ModListNode[T, U]] = {
-    if (ordering.lt(value._1, that.value._1)) {
+       modizer: Modizer1[ModListNode[T, U]],
+       comparator: ((T, U), (T, U) ) => Int)
+      (implicit c: Context): Changeable[ModListNode[T, U]] = {
+    if (comparator(value, that.value) < 0) {
+    //if (ordering.lt(value._1, that.value._1)) {
       val newNextMod =
 	modizer(value) {
 	read(nextMod) {
@@ -205,7 +206,7 @@ class ModListNode[T, U]
 	    }
 	  case node =>
             memo(node, that) {
-              node.merge(that, memo, modizer)
+              node.merge(that, memo, modizer, comparator)
             }
 	}
       }
@@ -221,7 +222,7 @@ class ModListNode[T, U]
 	      }
 	    case node =>
               memo(this, node) {
-		this.merge(node, memo, modizer)
+		this.merge(node, memo, modizer, comparator)
               }
 	}
       }

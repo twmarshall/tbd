@@ -6,7 +6,7 @@ import tbd.table.TableInput
 import tbd.{Adjustable, Context, Mod, Mutator}
 
 
-class SQLContext[T](listConf: ListConf) {
+class TBDSqlContext[T](listConf: ListConf) {
   
   val mutator = new Mutator()
   val input = TableInput[Int, T](mutator)

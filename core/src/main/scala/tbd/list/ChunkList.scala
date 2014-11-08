@@ -102,17 +102,16 @@ class ChunkList[T, U]
     )
   }
 
-  def merge(that: ChunkList[T, U])
-      (implicit c: Context,
-       ordering: Ordering[T]): ChunkList[T, U] = {
-    merge(that, new Memoizer[Changeable[ChunkListNode[T, U]]]())
+  def merge(that: ChunkList[T, U], comparator: ((T, U), (T, U)) => Int)
+      (implicit c: Context): ChunkList[T, U] = {
+    merge(that, new Memoizer[Changeable[ChunkListNode[T, U]]](), comparator)
   }
 
   def merge
       (that: ChunkList[T, U],
-       memo: Memoizer[Changeable[ChunkListNode[T, U]]])
-      (implicit c: Context,
-       ordering: Ordering[T]): ChunkList[T, U] = {
+       memo: Memoizer[Changeable[ChunkListNode[T, U]]],
+       comparator: ((T, U), (T, U)) => Int)
+      (implicit c: Context): ChunkList[T, U] = {
 
     def innerMerge
         (one: ChunkListNode[T, U],
@@ -145,7 +144,7 @@ class ChunkList[T, U]
 	} else {
 	  val buf = Buffer[(T, U)]()
 	  while (i < oneR.size && j < twoR.size) {
-	    if (ordering.lt(oneR(i)._1, twoR(j)._1)) {
+	    if (comparator(oneR(i), twoR(j)) < 0) {
 	      buf += oneR(i)
 	      i += 1
 	    } else {
@@ -222,11 +221,10 @@ class ChunkList[T, U]
     )
   }
 
-  override def mergesort()
-      (implicit c: Context,
-       ordering: Ordering[T]): ChunkList[T, U] = {
+  override def mergesort(cmp: ((T, U), (T, U)) => Int)
+      (implicit c: Context): ChunkList[T, U] = {
     def comparator(pair1: (T, U), pair2: (T, U)) = {
-      ordering.lt(pair1._1, pair2._1)
+      cmp(pair1, pair2) < 0
     }
 
     val modizer = new Modizer1[ChunkListNode[T, U]]()
@@ -244,7 +242,7 @@ class ChunkList[T, U]
       val merged = memo(pair1._2, pair2._2) {
         val memoizer = new Memoizer[Changeable[ChunkListNode[T, U]]]()
 
-	pair2._2.merge(pair1._2, memoizer)
+	pair2._2.merge(pair1._2, memoizer, cmp)
       }
 
       (pair1._1 + pair2._1, merged)
@@ -269,7 +267,9 @@ class ChunkList[T, U]
   override def reduceByKey(f: (U, U) => U)
       (implicit c: Context,
        ordering: Ordering[T]): ChunkList[T, U] = {
-    val sorted = this.mergesort()
+    val sorted = this.mergesort( (pair1: (T, _), pair2: (T, _)) => {
+      ordering.compare(pair1._1, pair2._1)
+    })
 
     new ChunkList(
       mod {
