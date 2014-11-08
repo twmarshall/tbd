@@ -35,5 +35,7 @@ object Constants {
     akka.log-dead-letters = off
 
     akka.remote.enabled-transports = [akka.remote.netty.tcp]
+
+    akka.remote.netty.tcp.maximum-frame-size = 8000000b
   """
 }
