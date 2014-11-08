@@ -17,82 +17,37 @@ package tbd.list
 
 import scala.collection.mutable.{Buffer, Map}
 
-import tbd.Mutator
+class PartitionedChunkListInput2[T, U]
+    (partitions: Buffer[ChunkListInput2[T, U]],
+     conf: ListConf)
+  extends ListInput[T, U] with java.io.Serializable {
 
-class PartitionedChunkListInput[T, U](mutator: Mutator, conf: ListConf)
-    extends ListInput[T, U] {
-
-  val partitionModifiers = Buffer[ChunkListInput[T, U]]()
-  val list = initialize()
-
-  private def initialize(): PartitionedChunkList[T, U] = {
-    val partitions = Buffer[ChunkList[T, U]]()
-    for (i <- 1 to conf.partitions) {
-      val chunkListModifier = new ChunkListInput[T, U](mutator, conf)
-      partitionModifiers += chunkListModifier
-      partitions += chunkListModifier.list
-    }
-
-    new PartitionedChunkList[T, U](partitions, conf)
+  def put(key: T, value: U) = {
+    partitions(key.hashCode() % partitions.size).put(key, value)
   }
 
-  def load(data: Map[T, U]) {
-    val groups = data.grouped((data.size.toDouble / conf.partitions).ceil.toInt)
+  def update(key: T, value: U) = {
+    partitions(key.hashCode() % partitions.size).update(key, value)
+  }
 
-    var i = 0
-    for (group <- groups) {
-      partitionModifiers(i).load(group)
-      i += 1
+  def remove(key: T) = {
+    partitions(key.hashCode() % partitions.size).remove(key)
+  }
+
+  def load(data: Map[T, U]) = {
+    for ((key, value) <- data) {
+      partitions(key.hashCode() % partitions.size).put(key, value)
     }
   }
 
-  private var putInto = 0
-  def put(key: T, value: U) {
-    putInto = (putInto + 1) % conf.partitions
-    partitionModifiers(putInto).put(key, value)
+  def putAfter(key: T, newPair: (T, U)) = ???
+
+  def getAdjustableList(): AdjustableList[T, U] = {
+    val adjustablePartitions = Buffer[ChunkList[T, U]]()
+    for (partition <- partitions) {
+      adjustablePartitions += partition.getAdjustableList()
+    }
+
+    new PartitionedChunkList(adjustablePartitions, conf)
   }
-
-  def putAfter(key: T, newPair: (T, U)) {
-    var found = false
-    for (partitionModifier <- partitionModifiers) {
-      if (!found && partitionModifier.contains(key)) {
-        partitionModifier.putAfter(key, newPair)
-        found = true
-      }
-    }
-
-    if (!found) {
-      println("Warning: tried to putAfter nonexistant key " + key)
-    }
-  }
-
-  def update(key: T, value: U) {
-    var found = false
-    for (partitionModifier <- partitionModifiers) {
-      if (!found && partitionModifier.contains(key)) {
-        partitionModifier.update(key, value)
-        found = true
-      }
-    }
-
-    if (!found) {
-      println("Warning: tried to update nonexistant key " + key)
-    }
-  }
-
-  def remove(key: T) {
-    var found = false
-    for (partitionModifier <- partitionModifiers) {
-      if (!found && partitionModifier.contains(key)) {
-        partitionModifier.remove(key)
-        found = true
-      }
-    }
-
-   if (!found) {
-     println("Warning: tried to remove nonexistant key " + key)
-   }
-  }
-
-  def getAdjustableList() = list
 }

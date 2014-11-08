@@ -84,7 +84,7 @@ object MemoryExperiment {
       //  WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
 
       val mutator = new Mutator()
-      val list = ListInput[Int, String](mutator, new ListConf(partitions = 4, chunkSize = 100))
+      val list = mutator.createList[Int, String](new ListConf(partitions = 4, chunkSize = 100))
       val input = new StringData(list, max, Array("insert", "remove", "update"), false)
       input.generate()
       input.load()

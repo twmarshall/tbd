@@ -70,6 +70,6 @@ class ReadNode(val mod: Mod[Any], val reader: Any => Changeable[Any])
   var updated = false
 }
 
-class RootNode(val id: String) extends Node
+class RootNode extends Node
 
 class WriteNode(val mod: Mod[Any], val mod2: Mod[Any]) extends Node

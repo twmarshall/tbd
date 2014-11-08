@@ -273,7 +273,7 @@ Options:
 			       ("repeat" -> i),
 			       ("store" -> confs("store")(0)))
 
-		val listConf = new ListConf("", partitions.toInt,
+		val listConf = new ListConf("", partitions.toInt, 0,
 					    chunkSize.toInt, _ => 1)
 
 		val alg = algorithm match {

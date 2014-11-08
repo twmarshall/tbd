@@ -25,6 +25,7 @@ import tbd.Constants._
 import tbd.ddg.DDG
 import tbd.master.MasterConnector
 import tbd.messages._
+import tbd.list.{ListConf, ListInput}
 
 class Mutator(_connector: MasterConnector = null) {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -45,13 +46,8 @@ class Mutator(_connector: MasterConnector = null) {
 
   var nextModId = 0
   def createMod[T](value: T): Mod[T] = {
-    val mod = new Mod[T]("d." + id + " " + nextModId)
-    nextModId += 1
-
-    val message = UpdateModMessage(mod.id, value, null)
-    futures += (masterRef ? message).mapTo[String]
-
-    mod
+    val message = CreateModMessage(value)
+    Await.result((masterRef ? message).mapTo[Mod[T]], DURATION)
   }
 
   def updateMod[T](mod: Mod[T], value: T) {
@@ -67,6 +63,11 @@ class Mutator(_connector: MasterConnector = null) {
       case NullMessage => null
       case x => x
     }).asInstanceOf[T]
+  }
+
+  def createList[T, U](conf: ListConf = new ListConf()): ListInput[T, U] = {
+    val future = masterRef ? CreateListMessage(conf)
+    Await.result(future.mapTo[ListInput[T, U]], DURATION)
   }
 
   def run[T](adjust: Adjustable[T]): T = {

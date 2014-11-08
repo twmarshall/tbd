@@ -96,7 +96,7 @@ class WCAdjust(list: AdjustableList[Int, String])
 
 class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
-  val input = ListInput[Int, String](mutator, listConf)
+  val input = mutator.createList[Int, String](listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 
@@ -154,7 +154,7 @@ class ChunkWCAdjust(list: AdjustableList[Int, String])
 
 class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
-  val input = ListInput[Int, String](mutator, listConf)
+  val input = mutator.createList[Int, String](listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 

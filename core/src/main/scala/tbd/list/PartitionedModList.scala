@@ -29,11 +29,11 @@ class PartitionedModList[T, U]
       (implicit c: Context): PartitionedModList[T, U] = {
     def parFilter(i: Int)(implicit c: Context): Buffer[ModList[T, U]] = {
       if (i < partitions.size) {
-        val (filteredPartition, filteredRest) = par {
+        val (filteredPartition, filteredRest) = parWithHint({
           c => partitions(i).filter(pred)(c)
-        } and {
+        }, partitions(i).workerId)({
           c => parFilter(i + 1)(c)
-        }
+        })
 
 	filteredRest += filteredPartition
       } else {

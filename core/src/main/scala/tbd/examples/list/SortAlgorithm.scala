@@ -32,7 +32,7 @@ class QuickSortAdjust(list: AdjustableList[Int, Int])
 
 class QuickSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = ListInput[Int, Int](mutator, listConf)
+  val input = mutator.createList[Int, Int](listConf)
 
   val adjust = new QuickSortAdjust(input.getAdjustableList())
 
@@ -76,7 +76,7 @@ class MergeSortAdjust(list: AdjustableList[Int, Int])
 
 class MergeSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = ListInput[Int, Int](mutator, listConf)
+  val input = mutator.createList[Int, Int](listConf)
 
   val adjust = new MergeSortAdjust(input.getAdjustableList())
 
