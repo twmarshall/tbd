@@ -15,9 +15,8 @@
  */
 package tbd
 
-import java.net.InetAddress
-
 import akka.util.Timeout
+import java.net.InetAddress
 import scala.concurrent.duration._
 
 object Constants {

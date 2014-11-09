@@ -80,17 +80,18 @@ object Wordcount {
   }
 
   def main(args: Array[String]) {
-    Constants.DURATION = 1000.seconds
-    Constants.TIMEOUT = Timeout(1000.seconds)
-
     object Conf extends ScallopConf(args) {
       version("TBD 0.1 (c) 2014 Carnegie Mellon University")
       banner("Usage: master.sh [options]")
       val chunkSize = opt[Int]("chunkSize", 'c', default = Some(1))
       val partitions = opt[Int]("partitions", 'p', default = Some(1))
+      val timeout = opt[Int]("timeout", 't', default = Some(100))
 
       val master = trailArg[String](required = true)
     }
+
+    Constants.DURATION = Conf.timeout.get.get.seconds
+    Constants.TIMEOUT = Timeout(Constants.DURATION)
 
     val mutator = new Mutator(MasterConnector(Conf.master.get.get))
 

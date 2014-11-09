@@ -173,15 +173,19 @@ class Datastore extends Actor with ActorLogging {
       lists(listId) = list
 
       if (conf.file != "") {
-	val file = new File("wiki.xml")
+	val file = new File(conf.file)
 	val fileSize = file.length()
 
-	val in = new BufferedReader(new FileReader("wiki.xml"))
+	val in = new BufferedReader(new FileReader(conf.file))
 	val partitionSize = (fileSize / conf.partitions).toInt
 	var buf = new Array[Char](partitionSize)
 
 	in.skip(partitionSize * conf.partitionIndex)
 	in.read(buf)
+
+	log.debug("Reading " + conf.file + " from " +
+	  (partitionSize * conf.partitionIndex) + " length " +
+	  partitionSize)
 
 	val regex = Pattern.compile("""(?s)<key>(.*?)</key>[\s]*?<value>(.*?)</value>""")
 	val str = new String(buf)
