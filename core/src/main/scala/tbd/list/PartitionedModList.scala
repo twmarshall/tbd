@@ -86,11 +86,11 @@ class PartitionedModList[T, U]
       (implicit c: Context): PartitionedModList[V, W] = {
     def innerMap(i: Int)(implicit c: Context): Buffer[ModList[V, W]] = {
       if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = par {
+        val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).map(f)(c)
-        } and {
+        }, partitions(i).workerId)({
           c => innerMap(i + 1)(c)
-        }
+        })
 
 	mappedRest += mappedPartition
       } else {
@@ -147,11 +147,11 @@ class PartitionedModList[T, U]
       (implicit c: Context): Mod[(T, U)] = {
     def innerReduce(i: Int)(implicit c: Context): Mod[(T, U)] = {
       if (i < partitions.size) {
-        val (reducedPartition, reducedRest) = par {
+        val (reducedPartition, reducedRest) = parWithHint({
           c => partitions(i).reduce(f)(c)
-        } and {
+        }, partitions(i).workerId)({
           c => innerReduce(i + 1)(c)
-        }
+        })
 
         mod {
           read(reducedPartition) {
