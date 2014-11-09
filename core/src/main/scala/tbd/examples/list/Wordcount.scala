@@ -72,7 +72,6 @@ object Wordcount {
 
   def mapper(pair: (String, String)) = {
     (pair._1, wordcount(pair._2))
-    (pair._1, HashMap[String, Int]())
   }
 
   def reducer
