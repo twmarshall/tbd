@@ -16,10 +16,13 @@
 package tbd.worker
 
 import akka.actor.{Actor, ActorRef, ActorSystem}
+import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.rogach.scallop._
 import scala.concurrent.Await
+import scala.concurrent.duration._
 
+import tbd.Constants
 import tbd.Constants._
 import tbd.messages._
 
@@ -35,9 +38,14 @@ object Main {
       val logging = opt[String]("log", 'l', default = Some("INFO"),
         descr = "The logging level. Options, by increasing verbosity, are " +
         "OFF, WARNING, INFO, or DEBUG")
+      val timeout = opt[Int]("timeout", 't', default = Some(100),
+        descr = "How long Akka waits on message responses before timing out")
 
       val master = trailArg[String](required = true)
     }
+
+    Constants.DURATION = Conf.timeout.get.get.seconds
+    Constants.TIMEOUT = Timeout(Constants.DURATION)
 
     val ip = Conf.ip.get.get
     val port = Conf.port.get.get
