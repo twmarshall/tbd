@@ -16,6 +16,7 @@
 package tbd.examples
 
 import akka.util.Timeout
+import java.io.{BufferedWriter, FileWriter}
 import org.rogach.scallop._
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.Map
@@ -107,7 +108,9 @@ object Wordcount {
     val beforeInitial = System.currentTimeMillis()
     val output = mutator.run(new WordcountAdjust(input.getAdjustableList()))
     println("initial run time = " + (System.currentTimeMillis - beforeInitial))
-    println(mutator.read(output))
+
+    val file = new BufferedWriter(new FileWriter("wordcount.out"))
+    file.write(mutator.read(output)._2.toString)
 
     mutator.shutdown()
   }
