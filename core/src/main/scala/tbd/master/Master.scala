@@ -17,6 +17,7 @@ package tbd.master
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
+import java.io.File
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -128,11 +129,22 @@ class Master extends Actor with ActorLogging {
       (datastoreRefs(workerId) ? UpdateModMessage(modId, null, null)) pipeTo sender
 
     case CreateListMessage(conf: ListConf) =>
+      val partitionSize =
+        if (conf.file != "") {
+          val file = new File(conf.file)
+          val fileSize = file.length()
+
+          (fileSize / conf.partitions).toInt
+        } else {
+          0
+        }
+
       val input =
 	if (conf.chunkSize == 1) {
 	  if (conf.partitions == 1) {
 	    val datastoreRef = datastoreRefs(nextWorker + "")
-	    val future = datastoreRef ? CreateListMessage(conf)
+	    val future = datastoreRef ? CreateListMessage(
+              conf.copy(partitionSize = partitionSize))
 	    val listId = Await.result(future.mapTo[String], DURATION)
 	    nextWorker = (nextWorker + 1) % workers.size
 
@@ -145,7 +157,8 @@ class Master extends Actor with ActorLogging {
 	      val datastoreRef = datastoreRefs(nextWorker + "")
 	      nextWorker = (nextWorker + 1) % workers.size
 
-              val message = CreateListMessage(conf.copy(partitionIndex = index))
+              val message = CreateListMessage(
+                conf.copy(partitionIndex = index, partitionSize = partitionSize))
 	      val future = datastoreRef ? message
               futures += ((future.mapTo[String], datastoreRef))
 
@@ -163,7 +176,8 @@ class Master extends Actor with ActorLogging {
 	} else {
 	  if (conf.partitions == 1) {
 	    val datastoreRef = datastoreRefs(nextWorker + "")
-	    val future = datastoreRef ? CreateListMessage(conf)
+	    val future = datastoreRef ? CreateListMessage(
+              conf.copy(partitionSize = partitionSize))
 	    val listId = Await.result(future.mapTo[String], DURATION)
 	    nextWorker = (nextWorker + 1) % workers.size
 
@@ -176,7 +190,8 @@ class Master extends Actor with ActorLogging {
 	      val datastoreRef = datastoreRefs(nextWorker + "")
 	      nextWorker = (nextWorker + 1) % workers.size
 
-              val message = CreateListMessage(conf.copy(partitionIndex = index))
+              val message = CreateListMessage(
+                conf.copy(partitionIndex = index, partitionSize = partitionSize))
 	      val future = datastoreRef ? message
               futures += ((future.mapTo[String], datastoreRef))
 

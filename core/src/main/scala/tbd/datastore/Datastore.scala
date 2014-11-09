@@ -17,7 +17,7 @@ package tbd.datastore
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
-import java.io.{BufferedReader, File, FileReader}
+import java.io.{BufferedReader, FileReader}
 import java.util.regex.Pattern
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future}
@@ -179,19 +179,15 @@ class Datastore extends Actor with ActorLogging {
       lists(listId) = list
 
       if (conf.file != "") {
-	val file = new File(conf.file)
-	val fileSize = file.length()
-
 	val in = new BufferedReader(new FileReader(conf.file))
-	val partitionSize = (fileSize / conf.partitions).toInt
-	var buf = new Array[Char](partitionSize)
+	var buf = new Array[Char](conf.partitionSize)
+        val start = conf.partitionSize * conf.partitionIndex
 
-	in.skip(partitionSize * conf.partitionIndex)
+	in.skip(start)
 	in.read(buf)
 
 	log.debug("Reading " + conf.file + " from " +
-	  (partitionSize * conf.partitionIndex) + " length " +
-	  partitionSize)
+	  start + " length " + conf.partitionSize)
 
 	val regex = Pattern.compile("""(?s)<key>(.*?)</key>[\s]*?<value>(.*?)</value>""")
 	val str = new String(buf)

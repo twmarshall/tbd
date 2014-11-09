@@ -273,8 +273,11 @@ Options:
 			       ("repeat" -> i),
 			       ("store" -> confs("store")(0)))
 
-		val listConf = new ListConf("", partitions.toInt, 0,
-					    chunkSize.toInt, _ => 1)
+		val listConf = new ListConf(
+                  file = "",
+                  partitions = partitions.toInt,
+		  chunkSize = chunkSize.toInt,
+                  chunkSizer = _ => 1)
 
 		val alg = algorithm match {
 		  case "filter" => new FilterAlgorithm(conf, listConf)
