@@ -180,7 +180,7 @@ class Datastore extends Actor with ActorLogging {
 
       if (conf.file != "") {
 	val in = new BufferedReader(new FileReader(conf.file))
-	var buf = new Array[Char](conf.partitionSize)
+	var buf = new Array[Char](conf.partitionSize.toInt)
         val start = conf.partitionSize * conf.partitionIndex
 
 	in.skip(start)

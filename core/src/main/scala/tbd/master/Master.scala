@@ -134,7 +134,7 @@ class Master extends Actor with ActorLogging {
           val file = new File(conf.file)
           val fileSize = file.length()
 
-          (fileSize / conf.partitions).toInt
+          fileSize / conf.partitions
         } else {
           0
         }
