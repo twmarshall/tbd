@@ -60,7 +60,7 @@ public final class TBDWorkerTask implements Task {
     String cp = TBDWorkerTask.class.getProtectionDomain().getCodeSource().getLocation().getFile();
     LOG.log(Level.INFO, "cp: {0}", cp);
     
-    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", hostIP, "-p", hostPort, masterAkka);
+    ProcessBuilder pb = new ProcessBuilder("java", "-Xmx2g", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", hostIP, "-p", hostPort, masterAkka);
     LOG.log(Level.INFO, "pb");
     
     pb.redirectErrorStream(true);

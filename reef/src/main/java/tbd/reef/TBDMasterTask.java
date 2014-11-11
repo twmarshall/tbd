@@ -49,7 +49,7 @@ public final class TBDMasterTask implements Task {
     }
     */
 
-    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp, "tbd.master.Main", "-i", masterIP, "-p", masterPort);
+    ProcessBuilder pb = new ProcessBuilder("java", "-Xmx2g", "-Xss4m", "-cp", cp, "tbd.master.Main", "-i", masterIP, "-p", masterPort);
     //ProcessBuilder pb = new ProcessBuilder("java","-cp", cp, "tbd.reef.Test");
     LOG.log(Level.INFO, "pb");
     
