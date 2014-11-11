@@ -74,7 +74,7 @@ public final class TBDDriver {
 
       TBDDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
           .setNumber(numEvaluators)
-          .setMemory(1024)
+          .setMemory(4096)
           .setNumberOfCores(2)
           .build());
       LOG.log(Level.INFO, "Requested Evaluators.");

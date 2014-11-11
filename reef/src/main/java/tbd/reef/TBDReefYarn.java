@@ -19,6 +19,13 @@ public final class TBDReefYarn {
    * @return the configuration of the REEF driver.
    */
   private static Configuration getDriverConfiguration() {
+    
+    System.out.println(TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile());
+    /*
+    System.out.println(TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation());
+    System.out.println(TBDReefYarn.class.getProtectionDomain().getCodeSource());
+    System.out.println(TBDReefYarn.class.getProtectionDomain());
+    */
     return DriverConfiguration.CONF
         .set(DriverConfiguration.GLOBAL_LIBRARIES, TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile())
         .set(DriverConfiguration.DRIVER_IDENTIFIER, "TBDReefYarn")
