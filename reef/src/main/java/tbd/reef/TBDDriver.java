@@ -1,19 +1,27 @@
 package tbd.reef;
 
+import com.microsoft.reef.driver.task.CompletedTask;
 import com.microsoft.reef.driver.task.RunningTask;
+import com.microsoft.reef.driver.client.JobMessageObserver;
 import com.microsoft.reef.driver.context.ActiveContext;
+import com.microsoft.reef.driver.context.ClosedContext;
 import com.microsoft.reef.driver.context.ContextConfiguration;
+import com.microsoft.reef.driver.context.FailedContext;
 import com.microsoft.reef.driver.evaluator.AllocatedEvaluator;
 import com.microsoft.reef.driver.evaluator.EvaluatorRequest;
 import com.microsoft.reef.driver.evaluator.EvaluatorRequestor;
+import com.microsoft.reef.driver.evaluator.FailedEvaluator;
 import com.microsoft.reef.driver.task.TaskConfiguration;
 import com.microsoft.tang.JavaConfigurationBuilder;
 import com.microsoft.tang.Tang;
 import com.microsoft.tang.annotations.Name;
 import com.microsoft.tang.annotations.NamedParameter;
+import com.microsoft.tang.annotations.Parameter;
 import com.microsoft.tang.annotations.Unit;
 import com.microsoft.wake.EventHandler;
+import com.microsoft.wake.remote.impl.ObjectSerializableCodec;
 import com.microsoft.wake.time.event.StartTime;
+import com.microsoft.wake.time.event.StopTime;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -26,10 +34,14 @@ import javax.inject.Inject;
 @Unit
 public final class TBDDriver {
   private static final Logger LOG = Logger.getLogger(TBDDriver.class.getName());
+  private static final ObjectSerializableCodec<String> CODEC = new ObjectSerializableCodec<>();
+  
   private final EvaluatorRequestor requestor;
-
-  private final int numWorkers=2;
-  private final int numEvaluators=numWorkers+1;
+  private final JobMessageObserver jobMessageObserver;
+  private final int timeout;
+  private final int numWorkers;
+  private final int numEvaluators;
+  
   private int numEvalAlloced = 0;
   private int numWorkerContexts = 0;
   private boolean masterEvalAlloced = false;
@@ -59,8 +71,13 @@ public final class TBDDriver {
    * @param requestor evaluator requestor object used to create new evaluator containers.
    */
   @Inject
-  public TBDDriver(final EvaluatorRequestor requestor) {
+  public TBDDriver(final EvaluatorRequestor requestor, final JobMessageObserver jobMessageObserver,
+      @Parameter(TBDLaunch.NumWorkers.class) final int numWorkers, @Parameter(TBDLaunch.Timeout.class) final int timeout) {
     this.requestor = requestor;
+    this.jobMessageObserver = jobMessageObserver;
+    this.numWorkers = numWorkers;
+    this.timeout = timeout;
+    this.numEvaluators=numWorkers+1;
     LOG.log(Level.INFO, "Instantiated 'TBDDriver'");
   }
 
@@ -74,10 +91,24 @@ public final class TBDDriver {
 
       TBDDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
           .setNumber(numEvaluators)
-          .setMemory(6144)
+          .setMemory(3072)
+          //.setMemory(6144)
           .setNumberOfCores(2)
           .build());
       LOG.log(Level.INFO, "Requested Evaluators.");
+    }
+  }
+  
+  /**
+   * Shutting down the job driver: close the evaluators.
+   */
+  public final class StopHandler implements EventHandler<StopTime> {
+    @Override
+    public void onNext(final StopTime time) {
+      LOG.log(Level.INFO, "TIME: {0}. Stop Driver.", time);
+      for (final ActiveContext context : contexts.values()) {
+        context.close();
+      }
     }
   }
 
@@ -134,6 +165,19 @@ public final class TBDDriver {
       }
     }
   }
+  
+  public final class EvaluatorFailedHandler implements EventHandler<FailedEvaluator> {
+    @Override
+    public void onNext(final FailedEvaluator eval) {
+      synchronized (TBDDriver.this) {
+        LOG.log(Level.SEVERE, "FailedEvaluator", eval);
+        for (final FailedContext failedContext : eval.getFailedContextList()) {
+          TBDDriver.this.contexts.remove(failedContext.getId());
+        }
+        throw new RuntimeException("Failed Evaluator: ", eval.getEvaluatorException());
+      }
+    }
+  }
 
   /**
    * Receive notification that the Context is active.
@@ -168,6 +212,7 @@ public final class TBDDriver {
         );
         cb.bindNamedParameter(HostIP.class, masterIP);
         cb.bindNamedParameter(HostPort.class, masterPort.toString());
+        cb.bindNamedParameter(TBDLaunch.Timeout.class, "" + timeout);
         context.submitTask(cb.build());
         LOG.log(Level.INFO, "Submit {0} to context {1}", new Object[]{taskId, contextId});
       } else if (workerCtxt) {
@@ -177,6 +222,27 @@ public final class TBDDriver {
         LOG.log(Level.INFO, "Close context {0} : {1}", new Object[]{contextId.split("_")[1], contextId});
         context.close();
       }
+    }
+  }
+
+  public final class ClosedContextHandler implements EventHandler<ClosedContext> {
+    @Override
+    public void onNext(final ClosedContext context) {
+      LOG.log(Level.INFO, "Completed Context: {0}", context.getId());
+      synchronized (TBDDriver.this) {
+        TBDDriver.this.contexts.remove(context.getId());
+      }
+    }
+  }
+
+  public final class FailedContextHandler implements EventHandler<FailedContext> {
+    @Override
+    public void onNext(final FailedContext context) {
+      LOG.log(Level.SEVERE, "FailedContext", context);
+      synchronized (TBDDriver.this) {
+        TBDDriver.this.contexts.remove(context.getId());
+      }
+      throw new RuntimeException("Failed context: ", context.asError());
     }
   }
 
@@ -216,10 +282,13 @@ public final class TBDDriver {
           cb.bindNamedParameter(HostIP.class, ctxt2ip.get(contextId));
           cb.bindNamedParameter(HostPort.class, ctxt2port.get(contextId).toString());
           cb.bindNamedParameter(MasterAkka.class, masterAkka);
+          cb.bindNamedParameter(TBDLaunch.Timeout.class, "" + timeout);
           context.submitTask(cb.build());
           LOG.log(Level.INFO, "Submit {0} to context {1}", new Object[]{taskId, contextId});
         }
       }
+      this.jobMessageObserver.sendMessageToClient(CODEC.encode(masterAkka));
+      
     } else {
       LOG.log(Level.INFO, "Sleep: wait worker contexts");
       try {
@@ -231,4 +300,52 @@ public final class TBDDriver {
       waitAndSubmitWorkerTasks();
     }
   }
+
+  public final class CompletedTaskHandler implements EventHandler<CompletedTask> {
+    @Override
+    public void onNext(final CompletedTask task) {
+      /*
+      LOG.log(Level.INFO, "Completed task: {0}", task.getId());
+      // Take the message returned by the task and add it to the running result.
+      final String result = CODEC.decode(task.get());
+      synchronized (TBDDriver.this) {
+        TBDDriver.this.results.add(task.getId() + " :: " + result);
+        LOG.log(Level.INFO, "Task {0} result {1}: {2} state: {3}", new Object[]{
+            task.getId(), TBDDriver.this.results.size(), result, TBDDriver.this.state});
+        if (--TBDDriver.this.expectCount <= 0) {
+          TBDDriver.this.returnResults();
+          TBDDriver.this.state = State.READY;
+          if (TBDDriver.this.cmd != null) {
+            TBDDriver.this.submit(TBDDriver.this.cmd);
+          }
+        }
+      }
+      */
+    }
+  }
+
+  /**
+   * Receive notification from the client.
+   */
+  public final class ClientMessageHandler implements EventHandler<byte[]> {
+    @Override
+    public void onNext(final byte[] message) {
+      /*
+      synchronized (TBDDriver.this) {
+        final String command = CODEC.decode(message);
+        LOG.log(Level.INFO, "Client message: {0} state: {1}",
+            new Object[]{command, TBDDriver.this.state});
+        assert (TBDDriver.this.cmd == null);
+        if (TBDDriver.this.state == State.READY) {
+          TBDDriver.this.submit(command);
+        } else {
+          // not ready yet - save the command for better times.
+          assert (TBDDriver.this.state == State.WAIT_EVALUATORS);
+          TBDDriver.this.cmd = command;
+        }
+      }
+      */
+    }
+  }
+
 }

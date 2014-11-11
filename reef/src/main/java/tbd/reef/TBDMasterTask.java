@@ -3,29 +3,28 @@ package tbd.reef;
 import com.microsoft.tang.annotations.Parameter;
 import com.microsoft.reef.task.Task;
 
-import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
-
-import tbd.master.Main;
 
 /**
  * A master node.
  */
 public final class TBDMasterTask implements Task {
   private static final Logger LOG = Logger.getLogger(TBDMasterTask.class.getName());
+  private final int timeout;
   private final String masterIP;
   private final String masterPort;
 
   @Inject
-  TBDMasterTask(@Parameter(TBDDriver.HostIP.class) final String ip, @Parameter(TBDDriver.HostPort.class) final String port) {
+  TBDMasterTask(@Parameter(TBDDriver.HostIP.class) final String ip, 
+      @Parameter(TBDDriver.HostPort.class) final String port,
+      @Parameter(TBDLaunch.Timeout.class) final int tout) {
     masterIP = ip;
     masterPort = port;
+    timeout = tout;
   }
 
   @Override
@@ -49,7 +48,8 @@ public final class TBDMasterTask implements Task {
     }
     */
 
-    ProcessBuilder pb = new ProcessBuilder("java", "-Xmx2g", "-Xss4m", "-cp", cp, "tbd.master.Main", "-i", masterIP, "-p", masterPort);
+    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp, "tbd.master.Main", "-i", masterIP, "-p", masterPort);
+    //ProcessBuilder pb = new ProcessBuilder("java", "-Xmx2g", "-Xss4m", "-cp", cp, "tbd.master.Main", "-i", masterIP, "-p", masterPort);
     //ProcessBuilder pb = new ProcessBuilder("java","-cp", cp, "tbd.reef.Test");
     LOG.log(Level.INFO, "pb");
     
@@ -91,7 +91,7 @@ public final class TBDMasterTask implements Task {
     
     LOG.log(Level.INFO, "master sleep");
     try {
-      Thread.sleep(400000);
+      Thread.sleep(timeout);
     } catch (InterruptedException e) {
       LOG.log(Level.INFO, "master sleep interrupted");
     }

@@ -43,6 +43,7 @@ public final class TBDReefYarn {
    * @throws BindException      if configuration commandLineInjector fails.
    * @throws InjectionException if configuration commandLineInjector fails.
    */
+  /*
   public static void main(final String[] args) throws BindException, InjectionException {
     LOG.log(Level.INFO, "Client started");
     final LauncherStatus status = DriverLauncher
@@ -50,4 +51,5 @@ public final class TBDReefYarn {
         .run(getDriverConfiguration(), JOB_TIMEOUT);
     LOG.log(Level.INFO, "REEF job completed: "+status);
   }
+  */
 }

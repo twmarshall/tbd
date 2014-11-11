@@ -3,20 +3,18 @@ package tbd.reef;
 import com.microsoft.tang.annotations.Parameter;
 import com.microsoft.reef.task.Task;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
-import tbd.worker.Main;
-
 /**
  * A worker node.
  */
 public final class TBDWorkerTask implements Task {
   private static final Logger LOG = Logger.getLogger(TBDWorkerTask.class.getName());
+  private final int timeout;
   private final String hostIP;
   private final String hostPort;
   private final String masterAkka;
@@ -24,10 +22,12 @@ public final class TBDWorkerTask implements Task {
   @Inject
   TBDWorkerTask(@Parameter(TBDDriver.HostIP.class) final String ip,
       @Parameter(TBDDriver.HostPort.class) final String port,
-      @Parameter(TBDDriver.MasterAkka.class) final String master) {
+      @Parameter(TBDDriver.MasterAkka.class) final String master,
+      @Parameter(TBDLaunch.Timeout.class) final int tout) {
     hostIP = ip;
     hostPort = port;
     masterAkka = master;
+    timeout = tout;
   }
 
   @Override
@@ -60,7 +60,8 @@ public final class TBDWorkerTask implements Task {
     String cp = TBDWorkerTask.class.getProtectionDomain().getCodeSource().getLocation().getFile();
     LOG.log(Level.INFO, "cp: {0}", cp);
     
-    ProcessBuilder pb = new ProcessBuilder("java", "-Xmx2g", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", hostIP, "-p", hostPort, masterAkka);
+    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", hostIP, "-p", hostPort, masterAkka);
+    //ProcessBuilder pb = new ProcessBuilder("java", "-Xmx2g", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", hostIP, "-p", hostPort, masterAkka);
     LOG.log(Level.INFO, "pb");
     
     pb.redirectErrorStream(true);
@@ -78,7 +79,7 @@ public final class TBDWorkerTask implements Task {
     
     LOG.log(Level.INFO, "worker sleep");
     try {
-      Thread.sleep(400000);
+      Thread.sleep(timeout);
     } catch (InterruptedException e) {
       LOG.log(Level.INFO, "worker sleep interrupted");
     }
