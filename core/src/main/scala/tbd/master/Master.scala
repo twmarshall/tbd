@@ -17,6 +17,7 @@ package tbd.master
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
+import java.io.File
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -129,58 +130,69 @@ class Master extends Actor with ActorLogging {
 
     case CreateListMessage(conf: ListConf) =>
       val input =
-	if (conf.chunkSize == 1) {
-	  if (conf.partitions == 1) {
-	    val datastoreRef = datastoreRefs(nextWorker + "")
-	    val future = datastoreRef ? CreateListMessage(conf)
-	    val listId = Await.result(future.mapTo[String], DURATION)
-	    nextWorker = (nextWorker + 1) % workers.size
+        if (conf.chunkSize == 1) {
+          if (conf.partitions == 1) {
+            val datastoreRef = datastoreRefs(nextWorker + "")
+            val future = datastoreRef ? CreateListMessage(conf)
+            val listId = Await.result(future.mapTo[String], DURATION)
+            nextWorker = (nextWorker + 1) % workers.size
 
-	    new ModListInput(listId, datastoreRef)
-	  } else {
-	    val partitions = Buffer[ModListInput[Any, Any]]()
+            new ModListInput(listId, datastoreRef)
+          } else {
+            val futures = Buffer[(Future[String], ActorRef)]()
+
             var index = 0
-	    for (i <- 1 to conf.partitions) {
-	      val datastoreRef = datastoreRefs(nextWorker + "")
-	      nextWorker = (nextWorker + 1) % workers.size
+            for (i <- 1 to conf.partitions) {
+              val datastoreRef = datastoreRefs(nextWorker + "")
+              nextWorker = (nextWorker + 1) % workers.size
 
-	      val future = datastoreRef ?
-                CreateListMessage(conf.copy(partitionIndex = index))
+              val message = CreateListMessage(conf.copy(partitionIndex = index))
+              val future = datastoreRef ? message
+              futures += ((future.mapTo[String], datastoreRef))
+
               index += 1
+            }
 
-	      val listId = Await.result(future.mapTo[String], DURATION)
-	      partitions += new ModListInput(listId, datastoreRef)
-	    }
+            val partitions = Buffer[ModListInput[Any, Any]]()
+            for ((future, datastoreRef) <- futures) {
+              val listId = Await.result(future, DURATION)
+              partitions += new ModListInput(listId, datastoreRef)
+            }
 
-	    new PartitionedModListInput(partitions)
-	  }
-	} else {
-	  if (conf.partitions == 1) {
-	    val datastoreRef = datastoreRefs(nextWorker + "")
-	    val future = datastoreRef ? CreateListMessage(conf)
-	    val listId = Await.result(future.mapTo[String], DURATION)
-	    nextWorker = (nextWorker + 1) % workers.size
+            new PartitionedModListInput(partitions)
+          }
+        } else {
+          if (conf.partitions == 1) {
+            val datastoreRef = datastoreRefs(nextWorker + "")
+            val future = datastoreRef ? CreateListMessage(conf)
+            val listId = Await.result(future.mapTo[String], DURATION)
+            nextWorker = (nextWorker + 1) % workers.size
 
-	    new ChunkListInput2(listId, datastoreRef)
-	  } else {
-	    val partitions = Buffer[ChunkListInput2[Any, Any]]()
+            new ChunkListInput2(listId, datastoreRef)
+          } else {
+            val futures = Buffer[(Future[String], ActorRef)]()
+
             var index = 0
-	    for (i <- 1 to conf.partitions) {
-	      val datastoreRef = datastoreRefs(nextWorker + "")
-	      nextWorker = (nextWorker + 1) % workers.size
+            for (i <- 1 to conf.partitions) {
+              val datastoreRef = datastoreRefs(nextWorker + "")
+              nextWorker = (nextWorker + 1) % workers.size
 
-	      val future = datastoreRef ?
-                CreateListMessage(conf.copy(partitionIndex = index))
+              val message = CreateListMessage(conf.copy(partitionIndex = index))
+              val future = datastoreRef ? message
+              futures += ((future.mapTo[String], datastoreRef))
+
               index += 1
+            }
 
-	      val listId = Await.result(future.mapTo[String], DURATION)
+            val partitions = Buffer[ChunkListInput2[Any, Any]]()
+            for ((future, datastoreRef) <- futures) {
+              val listId = Await.result(future, DURATION)
+              partitions += new ChunkListInput2(listId, datastoreRef)
+            }
 
-	      partitions += new ChunkListInput2(listId, datastoreRef)
-	    }
-
-	    new PartitionedChunkListInput2(partitions, conf)
-	  }
-	}
+            new PartitionedChunkListInput2(partitions, conf)
+          }
+        }
 
       sender ! input
 
