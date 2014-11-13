@@ -77,7 +77,13 @@ class Datastore extends Actor with ActorLogging {
       /*misses += 1
       log.info(misses + " misses")*/
 
-      Await.result(future, DURATION)
+      val result = Await.result(future, DURATION)
+
+      if (result.isInstanceOf[Tuple2[_, _]]) {
+        result.toString
+      }
+
+      result
     }
   }
 
