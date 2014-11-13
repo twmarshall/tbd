@@ -276,7 +276,7 @@ Options:
 		val listConf = new ListConf(
                   file = "",
                   partitions = partitions.toInt,
-		  chunkSize = chunkSize.toInt,
+                  chunkSize = chunkSize.toInt,
                   chunkSizer = _ => 1)
 
 		val alg = algorithm match {
