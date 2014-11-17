@@ -15,9 +15,8 @@
  */
 package tbd
 
-import java.net.InetAddress
-
 import akka.util.Timeout
+import java.net.InetAddress
 import scala.concurrent.duration._
 
 object Constants {
@@ -35,5 +34,7 @@ object Constants {
     akka.log-dead-letters = off
 
     akka.remote.enabled-transports = [akka.remote.netty.tcp]
+
+    akka.remote.netty.tcp.maximum-frame-size = 8000000b
   """
 }

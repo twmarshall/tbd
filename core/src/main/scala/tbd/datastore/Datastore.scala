@@ -67,9 +67,9 @@ class Datastore extends Actor with ActorLogging {
   def getMod(modId: ModId, taskRef: ActorRef): Any = {
     if (mods.contains(modId)) {
       if (mods(modId) == null)
-	NullMessage
+        NullMessage
       else
-	mods(modId)
+        mods(modId)
     } else {
       val workerId = modId.split(":")(0)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)
@@ -77,7 +77,13 @@ class Datastore extends Actor with ActorLogging {
       /*misses += 1
       log.info(misses + " misses")*/
 
-      Await.result(future, DURATION)
+      val result = Await.result(future, DURATION)
+
+      if (result.isInstanceOf[Tuple2[_, _]]) {
+        result.toString
+      }
+
+      result
     }
   }
 
@@ -88,9 +94,9 @@ class Datastore extends Actor with ActorLogging {
       mods(mod.id) = value
 
       if (dependencies.contains(mod.id)) {
-	for (taskRef <- dependencies(mod.id)) {
-	  futures += (taskRef ? ModUpdatedMessage(mod.id)).mapTo[String]
-	}
+        for (taskRef <- dependencies(mod.id)) {
+          futures += (taskRef ? ModUpdatedMessage(mod.id)).mapTo[String]
+        }
       }
     }
 
@@ -108,11 +114,11 @@ class Datastore extends Actor with ActorLogging {
       mods(modId) = value
 
       if (dependencies.contains(modId)) {
-	for (taskRef <- dependencies(modId)) {
+        for (taskRef <- dependencies(modId)) {
           if (taskRef != task) {
-	    futures += (taskRef ? ModUpdatedMessage(modId)).mapTo[String]
+            futures += (taskRef ? ModUpdatedMessage(modId)).mapTo[String]
           }
-	}
+        }
       }
     }
 
@@ -132,9 +138,9 @@ class Datastore extends Actor with ActorLogging {
       sender ! getMod(modId, taskRef)
 
       if (dependencies.contains(modId)) {
-	dependencies(modId) += taskRef
+        dependencies(modId) += taskRef
       } else {
-	dependencies(modId) = Set(taskRef)
+        dependencies(modId) = Set(taskRef)
       }
 
     case GetModMessage(modId: ModId, null) =>
@@ -154,8 +160,8 @@ class Datastore extends Actor with ActorLogging {
 
     case RemoveModsMessage(modIds: Iterable[ModId]) =>
       for (modId <- modIds) {
-	mods -= modId
-	dependencies -= modId
+        mods -= modId
+        dependencies -= modId
       }
 
       sender ! "done"
@@ -164,50 +170,55 @@ class Datastore extends Actor with ActorLogging {
       val listId = nextListId + ""
       nextListId += 1
       val list =
-	if (conf.chunkSize == 1) {
-	  new ListModifier[Any, Any](this)
-	} else {
-	  new ChunkListModifier[Any, Any](this, conf)
-	}
+        if (conf.chunkSize == 1) {
+          new ListModifier[Any, Any](this)
+        } else {
+          new ChunkListModifier[Any, Any](this, conf)
+        }
 
       lists(listId) = list
 
       if (conf.file != "") {
-	val file = new File("wiki.xml")
-	val fileSize = file.length()
+        val file = new File(conf.file)
+        val fileSize = file.length()
 
-	val in = new BufferedReader(new FileReader("wiki.xml"))
-	val partitionSize = (fileSize / conf.partitions).toInt
-	var buf = new Array[Char](partitionSize)
+        val in = new BufferedReader(new FileReader(conf.file))
+        val partitionSize = (fileSize / conf.partitions).toInt
+        var buf = new Array[Char](partitionSize)
 
-	in.skip(partitionSize * conf.partitionIndex)
-	in.read(buf)
+        in.skip(partitionSize * conf.partitionIndex)
+        in.read(buf)
 
-	val regex = Pattern.compile("""(?s)<key>(.*?)</key>[\s]*?<value>(.*?)</value>""")
-	val str = new String(buf)
-	val matcher = regex.matcher(str)
+        log.debug("Reading " + conf.file + " from " +
+          (partitionSize * conf.partitionIndex) + " length " +
+           partitionSize)
 
-	var end = 0
-	while (matcher.find()) {
-	  list.put(matcher.group(1), matcher.group(2))
-	  end = matcher.end()
-	}
+        val regex =
+          Pattern.compile("""(?s)<key>(.*?)</key>[\s]*?<value>(.*?)</value>""")
+        val str = new String(buf)
+        val matcher = regex.matcher(str)
 
-	if (conf.partitionIndex != conf.partitions - 1) {
-	  var remaining = str.substring(end)
-	  var done = false
-	  while (!done) {
-	    val smallBuf = new Array[Char](64)
-	    in.read(smallBuf)
+        var end = 0
+        while (matcher.find()) {
+          list.put(matcher.group(1), matcher.group(2))
+          end = matcher.end()
+        }
 
-	    remaining += new String(smallBuf)
-	    val matcher = regex.matcher(remaining)
-	    if (matcher.find()) {
-	      list.put(matcher.group(1), matcher.group(2))
-	      done = true
-	    }
-	  }
-	}
+        if (conf.partitionIndex != conf.partitions - 1) {
+          var remaining = str.substring(end)
+          var done = false
+          while (!done) {
+            val smallBuf = new Array[Char](64)
+            in.read(smallBuf)
+
+            remaining += new String(smallBuf)
+            val matcher = regex.matcher(remaining)
+            if (matcher.find()) {
+              list.put(matcher.group(1), matcher.group(2))
+              done = true
+            }
+          }
+        }
       }
 
       sender ! listId

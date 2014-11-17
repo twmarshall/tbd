@@ -85,7 +85,7 @@ class ModList[T, U]
           case null => write[ModListNode[V, W]](null)
           case node => node.map(f, memo, modizer)
         }
-      }
+      }, false, workerId
     )
   }
 

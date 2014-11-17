@@ -16,6 +16,7 @@
 package tbd.examples
 
 import akka.util.Timeout
+import java.io.{BufferedWriter, FileWriter}
 import org.rogach.scallop._
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.Map
@@ -34,13 +35,23 @@ class WordcountAdjust(list: AdjustableList[String, String])
   }
 }
 
+class ChunkWordcountAdjust(list: AdjustableList[String, String])
+  extends Adjustable[Mod[(String, HashMap[String, Int])]] {
+
+  def run(implicit c: Context): Mod[(String, HashMap[String, Int])] = {
+    val counts = list.chunkMap(Wordcount.chunkMapper)
+    counts.reduce(Wordcount.reducer)
+  }
+}
+
 object Wordcount {
   def wordcount(s: String): HashMap[String, Int] = {
     HashMap(mutableWordcount(s).toSeq: _*)
   }
 
-  def mutableWordcount(s: String, counts: Map[String, Int] = Map[String, Int]())
-      : Map[String, Int] = {
+  def mutableWordcount
+      (s: String,
+       counts: Map[String, Int] = Map[String, Int]()) : Map[String, Int] = {
     for (word <- s.split("\\W+")) {
       if (counts.contains(word)) {
         counts(word) += 1
@@ -79,18 +90,29 @@ object Wordcount {
     (pair1._1, reduce(pair1._2, pair2._2))
   }
 
-  def main(args: Array[String]) {
-    Constants.DURATION = 1000.seconds
-    Constants.TIMEOUT = Timeout(1000.seconds)
+  def chunkMapper(chunk: Vector[(String, String)]) = {
+    var counts = Map[String, Int]()
 
+    for (page <- chunk) {
+      counts = mutableWordcount(page._2, counts)
+    }
+
+    ("", HashMap(counts.toSeq: _*))
+  }
+
+  def main(args: Array[String]) {
     object Conf extends ScallopConf(args) {
       version("TBD 0.1 (c) 2014 Carnegie Mellon University")
       banner("Usage: master.sh [options]")
       val chunkSize = opt[Int]("chunkSize", 'c', default = Some(1))
       val partitions = opt[Int]("partitions", 'p', default = Some(1))
+      val timeout = opt[Int]("timeout", 't', default = Some(100))
 
       val master = trailArg[String](required = true)
     }
+
+    Constants.DURATION = Conf.timeout.get.get.seconds
+    Constants.TIMEOUT = Timeout(Constants.DURATION)
 
     val mutator = new Mutator(MasterConnector(Conf.master.get.get))
 
@@ -104,9 +126,17 @@ object Wordcount {
     println("load time = " + (System.currentTimeMillis() - beforeLoad))
 
     val beforeInitial = System.currentTimeMillis()
-    val output = mutator.run(new WordcountAdjust(input.getAdjustableList()))
+    val output =
+      if (listConf.chunkSize == 1) {
+        mutator.run(new WordcountAdjust(input.getAdjustableList()))
+      } else {
+        mutator.run(new ChunkWordcountAdjust(input.getAdjustableList()))
+      }
+
     println("initial run time = " + (System.currentTimeMillis - beforeInitial))
-    println(mutator.read(output))
+
+    val file = new BufferedWriter(new FileWriter("wordcount.out"))
+    file.write(mutator.read(output)._2.toString)
 
     mutator.shutdown()
   }

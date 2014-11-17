@@ -48,7 +48,6 @@ class Worker(masterRef: ActorRef) extends Actor with ActorLogging {
       sender ! "done"
 
     case ScheduleTaskMessage(parent: ActorRef, _) =>
-      log.debug("Scheduling task.")
       val taskId = workerId + ":" + nextTaskId
       val taskProps = Task.props(taskId, parent, datastore, masterRef)
       val taskRef = context.actorOf(taskProps, taskId)
