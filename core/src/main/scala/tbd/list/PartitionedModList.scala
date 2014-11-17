@@ -29,11 +29,11 @@ class PartitionedModList[T, U]
       (implicit c: Context): PartitionedModList[T, U] = {
     def parFilter(i: Int)(implicit c: Context): Buffer[ModList[T, U]] = {
       if (i < partitions.size) {
-        val (filteredPartition, filteredRest) = par {
+        val (filteredPartition, filteredRest) = parWithHint({
           c => partitions(i).filter(pred)(c)
-        } and {
+        }, partitions(i).workerId)({
           c => parFilter(i + 1)(c)
-        }
+        })
 
 	filteredRest += filteredPartition
       } else {
@@ -86,11 +86,11 @@ class PartitionedModList[T, U]
       (implicit c: Context): PartitionedModList[V, W] = {
     def innerMap(i: Int)(implicit c: Context): Buffer[ModList[V, W]] = {
       if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = par {
+        val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).map(f)(c)
-        } and {
+        }, partitions(i).workerId)({
           c => innerMap(i + 1)(c)
-        }
+        })
 
 	mappedRest += mappedPartition
       } else {
@@ -145,34 +145,58 @@ class PartitionedModList[T, U]
 
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = {
-    def innerReduce(i: Int)(implicit c: Context): Mod[(T, U)] = {
-      if (i < partitions.size) {
-        val (reducedPartition, reducedRest) = par {
-          c => partitions(i).reduce(f)(c)
-        } and {
-          c => innerReduce(i + 1)(c)
-        }
 
-        mod {
-          read(reducedPartition) {
-            case null =>
-              read(reducedRest) {
-                case null => write(null)
-                case rest => write(rest)
-              }
-            case partition =>
-              read(reducedRest) {
-                case null => write(partition)
-                case rest => write(f(partition, rest))
-              }
+    def innerReduce
+        (next: ModList[T, U],
+         remaining: Buffer[ModList[T, U]])
+        (implicit c: Context): Mod[(T, U)] = {
+      val newNextOption = remaining.find(_.workerId == next.workerId)
+
+      val (reducedPartition, reducedRest) =
+        newNextOption match {
+          case Some(newNext) =>
+            parWithHint({
+              c => next.reduce(f)(c)
+            }, next.workerId)({
+              c => innerReduce(newNext, remaining - newNext)(c)
+            }, newNext.workerId)
+        case None =>
+          if (remaining.size > 0) {
+            parWithHint({
+              c => next.reduce(f)(c)
+            }, next.workerId)({
+              c => innerReduce(remaining(0), remaining.tail)(c)
+            }, remaining(0).workerId)
+          } else {
+            parWithHint({
+              c => next.reduce(f)(c)
+            }, next.workerId)({
+              c => mod { write[(T, U)](null)(c) }(c)
+            }, next.workerId)
           }
         }
-      } else {
-        mod { write[(T, U)](null) }
+
+      mod {
+        read(reducedPartition) {
+          case null =>
+            read(reducedRest) {
+              case null => write(null)
+              case rest => write(rest)
+            }
+          case partition =>
+            read(reducedRest) {
+              case null => write(partition)
+              case rest => write(f(partition, rest))
+            }
+        }
       }
     }
 
-    innerReduce(0)
+    parWithHint({
+      c => innerReduce(partitions(0), partitions.tail)(c)
+    }, partitions(0).workerId)({
+      c =>
+    })._1
   }
 
   def sortJoin[V](that: AdjustableList[T, V])

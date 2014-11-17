@@ -41,7 +41,7 @@ class SplitAdjust(list: AdjustableList[Int, String])
 class SplitAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, SplitAlgorithm.SplitResult](_conf, _listConf) {
 
-  val input = ListInput[Int, String](mutator, listConf)
+  val input = mutator.createList[Int, String](listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
 

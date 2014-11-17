@@ -107,20 +107,20 @@ class Memoizer[T](implicit c: Context) {
     memoNode.value match {
       case changeable: Changeable[_] =>
 	if (memoNode.currentMod != currentMod) {
-	  c.update(currentMod, c.read(changeable.mod))
+	  c.update(currentMod.id, c.read(changeable.mod))
 
 	  c.ddg.replaceMods(memoNode, memoNode.currentMod, currentMod)
 	}
 
       case (c1: Changeable[_], c2: Changeable[_]) =>
 	if (memoNode.currentMod != currentMod) {
-          c.update(currentMod, c.read(c1.mod))
+          c.update(currentMod.id, c.read(c1.mod))
 
           c.ddg.replaceMods(memoNode, memoNode.currentMod, currentMod)
 	}
 
 	if (memoNode.currentMod2 != currentMod2) {
-          c.update(currentMod2, c.read(c2.mod))
+          c.update(currentMod2.id, c.read(c2.mod))
 
           c.ddg.replaceMods(memoNode, memoNode.currentMod2, currentMod2)
 	}

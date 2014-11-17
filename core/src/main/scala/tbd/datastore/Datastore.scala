@@ -17,10 +17,14 @@ package tbd.datastore
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
+import java.io.{BufferedReader, File, FileReader}
+import java.util.regex.Pattern
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 
+import tbd.Mod
 import tbd.Constants._
+import tbd.list._
 import tbd.messages._
 
 object Datastore {
@@ -30,15 +34,73 @@ object Datastore {
 class Datastore extends Actor with ActorLogging {
   import context.dispatcher
 
+  var workerId: String = _
+
   private val mods = Map[ModId, Any]()
+
+  private var nextModId = 0
+
+  private val lists = Map[String, ListInput[Any, Any]]()
+
+  private var nextListId = 0
 
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  def getMod(modId: ModId): Any = {
-    if (mods(modId) == null)
-      NullMessage
-    else
-      mods(modId)
+  // Maps logical names of datastores to their references.
+  private val datastores = Map[String, ActorRef]()
+
+  private var misses = 0
+
+  def createMod[T](value: T): Mod[T] = {
+    val modId = workerId + ":" + nextModId
+    nextModId += 1
+
+    mods(modId) = value
+
+    new Mod(modId)
+  }
+
+  def read[T](mod: Mod[T]): T = {
+    mods(mod.id).asInstanceOf[T]
+  }
+
+  def getMod(modId: ModId, taskRef: ActorRef): Any = {
+    if (mods.contains(modId)) {
+      if (mods(modId) == null)
+        NullMessage
+      else
+        mods(modId)
+    } else {
+      val workerId = modId.split(":")(0)
+      val future = datastores(workerId) ? GetModMessage(modId, taskRef)
+
+      /*misses += 1
+      log.info(misses + " misses")*/
+
+      val result = Await.result(future, DURATION)
+
+      if (result.isInstanceOf[Tuple2[_, _]]) {
+        result.toString
+      }
+
+      result
+    }
+  }
+
+  def update[T](mod: Mod[T], value: T) {
+    val futures = Buffer[Future[String]]()
+
+    if (!mods.contains(mod.id) || mods(mod.id) != value) {
+      mods(mod.id) = value
+
+      if (dependencies.contains(mod.id)) {
+        for (taskRef <- dependencies(mod.id)) {
+          futures += (taskRef ? ModUpdatedMessage(mod.id)).mapTo[String]
+        }
+      }
+    }
+
+    Await.result(Future.sequence(futures), DURATION)
   }
 
   def updateMod
@@ -52,11 +114,11 @@ class Datastore extends Actor with ActorLogging {
       mods(modId) = value
 
       if (dependencies.contains(modId)) {
-	for (taskRef <- dependencies(modId)) {
+        for (taskRef <- dependencies(modId)) {
           if (taskRef != task) {
-	    futures += (taskRef ? ModUpdatedMessage(modId)).mapTo[String]
+            futures += (taskRef ? ModUpdatedMessage(modId)).mapTo[String]
           }
-	}
+        }
       }
     }
 
@@ -66,17 +128,23 @@ class Datastore extends Actor with ActorLogging {
   }
 
   def receive = {
+    case CreateModMessage(value: Any) =>
+      sender ! createMod(value)
+
+    case CreateModMessage(null) =>
+      sender ! createMod(null)
+
     case GetModMessage(modId: ModId, taskRef: ActorRef) =>
-      sender ! getMod(modId)
+      sender ! getMod(modId, taskRef)
 
       if (dependencies.contains(modId)) {
-	dependencies(modId) += taskRef
+        dependencies(modId) += taskRef
       } else {
-	dependencies(modId) = Set(taskRef)
+        dependencies(modId) = Set(taskRef)
       }
 
     case GetModMessage(modId: ModId, null) =>
-      sender ! getMod(modId)
+      sender ! getMod(modId, null)
 
     case UpdateModMessage(modId: ModId, value: Any, task: ActorRef) =>
       updateMod(modId, value, task, sender)
@@ -92,11 +160,97 @@ class Datastore extends Actor with ActorLogging {
 
     case RemoveModsMessage(modIds: Iterable[ModId]) =>
       for (modId <- modIds) {
-	mods -= modId
-	dependencies -= modId
+        mods -= modId
+        dependencies -= modId
       }
 
       sender ! "done"
+
+    case CreateListMessage(conf: ListConf) =>
+      val listId = nextListId + ""
+      nextListId += 1
+      val list =
+        if (conf.chunkSize == 1) {
+          new ListModifier[Any, Any](this)
+        } else {
+          new ChunkListModifier[Any, Any](this, conf)
+        }
+
+      lists(listId) = list
+
+      if (conf.file != "") {
+        val file = new File(conf.file)
+        val fileSize = file.length()
+
+        val in = new BufferedReader(new FileReader(conf.file))
+        val partitionSize = (fileSize / conf.partitions).toInt
+        var buf = new Array[Char](partitionSize)
+
+        in.skip(partitionSize * conf.partitionIndex)
+        in.read(buf)
+
+        log.debug("Reading " + conf.file + " from " +
+          (partitionSize * conf.partitionIndex) + " length " +
+           partitionSize)
+
+        val regex =
+          Pattern.compile("""(?s)<key>(.*?)</key>[\s]*?<value>(.*?)</value>""")
+        val str = new String(buf)
+        val matcher = regex.matcher(str)
+
+        var end = 0
+        while (matcher.find()) {
+          list.put(matcher.group(1), matcher.group(2))
+          end = matcher.end()
+        }
+
+        if (conf.partitionIndex != conf.partitions - 1) {
+          var remaining = str.substring(end)
+          var done = false
+          while (!done) {
+            val smallBuf = new Array[Char](64)
+            in.read(smallBuf)
+
+            remaining += new String(smallBuf)
+            val matcher = regex.matcher(remaining)
+            if (matcher.find()) {
+              list.put(matcher.group(1), matcher.group(2))
+              done = true
+            }
+          }
+        }
+      }
+
+      sender ! listId
+
+    case GetAdjustableListMessage(listId: String) =>
+      sender ! lists(listId).getAdjustableList()
+
+    case LoadMessage(listId: String, data: Map[Any, Any]) =>
+      lists(listId).load(data)
+      sender ! "okay"
+
+    case PutMessage(listId: String, key: Any, value: Any) =>
+      lists(listId).put(key, value)
+      sender ! "okay"
+
+    case UpdateMessage(listId: String, key: Any, value: Any) =>
+      lists(listId).update(key, value)
+      sender ! "okay"
+
+    case RemoveMessage(listId: String, key: Any) =>
+      lists(listId).remove(key)
+      sender ! "okay"
+
+    case PutAfterMessage(listId: String, key: Any, newPair: (Any, Any)) =>
+      lists(listId).putAfter(key, newPair)
+      sender ! "okay"
+
+    case RegisterDatastoreMessage(workerId: String, datastoreRef: ActorRef) =>
+      datastores(workerId) = datastoreRef
+
+    case SetIdMessage(_workerId: String) =>
+      workerId = _workerId
 
     case x =>
       log.warning("Datastore actor received unhandled message " +

@@ -15,34 +15,14 @@
  */
 package tbd.list
 
-import scala.collection.mutable.Map
+import akka.actor.ActorRef
+import akka.pattern.ask
+import scala.collection.mutable.{Buffer, Map}
+import scala.concurrent.Await
 
 import tbd.{Input, Mutator}
-
-object ListInput {
-  def apply[T, U](mutator: Mutator, conf: ListConf = new ListConf())
-      (implicit ordering: Ordering[T]): ListInput[T, U] = {
-    if (conf.sorted) {
-      assert(conf.chunkSize == 1 && conf.partitions == 1)
-      new SortedModListInput(mutator)
-    }
-    else {
-      if (conf.partitions == 1) {
-	if (conf.chunkSize > 1) {
-	  new ChunkListInput(mutator, conf)
-	} else {
-	  new ModListInput(mutator)
-	}
-      } else {
-	if (conf.chunkSize > 1) {
-	  new PartitionedChunkListInput(mutator, conf)
-	} else {
-	  new PartitionedModListInput(mutator, conf)
-	}
-      }
-    }
-  }
-}
+import tbd.Constants._
+import tbd.messages._
 
 trait ListInput[T, U] extends Input[T, U] {
   // Inserts all of the elements from data into this ListInput. Assumes that

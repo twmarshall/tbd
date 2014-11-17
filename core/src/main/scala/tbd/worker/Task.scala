@@ -28,22 +28,22 @@ import tbd.messages._
 
 object Task {
   def props
-      (id: String,
+      (taskId: String,
        parent: ActorRef,
        datastore: ActorRef,
        masterRef: ActorRef): Props =
-    Props(classOf[Task], id, parent, datastore, masterRef)
+    Props(classOf[Task], taskId, parent, datastore, masterRef)
 }
 
 class Task
-    (val id: String,
+    (val taskId: String,
      parent: ActorRef,
      datastore: ActorRef,
      masterRef: ActorRef)
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val c = new Context(id, this, datastore, masterRef)
+  private val c = new Context(taskId, this, datastore, masterRef)
 
   def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
                 end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
@@ -162,6 +162,6 @@ class Task
       Future.sequence(futures) pipeTo sender
 
     case x =>
-      log.warning(id + " received unhandled message " + x + " from " + sender)
+      log.warning("Received unhandled message " + x + " from " + sender)
   }
 }

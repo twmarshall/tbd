@@ -21,7 +21,6 @@ import collection.mutable.{HashMap, MutableList}
 import scala.util.Random
 
 import tbd._
-import tbd.list.ListInput
 
 /*
  * Base class for test generators.
@@ -33,7 +32,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
 
   private val mutator = new Mutator()
   private val listConf = algorithm.getListConf()
-  private val input = ListInput[Int, Int](mutator, listConf)
+  private val input = mutator.createList[Int, Int](listConf)
 
   //Counter keeping track of mutation rounds.
   protected var mutationCounter = 0

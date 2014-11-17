@@ -67,7 +67,7 @@ class ListSplitTest(input: ListInput[Int, Int])
 class ListTests extends FlatSpec with Matchers {
   "ListMapTest" should "return the mapped list" in {
     val mutator = new Mutator()
-    val input = ListInput[String, Int](mutator)
+    val input = mutator.createList[String, Int]()
     input.put("one", 1)
     input.put("two", 2)
     val f = (pair: (String, Int)) => (pair._1, pair._2 * 2)
@@ -106,7 +106,7 @@ class ListTests extends FlatSpec with Matchers {
 
   "ListReduceTest" should "return the reduced list" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](mutator)
+    val input = mutator.createList[Int, Int]()
     input.put(1, 1)
     input.put(2, 2)
     val output = mutator.run(new ListReduceTest(input))
@@ -147,7 +147,7 @@ class ListTests extends FlatSpec with Matchers {
 
   "ListSortTest" should "return the sorted list" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](mutator, ListConf(partitions = 1))
+    val input = mutator.createList[Int, Int](ListConf(partitions = 1))
     input.put(0, 0)
     input.put(3, 3)
     input.put(2, 2)
@@ -174,7 +174,7 @@ class ListTests extends FlatSpec with Matchers {
 
   "ListSplitTest" should "return the list, split in two" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](mutator, ListConf(partitions = 1))
+    val input = mutator.createList[Int, Int](ListConf(partitions = 1))
     input.put(1, 0)
     input.put(2, 2)
     val output = mutator.run(new ListSplitTest(input))

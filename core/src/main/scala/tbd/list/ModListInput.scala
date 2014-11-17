@@ -15,83 +15,45 @@
  */
 package tbd.list
 
+import akka.actor.ActorRef
+import akka.pattern.ask
 import scala.collection.mutable.Map
+import scala.concurrent.Await
 
-import tbd.{Mod, Mutator}
+import tbd.Constants._
+import tbd.messages._
 
-class ModListInput[T, U](mutator: Mutator) extends ListInput[T, U] {
-  private var tailMod = mutator.createMod[ModListNode[T, U]](null)
+class ModListInput[T, U]
+    (listId: String,
+     datastoreRef: ActorRef)
+  extends ListInput[T, U] with java.io.Serializable {
 
-  val nodes = Map[T, Mod[ModListNode[T, U]]]()
-
-  val modList = new ModList[T, U](tailMod)
-
-  def load(data: Map[T, U]) {
-    var tail = mutator.createMod[ModListNode[T, U]](null)
-    val newTail = tail
-
-    for ((key, value) <- data) {
-      tail = mutator.createMod(new ModListNode((key, value), tail))
-      nodes(key) = tail
-    }
-
-    val head = mutator.read(tail)
-    mutator.updateMod(tailMod, mutator.read(tail))
-    nodes(head.value._1) = tailMod
-    tailMod = newTail
+  def put(key: T, value: U) = {
+    val future = datastoreRef ? PutMessage(listId, key, value)
+    Await.result(future, DURATION)
   }
 
-  def put(key: T, value: U) {
-    val newTail = mutator.createMod[ModListNode[T, U]](null)
-    val newNode = new ModListNode((key, value), newTail)
-
-    mutator.updateMod(tailMod, newNode)
-
-    nodes(key) = tailMod
-    tailMod = newTail
+  def update(key: T, value: U) = {
+    val future = datastoreRef ? UpdateMessage(listId, key, value)
+    Await.result(future, DURATION)
   }
 
-  def putAfter(key: T, pair: (T, U)) {
-    val before = mutator.read(nodes(key))
-
-    val newNode = new ModListNode(pair, before.nextMod)
-    val newNodeMod = mutator.createMod(newNode)
-
-    val newBefore = new ModListNode(before.value, newNodeMod)
-    mutator.updateMod(nodes(key), newBefore)
-
-    nodes(pair._1) = newNodeMod
+  def remove(key: T) = {
+    val future = datastoreRef ? RemoveMessage(listId, key)
+    Await.result(future, DURATION)
   }
 
-  def update(key: T, value: U) {
-    val nextMod = mutator.read(nodes(key)).nextMod
-    val newNode = new ModListNode((key, value), nextMod)
-
-    mutator.updateMod(nodes(key), newNode)
+  def load(data: Map[T, U]) = {
+    val future = datastoreRef ? LoadMessage(listId, data.asInstanceOf[Map[Any, Any]])
   }
 
-  def remove(key: T) {
-    val node = mutator.read(nodes(key))
-    val nextNode = mutator.read(node.nextMod)
-
-    if (nextNode == null) {
-      // We're removing the last element in the last.
-      assert(tailMod == node.nextMod)
-      tailMod = nodes(key)
-    } else {
-      nodes(nextNode.value._1) = nodes(key)
-    }
-
-    mutator.updateMod(nodes(key), nextNode)
-
-    nodes -= key
+  def putAfter(key: T, newPair: (T, U)) = {
+    val future = datastoreRef ? PutAfterMessage(listId, key, newPair)
+    Await.result(future, DURATION)
   }
 
-  def contains(key: T): Boolean = {
-    nodes.contains(key)
-  }
-
-  def getAdjustableList(): AdjustableList[T, U] = {
-    modList
+  def getAdjustableList(): ModList[T, U] = {
+    val future = datastoreRef ? GetAdjustableListMessage(listId)
+    Await.result(future.mapTo[ModList[T, U]], DURATION)
   }
 }

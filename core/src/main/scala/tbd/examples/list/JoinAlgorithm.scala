@@ -34,11 +34,11 @@ class JoinAdjust
 
 class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
-  val input = ListInput[Int, Int](mutator, listConf)
+  val input = mutator.createList[Int, Int](listConf)
   val data = new IntData(input, count, mutations, "data.txt")
   //val data = new IntFileData(input, "data.txt")
 
-  val input2 = ListInput[Int, Int](mutator, listConf.copy(partitions = 1))
+  val input2 = mutator.createList[Int, Int](listConf.copy(partitions = 1))
   val data2 = new IntData(input2, count, mutations, "data2.txt")
   //val data2 = new IntFileData(input2, "data2.txt")
 
@@ -90,10 +90,10 @@ class ChunkJoinAdjust
 
 class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
-  val input = ListInput[Int, Int](mutator, listConf)
+  val input = mutator.createList[Int, Int](listConf)
   val data = new IntData(input, count, mutations)
 
-  val input2 = ListInput[Int, Int](mutator, listConf)
+  val input2 = mutator.createList[Int, Int](listConf)
   val data2 = new IntData(input2, count)
 
   val adjust = new ChunkJoinAdjust(input.getAdjustableList(), input2.getAdjustableList())
@@ -146,11 +146,11 @@ class SortJoinAdjust
 
 class SortJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
-  val input = ListInput[Int, Int](mutator, listConf)
+  val input = mutator.createList[Int, Int](listConf)
   val data = new IntData(input, count, mutations, "data.txt")
   //val data = new IntFileData(input, "data.txt")
 
-  val input2 = ListInput[Int, Int](mutator, listConf)
+  val input2 = mutator.createList[Int, Int](listConf)
   val data2 = new IntData(input2, count, mutations, "data2.txt")
 
   //val data2 = new IntFileData(input2, "data2.txt")

@@ -15,12 +15,13 @@
  */
 package tbd
 
+import akka.actor.ActorRef
 import akka.pattern.ask
 import scala.collection.mutable.ListBuffer
-
-import tbd.macros.{TbdMacros, functionToInvoke}
+import scala.concurrent.Await
 
 import tbd.Constants._
+import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.messages._
 import tbd.TBD._
 
@@ -210,16 +211,16 @@ object TBD {
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
-    c.update(c.currentMod, value)
+    c.update(c.currentMod.id, value)
 
     (new Changeable(c.currentMod)).asInstanceOf[Changeable[T]]
   }
 
   def write2[T, U](value: T, value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    c.update(c.currentMod, value)
+    c.update(c.currentMod.id, value)
 
-    c.update(c.currentMod2, value2)
+    c.update(c.currentMod2.id, value2)
 
     (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
@@ -227,7 +228,7 @@ object TBD {
 
   def writeLeft[T, U](value: T, changeable: Changeable[U])
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    c.update(c.currentMod, value)
+    c.update(c.currentMod.id, value)
 
     (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
@@ -235,10 +236,33 @@ object TBD {
 
   def writeRight[T, U](changeable: Changeable[T], value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    c.update(c.currentMod2, value2)
+    c.update(c.currentMod2.id, value2)
 
     (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
      new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
+  }
+
+  def parWithHint[T, U](one: Context => T, workerId1: String = null)
+      (two: Context => U, workerId2: String = null)
+      (implicit c: Context): (T, U) = {
+    val future1 = c.masterRef ? ScheduleTaskMessage(c.task.self, workerId1)
+    val taskRef1 = Await.result(future1.mapTo[ActorRef], DURATION)
+
+    val adjust1 = new Adjustable[T] { def run(implicit c: Context) = one(c) }
+    val oneFuture = taskRef1 ? RunTaskMessage(adjust1)
+
+    val future2 = c.masterRef ? ScheduleTaskMessage(c.task.self, workerId2)
+    val taskRef2 = Await.result(future2.mapTo[ActorRef], DURATION)
+
+    val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
+    val twoFuture = taskRef2 ? RunTaskMessage(adjust2)
+
+    val parNode = c.ddg.addPar(taskRef1, taskRef2, c)
+    parNode.endTime = c.ddg.nextTimestamp(parNode, c)
+
+    val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
+    val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]
+    (oneRet, twoRet)
   }
 
   def par[T](one: Context => T): Parizer[T] = {

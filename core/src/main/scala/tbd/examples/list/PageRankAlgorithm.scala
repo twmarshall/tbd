@@ -50,7 +50,7 @@ class PageRankAdjust(links: AdjustableList[Int, Array[Int]])
 
 class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Array[Int], AdjustableList[Int, Double]](_conf, _listConf) {
-  val input = ListInput[Int, Array[Int]](mutator, listConf.copy(sorted = true))
+  val input = mutator.createList[Int, Array[Int]](listConf)
 
   val data = new GraphData(input, count, mutations)
 

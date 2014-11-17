@@ -23,6 +23,7 @@ import scala.util.{Failure, Success}
 
 import tbd.Adjustable
 import tbd.Constants._
+import tbd.datastore.Datastore
 import tbd.messages._
 
 object Worker {
@@ -32,19 +33,36 @@ object Worker {
 class Worker(masterRef: ActorRef) extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val datastore = Await.result(
-    (masterRef ? RegisterWorkerMessage(self)).mapTo[ActorRef], DURATION)
+  private val datastore = context.actorOf(Datastore.props(), "datastore")
+
+  private val idFuture = masterRef ? RegisterWorkerMessage(self, datastore)
+  private val workerId = Await.result(idFuture.mapTo[String], DURATION)
+
+  datastore ! SetIdMessage(workerId)
+
+  // A unique id to assign to tasks forked from this context.
+  private var nextTaskId = 0
 
   def receive = {
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       sender ! "done"
 
-    case ScheduleTaskMessage(id: String, parent: ActorRef) =>
-      log.debug("Scheduling task " + id)
-      val taskProps = Task.props(id, parent, datastore, masterRef)
-      val taskRef = context.actorOf(taskProps, id)
+    case ScheduleTaskMessage(parent: ActorRef, _) =>
+      val taskId = workerId + ":" + nextTaskId
+      val taskProps = Task.props(taskId, parent, datastore, masterRef)
+      val taskRef = context.actorOf(taskProps, taskId)
 
       sender ! taskRef
+
+      nextTaskId += 1
+
+    case CreateModMessage(value: Any) =>
+      (datastore ? CreateModMessage(value)) pipeTo sender
+
+    case CreateModMessage(null) =>
+      (datastore ? CreateModMessage(null)) pipeTo sender
+
+    case "started" => sender ! "done"
 
     case x => println("Worker received unhandled message " + x)
   }

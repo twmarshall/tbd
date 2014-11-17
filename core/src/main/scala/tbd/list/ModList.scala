@@ -24,7 +24,8 @@ import tbd.TBD._
 
 class ModList[T, U]
     (val head: Mod[ModListNode[T, U]],
-     val sorted: Boolean = false)
+     val sorted: Boolean = false,
+     val workerId: String = null)
   extends AdjustableList[T, U] with Serializable {
 
   def filter(pred: ((T, U)) => Boolean)
@@ -84,7 +85,7 @@ class ModList[T, U]
           case null => write[ModListNode[V, W]](null)
           case node => node.map(f, memo, modizer)
         }
-      }
+      }, false, workerId
     )
   }
 
