@@ -21,4 +21,5 @@ case class ListConf
      partitionIndex: Int = 0,
      chunkSize: Int = 1,
      chunkSizer: Any => Int = _ => 1,
-     sorted: Boolean = false)
+     sorted: Boolean = false,
+     double: Boolean = false)

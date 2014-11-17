@@ -170,7 +170,9 @@ class Datastore extends Actor with ActorLogging {
       val listId = nextListId + ""
       nextListId += 1
       val list =
-        if (conf.chunkSize == 1) {
+        if (conf.double) {
+          new DoubleListModifier[Any, Any](this)
+        } else if (conf.chunkSize == 1) {
           new ListModifier[Any, Any](this)
         } else {
           new ChunkListModifier[Any, Any](this, conf)
