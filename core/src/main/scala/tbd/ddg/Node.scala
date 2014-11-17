@@ -40,6 +40,8 @@ abstract class Node {
   var currentMod: Mod[Any] = null
 
   var currentMod2: Mod[Any] = null
+
+  var updated = false
 }
 
 class MemoNode
@@ -58,17 +60,17 @@ class ModNode
 class ParNode
     (val taskRef1: ActorRef,
      val taskRef2: ActorRef) extends Node {
-
-  var updated = false
-
   var pebble1 = false
   var pebble2 = false
 }
 
 class ReadNode(val mod: Mod[Any], val reader: Any => Changeable[Any])
-  extends Node {
-  var updated = false
-}
+  extends Node
+
+class Read2Node
+    (val mod1: Mod[Any],
+     val mod2: Mod[Any],
+     val reader: (Any, Any) => Changeable[Any]) extends Node
 
 class RootNode extends Node
 

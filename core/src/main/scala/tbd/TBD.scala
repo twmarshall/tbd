@@ -67,6 +67,28 @@ object TBD {
     changeables
   }
 
+  def read_2[T, U, V](mod1: Mod[T], mod2: Mod[U])
+      (reader: (T, U) => Changeable[V])
+      (implicit c: Context): Changeable[V] = {
+    val value1 = c.read(mod1, c.task.self)
+    val value2 = c.read(mod2, c.task.self)
+
+    val read2Node = c.ddg.addRead2(
+      mod1.asInstanceOf[Mod[Any]],
+      mod2.asInstanceOf[Mod[Any]],
+      value1,
+      value2,
+      reader.asInstanceOf[(Any, Any) => Changeable[Any]],
+      c)
+
+    val changeable = reader(value1, value2)
+
+    read2Node.endTime = c.ddg.nextTimestamp(read2Node, c)
+    read2Node.currentMod = c.currentMod
+
+    changeable
+  }
+
   def mod[T](initializer: => Changeable[T])
      (implicit c: Context): Mod[T] = {
     val mod1 = new Mod[T](c.newModId())

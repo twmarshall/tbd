@@ -23,7 +23,7 @@ import scala.util.{Failure, Success, Try}
 
 import tbd.Constants._
 import tbd.{Adjustable, Context}
-import tbd.ddg.{DDG, Node, MemoNode, ParNode, ReadNode, Timestamp}
+import tbd.ddg._
 import tbd.messages._
 
 object Task {
@@ -54,38 +54,68 @@ class Task
         val node = option.get
         c.ddg.updated -= node
 
-	node match {
-	  case readNode: ReadNode =>
+        node match {
+          case readNode: ReadNode =>
             if (readNode.updated) {
               val newValue = c.read(readNode.mod)
 
-	      val oldStart = c.reexecutionStart
-	      c.reexecutionStart = readNode.timestamp.getNext()
-	      val oldEnd = c.reexecutionEnd
-	      c.reexecutionEnd = readNode.endTime
+              val oldStart = c.reexecutionStart
+              c.reexecutionStart = readNode.timestamp.getNext()
+              val oldEnd = c.reexecutionEnd
+              c.reexecutionEnd = readNode.endTime
               val oldCurrentDest = c.currentMod
               c.currentMod = readNode.currentMod
-	      val oldCurrentDest2 = c.currentMod2
-	      c.currentMod2 = readNode.currentMod2
+              val oldCurrentDest2 = c.currentMod2
+              c.currentMod2 = readNode.currentMod2
 
-	      val oldCurrentTime = c.currentTime
-	      c.currentTime = readNode.timestamp
+              val oldCurrentTime = c.currentTime
+              c.currentTime = readNode.timestamp
 
               readNode.updated = false
               readNode.reader(newValue)
 
-	      if (c.reexecutionStart < c.reexecutionEnd) {
-		c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
-	      }
+              if (c.reexecutionStart < c.reexecutionEnd) {
+                c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
+              }
 
-	      c.reexecutionStart = oldStart
-	      c.reexecutionEnd = oldEnd
+              c.reexecutionStart = oldStart
+              c.reexecutionEnd = oldEnd
               c.currentMod = oldCurrentDest
-	      c.currentMod2 = oldCurrentDest2
-	      c.currentTime = oldCurrentTime
-	    }
-	  case parNode: ParNode =>
-	    if (parNode.updated) {
+              c.currentMod2 = oldCurrentDest2
+              c.currentTime = oldCurrentTime
+            }
+          case readNode: Read2Node =>
+            if (readNode.updated) {
+              val newValue1 = c.read(readNode.mod1)
+              val newValue2 = c.read(readNode.mod2)
+
+              val oldStart = c.reexecutionStart
+              c.reexecutionStart = readNode.timestamp.getNext()
+              val oldEnd = c.reexecutionEnd
+              c.reexecutionEnd = readNode.endTime
+              val oldCurrentDest = c.currentMod
+              c.currentMod = readNode.currentMod
+              val oldCurrentDest2 = c.currentMod2
+              c.currentMod2 = readNode.currentMod2
+
+              val oldCurrentTime = c.currentTime
+              c.currentTime = readNode.timestamp
+
+              readNode.updated = false
+              readNode.reader(newValue1, newValue2)
+
+              if (c.reexecutionStart < c.reexecutionEnd) {
+                c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
+              }
+
+              c.reexecutionStart = oldStart
+              c.reexecutionEnd = oldEnd
+              c.currentMod = oldCurrentDest
+              c.currentMod2 = oldCurrentDest2
+              c.currentTime = oldCurrentTime
+            }
+          case parNode: ParNode =>
+            if (parNode.updated) {
               Await.result(Future.sequence(c.pending), DURATION)
               c.pending.clear()
 
@@ -98,7 +128,7 @@ class Task
               Await.result(future1, DURATION)
               Await.result(future2, DURATION)
             }
-	}
+        }
 
         option = c.ddg.updated.find((node: Node) =>
           node.timestamp > start && node.timestamp < end)

@@ -29,7 +29,7 @@ class DDG {
   var root = new RootNode()
   debug.TBD.nodes(root) = (Node.getId(), Tag.Root(), null)
 
-  val reads = Map[ModId, Buffer[ReadNode]]()
+  val reads = Map[ModId, Buffer[Node]]()
   val pars = Map[ActorRef, ParNode]()
 
   var updated = TreeSet[Node]()((new TimestampOrdering()).reverse)
@@ -49,6 +49,32 @@ class DDG {
       reads(mod.id) :+= readNode.asInstanceOf[ReadNode]
     } else {
       reads(mod.id) = Buffer(readNode.asInstanceOf[ReadNode])
+    }
+
+    readNode
+  }
+
+  def addRead2
+      (mod1: Mod[Any],
+       mod2: Mod[Any],
+       value1: Any,
+       value2: Any,
+       reader: (Any, Any) => Changeable[Any],
+       c: Context): Read2Node = {
+    val readNode = new Read2Node(mod1, mod2, reader)
+    val timestamp = nextTimestamp(readNode, c)
+    readNode.timestamp = timestamp
+
+    if (reads.contains(mod1.id)) {
+      reads(mod1.id) :+= readNode
+    } else {
+      reads(mod1.id) = Buffer(readNode)
+    }
+
+    if (reads.contains(mod2.id)) {
+      reads(mod2.id) :+= readNode
+    } else {
+      reads(mod2.id) = Buffer(readNode)
     }
 
     readNode
