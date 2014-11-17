@@ -288,9 +288,8 @@ class ModListNode[T, U]
     }
   }
 
-  def quicksort(toAppend: Mod[ModListNode[T, U]])
-      (implicit c: Context,
-       ordering: Ordering[T]): Changeable[ModListNode[T, U]] = {
+  def quicksort(toAppend: Mod[ModListNode[T, U]], comparator: ((T, U), (T, U) ) => Int)
+      (implicit c: Context): Changeable[ModListNode[T, U]] = {
     val (smaller, greater) = mod2 {
       val splitMemo = new Memoizer[ModListNode.ChangeableTuple[T, U]]()
       val splitModizer = new Modizer2[ModListNode[T, U], ModListNode[T, U]]()
@@ -300,7 +299,8 @@ class ModListNode[T, U]
 	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
         case nextNode =>
 	  splitMemo(nextNode) {
-	    nextNode.split((cv: (T, U)) => { ordering.lt(cv._1, value._1) },
+	    nextNode.split((cv: (T, U)) => {comparator(cv, value) < 0 },
+	      
 			   splitMemo,
 			   splitModizer)
 	  }
@@ -312,7 +312,7 @@ class ModListNode[T, U]
 	case null =>
 	  read(toAppend) { write(_) }
 	case greater =>
-	  greater.quicksort(toAppend)
+	  greater.quicksort(toAppend, comparator)
       }
     }
 
@@ -322,7 +322,7 @@ class ModListNode[T, U]
       case null =>
 	write(mid)
       case smallerNode =>
-	smallerNode.quicksort(mod { write(mid) })
+	smallerNode.quicksort(mod { write(mid) }, comparator)
     }
   }
 

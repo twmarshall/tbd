@@ -121,22 +121,22 @@ class PartitionedModList[T, U]
     new PartitionedModList(Buffer(innerSort(0)))
   }
 
-  override def quicksort()
-      (implicit c: Context,
-       ordering: Ordering[T]): PartitionedModList[T, U] = {
+  override def quicksort(comparator: ((T, U), (T, U) ) => Int)
+      (implicit c: Context): PartitionedModList[T, U] = {
     def innerSort(i: Int)(implicit c: Context): ModList[T, U] = {
       if (i < partitions.size) {
         val (sortedPartition, sortedRest) = par {
-          c => partitions(i).quicksort()(c, ordering)
+          c => partitions(i).quicksort(comparator)(c)
         } and {
           c => innerSort(i + 1)(c)
         }
-        
+        /*
         val comp = (pair1: (T, _), pair2: (T, _)) => {
-	      ordering.compare(pair1._1, pair2._1)
+          comparator(pair1, pair2)
+	      //ordering.compare(pair1._1, pair2._1)
 	    }
-
-	sortedPartition.merge(sortedRest, comp)
+		*/
+	sortedPartition.merge(sortedRest, comparator)
       } else {
         new ModList[T, U](mod { write[ModListNode[T, U]](null) })
       }

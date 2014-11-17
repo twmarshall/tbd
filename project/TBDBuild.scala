@@ -4,7 +4,7 @@ import Keys._
 object TBDBuild extends Build {
   val buildOrganization = "edu.cmu.cs"
   val buildVersion      = "0.1-SNAPSHOT"
-  val buildScalaVersion = "2.10.0"
+  val buildScalaVersion = "2.11.0"
 
   val buildSettings = Defaults.defaultSettings ++ Seq (
     organization := buildOrganization,
@@ -22,14 +22,15 @@ object TBDBuild extends Build {
 
     "com.typesafe.akka"          %% "akka-actor"           % "2.3.2",
     "com.typesafe.akka"          %% "akka-remote"          % "2.3.2",
-    //"com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
+    "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
+    
+    "net.sf.jsqlparser"           % "jsqlparser"           % "0.8.0",
 
-    "org.rogach"                  % "scallop_2.10"         % "0.9.5",
+    "org.rogach"                  % "scallop_2.11"         % "0.9.5",
 
-    "org.scala-lang"             % "scala-pickling_2.10"       % "0.8.0",
-    "org.scalatest"              % "scalatest_2.10"            % "2.1.3" % "test",
-    "org.scalaz"                 % "scalaz-core_2.10"          % "7.0.6"
-
+    "org.scala-lang"             %% "scala-pickling"       % "0.8.0",
+    "org.scalatest"              %% "scalatest"            % "2.1.3" % "test",
+    "org.scalaz"                 %% "scalaz-core"          % "7.0.6"
   )
 
   val mkrun = TaskKey[File]("mkrun")
@@ -45,7 +46,6 @@ object TBDBuild extends Build {
     "core",
     file("core"),
     settings = buildSettings ++ Seq (
-      exportJars:=true,
       libraryDependencies ++= commonDeps,
       resolvers += mavenResolver,
       javaOptions += "-Xss128M",
@@ -60,12 +60,13 @@ object TBDBuild extends Build {
         IO.write(masterOut, master)
         masterOut.setExecutable(true)
 
-	val worker = template.format(classpath, "tbd.worker.Main")
-	val workerOut = baseDirectory.value / "../bin/worker.sh"
-	IO.write(workerOut, worker)
-	workerOut.setExecutable(true)
+  val worker = template.format(classpath, "tbd.worker.Main")
+  val workerOut = baseDirectory.value / "../bin/worker.sh"
+  IO.write(workerOut, worker)
+  workerOut.setExecutable(true)
 
-        val experiment = template.format(classpath, "tbd.examples.list.Experiment")
+        //val experiment = template.format(classpath, "tbd.examples.list.Experiment")
+        val experiment = template.format(classpath, "tbd.sql.SQLTest")
         val experimentOut = baseDirectory.value / "../bin/experiment.sh"
         IO.write(experimentOut, experiment)
         experimentOut.setExecutable(true)
@@ -102,21 +103,14 @@ object TBDBuild extends Build {
     file("sql"),
     settings = buildSettings ++ Seq (
       libraryDependencies ++= (commonDeps 
-                          ++ Seq(//"org.apache.spark" % "spark-core_2.10" % "1.1.0" exclude ("org.spark-project.akka",  "akka-actor_2.1.0") exclude ("org.spark-project.akka",  "akka-remote_2.10") exclude ("org.spark-project.akka",  "akka-slf4j_2.10"),
-                                  //"org.apache.spark" % "spark-sql_2.10" % "1.1.0",
-                                "org.apache.spark" % "spark-assembly_2.10" % "1.1.0",// exclude ("org.spark-project.akka",  "akka-actor_2.10") exclude ("org.spark-project.akka",  "akka-remote_2.10") exclude ("org.spark-project.akka",  "akka-slf4j_2.10"),
-                                  //"org.spark-project.akka" % "akka-slf4j_2.11" % "2.3.4-spark",
-                                  //"org.spark-project.akka" % "akka-actor_2.11" % "2.3.4-spark",
-                                  //"org.spark-project.akka" % "akka-remote_2.11" % "2.3.4-spark",
-                                  //"com.typesafe.akka" % "akka-slf4j_2.11" % "2.3.6",
-                                  "net.sf.jsqlparser" % "jsqlparser" % "0.8.0")),
+                          ++ Seq("net.sf.jsqlparser" % "jsqlparser" % "0.8.0")),
       mksql := {
         val classpath = (fullClasspath in Runtime).value.files.absString
         val template = """#!/bin/sh
         java -Xmx8g -Xss256m -classpath "%s" %s $@
         """
 
-        val sql = template.format(classpath, "tbd.sql.RDDRelation")
+        val sql = template.format(classpath, "tbd.sql.JsqlParser")
         val sqlOut = baseDirectory.value / "../bin/sql.sh"
         IO.write(sqlOut, sql)
         sqlOut.setExecutable(true)
@@ -127,6 +121,7 @@ object TBDBuild extends Build {
         //testOut.setExecutable(true)
 
         sqlOut
+        
       }
     )
   ) dependsOn(core)
@@ -136,8 +131,8 @@ object TBDBuild extends Build {
     file("macros"),
     settings = buildSettings ++ Seq (
       libraryDependencies ++= (commonDeps
-                          ++ Seq("org.scala-lang" % "scala-compiler" % "2.10.4",
-                                 "org.scala-lang" % "scala-reflect" % "2.10.4"))
+                          ++ Seq("org.scala-lang" % "scala-compiler" % "2.11.1",
+                                 "org.scala-lang" % "scala-reflect" % "2.11.1"))
     )
   )
 }

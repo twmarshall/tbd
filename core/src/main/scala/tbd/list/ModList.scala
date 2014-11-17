@@ -175,14 +175,13 @@ class ModList[T, U]
     )
   }
 
-  override def quicksort()
-      (implicit c: Context,
-       ordering: Ordering[T]): ModList[T, U] = {
+  override def quicksort(comparator: ((T, U), (T, U) ) => Int)
+      (implicit c: Context): ModList[T, U] = {
     val sorted = mod {
       read(head) {
         case null => write[ModListNode[T, U]](null)
         case node =>
-	  node.quicksort(mod { write(null) })
+	  node.quicksort(mod { write(null) }, comparator)
       }
     }
 
@@ -286,10 +285,10 @@ class ModList[T, U]
     }
   }
 
-  override def reduceByKey(f: (U, U) => U)
-      (implicit c: Context,
-       ordering: Ordering[T]): ModList[T, U] = {
-    val sorted = this.quicksort()
+  // reduceByKey[V, W] (:
+  override def reduceByKey(f: (U, U) => U, comparator: ((T, U), (T, U) ) => Int)
+      (implicit c: Context): ModList[T, U] = {
+    val sorted = this.quicksort(comparator)
 
     val memo = new Memoizer[Changeable[ModListNode[T, U]]]()
     new ModList(

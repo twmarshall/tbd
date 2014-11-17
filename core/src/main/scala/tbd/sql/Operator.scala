@@ -1,10 +1,12 @@
 package tbd.sql
 
-abstract class Operator {
-  var childOperators = List[Operator]();
-  var parentOperators = List[Operator]();
+trait Operator {
   
   def initialize() {}
   
-  def processOp (row: Any) {}
+  def processOp () {}
+  
+  def getTable: ScalaTable 
+  
+  def getAdjustable: tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]]
 }

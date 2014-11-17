@@ -264,12 +264,9 @@ class ChunkList[T, U]
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = ???
 
-  override def reduceByKey(f: (U, U) => U)
-      (implicit c: Context,
-       ordering: Ordering[T]): ChunkList[T, U] = {
-    val sorted = this.mergesort( (pair1: (T, _), pair2: (T, _)) => {
-      ordering.compare(pair1._1, pair2._1)
-    })
+  override def reduceByKey(f: (U, U) => U, comparator: ((T, U), (T, U)) => Int)
+      (implicit c: Context): ChunkList[T, U] = {
+    val sorted = this.mergesort( comparator)
 
     new ChunkList(
       mod {

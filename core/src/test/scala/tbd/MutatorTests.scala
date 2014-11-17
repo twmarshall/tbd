@@ -22,7 +22,7 @@ import tbd.datastore.IntData
 import tbd.list._
 
 class ListTest(input: ListInput[Int, Int])
-    extends Adjustable[AdjustableList[Int, Int]] {
+  extends Adjustable[AdjustableList[Int, Int]] {
   def run(implicit c: Context) = {
     input.getAdjustableList()
   }
@@ -30,20 +30,19 @@ class ListTest(input: ListInput[Int, Int])
 
 class MutatorTests extends FlatSpec with Matchers {
   val intensity = 10
-  def runTest
-      (mutator: Mutator,
-       adjustable: Adjustable[AdjustableList[Int, Int]],
-       input: ListInput[Int, Int],
-       sorted: Boolean) {
+  def runTest(mutator: Mutator,
+    adjustable: Adjustable[AdjustableList[Int, Int]],
+    input: ListInput[Int, Int],
+    sorted: Boolean) {
 
     def check(output: AdjustableList[Int, Int], data: IntData): Boolean = {
       val sortedAnswer = data.table.toBuffer.sortWith(_._1 < _._1)
 
       val sortedOutput =
-	if (sorted)
-	  output.toBuffer(mutator)
-	else
-	  output.toBuffer(mutator).sortWith(_._1 < _._1)
+        if (sorted)
+          output.toBuffer(mutator)
+        else
+          output.toBuffer(mutator).sortWith(_._1 < _._1)
 
       sortedOutput == sortedAnswer
     }
@@ -79,13 +78,13 @@ class MutatorTests extends FlatSpec with Matchers {
   "AdjustableListTests" should "update the AdjustableList correctly" in {
     for (partitions <- 1 to 2) {
       for (chunkSize <- 1 to 2) {
-	val mutator = new Mutator()
+        val mutator = new Mutator()
 
-	val conf = new ListConf(partitions = partitions, chunkSize = chunkSize)
-	val input = mutator.createList[Int, Int](conf)
-	runTest(mutator, new ListTest(input), input, false)
+        val conf = new ListConf(partitions = partitions, chunkSize = chunkSize)
+        val input = mutator.createList[Int, Int](conf)
+        runTest(mutator, new ListTest(input), input, false)
 
-	mutator.shutdown()
+        mutator.shutdown()
       }
     }
   }
