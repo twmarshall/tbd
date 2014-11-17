@@ -192,8 +192,8 @@ class Datastore
         val fileSize = file.length()
 
         val in = new BufferedReader(new FileReader(conf.file))
-        val partitionSize = (fileSize / conf.partitions).toInt
-        var buf = new Array[Char](partitionSize)
+        val partitionSize = fileSize / conf.partitions
+        var buf = new Array[Char](partitionSize.toInt)
 
         in.skip(partitionSize * conf.partitionIndex)
         in.read(buf)
