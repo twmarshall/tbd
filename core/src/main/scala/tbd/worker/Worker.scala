@@ -27,13 +27,21 @@ import tbd.datastore.Datastore
 import tbd.messages._
 
 object Worker {
-  def props(masterRef: ActorRef) = Props(classOf[Worker], masterRef)
+  def props
+      (masterRef: ActorRef,
+       storeType: String = "memory",
+       cacheSize: Int = 10000) =
+    Props(classOf[Worker], masterRef, storeType, cacheSize)
 }
 
-class Worker(masterRef: ActorRef) extends Actor with ActorLogging {
+class Worker
+    (masterRef: ActorRef,
+     storeType: String,
+     cacheSize: Int) extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val datastore = context.actorOf(Datastore.props(), "datastore")
+  private val datastore = context.actorOf(
+    Datastore.props(storeType, cacheSize), "datastore")
 
   private val idFuture = masterRef ? RegisterWorkerMessage(self, datastore)
   private val workerId = Await.result(idFuture.mapTo[String], DURATION)

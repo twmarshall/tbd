@@ -28,15 +28,21 @@ import tbd.list._
 import tbd.messages._
 
 object Datastore {
-  def props(): Props = Props(classOf[Datastore])
+  def props(storeType: String, cacheSize: Int): Props =
+    Props(classOf[Datastore], storeType, cacheSize)
 }
 
-class Datastore extends Actor with ActorLogging {
+class Datastore
+    (storeType: String,
+     cacheSize: Int) extends Actor with ActorLogging {
   import context.dispatcher
 
   var workerId: String = _
 
-  private val mods = Map[ModId, Any]()
+  private val store = storeType match {
+    case "memory" => new MemoryStore()
+    case "berkeleydb" => new BerkeleyDBStore(cacheSize, context)
+  }
 
   private var nextModId = 0
 
@@ -55,21 +61,22 @@ class Datastore extends Actor with ActorLogging {
     val modId = workerId + ":" + nextModId
     nextModId += 1
 
-    mods(modId) = value
+    store.put(modId, value)
 
     new Mod(modId)
   }
 
   def read[T](mod: Mod[T]): T = {
-    mods(mod.id).asInstanceOf[T]
+    store.get(mod.id).asInstanceOf[T]
   }
 
   def getMod(modId: ModId, taskRef: ActorRef): Any = {
-    if (mods.contains(modId)) {
-      if (mods(modId) == null)
+    if (store.contains(modId)) {
+      val value = store.get(modId)
+      if (value == null)
         NullMessage
       else
-        mods(modId)
+        value
     } else {
       val workerId = modId.split(":")(0)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)
@@ -90,8 +97,8 @@ class Datastore extends Actor with ActorLogging {
   def update[T](mod: Mod[T], value: T) {
     val futures = Buffer[Future[String]]()
 
-    if (!mods.contains(mod.id) || mods(mod.id) != value) {
-      mods(mod.id) = value
+    if (!store.contains(mod.id) || store.get(mod.id) != value) {
+      store.put(mod.id, value)
 
       if (dependencies.contains(mod.id)) {
         for (taskRef <- dependencies(mod.id)) {
@@ -110,8 +117,8 @@ class Datastore extends Actor with ActorLogging {
        respondTo: ActorRef) {
     val futures = Buffer[Future[String]]()
 
-    if (!mods.contains(modId) || mods(modId) != value) {
-      mods(modId) = value
+    if (!store.contains(modId) || store.get(modId) != value) {
+      store.put(modId, value)
 
       if (dependencies.contains(modId)) {
         for (taskRef <- dependencies(modId)) {
@@ -160,7 +167,7 @@ class Datastore extends Actor with ActorLogging {
 
     case RemoveModsMessage(modIds: Iterable[ModId]) =>
       for (modId <- modIds) {
-        mods -= modId
+        store.remove(modId)
         dependencies -= modId
       }
 
