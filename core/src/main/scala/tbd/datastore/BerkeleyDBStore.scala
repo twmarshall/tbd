@@ -17,6 +17,11 @@ package tbd.datastore
 
 import akka.actor.{ActorRef, ActorContext, Props}
 import akka.pattern.ask
+import com.sleepycat.je.{Environment, EnvironmentConfig}
+import com.sleepycat.persist.{EntityStore, StoreConfig}
+import com.sleepycat.persist.model.{Entity, PrimaryKey, SecondaryKey}
+import com.sleepycat.persist.model.Relationship
+import java.io._
 import scala.collection.mutable.Map
 import scala.concurrent.Await
 
@@ -31,20 +36,75 @@ class LRUNode(
   var next: LRUNode
 )
 
-class BerkeleyDBStore(cacheSize: Int, context: ActorContext) extends KVStore {
-  val numPartitions = 1
+class BerkeleyDBStore
+    (maxCacheSize: Int,
+     context: ActorContext) extends KVStore {
+  private var environment: Environment = null
+  private var store: EntityStore = null
 
-  val partitions = Map[Int, ActorRef]()
-  for (i <- 0 until numPartitions) {
-    partitions(i) = context.actorOf(Props[BerkeleyDBActor])
+  private val envConfig = new EnvironmentConfig()
+  envConfig.setCachePercent(10)
+
+  envConfig.setAllowCreate(true)
+  val storeConfig = new StoreConfig()
+  storeConfig.setAllowCreate(true)
+
+  val random = new scala.util.Random()
+  private val envHome = new File("/tmp/tbd_berkeleydb" + random.nextInt())
+  envHome.mkdir()
+
+  try {
+    // Open the environment and entity store
+    environment = new Environment(envHome, envConfig)
+    store = new EntityStore(environment, "EntityStore", storeConfig)
+  } catch {
+    case fnfe: FileNotFoundException => {
+      System.err.println("setup(): " + fnfe.toString())
+      System.exit(-1)
+    }
   }
 
+  val pIdx = store.getPrimaryIndex(classOf[ModId], classOf[ModEntity])
+
+  // LRU cache
   private val values = Map[ModId, LRUNode]()
   private val tail = new LRUNode(null, null, null, null)
   private var head = tail
 
+  // Statistics
+  var readCount = 0
+  var writeCount = 0
+  var deleteCount = 0
+
+  var cacheSize = 0
+
+  // Calculates size of value, in bytes.
+  private def getSize(value: Any): Int = {
+    value match {
+      case null =>
+        1
+      case s: String =>
+        s.size * 2
+      case node: tbd.list.ModListNode[_, _] =>
+        getSize(node.value) + getSize(node.nextMod) + 8
+      case tuple: Tuple2[_, _] =>
+        getSize(tuple._1) + getSize(tuple._2)
+      case i: Integer =>
+        4
+      case m: Mod[_] =>
+        getSize(m.id)
+      case h: scala.collection.immutable.HashMap[_, _] =>
+        h.size * 1000
+      case x =>
+        println(x.getClass)
+        0
+    }
+  }
+
   def put(key: ModId, value: Any) {
+    /*cacheSize += getSize(value)
     if (values.contains(key)) {
+      cacheSize -= getSize(values(key).value)
       values(key).value = value
     } else {
       val newNode = new LRUNode(key, value, null, head)
@@ -53,49 +113,101 @@ class BerkeleyDBStore(cacheSize: Int, context: ActorContext) extends KVStore {
       head.previous = newNode
       head = newNode
 
-      if (values.size > cacheSize) {
-	evict()
+      while (cacheSize > maxCacheSize * 1024 * 1024) {
+        println("evicting")
+        val toEvict = tail.previous
+
+        val key = toEvict.key
+        val value = toEvict.value
+
+        writeCount += 1
+        val entity = new ModEntity()
+        entity.key = key
+
+        val byteOutput = new ByteArrayOutputStream()
+        val objectOutput = new ObjectOutputStream(byteOutput)
+        objectOutput.writeObject(value)
+        entity.value = byteOutput.toByteArray
+
+        pIdx.put(entity)
+        values -= toEvict.key
+        cacheSize -= getSize(value)
+
+        tail.previous = toEvict.previous
+        toEvict.previous.next = tail
       }
-    }
-  }
+    }*/
 
-  private def evict() {
-    while (values.size > cacheSize) {
-      val toEvict = tail.previous
+    val entity = new ModEntity()
+    entity.key = key
 
-      getPartition(toEvict.key) ! DBPutMessage(toEvict.key, toEvict.value)
+    val byteOutput = new ByteArrayOutputStream()
+    val objectOutput = new ObjectOutputStream(byteOutput)
+    objectOutput.writeObject(value)
+    entity.value = byteOutput.toByteArray
 
-      values -= toEvict.key
-
-      tail.previous = toEvict.previous
-      toEvict.previous.next = tail
-    }
+    pIdx.put(entity)
   }
 
   def get(key: ModId): Any = {
-    if (values.contains(key)) {
+    /*if (values.contains(key)) {
       values(key).value
     } else {
-      val future = getPartition(key) ? DBGetMessage(key)
-      Await.result(future, DURATION)
+      readCount += 1
+      val byteArray = pIdx.get(key).value
+
+      val byteInput = new ByteArrayInputStream(byteArray)
+      val objectInput = new ObjectInputStream(byteInput)
+      val obj = objectInput.readObject()
+
+      // No idea why this is necessary.
+      if (obj != null && obj.isInstanceOf[Tuple2[_, _]]) {
+        obj.toString
+      }
+
+      obj
+    }*/
+
+    val byteArray = pIdx.get(key).value
+
+    val byteInput = new ByteArrayInputStream(byteArray)
+    val objectInput = new ObjectInputStream(byteInput)
+    val obj = objectInput.readObject()
+
+    // No idea why this is necessary.
+    if (obj != null && obj.isInstanceOf[Tuple2[_, _]]) {
+      obj.toString
     }
+
+    obj
   }
 
   def remove(key: ModId) {
-    if (values.contains(key)) {
+    /*if (values.contains(key)) {
       values -= key
-    }
+    }*/
 
-    getPartition(key) ! DBDeleteMessage(key)
+    //deleteCount += 1
+    pIdx.delete(key)
+  }
+
+  def contains(key: ModId) = {
+    //values.contains(key) || pIdx.contains(key)
+    pIdx.contains(key)
   }
 
   def shutdown() {
-    for ((num, partition) <- partitions) {
-      partition ! DBShutdownMessage()
-    }
+    println("Shutting down. writes = " + writeCount + ", reads = " +
+            readCount + ", deletes = " + deleteCount)
+    store.close()
+    environment.close()
   }
+}
 
-  private def getPartition(key: ModId): ActorRef = {
-    partitions(key.hashCode % numPartitions)
-  }
+@Entity
+class ModEntity {
+  @PrimaryKey
+  var key: ModId = null
+
+  var value: Array[Byte] = null
 }

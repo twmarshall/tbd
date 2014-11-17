@@ -33,12 +33,6 @@ case class NullMessage()
 case class RegisterDatastoreMessage(id: String, datastoreRef: ActorRef)
 case class SetIdMessage(id: String)
 
-case class DBPutMessage(key: ModId, value: Any)
-case class DBGetMessage(key: ModId)
-case class DBDeleteMessage(key: ModId)
-case class DBContainsMessage(key: ModId)
-case class DBShutdownMessage()
-
 // Master
 case class RegisterMutatorMessage()
 case class RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int)
