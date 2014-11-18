@@ -130,7 +130,29 @@ class Master extends Actor with ActorLogging {
 
     case CreateListMessage(conf: ListConf) =>
       val input =
-        if (conf.chunkSize == 1) {
+        if (conf.double) {
+          val futures = Buffer[(Future[String], ActorRef)]()
+
+          var index = 0
+          for (i <- 1 to conf.partitions) {
+            val datastoreRef = datastoreRefs(nextWorker + "")
+            nextWorker = (nextWorker + 1) % workers.size
+
+            val message = CreateListMessage(conf.copy(partitionIndex = index))
+            val future = datastoreRef ? message
+            futures += ((future.mapTo[String], datastoreRef))
+
+            index += 1
+          }
+
+          val partitions = Buffer[DoubleListInput[Any, Any]]()
+          for ((future, datastoreRef) <- futures) {
+            val listId = Await.result(future, DURATION)
+            partitions += new DoubleListInput(listId, datastoreRef)
+          }
+
+          new PartitionedDoubleListInput(partitions)
+        } else if (conf.chunkSize == 1) {
           if (conf.partitions == 1) {
             val datastoreRef = datastoreRefs(nextWorker + "")
             val future = datastoreRef ? CreateListMessage(conf)
