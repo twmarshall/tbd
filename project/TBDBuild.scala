@@ -18,7 +18,7 @@ object TBDBuild extends Build {
   val mavenResolver = "Maven Central Server" at "http://central.maven.org/maven2"
 
   val commonDeps = Seq (
-    "berkeleydb"                  % "je"                   % "3.2.76",
+    "com.sleepycat"               % "je"                   % "5.0.73",
 
     "com.typesafe.akka"          %% "akka-actor"           % "2.3.2",
     "com.typesafe.akka"          %% "akka-remote"          % "2.3.2",
