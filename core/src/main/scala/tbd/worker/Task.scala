@@ -48,11 +48,12 @@ class Task
   def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
                 end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
     Future {
-      var option = c.ddg.updated.find((node: Node) =>
-        node.timestamp > start && node.timestamp < end)
+      var option = c.ddg.updated.find((timestamp: Timestamp) =>
+        timestamp > start && timestamp < end)
       while (!option.isEmpty) {
-        val node = option.get
-        c.ddg.updated -= node
+        val timestamp = option.get
+        val node = timestamp.node
+        c.ddg.updated -= timestamp
 
         node match {
           case readNode: ReadNode =>
@@ -60,16 +61,16 @@ class Task
               val newValue = c.read(readNode.mod)
 
               val oldStart = c.reexecutionStart
-              c.reexecutionStart = readNode.timestamp.getNext()
+              c.reexecutionStart = timestamp.getNext()
               val oldEnd = c.reexecutionEnd
-              c.reexecutionEnd = readNode.endTime
+              c.reexecutionEnd = timestamp.end
               val oldCurrentDest = c.currentMod
               c.currentMod = readNode.currentMod
               val oldCurrentDest2 = c.currentMod2
               c.currentMod2 = readNode.currentMod2
 
               val oldCurrentTime = c.currentTime
-              c.currentTime = readNode.timestamp
+              c.currentTime = timestamp
 
               readNode.updated = false
               readNode.reader(newValue)
@@ -90,16 +91,16 @@ class Task
               val newValue2 = c.read(readNode.mod2)
 
               val oldStart = c.reexecutionStart
-              c.reexecutionStart = readNode.timestamp.getNext()
+              c.reexecutionStart = timestamp.getNext()
               val oldEnd = c.reexecutionEnd
-              c.reexecutionEnd = readNode.endTime
+              c.reexecutionEnd = timestamp.end
               val oldCurrentDest = c.currentMod
               c.currentMod = readNode.currentMod
               val oldCurrentDest2 = c.currentMod2
               c.currentMod2 = readNode.currentMod2
 
               val oldCurrentTime = c.currentTime
-              c.currentTime = readNode.timestamp
+              c.currentTime = timestamp
 
               readNode.updated = false
               readNode.reader(newValue1, newValue2)
@@ -130,8 +131,8 @@ class Task
             }
         }
 
-        option = c.ddg.updated.find((node: Node) =>
-          node.timestamp > start && node.timestamp < end)
+        option = c.ddg.updated.find((timestamp: Timestamp) =>
+          timestamp > start && timestamp < end)
       }
 
       true

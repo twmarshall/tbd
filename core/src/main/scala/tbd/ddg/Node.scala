@@ -33,10 +33,6 @@ object Node {
 }
 
 abstract class Node {
-  var timestamp: Timestamp = _
-
-  var endTime: Timestamp = _
-
   var currentMod: Mod[Any] = null
 
   var currentMod2: Mod[Any] = null

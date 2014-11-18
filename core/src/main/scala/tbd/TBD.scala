@@ -33,16 +33,17 @@ object TBD {
       (implicit c: Context): Changeable[U] = {
     val value = c.read(mod, c.task.self)
 
-    val readNode = c.ddg.addRead(
+    val timestamp = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
       value,
       reader.asInstanceOf[Any => Changeable[Any]],
       c)
+    val readNode = timestamp.node
 
     val changeable = reader(value)
 
-    readNode.endTime = c.ddg.nextTimestamp(readNode, c)
     readNode.currentMod = c.currentMod
+    timestamp.end = c.ddg.nextTimestamp(readNode, c)
 
     changeable
   }
@@ -52,17 +53,18 @@ object TBD {
       (implicit c: Context): (Changeable[U], Changeable[V]) = {
     val value = c.read(mod, c.task.self)
 
-    val readNode = c.ddg.addRead(
+    val timestamp = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
       value,
       reader.asInstanceOf[Any => Changeable[Any]],
       c)
+    val readNode = timestamp.node
 
     val changeables = reader(value)
 
-    readNode.endTime = c.ddg.nextTimestamp(readNode, c)
     readNode.currentMod = c.currentMod
     readNode.currentMod2 = c.currentMod2
+    timestamp.end = c.ddg.nextTimestamp(readNode, c)
 
     changeables
   }
@@ -73,18 +75,19 @@ object TBD {
     val value1 = c.read(mod1, c.task.self)
     val value2 = c.read(mod2, c.task.self)
 
-    val read2Node = c.ddg.addRead2(
+    val timestamp = c.ddg.addRead2(
       mod1.asInstanceOf[Mod[Any]],
       mod2.asInstanceOf[Mod[Any]],
       value1,
       value2,
       reader.asInstanceOf[(Any, Any) => Changeable[Any]],
       c)
+    val read2Node = timestamp.node
 
     val changeable = reader(value1, value2)
 
-    read2Node.endTime = c.ddg.nextTimestamp(read2Node, c)
     read2Node.currentMod = c.currentMod
+    timestamp.end = c.ddg.nextTimestamp(read2Node, c)
 
     changeable
   }
@@ -106,16 +109,17 @@ object TBD {
 
     c.currentMod = mod1.asInstanceOf[Mod[Any]]
 
-    val modNode = c.ddg.addMod(
+    val timestamp = c.ddg.addMod(
       mod1.id,
       null,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
+    val modNode = timestamp.node
 
     initializer
 
-    modNode.endTime = c.ddg.nextTimestamp(modNode, c)
+    timestamp.end = c.ddg.nextTimestamp(modNode, c)
 
     val mod = c.currentMod
     c.currentMod = outerCurrentMod
@@ -144,16 +148,17 @@ object TBD {
     val oldCurrentDest2 = c.currentMod2
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
-    val modNode = c.ddg.addMod(
+    val timestamp = c.ddg.addMod(
       modLeft.id,
       modRight.id,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
+    val modNode = timestamp.node
 
     initializer
 
-    modNode.endTime = c.ddg.nextTimestamp(modNode, c)
+    timestamp.end = c.ddg.nextTimestamp(modNode, c)
 
     val mod = c.currentMod
     c.currentMod = oldCurrentDest
@@ -178,18 +183,19 @@ object TBD {
     val oldCurrentDest = c.currentMod
     c.currentMod = modLeft.asInstanceOf[Mod[Any]]
 
-    val modNode = c.ddg.addMod(
+    val timestamp = c.ddg.addMod(
       modLeft.id,
       null,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
+    val modNode = timestamp.node
 
     modNode.currentMod2 = c.currentMod2
 
     initializer
 
-    modNode.endTime = c.ddg.nextTimestamp(modNode, c)
+    timestamp.end = c.ddg.nextTimestamp(modNode, c)
 
     val mod = c.currentMod
     c.currentMod = oldCurrentDest
@@ -212,18 +218,19 @@ object TBD {
     val oldCurrentDest2 = c.currentMod2
     c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
 
-    val modNode = c.ddg.addMod(
+    val timestamp = c.ddg.addMod(
       null,
       modRight.id,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
+    val modNode = timestamp.node
 
     modNode.currentMod = c.currentMod
 
     initializer
 
-    modNode.endTime = c.ddg.nextTimestamp(modNode, c)
+    timestamp.end = c.ddg.nextTimestamp(modNode, c)
 
     val mod2 = c.currentMod2
     c.currentMod2 = oldCurrentDest2
@@ -280,7 +287,6 @@ object TBD {
     val twoFuture = taskRef2 ? RunTaskMessage(adjust2)
 
     val parNode = c.ddg.addPar(taskRef1, taskRef2, c)
-    parNode.endTime = c.ddg.nextTimestamp(parNode, c)
 
     val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]

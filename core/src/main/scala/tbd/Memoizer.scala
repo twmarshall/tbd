@@ -23,7 +23,7 @@ import tbd.ddg.{MemoNode, Timestamp}
 import tbd.master.Master
 
 class Memoizer[T](implicit c: Context) {
-  val memoTable = Map[Seq[Any], ArrayBuffer[MemoNode]]()
+  val memoTable = Map[Seq[Any], ArrayBuffer[Timestamp]]()
 
   import c.task.context.dispatcher
 
@@ -33,27 +33,28 @@ class Memoizer[T](implicit c: Context) {
     if (!c.initialRun && !updated(signature) && memoTable.contains(signature)) {
       // Search through the memo entries matching this signature to see if
       // there's one in the right time range.
-      for (memoNode <- memoTable(signature)) {
-        val timestamp = memoNode.timestamp
+      for (timestamp <- memoTable(signature)) {
+        val memoNode = timestamp.node.asInstanceOf[MemoNode]
+
         if (!found && timestamp >= c.reexecutionStart &&
 	    timestamp < c.reexecutionEnd) {
-          updateChangeables(memoNode, c.currentMod, c.currentMod2)
+          updateChangeables(timestamp, c.currentMod, c.currentMod2)
 
           found = true
 
-	  if (c.reexecutionStart < memoNode.timestamp) {
-	    c.ddg.ordering.splice(c.reexecutionStart, memoNode.timestamp, c)
+	  if (c.reexecutionStart < timestamp) {
+	    c.ddg.ordering.splice(c.reexecutionStart, timestamp, c)
 	  }
 
 	  // This ensures that we won't match anything under the currently
 	  // reexecuting read that comes before this memo node, since then
 	  // the timestamps would be out of order.
-	  c.reexecutionStart = memoNode.endTime.getNext()
-	  c.currentTime = memoNode.endTime
+	  c.reexecutionStart = timestamp.end.getNext()
+	  c.currentTime = timestamp.end
 
           ret = memoNode.value.asInstanceOf[T]
 
-	  val future = c.task.propagate(timestamp, memoNode.endTime)
+	  val future = c.task.propagate(timestamp, timestamp.end)
           Await.result(future, DURATION)
 	  future onComplete {
 	    case scala.util.Failure(e) => e.printStackTrace()
@@ -64,19 +65,20 @@ class Memoizer[T](implicit c: Context) {
     }
 
     if (!found) {
-      val memoNode = c.ddg.addMemo(signature, this, c)
+      val timestamp = c.ddg.addMemo(signature, this, c)
+      val memoNode = timestamp.node.asInstanceOf[MemoNode]
 
       val value = func
 
       memoNode.currentMod = c.currentMod
       memoNode.currentMod2 = c.currentMod2
-      memoNode.endTime = c.ddg.nextTimestamp(memoNode, c)
+      timestamp.end = c.ddg.nextTimestamp(memoNode, c)
       memoNode.value = value
 
       if (memoTable.contains(signature)) {
-        memoTable(signature) += memoNode
+        memoTable(signature) += timestamp
       } else {
-        memoTable += (signature -> ArrayBuffer(memoNode))
+        memoTable += (signature -> ArrayBuffer(timestamp))
       }
 
       ret = value
@@ -100,29 +102,30 @@ class Memoizer[T](implicit c: Context) {
   }
 
   private def updateChangeables(
-      memoNode: MemoNode,
+      timestamp: Timestamp,
       currentMod: Mod[Any],
       currentMod2: Mod[Any]) {
+    val memoNode = timestamp.node.asInstanceOf[MemoNode]
 
     memoNode.value match {
       case changeable: Changeable[_] =>
 	if (memoNode.currentMod != currentMod) {
 	  c.update(currentMod.id, c.read(changeable.mod))
 
-	  c.ddg.replaceMods(memoNode, memoNode.currentMod, currentMod)
+	  c.ddg.replaceMods(timestamp, memoNode, memoNode.currentMod, currentMod)
 	}
 
       case (c1: Changeable[_], c2: Changeable[_]) =>
 	if (memoNode.currentMod != currentMod) {
           c.update(currentMod.id, c.read(c1.mod))
 
-          c.ddg.replaceMods(memoNode, memoNode.currentMod, currentMod)
+          c.ddg.replaceMods(timestamp, memoNode, memoNode.currentMod, currentMod)
 	}
 
 	if (memoNode.currentMod2 != currentMod2) {
           c.update(currentMod2.id, c.read(c2.mod))
 
-          c.ddg.replaceMods(memoNode, memoNode.currentMod2, currentMod2)
+          c.ddg.replaceMods(timestamp, memoNode, memoNode.currentMod2, currentMod2)
 	}
 
       case _ =>
@@ -130,11 +133,11 @@ class Memoizer[T](implicit c: Context) {
   }
 
   def removeEntry(timestamp: Timestamp, signature: Seq[_]) {
-    var toRemove: MemoNode = null
+    var toRemove: Timestamp = null
 
-    for (memoNode <- memoTable(signature)) {
-      if (toRemove == null && memoNode.timestamp == timestamp) {
-        toRemove = memoNode
+    for (_timestamp <- memoTable(signature)) {
+      if (toRemove == null && _timestamp == timestamp) {
+        toRemove = _timestamp
       }
     }
 

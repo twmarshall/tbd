@@ -51,7 +51,7 @@ object TBD {
 
     val changeable = tbd.TBD.read(mod)(reader)(c)
 
-    val readNode = c.ddg.reads(mod.id).last
+    val readNode = c.ddg.reads(mod.id).last.node
     nodes(readNode) = (internalId, tag, stack)
 
     changeable
@@ -76,7 +76,7 @@ object TBD {
 
     val changeable = tbd.TBD.read2(mod)(reader)(c)
 
-    val readNode = c.ddg.reads(mod.id).last
+    val readNode = c.ddg.reads(mod.id).last.node
     nodes(readNode) = (internalId, tag, stack)
 
     changeable
@@ -178,8 +178,9 @@ object TBD {
     val changeable = tbd.TBD.write(value)
     val mod = changeable.mod.asInstanceOf[Mod[Any]]
 
-    val writeNode = c.ddg.addWrite(mod, null, c)
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
+    val timestamp = c.ddg.addWrite(mod, null, c)
+    val writeNode = timestamp.node
+    timestamp.end = c.ddg.nextTimestamp(writeNode, c)
 
     val writes = List(SingleWriteTag(mod.id, c.read(mod)))
     val tag = Tag.Write(writes)
@@ -197,9 +198,9 @@ object TBD {
     val mod1 = c.currentMod.asInstanceOf[Mod[Any]]
     val mod2 = c.currentMod2.asInstanceOf[Mod[Any]]
 
-    val writeNode = c.ddg.addWrite(mod1, mod2, c)
-
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
+    val timestamp = c.ddg.addWrite(mod1, mod2, c)
+    val writeNode = timestamp.node
+    timestamp.end = c.ddg.nextTimestamp(writeNode, c)
 
     val writes = List(
       SingleWriteTag(mod1.id, c.read(mod1)),
@@ -222,9 +223,9 @@ object TBD {
     val changeables = tbd.TBD.writeLeft(value, changeable)
     val mod = c.currentMod.asInstanceOf[Mod[Any]]
 
-    val writeNode = c.ddg.addWrite(mod, null, c)
-
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
+    val timestamp = c.ddg.addWrite(mod, null, c)
+    val writeNode = timestamp.node
+    timestamp.end = c.ddg.nextTimestamp(writeNode, c)
 
     val writes = List(SingleWriteTag(mod.id, c.read(mod)))
     val tag = Tag.Write(writes)
@@ -245,9 +246,9 @@ object TBD {
     val changeables = tbd.TBD.writeRight(changeable, value2)
     val mod2 = c.currentMod2.asInstanceOf[Mod[Any]]
 
-    val writeNode = c.ddg.addWrite(null, mod2, c)
-
-    writeNode.endTime = c.ddg.nextTimestamp(writeNode, c)
+    val timestamp = c.ddg.addWrite(null, mod2, c)
+    val writeNode = timestamp.node
+    timestamp.end = c.ddg.nextTimestamp(writeNode, c)
 
     val writes = List(SingleWriteTag(mod2.id, c.read(mod2)))
     val tag = Tag.Write(writes)
