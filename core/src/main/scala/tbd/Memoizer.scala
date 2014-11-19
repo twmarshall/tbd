@@ -37,30 +37,30 @@ class Memoizer[T](implicit c: Context) {
         val memoNode = timestamp.node.asInstanceOf[MemoNode]
 
         if (!found && timestamp >= c.reexecutionStart &&
-	    timestamp < c.reexecutionEnd) {
+      timestamp < c.reexecutionEnd) {
           updateChangeables(timestamp, c.currentMod, c.currentMod2)
 
           found = true
 
-	  if (c.reexecutionStart < timestamp) {
-	    c.ddg.ordering.splice(c.reexecutionStart, timestamp, c)
-	  }
+          if (c.reexecutionStart < timestamp) {
+            c.ddg.ordering.splice(c.reexecutionStart, timestamp, c)
+          }
 
-	  // This ensures that we won't match anything under the currently
-	  // reexecuting read that comes before this memo node, since then
-	  // the timestamps would be out of order.
-	  c.reexecutionStart = timestamp.end.getNext()
-	  c.currentTime = timestamp.end
+          // This ensures that we won't match anything under the currently
+          // reexecuting read that comes before this memo node, since then
+          // the timestamps would be out of order.
+          c.reexecutionStart = timestamp.end.getNext()
+          c.currentTime = timestamp.end
 
           ret = memoNode.value.asInstanceOf[T]
 
-	  val future = c.task.propagate(timestamp, timestamp.end)
+          val future = c.task.propagate(timestamp, timestamp.end)
           Await.result(future, DURATION)
-	  future onComplete {
-	    case scala.util.Failure(e) => e.printStackTrace()
-	    case _ =>
-	  }
-	}
+          future onComplete {
+            case scala.util.Failure(e) => e.printStackTrace()
+            case _ =>
+          }
+        }
       }
     }
 
@@ -93,7 +93,7 @@ class Memoizer[T](implicit c: Context) {
     for (arg <- args) {
       if (arg.isInstanceOf[Mod[_]]) {
         if (c.updatedMods.contains(arg.asInstanceOf[Mod[_]].id)) {
-	  updated = true
+          updated = true
         }
       }
     }
@@ -109,24 +109,27 @@ class Memoizer[T](implicit c: Context) {
 
     memoNode.value match {
       case changeable: Changeable[_] =>
-	if (memoNode.currentMod != currentMod) {
-	  c.update(currentMod.id, c.read(changeable.mod))
+        if (memoNode.currentMod != currentMod) {
+          c.update(currentMod.id, c.read(changeable.mod))
 
-	  c.ddg.replaceMods(timestamp, memoNode, memoNode.currentMod, currentMod)
-	}
+          c.ddg.replaceMods(
+            timestamp, memoNode, memoNode.currentMod, currentMod)
+        }
 
       case (c1: Changeable[_], c2: Changeable[_]) =>
-	if (memoNode.currentMod != currentMod) {
+        if (memoNode.currentMod != currentMod) {
           c.update(currentMod.id, c.read(c1.mod))
 
-          c.ddg.replaceMods(timestamp, memoNode, memoNode.currentMod, currentMod)
-	}
+          c.ddg.replaceMods(
+            timestamp, memoNode, memoNode.currentMod, currentMod)
+        }
 
-	if (memoNode.currentMod2 != currentMod2) {
+        if (memoNode.currentMod2 != currentMod2) {
           c.update(currentMod2.id, c.read(c2.mod))
 
-          c.ddg.replaceMods(timestamp, memoNode, memoNode.currentMod2, currentMod2)
-	}
+          c.ddg.replaceMods(
+            timestamp, memoNode, memoNode.currentMod2, currentMod2)
+        }
 
       case _ =>
     }
