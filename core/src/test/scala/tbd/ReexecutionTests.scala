@@ -147,11 +147,11 @@ class SplitTest(input: ListInput[Int, Int], input2: TableInput[Int, Int])
 
     mod {
       read(pivot) {
-	case pivot =>
-	  write(list.split(pair => {
-	    println("splitting " + pair)
-	    pair._2 < pivot
-	  }))
+        case pivot =>
+          write(list.split(pair => {
+            println("splitting " + pair)
+            pair._2 < pivot
+          }))
       }
     }
   }
@@ -235,7 +235,8 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"MapReduceTest" should "only reexecute the necessary parts" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](mutator, new ListConf(partitions = 1, chunkSize = 1))
+    val input = ListInput[Int, Int](
+      mutator, new ListConf(partitions = 1, chunkSize = 1))
     for (i <- List(6, 2, 7, 3, 8, 1, 5, 10)) {
       input.put(i, i)
     }
@@ -250,7 +251,8 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"MapTest" should "only reexecute the necessary parts" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](mutator, new ListConf(partitions = 1, chunkSize = 1))
+    val input = ListInput[Int, Int](
+      mutator, new ListConf(partitions = 1, chunkSize = 1))
     for (i <- List(6, 2, 9, 3, 5, 4, 1)) {
       input.put(i, i)
     }
@@ -307,8 +309,10 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"MergeSortTest" should "reexecute only the necessary steps" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](mutator, new ListConf(partitions = 1, chunkSize = 2))
-    for (i <- List(25, 20, 27, 4, 32, 10, 28, 22, 11, 3, 2, 31, 15, 1, 16, 17, 0, 30, 9, 24, 8, 34, 35, 5, 23, 6, 33)) {
+    val input = ListInput[Int, Int](
+      mutator, new ListConf(partitions = 1, chunkSize = 2))
+    for (i <- List(25, 20, 27, 4, 32, 10, 28, 22, 11, 3, 2, 31, 15, 1, 16, 17,
+                   0, 30, 9, 24, 8, 34, 35, 5, 23, 6, 33)) {
       input.put(i, i)
     }
     println("input = " + input.getAdjustableList())
@@ -339,7 +343,8 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"ReduceByKeyTest" should "reexecute only the necessary parts" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](mutator, new ListConf(partitions = 1, chunkSize = 1))
+    val input = ListInput[Int, Int](
+      mutator, new ListConf(partitions = 1, chunkSize = 1))
     for (i <- List(1, 2, 3, 4)) {
       input.put(i, i)
     }
@@ -349,9 +354,10 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"SortTest" should "only reexecute the least possible" in {
     val mutator = new Mutator()
-    val input = ListInput[String, String](mutator, new ListConf(chunkSize = 1, partitions = 1))
+    val input = ListInput[String, String](
+      mutator, new ListConf(chunkSize = 1, partitions = 1))
     for (i <- List("m", "q", "s", "c", "v", "i", "f", "o", "n", "b", "r", "a",
-		   "p", "g", "h", "t", "l", "u")) {
+                   "p", "g", "h", "t", "l", "u")) {
       input.put(i, i)
     }
     val output = mutator.run(new SortTest(input))
@@ -365,7 +371,8 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
   /*"SplitTest" should " asdf" in {
     val mutator = new Mutator()
-    val input = ListInput[Int, Int](mutator, new ListConf(chunkSize = 1, partitions = 1))
+    val input = ListInput[Int, Int](
+      mutator, new ListConf(chunkSize = 1, partitions = 1))
     input.put(5, 5)
     input.put(3, 3)
     input.put(6, 6)

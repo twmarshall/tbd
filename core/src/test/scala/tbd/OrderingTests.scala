@@ -24,8 +24,8 @@ class OrderingTests extends FlatSpec with Matchers {
     var previous: Timestamp = null
     for (timestamp <- timestamps) {
       if (previous != null) {
-	assert(previous < timestamp)
-	assert(timestamp > previous)
+        assert(previous < timestamp)
+        assert(timestamp > previous)
       }
       previous = timestamp
     }
@@ -156,15 +156,15 @@ class OrderingTests extends FlatSpec with Matchers {
       var appended: Timestamp = null
       var lastAppended: Timestamp = null
       for (j <- 1 to 5) {
-	appended = ordering.append(null)
+        appended = ordering.append(null)
 
-	if (lastAppended != null) {
-	  checkOrdering(List(start, middle, end, lastAppended, appended))
-	} else {
-	  checkOrdering(List(start, middle, end, appended))
-	}
+        if (lastAppended != null) {
+          checkOrdering(List(start, middle, end, lastAppended, appended))
+        } else {
+          checkOrdering(List(start, middle, end, appended))
+        }
 
-	lastAppended = appended
+        lastAppended = appended
       }
     }
   }
