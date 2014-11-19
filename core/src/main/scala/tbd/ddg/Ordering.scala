@@ -146,10 +146,10 @@ class Ordering {
       if (time.end != null) {
 	node match {
 	  case modNode: ModNode =>
-	    if (modNode.modId1 != null) {
+	    if (modNode.modId1 != -1) {
 	      mods += modNode.modId1
 	    }
-	    if (modNode.modId2 != null) {
+	    if (modNode.modId2 != -1) {
 	      mods += modNode.modId2
 	    }
 	  case _ =>
@@ -177,20 +177,20 @@ class Ordering {
 	  case modNode: ModNode =>
 	    if (modNode.modizer != null) {
 	      if (modNode.modizer.remove(modNode.key, c)) {
-		if (modNode.modId1 != null) {
+		if (modNode.modId1 != -1) {
 		  c.remove(modNode.modId1)
 		}
 
-		if (modNode.modId2 != null) {
+		if (modNode.modId2 != -1) {
 		  c.remove(modNode.modId2)
 		}
 	      }
 	    } else {
-	      if (modNode.modId1 != null) {
+	      if (modNode.modId1 != -1) {
 		c.remove(modNode.modId1)
 	      }
 
-	      if (modNode.modId2 != null) {
+	      if (modNode.modId2 != -1) {
 		c.remove(modNode.modId2)
 	      }
 	    }

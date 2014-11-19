@@ -27,7 +27,7 @@ import tbd.messages._
 import tbd.worker.Task
 
 class Context
-    (id: String,
+    (taskId: TaskId,
      val task: Task,
      val datastore: ActorRef,
      val masterRef: ActorRef) {
@@ -61,15 +61,20 @@ class Context
   // is one.
   var currentModId2: ModId = _
 
-  private var nextModId = 0
+  private var nextModId: ModId = 0
 
   val pending = Buffer[Future[String]]()
 
   var epoch = 0
 
   def newModId(): ModId = {
+    var newModId: Long = taskId
+    newModId = newModId << 32
+    newModId += nextModId
+
     nextModId += 1
-    id + "." + nextModId
+
+    newModId
   }
 
   def read[T](mod: Mod[T], taskRef: ActorRef = null): T = {

@@ -108,7 +108,7 @@ object TBD {
 
     val timestamp = c.ddg.addMod(
       mod1.id,
-      null,
+      -1,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
@@ -179,7 +179,7 @@ object TBD {
 
     val timestamp = c.ddg.addMod(
       modLeft.id,
-      null,
+      -1,
       modizer.asInstanceOf[Modizer[Any]],
       key,
       c)
@@ -211,7 +211,7 @@ object TBD {
     c.currentModId2 = modRight.id
 
     val timestamp = c.ddg.addMod(
-      null,
+      -1,
       modRight.id,
       modizer.asInstanceOf[Modizer[Any]],
       key,
@@ -261,8 +261,8 @@ object TBD {
      new Changeable[U](c.currentModId2))
   }
 
-  def parWithHint[T, U](one: Context => T, workerId1: String = null)
-      (two: Context => U, workerId2: String = null)
+  def parWithHint[T, U](one: Context => T, workerId1: WorkerId = -1)
+      (two: Context => U, workerId2: WorkerId = -1)
       (implicit c: Context): (T, U) = {
     val future1 = c.masterRef ? ScheduleTaskMessage(c.task.self, workerId1)
     val taskRef1 = Await.result(future1.mapTo[ActorRef], DURATION)

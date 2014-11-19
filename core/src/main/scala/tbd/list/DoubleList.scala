@@ -19,13 +19,13 @@ import java.io.Serializable
 import scala.collection.mutable.{Buffer, Map}
 
 import tbd._
-import tbd.Constants.ModId
+import tbd.Constants._
 import tbd.TBD._
 
 class DoubleList[T, U]
     (val head: Mod[DoubleListNode[T, U]],
      val sorted: Boolean = false,
-     val workerId: String = null)
+     val workerId: WorkerId = -1)
   extends AdjustableList[T, U] with Serializable {
 
   def filter(pred: ((T, U)) => Boolean)

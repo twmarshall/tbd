@@ -28,7 +28,7 @@ import tbd.messages._
 
 object Task {
   def props
-      (taskId: String,
+      (taskId: TaskId,
        parent: ActorRef,
        datastore: ActorRef,
        masterRef: ActorRef): Props =
@@ -36,7 +36,7 @@ object Task {
 }
 
 class Task
-    (val taskId: String,
+    (taskId: TaskId,
      parent: ActorRef,
      datastore: ActorRef,
      masterRef: ActorRef)

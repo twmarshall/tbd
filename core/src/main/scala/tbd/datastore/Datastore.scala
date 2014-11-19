@@ -37,7 +37,7 @@ class Datastore
      cacheSize: Int) extends Actor with ActorLogging {
   import context.dispatcher
 
-  var workerId: String = _
+  var workerId: WorkerId = _
 
   private val store = storeType match {
     case "memory" => new MemoryStore()
@@ -53,17 +53,20 @@ class Datastore
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
   // Maps logical names of datastores to their references.
-  private val datastores = Map[String, ActorRef]()
+  private val datastores = Map[WorkerId, ActorRef]()
 
   private var misses = 0
 
   def createMod[T](value: T): Mod[T] = {
-    val modId = workerId + ":" + nextModId
+    var newModId: Long = workerId
+    newModId = newModId << 48
+    newModId += nextModId
+
     nextModId += 1
 
-    store.put(modId, value)
+    store.put(newModId, value)
 
-    new Mod(modId)
+    new Mod(newModId)
   }
 
   def read[T](mod: Mod[T]): T = {
@@ -78,7 +81,7 @@ class Datastore
       else
         value
     } else {
-      val workerId = modId.split(":")(0)
+      val workerId = getWorkerId(modId)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)
 
       /*misses += 1
@@ -255,10 +258,10 @@ class Datastore
       lists(listId).putAfter(key, newPair)
       sender ! "okay"
 
-    case RegisterDatastoreMessage(workerId: String, datastoreRef: ActorRef) =>
+    case RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef) =>
       datastores(workerId) = datastoreRef
 
-    case SetIdMessage(_workerId: String) =>
+    case SetIdMessage(_workerId: WorkerId) =>
       workerId = _workerId
 
     case x =>

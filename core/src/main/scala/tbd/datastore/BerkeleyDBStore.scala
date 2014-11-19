@@ -26,8 +26,7 @@ import scala.collection.mutable.Map
 import scala.concurrent.Await
 
 import tbd.Mod
-import tbd.Constants._
-import tbd.messages._
+import tbd.Constants.ModId
 
 class LRUNode(
   val key: ModId,
@@ -64,11 +63,11 @@ class BerkeleyDBStore
     }
   }
 
-  val pIdx = store.getPrimaryIndex(classOf[ModId], classOf[ModEntity])
+  val pIdx = store.getPrimaryIndex(classOf[java.lang.Long], classOf[ModEntity])
 
   // LRU cache
   private val values = Map[ModId, LRUNode]()
-  private val tail = new LRUNode(null, null, null, null)
+  private val tail = new LRUNode(-1, null, null, null)
   private var head = tail
 
   // Statistics
@@ -207,7 +206,7 @@ class BerkeleyDBStore
 @Entity
 class ModEntity {
   @PrimaryKey
-  var key: ModId = null
+  var key: java.lang.Long = -1
 
   var value: Array[Byte] = null
 }

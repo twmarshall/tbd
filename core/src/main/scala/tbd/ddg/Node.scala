@@ -20,8 +20,7 @@ import akka.pattern.ask
 import scala.concurrent.Await
 
 import tbd._
-import tbd.Constants._
-import tbd.messages._
+import tbd.Constants.ModId
 
 object Node {
   var id = 0
@@ -33,9 +32,9 @@ object Node {
 }
 
 abstract class Node {
-  var currentModId: ModId = null
+  var currentModId: ModId = -1
 
-  var currentModId2: ModId = null
+  var currentModId2: ModId = -1
 
   var updated = false
 }

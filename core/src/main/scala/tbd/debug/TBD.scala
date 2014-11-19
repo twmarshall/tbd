@@ -178,7 +178,7 @@ object TBD {
     val changeable = tbd.TBD.write(value)
     val modId = changeable.modId
 
-    val timestamp = c.ddg.addWrite(modId, null, c)
+    val timestamp = c.ddg.addWrite(modId, -1, c)
     val writeNode = timestamp.node
     timestamp.end = c.ddg.nextTimestamp(writeNode, c)
 
@@ -223,7 +223,7 @@ object TBD {
     val changeables = tbd.TBD.writeLeft(value, changeable)
     val modId = c.currentModId
 
-    val timestamp = c.ddg.addWrite(modId, null, c)
+    val timestamp = c.ddg.addWrite(modId, -1, c)
     val writeNode = timestamp.node
     timestamp.end = c.ddg.nextTimestamp(writeNode, c)
 
@@ -246,7 +246,7 @@ object TBD {
     val changeables = tbd.TBD.writeRight(changeable, value2)
     val modId2 = c.currentModId2
 
-    val timestamp = c.ddg.addWrite(null, modId2, c)
+    val timestamp = c.ddg.addWrite(-1, modId2, c)
     val writeNode = timestamp.node
     timestamp.end = c.ddg.nextTimestamp(writeNode, c)
 

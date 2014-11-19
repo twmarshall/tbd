@@ -30,15 +30,15 @@ case class GetModMessage(modId: ModId, task: ActorRef)
 case class UpdateModMessage(modId: ModId, value: Any, task: ActorRef)
 case class RemoveModsMessage(mods: Iterable[ModId])
 case class NullMessage()
-case class RegisterDatastoreMessage(id: String, datastoreRef: ActorRef)
-case class SetIdMessage(id: String)
+case class RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef)
+case class SetIdMessage(workerId: WorkerId)
 
 // Master
 case class RegisterMutatorMessage()
 case class RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int)
 case class PropagateMutatorMessage(mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
-case class ScheduleTaskMessage(parent: ActorRef, workerId: String = null)
+case class ScheduleTaskMessage(parent: ActorRef, workerId: WorkerId = -1)
 case class ShutdownMutatorMessage(mutatorId: Int)
 
 case class CreateListMessage(conf: ListConf)

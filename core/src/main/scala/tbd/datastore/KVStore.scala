@@ -15,7 +15,7 @@
  */
 package tbd.datastore
 
-import tbd.Constants._
+import tbd.Constants.ModId
 
 trait KVStore {
   def put(key: ModId, value: Any)
