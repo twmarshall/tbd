@@ -38,7 +38,7 @@ class Memoizer[T](implicit c: Context) {
 
         if (!found && timestamp >= c.reexecutionStart &&
       timestamp < c.reexecutionEnd) {
-          updateChangeables(timestamp, c.currentMod, c.currentMod2)
+          updateChangeables(timestamp)
 
           found = true
 
@@ -70,8 +70,8 @@ class Memoizer[T](implicit c: Context) {
 
       val value = func
 
-      memoNode.currentMod = c.currentMod
-      memoNode.currentMod2 = c.currentMod2
+      memoNode.currentModId = c.currentModId
+      memoNode.currentModId2 = c.currentModId2
       timestamp.end = c.ddg.nextTimestamp(memoNode, c)
       memoNode.value = value
 
@@ -101,34 +101,31 @@ class Memoizer[T](implicit c: Context) {
     updated
   }
 
-  private def updateChangeables(
-      timestamp: Timestamp,
-      currentMod: Mod[Any],
-      currentMod2: Mod[Any]) {
+  private def updateChangeables(timestamp: Timestamp) {
     val memoNode = timestamp.node.asInstanceOf[MemoNode]
 
     memoNode.value match {
       case changeable: Changeable[_] =>
-        if (memoNode.currentMod != currentMod) {
-          c.update(currentMod.id, c.read(changeable.mod))
+        if (memoNode.currentModId != c.currentModId) {
+          c.update(c.currentModId, c.readId(changeable.modId))
 
           c.ddg.replaceMods(
-            timestamp, memoNode, memoNode.currentMod, currentMod)
+            timestamp, memoNode, memoNode.currentModId, c.currentModId)
         }
 
       case (c1: Changeable[_], c2: Changeable[_]) =>
-        if (memoNode.currentMod != currentMod) {
-          c.update(currentMod.id, c.read(c1.mod))
+        if (memoNode.currentModId != c.currentModId) {
+          c.update(c.currentModId, c.readId(c1.modId))
 
           c.ddg.replaceMods(
-            timestamp, memoNode, memoNode.currentMod, currentMod)
+            timestamp, memoNode, memoNode.currentModId, c.currentModId)
         }
 
-        if (memoNode.currentMod2 != currentMod2) {
-          c.update(currentMod2.id, c.read(c2.mod))
+        if (memoNode.currentModId2 != c.currentModId2) {
+          c.update(c.currentModId2, c.readId(c2.modId))
 
           c.ddg.replaceMods(
-            timestamp, memoNode, memoNode.currentMod2, currentMod2)
+            timestamp, memoNode, memoNode.currentModId2, c.currentModId2)
         }
 
       case _ =>

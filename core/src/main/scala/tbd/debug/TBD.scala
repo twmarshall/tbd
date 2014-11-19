@@ -176,13 +176,13 @@ object TBD {
     val stack = Thread.currentThread().getStackTrace()
 
     val changeable = tbd.TBD.write(value)
-    val mod = changeable.mod.asInstanceOf[Mod[Any]]
+    val modId = changeable.modId
 
-    val timestamp = c.ddg.addWrite(mod, null, c)
+    val timestamp = c.ddg.addWrite(modId, null, c)
     val writeNode = timestamp.node
     timestamp.end = c.ddg.nextTimestamp(writeNode, c)
 
-    val writes = List(SingleWriteTag(mod.id, c.read(mod)))
+    val writes = List(SingleWriteTag(modId, c.readId(modId)))
     val tag = Tag.Write(writes)
     nodes(writeNode) = (internalId, tag, stack)
 
@@ -195,16 +195,16 @@ object TBD {
     val stack = Thread.currentThread().getStackTrace()
 
     val changeables = tbd.TBD.write2(value, value2)
-    val mod1 = c.currentMod.asInstanceOf[Mod[Any]]
-    val mod2 = c.currentMod2.asInstanceOf[Mod[Any]]
+    val modId = c.currentModId
+    val modId2 = c.currentModId2
 
-    val timestamp = c.ddg.addWrite(mod1, mod2, c)
+    val timestamp = c.ddg.addWrite(modId, modId2, c)
     val writeNode = timestamp.node
     timestamp.end = c.ddg.nextTimestamp(writeNode, c)
 
     val writes = List(
-      SingleWriteTag(mod1.id, c.read(mod1)),
-      SingleWriteTag(mod1.id, c.read(mod1)))
+      SingleWriteTag(modId, c.readId(modId)),
+      SingleWriteTag(modId2, c.readId(modId2)))
     val tag = Tag.Write(writes)
     nodes(writeNode) = (internalId, tag, stack)
 
@@ -216,18 +216,18 @@ object TBD {
     val internalId = Node.getId()
     val stack = Thread.currentThread().getStackTrace()
 
-    if (changeable.mod != c.currentMod2) {
+    if (changeable.modId != c.currentModId2) {
       println("WARNING - mod parameter to writeLeft doesn't match currentMod2")
     }
 
     val changeables = tbd.TBD.writeLeft(value, changeable)
-    val mod = c.currentMod.asInstanceOf[Mod[Any]]
+    val modId = c.currentModId
 
-    val timestamp = c.ddg.addWrite(mod, null, c)
+    val timestamp = c.ddg.addWrite(modId, null, c)
     val writeNode = timestamp.node
     timestamp.end = c.ddg.nextTimestamp(writeNode, c)
 
-    val writes = List(SingleWriteTag(mod.id, c.read(mod)))
+    val writes = List(SingleWriteTag(modId, c.readId(modId)))
     val tag = Tag.Write(writes)
     nodes(writeNode) = (internalId, tag, stack)
 
@@ -239,18 +239,18 @@ object TBD {
     val internalId = Node.getId()
     val stack = Thread.currentThread().getStackTrace()
 
-    if (changeable.mod != c.currentMod) {
+    if (changeable.modId != c.currentModId) {
       println("WARNING - mod parameter to writeRight doesn't match currentMod")
     }
 
     val changeables = tbd.TBD.writeRight(changeable, value2)
-    val mod2 = c.currentMod2.asInstanceOf[Mod[Any]]
+    val modId2 = c.currentModId2
 
-    val timestamp = c.ddg.addWrite(null, mod2, c)
+    val timestamp = c.ddg.addWrite(null, modId2, c)
     val writeNode = timestamp.node
     timestamp.end = c.ddg.nextTimestamp(writeNode, c)
 
-    val writes = List(SingleWriteTag(mod2.id, c.read(mod2)))
+    val writes = List(SingleWriteTag(modId2, c.readId(modId2)))
     val tag = Tag.Write(writes)
     nodes(writeNode) = (internalId, tag, stack)
 
@@ -259,7 +259,7 @@ object TBD {
 
   @functionToInvoke("parInternal")
   def par[T](one: Context => T): Parizer[T] =
-	macro TbdMacros.parOneMacro[Parizer[T]]
+        macro TbdMacros.parOneMacro[Parizer[T]]
 
   def parInternal[T](
       one: Context => T,

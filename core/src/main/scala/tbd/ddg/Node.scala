@@ -33,9 +33,9 @@ object Node {
 }
 
 abstract class Node {
-  var currentMod: Mod[Any] = null
+  var currentModId: ModId = null
 
-  var currentMod2: Mod[Any] = null
+  var currentModId2: ModId = null
 
   var updated = false
 }
@@ -70,4 +70,4 @@ class Read2Node
 
 class RootNode extends Node
 
-class WriteNode(val mod: Mod[Any], val mod2: Mod[Any]) extends Node
+class WriteNode(val modId: ModId, val modId2: ModId) extends Node

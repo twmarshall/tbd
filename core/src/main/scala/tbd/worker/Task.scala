@@ -64,10 +64,10 @@ class Task
               c.reexecutionStart = timestamp.getNext()
               val oldEnd = c.reexecutionEnd
               c.reexecutionEnd = timestamp.end
-              val oldCurrentDest = c.currentMod
-              c.currentMod = readNode.currentMod
-              val oldCurrentDest2 = c.currentMod2
-              c.currentMod2 = readNode.currentMod2
+              val oldCurrentModId = c.currentModId
+              c.currentModId = readNode.currentModId
+              val oldCurrentModId2 = c.currentModId2
+              c.currentModId2 = readNode.currentModId2
 
               val oldCurrentTime = c.currentTime
               c.currentTime = timestamp
@@ -81,8 +81,8 @@ class Task
 
               c.reexecutionStart = oldStart
               c.reexecutionEnd = oldEnd
-              c.currentMod = oldCurrentDest
-              c.currentMod2 = oldCurrentDest2
+              c.currentModId = oldCurrentModId
+              c.currentModId2 = oldCurrentModId2
               c.currentTime = oldCurrentTime
             }
           case readNode: Read2Node =>
@@ -94,10 +94,10 @@ class Task
               c.reexecutionStart = timestamp.getNext()
               val oldEnd = c.reexecutionEnd
               c.reexecutionEnd = timestamp.end
-              val oldCurrentDest = c.currentMod
-              c.currentMod = readNode.currentMod
-              val oldCurrentDest2 = c.currentMod2
-              c.currentMod2 = readNode.currentMod2
+              val oldCurrentModId = c.currentModId
+              c.currentModId = readNode.currentModId
+              val oldCurrentModId2 = c.currentModId2
+              c.currentModId2 = readNode.currentModId2
 
               val oldCurrentTime = c.currentTime
               c.currentTime = timestamp
@@ -111,8 +111,8 @@ class Task
 
               c.reexecutionStart = oldStart
               c.reexecutionEnd = oldEnd
-              c.currentMod = oldCurrentDest
-              c.currentMod2 = oldCurrentDest2
+              c.currentModId = oldCurrentModId
+              c.currentModId2 = oldCurrentModId2
               c.currentTime = oldCurrentTime
             }
           case parNode: ParNode =>

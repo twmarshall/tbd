@@ -55,11 +55,11 @@ class Context
 
   // The mod created by the most recent (in scope) call to mod. This is
   // what a call to write will write to.
-  var currentMod: Mod[Any] = _
+  var currentModId: ModId = _
 
   // The second mod created by the most recent call to mod2, if there
   // is one.
-  var currentMod2: Mod[Any] = _
+  var currentModId2: ModId = _
 
   private var nextModId = 0
 
@@ -80,6 +80,16 @@ class Context
       case NullMessage => null
       case x => x
     }).asInstanceOf[T]
+  }
+
+  def readId(modId: ModId): Any = {
+    val future = datastore ? GetModMessage(modId, null)
+    val ret = Await.result(future, DURATION)
+
+    ret match {
+      case NullMessage => null
+      case x => x
+    }
   }
 
   def update[T](modId: ModId, value: T) {

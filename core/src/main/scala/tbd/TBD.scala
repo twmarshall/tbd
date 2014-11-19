@@ -42,7 +42,7 @@ object TBD {
 
     val changeable = reader(value)
 
-    readNode.currentMod = c.currentMod
+    readNode.currentModId = c.currentModId
     timestamp.end = c.ddg.nextTimestamp(readNode, c)
 
     changeable
@@ -62,8 +62,8 @@ object TBD {
 
     val changeables = reader(value)
 
-    readNode.currentMod = c.currentMod
-    readNode.currentMod2 = c.currentMod2
+    readNode.currentModId = c.currentModId
+    readNode.currentModId2 = c.currentModId2
     timestamp.end = c.ddg.nextTimestamp(readNode, c)
 
     changeables
@@ -86,7 +86,7 @@ object TBD {
 
     val changeable = reader(value1, value2)
 
-    read2Node.currentMod = c.currentMod
+    read2Node.currentModId = c.currentModId
     timestamp.end = c.ddg.nextTimestamp(read2Node, c)
 
     changeable
@@ -105,9 +105,9 @@ object TBD {
        modizer: Modizer[T],
        key: Any,
        c: Context): Mod[T] = {
-    val outerCurrentMod = c.currentMod
+    val oldCurrentModId = c.currentModId
 
-    c.currentMod = mod1.asInstanceOf[Mod[Any]]
+    c.currentModId = mod1.id
 
     val timestamp = c.ddg.addMod(
       mod1.id,
@@ -121,10 +121,9 @@ object TBD {
 
     timestamp.end = c.ddg.nextTimestamp(modNode, c)
 
-    val mod = c.currentMod
-    c.currentMod = outerCurrentMod
+    c.currentModId = oldCurrentModId
 
-    mod.asInstanceOf[Mod[T]]
+    mod1
   }
 
   def mod2[T, U](initializer: => (Changeable[T], Changeable[U]))
@@ -142,11 +141,11 @@ object TBD {
        modizer: Modizer2[T, U],
        key: Any,
        c: Context): (Mod[T], Mod[U]) = {
-    val oldCurrentDest = c.currentMod
-    c.currentMod = modLeft.asInstanceOf[Mod[Any]]
+    val oldCurrentModId = c.currentModId
+    c.currentModId = modLeft.id
 
-    val oldCurrentDest2 = c.currentMod2
-    c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
+    val oldCurrentModId2 = c.currentModId2
+    c.currentModId2 = modRight.id
 
     val timestamp = c.ddg.addMod(
       modLeft.id,
@@ -160,12 +159,10 @@ object TBD {
 
     timestamp.end = c.ddg.nextTimestamp(modNode, c)
 
-    val mod = c.currentMod
-    c.currentMod = oldCurrentDest
-    val mod2 = c.currentMod2
-    c.currentMod2 = oldCurrentDest2
+    c.currentModId = oldCurrentModId
+    c.currentModId2 = oldCurrentModId2
 
-    (mod.asInstanceOf[Mod[T]], mod2.asInstanceOf[Mod[U]])
+    (modLeft, modRight)
   }
 
   def modLeft[T, U](initializer: => (Changeable[T], Changeable[U]))
@@ -180,8 +177,8 @@ object TBD {
        key: Any,
        c: Context): (Mod[T], Changeable[U]) = {
 
-    val oldCurrentDest = c.currentMod
-    c.currentMod = modLeft.asInstanceOf[Mod[Any]]
+    val oldCurrentModId = c.currentModId
+    c.currentModId = modLeft.id
 
     val timestamp = c.ddg.addMod(
       modLeft.id,
@@ -191,17 +188,15 @@ object TBD {
       c)
     val modNode = timestamp.node
 
-    modNode.currentMod2 = c.currentMod2
+    modNode.currentModId2 = c.currentModId2
 
     initializer
 
     timestamp.end = c.ddg.nextTimestamp(modNode, c)
 
-    val mod = c.currentMod
-    c.currentMod = oldCurrentDest
+    c.currentModId = oldCurrentModId
 
-    (mod.asInstanceOf[Mod[T]],
-     new Changeable(c.currentMod2.asInstanceOf[Mod[U]]))
+    (modLeft, new Changeable[U](c.currentModId2))
   }
 
   def modRight[T, U](initializer: => (Changeable[T], Changeable[U]))
@@ -215,8 +210,8 @@ object TBD {
        modizer: Modizer2[T, U],
        key: Any,
        c: Context): (Changeable[T], Mod[U]) = {
-    val oldCurrentDest2 = c.currentMod2
-    c.currentMod2 = modRight.asInstanceOf[Mod[Any]]
+    val oldCurrentModId2 = c.currentModId2
+    c.currentModId2 = modRight.id
 
     val timestamp = c.ddg.addMod(
       null,
@@ -226,49 +221,47 @@ object TBD {
       c)
     val modNode = timestamp.node
 
-    modNode.currentMod = c.currentMod
+    modNode.currentModId = c.currentModId
 
     initializer
 
     timestamp.end = c.ddg.nextTimestamp(modNode, c)
 
-    val mod2 = c.currentMod2
-    c.currentMod2 = oldCurrentDest2
+    c.currentModId2 = oldCurrentModId2
 
-    (new Changeable(c.currentMod.asInstanceOf[Mod[T]]),
-     mod2.asInstanceOf[Mod[U]])
+    (new Changeable[T](c.currentModId), modRight)
   }
 
   def write[T](value: T)(implicit c: Context): Changeable[T] = {
-    c.update(c.currentMod.id, value)
+    c.update(c.currentModId, value)
 
-    (new Changeable(c.currentMod)).asInstanceOf[Changeable[T]]
+    (new Changeable[T](c.currentModId))
   }
 
   def write2[T, U](value: T, value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    c.update(c.currentMod.id, value)
+    c.update(c.currentModId, value)
 
-    c.update(c.currentMod2.id, value2)
+    c.update(c.currentModId2, value2)
 
-    (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
-     new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
+    (new Changeable[T](c.currentModId),
+     new Changeable[U](c.currentModId2))
   }
 
   def writeLeft[T, U](value: T, changeable: Changeable[U])
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    c.update(c.currentMod.id, value)
+    c.update(c.currentModId, value)
 
-    (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
-     new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
+    (new Changeable[T](c.currentModId),
+     new Changeable[U](c.currentModId2))
   }
 
   def writeRight[T, U](changeable: Changeable[T], value2: U)
       (implicit c: Context): (Changeable[T], Changeable[U]) = {
-    c.update(c.currentMod2.id, value2)
+    c.update(c.currentModId2, value2)
 
-    (new Changeable(c.currentMod).asInstanceOf[Changeable[T]],
-     new Changeable(c.currentMod2).asInstanceOf[Changeable[U]])
+    (new Changeable[T](c.currentModId),
+     new Changeable[U](c.currentModId2))
   }
 
   def parWithHint[T, U](one: Context => T, workerId1: String = null)

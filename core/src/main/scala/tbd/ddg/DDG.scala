@@ -90,11 +90,11 @@ class DDG {
     timestamp
   }
 
-  def addWrite[T]
-      (mod: Mod[Any],
-       mod2: Mod[Any],
+  def addWrite
+      (modId: ModId,
+       modId2: ModId,
        c: Context): Timestamp = {
-    val writeNode = new WriteNode(mod, mod2)
+    val writeNode = new WriteNode(modId, modId2)
     val timestamp = nextTimestamp(writeNode, c)
 
     timestamp
@@ -128,9 +128,9 @@ class DDG {
   def nextTimestamp(node: Node, c: Context): Timestamp = {
     val time =
       if (c.initialRun)
-	ordering.append(node)
+        ordering.append(node)
       else
-	ordering.after(c.currentTime, node)
+        ordering.after(c.currentTime, node)
 
     c.currentTime = time
 
@@ -142,7 +142,7 @@ class DDG {
       if (!timestamp.node.updated) {
         updated += timestamp
 
-	timestamp.node.updated = true
+        timestamp.node.updated = true
       }
     }
   }
@@ -169,11 +169,15 @@ class DDG {
   }
 
   /**
-   * Replaces all of the mods equal to mod1 with mod2 in the subtree rooted at
-   * node. This is called when a memo match is made where the memo node has a
-   * currentMod that's different from the Context's currentMod.
+   * Replaces all of the mods equal to toReplace with newModId in the subtree
+   * rooted at node. This is called when a memo match is made where the memo
+   * node has a currentMod that's different from the Context's currentMod.
    */
-  def replaceMods(_timestamp: Timestamp, _node: Node, mod1: Mod[Any], mod2: Mod[Any]): Buffer[Node] = {
+  def replaceMods
+      (_timestamp: Timestamp,
+       _node: Node,
+       toReplace: ModId,
+       newModId: ModId): Buffer[Node] = {
     val buf = Buffer[Node]()
 
     var time = _timestamp
@@ -181,23 +185,23 @@ class DDG {
       val node = time.node
 
       if (time.end != null) {
-        if (node.currentMod == mod1) {
+        if (node.currentModId == toReplace) {
 
-	  buf += time.node
-	  process(node, mod1, mod2)
+          buf += time.node
+          replace(node, toReplace, newModId)
 
-	  node.currentMod = mod2
-	} else if (node.currentMod2 == mod1) {
+          node.currentModId = newModId
+        } else if (node.currentModId2 == toReplace) {
           if (time.end != null) {
-	    buf += time.node
-	    process(node, mod1, mod2)
+            buf += time.node
+            replace(node, toReplace, newModId)
 
-	    node.currentMod2 = mod2
-	  }
+            node.currentModId2 = newModId
+          }
         } else {
           // Skip the subtree rooted at this node since this node doesn't have
-          // mod1 as its currentMod and therefore none of its children can either.
-	  time = time.end
+          // toReplace as its currentModId and therefore no children can either.
+          time = time.end
         }
       }
 
@@ -207,24 +211,24 @@ class DDG {
     buf
   }
 
-  private def process(node: Node, mod1: Mod[Any], mod2: Mod[Any]) {
+  private def replace(node: Node, toReplace: ModId, newModId: ModId) {
     node match {
       case memoNode: MemoNode =>
-	memoNode.value match {
-	  case changeable: Changeable[_] =>
-	    if (changeable.mod == mod1) {
-	      changeable.asInstanceOf[Changeable[Any]].mod = mod2
-	    }
-	  case (c1: Changeable[_], c2: Changeable[_]) =>
-	    if (c1.mod == mod1) {
-	      c1.asInstanceOf[Changeable[Any]].mod = mod2
-	    }
+        memoNode.value match {
+          case changeable: Changeable[_] =>
+            if (changeable.modId == toReplace) {
+              changeable.modId = newModId
+            }
+          case (c1: Changeable[_], c2: Changeable[_]) =>
+            if (c1.modId == toReplace) {
+              c1.modId = newModId
+            }
 
-	    if (c2.mod == mod1) {
-	      c2.asInstanceOf[Changeable[Any]].mod = mod2
-	    }
-	  case _ =>
-	}
+            if (c2.modId == toReplace) {
+              c2.modId = newModId
+            }
+          case _ =>
+        }
       case _ =>
     }
   }
@@ -239,36 +243,35 @@ class DDG {
     val out = new StringBuffer("")
     def innerToString(time: Timestamp, prefix: String) {
       val thisString = time.node match {
-	case memo: MemoNode =>
-	  prefix + memo + " time = " + time + " to " + time.end +
-	  " signature=" + memo.signature + "\n"
-	case mod: ModNode =>
-	  prefix + mod + " time = " + time + " to " + time.end + "\n"
-	case par: ParNode =>
-	  val future1 = par.taskRef1 ? GetTaskDDGMessage
-	  val future2 = par.taskRef2 ? GetTaskDDGMessage
+        case memo: MemoNode =>
+          prefix + memo + " time = " + time + " to " + time.end +
+          " signature=" + memo.signature + "\n"
+        case mod: ModNode =>
+          prefix + mod + " time = " + time + " to " + time.end + "\n"
+        case par: ParNode =>
+          val future1 = par.taskRef1 ? GetTaskDDGMessage
+          val future2 = par.taskRef2 ? GetTaskDDGMessage
 
-	  val ddg1 = Await.result(future1.mapTo[DDG], DURATION)
-	  val ddg2 = Await.result(future2.mapTo[DDG], DURATION)
+          val ddg1 = Await.result(future1.mapTo[DDG], DURATION)
+          val ddg2 = Await.result(future2.mapTo[DDG], DURATION)
 
-	  prefix + par + " pebbles=(" + par.pebble1 +
-	  ", " + par.pebble2 + ")\n" + ddg1.toString(prefix + "|") +
-	  ddg2.toString(prefix + "|")
-	case read: ReadNode =>
-	  prefix + read + " modId=(" + read.mod.id + ") " + " time=" +
-	  time + " to " + time.end + " value=" + read.mod +
-	  " updated=(" + read.updated + ")\n"
-	case root: RootNode =>
-	  prefix + "RootNode=" + root + "\n"
-	case write: WriteNode =>
-	  prefix + write + " modId=(" + write.mod.id + ") " +
-	  " value=" + write.mod + "\n"
-	case x => "???"
+          prefix + par + " pebbles=(" + par.pebble1 +
+          ", " + par.pebble2 + ")\n" + ddg1.toString(prefix + "|") +
+          ddg2.toString(prefix + "|")
+        case read: ReadNode =>
+          prefix + read + " modId=(" + read.mod.id + ") " + " time=" +
+          time + " to " + time.end + " value=" + read.mod +
+          " updated=(" + read.updated + ")\n"
+        case root: RootNode =>
+          prefix + "RootNode=" + root + "\n"
+        case write: WriteNode =>
+          prefix + write + " modId=(" + write.modId + ")\n"
+        case x => "???"
       }
       out.append(thisString)
 
       for (time <- ordering.getChildren(time, time.end)) {
-	innerToString(time, prefix + "-")
+        innerToString(time, prefix + "-")
       }
     }
     innerToString(startTime.getNext(), prefix)
