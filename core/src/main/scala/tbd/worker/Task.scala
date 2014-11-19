@@ -57,8 +57,8 @@ class Task
 
         node match {
           case readNode: ReadNode =>
-            if (readNode.updated) {
-              val newValue = c.readId(readNode.modId)
+            if (ReadNode.getUpdated(timestamp.pointer)) {
+              val newValue = c.readId(ReadNode.getModId(timestamp.pointer))
 
               val oldStart = c.reexecutionStart
               c.reexecutionStart = timestamp.getNext()
@@ -72,11 +72,11 @@ class Task
               val oldCurrentTime = c.currentTime
               c.currentTime = timestamp
 
-              readNode.updated = false
+              ReadNode.setUpdated(timestamp.pointer, false)
               readNode.reader(newValue)
 
               if (c.reexecutionStart < c.reexecutionEnd) {
-                c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
+                c.ddg.splice(c.reexecutionStart, c.reexecutionEnd, c)
               }
 
               c.reexecutionStart = oldStart
@@ -106,7 +106,7 @@ class Task
               readNode.reader(newValue1, newValue2)
 
               if (c.reexecutionStart < c.reexecutionEnd) {
-                c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
+                c.ddg.splice(c.reexecutionStart, c.reexecutionEnd, c)
               }
 
               c.reexecutionStart = oldStart

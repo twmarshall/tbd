@@ -44,6 +44,8 @@ object Constants {
 
   type InputId = Int
 
+  type Pointer[T] = Long
+
   val localhost = InetAddress.getLocalHost.getHostAddress
 
   val akkaConf = """

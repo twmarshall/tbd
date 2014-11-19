@@ -34,15 +34,19 @@ class DDG {
 
   var updated = TreeSet[Timestamp]()((new TimestampOrdering()).reverse)
 
-  val ordering = new Ordering()
+  private val ordering = new Ordering()
 
   def addRead
       (mod: Mod[Any],
        value: Any,
        reader: Any => Changeable[Any],
        c: Context): Timestamp = {
-    val readNode = new ReadNode(mod.id, reader)
+    val readNode = new ReadNode(reader)
+
+    val readNodePointer = ReadNode.create(mod.id, false)
+
     val timestamp = nextTimestamp(readNode, c)
+    timestamp.pointer = readNodePointer
 
     if (reads.contains(mod.id)) {
       reads(mod.id) :+= timestamp
@@ -137,12 +141,24 @@ class DDG {
     time
   }
 
+  def getChildren(start: Timestamp, end: Timestamp): Buffer[Timestamp] = {
+    val children = Buffer[Timestamp]()
+
+    var time = start.getNext()
+    while (time != end) {
+      children += time
+      time = time.end.getNext()
+    }
+
+    children
+  }
+
   def modUpdated(modId: ModId) {
     for (timestamp <- reads(modId)) {
-      if (!timestamp.node.updated) {
+      if (!ReadNode.getUpdated(timestamp.pointer)) {
         updated += timestamp
 
-        timestamp.node.updated = true
+        ReadNode.setUpdated(timestamp.pointer, true)
       }
     }
   }
@@ -233,6 +249,98 @@ class DDG {
     }
   }
 
+  def splice(start: Timestamp, end: Timestamp, c: tbd.Context) {
+    var time = start
+    while (time < end) {
+      val node = time.node
+
+      if (time.end != null) {
+	node match {
+	  case readNode: ReadNode =>
+	    c.ddg.reads(ReadNode.getModId(time.pointer)) -= time
+            ReadNode.setUpdated(time.pointer, false)
+	  case memoNode: MemoNode =>
+	    memoNode.memoizer.removeEntry(time, memoNode.signature)
+	  case modNode: ModNode =>
+	    if (modNode.modizer != null) {
+	      if (modNode.modizer.remove(modNode.key, c)) {
+		if (modNode.modId1 != -1) {
+		  c.remove(modNode.modId1)
+		}
+
+		if (modNode.modId2 != -1) {
+		  c.remove(modNode.modId2)
+		}
+	      }
+	    } else {
+	      if (modNode.modId1 != -1) {
+		c.remove(modNode.modId1)
+	      }
+
+	      if (modNode.modId2 != -1) {
+		c.remove(modNode.modId2)
+	      }
+	    }
+
+	  case parNode: ParNode =>
+	    parNode.updated = false
+	  case _ =>
+	}
+
+	if (time.end > end) {
+	  ordering.remove(time.end)
+	}
+      }
+
+      time = time.getNext()
+    }
+
+    if (start.sublist == end.sublist) {
+      start.previous.next = end
+      end.previous = start.previous
+
+      var size = 0
+      var stamp = start.sublist.base.next
+      while (stamp != start.sublist.base) {
+	size += 1
+	stamp = stamp.next
+      }
+      start.sublist.size = size
+    } else {
+      val startSublist =
+	if (start.previous == start.sublist.base) {
+	  start.sublist.previous
+	} else {
+	  start.previous.next = start.sublist.base
+	  start.sublist.base.previous = start.previous
+
+	  var size = 0
+	  var stamp = start.sublist.base.next
+	  while (stamp != start.sublist.base) {
+	    size += 1
+	    stamp = stamp.next
+	  }
+	  start.sublist.size = size
+
+	  start.sublist
+	}
+
+      end.previous = end.sublist.base
+      end.sublist.base.next = end
+
+      var size = 0
+      var stamp = end.sublist.base.next
+      while (stamp != end.sublist.base) {
+	size += 1
+	stamp = stamp.next
+      }
+      end.sublist.size = size
+
+      startSublist.next = end.sublist
+      end.sublist.previous = startSublist
+    }
+  }
+
   def startTime = ordering.base.next.base
 
   def endTime = ordering.base.base
@@ -259,8 +367,8 @@ class DDG {
           ", " + par.pebble2 + ")\n" + ddg1.toString(prefix + "|") +
           ddg2.toString(prefix + "|")
         case read: ReadNode =>
-          prefix + read + " modId=(" + read.modId + ") " + " time=" +
-          time + " to " + time.end + " updated=(" + read.updated + ")\n"
+          prefix + read + " modId=(" + ReadNode.getModId(time.pointer) + ") " + " time=" +
+          time + " to " + time.end + " updated=(" + ReadNode.getUpdated(time.pointer) + ")\n"
         case root: RootNode =>
           prefix + "RootNode=" + root + "\n"
         case write: WriteNode =>
@@ -269,7 +377,7 @@ class DDG {
       }
       out.append(thisString)
 
-      for (time <- ordering.getChildren(time, time.end)) {
+      for (time <- getChildren(time, time.end)) {
         innerToString(time, prefix + "-")
       }
     }

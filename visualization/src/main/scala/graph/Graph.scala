@@ -91,9 +91,9 @@ object DDG {
 	val f2 = parNode.taskRef2 ? tbd.messages.GetTaskDDGMessage
 	val ddg2 = Await.result(f2.mapTo[tbd.ddg.DDG], DURATION)
 
-        ddg1.ordering.getChildren(ddg1.startTime, ddg1.endTime) ++
-        ddg2.ordering.getChildren(ddg2.startTime, ddg2.endTime)
-      case _ => ddg.ordering.getChildren(start, end)
+        ddg1.getChildren(ddg1.startTime, ddg1.endTime) ++
+        ddg2.getChildren(ddg2.startTime, ddg2.endTime)
+      case _ => ddg.getChildren(start, end)
     }
   }
 

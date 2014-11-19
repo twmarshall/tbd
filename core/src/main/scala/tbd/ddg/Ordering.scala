@@ -20,7 +20,7 @@ import scala.collection.mutable.Buffer
 import tbd.Constants.ModId
 
 class Ordering {
-  val maxSize = Int.MaxValue / 2
+  private val maxSize = Int.MaxValue / 2
   val base = new Sublist(0, null)
   base.next = new Sublist(1, base)
   base.previous = base.next
@@ -55,6 +55,15 @@ class Ordering {
       }
 
     newTimestamp
+  }
+
+  def remove(t: Timestamp) {
+    t.sublist.remove(t)
+
+    if (t.sublist.size == 0) {
+      t.sublist.previous.next = t.sublist.next
+      t.sublist.next.previous = t.sublist.previous
+    }
   }
 
   private def sublistAppend(): Sublist = {
@@ -125,147 +134,6 @@ class Ordering {
     previous.next = newSublist
 
     newSublist*/
-  }
-
-  def remove(t: Timestamp) {
-    t.sublist.remove(t)
-
-    if (t.sublist.size == 0) {
-      t.sublist.previous.next = t.sublist.next
-      t.sublist.next.previous = t.sublist.previous
-    }
-  }
-
-  def getMods(): Iterable[ModId] = {
-    val mods = Buffer[ModId]()
-
-    var time = base.next.base.next
-    while (time < base.previous.base.previous) {
-      val node = time.node
-
-      if (time.end != null) {
-	node match {
-	  case modNode: ModNode =>
-	    if (modNode.modId1 != -1) {
-	      mods += modNode.modId1
-	    }
-	    if (modNode.modId2 != -1) {
-	      mods += modNode.modId2
-	    }
-	  case _ =>
-	}
-      }
-
-      time = time.getNext()
-    }
-
-    mods
-  }
-
-  def splice(start: Timestamp, end: Timestamp, c: tbd.Context) {
-    var time = start
-    while (time < end) {
-      val node = time.node
-
-      if (time.end != null) {
-	node match {
-	  case readNode: ReadNode =>
-	    c.ddg.reads(readNode.modId) -= time
-	    readNode.updated = false
-	  case memoNode: MemoNode =>
-	    memoNode.memoizer.removeEntry(time, memoNode.signature)
-	  case modNode: ModNode =>
-	    if (modNode.modizer != null) {
-	      if (modNode.modizer.remove(modNode.key, c)) {
-		if (modNode.modId1 != -1) {
-		  c.remove(modNode.modId1)
-		}
-
-		if (modNode.modId2 != -1) {
-		  c.remove(modNode.modId2)
-		}
-	      }
-	    } else {
-	      if (modNode.modId1 != -1) {
-		c.remove(modNode.modId1)
-	      }
-
-	      if (modNode.modId2 != -1) {
-		c.remove(modNode.modId2)
-	      }
-	    }
-
-	  case parNode: ParNode =>
-	    parNode.updated = false
-	  case _ =>
-	}
-
-	if (time.end > end) {
-	  remove(time.end)
-	}
-      }
-
-      time = time.getNext()
-    }
-
-    if (start.sublist == end.sublist) {
-      start.previous.next = end
-      end.previous = start.previous
-
-      var size = 0
-      var stamp = start.sublist.base.next
-      while (stamp != start.sublist.base) {
-	size += 1
-	stamp = stamp.next
-      }
-      start.sublist.size = size
-    } else {
-      val startSublist =
-	if (start.previous == start.sublist.base) {
-	  start.sublist.previous
-	} else {
-	  start.previous.next = start.sublist.base
-	  start.sublist.base.previous = start.previous
-
-	  var size = 0
-	  var stamp = start.sublist.base.next
-	  while (stamp != start.sublist.base) {
-	    size += 1
-	    stamp = stamp.next
-	  }
-	  start.sublist.size = size
-
-	  start.sublist
-	}
-
-      end.previous = end.sublist.base
-      end.sublist.base.next = end
-
-      var size = 0
-      var stamp = end.sublist.base.next
-      while (stamp != end.sublist.base) {
-	size += 1
-	stamp = stamp.next
-      }
-      end.sublist.size = size
-
-      startSublist.next = end.sublist
-      end.sublist.previous = startSublist
-    }
-  }
-
-  def getChildren(start: Timestamp, end: Timestamp): Buffer[Timestamp] = {
-    println("getChildren " + start + " " + end)
-    val children = Buffer[Timestamp]()
-
-    var time = start.getNext()
-    while (time != end) {
-      println(time + " " + end)
-      children += time
-      time = time.end.getNext()
-    }
-
-    children
   }
 
   override def toString = {

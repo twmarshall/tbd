@@ -51,7 +51,7 @@ class Context
   // reexecuted.
   var reexecutionEnd: Timestamp = _
 
-  var currentTime: Timestamp = ddg.ordering.base.next.base
+  var currentTime: Timestamp = ddg.startTime
 
   // The mod created by the most recent (in scope) call to mod. This is
   // what a call to write will write to.
