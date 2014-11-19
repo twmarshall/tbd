@@ -21,13 +21,10 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 
 import tbd.Constants._
-import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.messages._
 import tbd.TBD._
 
 object TBD {
-  import scala.language.experimental.macros
-
   def read[T, U](mod: Mod[T])
       (reader: T => Changeable[U])
       (implicit c: Context): Changeable[U] = {

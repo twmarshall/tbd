@@ -41,7 +41,7 @@ class DDG {
        value: Any,
        reader: Any => Changeable[Any],
        c: Context): Timestamp = {
-    val readNode = new ReadNode(mod, reader)
+    val readNode = new ReadNode(mod.id, reader)
     val timestamp = nextTimestamp(readNode, c)
 
     if (reads.contains(mod.id)) {
@@ -60,7 +60,7 @@ class DDG {
        value2: Any,
        reader: (Any, Any) => Changeable[Any],
        c: Context): Timestamp = {
-    val readNode = new Read2Node(mod1, mod2, reader)
+    val readNode = new Read2Node(mod1.id, mod2.id, reader)
     val timestamp = nextTimestamp(readNode, c)
 
     if (reads.contains(mod1.id)) {
@@ -259,9 +259,8 @@ class DDG {
           ", " + par.pebble2 + ")\n" + ddg1.toString(prefix + "|") +
           ddg2.toString(prefix + "|")
         case read: ReadNode =>
-          prefix + read + " modId=(" + read.mod.id + ") " + " time=" +
-          time + " to " + time.end + " value=" + read.mod +
-          " updated=(" + read.updated + ")\n"
+          prefix + read + " modId=(" + read.modId + ") " + " time=" +
+          time + " to " + time.end + " updated=(" + read.updated + ")\n"
         case root: RootNode =>
           prefix + "RootNode=" + root + "\n"
         case write: WriteNode =>

@@ -60,12 +60,14 @@ class ParNode
   var pebble2 = false
 }
 
-class ReadNode(val mod: Mod[Any], val reader: Any => Changeable[Any])
+class ReadNode
+    (val modId: ModId,
+     val reader: Any => Changeable[Any])
   extends Node
 
 class Read2Node
-    (val mod1: Mod[Any],
-     val mod2: Mod[Any],
+    (val modId1: ModId,
+     val modId2: ModId,
      val reader: (Any, Any) => Changeable[Any]) extends Node
 
 class RootNode extends Node

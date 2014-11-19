@@ -58,7 +58,7 @@ class Task
         node match {
           case readNode: ReadNode =>
             if (readNode.updated) {
-              val newValue = c.read(readNode.mod)
+              val newValue = c.readId(readNode.modId)
 
               val oldStart = c.reexecutionStart
               c.reexecutionStart = timestamp.getNext()
@@ -87,8 +87,8 @@ class Task
             }
           case readNode: Read2Node =>
             if (readNode.updated) {
-              val newValue1 = c.read(readNode.mod1)
-              val newValue2 = c.read(readNode.mod2)
+              val newValue1 = c.readId(readNode.modId1)
+              val newValue2 = c.readId(readNode.modId2)
 
               val oldStart = c.reexecutionStart
               c.reexecutionStart = timestamp.getNext()

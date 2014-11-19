@@ -18,7 +18,6 @@ package tbd.test
 import org.scalatest._
 
 import tbd._
-import tbd.ddg.{MemoNode, ReadNode, RootNode}
 import tbd.table._
 import tbd.TBD._
 

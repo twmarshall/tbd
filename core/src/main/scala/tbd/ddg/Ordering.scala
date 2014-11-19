@@ -170,7 +170,7 @@ class Ordering {
       if (time.end != null) {
 	node match {
 	  case readNode: ReadNode =>
-	    c.ddg.reads(readNode.mod.id) -= time
+	    c.ddg.reads(readNode.modId) -= time
 	    readNode.updated = false
 	  case memoNode: MemoNode =>
 	    memoNode.memoizer.removeEntry(time, memoNode.signature)
