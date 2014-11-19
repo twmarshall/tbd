@@ -34,7 +34,7 @@ class Timestamp
      val node: Node) {
   var end: Timestamp = null
 
-  var pointer: Pointer[_] = _
+  var pointer: Pointer = _
 
   def <(that: Timestamp): Boolean = {
     if (sublist == that.sublist) {

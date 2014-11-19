@@ -34,6 +34,9 @@ object Constants {
   // that owns it.
   type ModId = Long
 
+  // The size of ModIds, in bytes.
+  val modIdSize = 8
+
   def getWorkerId(modId: ModId): WorkerId = {
     (modId >> 48).toShort
   }
@@ -44,7 +47,12 @@ object Constants {
 
   type InputId = Int
 
-  type Pointer[T] = Long
+  type Pointer = Long
+
+  type ModizerId = Int
+
+  // The size of ModizerIds, in bytes.
+  val modizerIdSize = 4
 
   val localhost = InetAddress.getLocalHost.getHostAddress
 

@@ -17,6 +17,7 @@ package tbd.ddg
 
 import akka.actor.ActorRef
 import akka.pattern.ask
+import java.io._
 import scala.concurrent.Await
 
 import tbd._
@@ -33,10 +34,10 @@ object Node {
 
 object ReadNode {
   private val modIdOffset = 0
-  private val updatedOffset = 8
+  private val updatedOffset = modIdSize
 
-  def create(modId: ModId, updated: Boolean): Pointer[ReadNode] = {
-    val ptr = MemoryAllocator.allocate(8 * 3 + 1)
+  def create(modId: ModId, updated: Boolean): Pointer = {
+    val ptr = MemoryAllocator.allocate(modIdSize + 1)
 
     MemoryAllocator.unsafe.putLong(ptr + modIdOffset, modId)
 
@@ -47,20 +48,82 @@ object ReadNode {
     ptr
   }
 
-  def getModId(ptr: Pointer[ReadNode]): ModId = {
+  def getModId(ptr: Pointer): ModId = {
     MemoryAllocator.unsafe.getLong(ptr)
   }
 
-  def getUpdated(ptr: Pointer[ReadNode]): Boolean = {
+  def getUpdated(ptr: Pointer): Boolean = {
     val byte = MemoryAllocator.unsafe.getByte(ptr + updatedOffset)
 
     byte == 1
   }
 
-  def setUpdated(ptr: Pointer[ReadNode], updated: Boolean) {
+  def setUpdated(ptr: Pointer, updated: Boolean) {
     val byte = if (updated) 1.toByte else 0.toByte
 
     MemoryAllocator.unsafe.putByte(ptr + updatedOffset, byte)
+  }
+}
+
+object ModNode {
+  private val modId1Offset = 0
+  private val modId2Offset = modId1Offset + modIdSize
+  private val modizerIdOffset = modId2Offset + modIdSize
+  private val keySizeOffset = modizerIdOffset + modizerIdSize
+  private val keyOffset = keySizeOffset + 4
+
+  def create
+      (modId1: ModId,
+       modId2: ModId,
+       modizerId: ModizerId,
+       key: Any): Pointer = {
+    val byteOutput = new ByteArrayOutputStream()
+    val objectOutput = new ObjectOutputStream(byteOutput)
+    objectOutput.writeObject(key)
+    val serializedKey = byteOutput.toByteArray
+
+    // Two modIds + modizerId + key + key size
+    val size = modIdSize * 2 + modizerIdSize + 4 + serializedKey.size
+    val ptr = MemoryAllocator.allocate(size)
+
+    MemoryAllocator.unsafe.putLong(ptr + modId1Offset, modId1)
+
+    MemoryAllocator.unsafe.putLong(ptr + modId2Offset, modId2)
+
+    MemoryAllocator.unsafe.putInt(ptr + modizerIdOffset, modizerId)
+
+    MemoryAllocator.unsafe.putInt(ptr + keySizeOffset, serializedKey.size)
+    for (i <- 0 until serializedKey.size) {
+      MemoryAllocator.unsafe.putByte(ptr + keyOffset + i, serializedKey(i))
+    }
+
+    ptr
+  }
+
+  def getModId1(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + modId1Offset)
+  }
+
+  def getModId2(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + modId2Offset)
+  }
+
+  def getModizerId(ptr: Pointer): ModizerId = {
+    MemoryAllocator.unsafe.getInt(ptr + modizerIdOffset)
+  }
+
+  def getKey(ptr: Pointer): Any = {
+    val keySize = MemoryAllocator.unsafe.getInt(ptr + keySizeOffset)
+
+    val byteArray = new Array[Byte](keySize)
+
+    for (i <- 0 until keySize) {
+      byteArray(i) = MemoryAllocator.unsafe.getByte(ptr + keyOffset + i)
+    }
+
+    val byteInput = new ByteArrayInputStream(byteArray)
+    val objectInput = new ObjectInputStream(byteInput)
+    objectInput.readObject()    
   }
 }
 
@@ -79,11 +142,7 @@ class MemoNode
   var value: Any = null
 }
 
-class ModNode
-    (val modId1: ModId,
-     val modId2: ModId,
-     val modizer: Modizer[Any],
-     val key: Any) extends Node
+class ModNode() extends Node
 
 class ParNode
     (val taskRef1: ActorRef,

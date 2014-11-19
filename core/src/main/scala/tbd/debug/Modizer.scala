@@ -25,24 +25,23 @@ import tbd.ddg.{FunctionTag, ModNode, Node, Tag}
 import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.messages._
 
-class Modizer1[T] extends tbd.Modizer1[T] {
+class Modizer1[T](implicit c: Context) extends tbd.Modizer1[T] {
   import scala.language.experimental.macros
 
   @functionToInvoke("applyInternal")
   override def apply(key: Any)
-      (initializer: => Changeable[T])
-      (implicit c: Context): Mod[T] = macro TbdMacros.modizerMacro[Mod[T]]
+      (initializer: => Changeable[T]): Mod[T] =
+    macro TbdMacros.modizerMacro[Mod[T]]
 
   def applyInternal
       (key: Any,
        initializer: => Changeable[T],
-       c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]) = {
     val internalId = Node.getId()
     val stack = Thread.currentThread().getStackTrace()
 
-    val mod = super.apply(key)(initializer)(c)
+    val mod = super.apply(key)(initializer)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
@@ -52,20 +51,18 @@ class Modizer1[T] extends tbd.Modizer1[T] {
   }
 }
 
-class Modizer2[T, U] extends tbd.Modizer2[T, U] {
+class Modizer2[T, U](implicit c: Context) extends tbd.Modizer2[T, U] {
   import scala.language.experimental.macros
 
   @functionToInvoke("applyInternal")
   override def apply
       (key: Any)
-      (initializer: => (Changeable[T], Changeable[U]))
-      (implicit c: Context): (Mod[T], Mod[U]) =
+      (initializer: => (Changeable[T], Changeable[U])): (Mod[T], Mod[U]) =
     macro TbdMacros.modizerMacro[(Mod[T], Mod[U])]
 
   def applyInternal
       (key: Any,
        initializer: => (Changeable[T], Changeable[U]),
-       c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]) = {
     if (allocations.contains(key) && c.initialRun) {
@@ -78,8 +75,7 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
 
     val internalId = Node.getId()
     val stack = Thread.currentThread().getStackTrace()
-    val (mod1, mod2) =
-      super.apply(key)(initializer)(c)
+    val (mod1, mod2) = super.apply(key)(initializer)
 
     val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
@@ -90,14 +86,12 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
 
   @functionToInvoke("modLeftInternal")
   override def left(key: Any)
-      (initializer: => (Changeable[T], Changeable[U]))
-      (implicit c: Context): (Mod[T], Changeable[U]) =
+      (initializer: => (Changeable[T], Changeable[U])): (Mod[T], Changeable[U]) =
     macro TbdMacros.modizerMacro[(Mod[T], Changeable[U])]
 
   def modLeftInternal
       (key: Any,
        initializer: => (Changeable[T], Changeable[U]),
-       c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Mod[T], Changeable[U]) = {
     if (allocations.contains(key) && c.initialRun) {
@@ -106,8 +100,7 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
 
     val internalId = Node.getId()
     val stack = Thread.currentThread().getStackTrace()
-    val (mod, changeable) =
-      super.left(key)(initializer)(c)
+    val (mod, changeable) = super.left(key)(initializer)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
@@ -118,14 +111,12 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
 
   @functionToInvoke("modRightInternal")
   override def right(key: Any)
-      (initializer: => (Changeable[T], Changeable[U]))
-      (implicit c: Context): (Changeable[T], Mod[U]) =
+      (initializer: => (Changeable[T], Changeable[U])): (Changeable[T], Mod[U]) =
     macro TbdMacros.modizerMacro[(Changeable[T], Mod[U])]
 
   def modRightInternal
       (key: Any,
        initializer: => (Changeable[T], Changeable[U]),
-       c: Context,
        readerId: Int,
        freeTerms: List[(String, Any)]): (Changeable[T], Mod[U]) = {
     if (allocations2.contains(key) && c.initialRun) {
@@ -134,8 +125,7 @@ class Modizer2[T, U] extends tbd.Modizer2[T, U] {
 
     val internalId = Node.getId()
     val stack = Thread.currentThread().getStackTrace()
-    val (changeable, mod) =
-      super.right(key)(initializer)(c)
+    val (changeable, mod) = super.right(key)(initializer)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node

@@ -85,11 +85,15 @@ class DDG {
   def addMod
       (modId1: ModId,
        modId2: ModId,
-       modizer: Modizer[Any],
+       modizerId: ModizerId,
        key: Any,
        c: Context): Timestamp = {
-    val modNode = new ModNode(modId1, modId2, modizer, key)
+    val modNode = new ModNode()
     val timestamp = nextTimestamp(modNode, c)
+
+    val ptr = ModNode.create(modId1, modId2, modizerId, key)
+
+    timestamp.pointer = ptr
 
     timestamp
   }
@@ -262,23 +266,31 @@ class DDG {
 	  case memoNode: MemoNode =>
 	    memoNode.memoizer.removeEntry(time, memoNode.signature)
 	  case modNode: ModNode =>
-	    if (modNode.modizer != null) {
-	      if (modNode.modizer.remove(modNode.key, c)) {
-		if (modNode.modId1 != -1) {
-		  c.remove(modNode.modId1)
+            val modizerId = ModNode.getModizerId(time.pointer)
+
+	    if (modizerId != -1) {
+              val key  = ModNode.getKey(time.pointer)
+
+	      if (c.getModizer(modizerId).remove(key)) {
+                val modId1 = ModNode.getModId1(time.pointer)
+                if (modId1 != -1) {
+                  c.remove(modId1)
 		}
 
-		if (modNode.modId2 != -1) {
-		  c.remove(modNode.modId2)
+                val modId2 = ModNode.getModId2(time.pointer)
+                if (modId2 != -1) {
+		  c.remove(modId2)
 		}
 	      }
 	    } else {
-	      if (modNode.modId1 != -1) {
-		c.remove(modNode.modId1)
+              val modId1 = ModNode.getModId1(time.pointer)
+              if (modId1 != -1) {
+		c.remove(modId1)
 	      }
 
-	      if (modNode.modId2 != -1) {
-		c.remove(modNode.modId2)
+              val modId2 = ModNode.getModId2(time.pointer)
+              if (modId2 != -1) {
+		c.remove(modId2)
 	      }
 	    }
 
