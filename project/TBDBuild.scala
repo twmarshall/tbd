@@ -20,13 +20,17 @@ object TBDBuild extends Build {
   val mavenResolver = "Maven Central Server" at "http://central.maven.org/maven2"
 
   val reefVer = "0.9"
+  val hadoopVer = "2.2.0"
   val reefDeps = Seq (
+    //"org.apache.hadoop"           % "hadoop-common"        % hadoopVer,
+    //"org.apache.hadoop"           % "hadoop-mapreduce-client-core" % hadoopVer,
     "com.microsoft.reef"          % "reef-common"          % reefVer,
     "com.microsoft.reef"          % "reef-runtime-local"   % reefVer,
     "com.microsoft.reef"          % "reef-runtime-yarn"    % reefVer,
     "com.microsoft.reef"          % "reef-checkpoint"      % reefVer,
     "com.microsoft.reef"          % "reef-io"              % reefVer,
-    "com.microsoft.reef"          % "reef-annotations"     % reefVer
+    "com.microsoft.reef"          % "reef-annotations"     % reefVer,
+    "com.microsoft.reef"          % "reef-poison"          % reefVer
   )
 
   val commonDeps = Seq (
@@ -89,8 +93,35 @@ object TBDBuild extends Build {
     "reef",
     file("reef"),
     settings = buildSettings ++ assemblySettings ++ Seq (
-      libraryDependencies ++= reefDeps,
-      javaOptions += "-Xss128M"
+      libraryDependencies ++= (reefDeps
+                          ++ Seq(
+        ("org.apache.hadoop" % "hadoop-common" % "2.2.0").
+          exclude("org.sonatype.sisu.inject", "cglib").
+          exclude("javax.servlet", "servlet-api").
+          exclude("javax.servlet.jsp", "jsp-api"),
+        ("org.apache.hadoop" % "hadoop-mapreduce-client-core" % "2.2.0").
+          exclude("org.sonatype.sisu.inject", "cglib").
+          exclude("javax.servlet", "servlet-api").
+          exclude("javax.servlet.jsp", "jsp-api")
+      )),
+      /*
+      libraryDependencies ++= (reefDeps
+                          ++ Seq(
+        ("org.apache.hadoop" % "hadoop-core" % "1.2.1").
+          exclude("org.mortbay.jetty", "servlet-api-2.5").
+          exclude("org.mortbay.jetty", "jsp-api-2.1").
+          exclude("org.mortbay.jetty", "jsp-2.1").
+          exclude("stax", "stax-api").
+          exclude("asm", "asm")
+      )),
+      */
+      mergeStrategy in assembly := {
+        case PathList(ps @ _*) if ps.last endsWith ".class" => MergeStrategy.first
+        case x =>
+          val oldStrategy = (mergeStrategy in assembly).value
+          oldStrategy(x)
+      }
+      
     )
   ) dependsOn(core)
 
