@@ -24,8 +24,9 @@ import tbd._
 import tbd.Constants._
 
 object Node {
-  val ReadNodeType: Byte = 0
   val ModNodeType: Byte = 1
+  val ReadNodeType: Byte = 2
+  val Read2NodeType: Byte = 3
 
   val typeOffset = 0
   val currentModId1Offset = typeOffset + 1
@@ -163,6 +164,41 @@ object ReadNode {
   }
 }
 
+object Read2Node {
+  private val modId1Offset = Node.nodeOffset
+  private val modId2Offset = modId1Offset + modIdSize
+  private val readerIdOffset = modId2Offset + modIdSize
+
+  def create
+      (modId1: ModId,
+       modId2: ModId,
+       readerId: Int,
+       currentModId1: ModId,
+       currentModId2: ModId): Pointer = {
+    val size = modIdSize * 2 + 4
+    val ptr = Node.create(
+      size, Node.Read2NodeType, currentModId1, currentModId2)
+
+    MemoryAllocator.unsafe.putLong(ptr + modId1Offset, modId1)
+    MemoryAllocator.unsafe.putLong(ptr + modId2Offset, modId2)
+    MemoryAllocator.unsafe.putInt(ptr + readerIdOffset, readerId)
+
+    ptr
+  }
+
+  def getModId1(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + modId1Offset)
+  }
+
+  def getModId2(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + modId2Offset)
+  }
+
+  def getReaderId(ptr: Pointer): Int = {
+    MemoryAllocator.unsafe.getInt(ptr + readerIdOffset)
+  }
+}
+
 abstract class Node {
   var currentModId: ModId = -1
 
@@ -182,11 +218,6 @@ class ParNode
   var pebble1 = false
   var pebble2 = false
 }
-
-class Read2Node
-    (val modId1: ModId,
-     val modId2: ModId,
-     val reader: (Any, Any) => Changeable[Any]) extends Node
 
 class RootNode extends Node
 

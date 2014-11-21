@@ -37,11 +37,10 @@ object TBD {
       c.currentModId,
       -1,
       c)
-    val readNode = timestamp.node
 
     val changeable = reader(value)
 
-    timestamp.end = c.ddg.nextTimestamp(readNode, c)
+    timestamp.end = c.ddg.nextTimestamp(null, c)
 
     changeable
   }
@@ -58,11 +57,10 @@ object TBD {
       c.currentModId,
       c.currentModId2,
       c)
-    val readNode = timestamp.node
 
     val changeables = reader(value)
 
-    timestamp.end = c.ddg.nextTimestamp(readNode, c)
+    timestamp.end = c.ddg.nextTimestamp(null, c)
 
     changeables
   }
@@ -79,13 +77,13 @@ object TBD {
       value1,
       value2,
       reader.asInstanceOf[(Any, Any) => Changeable[Any]],
+      c.currentModId,
+      -1,
       c)
-    val read2Node = timestamp.node
 
     val changeable = reader(value1, value2)
 
-    read2Node.currentModId = c.currentModId
-    timestamp.end = c.ddg.nextTimestamp(read2Node, c)
+    timestamp.end = c.ddg.nextTimestamp(null, c)
 
     changeable
   }
@@ -108,11 +106,10 @@ object TBD {
     c.currentModId = mod1.id
 
     val timestamp = c.ddg.addMod(mod1.id, -1, modizerId, key, -1, -1, c)
-    val modNode = timestamp.node
 
     initializer
 
-    timestamp.end = c.ddg.nextTimestamp(modNode, c)
+    timestamp.end = c.ddg.nextTimestamp(null, c)
 
     c.currentModId = oldCurrentModId
 
@@ -143,11 +140,9 @@ object TBD {
     val timestamp = c.ddg.addMod(
       modLeft.id, modRight.id, modizerId, key, -1, -1, c)
 
-    val modNode = timestamp.node
-
     initializer
 
-    timestamp.end = c.ddg.nextTimestamp(modNode, c)
+    timestamp.end = c.ddg.nextTimestamp(null, c)
 
     c.currentModId = oldCurrentModId
     c.currentModId2 = oldCurrentModId2
@@ -172,11 +167,10 @@ object TBD {
 
     val timestamp = c.ddg.addMod(
       modLeft.id, -1, modizerId, key, -1, c.currentModId2, c)
-    val modNode = timestamp.node
 
     initializer
 
-    timestamp.end = c.ddg.nextTimestamp(modNode, c)
+    timestamp.end = c.ddg.nextTimestamp(null, c)
 
     c.currentModId = oldCurrentModId
 
@@ -199,11 +193,10 @@ object TBD {
 
     val timestamp = c.ddg.addMod(
       -1, modRight.id, modizerId, key, c.currentModId, -1, c)
-    val modNode = timestamp.node
 
     initializer
 
-    timestamp.end = c.ddg.nextTimestamp(modNode, c)
+    timestamp.end = c.ddg.nextTimestamp(null, c)
 
     c.currentModId2 = oldCurrentModId2
 

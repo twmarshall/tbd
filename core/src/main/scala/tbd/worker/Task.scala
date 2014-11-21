@@ -86,27 +86,25 @@ class Task
               c.currentModId2 = oldCurrentModId2
               c.currentTime = oldCurrentTime
 
-            case x => println("unknown node type " + x)
-          }
-        } else {
-          node match {
-            case readNode: Read2Node =>
-              val newValue1 = c.readId(readNode.modId1)
-              val newValue2 = c.readId(readNode.modId2)
+            case Node.Read2NodeType =>
+              val newValue1 = c.readId(Read2Node.getModId1(timestamp.pointer))
+              val newValue2 = c.readId(Read2Node.getModId2(timestamp.pointer))
 
               val oldStart = c.reexecutionStart
               c.reexecutionStart = timestamp.getNext()
               val oldEnd = c.reexecutionEnd
               c.reexecutionEnd = timestamp.end
               val oldCurrentModId = c.currentModId
-              c.currentModId = readNode.currentModId
+              c.currentModId = Node.getCurrentModId1(timestamp.pointer)
               val oldCurrentModId2 = c.currentModId2
-              c.currentModId2 = readNode.currentModId2
+              c.currentModId2 = Node.getCurrentModId2(timestamp.pointer)
 
               val oldCurrentTime = c.currentTime
               c.currentTime = timestamp
 
-              readNode.reader(newValue1, newValue2)
+              val reader = c.ddg.read2ers(
+                Read2Node.getReaderId(timestamp.pointer))
+              reader(newValue1, newValue2)
 
               if (c.reexecutionStart < c.reexecutionEnd) {
                 c.ddg.splice(c.reexecutionStart, c.reexecutionEnd, c)
@@ -117,6 +115,11 @@ class Task
               c.currentModId = oldCurrentModId
               c.currentModId2 = oldCurrentModId2
               c.currentTime = oldCurrentTime
+
+            case x => println("unknown node type " + x)
+          }
+        } else {
+          node match {
             case parNode: ParNode =>
               Await.result(Future.sequence(c.pending), DURATION)
               c.pending.clear()

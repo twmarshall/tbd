@@ -37,6 +37,7 @@ class DDG {
   private val ordering = new Ordering()
 
   val readers = Map[Int, Any => Changeable[Any]]()
+  val read2ers = Map[Int, (Any, Any) => Changeable[Any]]()
 
   var nextReadId = 0
 
@@ -70,9 +71,15 @@ class DDG {
        value1: Any,
        value2: Any,
        reader: (Any, Any) => Changeable[Any],
+       currentModId1: ModId,
+       currentModId2: ModId,
        c: Context): Timestamp = {
-    val readNode = new Read2Node(mod1.id, mod2.id, reader)
-    val timestamp = nextTimestamp(readNode, c)
+    val timestamp = nextTimestamp(null, c)
+
+    val read2NodePointer = Read2Node.create(
+      mod1.id, mod2.id, nextReadId, currentModId1, currentModId2)
+    read2ers(nextReadId) = reader
+    nextReadId += 1
 
     if (reads.contains(mod1.id)) {
       reads(mod1.id) :+= timestamp
@@ -281,10 +288,6 @@ class DDG {
       if (time.end != null) {
         if (time.pointer != -1) {
           Node.getType(time.pointer) match {
-            case Node.ReadNodeType =>
-              c.ddg.reads(ReadNode.getModId(time.pointer)) -= time
-              updated -= time
-              MemoryAllocator.free(time.pointer)
             case Node.ModNodeType =>
               val modizerId = ModNode.getModizerId(time.pointer)
 
@@ -315,14 +318,19 @@ class DDG {
               }
 
               MemoryAllocator.free(time.pointer)
+
+            case Node.ReadNodeType =>
+              c.ddg.reads(ReadNode.getModId(time.pointer)) -= time
+              updated -= time
+              MemoryAllocator.free(time.pointer)
+
+            case Node.Read2NodeType =>
+              c.ddg.reads(Read2Node.getModId1(time.pointer)) -= time
+              c.ddg.reads(Read2Node.getModId2(time.pointer)) -= time
+              updated -= time
           }
         } else {
           node match {
-            case read2Node: Read2Node =>
-              assert(time.pointer == -1)
-              c.ddg.reads(read2Node.modId1) -= time
-              c.ddg.reads(read2Node.modId2) -= time
-              updated -= time
             case memoNode: MemoNode =>
               assert(time.pointer == -1)
               memoNode.memoizer.removeEntry(time, memoNode.signature)
@@ -399,14 +407,19 @@ class DDG {
       val thisString =
         if (time.pointer != -1) {
           Node.getType(time.pointer) match {
-            case Node.ReadNodeType =>
-              prefix + time.pointer + " modId=(" +
-              ReadNode.getModId(time.pointer) + ") time=" + time + " to " +
-              time.end + "\n"
             case Node.ModNodeType =>
-              prefix + time.pointer + " modId1=)" +
+              prefix + "ModNode " + time.pointer + " modId1=)" +
               ModNode.getModId1(time.pointer) + ") modId2=(" +
               ModNode.getModId1(time.pointer) + ") time = " + time + " to " +
+              time.end + "\n"
+            case Node.ReadNodeType =>
+              prefix + "ReadNode " + time.pointer + " modId=(" +
+              ReadNode.getModId(time.pointer) + ") time=" + time + " to " +
+              time.end + "\n"
+            case Node.Read2NodeType =>
+              prefix + "Read2Node " + time.pointer + " modId1=(" +
+              Read2Node.getModId1(time.pointer) + ") modId2=(" +
+              Read2Node.getModId2(time.pointer) + ") time=" + time + " to " +
               time.end + "\n"
           }
         } else {
