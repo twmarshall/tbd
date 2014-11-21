@@ -17,18 +17,13 @@ public class MemoryAllocator {
     }
   }
 
-  private static final long heapSize = 2 * 1024 * 1024;
-
-  private static final long baseAddress = unsafe.allocateMemory(heapSize);
-
-  private static long currentAddress = baseAddress;
-
   private MemoryAllocator() {}
 
   public static long allocate(int size) {
-    long ret = currentAddress;
-    currentAddress += size;
+    return unsafe.allocateMemory(size);
+  }
 
-    return ret;
+  public static void free(long pointer) {
+    unsafe.freeMemory(pointer);
   }
 }

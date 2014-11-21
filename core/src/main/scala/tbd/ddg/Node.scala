@@ -34,34 +34,17 @@ object Node {
 
 object ReadNode {
   private val modIdOffset = 0
-  private val updatedOffset = modIdSize
 
   def create(modId: ModId, updated: Boolean): Pointer = {
-    val ptr = MemoryAllocator.allocate(modIdSize + 1)
+    val ptr = MemoryAllocator.allocate(modIdSize)
 
     MemoryAllocator.unsafe.putLong(ptr + modIdOffset, modId)
-
-    val byte = if (updated) 1.toByte else 0.toByte
-
-    MemoryAllocator.unsafe.putByte(ptr + updatedOffset, byte)
 
     ptr
   }
 
   def getModId(ptr: Pointer): ModId = {
     MemoryAllocator.unsafe.getLong(ptr)
-  }
-
-  def getUpdated(ptr: Pointer): Boolean = {
-    val byte = MemoryAllocator.unsafe.getByte(ptr + updatedOffset)
-
-    byte == 1
-  }
-
-  def setUpdated(ptr: Pointer, updated: Boolean) {
-    val byte = if (updated) 1.toByte else 0.toByte
-
-    MemoryAllocator.unsafe.putByte(ptr + updatedOffset, byte)
   }
 }
 
@@ -131,8 +114,6 @@ abstract class Node {
   var currentModId: ModId = -1
 
   var currentModId2: ModId = -1
-
-  var updated = false
 }
 
 class MemoNode

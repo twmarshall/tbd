@@ -159,11 +159,7 @@ class DDG {
 
   def modUpdated(modId: ModId) {
     for (timestamp <- reads(modId)) {
-      if (!ReadNode.getUpdated(timestamp.pointer)) {
-        updated += timestamp
-
-        ReadNode.setUpdated(timestamp.pointer, true)
-      }
+      updated += timestamp
     }
   }
 
@@ -174,7 +170,6 @@ class DDG {
 
     if (!parNode.pebble1 && !parNode.pebble2) {
       updated += timestamp
-      parNode.updated = true
     }
 
     if (parNode.taskRef1 == taskRef) {
@@ -259,49 +254,56 @@ class DDG {
       val node = time.node
 
       if (time.end != null) {
-	node match {
-	  case readNode: ReadNode =>
-	    c.ddg.reads(ReadNode.getModId(time.pointer)) -= time
-            ReadNode.setUpdated(time.pointer, false)
-	  case memoNode: MemoNode =>
-	    memoNode.memoizer.removeEntry(time, memoNode.signature)
-	  case modNode: ModNode =>
+        node match {
+          case readNode: ReadNode =>
+            c.ddg.reads(ReadNode.getModId(time.pointer)) -= time
+            updated -= time
+            MemoryAllocator.free(time.pointer)
+          case read2Node: Read2Node =>
+            c.ddg.reads(read2Node.modId1) -= time
+            c.ddg.reads(read2Node.modId2) -= time
+            updated -= time
+          case memoNode: MemoNode =>
+            memoNode.memoizer.removeEntry(time, memoNode.signature)
+          case modNode: ModNode =>
             val modizerId = ModNode.getModizerId(time.pointer)
 
-	    if (modizerId != -1) {
+            if (modizerId != -1) {
               val key  = ModNode.getKey(time.pointer)
 
-	      if (c.getModizer(modizerId).remove(key)) {
+              if (c.getModizer(modizerId).remove(key)) {
                 val modId1 = ModNode.getModId1(time.pointer)
                 if (modId1 != -1) {
                   c.remove(modId1)
-		}
+                }
 
                 val modId2 = ModNode.getModId2(time.pointer)
                 if (modId2 != -1) {
-		  c.remove(modId2)
-		}
-	      }
-	    } else {
+                  c.remove(modId2)
+                }
+              }
+            } else {
               val modId1 = ModNode.getModId1(time.pointer)
               if (modId1 != -1) {
-		c.remove(modId1)
-	      }
+                c.remove(modId1)
+              }
 
               val modId2 = ModNode.getModId2(time.pointer)
               if (modId2 != -1) {
-		c.remove(modId2)
-	      }
-	    }
+                c.remove(modId2)
+              }
+            }
 
-	  case parNode: ParNode =>
-	    parNode.updated = false
-	  case _ =>
-	}
+            MemoryAllocator.free(time.pointer)
+            //time.pointer = -1
+          case parNode: ParNode =>
+            updated -= time
+          case _ =>
+        }
 
-	if (time.end > end) {
-	  ordering.remove(time.end)
-	}
+        if (time.end > end) {
+          ordering.remove(time.end)
+        }
       }
 
       time = time.getNext()
@@ -314,28 +316,28 @@ class DDG {
       var size = 0
       var stamp = start.sublist.base.next
       while (stamp != start.sublist.base) {
-	size += 1
-	stamp = stamp.next
+        size += 1
+        stamp = stamp.next
       }
       start.sublist.size = size
     } else {
       val startSublist =
-	if (start.previous == start.sublist.base) {
-	  start.sublist.previous
-	} else {
-	  start.previous.next = start.sublist.base
-	  start.sublist.base.previous = start.previous
+        if (start.previous == start.sublist.base) {
+          start.sublist.previous
+        } else {
+          start.previous.next = start.sublist.base
+          start.sublist.base.previous = start.previous
 
-	  var size = 0
-	  var stamp = start.sublist.base.next
-	  while (stamp != start.sublist.base) {
-	    size += 1
-	    stamp = stamp.next
-	  }
-	  start.sublist.size = size
+          var size = 0
+          var stamp = start.sublist.base.next
+          while (stamp != start.sublist.base) {
+            size += 1
+            stamp = stamp.next
+          }
+          start.sublist.size = size
 
-	  start.sublist
-	}
+          start.sublist
+        }
 
       end.previous = end.sublist.base
       end.sublist.base.next = end
@@ -343,8 +345,8 @@ class DDG {
       var size = 0
       var stamp = end.sublist.base.next
       while (stamp != end.sublist.base) {
-	size += 1
-	stamp = stamp.next
+        size += 1
+        stamp = stamp.next
       }
       end.sublist.size = size
 
@@ -379,8 +381,8 @@ class DDG {
           ", " + par.pebble2 + ")\n" + ddg1.toString(prefix + "|") +
           ddg2.toString(prefix + "|")
         case read: ReadNode =>
-          prefix + read + " modId=(" + ReadNode.getModId(time.pointer) + ") " + " time=" +
-          time + " to " + time.end + " updated=(" + ReadNode.getUpdated(time.pointer) + ")\n"
+          prefix + read + " modId=(" + ReadNode.getModId(time.pointer) + ") " +
+          " time=" + time + " to " + time.end + "\n"
         case root: RootNode =>
           prefix + "RootNode=" + root + "\n"
         case write: WriteNode =>
