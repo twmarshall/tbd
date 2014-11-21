@@ -24,32 +24,56 @@ import tbd._
 import tbd.Constants._
 
 object Node {
+  type NodeType = Byte
+  val ReadNodeType: NodeType = 0
+  val ModNodeType: NodeType = 1
+
   var id = 0
 
   def getId(): Int = {
     id = id + 1
     id
   }
+
+  def getType(ptr: Pointer): NodeType = {
+    MemoryAllocator.unsafe.getByte(ptr)
+  }
 }
 
 object ReadNode {
-  private val modIdOffset = 0
+  private val modIdOffset = 1
+  private val currentModId1Offset = modIdOffset + modIdSize
+  private val currentModId2Offset = currentModId1Offset + modIdSize
 
-  def create(modId: ModId, updated: Boolean): Pointer = {
-    val ptr = MemoryAllocator.allocate(modIdSize)
+  def create
+      (modId: ModId,
+       currentModId1: ModId,
+       currentModId2: ModId): Pointer = {
+    val ptr = MemoryAllocator.allocate(1 + modIdSize * 3)
 
+    MemoryAllocator.unsafe.putByte(ptr, Node.ReadNodeType)
     MemoryAllocator.unsafe.putLong(ptr + modIdOffset, modId)
+    MemoryAllocator.unsafe.putLong(ptr + currentModId1Offset, currentModId1)
+    MemoryAllocator.unsafe.putLong(ptr + currentModId2Offset, currentModId2)
 
     ptr
   }
 
   def getModId(ptr: Pointer): ModId = {
-    MemoryAllocator.unsafe.getLong(ptr)
+    MemoryAllocator.unsafe.getLong(ptr + modIdOffset)
+  }
+
+  def getCurrentModId1(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + currentModId1Offset)
+  }
+
+  def getCurrentModId2(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + currentModId2Offset)
   }
 }
 
 object ModNode {
-  private val modId1Offset = 0
+  private val modId1Offset = 1
   private val modId2Offset = modId1Offset + modIdSize
   private val modizerIdOffset = modId2Offset + modIdSize
   private val keySizeOffset = modizerIdOffset + modizerIdSize
@@ -65,17 +89,16 @@ object ModNode {
     objectOutput.writeObject(key)
     val serializedKey = byteOutput.toByteArray
 
-    // Two modIds + modizerId + key + key size
-    val size = modIdSize * 2 + modizerIdSize + 4 + serializedKey.size
+    // Type + two modIds + modizerId + key + key size
+    val size = 1 + modIdSize * 2 + modizerIdSize + 4 + serializedKey.size
     val ptr = MemoryAllocator.allocate(size)
 
+    MemoryAllocator.unsafe.putByte(ptr, Node.ModNodeType)
     MemoryAllocator.unsafe.putLong(ptr + modId1Offset, modId1)
-
     MemoryAllocator.unsafe.putLong(ptr + modId2Offset, modId2)
-
     MemoryAllocator.unsafe.putInt(ptr + modizerIdOffset, modizerId)
-
     MemoryAllocator.unsafe.putInt(ptr + keySizeOffset, serializedKey.size)
+
     for (i <- 0 until serializedKey.size) {
       MemoryAllocator.unsafe.putByte(ptr + keyOffset + i, serializedKey(i))
     }

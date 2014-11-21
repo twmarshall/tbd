@@ -34,6 +34,8 @@ object TBD {
       mod.asInstanceOf[Mod[Any]],
       value,
       reader.asInstanceOf[Any => Changeable[Any]],
+      c.currentModId,
+      -1,
       c)
     val readNode = timestamp.node
 
@@ -54,6 +56,8 @@ object TBD {
       mod.asInstanceOf[Mod[Any]],
       value,
       reader.asInstanceOf[Any => Changeable[Any]],
+      c.currentModId,
+      c.currentModId2,
       c)
     val readNode = timestamp.node
 
