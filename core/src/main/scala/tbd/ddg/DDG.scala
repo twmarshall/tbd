@@ -36,6 +36,10 @@ class DDG {
 
   private val ordering = new Ordering()
 
+  val readers = Map[Int, Any => Changeable[Any]]()
+
+  var nextReadId = 0
+
   def addRead
       (mod: Mod[Any],
        value: Any,
@@ -43,11 +47,12 @@ class DDG {
        currentModId1: ModId,
        currentModId2: ModId,
        c: Context): Timestamp = {
-    val readNode = new ReadNode(reader)
+    val readNodePointer = ReadNode.create(
+      mod.id, nextReadId, currentModId1, currentModId2)
+    readers(nextReadId) = reader
+    nextReadId += 1
 
-    val readNodePointer = ReadNode.create(mod.id, currentModId1, currentModId2)
-
-    val timestamp = nextTimestamp(readNode, c)
+    val timestamp = nextTimestamp(null, c)
     timestamp.pointer = readNodePointer
 
     if (reads.contains(mod.id)) {

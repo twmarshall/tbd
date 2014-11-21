@@ -74,26 +74,6 @@ object Node {
   }
 }
 
-object ReadNode {
-  private val modIdOffset = Node.nodeOffset
-
-  def create
-      (modId: ModId,
-       currentModId1: ModId,
-       currentModId2: ModId): Pointer = {
-    val size = modIdSize
-    val ptr = Node.create(size, Node.ReadNodeType, currentModId1, currentModId2)
-
-    MemoryAllocator.unsafe.putLong(ptr + modIdOffset, modId)
-
-    ptr
-  }
-
-  def getModId(ptr: Pointer): ModId = {
-    MemoryAllocator.unsafe.getLong(ptr + modIdOffset)
-  }
-}
-
 object ModNode {
   private val modId1Offset = Node.nodeOffset
   private val modId2Offset = modId1Offset + modIdSize
@@ -156,6 +136,33 @@ object ModNode {
   }
 }
 
+object ReadNode {
+  private val modIdOffset = Node.nodeOffset
+  private val readerIdOffset = modIdOffset + modIdSize
+
+  def create
+      (modId: ModId,
+       readerId: Int,
+       currentModId1: ModId,
+       currentModId2: ModId): Pointer = {
+    val size = modIdSize + 4
+    val ptr = Node.create(size, Node.ReadNodeType, currentModId1, currentModId2)
+
+    MemoryAllocator.unsafe.putLong(ptr + modIdOffset, modId)
+    MemoryAllocator.unsafe.putInt(ptr + readerIdOffset, readerId)
+
+    ptr
+  }
+
+  def getModId(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + modIdOffset)
+  }
+
+  def getReaderId(ptr: Pointer): Int = {
+    MemoryAllocator.unsafe.getInt(ptr + readerIdOffset)
+  }
+}
+
 abstract class Node {
   var currentModId: ModId = -1
 
@@ -175,8 +182,6 @@ class ParNode
   var pebble1 = false
   var pebble2 = false
 }
-
-class ReadNode(val reader: Any => Changeable[Any]) extends Node
 
 class Read2Node
     (val modId1: ModId,
