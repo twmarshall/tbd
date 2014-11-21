@@ -89,11 +89,13 @@ class DDG {
        modId2: ModId,
        modizerId: ModizerId,
        key: Any,
+       currentModId1: ModId,
+       currentModId2: ModId,
        c: Context): Timestamp = {
-    val modNode = new ModNode()
-    val timestamp = nextTimestamp(modNode, c)
+    val timestamp = nextTimestamp(null, c)
 
-    val ptr = ModNode.create(modId1, modId2, modizerId, key)
+    val ptr = ModNode.create(
+      modId1, modId2, modizerId, key, currentModId1, currentModId2)
 
     timestamp.pointer = ptr
 
@@ -202,18 +204,34 @@ class DDG {
       val node = time.node
 
       if (time.end != null) {
-        if (node.currentModId == toReplace) {
+        val (currentModId, currentModId2) =
+          if (time.pointer != -1) {
+            (Node.getCurrentModId1(time.pointer),
+             Node.getCurrentModId2(time.pointer))
+          } else {
+            (node.currentModId, node.currentModId2)
+          }
+
+        if (currentModId == toReplace) {
 
           buf += time.node
           replace(node, toReplace, newModId)
 
-          node.currentModId = newModId
-        } else if (node.currentModId2 == toReplace) {
+          if (time.pointer != -1) {
+            Node.setCurrentModId1(time.pointer, newModId)
+          } else {
+            node.currentModId = newModId
+          }
+        } else if (currentModId2 == toReplace) {
           if (time.end != null) {
             buf += time.node
             replace(node, toReplace, newModId)
 
-            node.currentModId2 = newModId
+            if (time.pointer != -1) {
+              Node.setCurrentModId2(time.pointer, newModId)
+            } else {
+              node.currentModId2 = newModId
+            }
           }
         } else {
           // Skip the subtree rooted at this node since this node doesn't have

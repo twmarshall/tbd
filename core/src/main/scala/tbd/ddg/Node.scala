@@ -24,9 +24,47 @@ import tbd._
 import tbd.Constants._
 
 object Node {
-  type NodeType = Byte
-  val ReadNodeType: NodeType = 0
-  val ModNodeType: NodeType = 1
+  val ReadNodeType: Byte = 0
+  val ModNodeType: Byte = 1
+
+  val typeOffset = 0
+  val currentModId1Offset = typeOffset + 1
+  val currentModId2Offset = currentModId1Offset + modIdSize
+  val nodeOffset = currentModId2Offset + modIdSize
+
+  def create
+      (size: Int,
+       nodeType: Byte,
+       currentModId1: ModId,
+       currentModId2: ModId): Pointer = {
+    val ptr = MemoryAllocator.allocate(size + 1 + modIdSize * 2)
+
+    MemoryAllocator.unsafe.putByte(ptr + typeOffset, nodeType)
+    MemoryAllocator.unsafe.putLong(ptr + currentModId1Offset, currentModId1)
+    MemoryAllocator.unsafe.putLong(ptr + currentModId2Offset, currentModId2)
+
+    ptr
+  }
+
+  def getType(ptr: Pointer): Byte = {
+    MemoryAllocator.unsafe.getByte(ptr + typeOffset)
+  }
+
+  def getCurrentModId1(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + currentModId1Offset)
+  }
+
+  def setCurrentModId1(ptr: Pointer, newModId: ModId) {
+    MemoryAllocator.unsafe.putLong(ptr + currentModId1Offset, newModId)
+  }
+
+  def getCurrentModId2(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + currentModId2Offset)
+  }
+
+  def setCurrentModId2(ptr: Pointer, newModId: ModId) {
+    MemoryAllocator.unsafe.putLong(ptr + currentModId2Offset, newModId)
+  }
 
   var id = 0
 
@@ -34,27 +72,19 @@ object Node {
     id = id + 1
     id
   }
-
-  def getType(ptr: Pointer): NodeType = {
-    MemoryAllocator.unsafe.getByte(ptr)
-  }
 }
 
 object ReadNode {
-  private val modIdOffset = 1
-  private val currentModId1Offset = modIdOffset + modIdSize
-  private val currentModId2Offset = currentModId1Offset + modIdSize
+  private val modIdOffset = Node.nodeOffset
 
   def create
       (modId: ModId,
        currentModId1: ModId,
        currentModId2: ModId): Pointer = {
-    val ptr = MemoryAllocator.allocate(1 + modIdSize * 3)
+    val size = modIdSize
+    val ptr = Node.create(size, Node.ReadNodeType, currentModId1, currentModId2)
 
-    MemoryAllocator.unsafe.putByte(ptr, Node.ReadNodeType)
     MemoryAllocator.unsafe.putLong(ptr + modIdOffset, modId)
-    MemoryAllocator.unsafe.putLong(ptr + currentModId1Offset, currentModId1)
-    MemoryAllocator.unsafe.putLong(ptr + currentModId2Offset, currentModId2)
 
     ptr
   }
@@ -62,18 +92,10 @@ object ReadNode {
   def getModId(ptr: Pointer): ModId = {
     MemoryAllocator.unsafe.getLong(ptr + modIdOffset)
   }
-
-  def getCurrentModId1(ptr: Pointer): ModId = {
-    MemoryAllocator.unsafe.getLong(ptr + currentModId1Offset)
-  }
-
-  def getCurrentModId2(ptr: Pointer): ModId = {
-    MemoryAllocator.unsafe.getLong(ptr + currentModId2Offset)
-  }
 }
 
 object ModNode {
-  private val modId1Offset = 1
+  private val modId1Offset = Node.nodeOffset
   private val modId2Offset = modId1Offset + modIdSize
   private val modizerIdOffset = modId2Offset + modIdSize
   private val keySizeOffset = modizerIdOffset + modizerIdSize
@@ -83,17 +105,18 @@ object ModNode {
       (modId1: ModId,
        modId2: ModId,
        modizerId: ModizerId,
-       key: Any): Pointer = {
+       key: Any,
+       currentModId1: ModId,
+       currentModId2: ModId): Pointer = {
     val byteOutput = new ByteArrayOutputStream()
     val objectOutput = new ObjectOutputStream(byteOutput)
     objectOutput.writeObject(key)
     val serializedKey = byteOutput.toByteArray
 
-    // Type + two modIds + modizerId + key + key size
-    val size = 1 + modIdSize * 2 + modizerIdSize + 4 + serializedKey.size
-    val ptr = MemoryAllocator.allocate(size)
+    // Two modIds + modizerId + key + key size
+    val size = modIdSize * 2 + modizerIdSize + 4 + serializedKey.size
+    val ptr = Node.create(size, Node.ModNodeType, currentModId1, currentModId2)
 
-    MemoryAllocator.unsafe.putByte(ptr, Node.ModNodeType)
     MemoryAllocator.unsafe.putLong(ptr + modId1Offset, modId1)
     MemoryAllocator.unsafe.putLong(ptr + modId2Offset, modId2)
     MemoryAllocator.unsafe.putInt(ptr + modizerIdOffset, modizerId)
@@ -129,7 +152,7 @@ object ModNode {
 
     val byteInput = new ByteArrayInputStream(byteArray)
     val objectInput = new ObjectInputStream(byteInput)
-    objectInput.readObject()    
+    objectInput.readObject()
   }
 }
 
@@ -145,8 +168,6 @@ class MemoNode
 
   var value: Any = null
 }
-
-class ModNode() extends Node
 
 class ParNode
     (val taskRef1: ActorRef,

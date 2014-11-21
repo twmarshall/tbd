@@ -64,9 +64,9 @@ class Task
             val oldEnd = c.reexecutionEnd
             c.reexecutionEnd = timestamp.end
             val oldCurrentModId = c.currentModId
-            c.currentModId = readNode.currentModId
+            c.currentModId = Node.getCurrentModId1(timestamp.pointer)
             val oldCurrentModId2 = c.currentModId2
-            c.currentModId2 = readNode.currentModId2
+            c.currentModId2 = Node.getCurrentModId2(timestamp.pointer)
 
             val oldCurrentTime = c.currentTime
             c.currentTime = timestamp
