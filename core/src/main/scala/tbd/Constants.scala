@@ -29,6 +29,9 @@ object Constants {
   // This allows us to generate unique ids in parallel.
   type TaskId = Int
 
+  // The size of TaskIds, in bytes.
+  val taskIdSize = 4
+
   // The first 32 bits of a ModId represent the TaskId where the Mod was
   // created. We can use this to request the value of the Mod from the Worker
   // that owns it.

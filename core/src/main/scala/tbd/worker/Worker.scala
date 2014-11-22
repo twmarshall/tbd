@@ -63,7 +63,7 @@ class Worker
       val taskProps = Task.props(taskId, parent, datastore, masterRef)
       val taskRef = context.actorOf(taskProps, taskId + "")
 
-      sender ! taskRef
+      sender ! (taskId, taskRef)
 
       nextTaskId += 1
 

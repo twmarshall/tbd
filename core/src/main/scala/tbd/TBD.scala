@@ -235,22 +235,24 @@ object TBD {
      new Changeable[U](c.currentModId2))
   }
 
-  def parWithHint[T, U](one: Context => T, workerId1: WorkerId = -1)
-      (two: Context => U, workerId2: WorkerId = -1)
+  def parWithHint[T, U](one: Context => T, hint1: WorkerId = -1)
+      (two: Context => U, hint2: WorkerId = -1)
       (implicit c: Context): (T, U) = {
-    val future1 = c.masterRef ? ScheduleTaskMessage(c.task.self, workerId1)
-    val taskRef1 = Await.result(future1.mapTo[ActorRef], DURATION)
+    val future1 = c.masterRef ? ScheduleTaskMessage(c.task.self, hint1)
+    val (taskId1, taskRef1) =
+      Await.result(future1.mapTo[(TaskId, ActorRef)], DURATION)
 
     val adjust1 = new Adjustable[T] { def run(implicit c: Context) = one(c) }
     val oneFuture = taskRef1 ? RunTaskMessage(adjust1)
 
-    val future2 = c.masterRef ? ScheduleTaskMessage(c.task.self, workerId2)
-    val taskRef2 = Await.result(future2.mapTo[ActorRef], DURATION)
+    val future2 = c.masterRef ? ScheduleTaskMessage(c.task.self, hint2)
+    val (taskId2, taskRef2) =
+      Await.result(future2.mapTo[(TaskId, ActorRef)], DURATION)
 
     val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
     val twoFuture = taskRef2 ? RunTaskMessage(adjust2)
 
-    val parNode = c.ddg.addPar(taskRef1, taskRef2, c)
+    val parNode = c.ddg.addPar(taskRef1, taskRef2, taskId1, taskId2, c)
 
     val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]

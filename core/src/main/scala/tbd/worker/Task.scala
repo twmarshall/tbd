@@ -57,6 +57,22 @@ class Task
 
         if (timestamp.pointer != -1) {
           Node.getType(timestamp.pointer) match {
+            case Node.ParNodeType =>
+              Await.result(Future.sequence(c.pending), DURATION)
+              c.pending.clear()
+
+
+              val future1 =
+                c.ddg.getLeftTask(timestamp.pointer) ? PropagateTaskMessage
+              val future2 =
+                  c.ddg.getRightTask(timestamp.pointer) ? PropagateTaskMessage
+
+              ParNode.setPebble1(timestamp.pointer, false)
+              ParNode.setPebble2(timestamp.pointer, false)
+
+              Await.result(future1, DURATION)
+              Await.result(future2, DURATION)
+
             case Node.ReadNodeType =>
               val newValue = c.readId(ReadNode.getModId(timestamp.pointer))
 
@@ -120,18 +136,6 @@ class Task
           }
         } else {
           node match {
-            case parNode: ParNode =>
-              Await.result(Future.sequence(c.pending), DURATION)
-              c.pending.clear()
-
-              val future1 = parNode.taskRef1 ? PropagateTaskMessage
-              val future2 = parNode.taskRef2 ? PropagateTaskMessage
-
-              parNode.pebble1 = false
-              parNode.pebble2 = false
-
-              Await.result(future1, DURATION)
-              Await.result(future2, DURATION)
             case x => println("unknown node type " + x)
           }
         }
@@ -158,12 +162,12 @@ class Task
       c.pending.clear()
 
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
-      val newPebble = c.ddg.parUpdated(taskRef)
+      val newPebble = c.ddg.parUpdated(taskRef, c)
 
       if (newPebble) {
         (parent ? PebbleMessage(self, modId)) pipeTo sender
       } else {
-	sender ! "done"
+        sender ! "done"
       }
 
     case PropagateTaskMessage =>
@@ -174,18 +178,18 @@ class Task
       val respondTo = sender
       val future = propagate()
       future onComplete {
-	case Success(t) =>
-	  c.updatedMods.clear()
+        case Success(t) =>
+          c.updatedMods.clear()
 
           Await.result(Future.sequence(c.pending), DURATION)
           c.pending.clear()
 
           respondTo ! "done"
-	case Failure(e) =>
-	  e.printStackTrace()
+        case Failure(e) =>
+          e.printStackTrace()
       }
 
-    case GetTaskDDGMessage =>
+    case GetTaskDDGMessage() =>
       sender ! c.ddg
 
     case ShutdownTaskMessage =>

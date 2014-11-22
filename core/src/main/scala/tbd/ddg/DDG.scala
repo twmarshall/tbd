@@ -39,6 +39,8 @@ class DDG {
   val readers = Map[Int, Any => Changeable[Any]]()
   val read2ers = Map[Int, (Any, Any) => Changeable[Any]]()
 
+  private val tasks = Map[TaskId, ActorRef]()
+
   var nextReadId = 0
 
   def addRead
@@ -127,16 +129,28 @@ class DDG {
   def addPar
       (taskRef1: ActorRef,
        taskRef2: ActorRef,
-       c: Context): ParNode = {
-    val parNode = new ParNode(taskRef1, taskRef2)
-    val timestamp = nextTimestamp(parNode, c)
+       taskId1: TaskId,
+       taskId2: TaskId,
+       c: Context): Timestamp = {
+    val timestamp = nextTimestamp(null, c)
+    timestamp.pointer = ParNode.create(taskId1, taskId2)
 
+    tasks(taskId1) = taskRef1
+    tasks(taskId2) = taskRef2
     pars(taskRef1) = timestamp
     pars(taskRef2) = timestamp
 
-    timestamp.end = c.ddg.nextTimestamp(parNode, c)
+    timestamp.end = c.ddg.nextTimestamp(null, c)
 
-    parNode
+    timestamp
+  }
+
+  def getLeftTask(ptr: Pointer): ActorRef = {
+    tasks(ParNode.getTaskId1(ptr))
+  }
+
+  def getRightTask(ptr: Pointer): ActorRef = {
+    tasks(ParNode.getTaskId2(ptr))
   }
 
   def addMemo
@@ -180,21 +194,21 @@ class DDG {
   }
 
   // Pebbles a par node. Returns true iff the pebble did not already exist.
-  def parUpdated(taskRef: ActorRef): Boolean = {
+  def parUpdated(taskRef: ActorRef, c: Context): Boolean = {
     val timestamp = pars(taskRef)
-    val parNode = timestamp.node.asInstanceOf[ParNode]
 
-    if (!parNode.pebble1 && !parNode.pebble2) {
+    if (!ParNode.getPebble1(timestamp.pointer) &&
+        !ParNode.getPebble2(timestamp.pointer)) {
       updated += timestamp
     }
 
-    if (parNode.taskRef1 == taskRef) {
-      val ret = !parNode.pebble1
-      parNode.pebble1 = true
+    if (tasks(ParNode.getTaskId1(timestamp.pointer)) == taskRef) {
+      val ret = !ParNode.getPebble1(timestamp.pointer)
+      ParNode.setPebble1(timestamp.pointer, true)
       ret
     } else {
-      val ret = !parNode.pebble2
-      parNode.pebble2 = true
+      val ret = !ParNode.getPebble2(timestamp.pointer)
+      ParNode.setPebble2(timestamp.pointer, true)
       ret
     }
   }
@@ -319,6 +333,9 @@ class DDG {
 
               MemoryAllocator.free(time.pointer)
 
+            case Node.ParNodeType =>
+              updated -= time
+
             case Node.ReadNodeType =>
               c.ddg.reads(ReadNode.getModId(time.pointer)) -= time
               updated -= time
@@ -334,9 +351,6 @@ class DDG {
             case memoNode: MemoNode =>
               assert(time.pointer == -1)
               memoNode.memoizer.removeEntry(time, memoNode.signature)
-            case parNode: ParNode =>
-              assert(time.pointer == -1)
-              updated -= time
             case _ => println("??")
           }
         }
@@ -399,8 +413,6 @@ class DDG {
 
   def endTime = ordering.base.base
 
-  override def toString = toString("")
-
   def toString(prefix: String): String = {
     val out = new StringBuffer("")
     def innerToString(time: Timestamp, prefix: String) {
@@ -412,6 +424,19 @@ class DDG {
               ModNode.getModId1(time.pointer) + ") modId2=(" +
               ModNode.getModId1(time.pointer) + ") time = " + time + " to " +
               time.end + "\n"
+            case Node.ParNodeType =>
+              val taskRef1 = tasks(ParNode.getTaskId1(time.pointer))
+              val taskRef2 = tasks(ParNode.getTaskId2(time.pointer))
+              val f1 = taskRef1 ? GetTaskDDGMessage()
+              val f2 = taskRef2 ? GetTaskDDGMessage()
+
+              val ddg1 = Await.result(f1.mapTo[DDG], DURATION)
+              val ddg2 = Await.result(f2.mapTo[DDG], DURATION)
+
+              prefix + "ParNode " + time.pointer  + " pebbles=(" +
+              ParNode.getPebble1(time.pointer) + ", " +
+              ParNode.getPebble2(time.pointer) + ")\n" +
+              ddg1.toString(prefix + "|") + ddg2.toString(prefix + "|")
             case Node.ReadNodeType =>
               prefix + "ReadNode " + time.pointer + " modId=(" +
               ReadNode.getModId(time.pointer) + ") time=" + time + " to " +
@@ -427,16 +452,6 @@ class DDG {
             case memo: MemoNode =>
               prefix + memo + " time = " + time + " to " + time.end +
               " signature=" + memo.signature + "\n"
-            case par: ParNode =>
-              val future1 = par.taskRef1 ? GetTaskDDGMessage
-              val future2 = par.taskRef2 ? GetTaskDDGMessage
-
-              val ddg1 = Await.result(future1.mapTo[DDG], DURATION)
-              val ddg2 = Await.result(future2.mapTo[DDG], DURATION)
-
-              prefix + par + " pebbles=(" + par.pebble1 +
-              ", " + par.pebble2 + ")\n" + ddg1.toString(prefix + "|") +
-              ddg2.toString(prefix + "|")
             case root: RootNode =>
               prefix + "RootNode=" + root + "\n"
             case write: WriteNode =>

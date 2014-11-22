@@ -25,8 +25,9 @@ import tbd.Constants._
 
 object Node {
   val ModNodeType: Byte = 1
-  val ReadNodeType: Byte = 2
-  val Read2NodeType: Byte = 3
+  val ParNodeType: Byte = 2
+  val ReadNodeType: Byte = 3
+  val Read2NodeType: Byte = 4
 
   val typeOffset = 0
   val currentModId1Offset = typeOffset + 1
@@ -137,6 +138,53 @@ object ModNode {
   }
 }
 
+object ParNode {
+  private val taskId1Offset = Node.nodeOffset
+  private val taskId2Offset = taskId1Offset + taskIdSize
+  private val pebble1Offset = taskId2Offset + taskIdSize
+  private val pebble2Offset = pebble1Offset + 1
+
+  def create(taskId1: TaskId, taskId2: TaskId): Pointer = {
+    val size = taskIdSize * 2 + 2
+    val ptr = Node.create(size, Node.ParNodeType, -1, -1)
+
+    MemoryAllocator.unsafe.putInt(ptr + taskId1Offset, taskId1)
+    MemoryAllocator.unsafe.putInt(ptr + taskId2Offset, taskId2)
+    MemoryAllocator.unsafe.putByte(ptr + pebble1Offset, 0)
+    MemoryAllocator.unsafe.putByte(ptr + pebble2Offset, 0)
+
+    ptr
+  }
+
+  def getTaskId1(ptr: Pointer): TaskId = {
+    MemoryAllocator.unsafe.getInt(ptr + taskId1Offset)
+  }
+
+  def getTaskId2(ptr: Pointer): TaskId = {
+    MemoryAllocator.unsafe.getInt(ptr + taskId2Offset)
+  }
+
+  def getPebble1(ptr: Pointer): Boolean = {
+    MemoryAllocator.unsafe.getByte(ptr + pebble1Offset) == 1
+  }
+
+  def setPebble1(ptr: Pointer, value: Boolean) {
+    val byte: Byte = if (value) 1 else 0
+
+    MemoryAllocator.unsafe.putByte(ptr + pebble1Offset, byte)
+  }
+
+  def getPebble2(ptr: Pointer): Boolean = {
+    MemoryAllocator.unsafe.getByte(ptr + pebble2Offset) == 1
+  }
+
+  def setPebble2(ptr: Pointer, value: Boolean) {
+    val byte: Byte = if (value) 1 else 0
+
+    MemoryAllocator.unsafe.putByte(ptr + pebble2Offset, byte)
+  }
+}
+
 object ReadNode {
   private val modIdOffset = Node.nodeOffset
   private val readerIdOffset = modIdOffset + modIdSize
@@ -210,13 +258,6 @@ class MemoNode
      val memoizer: Memoizer[_]) extends Node {
 
   var value: Any = null
-}
-
-class ParNode
-    (val taskRef1: ActorRef,
-     val taskRef2: ActorRef) extends Node {
-  var pebble1 = false
-  var pebble2 = false
 }
 
 class RootNode extends Node
