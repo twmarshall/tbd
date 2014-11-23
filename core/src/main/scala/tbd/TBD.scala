@@ -40,7 +40,7 @@ object TBD {
 
     val changeable = reader(value)
 
-    timestamp.end = c.ddg.nextTimestamp(null, c)
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     changeable
   }
@@ -60,7 +60,7 @@ object TBD {
 
     val changeables = reader(value)
 
-    timestamp.end = c.ddg.nextTimestamp(null, c)
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     changeables
   }
@@ -83,7 +83,7 @@ object TBD {
 
     val changeable = reader(value1, value2)
 
-    timestamp.end = c.ddg.nextTimestamp(null, c)
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     changeable
   }
@@ -109,7 +109,7 @@ object TBD {
 
     initializer
 
-    timestamp.end = c.ddg.nextTimestamp(null, c)
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     c.currentModId = oldCurrentModId
 
@@ -142,7 +142,7 @@ object TBD {
 
     initializer
 
-    timestamp.end = c.ddg.nextTimestamp(null, c)
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     c.currentModId = oldCurrentModId
     c.currentModId2 = oldCurrentModId2
@@ -170,7 +170,7 @@ object TBD {
 
     initializer
 
-    timestamp.end = c.ddg.nextTimestamp(null, c)
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     c.currentModId = oldCurrentModId
 
@@ -196,7 +196,7 @@ object TBD {
 
     initializer
 
-    timestamp.end = c.ddg.nextTimestamp(null, c)
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     c.currentModId2 = oldCurrentModId2
 

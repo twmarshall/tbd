@@ -181,7 +181,7 @@ class Task
           e.printStackTrace()
       }
 
-    case GetTaskDDGMessage() =>
+    case GetTaskDDGMessage =>
       sender ! c.ddg
 
     case ShutdownTaskMessage =>

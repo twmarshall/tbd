@@ -17,17 +17,17 @@ package tbd.ddg
 
 import scala.collection.mutable.Buffer
 
-import tbd.Constants.ModId
+import tbd.Constants._
 
-class Ordering {
+class Ordering(basePointer: Pointer = -1) {
   private val maxSize = Int.MaxValue / 2
   val base = new Sublist(0, null)
-  base.next = new Sublist(1, base)
+  base.next = new Sublist(1, base, basePointer)
   base.previous = base.next
 
   base.next.base.end = base.base
 
-  def after(t: Timestamp, node: Node): Timestamp = {
+  def after(t: Timestamp, ptr: Pointer): Timestamp = {
     val previousSublist =
       if (t == null) {
         base.next
@@ -35,7 +35,7 @@ class Ordering {
         t.sublist
       }
 
-    val newTimestamp = previousSublist.after(t, node)
+    val newTimestamp = previousSublist.after(t, ptr)
     if (previousSublist.size > 63) {
       val newSublist = sublistAfter(previousSublist)
       assert(previousSublist.id != newSublist.id)
@@ -45,13 +45,13 @@ class Ordering {
     newTimestamp
   }
 
-  def append(node: Node): Timestamp = {
+  def append(ptr: Pointer): Timestamp = {
     val newTimestamp =
       if (base.previous.size > 31) {
-	val newSublist = sublistAppend()
-	newSublist.append(node)
+        val newSublist = sublistAppend()
+        newSublist.append(ptr)
       } else {
-	base.previous.append(node)
+        base.previous.append(ptr)
       }
 
     newTimestamp

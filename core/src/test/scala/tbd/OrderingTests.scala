@@ -34,18 +34,18 @@ class OrderingTests extends FlatSpec with Matchers {
   def fill(ordering: Ordering, num: Int):
       Tuple3[Timestamp, Timestamp, Timestamp] = {
     var i = 1
-    val middle = ordering.after(null, null)
+    val middle = ordering.after(null, -1)
     while (i < num / 2) {
-      ordering.after(null, null)
+      ordering.after(null, -1)
       i += 1
     }
 
-    val start = ordering.after(null, null)
-    val end = ordering.after(middle, null)
+    val start = ordering.after(null, -1)
+    val end = ordering.after(middle, -1)
     i += 2
 
     while (i < num) {
-      ordering.after(middle, null)
+      ordering.after(middle, -1)
       i += 1
     }
 
@@ -67,8 +67,8 @@ class OrderingTests extends FlatSpec with Matchers {
       val ordering = new Ordering()
       val tuple = fill(ordering, i)
 
-      val t1 = ordering.after(tuple._1, null)
-      val t2 = ordering.after(tuple._2, null)
+      val t1 = ordering.after(tuple._1, -1)
+      val t2 = ordering.after(tuple._2, -1)
 
       checkOrdering(List(tuple._1, t1, tuple._2, t2, tuple._3))
     }
@@ -79,7 +79,7 @@ class OrderingTests extends FlatSpec with Matchers {
       val ordering = new Ordering()
       val tuple = fill(ordering, i)
 
-      val t1 = ordering.after(tuple._3, null)
+      val t1 = ordering.after(tuple._3, -1)
 
       checkOrdering(List(tuple._1, tuple._2, tuple._3, t1))
     }
@@ -90,7 +90,7 @@ class OrderingTests extends FlatSpec with Matchers {
       val ordering = new Ordering()
       val tuple = fill(ordering, i)
 
-      val t1 = ordering.after(null, null)
+      val t1 = ordering.after(null, -1)
 
       checkOrdering(List(t1, tuple._1, tuple._2, tuple._3))
     }
@@ -102,9 +102,9 @@ class OrderingTests extends FlatSpec with Matchers {
       val tuple = fill(ordering, i)
 
       ordering.remove(tuple._1)
-      val t1 = ordering.after(tuple._2, null)
-      val t2 = ordering.after(tuple._3, null)
-      val t3 = ordering.after(null, null)
+      val t1 = ordering.after(tuple._2, -1)
+      val t2 = ordering.after(tuple._3, -1)
+      val t3 = ordering.after(null, -1)
 
       checkOrdering(List(t3, tuple._2, t1, tuple._3, t2))
     }
@@ -115,12 +115,12 @@ class OrderingTests extends FlatSpec with Matchers {
       val ordering = new Ordering()
       val tuple = fill(ordering, i)
 
-      val t1 = ordering.after(tuple._3, null)
+      val t1 = ordering.after(tuple._3, -1)
       ordering.remove(t1)
-      val t2 = ordering.after(tuple._1, null)
-      val t3 = ordering.after(tuple._2, null)
-      val t4 = ordering.after(tuple._3, null)
-      val t5 = ordering.after(null, null)
+      val t2 = ordering.after(tuple._1, -1)
+      val t3 = ordering.after(tuple._2, -1)
+      val t4 = ordering.after(tuple._3, -1)
+      val t5 = ordering.after(null, -1)
 
       checkOrdering(List(t5, tuple._1, t2, tuple._2, t3, tuple._3, t4))
     }
@@ -131,12 +131,12 @@ class OrderingTests extends FlatSpec with Matchers {
       val ordering = new Ordering()
       val tuple = fill(ordering, i)
 
-      val t1 = ordering.after(tuple._2, null)
+      val t1 = ordering.after(tuple._2, -1)
       ordering.remove(tuple._2)
-      val t2 = ordering.after(null, null)
-      val t3 = ordering.after(tuple._1, null)
-      val t4 = ordering.after(t1, null)
-      val t5 = ordering.after(tuple._3, null)
+      val t2 = ordering.after(null, -1)
+      val t3 = ordering.after(tuple._1, -1)
+      val t4 = ordering.after(t1, -1)
+      val t5 = ordering.after(tuple._3, -1)
 
       checkOrdering(List(t2, tuple._1, t3, t1, t4, tuple._3, t5))
     }
@@ -147,16 +147,16 @@ class OrderingTests extends FlatSpec with Matchers {
       val ordering = new Ordering()
       val (start, middle, end) = fill(ordering, i)
 
-      val t1 = ordering.append(null)
-      val t2 = ordering.after(end, null)
-      val t3 = ordering.after(t1, null)
+      val t1 = ordering.append(-1)
+      val t2 = ordering.after(end, -1)
+      val t3 = ordering.after(t1, -1)
 
       checkOrdering(List(start, middle, end, t2, t1, t3))
 
       var appended: Timestamp = null
       var lastAppended: Timestamp = null
       for (j <- 1 to 5) {
-        appended = ordering.append(null)
+        appended = ordering.append(-1)
 
         if (lastAppended != null) {
           checkOrdering(List(start, middle, end, lastAppended, appended))

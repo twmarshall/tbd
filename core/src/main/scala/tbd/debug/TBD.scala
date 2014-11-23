@@ -29,8 +29,9 @@ object TBD {
   type Changeable[T] = tbd.Changeable[T]
   type Context = tbd.Context
   type Mod[T] = tbd.Mod[T]
+  type Mutator = tbd.Mutator
 
-  val nodes = Map[Node, (Int, Tag, Array[StackTraceElement])]()
+  val nodes = Map[Pointer, (Int, Tag, Array[StackTraceElement])]()
 
   @functionToInvoke("readInternal")
   def read[T, U]
@@ -51,8 +52,8 @@ object TBD {
 
     val changeable = tbd.TBD.read(mod)(reader)(c)
 
-    val readNode = c.ddg.reads(mod.id).last.node
-    nodes(readNode) = (internalId, tag, stack)
+    val time = c.ddg.reads(mod.id).last
+    nodes(time.pointer) = (internalId, tag, stack)
 
     changeable
   }
@@ -76,8 +77,8 @@ object TBD {
 
     val changeable = tbd.TBD.read2(mod)(reader)(c)
 
-    val readNode = c.ddg.reads(mod.id).last.node
-    nodes(readNode) = (internalId, tag, stack)
+    val time = c.ddg.reads(mod.id).last
+    nodes(time.pointer) = (internalId, tag, stack)
 
     changeable
   }
@@ -97,8 +98,7 @@ object TBD {
     val mod = tbd.TBD.mod(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
-    val modNode = c.currentTime.node
-    nodes(modNode) = (internalId, tag, stack)
+    nodes(c.currentTime.pointer) = (internalId, tag, stack)
 
     mod
   }
@@ -120,8 +120,7 @@ object TBD {
     val (mod1, mod2) = tbd.TBD.mod2(initializer)(c)
 
     val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
-    val modNode = c.currentTime.node
-    nodes(modNode) = (internalId, tag, stack)
+    nodes(c.currentTime.pointer) = (internalId, tag, stack)
 
     (mod1, mod2)
   }
@@ -143,8 +142,7 @@ object TBD {
     val (mod, changeable) = tbd.TBD.modLeft(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
-    val modNode = c.currentTime.node
-    nodes(modNode) = (internalId, tag, stack)
+    nodes(c.currentTime.pointer) = (internalId, tag, stack)
 
     (mod, changeable)
   }
@@ -165,8 +163,7 @@ object TBD {
     val (changeable, mod) = tbd.TBD.modRight(initializer)(c)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
-    val modNode = c.currentTime.node
-    nodes(modNode) = (internalId, tag, stack)
+    nodes(c.currentTime.pointer) = (internalId, tag, stack)
 
     (changeable, mod)
   }
@@ -179,12 +176,11 @@ object TBD {
     val modId = changeable.modId
 
     val timestamp = c.ddg.addWrite(modId, -1, c)
-    val writeNode = timestamp.node
-    timestamp.end = c.ddg.nextTimestamp(writeNode, c)
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     val writes = List(SingleWriteTag(modId, c.readId(modId)))
     val tag = Tag.Write(writes)
-    nodes(writeNode) = (internalId, tag, stack)
+    nodes(timestamp.pointer) = (internalId, tag, stack)
 
     changeable
   }
@@ -199,14 +195,13 @@ object TBD {
     val modId2 = c.currentModId2
 
     val timestamp = c.ddg.addWrite(modId, modId2, c)
-    val writeNode = timestamp.node
-    timestamp.end = c.ddg.nextTimestamp(writeNode, c)
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     val writes = List(
       SingleWriteTag(modId, c.readId(modId)),
       SingleWriteTag(modId2, c.readId(modId2)))
     val tag = Tag.Write(writes)
-    nodes(writeNode) = (internalId, tag, stack)
+    nodes(timestamp.pointer) = (internalId, tag, stack)
 
     changeables
   }
@@ -224,12 +219,11 @@ object TBD {
     val modId = c.currentModId
 
     val timestamp = c.ddg.addWrite(modId, -1, c)
-    val writeNode = timestamp.node
-    timestamp.end = c.ddg.nextTimestamp(writeNode, c)
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     val writes = List(SingleWriteTag(modId, c.readId(modId)))
     val tag = Tag.Write(writes)
-    nodes(writeNode) = (internalId, tag, stack)
+    nodes(timestamp.pointer) = (internalId, tag, stack)
 
     changeables
   }
@@ -247,12 +241,11 @@ object TBD {
     val modId2 = c.currentModId2
 
     val timestamp = c.ddg.addWrite(-1, modId2, c)
-    val writeNode = timestamp.node
-    timestamp.end = c.ddg.nextTimestamp(writeNode, c)
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     val writes = List(SingleWriteTag(modId2, c.readId(modId2)))
     val tag = Tag.Write(writes)
-    nodes(writeNode) = (internalId, tag, stack)
+    nodes(timestamp.pointer) = (internalId, tag, stack)
 
     changeables
   }

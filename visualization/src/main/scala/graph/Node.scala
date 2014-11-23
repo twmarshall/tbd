@@ -22,12 +22,13 @@ import tbd.ddg
  * Represents a visualizer DDG node.
  * Is created by copying all necessary properties of the TBD ddg node.
  */
-class Node(ddgNode: ddg.Node) {
-  val (internalId, tag, stacktrace) = TBD.nodes(ddgNode)
+class Node(time: ddg.Timestamp) {
+
+  val (internalId, tag, stacktrace) = TBD.nodes(time.pointer)
 
   override def toString = {
-    //tag.toString()
-    ddgNode.toString
+    tag.toString()
+    //ddgNode.toString
   }
 
   //Gets a string identifying the nodes type.

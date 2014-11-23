@@ -26,7 +26,7 @@ import tbd.master.Master
 import tbd.messages._
 
 class DDG {
-  var root = new RootNode()
+  var root = RootNode.create()
   debug.TBD.nodes(root) = (Node.getId(), Tag.Root(), null)
 
   val reads = Map[ModId, Buffer[Timestamp]]()
@@ -34,7 +34,7 @@ class DDG {
 
   var updated = TreeSet[Timestamp]()((new TimestampOrdering()).reverse)
 
-  private val ordering = new Ordering()
+  private val ordering = new Ordering(root)
 
   val readers = Map[Int, Any => Changeable[Any]]()
   val read2ers = Map[Int, (Any, Any) => Changeable[Any]]()
@@ -55,8 +55,7 @@ class DDG {
     readers(nextReadId) = reader
     nextReadId += 1
 
-    val timestamp = nextTimestamp(null, c)
-    timestamp.pointer = readNodePointer
+    val timestamp = nextTimestamp(readNodePointer, c)
 
     if (reads.contains(mod.id)) {
       reads(mod.id) :+= timestamp
@@ -76,10 +75,10 @@ class DDG {
        currentModId1: ModId,
        currentModId2: ModId,
        c: Context): Timestamp = {
-    val timestamp = nextTimestamp(null, c)
-
     val read2NodePointer = Read2Node.create(
       mod1.id, mod2.id, nextReadId, currentModId1, currentModId2)
+    val timestamp = nextTimestamp(read2NodePointer, c)
+
     read2ers(nextReadId) = reader
     nextReadId += 1
 
@@ -104,9 +103,9 @@ class DDG {
        currentModId1: ModId,
        currentModId2: ModId,
        c: Context): Timestamp = {
-    val timestamp = nextTimestamp(null, c)
-    timestamp.pointer = MemoNode.create(
+    val memoNodePointer = MemoNode.create(
       memoizerId, signature, currentModId1, currentModId2)
+    val timestamp = nextTimestamp(memoNodePointer, c)
 
     assert(Node.getCurrentModId2(timestamp.pointer) == currentModId2)
     assert(Node.getCurrentModId1(timestamp.pointer) == currentModId1)
@@ -122,12 +121,9 @@ class DDG {
        currentModId1: ModId,
        currentModId2: ModId,
        c: Context): Timestamp = {
-    val timestamp = nextTimestamp(null, c)
-
-    val ptr = ModNode.create(
+    val modNodePointer = ModNode.create(
       modId1, modId2, modizerId, key, currentModId1, currentModId2)
-
-    timestamp.pointer = ptr
+    val timestamp = nextTimestamp(modNodePointer, c)
 
     timestamp
   }
@@ -136,8 +132,8 @@ class DDG {
       (modId: ModId,
        modId2: ModId,
        c: Context): Timestamp = {
-    val writeNode = new WriteNode(modId, modId2)
-    val timestamp = nextTimestamp(writeNode, c)
+    val writeNodePointer = WriteNode.create(modId, modId2)
+    val timestamp = nextTimestamp(writeNodePointer, c)
 
     timestamp
   }
@@ -148,15 +144,15 @@ class DDG {
        taskId1: TaskId,
        taskId2: TaskId,
        c: Context): Timestamp = {
-    val timestamp = nextTimestamp(null, c)
-    timestamp.pointer = ParNode.create(taskId1, taskId2)
+    val parNodePointer = ParNode.create(taskId1, taskId2)
+    val timestamp = nextTimestamp(parNodePointer, c)
 
     tasks(taskId1) = taskRef1
     tasks(taskId2) = taskRef2
     pars(taskRef1) = timestamp
     pars(taskRef2) = timestamp
 
-    timestamp.end = c.ddg.nextTimestamp(null, c)
+    timestamp.end = c.ddg.nextTimestamp(parNodePointer, c)
 
     timestamp
   }
@@ -169,12 +165,12 @@ class DDG {
     tasks(ParNode.getTaskId2(ptr))
   }
 
-  def nextTimestamp(node: Node, c: Context): Timestamp = {
+  def nextTimestamp(ptr: Pointer, c: Context): Timestamp = {
     val time =
       if (c.initialRun)
-        ordering.append(node)
+        ordering.append(ptr)
       else
-        ordering.after(c.currentTime, node)
+        ordering.after(c.currentTime, ptr)
 
     c.currentTime = time
 
@@ -222,8 +218,6 @@ class DDG {
   def splice(start: Timestamp, end: Timestamp, c: tbd.Context) {
     var time = start
     while (time < end) {
-      val node = time.node
-
       if (time.end != null) {
         Node.getType(time.pointer) match {
           case Node.MemoNodeType =>
@@ -273,6 +267,8 @@ class DDG {
             c.ddg.reads(Read2Node.getModId1(time.pointer)) -= time
             c.ddg.reads(Read2Node.getModId2(time.pointer)) -= time
             updated -= time
+
+          case Node.WriteNodeType =>
         }
 
         if (time.end > end) {
@@ -337,49 +333,46 @@ class DDG {
     val out = new StringBuffer("")
     def innerToString(time: Timestamp, prefix: String) {
       val thisString =
-        if (time.pointer != -1) {
-          Node.getType(time.pointer) match {
-            case Node.MemoNodeType =>
-              prefix + "MemoNode " + time.pointer + " time = " + time + " to " +
-              time.end + " signature=" +
-              MemoNode.getSignature(time.pointer) + "\n"
-            case Node.ModNodeType =>
-              prefix + "ModNode " + time.pointer + " modId1=)" +
-              ModNode.getModId1(time.pointer) + ") modId2=(" +
-              ModNode.getModId1(time.pointer) + ") time = " + time + " to " +
-              time.end + "\n"
-            case Node.ParNodeType =>
-              val taskRef1 = tasks(ParNode.getTaskId1(time.pointer))
-              val taskRef2 = tasks(ParNode.getTaskId2(time.pointer))
-              val f1 = taskRef1 ? GetTaskDDGMessage()
-              val f2 = taskRef2 ? GetTaskDDGMessage()
+        Node.getType(time.pointer) match {
+          case Node.MemoNodeType =>
+            prefix + "MemoNode " + time.pointer + " time = " + time + " to " +
+            time.end + " signature=" +
+            MemoNode.getSignature(time.pointer) + "\n"
+          case Node.ModNodeType =>
+            prefix + "ModNode " + time.pointer + " modId1=)" +
+            ModNode.getModId1(time.pointer) + ") modId2=(" +
+            ModNode.getModId1(time.pointer) + ") time = " + time + " to " +
+            time.end + "\n"
+          case Node.ParNodeType =>
+            val taskRef1 = tasks(ParNode.getTaskId1(time.pointer))
+            val taskRef2 = tasks(ParNode.getTaskId2(time.pointer))
 
-              val ddg1 = Await.result(f1.mapTo[DDG], DURATION)
-              val ddg2 = Await.result(f2.mapTo[DDG], DURATION)
+            val f1 = taskRef1 ? GetTaskDDGMessage
+            val f2 = taskRef2 ? GetTaskDDGMessage
 
-              prefix + "ParNode " + time.pointer  + " pebbles=(" +
-              ParNode.getPebble1(time.pointer) + ", " +
-              ParNode.getPebble2(time.pointer) + ")\n" +
-              ddg1.toString(prefix + "|") + ddg2.toString(prefix + "|")
-            case Node.ReadNodeType =>
-              prefix + "ReadNode " + time.pointer + " modId=(" +
-              ReadNode.getModId(time.pointer) + ") time=" + time + " to " +
-              time.end + "\n"
-            case Node.Read2NodeType =>
-              prefix + "Read2Node " + time.pointer + " modId1=(" +
-              Read2Node.getModId1(time.pointer) + ") modId2=(" +
-              Read2Node.getModId2(time.pointer) + ") time=" + time + " to " +
-              time.end + "\n"
-          }
-        } else {
-          time.node match {
-            case root: RootNode =>
-              prefix + "RootNode=" + root + "\n"
-            case write: WriteNode =>
-              prefix + write + " modId=(" + write.modId + ")\n"
-            case x => "???"
-          }
-      }
+            val ddg1 = Await.result(f1.mapTo[DDG], DURATION)
+            val ddg2 = Await.result(f2.mapTo[DDG], DURATION)
+
+            prefix + "ParNode " + time.pointer  + " pebbles=(" +
+            ParNode.getPebble1(time.pointer) + ", " +
+            ParNode.getPebble2(time.pointer) + ")\n" +
+            ddg1.toString(prefix + "|") + ddg2.toString(prefix + "|")
+          case Node.RootNodeType =>
+            prefix + "RootNode " + time.pointer + "\n"
+          case Node.ReadNodeType =>
+            prefix + "ReadNode " + time.pointer + " modId=(" +
+            ReadNode.getModId(time.pointer) + ") time=" + time + " to " +
+            time.end + "\n"
+          case Node.Read2NodeType =>
+            prefix + "Read2Node " + time.pointer + " modId1=(" +
+            Read2Node.getModId1(time.pointer) + ") modId2=(" +
+            Read2Node.getModId2(time.pointer) + ") time=" + time + " to " +
+            time.end + "\n"
+          case Node.WriteNodeType =>
+            prefix + "WriteNode " + time.pointer + " modId=(" +
+            WriteNode.getModId1(time.pointer) + ")\n"
+        }
+
       out.append(thisString)
 
       for (time <- getChildren(time, time.end)) {

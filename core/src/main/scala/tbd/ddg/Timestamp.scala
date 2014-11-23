@@ -20,10 +20,11 @@ import tbd.Constants.Pointer
 object Timestamp {
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
-  val MAX_TIMESTAMP = new Timestamp(new Sublist(Int.MaxValue, null), Int.MaxValue, null, null, null)
+  val MAX_TIMESTAMP =
+    new Timestamp(new Sublist(Int.MaxValue, null), Int.MaxValue, null, null, -1)
 
   // A dummy timestamp which all real Timestamps are greater than.
-  val MIN_TIMESTAMP = new Timestamp(new Sublist(-1, null), -1, null, null, null)
+  val MIN_TIMESTAMP = new Timestamp(new Sublist(-1, null), -1, null, null, -1)
 }
 
 class Timestamp
@@ -31,10 +32,8 @@ class Timestamp
      var time: Double,
      var next: Timestamp,
      var previous: Timestamp,
-     val node: Node) {
+     val pointer: Pointer) {
   var end: Timestamp = null
-
-  var pointer: Pointer = -1
 
   def <(that: Timestamp): Boolean = {
     if (sublist == that.sublist) {

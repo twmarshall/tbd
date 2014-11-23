@@ -66,7 +66,8 @@ object DDG {
   //Recursivley creates a visualizer DDG from a TBD DDG.
   def create(ddg: tbd.ddg.DDG): DDG = {
 
-    val newNode = new Node(ddg.root)
+    val newNode = new Node(ddg.startTime)
+
     val result = new DDG(newNode)
 
     result.nodes += newNode
@@ -86,6 +87,7 @@ object DDG {
        end: tbd.ddg.Timestamp): Seq[tbd.ddg.Timestamp] = {
     tbd.ddg.Node.getType(start.pointer) match {
       case tbd.ddg.Node.ParNodeType =>
+        println("!!")
         val f1 = ddg.getLeftTask(start.pointer) ? tbd.messages.GetTaskDDGMessage
         val ddg1 = Await.result(f1.mapTo[tbd.ddg.DDG], DURATION)
         val f2 =
@@ -104,8 +106,7 @@ object DDG {
        node: Node,
        time: tbd.ddg.Timestamp,
        result: DDG): Unit = {
-    val ddgNode = time.node
-    val newNode = new Node(ddgNode)
+    val newNode = new Node(time)
 
     result.nodes += newNode
     result.adj += (newNode -> new ArrayBuffer[Edge]())

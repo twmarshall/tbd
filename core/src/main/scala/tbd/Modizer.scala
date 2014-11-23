@@ -46,13 +46,13 @@ class Modizer1[T](implicit c: Context) extends Modizer[T] {
       (initializer: => Changeable[T]): Mod[T] = {
     val mod1 =
       if (allocations.contains(key)) {
-	allocations(key) = (allocations(key)._1, c.epoch)
+        allocations(key) = (allocations(key)._1, c.epoch)
 
-	allocations(key)._1
+        allocations(key)._1
       } else {
-	val mod1 = new Mod[T](c.newModId())
-	allocations(key) = (mod1, c.epoch)
-	mod1
+        val mod1 = new Mod[T](c.newModId())
+        allocations(key) = (mod1, c.epoch)
+        mod1
       }
 
     TBD.modInternal(initializer, mod1, id, key, c)

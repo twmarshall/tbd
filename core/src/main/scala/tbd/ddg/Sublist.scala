@@ -15,16 +15,22 @@
  */
 package tbd.ddg
 
-class Sublist(var id: Int, var next: Sublist) {
+import tbd.Constants.Pointer
+
+class Sublist
+    (var id: Int,
+     var next: Sublist,
+     basePointer: Pointer = -1) {
   var previous: Sublist = null
 
-  val base: Timestamp = new Timestamp(this, 0, null, null, null)
+  val base: Timestamp = new Timestamp(this, 0, null, null, basePointer)
+
   base.next = base
   base.previous = base
 
   var size = 0
 
-  def after(t: Timestamp, node: Node): Timestamp = {
+  def after(t: Timestamp, ptr: Pointer): Timestamp = {
     val previous =
       if (t == null) {
         base
@@ -34,14 +40,14 @@ class Sublist(var id: Int, var next: Sublist) {
 
     val newTimestamp =
       if (previous.next == base) {
-        new Timestamp(this, previous.time + 1, base, previous, node)
+        new Timestamp(this, previous.time + 1, base, previous, ptr)
       } else {
         new Timestamp(
-	  this,
+          this,
           (previous.time + previous.next.time) / 2,
           previous.next,
           previous,
-	  node)
+          ptr)
       }
 
     previous.next = newTimestamp
@@ -51,9 +57,10 @@ class Sublist(var id: Int, var next: Sublist) {
     newTimestamp
   }
 
-  def append(node: Node): Timestamp = {
+  def append(ptr: Pointer): Timestamp = {
     val previous = base.previous
-    val newTimestamp = new Timestamp(this, previous.time + 1, base, previous, node)
+    val newTimestamp =
+      new Timestamp(this, previous.time + 1, base, previous, ptr)
 
     previous.next = newTimestamp
     newTimestamp.next.previous = newTimestamp

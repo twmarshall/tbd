@@ -38,9 +38,8 @@ class Memoizer[T](implicit c: Context) extends tbd.Memoizer[T]()(c) {
     val stack = Thread.currentThread().getStackTrace()
     val ret = super.apply(signature)(func)
 
-    val memoNode = c.currentTime.node
     val tag = Tag.Memo(FunctionTag(funcId, freeTerms), signature)
-    TBD.nodes(memoNode) = (internalId, tag, stack)
+    TBD.nodes(c.currentTime.pointer) = (internalId, tag, stack)
 
     ret
   }

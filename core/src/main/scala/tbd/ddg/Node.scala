@@ -29,6 +29,8 @@ object Node {
   val ParNodeType: Byte = 2
   val ReadNodeType: Byte = 3
   val Read2NodeType: Byte = 4
+  val RootNodeType: Byte = 5
+  val WriteNodeType: Byte = 6
 
   val typeOffset = 0
   val currentModId1Offset = typeOffset + 1
@@ -297,12 +299,32 @@ object Read2Node {
   }
 }
 
-abstract class Node {
-  var currentModId: ModId = -1
-
-  var currentModId2: ModId = -1
+object RootNode {
+  def create(): Pointer = {
+    val size = 0
+    Node.create(size, Node.RootNodeType, -1, -1)
+  }
 }
 
-class RootNode extends Node
+object WriteNode {
+  val modId1Offset = Node.nodeOffset
+  val modId2Offset = modId1Offset + modIdSize
 
-class WriteNode(val modId: ModId, val modId2: ModId) extends Node
+  def create(modId1: ModId, modId2: ModId): Pointer = {
+    val size = modIdSize * 2
+    val ptr = Node.create(size, Node.WriteNodeType, -1, -1)
+
+    MemoryAllocator.unsafe.putLong(ptr + modId1Offset, modId1)
+    MemoryAllocator.unsafe.putLong(ptr + modId2Offset, modId2)
+
+    ptr
+  }
+
+  def getModId1(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + modId1Offset)
+  }
+
+  def getModId2(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + modId2Offset)
+  }
+}
