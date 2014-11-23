@@ -57,6 +57,11 @@ object Constants {
   // The size of ModizerIds, in bytes.
   val modizerIdSize = 4
 
+  type MemoizerId = Int
+
+  // The size of MemoizerIds, in bytes.
+  val memoizerIdSize = 4
+
   val localhost = InetAddress.getLocalHost.getHostAddress
 
   val akkaConf = """

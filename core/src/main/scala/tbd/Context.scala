@@ -37,6 +37,8 @@ class Context
 
   val ddg = new DDG()
 
+  val memoTable = Map[Seq[Any], Buffer[(Timestamp, Any)]]()
+
   var initialRun = true
 
   // Contains a list of mods that have been updated since the last run of change
@@ -64,6 +66,8 @@ class Context
   private var nextModId: ModId = 0
 
   private var nextModizerId: ModizerId = 0
+
+  var nextMemoizerId: MemoizerId = 0
 
   private var modizers = Map[ModizerId, Modizer[_]]()
 

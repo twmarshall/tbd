@@ -24,6 +24,7 @@ import tbd._
 import tbd.Constants._
 
 object Node {
+  val MemoNodeType: Byte = 0
   val ModNodeType: Byte = 1
   val ParNodeType: Byte = 2
   val ReadNodeType: Byte = 3
@@ -73,6 +74,27 @@ object Node {
   def getId(): Int = {
     id = id + 1
     id
+  }
+}
+
+object MemoNode {
+  private val memoizerIdOffset = Node.nodeOffset
+  private val signatureOffset = memoizerIdOffset + memoizerIdSize
+
+  def create
+      (memoizerId: MemoizerId,
+       signature: Seq[_],
+       currentModId1: ModId,
+       currentModId2: ModId): Pointer = {
+    val byteOutput = new ByteArrayOutputStream()
+    val objectOutput = new ObjectOutputStream(byteOutput)
+    objectOutput.writeObject(signature)
+    val serializedSignature = byteOutput.toByteArray
+
+    val size = memoizerIdSize + serializedSignature.size
+    val ptr = Node.create(size, Node.MemoNodeType, currentModId1, currentModId2)
+
+    ptr
   }
 }
 
@@ -256,8 +278,6 @@ abstract class Node {
 class MemoNode
     (val signature: Seq[Any],
      val memoizer: Memoizer[_]) extends Node {
-
-  var value: Any = null
 }
 
 class RootNode extends Node

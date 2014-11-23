@@ -213,87 +213,6 @@ class DDG {
     }
   }
 
-  /**
-   * Replaces all of the mods equal to toReplace with newModId in the subtree
-   * rooted at node. This is called when a memo match is made where the memo
-   * node has a currentMod that's different from the Context's currentMod.
-   */
-  def replaceMods
-      (_timestamp: Timestamp,
-       _node: Node,
-       toReplace: ModId,
-       newModId: ModId): Buffer[Node] = {
-    val buf = Buffer[Node]()
-
-    var time = _timestamp
-    while (time < _timestamp.end) {
-      val node = time.node
-
-      if (time.end != null) {
-        val (currentModId, currentModId2) =
-          if (time.pointer != -1) {
-            (Node.getCurrentModId1(time.pointer),
-             Node.getCurrentModId2(time.pointer))
-          } else {
-            (node.currentModId, node.currentModId2)
-          }
-
-        if (currentModId == toReplace) {
-
-          buf += time.node
-          replace(node, toReplace, newModId)
-
-          if (time.pointer != -1) {
-            Node.setCurrentModId1(time.pointer, newModId)
-          } else {
-            node.currentModId = newModId
-          }
-        } else if (currentModId2 == toReplace) {
-          if (time.end != null) {
-            buf += time.node
-            replace(node, toReplace, newModId)
-
-            if (time.pointer != -1) {
-              Node.setCurrentModId2(time.pointer, newModId)
-            } else {
-              node.currentModId2 = newModId
-            }
-          }
-        } else {
-          // Skip the subtree rooted at this node since this node doesn't have
-          // toReplace as its currentModId and therefore no children can either.
-          time = time.end
-        }
-      }
-
-      time = time.getNext()
-    }
-
-    buf
-  }
-
-  private def replace(node: Node, toReplace: ModId, newModId: ModId) {
-    node match {
-      case memoNode: MemoNode =>
-        memoNode.value match {
-          case changeable: Changeable[_] =>
-            if (changeable.modId == toReplace) {
-              changeable.modId = newModId
-            }
-          case (c1: Changeable[_], c2: Changeable[_]) =>
-            if (c1.modId == toReplace) {
-              c1.modId = newModId
-            }
-
-            if (c2.modId == toReplace) {
-              c2.modId = newModId
-            }
-          case _ =>
-        }
-      case _ =>
-    }
-  }
-
   def splice(start: Timestamp, end: Timestamp, c: tbd.Context) {
     var time = start
     while (time < end) {
@@ -349,7 +268,6 @@ class DDG {
         } else {
           node match {
             case memoNode: MemoNode =>
-              assert(time.pointer == -1)
               memoNode.memoizer.removeEntry(time, memoNode.signature)
             case _ => println("??")
           }
