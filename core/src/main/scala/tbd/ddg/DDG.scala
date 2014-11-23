@@ -98,6 +98,22 @@ class DDG {
     timestamp
   }
 
+  def addMemo
+      (signature: Seq[Any],
+       memoizerId: MemoizerId,
+       currentModId1: ModId,
+       currentModId2: ModId,
+       c: Context): Timestamp = {
+    val timestamp = nextTimestamp(null, c)
+    timestamp.pointer = MemoNode.create(
+      memoizerId, signature, currentModId1, currentModId2)
+
+    assert(Node.getCurrentModId2(timestamp.pointer) == currentModId2)
+    assert(Node.getCurrentModId1(timestamp.pointer) == currentModId1)
+
+    timestamp
+  }
+
   def addMod
       (modId1: ModId,
        modId2: ModId,
@@ -151,16 +167,6 @@ class DDG {
 
   def getRightTask(ptr: Pointer): ActorRef = {
     tasks(ParNode.getTaskId2(ptr))
-  }
-
-  def addMemo
-      (signature: Seq[Any],
-       memoizer: Memoizer[_],
-       c: Context): Timestamp = {
-    val memoNode = new MemoNode(signature, memoizer)
-    val timestamp = nextTimestamp(memoNode, c)
-
-    timestamp
   }
 
   def nextTimestamp(node: Node, c: Context): Timestamp = {
@@ -219,26 +225,18 @@ class DDG {
       val node = time.node
 
       if (time.end != null) {
-        if (time.pointer != -1) {
-          Node.getType(time.pointer) match {
-            case Node.ModNodeType =>
-              val modizerId = ModNode.getModizerId(time.pointer)
+        Node.getType(time.pointer) match {
+          case Node.MemoNodeType =>
+            c.getMemoizer(MemoNode.getMemoizerId(time.pointer))
+              .removeEntry(time, MemoNode.getSignature(time.pointer))
 
-              if (modizerId != -1) {
-                val key  = ModNode.getKey(time.pointer)
+          case Node.ModNodeType =>
+            val modizerId = ModNode.getModizerId(time.pointer)
 
-                if (c.getModizer(modizerId).remove(key)) {
-                  val modId1 = ModNode.getModId1(time.pointer)
-                  if (modId1 != -1) {
-                    c.remove(modId1)
-                  }
+            if (modizerId != -1) {
+              val key  = ModNode.getKey(time.pointer)
 
-                  val modId2 = ModNode.getModId2(time.pointer)
-                  if (modId2 != -1) {
-                    c.remove(modId2)
-                  }
-                }
-              } else {
+              if (c.getModizer(modizerId).remove(key)) {
                 val modId1 = ModNode.getModId1(time.pointer)
                 if (modId1 != -1) {
                   c.remove(modId1)
@@ -249,28 +247,32 @@ class DDG {
                   c.remove(modId2)
                 }
               }
+            } else {
+              val modId1 = ModNode.getModId1(time.pointer)
+              if (modId1 != -1) {
+                c.remove(modId1)
+              }
 
-              MemoryAllocator.free(time.pointer)
+              val modId2 = ModNode.getModId2(time.pointer)
+              if (modId2 != -1) {
+                c.remove(modId2)
+              }
+            }
 
-            case Node.ParNodeType =>
-              updated -= time
+            MemoryAllocator.free(time.pointer)
 
-            case Node.ReadNodeType =>
-              c.ddg.reads(ReadNode.getModId(time.pointer)) -= time
-              updated -= time
-              MemoryAllocator.free(time.pointer)
+          case Node.ParNodeType =>
+            updated -= time
 
-            case Node.Read2NodeType =>
-              c.ddg.reads(Read2Node.getModId1(time.pointer)) -= time
-              c.ddg.reads(Read2Node.getModId2(time.pointer)) -= time
-              updated -= time
-          }
-        } else {
-          node match {
-            case memoNode: MemoNode =>
-              memoNode.memoizer.removeEntry(time, memoNode.signature)
-            case _ => println("??")
-          }
+          case Node.ReadNodeType =>
+            c.ddg.reads(ReadNode.getModId(time.pointer)) -= time
+            updated -= time
+            MemoryAllocator.free(time.pointer)
+
+          case Node.Read2NodeType =>
+            c.ddg.reads(Read2Node.getModId1(time.pointer)) -= time
+            c.ddg.reads(Read2Node.getModId2(time.pointer)) -= time
+            updated -= time
         }
 
         if (time.end > end) {
@@ -337,6 +339,10 @@ class DDG {
       val thisString =
         if (time.pointer != -1) {
           Node.getType(time.pointer) match {
+            case Node.MemoNodeType =>
+              prefix + "MemoNode " + time.pointer + " time = " + time + " to " +
+              time.end + " signature=" +
+              MemoNode.getSignature(time.pointer) + "\n"
             case Node.ModNodeType =>
               prefix + "ModNode " + time.pointer + " modId1=)" +
               ModNode.getModId1(time.pointer) + ") modId2=(" +
@@ -367,9 +373,6 @@ class DDG {
           }
         } else {
           time.node match {
-            case memo: MemoNode =>
-              prefix + memo + " time = " + time + " to " + time.end +
-              " signature=" + memo.signature + "\n"
             case root: RootNode =>
               prefix + "RootNode=" + root + "\n"
             case write: WriteNode =>

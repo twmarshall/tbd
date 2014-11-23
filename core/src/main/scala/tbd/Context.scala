@@ -67,9 +67,11 @@ class Context
 
   private var nextModizerId: ModizerId = 0
 
-  var nextMemoizerId: MemoizerId = 0
+  private val modizers = Map[ModizerId, Modizer[_]]()
 
-  private var modizers = Map[ModizerId, Modizer[_]]()
+  private var nextMemoizerId: MemoizerId = 0
+
+  private val memoizers = Map[MemoizerId, Memoizer[_]]()
 
   val pending = Buffer[Future[String]]()
 
@@ -96,6 +98,19 @@ class Context
 
   def getModizer(modizerId: ModizerId): Modizer[_] = {
     modizers(modizerId)
+  }
+
+  def addMemoizer(memoizer: Memoizer[_]): MemoizerId = {
+    val newMemoizerId = nextMemoizerId
+    nextMemoizerId += 1
+
+    memoizers(newMemoizerId) = memoizer
+
+    newMemoizerId
+  }
+
+  def getMemoizer(memoizerId: MemoizerId): Memoizer[_] = {
+    memoizers(memoizerId)
   }
 
   def read[T](mod: Mod[T], taskRef: ActorRef = null): T = {

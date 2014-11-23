@@ -79,7 +79,8 @@ object Node {
 
 object MemoNode {
   private val memoizerIdOffset = Node.nodeOffset
-  private val signatureOffset = memoizerIdOffset + memoizerIdSize
+  private val signatureSizeOffset = memoizerIdOffset + memoizerIdSize
+  private val signatureOffset = signatureSizeOffset + 4
 
   def create
       (memoizerId: MemoizerId,
@@ -91,10 +92,37 @@ object MemoNode {
     objectOutput.writeObject(signature)
     val serializedSignature = byteOutput.toByteArray
 
-    val size = memoizerIdSize + serializedSignature.size
+    val size = memoizerIdSize + 4 + serializedSignature.size
     val ptr = Node.create(size, Node.MemoNodeType, currentModId1, currentModId2)
 
+    MemoryAllocator.unsafe.putInt(ptr + memoizerIdOffset, memoizerId)
+    MemoryAllocator.unsafe.putInt(
+      ptr + signatureSizeOffset, serializedSignature.size)
+
+    for (i <- 0 until serializedSignature.size) {
+      MemoryAllocator.unsafe.putByte(
+        ptr + signatureOffset + i, serializedSignature(i))
+    }
+
     ptr
+  }
+
+  def getMemoizerId(ptr: Pointer): MemoizerId = {
+    MemoryAllocator.unsafe.getInt(ptr + memoizerIdOffset)
+  }
+
+  def getSignature(ptr: Pointer): Seq[Any] = {
+    val signatureSize = MemoryAllocator.unsafe.getInt(ptr + signatureSizeOffset)
+
+    val byteArray = new Array[Byte](signatureSize)
+
+    for (i <- 0 until signatureSize) {
+      byteArray(i) = MemoryAllocator.unsafe.getByte(ptr + signatureOffset + i)
+    }
+
+    val byteInput = new ByteArrayInputStream(byteArray)
+    val objectInput = new ObjectInputStream(byteInput)
+    objectInput.readObject().asInstanceOf[Seq[Any]]
   }
 }
 
@@ -273,11 +301,6 @@ abstract class Node {
   var currentModId: ModId = -1
 
   var currentModId2: ModId = -1
-}
-
-class MemoNode
-    (val signature: Seq[Any],
-     val memoizer: Memoizer[_]) extends Node {
 }
 
 class RootNode extends Node
