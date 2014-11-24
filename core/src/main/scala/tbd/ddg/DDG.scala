@@ -184,6 +184,9 @@ class DDG {
     }
   }
 
+  // Removes the subdddg between start and end, inclusive. This is the only
+  // place in the code where Nodes are removed from the graph, so this is where
+  // we must call free on their pointers.
   def splice(start: Timestamp, end: Timestamp, c: tbd.Context) {
     var time = start
     while (time < end) {
@@ -214,8 +217,6 @@ class DDG {
               }
             }
 
-            MemoryAllocator.free(time.pointer)
-
           case Node.ModNodeType =>
             val modId1 = ModNode.getModId1(time.pointer)
             if (modId1 != -1) {
@@ -227,15 +228,12 @@ class DDG {
               c.remove(modId2)
             }
 
-            MemoryAllocator.free(time.pointer)
-
           case Node.ParNodeType =>
             updated -= time
 
           case Node.ReadNodeType =>
             c.ddg.reads(ReadNode.getModId(time.pointer)) -= time
             updated -= time
-            MemoryAllocator.free(time.pointer)
 
           case Node.Read2NodeType =>
             c.ddg.reads(Read2Node.getModId1(time.pointer)) -= time
@@ -244,6 +242,8 @@ class DDG {
 
           case Node.WriteNodeType =>
         }
+
+        MemoryAllocator.free(time.pointer)
 
         if (time.end > end) {
           ordering.remove(time.end)
