@@ -32,7 +32,7 @@ class Timestamp
      var time: Double,
      var next: Timestamp,
      var previous: Timestamp,
-     val pointer: Pointer) {
+     val nodePtr: Pointer) {
   var end: Timestamp = null
 
   def <(that: Timestamp): Boolean = {

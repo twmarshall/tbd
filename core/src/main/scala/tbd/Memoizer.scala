@@ -81,7 +81,7 @@ class Memoizer[T](implicit c: Context) {
 
       val value = func
 
-      timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
+      timestamp.end = c.ddg.nextTimestamp(timestamp.nodePtr, c)
 
       if (c.memoTable.contains(signature)) {
         c.memoTable(signature) += ((timestamp, value))
@@ -112,26 +112,26 @@ class Memoizer[T](implicit c: Context) {
   private def updateChangeables(timestamp: Timestamp, value: T) {
     value match {
       case changeable: Changeable[_] =>
-        if (Node.getCurrentModId1(timestamp.pointer) != c.currentModId) {
+        if (Node.getCurrentModId1(timestamp.nodePtr) != c.currentModId) {
           c.update(c.currentModId, c.readId(changeable.modId))
 
           replaceMods(
-            timestamp, Node.getCurrentModId1(timestamp.pointer), c.currentModId)
+            timestamp, Node.getCurrentModId1(timestamp.nodePtr), c.currentModId)
         }
 
       case (c1: Changeable[_], c2: Changeable[_]) =>
-        if (Node.getCurrentModId1(timestamp.pointer) != c.currentModId) {
+        if (Node.getCurrentModId1(timestamp.nodePtr) != c.currentModId) {
           c.update(c.currentModId, c.readId(c1.modId))
 
           replaceMods(
-            timestamp, Node.getCurrentModId1(timestamp.pointer), c.currentModId)
+            timestamp, Node.getCurrentModId1(timestamp.nodePtr), c.currentModId)
         }
 
-        if (Node.getCurrentModId2(timestamp.pointer) != c.currentModId2) {
+        if (Node.getCurrentModId2(timestamp.nodePtr) != c.currentModId2) {
           c.update(c.currentModId2, c.readId(c2.modId))
 
           replaceMods(
-            timestamp, Node.getCurrentModId2(timestamp.pointer), c.currentModId2)
+            timestamp, Node.getCurrentModId2(timestamp.nodePtr), c.currentModId2)
         }
 
       case _ =>
@@ -150,19 +150,19 @@ class Memoizer[T](implicit c: Context) {
     var time = _timestamp
     while (time < _timestamp.end) {
       if (time.end != null) {
-        val currentModId = Node.getCurrentModId1(time.pointer)
-        val currentModId2 = Node.getCurrentModId2(time.pointer)
+        val currentModId = Node.getCurrentModId1(time.nodePtr)
+        val currentModId2 = Node.getCurrentModId2(time.nodePtr)
 
         if (currentModId == toReplace) {
 
           replace(time, toReplace, newModId)
 
-          Node.setCurrentModId1(time.pointer, newModId)
+          Node.setCurrentModId1(time.nodePtr, newModId)
         } else if (currentModId2 == toReplace) {
           if (time.end != null) {
             replace(time, toReplace, newModId)
 
-            Node.setCurrentModId2(time.pointer, newModId)
+            Node.setCurrentModId2(time.nodePtr, newModId)
           }
         } else {
           // Skip the subtree rooted at this node since this node doesn't have
@@ -176,9 +176,9 @@ class Memoizer[T](implicit c: Context) {
   }
 
   private def replace(time: Timestamp, toReplace: ModId, newModId: ModId) {
-    Node.getType(time.pointer) match {
+    Node.getType(time.nodePtr) match {
       case Node.MemoNodeType =>
-        val signature = MemoNode.getSignature(time.pointer)
+        val signature = MemoNode.getSignature(time.nodePtr)
 
         var value: T = null.asInstanceOf[T]
         for ((_time, _value) <-
@@ -205,7 +205,7 @@ class Memoizer[T](implicit c: Context) {
         }
 
       case Node.Memo1NodeType =>
-        val signature = Memo1Node.getSignature(time.pointer)
+        val signature = Memo1Node.getSignature(time.nodePtr)
 
         var value: T = null.asInstanceOf[T]
         for ((_time, _value) <- c.memoTable(signature)) {

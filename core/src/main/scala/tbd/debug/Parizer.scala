@@ -40,7 +40,7 @@ class Parizer[T]
 
     val tag = Tag.Par(
       FunctionTag(id1, closedTerms1), FunctionTag(id2, closedTerms2))
-    TBD.nodes(c.currentTime.pointer) = (internalId, tag, stack)
+    TBD.nodes(c.currentTime.nodePtr) = (internalId, tag, stack)
 
     (oneRet, twoRet)
   }

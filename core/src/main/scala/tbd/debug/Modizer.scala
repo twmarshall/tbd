@@ -44,7 +44,7 @@ class Modizer1[T](implicit c: Context) extends tbd.Modizer1[T] {
     val mod = super.apply(key)(initializer)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
-    TBD.nodes(c.currentTime.pointer) = (internalId, tag, stack)
+    TBD.nodes(c.currentTime.nodePtr) = (internalId, tag, stack)
 
     mod
   }
@@ -77,7 +77,7 @@ class Modizer2[T, U](implicit c: Context) extends tbd.Modizer2[T, U] {
     val (mod1, mod2) = super.apply(key)(initializer)
 
     val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
-    TBD.nodes(c.currentTime.pointer) = (internalId, tag, stack)
+    TBD.nodes(c.currentTime.nodePtr) = (internalId, tag, stack)
 
     (mod1, mod2)
   }
@@ -102,7 +102,7 @@ class Modizer2[T, U](implicit c: Context) extends tbd.Modizer2[T, U] {
     val (mod, changeable) = super.left(key)(initializer)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
-    TBD.nodes(c.currentTime.pointer) = (internalId, tag, stack)
+    TBD.nodes(c.currentTime.nodePtr) = (internalId, tag, stack)
 
     (mod, changeable)
   }
@@ -127,7 +127,7 @@ class Modizer2[T, U](implicit c: Context) extends tbd.Modizer2[T, U] {
     val (changeable, mod) = super.right(key)(initializer)
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
-    TBD.nodes(c.currentTime.pointer) = (internalId, tag, stack)
+    TBD.nodes(c.currentTime.nodePtr) = (internalId, tag, stack)
 
     (changeable, mod)
   }

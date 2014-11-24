@@ -85,13 +85,13 @@ object DDG {
       (ddg: tbd.ddg.DDG,
        start: tbd.ddg.Timestamp,
        end: tbd.ddg.Timestamp): Seq[tbd.ddg.Timestamp] = {
-    tbd.ddg.Node.getType(start.pointer) match {
+    tbd.ddg.Node.getType(start.nodePtr) match {
       case tbd.ddg.Node.ParNodeType =>
         println("!!")
-        val f1 = ddg.getLeftTask(start.pointer) ? tbd.messages.GetTaskDDGMessage
+        val f1 = ddg.getLeftTask(start.nodePtr) ? tbd.messages.GetTaskDDGMessage
         val ddg1 = Await.result(f1.mapTo[tbd.ddg.DDG], DURATION)
         val f2 =
-          ddg.getRightTask(start.pointer) ? tbd.messages.GetTaskDDGMessage
+          ddg.getRightTask(start.nodePtr) ? tbd.messages.GetTaskDDGMessage
         val ddg2 = Await.result(f2.mapTo[tbd.ddg.DDG], DURATION)
 
         ddg1.getChildren(ddg1.startTime, ddg1.endTime) ++

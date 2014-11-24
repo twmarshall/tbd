@@ -168,18 +168,18 @@ class DDG {
   def parUpdated(taskRef: ActorRef, c: Context): Boolean = {
     val timestamp = pars(taskRef)
 
-    if (!ParNode.getPebble1(timestamp.pointer) &&
-        !ParNode.getPebble2(timestamp.pointer)) {
+    if (!ParNode.getPebble1(timestamp.nodePtr) &&
+        !ParNode.getPebble2(timestamp.nodePtr)) {
       updated += timestamp
     }
 
-    if (tasks(ParNode.getTaskId1(timestamp.pointer)) == taskRef) {
-      val ret = !ParNode.getPebble1(timestamp.pointer)
-      ParNode.setPebble1(timestamp.pointer, true)
+    if (tasks(ParNode.getTaskId1(timestamp.nodePtr)) == taskRef) {
+      val ret = !ParNode.getPebble1(timestamp.nodePtr)
+      ParNode.setPebble1(timestamp.nodePtr, true)
       ret
     } else {
-      val ret = !ParNode.getPebble2(timestamp.pointer)
-      ParNode.setPebble2(timestamp.pointer, true)
+      val ret = !ParNode.getPebble2(timestamp.nodePtr)
+      ParNode.setPebble2(timestamp.nodePtr, true)
       ret
     }
   }
@@ -191,39 +191,39 @@ class DDG {
     var time = start
     while (time < end) {
       if (time.end != null) {
-        Node.getType(time.pointer) match {
+        Node.getType(time.nodePtr) match {
           case Node.MemoNodeType =>
-            c.getMemoizer(MemoNode.getMemoizerId(time.pointer))
-              .removeEntry(time, MemoNode.getSignature(time.pointer))
+            c.getMemoizer(MemoNode.getMemoizerId(time.nodePtr))
+              .removeEntry(time, MemoNode.getSignature(time.nodePtr))
 
           case Node.Memo1NodeType =>
-            c.getMemoizer(Memo1Node.getMemoizerId(time.pointer))
-              .removeEntry(time, Memo1Node.getSignature(time.pointer))
+            c.getMemoizer(Memo1Node.getMemoizerId(time.nodePtr))
+              .removeEntry(time, Memo1Node.getSignature(time.nodePtr))
 
           case Node.ModizerNodeType =>
-            val modizerId = ModizerNode.getModizerId(time.pointer)
+            val modizerId = ModizerNode.getModizerId(time.nodePtr)
 
-            val key  = ModizerNode.getKey(time.pointer)
+            val key  = ModizerNode.getKey(time.nodePtr)
 
             if (c.getModizer(modizerId).remove(key)) {
-              val modId1 = ModizerNode.getModId1(time.pointer)
+              val modId1 = ModizerNode.getModId1(time.nodePtr)
               if (modId1 != -1) {
                 c.remove(modId1)
               }
 
-              val modId2 = ModizerNode.getModId2(time.pointer)
+              val modId2 = ModizerNode.getModId2(time.nodePtr)
               if (modId2 != -1) {
                 c.remove(modId2)
               }
             }
 
           case Node.ModNodeType =>
-            val modId1 = ModNode.getModId1(time.pointer)
+            val modId1 = ModNode.getModId1(time.nodePtr)
             if (modId1 != -1) {
               c.remove(modId1)
             }
 
-            val modId2 = ModNode.getModId2(time.pointer)
+            val modId2 = ModNode.getModId2(time.nodePtr)
             if (modId2 != -1) {
               c.remove(modId2)
             }
@@ -232,18 +232,18 @@ class DDG {
             updated -= time
 
           case Node.ReadNodeType =>
-            c.ddg.reads(ReadNode.getModId(time.pointer)) -= time
+            c.ddg.reads(ReadNode.getModId(time.nodePtr)) -= time
             updated -= time
 
           case Node.Read2NodeType =>
-            c.ddg.reads(Read2Node.getModId1(time.pointer)) -= time
-            c.ddg.reads(Read2Node.getModId2(time.pointer)) -= time
+            c.ddg.reads(Read2Node.getModId1(time.nodePtr)) -= time
+            c.ddg.reads(Read2Node.getModId2(time.nodePtr)) -= time
             updated -= time
 
           case Node.WriteNodeType =>
         }
 
-        MemoryAllocator.free(time.pointer)
+        MemoryAllocator.free(time.nodePtr)
 
         if (time.end > end) {
           ordering.remove(time.end)
@@ -307,24 +307,24 @@ class DDG {
     val out = new StringBuffer("")
     def innerToString(time: Timestamp, prefix: String) {
       val thisString =
-        Node.getType(time.pointer) match {
+        Node.getType(time.nodePtr) match {
           case Node.MemoNodeType =>
-            prefix + "MemoNode " + time.pointer + " time = " + time + " to " +
+            prefix + "MemoNode " + time.nodePtr + " time = " + time + " to " +
             time.end + " signature=" +
-            MemoNode.getSignature(time.pointer) + "\n"
+            MemoNode.getSignature(time.nodePtr) + "\n"
           case Node.ModizerNodeType =>
-            prefix + "ModizerNode " + time.pointer + " modId1=)" +
-            ModizerNode.getModId1(time.pointer) + ") modId2=(" +
-            ModizerNode.getModId1(time.pointer) + ") time = " + time + " to " +
+            prefix + "ModizerNode " + time.nodePtr + " modId1=)" +
+            ModizerNode.getModId1(time.nodePtr) + ") modId2=(" +
+            ModizerNode.getModId1(time.nodePtr) + ") time = " + time + " to " +
             time.end + "\n"
           case Node.ModNodeType =>
-            prefix + "ModNode " + time.pointer + " modId1=)" +
-            ModNode.getModId1(time.pointer) + ") modId2=(" +
-            ModNode.getModId1(time.pointer) + ") time = " + time + " to " +
+            prefix + "ModNode " + time.nodePtr + " modId1=)" +
+            ModNode.getModId1(time.nodePtr) + ") modId2=(" +
+            ModNode.getModId1(time.nodePtr) + ") time = " + time + " to " +
             time.end + "\n"
           case Node.ParNodeType =>
-            val taskRef1 = tasks(ParNode.getTaskId1(time.pointer))
-            val taskRef2 = tasks(ParNode.getTaskId2(time.pointer))
+            val taskRef1 = tasks(ParNode.getTaskId1(time.nodePtr))
+            val taskRef2 = tasks(ParNode.getTaskId2(time.nodePtr))
 
             val f1 = taskRef1 ? GetTaskDDGMessage
             val f2 = taskRef2 ? GetTaskDDGMessage
@@ -332,24 +332,24 @@ class DDG {
             val ddg1 = Await.result(f1.mapTo[DDG], DURATION)
             val ddg2 = Await.result(f2.mapTo[DDG], DURATION)
 
-            prefix + "ParNode " + time.pointer  + " pebbles=(" +
-            ParNode.getPebble1(time.pointer) + ", " +
-            ParNode.getPebble2(time.pointer) + ")\n" +
+            prefix + "ParNode " + time.nodePtr  + " pebbles=(" +
+            ParNode.getPebble1(time.nodePtr) + ", " +
+            ParNode.getPebble2(time.nodePtr) + ")\n" +
             ddg1.toString(prefix + "|") + ddg2.toString(prefix + "|")
           case Node.RootNodeType =>
-            prefix + "RootNode " + time.pointer + "\n"
+            prefix + "RootNode " + time.nodePtr + "\n"
           case Node.ReadNodeType =>
-            prefix + "ReadNode " + time.pointer + " modId=(" +
-            ReadNode.getModId(time.pointer) + ") time=" + time + " to " +
+            prefix + "ReadNode " + time.nodePtr + " modId=(" +
+            ReadNode.getModId(time.nodePtr) + ") time=" + time + " to " +
             time.end + "\n"
           case Node.Read2NodeType =>
-            prefix + "Read2Node " + time.pointer + " modId1=(" +
-            Read2Node.getModId1(time.pointer) + ") modId2=(" +
-            Read2Node.getModId2(time.pointer) + ") time=" + time + " to " +
+            prefix + "Read2Node " + time.nodePtr + " modId1=(" +
+            Read2Node.getModId1(time.nodePtr) + ") modId2=(" +
+            Read2Node.getModId2(time.nodePtr) + ") time=" + time + " to " +
             time.end + "\n"
           case Node.WriteNodeType =>
-            prefix + "WriteNode " + time.pointer + " modId=(" +
-            WriteNode.getModId1(time.pointer) + ")\n"
+            prefix + "WriteNode " + time.nodePtr + " modId=(" +
+            WriteNode.getModId1(time.nodePtr) + ")\n"
         }
 
       out.append(thisString)

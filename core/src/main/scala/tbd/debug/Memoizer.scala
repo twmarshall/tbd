@@ -39,7 +39,7 @@ class Memoizer[T](implicit c: Context) extends tbd.Memoizer[T]()(c) {
     val ret = super.apply(signature)(func)
 
     val tag = Tag.Memo(FunctionTag(funcId, freeTerms), signature)
-    TBD.nodes(c.currentTime.pointer) = (internalId, tag, stack)
+    TBD.nodes(c.currentTime.nodePtr) = (internalId, tag, stack)
 
     ret
   }
