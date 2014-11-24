@@ -19,7 +19,7 @@ import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.ddg.{MemoNode, Node, Timestamp}
+import tbd.ddg._
 import tbd.master.Master
 
 class Memoizer[T](implicit c: Context) {
@@ -67,8 +67,17 @@ class Memoizer[T](implicit c: Context) {
     }
 
     if (!found) {
-      val timestamp = c.ddg.addMemo(
-        signature, memoizerId, c.currentModId, c.currentModId2, c)
+      val memoNodePointer =
+        if (args.size == 1 && args(0).isInstanceOf[Mod[_]]) {
+          val modId = args(0).asInstanceOf[Mod[_]].id
+
+          Memo1Node.create(memoizerId, modId, c.currentModId, c.currentModId2)
+        } else {
+          MemoNode.create(
+            memoizerId, signature, c.currentModId, c.currentModId2)
+        }
+
+      val timestamp = c.ddg.nextTimestamp(memoNodePointer, c)
 
       val value = func
 
@@ -173,7 +182,33 @@ class Memoizer[T](implicit c: Context) {
 
         var value: T = null.asInstanceOf[T]
         for ((_time, _value) <-
-             c.memoTable(MemoNode.getSignature(time.pointer))) {
+             c.memoTable(signature)) {
+          if (_time == time) {
+            value = _value.asInstanceOf[T]
+          }
+        }
+
+        value match {
+          case changeable: Changeable[_] =>
+            if (changeable.modId == toReplace) {
+              changeable.modId = newModId
+            }
+          case (c1: Changeable[_], c2: Changeable[_]) =>
+            if (c1.modId == toReplace) {
+              c1.modId = newModId
+            }
+
+            if (c2.modId == toReplace) {
+              c2.modId = newModId
+            }
+          case _ =>
+        }
+
+      case Node.Memo1NodeType =>
+        val signature = Memo1Node.getSignature(time.pointer)
+
+        var value: T = null.asInstanceOf[T]
+        for ((_time, _value) <- c.memoTable(signature)) {
           if (_time == time) {
             value = _value.asInstanceOf[T]
           }

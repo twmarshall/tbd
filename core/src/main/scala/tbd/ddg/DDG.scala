@@ -97,22 +97,6 @@ class DDG {
     timestamp
   }
 
-  def addMemo
-      (signature: Seq[Any],
-       memoizerId: MemoizerId,
-       currentModId1: ModId,
-       currentModId2: ModId,
-       c: Context): Timestamp = {
-    val memoNodePointer = MemoNode.create(
-      memoizerId, signature, currentModId1, currentModId2)
-    val timestamp = nextTimestamp(memoNodePointer, c)
-
-    assert(Node.getCurrentModId2(timestamp.pointer) == currentModId2)
-    assert(Node.getCurrentModId1(timestamp.pointer) == currentModId1)
-
-    timestamp
-  }
-
   def addWrite
       (modId: ModId,
        modId2: ModId,
@@ -208,6 +192,10 @@ class DDG {
           case Node.MemoNodeType =>
             c.getMemoizer(MemoNode.getMemoizerId(time.pointer))
               .removeEntry(time, MemoNode.getSignature(time.pointer))
+
+          case Node.Memo1NodeType =>
+            c.getMemoizer(Memo1Node.getMemoizerId(time.pointer))
+              .removeEntry(time, Memo1Node.getSignature(time.pointer))
 
           case Node.ModizerNodeType =>
             val modizerId = ModizerNode.getModizerId(time.pointer)

@@ -25,6 +25,7 @@ import tbd.Constants._
 
 object Node {
   val MemoNodeType: Byte = 0
+  val Memo1NodeType: Byte = 8
   val ModizerNodeType: Byte = 1
   val ModNodeType: Byte = 2
   val ParNodeType: Byte = 3
@@ -126,6 +127,37 @@ object MemoNode {
     val byteInput = new ByteArrayInputStream(byteArray)
     val objectInput = new ObjectInputStream(byteInput)
     objectInput.readObject().asInstanceOf[Seq[Any]]
+  }
+}
+
+object Memo1Node {
+  private val memoizerIdOffset = Node.nodeOffset
+  private val modId1Offset = memoizerIdOffset + memoizerIdSize
+
+  def create
+      (memoizerId: MemoizerId,
+       modId1: ModId,
+       currentModId1: ModId,
+       currentModId2: ModId): Pointer = {
+    val size = memoizerIdSize + modIdSize
+    val ptr = Node.create(
+      size, Node.Memo1NodeType, currentModId1, currentModId2)
+
+    MemoryAllocator.unsafe.putInt(ptr + memoizerIdOffset, memoizerId)
+    MemoryAllocator.unsafe.putLong(ptr + modId1Offset, modId1)
+
+    ptr
+  }
+
+  def getMemoizerId(ptr: Pointer): MemoizerId = {
+    MemoryAllocator.unsafe.getInt(ptr + memoizerIdOffset)
+  }
+
+  def getSignature(ptr: Pointer): Seq[Any] = {
+    val memoizerId = getMemoizerId(ptr)
+    val modId1 = MemoryAllocator.unsafe.getLong(ptr + modId1Offset)
+
+    Seq(memoizerId, new Mod(modId1))
   }
 }
 
