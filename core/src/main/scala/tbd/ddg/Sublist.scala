@@ -15,22 +15,50 @@
  */
 package tbd.ddg
 
+import tbd.MemoryAllocator
 import tbd.Constants.Pointer
 
+object Sublist {
+  val idOffset = 0
+  val nextOffset = idOffset + 4
+
+  def create(id: Int, next: Pointer): Pointer = {
+    val size = 4 + 8
+    val ptr = MemoryAllocator.allocate(size)
+
+    MemoryAllocator.putInt(ptr + idOffset, id)
+    MemoryAllocator.putPointer(ptr + nextOffset, next)
+
+    ptr
+  }
+
+  def getId(ptr: Pointer): Int = {
+    MemoryAllocator.getInt(ptr + idOffset)
+  }
+
+  def setId(ptr: Pointer, newId: Int) {
+    MemoryAllocator.putInt(ptr + idOffset, newId)
+  }
+}
+
 class Sublist
-    (var id: Int,
-     var next: Sublist,
+    (id: Int,
+     var nextSub: Sublist,
+     var nextPointer: Pointer,
      basePointer: Pointer = -1) {
+
+  val ptr = Sublist.create(id, 0)
+
   var previous: Sublist = null
 
-  val base: Timestamp = new Timestamp(this, 0, null, null, basePointer)
+  val base: Timestamp = new Timestamp(this, ptr, 0, null, null, basePointer)
 
   base.next = base
   base.previous = base
 
   var size = 0
 
-  def after(t: Timestamp, ptr: Pointer): Timestamp = {
+  def after(t: Timestamp, nodePtr: Pointer): Timestamp = {
     val previous =
       if (t == null) {
         base
@@ -40,14 +68,15 @@ class Sublist
 
     val newTimestamp =
       if (previous.next == base) {
-        new Timestamp(this, previous.time + 1, base, previous, ptr)
+        new Timestamp(this, ptr, previous.time + 1, base, previous, nodePtr)
       } else {
         new Timestamp(
           this,
+          ptr,
           (previous.time + previous.next.time) / 2,
           previous.next,
           previous,
-          ptr)
+          nodePtr)
       }
 
     previous.next = newTimestamp
@@ -57,10 +86,10 @@ class Sublist
     newTimestamp
   }
 
-  def append(ptr: Pointer): Timestamp = {
+  def append(nodePtr: Pointer): Timestamp = {
     val previous = base.previous
     val newTimestamp =
-      new Timestamp(this, previous.time + 1, base, previous, ptr)
+      new Timestamp(this, ptr, previous.time + 1, base, previous, nodePtr)
 
     previous.next = newTimestamp
     newTimestamp.next.previous = newTimestamp
@@ -96,7 +125,10 @@ class Sublist
     while (node.next != base) {
       node = node.next
       node.time = i + 1
+
       node.sublist = newSublist
+      node.sublistPtr = node.sublist.ptr
+
       i += 1
     }
 

@@ -18,17 +18,21 @@ package tbd.ddg
 import tbd.Constants.Pointer
 
 object Timestamp {
+  private val maxSublist = new Sublist(Int.MaxValue, null, -1)
+
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
-  val MAX_TIMESTAMP =
-    new Timestamp(new Sublist(Int.MaxValue, null), Int.MaxValue, null, null, -1)
+  val MAX_TIMESTAMP = new Timestamp(maxSublist, maxSublist.ptr, Int.MaxValue, null, null, -1)
+
+  private val minSublist = new Sublist(-1, null, -1)
 
   // A dummy timestamp which all real Timestamps are greater than.
-  val MIN_TIMESTAMP = new Timestamp(new Sublist(-1, null), -1, null, null, -1)
+  val MIN_TIMESTAMP = new Timestamp(minSublist, minSublist.ptr, -1, null, null, -1)
 }
 
 class Timestamp
     (var sublist: Sublist,
+     var sublistPtr: Long,
      var time: Double,
      var next: Timestamp,
      var previous: Timestamp,
@@ -36,42 +40,34 @@ class Timestamp
   var end: Timestamp = null
 
   def <(that: Timestamp): Boolean = {
-    if (sublist == that.sublist) {
+    if (sublistPtr == that.sublistPtr) {
       time < that.time
     } else {
-      sublist.id < that.sublist.id
+      Sublist.getId(sublistPtr) < Sublist.getId(that.sublistPtr)
     }
   }
 
   def >(that: Timestamp): Boolean = {
-    if (sublist == that.sublist) {
+    if (sublistPtr == that.sublistPtr) {
       time > that.time
     } else {
-      sublist.id > that.sublist.id
+      Sublist.getId(sublistPtr) > Sublist.getId(that.sublistPtr)
     }
   }
 
   def >=(that: Timestamp): Boolean = {
-    if (sublist == that.sublist) {
-      time >= that.time
-    } else {
-      sublist.id > that.sublist.id
-    }
+    !(this < that)
   }
 
   def <=(that: Timestamp): Boolean = {
-    if (sublist == that.sublist) {
-      time <= that.time
-    } else {
-      sublist.id < that.sublist.id
-    }
+    !(this > that)
   }
 
   def getNext(): Timestamp = {
     if (next != sublist.base)
       next
     else
-      sublist.next.base.next
+      sublist.nextSub.base.next
   }
 
   override def equals(obj: Any): Boolean = {
@@ -79,11 +75,12 @@ class Timestamp
       false
     } else {
       val that = obj.asInstanceOf[Timestamp]
-      that.time == time && that.sublist.id == sublist.id
+      that.time == time &&
+      Sublist.getId(that.sublistPtr) == Sublist.getId(sublistPtr)
     }
   }
 
-  override def toString = "(" + sublist.id + " " + time.toString + ")"
+  override def toString = "(" + Sublist.getId(sublist.ptr) + " " + time.toString + ")"
 }
 
 class TimestampOrdering extends scala.math.Ordering[Timestamp] {

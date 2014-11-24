@@ -21,16 +21,17 @@ import tbd.Constants._
 
 class Ordering(basePointer: Pointer = -1) {
   private val maxSize = Int.MaxValue / 2
-  val base = new Sublist(0, null)
-  base.next = new Sublist(1, base, basePointer)
-  base.previous = base.next
+  val base = new Sublist(0, null, -1)
+  base.nextSub = new Sublist(1, base, base.ptr, basePointer)
+  base.nextPointer = base.nextSub.ptr
+  base.previous = base.nextSub
 
-  base.next.base.end = base.base
+  base.nextSub.base.end = base.base
 
   def after(t: Timestamp, ptr: Pointer): Timestamp = {
     val previousSublist =
       if (t == null) {
-        base.next
+        base.nextSub
       } else {
         t.sublist
       }
@@ -38,7 +39,6 @@ class Ordering(basePointer: Pointer = -1) {
     val newTimestamp = previousSublist.after(t, ptr)
     if (previousSublist.size > 63) {
       val newSublist = sublistAfter(previousSublist)
-      assert(previousSublist.id != newSublist.id)
       previousSublist.split(newSublist)
     }
 
@@ -61,33 +61,39 @@ class Ordering(basePointer: Pointer = -1) {
     t.sublist.remove(t)
 
     if (t.sublist.size == 0) {
-      t.sublist.previous.next = t.sublist.next
-      t.sublist.next.previous = t.sublist.previous
+      t.sublist.previous.nextSub = t.sublist.nextSub
+      t.sublist.previous.nextPointer = t.sublist.nextSub.ptr
+
+      t.sublist.nextSub.previous = t.sublist.previous
     }
   }
 
   private def sublistAppend(): Sublist = {
     val previous = base.previous
-    val newSublist = new Sublist(previous.id + 1, base)
+    val newSublist = new Sublist(Sublist.getId(previous.ptr) + 1, base, base.ptr)
     newSublist.previous = previous
 
-    previous.next = newSublist
+    previous.nextSub = newSublist
+    previous.nextPointer = newSublist.ptr
+
     base.previous = newSublist
 
     newSublist
   }
 
   private def sublistAfter(s: Sublist): Sublist = {
-    var node = s.next
+    var node = s.nextSub
     while (node != base) {
-      node.id += 1
-      node = node.next
+      //node.id += 1
+      Sublist.setId(node.ptr, Sublist.getId(node.ptr) + 1)
+      node = node.nextSub
     }
-    val newSublist = new Sublist(s.id + 1, s.next)
+    val newSublist = new Sublist(Sublist.getId(s.ptr) + 1, s.nextSub, s.nextSub.ptr)
     newSublist.previous = s
 
-    s.next = newSublist
-    newSublist.next.previous = newSublist
+    s.nextSub = newSublist
+    s.nextPointer = newSublist.ptr
+    newSublist.nextSub.previous = newSublist
 
     newSublist
     /*val previous =
@@ -137,13 +143,13 @@ class Ordering(basePointer: Pointer = -1) {
   }
 
   override def toString = {
-    var node = base.next
+    var node = base.nextSub
     var ret = base.toString
 
     while (node != base) {
       print(node + " ")
       ret += ", " + node
-      node = node.next
+      node = node.nextSub
     }
     ret
   }

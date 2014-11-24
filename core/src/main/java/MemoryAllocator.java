@@ -50,4 +50,12 @@ public class MemoryAllocator {
   public static void putModId(long ptr, long modId) {
     unsafe.putLong(ptr, modId);
   }
+
+  public static long getPointer(long ptr) {
+    return unsafe.getLong(ptr);
+  }
+
+  public static void putPointer(long ptr, long pointer) {
+    unsafe.putLong(ptr, pointer);
+  }
 }

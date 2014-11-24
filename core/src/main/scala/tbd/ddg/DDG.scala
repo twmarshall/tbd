@@ -294,12 +294,13 @@ class DDG {
       }
       end.sublist.size = size
 
-      startSublist.next = end.sublist
+      startSublist.nextSub = end.sublist
+      startSublist.nextPointer = end.sublist.ptr
       end.sublist.previous = startSublist
     }
   }
 
-  def startTime = ordering.base.next.base
+  def startTime = ordering.base.nextSub.base
 
   def endTime = ordering.base.base
 
