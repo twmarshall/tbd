@@ -55,7 +55,9 @@ class Modizer1[T](implicit c: Context) extends Modizer[T] {
         mod1
       }
 
-    TBD.modInternal(initializer, mod1, id, key, c)
+    TBD.modizerHelper(initializer, mod1.id, -1, id, key, -1, -1, c)
+
+    mod1
   }
 }
 
@@ -68,20 +70,20 @@ class Modizer2[T, U](implicit c: Context) extends Modizer[(T, U)] {
   def remove(key: Any): Boolean = {
     if (allocations.contains(key)) {
       if (allocations(key)._2 < c.epoch) {
-	allocations -= key
-	allocations2 -= key
+        allocations -= key
+        allocations2 -= key
 
-	true
+        true
       } else {
-	false
+        false
       }
     } else {
       if (allocations2(key)._2 < c.epoch) {
-	allocations2 -= key
+        allocations2 -= key
 
-	true
+        true
       } else {
-	false
+        false
       }
     }
   }
@@ -91,58 +93,64 @@ class Modizer2[T, U](implicit c: Context) extends Modizer[(T, U)] {
       (initializer: => (Changeable[T], Changeable[U])): (Mod[T], Mod[U]) = {
     val modLeft =
       if (allocations.contains(key)) {
-	allocations(key) = (allocations(key)._1, c.epoch)
+        allocations(key) = (allocations(key)._1, c.epoch)
 
-	allocations(key)._1
+        allocations(key)._1
       } else {
-	val modLeft = new Mod[T](c.newModId())
-	allocations(key) = (modLeft, c.epoch)
-	modLeft
+        val modLeft = new Mod[T](c.newModId())
+        allocations(key) = (modLeft, c.epoch)
+        modLeft
       }
 
     val modRight =
       if (allocations2.contains(key)) {
-	allocations2(key) = (allocations2(key)._1, c.epoch)
+        allocations2(key) = (allocations2(key)._1, c.epoch)
 
-	allocations2(key)._1
+        allocations2(key)._1
       } else {
-	val modRight = new Mod[U](c.newModId())
-	allocations2(key) = (modRight, c.epoch)
-	modRight
+        val modRight = new Mod[U](c.newModId())
+        allocations2(key) = (modRight, c.epoch)
+        modRight
       }
 
-    TBD.mod2Internal(initializer, modLeft, modRight, id, key, c)
+    TBD.modizerHelper(initializer, modLeft.id, modRight.id, id, key, -1, -1, c)
+
+    (modLeft, modRight)
   }
 
   def left(key: Any)
       (initializer: => (Changeable[T], Changeable[U])): (Mod[T], Changeable[U]) = {
     val modLeft =
       if (allocations.contains(key)) {
-	allocations(key) = (allocations(key)._1, c.epoch)
+        allocations(key) = (allocations(key)._1, c.epoch)
 
-	allocations(key)._1
+        allocations(key)._1
       } else {
-	val modLeft = new Mod[T](c.newModId())
-	allocations(key) = (modLeft, c.epoch)
-	modLeft
+        val modLeft = new Mod[T](c.newModId())
+        allocations(key) = (modLeft, c.epoch)
+        modLeft
       }
 
-    TBD.modLeftInternal(initializer, modLeft, id, key, c)
+    TBD.modizerHelper(initializer, modLeft.id, -1, id, key, -1, c.currentModId2, c)
+
+    (modLeft, new Changeable[U](c.currentModId2))
   }
 
   def right(key: Any)
       (initializer: => (Changeable[T], Changeable[U])): (Changeable[T], Mod[U]) = {
     val modRight =
       if (allocations2.contains(key)) {
-	allocations2(key) = (allocations2(key)._1, c.epoch)
+        allocations2(key) = (allocations2(key)._1, c.epoch)
 
-	allocations2(key)._1
+        allocations2(key)._1
       } else {
-	val modRight = new Mod[U](c.newModId())
-	allocations2(key) = (modRight, c.epoch)
-	modRight
+        val modRight = new Mod[U](c.newModId())
+        allocations2(key) = (modRight, c.epoch)
+        modRight
       }
 
-    TBD.modRightInternal(initializer, modRight, id, key, c)
+    TBD.modizerHelper(initializer, -1, modRight.id, id, key, c.currentModId, -1, c)
+
+    (new Changeable[T](c.currentModId), modRight)
   }
 }

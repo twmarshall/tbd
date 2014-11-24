@@ -25,12 +25,13 @@ import tbd.Constants._
 
 object Node {
   val MemoNodeType: Byte = 0
-  val ModNodeType: Byte = 1
-  val ParNodeType: Byte = 2
-  val ReadNodeType: Byte = 3
-  val Read2NodeType: Byte = 4
-  val RootNodeType: Byte = 5
-  val WriteNodeType: Byte = 6
+  val ModizerNodeType: Byte = 1
+  val ModNodeType: Byte = 2
+  val ParNodeType: Byte = 3
+  val ReadNodeType: Byte = 4
+  val Read2NodeType: Byte = 5
+  val RootNodeType: Byte = 6
+  val WriteNodeType: Byte = 7
 
   val typeOffset = 0
   val currentModId1Offset = typeOffset + 1
@@ -128,7 +129,7 @@ object MemoNode {
   }
 }
 
-object ModNode {
+object ModizerNode {
   private val modId1Offset = Node.nodeOffset
   private val modId2Offset = modId1Offset + modIdSize
   private val modizerIdOffset = modId2Offset + modIdSize
@@ -149,7 +150,8 @@ object ModNode {
 
     // Two modIds + modizerId + key + key size
     val size = modIdSize * 2 + modizerIdSize + 4 + serializedKey.size
-    val ptr = Node.create(size, Node.ModNodeType, currentModId1, currentModId2)
+    val ptr = Node.create(
+      size, Node.ModizerNodeType, currentModId1, currentModId2)
 
     MemoryAllocator.unsafe.putLong(ptr + modId1Offset, modId1)
     MemoryAllocator.unsafe.putLong(ptr + modId2Offset, modId2)
@@ -187,6 +189,34 @@ object ModNode {
     val byteInput = new ByteArrayInputStream(byteArray)
     val objectInput = new ObjectInputStream(byteInput)
     objectInput.readObject()
+  }
+}
+
+object ModNode {
+  private val modId1Offset = Node.nodeOffset
+  private val modId2Offset = modId1Offset + modIdSize
+
+  def create
+      (modId1: ModId,
+       modId2: ModId,
+       currentModId1: ModId,
+       currentModId2: ModId): Pointer = {
+    // Two modIds + modizerId + key + key size
+    val size = modIdSize * 2 + modizerIdSize
+    val ptr = Node.create(size, Node.ModNodeType, currentModId1, currentModId2)
+
+    MemoryAllocator.unsafe.putLong(ptr + modId1Offset, modId1)
+    MemoryAllocator.unsafe.putLong(ptr + modId2Offset, modId2)
+
+    ptr
+  }
+
+  def getModId1(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + modId1Offset)
+  }
+
+  def getModId2(ptr: Pointer): ModId = {
+    MemoryAllocator.unsafe.getLong(ptr + modId2Offset)
   }
 }
 

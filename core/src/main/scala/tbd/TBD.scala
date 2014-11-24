@@ -21,6 +21,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 
 import tbd.Constants._
+import tbd.ddg._
 import tbd.messages._
 import tbd.TBD._
 
@@ -92,28 +93,71 @@ object TBD {
      (implicit c: Context): Mod[T] = {
     val mod1 = new Mod[T](c.newModId())
 
-    modInternal(initializer, mod1, -1, null, c)
+    modHelper(initializer, mod1.id, -1, -1, -1, c)
+
+    mod1
   }
 
-  def modInternal[T]
-      (initializer: => Changeable[T],
-       mod1: Mod[T],
-       modizerId: ModizerId,
-       key: Any,
-       c: Context): Mod[T] = {
+  def modHelper[T, U]
+      (initializer: => Any,
+       modId1: ModId,
+       modId2: ModId,
+       currentModId: ModId,
+       currentModId2: ModId,
+       c: Context): Unit = {
     val oldCurrentModId = c.currentModId
+    if (modId1 != -1) {
+      c.currentModId = modId1
+    }
 
-    c.currentModId = mod1.id
+    val oldCurrentModId2 = c.currentModId2
+    if (modId2 != -1) {
+      c.currentModId2 = modId2
+    }
 
-    val timestamp = c.ddg.addMod(mod1.id, -1, modizerId, key, -1, -1, c)
+    val modNodePointer = ModNode.create(
+      modId1, modId2, currentModId, currentModId2)
+
+    val timestamp = c.ddg.nextTimestamp(modNodePointer, c)
 
     initializer
 
     timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
 
     c.currentModId = oldCurrentModId
+    c.currentModId2 = oldCurrentModId2
+  }
 
-    mod1
+  def modizerHelper[T, U]
+      (initializer: => Any,
+       modId1: ModId,
+       modId2: ModId,
+       modizerId: ModizerId,
+       key: Any,
+       currentModId: ModId,
+       currentModId2: ModId,
+       c: Context): Unit = {
+    val oldCurrentModId = c.currentModId
+    if (modId1 != -1) {
+      c.currentModId = modId1
+    }
+
+    val oldCurrentModId2 = c.currentModId2
+    if (modId2 != -1) {
+      c.currentModId2 = modId2
+    }
+
+    val modNodePointer = ModizerNode.create(
+      modId1, modId2, modizerId, key, currentModId, currentModId2)
+
+    val timestamp = c.ddg.nextTimestamp(modNodePointer, c)
+
+    initializer
+
+    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
+
+    c.currentModId = oldCurrentModId
+    c.currentModId2 = oldCurrentModId2
   }
 
   def mod2[T, U](initializer: => (Changeable[T], Changeable[U]))
@@ -121,84 +165,24 @@ object TBD {
     val mod1 = new Mod[T](c.newModId())
     val mod2 = new Mod[U](c.newModId())
 
-    mod2Internal(initializer, mod1, mod2, -1, null, c)
-  }
+    modHelper(initializer, mod1.id, mod2.id, -1, -1, c)
 
-  def mod2Internal[T, U]
-      (initializer: => (Changeable[T], Changeable[U]),
-       modLeft: Mod[T],
-       modRight: Mod[U],
-       modizerId: ModizerId,
-       key: Any,
-       c: Context): (Mod[T], Mod[U]) = {
-    val oldCurrentModId = c.currentModId
-    c.currentModId = modLeft.id
-
-    val oldCurrentModId2 = c.currentModId2
-    c.currentModId2 = modRight.id
-
-    val timestamp = c.ddg.addMod(
-      modLeft.id, modRight.id, modizerId, key, -1, -1, c)
-
-    initializer
-
-    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
-
-    c.currentModId = oldCurrentModId
-    c.currentModId2 = oldCurrentModId2
-
-    (modLeft, modRight)
+    (mod1, mod2)
   }
 
   def modLeft[T, U](initializer: => (Changeable[T], Changeable[U]))
       (implicit c: Context): (Mod[T], Changeable[U]) = {
-    modLeftInternal(initializer, new Mod[T](c.newModId()), -1, null, c)
-  }
+    val modLeft = new Mod[T](c.newModId())
 
-  def modLeftInternal[T, U]
-      (initializer: => (Changeable[T], Changeable[U]),
-       modLeft: Mod[T],
-       modizerId: ModizerId,
-       key: Any,
-       c: Context): (Mod[T], Changeable[U]) = {
-
-    val oldCurrentModId = c.currentModId
-    c.currentModId = modLeft.id
-
-    val timestamp = c.ddg.addMod(
-      modLeft.id, -1, modizerId, key, -1, c.currentModId2, c)
-
-    initializer
-
-    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
-
-    c.currentModId = oldCurrentModId
+    modHelper(initializer, modLeft.id, -1, -1, c.currentModId2, c)
 
     (modLeft, new Changeable[U](c.currentModId2))
   }
 
   def modRight[T, U](initializer: => (Changeable[T], Changeable[U]))
       (implicit c: Context): (Changeable[T], Mod[U]) = {
-    modRightInternal(initializer, new Mod[U](c.newModId()), -1, null, c)
-  }
-
-  def modRightInternal[T, U]
-      (initializer: => (Changeable[T], Changeable[U]),
-       modRight: Mod[U],
-       modizerId: ModizerId,
-       key: Any,
-       c: Context): (Changeable[T], Mod[U]) = {
-    val oldCurrentModId2 = c.currentModId2
-    c.currentModId2 = modRight.id
-
-    val timestamp = c.ddg.addMod(
-      -1, modRight.id, modizerId, key, c.currentModId, -1, c)
-
-    initializer
-
-    timestamp.end = c.ddg.nextTimestamp(timestamp.pointer, c)
-
-    c.currentModId2 = oldCurrentModId2
+    val modRight = new Mod[U](c.newModId())
+    modHelper(initializer, -1, modRight.id, c.currentModId, -1, c)
 
     (new Changeable[T](c.currentModId), modRight)
   }

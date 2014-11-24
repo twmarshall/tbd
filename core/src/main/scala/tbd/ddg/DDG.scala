@@ -113,21 +113,6 @@ class DDG {
     timestamp
   }
 
-  def addMod
-      (modId1: ModId,
-       modId2: ModId,
-       modizerId: ModizerId,
-       key: Any,
-       currentModId1: ModId,
-       currentModId2: ModId,
-       c: Context): Timestamp = {
-    val modNodePointer = ModNode.create(
-      modId1, modId2, modizerId, key, currentModId1, currentModId2)
-    val timestamp = nextTimestamp(modNodePointer, c)
-
-    timestamp
-  }
-
   def addWrite
       (modId: ModId,
        modId2: ModId,
@@ -224,33 +209,34 @@ class DDG {
             c.getMemoizer(MemoNode.getMemoizerId(time.pointer))
               .removeEntry(time, MemoNode.getSignature(time.pointer))
 
-          case Node.ModNodeType =>
-            val modizerId = ModNode.getModizerId(time.pointer)
+          case Node.ModizerNodeType =>
+            val modizerId = ModizerNode.getModizerId(time.pointer)
 
-            if (modizerId != -1) {
-              val key  = ModNode.getKey(time.pointer)
+            val key  = ModizerNode.getKey(time.pointer)
 
-              if (c.getModizer(modizerId).remove(key)) {
-                val modId1 = ModNode.getModId1(time.pointer)
-                if (modId1 != -1) {
-                  c.remove(modId1)
-                }
-
-                val modId2 = ModNode.getModId2(time.pointer)
-                if (modId2 != -1) {
-                  c.remove(modId2)
-                }
-              }
-            } else {
-              val modId1 = ModNode.getModId1(time.pointer)
+            if (c.getModizer(modizerId).remove(key)) {
+              val modId1 = ModizerNode.getModId1(time.pointer)
               if (modId1 != -1) {
                 c.remove(modId1)
               }
 
-              val modId2 = ModNode.getModId2(time.pointer)
+              val modId2 = ModizerNode.getModId2(time.pointer)
               if (modId2 != -1) {
                 c.remove(modId2)
               }
+            }
+
+            MemoryAllocator.free(time.pointer)
+
+          case Node.ModNodeType =>
+            val modId1 = ModNode.getModId1(time.pointer)
+            if (modId1 != -1) {
+              c.remove(modId1)
+            }
+
+            val modId2 = ModNode.getModId2(time.pointer)
+            if (modId2 != -1) {
+              c.remove(modId2)
             }
 
             MemoryAllocator.free(time.pointer)
@@ -338,6 +324,11 @@ class DDG {
             prefix + "MemoNode " + time.pointer + " time = " + time + " to " +
             time.end + " signature=" +
             MemoNode.getSignature(time.pointer) + "\n"
+          case Node.ModizerNodeType =>
+            prefix + "ModizerNode " + time.pointer + " modId1=)" +
+            ModizerNode.getModId1(time.pointer) + ") modId2=(" +
+            ModizerNode.getModId1(time.pointer) + ") time = " + time + " to " +
+            time.end + "\n"
           case Node.ModNodeType =>
             prefix + "ModNode " + time.pointer + " modId1=)" +
             ModNode.getModId1(time.pointer) + ") modId2=(" +
