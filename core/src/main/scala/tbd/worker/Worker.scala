@@ -21,19 +21,31 @@ import scala.collection.mutable.Map
 import scala.concurrent.{Await, Promise}
 import scala.util.{Failure, Success}
 
+import tbd.list.ListConf
 import tbd.Adjustable
 import tbd.Constants._
 import tbd.datastore.Datastore
 import tbd.messages._
 
 object Worker {
-  def props(masterRef: ActorRef) = Props(classOf[Worker], masterRef)
+  def props(masterRef: ActorRef, data: String, partitions: Int, chunkSizes: Int) = 
+    Props(classOf[Worker], masterRef, data, partitions, chunkSizes)
 }
 
-class Worker(masterRef: ActorRef) extends Actor with ActorLogging {
+class Worker(masterRef: ActorRef, data: String, _partitions: Int, _chunkSizes: Int) 
+    extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val datastore = context.actorOf(Datastore.props(), "datastore")
+  private val datastore = context.actorOf(Datastore.props(data), "datastore")
+
+  private val partitions = _partitions
+  private val chunkSizes = _chunkSizes
+  private var listId = ""
+  if (!data.isEmpty()) {
+    val listConf = new ListConf("", partitions.toInt, 0, chunkSizes.toInt, _ => 1)
+    val listIdFuture = datastore ? CreateListMessage(listConf)
+    listId = Await.result(listIdFuture.mapTo[String], DURATION)
+  }
 
   private val idFuture = masterRef ? RegisterWorkerMessage(self, datastore)
   private val workerId = Await.result(idFuture.mapTo[String], DURATION)
@@ -46,6 +58,12 @@ class Worker(masterRef: ActorRef) extends Actor with ActorLogging {
   def receive = {
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       sender ! "done"
+
+    case GetListIdMessage(conf: ListConf) =>
+      if (partitions != conf.partitions || chunkSizes != conf.chunkSize) {
+        log.warning("Wrong partitions or chunkSizes.")
+      }
+      sender ! listId
 
     case ScheduleTaskMessage(parent: ActorRef, _) =>
       val taskId = workerId + ":" + nextTaskId

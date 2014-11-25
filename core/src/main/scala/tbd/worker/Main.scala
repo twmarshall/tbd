@@ -40,7 +40,12 @@ object Main {
         "OFF, WARNING, INFO, or DEBUG")
       val timeout = opt[Int]("timeout", 't', default = Some(100),
         descr = "How long Akka waits on message responses before timing out")
-
+      val data = opt[String]("data", 'd', default = Some(""),
+        descr = "path of partitioned data file on local disk, if empty, not loading data")
+      val partitions = opt[Int]("partitions", 's', default = Some(2),
+        descr = "number of partitions of data")
+      val chunkSizes = opt[Int]("chunkSizes", 'c', default = Some(1),
+        descr = "chunk sizes of data")
       val master = trailArg[String](required = true)
     }
 
@@ -51,6 +56,9 @@ object Main {
     val port = Conf.port.get.get
     val master = Conf.master.get.get
     val logging = Conf.logging.get.get
+    val data = Conf.data.get.get
+    val partitions = Conf.partitions.get.get
+    val chunkSizes = Conf.chunkSizes.get.get
 
     val conf = akkaConf + s"""
       akka.loglevel = $logging
@@ -67,6 +75,6 @@ object Main {
     val future = selection.resolveOne()
     val masterRef = Await.result(future.mapTo[ActorRef], DURATION)
 
-    system.actorOf(Worker.props(masterRef), "worker")
+    system.actorOf(Worker.props(masterRef, data, partitions, chunkSizes), "worker")
   }
 }

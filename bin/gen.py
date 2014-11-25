@@ -5,7 +5,7 @@ import sys
 import os
 
 def main():
-    f = open('wiki.xml','w')
+    f = open('wiki1.xml','w')
     for i in range(1,1001):
         f.write("<key>")
         f.write(str(i))
