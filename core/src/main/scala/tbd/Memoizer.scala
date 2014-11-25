@@ -36,16 +36,18 @@ class Memoizer[T](implicit c: Context) {
         c.memoTable.contains(signature)) {
       // Search through the memo entries matching this signature to see if
       // there's one in the right time range.
-      for ((timestamp, _value) <- c.memoTable(signature)) {
-        if (!found && Timestamp.>=(timestamp.ptr, c.reexecutionStart) &&
-            Timestamp.<(timestamp.ptr, c.reexecutionEnd)) {
+      for ((timePtr, _value) <- c.memoTable(signature)) {
+        val timestamp = Timestamp.timestamps(timePtr)
+
+        if (!found && Timestamp.>=(timePtr, c.reexecutionStart) &&
+            Timestamp.<(timePtr, c.reexecutionEnd)) {
           val value = _value.asInstanceOf[T]
           updateChangeables(timestamp, value)
 
           found = true
 
-          if (Timestamp.<(c.reexecutionStart, timestamp.ptr)) {
-            c.ddg.splice(c.reexecutionStart, timestamp.ptr, c)
+          if (Timestamp.<(c.reexecutionStart, timePtr)) {
+            c.ddg.splice(c.reexecutionStart, timePtr, c)
           }
 
           // This ensures that we won't match anything under the currently
@@ -84,9 +86,9 @@ class Memoizer[T](implicit c: Context) {
       timestamp.end = c.ddg.nextTimestamp(memoNodePointer, c)
 
       if (c.memoTable.contains(signature)) {
-        c.memoTable(signature) += ((timestamp, value))
+        c.memoTable(signature) += ((timestamp.ptr, value))
       } else {
-        c.memoTable += (signature -> Buffer((timestamp, value)))
+        c.memoTable += (signature -> Buffer((timestamp.ptr, value)))
       }
 
       ret = value
@@ -187,9 +189,8 @@ class Memoizer[T](implicit c: Context) {
         val signature = MemoNode.getSignature(nodePtr)
 
         var value: T = null.asInstanceOf[T]
-        for ((_time, _value) <-
-             c.memoTable(signature)) {
-          if (_time == time) {
+        for ((_timePtr, _value) <- c.memoTable(signature)) {
+          if (_timePtr == time.ptr) {
             value = _value.asInstanceOf[T]
           }
         }
@@ -214,8 +215,8 @@ class Memoizer[T](implicit c: Context) {
         val signature = Memo1Node.getSignature(nodePtr)
 
         var value: T = null.asInstanceOf[T]
-        for ((_time, _value) <- c.memoTable(signature)) {
-          if (_time == time) {
+        for ((_timePtr, _value) <- c.memoTable(signature)) {
+          if (_timePtr == time.ptr) {
             value = _value.asInstanceOf[T]
           }
         }
@@ -240,11 +241,11 @@ class Memoizer[T](implicit c: Context) {
   }
 
   def removeEntry(timestamp: Timestamp, signature: Seq[_]) {
-    var toRemove: (Timestamp, Any) = null
+    var toRemove: (Pointer, Any) = null
 
-    for ((_timestamp, value) <- c.memoTable(signature)) {
-      if (toRemove == null && _timestamp == timestamp) {
-        toRemove = (_timestamp, value)
+    for ((_timePtr, value) <- c.memoTable(signature)) {
+      if (toRemove == null && _timePtr == timestamp.ptr) {
+        toRemove = (_timePtr, value)
       }
     }
 

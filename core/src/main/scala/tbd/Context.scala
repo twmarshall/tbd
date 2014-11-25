@@ -37,7 +37,7 @@ class Context
 
   val ddg = new DDG()
 
-  val memoTable = Map[Seq[Any], Buffer[(Timestamp, Any)]]()
+  val memoTable = Map[Seq[Any], Buffer[(Pointer, Any)]]()
 
   var initialRun = true
 
