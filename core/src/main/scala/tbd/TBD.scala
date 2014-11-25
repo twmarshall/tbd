@@ -42,6 +42,7 @@ object TBD {
     val changeable = reader(value)
 
     timestamp.end = c.ddg.nextTimestamp(Timestamp.getNodePtr(timestamp.ptr), c)
+    Timestamp.setEndPtr(timestamp.ptr, timestamp.end.ptr)
 
     changeable
   }
@@ -62,6 +63,7 @@ object TBD {
     val changeables = reader(value)
 
     timestamp.end = c.ddg.nextTimestamp(Timestamp.getNodePtr(timestamp.ptr), c)
+    Timestamp.setEndPtr(timestamp.ptr, timestamp.end.ptr)
 
     changeables
   }
@@ -85,6 +87,7 @@ object TBD {
     val changeable = reader(value1, value2)
 
     timestamp.end = c.ddg.nextTimestamp(Timestamp.getNodePtr(timestamp.ptr), c)
+    Timestamp.setEndPtr(timestamp.ptr, timestamp.end.ptr)
 
     changeable
   }
@@ -123,6 +126,7 @@ object TBD {
     initializer
 
     timestamp.end = c.ddg.nextTimestamp(modNodePointer, c)
+    Timestamp.setEndPtr(timestamp.ptr, timestamp.end.ptr)
 
     c.currentModId = oldCurrentModId
     c.currentModId2 = oldCurrentModId2
@@ -155,6 +159,7 @@ object TBD {
     initializer
 
     timestamp.end = c.ddg.nextTimestamp(modNodePointer, c)
+    Timestamp.setEndPtr(timestamp.ptr, timestamp.end.ptr)
 
     c.currentModId = oldCurrentModId
     c.currentModId2 = oldCurrentModId2

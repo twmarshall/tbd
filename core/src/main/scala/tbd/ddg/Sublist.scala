@@ -22,14 +22,18 @@ object Sublist {
   val idOffset = 0
   val sizeOffset = idOffset + 4
   val nextSubOffset = sizeOffset + 4
+  val previousSubOffset = nextSubOffset + pointerSize
+  val baseOffset = previousSubOffset + pointerSize
 
   def create(id: Int, nextSub: Pointer): Pointer = {
-    val size = 4 * 2 + pointerSize
+    val size = 4 * 2 + pointerSize * 3
     val ptr = MemoryAllocator.allocate(size)
 
     MemoryAllocator.putInt(ptr + idOffset, id)
     MemoryAllocator.putInt(ptr + sizeOffset, 0)
     MemoryAllocator.putPointer(ptr + nextSubOffset, nextSub)
+    MemoryAllocator.putPointer(ptr + previousSubOffset, -1)
+    MemoryAllocator.putPointer(ptr + baseOffset, -1)
 
     ptr
   }
@@ -58,6 +62,14 @@ object Sublist {
     MemoryAllocator.putPointer(ptr + nextSubOffset, newNextSub)
   }
 
+  def getBasePtr(thisPtr: Pointer): Pointer = {
+    MemoryAllocator.getPointer(thisPtr + baseOffset)
+  }
+
+  def setBasePtr(thisPtr: Pointer, newBasePtr: Pointer) {
+    MemoryAllocator.putPointer(thisPtr + baseOffset, newBasePtr)
+  }
+
   def calculateSize(ptr: Pointer): Int = {
     var timePtr = Timestamp.getNextTime(ptr)
 
@@ -81,6 +93,7 @@ class Sublist
   val base: Timestamp = new Timestamp(this, null, null)
   base.ptr = Timestamp.create(ptr, 0, -1, -1, basePointer, base)
   val basePtr = base.ptr
+  Sublist.setBasePtr(ptr, basePtr)
 
   base.next = base
   Timestamp.setNextTime(base.ptr, base.ptr)

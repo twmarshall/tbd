@@ -76,7 +76,7 @@ class Task
             val newValue = c.readId(ReadNode.getModId(nodePtr))
 
             val oldStart = c.reexecutionStart
-            c.reexecutionStart = timestamp.getNext().ptr
+            c.reexecutionStart = Timestamp.getNext(timestamp.ptr)
             val oldEnd = c.reexecutionEnd
             c.reexecutionEnd = timestamp.end.ptr
             val oldCurrentModId = c.currentModId
@@ -106,7 +106,7 @@ class Task
             val newValue2 = c.readId(Read2Node.getModId2(nodePtr))
 
             val oldStart = c.reexecutionStart
-            c.reexecutionStart = timestamp.getNext().ptr
+            c.reexecutionStart = Timestamp.getNext(timestamp.ptr)
             val oldEnd = c.reexecutionEnd
             c.reexecutionEnd = timestamp.end.ptr
             val oldCurrentModId = c.currentModId

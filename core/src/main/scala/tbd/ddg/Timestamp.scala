@@ -26,6 +26,7 @@ object Timestamp {
   private val nextTimeOffset = timeOffset + 8
   private val previousTimeOffset = nextTimeOffset + pointerSize
   private val nodePtrOffset = previousTimeOffset + pointerSize
+  private val endPtrOffset = nodePtrOffset + pointerSize
 
   def create
     (sublistPtr: Pointer,
@@ -34,7 +35,7 @@ object Timestamp {
      previousTime: Pointer,
      nodePtr: Pointer,
      timestamp: Timestamp): Pointer = {
-    val size = pointerSize * 4 + 8
+    val size = pointerSize * 5 + 8
     val ptr = MemoryAllocator.allocate(size)
 
     MemoryAllocator.putPointer(ptr, sublistPtr)
@@ -42,6 +43,7 @@ object Timestamp {
     MemoryAllocator.putPointer(ptr + nextTimeOffset, nextTime)
     MemoryAllocator.putPointer(ptr + previousTimeOffset, previousTime)
     MemoryAllocator.putPointer(ptr + nodePtrOffset, nodePtr)
+    MemoryAllocator.putPointer(ptr + endPtrOffset, -1)
 
     timestamps(ptr) = timestamp
     ptr
@@ -81,6 +83,28 @@ object Timestamp {
 
   def getNodePtr(ptr: Pointer): Pointer = {
     MemoryAllocator.getPointer(ptr + nodePtrOffset)
+  }
+
+  def getEndPtr(ptr: Pointer): Pointer = {
+    MemoryAllocator.getPointer(ptr + endPtrOffset)
+  }
+
+  def setEndPtr(ptr: Pointer, newEndPtr: Pointer) {
+    MemoryAllocator.putPointer(ptr + endPtrOffset, newEndPtr)
+  }
+
+  def getNext(thisPtr: Pointer): Pointer = {
+    val nextPtr = getNextTime(thisPtr)
+    val sublistPtr = getSublistPtr(thisPtr)
+    val sublistBasePtr = Sublist.getBasePtr(sublistPtr)
+
+    if (nextPtr != sublistBasePtr) {
+      nextPtr
+    } else {
+      val nextSublistPtr = Sublist.getNextSub(sublistPtr)
+      val nextBasePtr = Sublist.getBasePtr(nextSublistPtr)
+      getNext(nextBasePtr)
+    }
   }
 
   def toString(ptr: Pointer): String = {
@@ -140,13 +164,6 @@ class Timestamp
   var end: Timestamp = null
 
   var ptr: Long = -1
-
-  def getNext(): Timestamp = {
-    if (next != sublist.base)
-      next
-    else
-      sublist.nextSub.base.getNext()
-  }
 
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[Timestamp]) {

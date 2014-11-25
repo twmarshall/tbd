@@ -28,6 +28,7 @@ class Ordering(basePointer: Pointer = -1) {
   base.previousSub = base.nextSub
 
   base.nextSub.base.end = base.base
+  Timestamp.setEndPtr(base.nextSub.base.ptr, base.base.ptr)
 
   def after(t: Timestamp, ptr: Pointer): Timestamp = {
     val previousSublist =

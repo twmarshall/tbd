@@ -122,6 +122,7 @@ class DDG {
     pars(taskRef2) = timestamp
 
     timestamp.end = c.ddg.nextTimestamp(parNodePointer, c)
+    Timestamp.setEndPtr(timestamp.ptr, timestamp.end.ptr)
 
     timestamp
   }
@@ -149,10 +150,10 @@ class DDG {
   def getChildren(start: Timestamp, end: Timestamp): Buffer[Timestamp] = {
     val children = Buffer[Timestamp]()
 
-    var time = start.getNext()
-    while (time != end) {
-      children += time
-      time = time.end.getNext()
+    var timePtr = Timestamp.getNext(start.ptr)
+    while (timePtr != end.ptr) {
+      children += Timestamp.timestamps(timePtr)
+      timePtr = Timestamp.getNext(Timestamp.getEndPtr(timePtr))
     }
 
     children
@@ -256,7 +257,8 @@ class DDG {
         }
       }
 
-      time = time.getNext()
+      val nextPtr = Timestamp.getNext(time.ptr)
+      time = Timestamp.timestamps(nextPtr)
     }
 
     if (start.sublist == end.sublist) {
@@ -359,7 +361,8 @@ class DDG {
         innerToString(time, prefix + "-")
       }
     }
-    innerToString(startTime.getNext(), prefix)
+    val nextPtr = Timestamp.getNext(startTime.ptr)
+    innerToString(Timestamp.timestamps(nextPtr), prefix)
 
     out.toString
   }

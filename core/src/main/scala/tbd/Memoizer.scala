@@ -53,8 +53,8 @@ class Memoizer[T](implicit c: Context) {
           // This ensures that we won't match anything under the currently
           // reexecuting read that comes before this memo node, since then
           // the timestamps would be out of order.
-          c.reexecutionStart = timestamp.end.getNext().ptr
-          c.currentTime = timestamp.end.ptr
+          c.reexecutionStart = Timestamp.getNext(timestamp.end.ptr)
+          c.currentTime = Timestamp.getEndPtr(timestamp.ptr)
 
           ret = value
 
@@ -84,6 +84,7 @@ class Memoizer[T](implicit c: Context) {
       val value = func
 
       timestamp.end = c.ddg.nextTimestamp(memoNodePointer, c)
+      Timestamp.setEndPtr(timestamp.ptr, timestamp.end.ptr)
 
       if (c.memoTable.contains(signature)) {
         c.memoTable(signature) += ((timestamp.ptr, value))
@@ -175,7 +176,8 @@ class Memoizer[T](implicit c: Context) {
         }
       }
 
-      time = time.getNext()
+      val nextPtr = Timestamp.getNext(time.ptr)
+      time = Timestamp.timestamps(nextPtr)
     }
   }
 
