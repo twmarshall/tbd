@@ -20,13 +20,15 @@ import tbd.Constants._
 
 object Sublist {
   val idOffset = 0
-  val nextSubOffset = idOffset + 4
+  val sizeOffset = idOffset + 4
+  val nextSubOffset = sizeOffset + 4
 
   def create(id: Int, nextSub: Pointer): Pointer = {
-    val size = 4 + pointerSize
+    val size = 4 * 2 + pointerSize
     val ptr = MemoryAllocator.allocate(size)
 
     MemoryAllocator.putInt(ptr + idOffset, id)
+    MemoryAllocator.putInt(ptr + sizeOffset, 0)
     MemoryAllocator.putPointer(ptr + nextSubOffset, nextSub)
 
     ptr
@@ -38,6 +40,14 @@ object Sublist {
 
   def setId(ptr: Pointer, newId: Int) {
     MemoryAllocator.putInt(ptr + idOffset, newId)
+  }
+
+  def getSize(ptr: Pointer): Int = {
+    MemoryAllocator.getInt(ptr + sizeOffset)
+  }
+
+  def setSize(ptr: Pointer, newSize: Int) {
+    MemoryAllocator.putInt(ptr + sizeOffset, newSize)
   }
 
   def getNextSub(ptr: Pointer): Pointer = {
@@ -77,8 +87,6 @@ class Sublist
   base.previous = base
   Timestamp.setPreviousTime(base.ptr, base.ptr)
 
-  var size = 0
-
   def after(t: Timestamp, nodePtr: Pointer): Timestamp = {
     val previous =
       if (t == null) {
@@ -112,7 +120,7 @@ class Sublist
     Timestamp.setNextTime(previous.ptr, newTimestamp.ptr)
     newTimestamp.next.previous = newTimestamp
     Timestamp.setPreviousTime(Timestamp.getNextTime(newTimestamp.ptr), newTimestamp.ptr)
-    size += 1
+    Sublist.setSize(ptr, Sublist.getSize(ptr) + 1)
 
     newTimestamp
   }
@@ -132,7 +140,7 @@ class Sublist
     Timestamp.setNextTime(previousPtr, newTimestamp.ptr)
     newTimestamp.next.previous = newTimestamp
     Timestamp.setPreviousTime(Timestamp.getNextTime(newTimestamp.ptr), newTimestamp.ptr)
-    size += 1
+    Sublist.setSize(ptr, Sublist.getSize(ptr) + 1)
 
     newTimestamp
   }
@@ -145,7 +153,7 @@ class Sublist
     Timestamp.setNextTime(previousPtr, nextPtr)
     t.next.previous = t.previous
     Timestamp.setPreviousTime(nextPtr, previousPtr)
-    size -= 1
+    Sublist.setSize(ptr, Sublist.getSize(ptr) - 1)
   }
 
   def split(newSublist: Sublist) {
@@ -169,7 +177,7 @@ class Sublist
     Timestamp.setNextTime(nodePtr, base.ptr)
     base.previous = node
     Timestamp.setPreviousTime(base.ptr, node.ptr)
-    this.size = i
+    Sublist.setSize(ptr, i)
 
     node = newSublist.base
     nodePtr = newSublist.base.ptr
@@ -189,12 +197,12 @@ class Sublist
     Timestamp.setPreviousTime(newSublist.base.ptr, node.ptr)
     node.next = newSublist.base
     Timestamp.setNextTime(node.ptr, newSublist.base.ptr)
-    newSublist.size = i
+    Sublist.setSize(newSublist.ptr, i)
   }
 
   override def toString = {
     var nodePtr = Timestamp.getNextTime(base.ptr)
-    var ret = "(" + size + ") {"
+    var ret = "(" + Sublist.getSize(ptr) + ") {"
 
     while (nodePtr != basePtr) {
       ret += Timestamp.toString(nodePtr) + ", "

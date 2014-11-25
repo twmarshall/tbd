@@ -38,7 +38,7 @@ class Ordering(basePointer: Pointer = -1) {
       }
 
     val newTimestamp = previousSublist.after(t, ptr)
-    if (previousSublist.size > 63) {
+    if (Sublist.getSize(previousSublist.ptr) > 63) {
       val newSublist = sublistAfter(previousSublist)
       previousSublist.split(newSublist)
     }
@@ -48,7 +48,7 @@ class Ordering(basePointer: Pointer = -1) {
 
   def append(ptr: Pointer): Timestamp = {
     val newTimestamp =
-      if (base.previousSub.size > 31) {
+      if (Sublist.getSize(base.previousSub.ptr) > 31) {
         val newSublist = sublistAppend()
         newSublist.append(ptr)
       } else {
@@ -61,7 +61,7 @@ class Ordering(basePointer: Pointer = -1) {
   def remove(t: Timestamp) {
     t.sublist.remove(t)
 
-    if (t.sublist.size == 0) {
+    if (Sublist.getSize(t.sublist.ptr) == 0) {
       t.sublist.previousSub.nextSub = t.sublist.nextSub
       Sublist.setNextSub(t.sublist.previousSub.ptr, t.sublist.nextSub.ptr)
 
