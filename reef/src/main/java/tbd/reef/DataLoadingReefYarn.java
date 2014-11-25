@@ -30,16 +30,16 @@ public class DataLoadingReefYarn {
   private static final Logger LOG = Logger.getLogger(DataLoadingReefYarn.class.getName());
 
   private static final int NUM_LOCAL_THREADS = 16;
-  private static final int NUM_SPLITS = 6;
-  private static final int NUM_COMPUTE_EVALUATORS = 2;
+  private static final int NUM_SPLITS = 2;
+  private static final int NUM_COMPUTE_EVALUATORS = 0;
 
   @NamedParameter(doc = "Whether or not to run on the local runtime",
-      short_name = "local", default_value = "true")
+      short_name = "local", default_value = "false")
   public static final class Local implements Name<Boolean> {
   }
 
   @NamedParameter(doc = "Number of minutes before timeout",
-      short_name = "timeout", default_value = "2")
+      short_name = "timeout", default_value = "10")
   public static final class TimeOut implements Name<Integer> {
   }
 
@@ -84,22 +84,44 @@ public class DataLoadingReefYarn {
         .build();
 
     final Configuration dataLoadConfiguration = new DataLoadingRequestBuilder()
-        .setMemoryMB(1024)
+        .setMemoryMB(3072)
+        .setNumberOfCores(2)
         .setInputFormatClass(TextInputFormat.class)
         .setInputPath(inputDir)
         .setNumberOfDesiredSplits(NUM_SPLITS)
-        .setComputeRequest(computeRequest)
+        //.setComputeRequest(computeRequest)
         .setDriverConfigurationModule(DriverConfiguration.CONF
             .set(DriverConfiguration.GLOBAL_LIBRARIES, EnvironmentUtils.getClassLocation(DataLoadingReefYarn.class))
             .set(DriverConfiguration.ON_CONTEXT_ACTIVE, DataLoadingDriver.ContextActiveHandler.class)
             .set(DriverConfiguration.ON_TASK_COMPLETED, DataLoadingDriver.TaskCompletedHandler.class)
-            .set(DriverConfiguration.ON_DRIVER_STARTED, DataLoadingDriver.DriverStartedHandler.class)
+            //.set(DriverConfiguration.ON_DRIVER_STARTED, DataLoadingDriver.DriverStartedHandler.class)
             .set(DriverConfiguration.DRIVER_IDENTIFIER, "DataLoadingREEF"))
         .build();
+
+    //start a hardcoded master on localhost
+    String cp = DataLoadingReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+    LOG.log(Level.INFO, "cp: {0}", cp);
+    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp, "tbd.master.Main", "-i", "127.0.0.1", "-p", "2555");
+    LOG.log(Level.INFO, "pb");
+    pb.redirectErrorStream(true);
+    pb.inheritIO();
+    pb.redirectErrorStream(true);
+    Process p = null;
+    try {
+      LOG.log(Level.INFO, "before start");
+      p = pb.start();
+      LOG.log(Level.INFO, "after start");
+    }
+    catch (IOException e) {
+      LOG.log(Level.INFO, "master process IO exception");
+    }
 
     final LauncherStatus state =
         DriverLauncher.getLauncher(runtimeConfiguration).run(dataLoadConfiguration, jobTimeout);
 
     LOG.log(Level.INFO, "REEF job completed: {0}", state);
+
+    LOG.log(Level.INFO, "end master");
+    p.destroy();
   }
 }

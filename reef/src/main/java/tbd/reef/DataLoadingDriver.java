@@ -1,6 +1,8 @@
 package tbd.reef;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -33,12 +35,17 @@ public class DataLoadingDriver {
 
   private final DataLoadingService dataLoadingService;
 
+  private boolean firstTask = true;
+  
+  Map<String, ActiveContext> contexts = new HashMap<String, ActiveContext>();
+
   @Inject
   public DataLoadingDriver(final DataLoadingService dataLoadingService) {
     this.dataLoadingService = dataLoadingService;
     this.completedDataTasks.set(dataLoadingService.getNumberOfPartitions());
   }
 
+  /*
   public class DriverStartedHandler implements EventHandler<StartTime> {
 
     @Override
@@ -66,6 +73,7 @@ public class DataLoadingDriver {
       p.destroy();
     }
   }
+  */
 
   public class ContextActiveHandler implements EventHandler<ActiveContext> {
 
@@ -75,8 +83,33 @@ public class DataLoadingDriver {
       final String contextId = activeContext.getId();
       LOG.log(Level.INFO, "Context active: {0}", contextId);
 
-      if (dataLoadingService.isDataLoadedContext(activeContext)) {
+      if (dataLoadingService.isDataLoadedContext(activeContext) && !contexts.keySet().contains(contextId)) {
+        contexts.put(contextId, activeContext);
+        
+        final String taskId = "LineCountTask-" + ctrlCtxIds.getAndIncrement();
+        LOG.log(Level.INFO, "Submit LineCount task {0} to: {1}", new Object[] { taskId, contextId });
 
+        try {
+          if (firstTask) {
+            firstTask = false;
+          activeContext.submitTask(TaskConfiguration.CONF
+              .set(TaskConfiguration.IDENTIFIER, taskId)
+              .set(TaskConfiguration.TASK, DataLoadingTask.class)
+              .build());
+          
+          
+          } else {
+            activeContext.submitTask(TaskConfiguration.CONF
+                .set(TaskConfiguration.IDENTIFIER, taskId)
+                .set(TaskConfiguration.TASK, DataLoadingTask2.class)
+                .build());
+          }
+          
+        } catch (final BindException ex) {
+          LOG.log(Level.INFO, "Configuration error in " + contextId, ex);
+          throw new RuntimeException("Configuration error in " + contextId, ex);
+        }
+        /*
         final String lcContextId = "LineCountCtxt-" + ctrlCtxIds.getAndIncrement();
         LOG.log(Level.INFO, "Submit LineCount context {0} to: {1}",
             new Object[] { lcContextId, contextId });
@@ -90,6 +123,8 @@ public class DataLoadingDriver {
             .newConfigurationBuilder(poisonedConfiguration,
                 ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, lcContextId).build())
             .build());
+        */
+        
 
       } else if (activeContext.getId().startsWith("LineCountCtxt")) {
 
@@ -97,17 +132,27 @@ public class DataLoadingDriver {
         LOG.log(Level.INFO, "Submit LineCount task {0} to: {1}", new Object[] { taskId, contextId });
 
         try {
+          //if (firstTask) {
           activeContext.submitTask(TaskConfiguration.CONF
               .set(TaskConfiguration.IDENTIFIER, taskId)
               .set(TaskConfiguration.TASK, DataLoadingTask.class)
               .build());
+          firstTask = false;
+          /*
+          } else {
+            activeContext.submitTask(TaskConfiguration.CONF
+                .set(TaskConfiguration.IDENTIFIER, taskId)
+                .set(TaskConfiguration.TASK, DataLoadingTask2.class)
+                .build());
+          }
+          */
         } catch (final BindException ex) {
           LOG.log(Level.INFO, "Configuration error in " + contextId, ex);
           throw new RuntimeException("Configuration error in " + contextId, ex);
         }
       } else {
-        LOG.log(Level.INFO, "Line count Compute Task {0} -- Closing", contextId);
-        activeContext.close();
+        LOG.log(Level.INFO, "Unrecognized context: {0}", contextId);
+        //activeContext.close();
       }
     }
   }
