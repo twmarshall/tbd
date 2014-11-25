@@ -40,7 +40,7 @@ class Parizer[T]
 
     val tag = Tag.Par(
       FunctionTag(id1, closedTerms1), FunctionTag(id2, closedTerms2))
-    val nodePtr = Timestamp.getNodePtr(c.currentTime.ptr)
+    val nodePtr = Timestamp.getNodePtr(c.currentTime)
     TBD.nodes(nodePtr) = (internalId, tag, stack)
 
     (oneRet, twoRet)

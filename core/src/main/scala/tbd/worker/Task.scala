@@ -85,7 +85,7 @@ class Task
             c.currentModId2 = Node.getCurrentModId2(nodePtr)
 
             val oldCurrentTime = c.currentTime
-            c.currentTime = timestamp
+            c.currentTime = timestamp.ptr
 
             val reader =
               c.ddg.readers(ReadNode.getReaderId(nodePtr))
@@ -115,7 +115,7 @@ class Task
             c.currentModId2 = Node.getCurrentModId2(nodePtr)
 
             val oldCurrentTime = c.currentTime
-            c.currentTime = timestamp
+            c.currentTime = timestamp.ptr
 
             val reader = c.ddg.read2ers(
               Read2Node.getReaderId(nodePtr))

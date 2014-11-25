@@ -52,7 +52,7 @@ class Memoizer[T](implicit c: Context) {
           // reexecuting read that comes before this memo node, since then
           // the timestamps would be out of order.
           c.reexecutionStart = timestamp.end.getNext().ptr
-          c.currentTime = timestamp.end
+          c.currentTime = timestamp.end.ptr
 
           ret = value
 

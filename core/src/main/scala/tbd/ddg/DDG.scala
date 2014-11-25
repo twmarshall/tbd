@@ -139,9 +139,9 @@ class DDG {
       if (c.initialRun)
         ordering.append(ptr)
       else
-        ordering.after(c.currentTime, ptr)
+        ordering.after(Timestamp.timestamps(c.currentTime), ptr)
 
-    c.currentTime = time
+    c.currentTime = time.ptr
 
     time
   }
