@@ -37,7 +37,7 @@ class Memoizer[T](implicit c: Context) {
       // Search through the memo entries matching this signature to see if
       // there's one in the right time range.
       for ((timePtr, _value) <- c.memoTable(signature)) {
-        val timestamp = Timestamp.timestamps(timePtr)
+        val timestamp = Timestamp.getTimestamp(timePtr)
 
         if (!found && Timestamp.>=(timePtr, c.reexecutionStart) &&
             Timestamp.<(timePtr, c.reexecutionEnd)) {
@@ -177,7 +177,7 @@ class Memoizer[T](implicit c: Context) {
       }
 
       val nextPtr = Timestamp.getNext(time.ptr)
-      time = Timestamp.timestamps(nextPtr)
+      time = Timestamp.getTimestamp(nextPtr)
     }
   }
 

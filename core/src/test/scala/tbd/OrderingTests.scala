@@ -17,30 +17,34 @@ package tbd.test
 
 import org.scalatest._
 
+import tbd.Constants.Pointer
 import tbd.ddg.{Ordering, Sublist, Timestamp}
 
 class OrderingTests extends FlatSpec with Matchers {
-  def checkOrdering(timestamps: List[Timestamp]) {
-    var previous: Timestamp = null
+  def checkOrdering(timestamps: List[Pointer]) {
+    var previousPtr: Pointer = -1
     for (timestamp <- timestamps) {
-      if (previous != null) {
-        assert(Timestamp.<(previous.ptr, timestamp.ptr))
-        assert(Timestamp.>(timestamp.ptr, previous.ptr))
+      if (previousPtr != -1) {
+        assert(previousPtr != -1)
+
+        assert(Timestamp.<(previousPtr, timestamp))
+        assert(Timestamp.>(timestamp, previousPtr))
       }
-      previous = timestamp
+
+      previousPtr = timestamp
     }
   }
 
   def fill(ordering: Ordering, num: Int):
-      Tuple3[Timestamp, Timestamp, Timestamp] = {
+      Tuple3[Pointer, Pointer, Pointer] = {
     var i = 1
-    val middle = ordering.after(null, -1)
+    val middle = ordering.after(-1, -1)
     while (i < num / 2) {
-      ordering.after(null, -1)
+      ordering.after(-1, -1)
       i += 1
     }
 
-    val start = ordering.after(null, -1)
+    val start = ordering.after(-1, -1)
     val end = ordering.after(middle, -1)
     i += 2
 
@@ -90,7 +94,7 @@ class OrderingTests extends FlatSpec with Matchers {
       val ordering = new Ordering()
       val tuple = fill(ordering, i)
 
-      val t1 = ordering.after(null, -1)
+      val t1 = ordering.after(-1, -1)
 
       checkOrdering(List(t1, tuple._1, tuple._2, tuple._3))
     }
@@ -104,7 +108,7 @@ class OrderingTests extends FlatSpec with Matchers {
       ordering.remove(tuple._1)
       val t1 = ordering.after(tuple._2, -1)
       val t2 = ordering.after(tuple._3, -1)
-      val t3 = ordering.after(null, -1)
+      val t3 = ordering.after(-1, -1)
 
       checkOrdering(List(t3, tuple._2, t1, tuple._3, t2))
     }
@@ -120,7 +124,7 @@ class OrderingTests extends FlatSpec with Matchers {
       val t2 = ordering.after(tuple._1, -1)
       val t3 = ordering.after(tuple._2, -1)
       val t4 = ordering.after(tuple._3, -1)
-      val t5 = ordering.after(null, -1)
+      val t5 = ordering.after(-1, -1)
 
       checkOrdering(List(t5, tuple._1, t2, tuple._2, t3, tuple._3, t4))
     }
@@ -133,7 +137,7 @@ class OrderingTests extends FlatSpec with Matchers {
 
       val t1 = ordering.after(tuple._2, -1)
       ordering.remove(tuple._2)
-      val t2 = ordering.after(null, -1)
+      val t2 = ordering.after(-1, -1)
       val t3 = ordering.after(tuple._1, -1)
       val t4 = ordering.after(t1, -1)
       val t5 = ordering.after(tuple._3, -1)
@@ -153,12 +157,12 @@ class OrderingTests extends FlatSpec with Matchers {
 
       checkOrdering(List(start, middle, end, t2, t1, t3))
 
-      var appended: Timestamp = null
-      var lastAppended: Timestamp = null
+      var appended: Pointer = -1
+      var lastAppended: Pointer = -1
       for (j <- 1 to 5) {
         appended = ordering.append(-1)
 
-        if (lastAppended != null) {
+        if (lastAppended != -1) {
           checkOrdering(List(start, middle, end, lastAppended, appended))
         } else {
           checkOrdering(List(start, middle, end, appended))

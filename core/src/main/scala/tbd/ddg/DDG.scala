@@ -136,15 +136,15 @@ class DDG {
   }
 
   def nextTimestamp(ptr: Pointer, c: Context): Timestamp = {
-    val time =
+    val timePtr =
       if (c.initialRun)
         ordering.append(ptr)
       else
-        ordering.after(Timestamp.timestamps(c.currentTime), ptr)
+        ordering.after(c.currentTime, ptr)
 
-    c.currentTime = time.ptr
+    c.currentTime = timePtr
 
-    time
+    Timestamp.getTimestamp(timePtr)
   }
 
   def getChildren(start: Timestamp, end: Timestamp): Buffer[Timestamp] = {
@@ -152,7 +152,7 @@ class DDG {
 
     var timePtr = Timestamp.getNext(start.ptr)
     while (timePtr != end.ptr) {
-      children += Timestamp.timestamps(timePtr)
+      children += Timestamp.getTimestamp(timePtr)
       timePtr = Timestamp.getNext(Timestamp.getEndPtr(timePtr))
     }
 
@@ -190,8 +190,8 @@ class DDG {
   // place in the code where Nodes are removed from the graph, so this is where
   // we must call free on their pointers.
   def splice(_start: Pointer, _end: Pointer, c: tbd.Context) {
-    val start = Timestamp.timestamps(_start)
-    val end = Timestamp.timestamps(_end)
+    val start = Timestamp.getTimestamp(_start)
+    val end = Timestamp.getTimestamp(_end)
 
     var time = start
     while (Timestamp.<(time.ptr, end.ptr)) {
@@ -253,12 +253,12 @@ class DDG {
         MemoryAllocator.free(nodePtr)
 
         if (Timestamp.>(time.end.ptr, end.ptr)) {
-          ordering.remove(time.end)
+          ordering.remove(time.end.ptr)
         }
       }
 
       val nextPtr = Timestamp.getNext(time.ptr)
-      time = Timestamp.timestamps(nextPtr)
+      time = Timestamp.getTimestamp(nextPtr)
     }
 
     if (start.sublist == end.sublist) {
@@ -362,7 +362,7 @@ class DDG {
       }
     }
     val nextPtr = Timestamp.getNext(startTime.ptr)
-    innerToString(Timestamp.timestamps(nextPtr), prefix)
+    innerToString(Timestamp.getTimestamp(nextPtr), prefix)
 
     out.toString
   }

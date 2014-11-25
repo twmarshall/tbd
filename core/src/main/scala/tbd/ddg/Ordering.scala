@@ -30,37 +30,39 @@ class Ordering(basePointer: Pointer = -1) {
   base.nextSub.base.end = base.base
   Timestamp.setEndPtr(base.nextSub.base.ptr, base.base.ptr)
 
-  def after(t: Timestamp, ptr: Pointer): Timestamp = {
-    val previousSublist =
-      if (t == null) {
-        base.nextSub
+  def after(ptr: Pointer, nodePtr: Pointer): Pointer = {
+    val previousSublistPtr =
+      if (ptr == -1) {
+        Sublist.getNextSub(base.ptr)
       } else {
-        t.sublist
+        Timestamp.getSublistPtr(ptr)
       }
 
-    val newTimestamp = previousSublist.after(t, ptr)
-    if (Sublist.getSize(previousSublist.ptr) > 63) {
-      val newSublist = sublistAfter(previousSublist)
-      previousSublist.split(newSublist)
+    val newTimePtr = Sublist.after(previousSublistPtr, ptr, nodePtr)
+    val newTimestamp = Timestamp.getTimestamp(newTimePtr)
+    if (Sublist.getSize(previousSublistPtr) > 63) {
+      val newSublist = sublistAfter(previousSublistPtr)
+      Sublist.split(previousSublistPtr, newSublist.ptr)
     }
 
-    newTimestamp
+    newTimePtr
   }
 
-  def append(ptr: Pointer): Timestamp = {
-    val newTimestamp =
+  def append(ptr: Pointer): Pointer = {
+    val newTimePtr =
       if (Sublist.getSize(base.previousSub.ptr) > 31) {
         val newSublist = sublistAppend()
-        newSublist.append(ptr)
+        Sublist.append(newSublist.ptr, ptr)
       } else {
-        base.previousSub.append(ptr)
+        Sublist.append(base.previousSub.ptr, ptr)
       }
 
-    newTimestamp
+    newTimePtr
   }
 
-  def remove(t: Timestamp) {
-    t.sublist.remove(t)
+  def remove(ptr: Pointer) {
+    val t = Timestamp.getTimestamp(ptr)
+    Sublist.remove(t.sublist.ptr, t.ptr)
 
     if (Sublist.getSize(t.sublist.ptr) == 0) {
       t.sublist.previousSub.nextSub = t.sublist.nextSub
@@ -85,7 +87,9 @@ class Ordering(basePointer: Pointer = -1) {
     newSublist
   }
 
-  private def sublistAfter(s: Sublist): Sublist = {
+  private def sublistAfter(_s: Pointer): Sublist = {
+    val s = Sublist.getSublist(_s)
+
     var node = s.nextSub
     while (node != base) {
       Sublist.setId(node.ptr, Sublist.getId(node.ptr) + 1)

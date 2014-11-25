@@ -19,7 +19,15 @@ import tbd.MemoryAllocator
 import tbd.Constants._
 
 object Timestamp {
-  val timestamps = scala.collection.mutable.Map[Pointer, Timestamp]()
+  private val timestamps = scala.collection.mutable.Map[Pointer, Timestamp]()
+  private val lock = new java.util.concurrent.locks.ReentrantLock()
+
+  def getTimestamp(ptr: Pointer): Timestamp = {
+    lock.lock()
+    val t = timestamps(ptr)
+    lock.unlock()
+    t
+  }
 
   private val sublistPtrOffset = 0
   private val timeOffset = sublistPtrOffset + pointerSize
@@ -45,7 +53,10 @@ object Timestamp {
     MemoryAllocator.putPointer(ptr + nodePtrOffset, nodePtr)
     MemoryAllocator.putPointer(ptr + endPtrOffset, -1)
 
+    lock.lock()
     timestamps(ptr) = timestamp
+    lock.unlock()
+
     ptr
   }
 
