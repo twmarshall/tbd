@@ -79,7 +79,7 @@ class Sublist
   var previousSub: Sublist = null
 
   val base: Timestamp = new Timestamp(this, null, null)
-  base.ptr = Timestamp.create(ptr, 0, -1, -1, basePointer)
+  base.ptr = Timestamp.create(ptr, 0, -1, -1, basePointer, base)
   val basePtr = base.ptr
 
   base.next = base
@@ -102,7 +102,7 @@ class Sublist
           base,
           previous)
         time.ptr = Timestamp.create(ptr, Timestamp.getTime(previous.ptr) + 1,
-                                    base.ptr, previous.ptr, nodePtr)
+                                    base.ptr, previous.ptr, nodePtr, time)
         time
       } else {
         val nextTimePtr = Timestamp.getNextTime(previous.ptr)
@@ -112,7 +112,7 @@ class Sublist
           this,
           previous.next,
           previous)
-        time.ptr = Timestamp.create(ptr, newTime, nextTimePtr, previous.ptr, nodePtr)
+        time.ptr = Timestamp.create(ptr, newTime, nextTimePtr, previous.ptr, nodePtr, time)
         time
       }
 
@@ -134,7 +134,7 @@ class Sublist
         base,
         previous)
     newTimestamp.ptr = Timestamp.create(ptr,
-      Timestamp.getTime(previousPtr) + 1, base.ptr, previousPtr, nodePtr)
+      Timestamp.getTime(previousPtr) + 1, base.ptr, previousPtr, nodePtr, newTimestamp)
 
     previous.next = newTimestamp
     Timestamp.setNextTime(previousPtr, newTimestamp.ptr)

@@ -47,11 +47,11 @@ class Context
 
   // The timestamp of the read currently being reexecuting during change
   // propagation.
-  var reexecutionStart: Timestamp = _
+  var reexecutionStart: Pointer = _
 
   // The timestamp of the node immediately after the end of the read being
   // reexecuted.
-  var reexecutionEnd: Timestamp = _
+  var reexecutionEnd: Pointer = _
 
   var currentTime: Timestamp = ddg.startTime
 

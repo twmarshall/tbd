@@ -37,21 +37,21 @@ class Memoizer[T](implicit c: Context) {
       // Search through the memo entries matching this signature to see if
       // there's one in the right time range.
       for ((timestamp, _value) <- c.memoTable(signature)) {
-        if (!found && Timestamp.>=(timestamp.ptr, c.reexecutionStart.ptr) &&
-            Timestamp.<(timestamp.ptr, c.reexecutionEnd.ptr)) {
+        if (!found && Timestamp.>=(timestamp.ptr, c.reexecutionStart) &&
+            Timestamp.<(timestamp.ptr, c.reexecutionEnd)) {
           val value = _value.asInstanceOf[T]
           updateChangeables(timestamp, value)
 
           found = true
 
-          if (Timestamp.<(c.reexecutionStart.ptr, timestamp.ptr)) {
-            c.ddg.splice(c.reexecutionStart, timestamp, c)
+          if (Timestamp.<(c.reexecutionStart, timestamp.ptr)) {
+            c.ddg.splice(c.reexecutionStart, timestamp.ptr, c)
           }
 
           // This ensures that we won't match anything under the currently
           // reexecuting read that comes before this memo node, since then
           // the timestamps would be out of order.
-          c.reexecutionStart = timestamp.end.getNext()
+          c.reexecutionStart = timestamp.end.getNext().ptr
           c.currentTime = timestamp.end
 
           ret = value

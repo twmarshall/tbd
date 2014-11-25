@@ -188,7 +188,10 @@ class DDG {
   // Removes the subdddg between start and end, inclusive. This is the only
   // place in the code where Nodes are removed from the graph, so this is where
   // we must call free on their pointers.
-  def splice(start: Timestamp, end: Timestamp, c: tbd.Context) {
+  def splice(_start: Pointer, _end: Pointer, c: tbd.Context) {
+    val start = Timestamp.timestamps(_start)
+    val end = Timestamp.timestamps(_end)
+
     var time = start
     while (Timestamp.<(time.ptr, end.ptr)) {
       if (time.end != null) {

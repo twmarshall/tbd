@@ -19,6 +19,8 @@ import tbd.MemoryAllocator
 import tbd.Constants._
 
 object Timestamp {
+  val timestamps = scala.collection.mutable.Map[Pointer, Timestamp]()
+
   private val sublistPtrOffset = 0
   private val timeOffset = sublistPtrOffset + pointerSize
   private val nextTimeOffset = timeOffset + 8
@@ -30,7 +32,8 @@ object Timestamp {
      time: Double,
      nextTime: Pointer,
      previousTime: Pointer,
-     nodePtr: Pointer): Pointer = {
+     nodePtr: Pointer,
+     timestamp: Timestamp): Pointer = {
     val size = pointerSize * 4 + 8
     val ptr = MemoryAllocator.allocate(size)
 
@@ -40,6 +43,7 @@ object Timestamp {
     MemoryAllocator.putPointer(ptr + previousTimeOffset, previousTime)
     MemoryAllocator.putPointer(ptr + nodePtrOffset, nodePtr)
 
+    timestamps(ptr) = timestamp
     ptr
   }
 
@@ -120,13 +124,13 @@ object Timestamp {
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
   val MAX_TIMESTAMP = new Timestamp(maxSublist, null, null)
-  MAX_TIMESTAMP.ptr = Timestamp.create(maxSublist.ptr, Int.MaxValue, -1, -1, -1)
+  MAX_TIMESTAMP.ptr = Timestamp.create(maxSublist.ptr, Int.MaxValue, -1, -1, -1, MAX_TIMESTAMP)
 
   private val minSublist = new Sublist(Sublist.create(-1, -1), null)
 
   // A dummy timestamp which all real Timestamps are greater than.
   val MIN_TIMESTAMP = new Timestamp(minSublist, null, null)
-  MIN_TIMESTAMP.ptr = Timestamp.create(minSublist.ptr, -1, -1, -1, -1)
+  MIN_TIMESTAMP.ptr = Timestamp.create(minSublist.ptr, -1, -1, -1, -1, MIN_TIMESTAMP)
 }
 
 class Timestamp

@@ -76,9 +76,9 @@ class Task
             val newValue = c.readId(ReadNode.getModId(nodePtr))
 
             val oldStart = c.reexecutionStart
-            c.reexecutionStart = timestamp.getNext()
+            c.reexecutionStart = timestamp.getNext().ptr
             val oldEnd = c.reexecutionEnd
-            c.reexecutionEnd = timestamp.end
+            c.reexecutionEnd = timestamp.end.ptr
             val oldCurrentModId = c.currentModId
             c.currentModId = Node.getCurrentModId1(nodePtr)
             val oldCurrentModId2 = c.currentModId2
@@ -91,7 +91,7 @@ class Task
               c.ddg.readers(ReadNode.getReaderId(nodePtr))
             reader(newValue)
 
-            if (Timestamp.<(c.reexecutionStart.ptr, c.reexecutionEnd.ptr)) {
+            if (Timestamp.<(c.reexecutionStart, c.reexecutionEnd)) {
               c.ddg.splice(c.reexecutionStart, c.reexecutionEnd, c)
             }
 
@@ -106,9 +106,9 @@ class Task
             val newValue2 = c.readId(Read2Node.getModId2(nodePtr))
 
             val oldStart = c.reexecutionStart
-            c.reexecutionStart = timestamp.getNext()
+            c.reexecutionStart = timestamp.getNext().ptr
             val oldEnd = c.reexecutionEnd
-            c.reexecutionEnd = timestamp.end
+            c.reexecutionEnd = timestamp.end.ptr
             val oldCurrentModId = c.currentModId
             c.currentModId = Node.getCurrentModId1(nodePtr)
             val oldCurrentModId2 = c.currentModId2
@@ -121,7 +121,7 @@ class Task
               Read2Node.getReaderId(nodePtr))
             reader(newValue1, newValue2)
 
-            if (Timestamp.<(c.reexecutionStart.ptr, c.reexecutionEnd.ptr)) {
+            if (Timestamp.<(c.reexecutionStart, c.reexecutionEnd)) {
               c.ddg.splice(c.reexecutionStart, c.reexecutionEnd, c)
             }
 
