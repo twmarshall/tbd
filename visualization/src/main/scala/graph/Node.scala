@@ -24,7 +24,8 @@ import tbd.ddg
  */
 class Node(time: ddg.Timestamp) {
 
-  val (internalId, tag, stacktrace) = TBD.nodes(time.nodePtr)
+  val (internalId, tag, stacktrace) =
+    TBD.nodes(ddg.Timestamp.getNodePtr(time.ptr))
 
   override def toString = {
     tag.toString()

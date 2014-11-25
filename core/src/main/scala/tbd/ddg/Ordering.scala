@@ -21,10 +21,11 @@ import tbd.Constants._
 
 class Ordering(basePointer: Pointer = -1) {
   private val maxSize = Int.MaxValue / 2
-  val base = new Sublist(0, null, -1)
-  base.nextSub = new Sublist(1, base, base.ptr, basePointer)
-  base.nextPointer = base.nextSub.ptr
-  base.previous = base.nextSub
+  val base = new Sublist(Sublist.create(0, -1), null)
+
+  base.nextSub = new Sublist(Sublist.create(1, base.ptr), base, basePointer)
+  Sublist.setNextSub(base.ptr, base.nextSub.ptr)
+  base.previousSub = base.nextSub
 
   base.nextSub.base.end = base.base
 
@@ -47,11 +48,11 @@ class Ordering(basePointer: Pointer = -1) {
 
   def append(ptr: Pointer): Timestamp = {
     val newTimestamp =
-      if (base.previous.size > 31) {
+      if (base.previousSub.size > 31) {
         val newSublist = sublistAppend()
         newSublist.append(ptr)
       } else {
-        base.previous.append(ptr)
+        base.previousSub.append(ptr)
       }
 
     newTimestamp
@@ -61,22 +62,24 @@ class Ordering(basePointer: Pointer = -1) {
     t.sublist.remove(t)
 
     if (t.sublist.size == 0) {
-      t.sublist.previous.nextSub = t.sublist.nextSub
-      t.sublist.previous.nextPointer = t.sublist.nextSub.ptr
+      t.sublist.previousSub.nextSub = t.sublist.nextSub
+      Sublist.setNextSub(t.sublist.previousSub.ptr, t.sublist.nextSub.ptr)
 
-      t.sublist.nextSub.previous = t.sublist.previous
+      t.sublist.nextSub.previousSub = t.sublist.previousSub
     }
   }
 
   private def sublistAppend(): Sublist = {
-    val previous = base.previous
-    val newSublist = new Sublist(Sublist.getId(previous.ptr) + 1, base, base.ptr)
-    newSublist.previous = previous
+    val previous = base.previousSub
+
+    val newId = Sublist.getId(previous.ptr) + 1
+    val newSublist = new Sublist(Sublist.create(newId, base.ptr), base)
+    newSublist.previousSub = previous
 
     previous.nextSub = newSublist
-    previous.nextPointer = newSublist.ptr
+    Sublist.setNextSub(previous.ptr, newSublist.ptr)
 
-    base.previous = newSublist
+    base.previousSub = newSublist
 
     newSublist
   }
@@ -84,16 +87,17 @@ class Ordering(basePointer: Pointer = -1) {
   private def sublistAfter(s: Sublist): Sublist = {
     var node = s.nextSub
     while (node != base) {
-      //node.id += 1
       Sublist.setId(node.ptr, Sublist.getId(node.ptr) + 1)
       node = node.nextSub
     }
-    val newSublist = new Sublist(Sublist.getId(s.ptr) + 1, s.nextSub, s.nextSub.ptr)
-    newSublist.previous = s
+
+    val newId = Sublist.getId(s.ptr) + 1
+    val newSublist = new Sublist(Sublist.create(newId, s.nextSub.ptr), s.nextSub)
+    newSublist.previousSub = s
 
     s.nextSub = newSublist
-    s.nextPointer = newSublist.ptr
-    newSublist.nextSub.previous = newSublist
+    Sublist.setNextSub(s.ptr, newSublist.ptr)
+    newSublist.nextSub.previousSub = newSublist
 
     newSublist
     /*val previous =

@@ -35,6 +35,14 @@ public class MemoryAllocator {
     unsafe.putByte(ptr, b);
   }
 
+  public static double getDouble(long ptr) {
+    return unsafe.getDouble(ptr);
+  }
+
+  public static void putDouble(long ptr, double d) {
+    unsafe.putDouble(ptr, d);
+  }
+
   public static int getInt(long ptr) {
     return unsafe.getInt(ptr);
   }
@@ -49,6 +57,10 @@ public class MemoryAllocator {
 
   public static void putModId(long ptr, long modId) {
     unsafe.putLong(ptr, modId);
+  }
+
+  public static int pointerSize() {
+      return unsafe.addressSize();
   }
 
   public static long getPointer(long ptr) {

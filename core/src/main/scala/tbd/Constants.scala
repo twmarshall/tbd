@@ -52,6 +52,9 @@ object Constants {
 
   type Pointer = Long
 
+  // The size of Pointers, in bytes.
+  val pointerSize = 8
+
   type ModizerId = Int
 
   // The size of ModizerIds, in bytes.

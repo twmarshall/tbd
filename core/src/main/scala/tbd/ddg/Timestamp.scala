@@ -15,59 +15,133 @@
  */
 package tbd.ddg
 
-import tbd.Constants.Pointer
+import tbd.MemoryAllocator
+import tbd.Constants._
 
 object Timestamp {
-  private val maxSublist = new Sublist(Int.MaxValue, null, -1)
+  private val sublistPtrOffset = 0
+  private val timeOffset = sublistPtrOffset + pointerSize
+  private val nextTimeOffset = timeOffset + 8
+  private val previousTimeOffset = nextTimeOffset + pointerSize
+  private val nodePtrOffset = previousTimeOffset + pointerSize
+
+  def create
+    (sublistPtr: Pointer,
+     time: Double,
+     nextTime: Pointer,
+     previousTime: Pointer,
+     nodePtr: Pointer): Pointer = {
+    val size = pointerSize * 4 + 8
+    val ptr = MemoryAllocator.allocate(size)
+
+    MemoryAllocator.putPointer(ptr, sublistPtr)
+    MemoryAllocator.putDouble(ptr + timeOffset, time)
+    MemoryAllocator.putPointer(ptr + nextTimeOffset, nextTime)
+    MemoryAllocator.putPointer(ptr + previousTimeOffset, previousTime)
+    MemoryAllocator.putPointer(ptr + nodePtrOffset, nodePtr)
+
+    ptr
+  }
+
+  def getSublistPtr(ptr: Pointer): Pointer = {
+    MemoryAllocator.getPointer(ptr + sublistPtrOffset)
+  }
+
+  def setSublistPtr(ptr: Pointer, newSublistPtr: Pointer) {
+    MemoryAllocator.putPointer(ptr + sublistPtrOffset, newSublistPtr)
+  }
+
+  def getTime(ptr: Pointer): Double = {
+    MemoryAllocator.getDouble(ptr + timeOffset)
+  }
+
+  def setTime(ptr: Pointer, newTime: Double) {
+    MemoryAllocator.putDouble(ptr + timeOffset, newTime)
+  }
+
+  def getNextTime(ptr: Pointer): Pointer = {
+    MemoryAllocator.getPointer(ptr + nextTimeOffset)
+  }
+
+  def setNextTime(ptr: Pointer, newNextTime: Pointer) {
+    MemoryAllocator.putPointer(ptr + nextTimeOffset, newNextTime)
+  }
+
+  def getPreviousTime(ptr: Pointer): Pointer = {
+    MemoryAllocator.getPointer(ptr + previousTimeOffset)
+  }
+
+  def setPreviousTime(ptr: Pointer, newPreviousTime: Pointer) {
+    MemoryAllocator.putPointer(ptr + previousTimeOffset, newPreviousTime)
+  }
+
+  def getNodePtr(ptr: Pointer): Pointer = {
+    MemoryAllocator.getPointer(ptr + nodePtrOffset)
+  }
+
+  def toString(ptr: Pointer): String = {
+    "Timestamp " + getTime(ptr)
+  }
+
+  def <(ptr1: Pointer, ptr2: Pointer): Boolean = {
+    val sublistPtr1 = getSublistPtr(ptr1)
+    val sublistPtr2 = getSublistPtr(ptr2)
+
+    if (sublistPtr1 == sublistPtr2) {
+      val time1 = getTime(ptr1)
+      val time2 = getTime(ptr2)
+
+      time1 < time2
+    } else {
+      Sublist.getId(sublistPtr1) < Sublist.getId(sublistPtr2)
+    }
+  }
+
+  def >(ptr1: Pointer, ptr2: Pointer): Boolean = {
+    val sublistPtr1 = getSublistPtr(ptr1)
+    val sublistPtr2 = getSublistPtr(ptr2)
+
+    if (sublistPtr1 == sublistPtr2) {
+      val time1 = getTime(ptr1)
+      val time2 = getTime(ptr2)
+
+      time1 > time2
+    } else {
+      Sublist.getId(sublistPtr1) > Sublist.getId(sublistPtr2)
+    }
+  }
+
+  def >=(ptr1: Pointer, ptr2: Pointer): Boolean = {
+    !(<(ptr1, ptr2))
+  }
+
+  private val maxSublist = new Sublist(Sublist.create(Int.MaxValue, -1), null)
 
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
-  val MAX_TIMESTAMP = new Timestamp(maxSublist, maxSublist.ptr, Int.MaxValue, null, null, -1)
+  val MAX_TIMESTAMP = new Timestamp(maxSublist, null, null)
+  MAX_TIMESTAMP.ptr = Timestamp.create(maxSublist.ptr, Int.MaxValue, -1, -1, -1)
 
-  private val minSublist = new Sublist(-1, null, -1)
+  private val minSublist = new Sublist(Sublist.create(-1, -1), null)
 
   // A dummy timestamp which all real Timestamps are greater than.
-  val MIN_TIMESTAMP = new Timestamp(minSublist, minSublist.ptr, -1, null, null, -1)
+  val MIN_TIMESTAMP = new Timestamp(minSublist, null, null)
+  MIN_TIMESTAMP.ptr = Timestamp.create(minSublist.ptr, -1, -1, -1, -1)
 }
 
 class Timestamp
     (var sublist: Sublist,
-     var sublistPtr: Long,
-     var time: Double,
      var next: Timestamp,
-     var previous: Timestamp,
-     val nodePtr: Pointer) {
+     var previous: Timestamp) {
   var end: Timestamp = null
 
-  def <(that: Timestamp): Boolean = {
-    if (sublistPtr == that.sublistPtr) {
-      time < that.time
-    } else {
-      Sublist.getId(sublistPtr) < Sublist.getId(that.sublistPtr)
-    }
-  }
-
-  def >(that: Timestamp): Boolean = {
-    if (sublistPtr == that.sublistPtr) {
-      time > that.time
-    } else {
-      Sublist.getId(sublistPtr) > Sublist.getId(that.sublistPtr)
-    }
-  }
-
-  def >=(that: Timestamp): Boolean = {
-    !(this < that)
-  }
-
-  def <=(that: Timestamp): Boolean = {
-    !(this > that)
-  }
+  var ptr: Long = -1
 
   def getNext(): Timestamp = {
     if (next != sublist.base)
       next
     else
-      sublist.nextSub.base.next
+      sublist.nextSub.base.getNext()
   }
 
   override def equals(obj: Any): Boolean = {
@@ -75,17 +149,20 @@ class Timestamp
       false
     } else {
       val that = obj.asInstanceOf[Timestamp]
-      that.time == time &&
-      Sublist.getId(that.sublistPtr) == Sublist.getId(sublistPtr)
+
+      Timestamp.getTime(that.ptr) == Timestamp.getTime(ptr) &&
+      Sublist.getId(Timestamp.getSublistPtr(that.ptr)) ==
+      Sublist.getId(Timestamp.getSublistPtr(ptr))
     }
   }
 
-  override def toString = "(" + Sublist.getId(sublist.ptr) + " " + time.toString + ")"
+  override def toString =
+    "(" + Sublist.getId(sublist.ptr) + " " + Timestamp.getTime(ptr) + ")"
 }
 
 class TimestampOrdering extends scala.math.Ordering[Timestamp] {
   def compare(one: Timestamp, two: Timestamp) = {
-    if (one < two) {
+    if (Timestamp.>(one.ptr, two.ptr)) {
       1
     } else if (one == two) {
       0

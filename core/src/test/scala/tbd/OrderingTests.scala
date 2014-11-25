@@ -24,8 +24,8 @@ class OrderingTests extends FlatSpec with Matchers {
     var previous: Timestamp = null
     for (timestamp <- timestamps) {
       if (previous != null) {
-        assert(previous < timestamp)
-        assert(timestamp > previous)
+        assert(Timestamp.<(previous.ptr, timestamp.ptr))
+        assert(Timestamp.>(timestamp.ptr, previous.ptr))
       }
       previous = timestamp
     }
