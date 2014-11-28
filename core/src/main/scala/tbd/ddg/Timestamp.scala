@@ -158,20 +158,17 @@ object Timestamp {
 
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
-  val MAX_TIMESTAMP = new Timestamp(maxSublist, null, null)
+  val MAX_TIMESTAMP = new Timestamp(maxSublist)
   MAX_TIMESTAMP.ptr = Timestamp.create(maxSublist.ptr, Int.MaxValue, -1, -1, -1, MAX_TIMESTAMP)
 
   private val minSublist = new Sublist(Sublist.create(-1, -1), null)
 
   // A dummy timestamp which all real Timestamps are greater than.
-  val MIN_TIMESTAMP = new Timestamp(minSublist, null, null)
+  val MIN_TIMESTAMP = new Timestamp(minSublist)
   MIN_TIMESTAMP.ptr = Timestamp.create(minSublist.ptr, -1, -1, -1, -1, MIN_TIMESTAMP)
 }
 
-class Timestamp
-    (var sublist: Sublist,
-     var next: Timestamp,
-     var previous: Timestamp) {
+class Timestamp(var sublist: Sublist) {
   var ptr: Long = -1
 
   override def equals(obj: Any): Boolean = {

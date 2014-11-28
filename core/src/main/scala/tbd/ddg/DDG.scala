@@ -263,9 +263,7 @@ class DDG {
     }
 
     if (start.sublist == end.sublist) {
-      start.previous.next = end
       Timestamp.setNextTime(Timestamp.getPreviousTime(start.ptr), end.ptr)
-      end.previous = start.previous
       Timestamp.setPreviousTime(end.ptr, Timestamp.getPreviousTime(start.ptr))
 
       val newSize = Sublist.calculateSize(start.sublist.basePtr)
@@ -276,9 +274,7 @@ class DDG {
             Timestamp.getPreviousTime(start.sublist.basePtr)) {
           start.sublist.previousSub
         } else {
-          start.previous.next = start.sublist.base
           Timestamp.setNextTime(Timestamp.getPreviousTime(start.ptr), start.sublist.basePtr)
-          start.sublist.base.previous = start.previous
           Timestamp.setPreviousTime(start.sublist.basePtr, Timestamp.getPreviousTime(start.ptr))
 
           val newSize = Sublist.calculateSize(start.sublist.basePtr)
@@ -287,9 +283,7 @@ class DDG {
           start.sublist
         }
 
-      end.previous = end.sublist.base
       Timestamp.setPreviousTime(end.ptr, end.sublist.basePtr)
-      end.sublist.base.next = end
       Timestamp.setNextTime(end.sublist.basePtr, end.ptr)
 
       val newSize = Sublist.calculateSize(end.sublist.basePtr)
