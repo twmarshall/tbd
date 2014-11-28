@@ -17,6 +17,7 @@ package tbd.ddg
 
 import scala.collection.mutable.Buffer
 
+import tbd.MemoryAllocator
 import tbd.Constants._
 
 class Ordering(basePointer: Pointer = -1) {
@@ -70,6 +71,7 @@ class Ordering(basePointer: Pointer = -1) {
       val previousSubPtr = Sublist.getPreviousSub(sublistPtr)
       Sublist.setNextSub(previousSubPtr, nextSubPtr)
       Sublist.setPreviousSub(nextSubPtr, previousSubPtr)
+      MemoryAllocator.free(sublistPtr)
     }
   }
 

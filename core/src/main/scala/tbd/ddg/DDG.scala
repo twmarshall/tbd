@@ -188,6 +188,11 @@ class DDG {
   // place in the code where Nodes are removed from the graph, so this is where
   // we must call free on their pointers.
   def splice(startPtr: Pointer, endPtr: Pointer, c: tbd.Context) {
+    val startSublistPtr = Timestamp.getSublistPtr(startPtr)
+    val startSublistBasePtr = Sublist.getBasePtr(startSublistPtr)
+    val startPreviousTime = Timestamp.getPreviousTime(startPtr)
+    val endSublistPtr = Timestamp.getSublistPtr(endPtr)
+
     var timePtr = startPtr
     while (Timestamp.<(timePtr, endPtr)) {
       val timeEndPtr = Timestamp.getEndPtr(timePtr)
@@ -250,29 +255,29 @@ class DDG {
 
         if (Timestamp.>(timeEndPtr, endPtr)) {
           ordering.remove(timeEndPtr)
+          MemoryAllocator.free(timeEndPtr)
         }
       }
 
+      val lastTimePtr = timePtr
       timePtr = Timestamp.getNext(timePtr)
+      MemoryAllocator.free(lastTimePtr)
     }
 
-    val startSublistPtr = Timestamp.getSublistPtr(startPtr)
-    val startSublistBasePtr = Sublist.getBasePtr(startSublistPtr)
-    val endSublistPtr = Timestamp.getSublistPtr(endPtr)
     if (startSublistPtr == endSublistPtr) {
-      Timestamp.setNextTime(Timestamp.getPreviousTime(startPtr), endPtr)
-      Timestamp.setPreviousTime(endPtr, Timestamp.getPreviousTime(startPtr))
+      Timestamp.setNextTime(startPreviousTime, endPtr)
+      Timestamp.setPreviousTime(endPtr, startPreviousTime)
 
       val newSize = Sublist.calculateSize(startSublistBasePtr)
       Sublist.setSize(startSublistPtr, newSize)
     } else {
       val newStartSublistPtr =
-        if (Timestamp.getPreviousTime(startPtr) ==
+        if (startPreviousTime ==
             Timestamp.getPreviousTime(startSublistBasePtr)) {
           Sublist.getPreviousSub(startSublistPtr)
         } else {
-          Timestamp.setNextTime(Timestamp.getPreviousTime(startPtr), startSublistBasePtr)
-          Timestamp.setPreviousTime(startSublistBasePtr, Timestamp.getPreviousTime(startPtr))
+          Timestamp.setNextTime(startPreviousTime, startSublistBasePtr)
+          Timestamp.setPreviousTime(startSublistBasePtr, startPreviousTime)
 
           val newSize = Sublist.calculateSize(startSublistBasePtr)
           Sublist.setSize(startSublistPtr, newSize)
