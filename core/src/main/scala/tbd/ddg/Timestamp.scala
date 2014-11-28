@@ -158,33 +158,18 @@ object Timestamp {
 
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
-  val MAX_TIMESTAMP = new Timestamp(maxSublist)
+  val MAX_TIMESTAMP = new Timestamp()
   MAX_TIMESTAMP.ptr = Timestamp.create(maxSublist.ptr, Int.MaxValue, -1, -1, -1, MAX_TIMESTAMP)
 
   private val minSublist = new Sublist(Sublist.create(-1, -1), null)
 
   // A dummy timestamp which all real Timestamps are greater than.
-  val MIN_TIMESTAMP = new Timestamp(minSublist)
+  val MIN_TIMESTAMP = new Timestamp()
   MIN_TIMESTAMP.ptr = Timestamp.create(minSublist.ptr, -1, -1, -1, -1, MIN_TIMESTAMP)
 }
 
-class Timestamp(var sublist: Sublist) {
+class Timestamp {
   var ptr: Long = -1
-
-  override def equals(obj: Any): Boolean = {
-    if (!obj.isInstanceOf[Timestamp]) {
-      false
-    } else {
-      val that = obj.asInstanceOf[Timestamp]
-
-      Timestamp.getTime(that.ptr) == Timestamp.getTime(ptr) &&
-      Sublist.getId(Timestamp.getSublistPtr(that.ptr)) ==
-      Sublist.getId(Timestamp.getSublistPtr(ptr))
-    }
-  }
-
-  override def toString =
-    "(" + Sublist.getId(sublist.ptr) + " " + Timestamp.getTime(ptr) + ")"
 }
 
 class TimestampOrdering extends scala.math.Ordering[Timestamp] {

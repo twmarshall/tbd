@@ -60,14 +60,15 @@ class Ordering(basePointer: Pointer = -1) {
   }
 
   def remove(ptr: Pointer) {
-    val t = Timestamp.getTimestamp(ptr)
-    Sublist.remove(t.sublist.ptr, t.ptr)
+    val sublistPtr = Timestamp.getSublistPtr(ptr)
+    Sublist.remove(sublistPtr, ptr)
 
-    if (Sublist.getSize(t.sublist.ptr) == 0) {
-      t.sublist.previousSub.nextSub = t.sublist.nextSub
-      Sublist.setNextSub(t.sublist.previousSub.ptr, t.sublist.nextSub.ptr)
+    if (Sublist.getSize(sublistPtr) == 0) {
+      val sublist = Sublist.getSublist(sublistPtr)
+      sublist.previousSub.nextSub = sublist.nextSub
+      Sublist.setNextSub(sublist.previousSub.ptr, sublist.nextSub.ptr)
 
-      t.sublist.nextSub.previousSub = t.sublist.previousSub
+      sublist.nextSub.previousSub = sublist.previousSub
     }
   }
 

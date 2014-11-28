@@ -262,36 +262,43 @@ class DDG {
       time = Timestamp.getTimestamp(nextPtr)
     }
 
-    if (start.sublist == end.sublist) {
+    val startSublistPtr = Timestamp.getSublistPtr(start.ptr)
+    val startSublistBasePtr = Sublist.getBasePtr(startSublistPtr)
+    val endSublistPtr = Timestamp.getSublistPtr(end.ptr)
+    if (startSublistPtr == endSublistPtr) {
       Timestamp.setNextTime(Timestamp.getPreviousTime(start.ptr), end.ptr)
       Timestamp.setPreviousTime(end.ptr, Timestamp.getPreviousTime(start.ptr))
 
-      val newSize = Sublist.calculateSize(start.sublist.basePtr)
-      Sublist.setSize(start.sublist.ptr, newSize)
+      val newSize = Sublist.calculateSize(startSublistBasePtr)
+      Sublist.setSize(startSublistPtr, newSize)
     } else {
-      val startSublist =
+      val newStartSublistPtr =
         if (Timestamp.getPreviousTime(start.ptr) ==
-            Timestamp.getPreviousTime(start.sublist.basePtr)) {
-          start.sublist.previousSub
+            Timestamp.getPreviousTime(startSublistBasePtr)) {
+          Sublist.getPreviousSub(startSublistPtr)
         } else {
-          Timestamp.setNextTime(Timestamp.getPreviousTime(start.ptr), start.sublist.basePtr)
-          Timestamp.setPreviousTime(start.sublist.basePtr, Timestamp.getPreviousTime(start.ptr))
+          Timestamp.setNextTime(Timestamp.getPreviousTime(start.ptr), startSublistBasePtr)
+          Timestamp.setPreviousTime(startSublistBasePtr, Timestamp.getPreviousTime(start.ptr))
 
-          val newSize = Sublist.calculateSize(start.sublist.basePtr)
-          Sublist.setSize(start.sublist.ptr, newSize)
+          val newSize = Sublist.calculateSize(startSublistBasePtr)
+          Sublist.setSize(startSublistPtr, newSize)
 
-          start.sublist
+          startSublistPtr
         }
 
-      Timestamp.setPreviousTime(end.ptr, end.sublist.basePtr)
-      Timestamp.setNextTime(end.sublist.basePtr, end.ptr)
+      val startSublist = Sublist.getSublist(newStartSublistPtr)
+      val endSublistBasePtr = Sublist.getBasePtr(endSublistPtr)
 
-      val newSize = Sublist.calculateSize(end.sublist.basePtr)
-      Sublist.setSize(end.sublist.ptr, newSize)
+      Timestamp.setPreviousTime(end.ptr, endSublistBasePtr)
+      Timestamp.setNextTime(endSublistBasePtr, end.ptr)
 
-      startSublist.nextSub = end.sublist
-      Sublist.setNextSub(startSublist.ptr, end.sublist.ptr)
-      end.sublist.previousSub = startSublist
+      val newSize = Sublist.calculateSize(endSublistBasePtr)
+      Sublist.setSize(endSublistPtr, newSize)
+
+      val endSublist = Sublist.getSublist(endSublistPtr)
+      startSublist.nextSub = endSublist
+      Sublist.setNextSub(startSublist.ptr, endSublistPtr)
+      endSublist.previousSub = startSublist
     }
   }
 

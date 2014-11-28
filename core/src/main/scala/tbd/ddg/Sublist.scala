@@ -79,6 +79,10 @@ object Sublist {
     MemoryAllocator.putPointer(ptr + nextSubOffset, newNextSub)
   }
 
+  def getPreviousSub(ptr: Pointer): Pointer = {
+    MemoryAllocator.getPointer(ptr + previousSubOffset)
+  }
+
   def getBasePtr(thisPtr: Pointer): Pointer = {
     MemoryAllocator.getPointer(thisPtr + baseOffset)
   }
@@ -106,7 +110,7 @@ object Sublist {
 
     val newTimestamp =
       if (Timestamp.getNextTime(previous.ptr) == basePtr) {
-        val time = new Timestamp(thisList)
+        val time = new Timestamp()
         time.ptr = Timestamp.create(thisPtr, Timestamp.getTime(previous.ptr) + 1,
                                     basePtr, previous.ptr, nodePtr, time)
         time
@@ -114,7 +118,7 @@ object Sublist {
         val nextTimePtr = Timestamp.getNextTime(previous.ptr)
         val newTime = (Timestamp.getTime(previous.ptr) +
                        Timestamp.getTime(nextTimePtr)) / 2
-        val time = new Timestamp(thisList)
+        val time = new Timestamp()
         time.ptr = Timestamp.create(thisPtr, newTime, nextTimePtr, previous.ptr, nodePtr, time)
         time
       }
@@ -131,7 +135,7 @@ object Sublist {
     val base = thisList.base
 
     val previousPtr = Timestamp.getPreviousTime(base.ptr)
-    val newTimestamp = new Timestamp(thisList)
+    val newTimestamp = new Timestamp()
     newTimestamp.ptr = Timestamp.create(thisPtr,
       Timestamp.getTime(previousPtr) + 1, base.ptr, previousPtr, nodePtr, newTimestamp)
 
@@ -180,9 +184,7 @@ object Sublist {
       nodePtr = Timestamp.getNextTime(nodePtr)
       Timestamp.setTime(nodePtr, i + 1)
 
-      val node = Timestamp.getTimestamp(nodePtr)
-      node.sublist = newSublist
-      Timestamp.setSublistPtr(nodePtr, node.sublist.ptr)
+      Timestamp.setSublistPtr(nodePtr, newSublist.ptr)
 
       i += 1
     }
@@ -213,7 +215,7 @@ class Sublist
 
   var previousSub: Sublist = null
 
-  val base: Timestamp = new Timestamp(this)
+  val base: Timestamp = new Timestamp()
   base.ptr = Timestamp.create(ptr, 0, -1, -1, basePointer, base)
   val basePtr = base.ptr
   Sublist.setBasePtr(ptr, basePtr)
