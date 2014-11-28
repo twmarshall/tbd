@@ -172,8 +172,6 @@ class Timestamp
     (var sublist: Sublist,
      var next: Timestamp,
      var previous: Timestamp) {
-  var end: Timestamp = null
-
   var ptr: Long = -1
 
   override def equals(obj: Any): Boolean = {

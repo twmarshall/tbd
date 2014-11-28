@@ -114,7 +114,8 @@ object DDG {
     result.adj(node) += new Edge.Control(node, newNode)
     result.adj(newNode) += new Edge.InverseControl(newNode, node)
 
-    getChildren(ddg, time, time.end).foreach(x => {
+    val end = tbd.ddg.Timestamp.getTimestamp(tbd.ddg.Timestamp.getEndPtr(time.ptr))
+    getChildren(ddg, time, end).foreach(x => {
       append(ddg, newNode, x, result)
     })
   }

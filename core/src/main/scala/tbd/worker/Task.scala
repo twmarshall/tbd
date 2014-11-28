@@ -45,12 +45,12 @@ class Task
 
   private val c = new Context(taskId, this, datastore, masterRef)
 
-  def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
-                end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
+  def propagate(start: Pointer = Timestamp.MIN_TIMESTAMP.ptr,
+                end: Pointer = Timestamp.MAX_TIMESTAMP.ptr): Future[Boolean] = {
     Future {
       var option = c.ddg.updated.find((timestamp: Timestamp) =>
-        Timestamp.>(timestamp.ptr, start.ptr) &&
-        Timestamp.<(timestamp.ptr, end.ptr))
+        Timestamp.>(timestamp.ptr, start) &&
+        Timestamp.<(timestamp.ptr, end))
       while (!option.isEmpty) {
         val timestamp = option.get
         c.ddg.updated -= timestamp
@@ -78,7 +78,7 @@ class Task
             val oldStart = c.reexecutionStart
             c.reexecutionStart = Timestamp.getNext(timestamp.ptr)
             val oldEnd = c.reexecutionEnd
-            c.reexecutionEnd = timestamp.end.ptr
+            c.reexecutionEnd = Timestamp.getEndPtr(timestamp.ptr)
             val oldCurrentModId = c.currentModId
             c.currentModId = Node.getCurrentModId1(nodePtr)
             val oldCurrentModId2 = c.currentModId2
@@ -108,7 +108,7 @@ class Task
             val oldStart = c.reexecutionStart
             c.reexecutionStart = Timestamp.getNext(timestamp.ptr)
             val oldEnd = c.reexecutionEnd
-            c.reexecutionEnd = timestamp.end.ptr
+            c.reexecutionEnd = Timestamp.getEndPtr(timestamp.ptr)
             val oldCurrentModId = c.currentModId
             c.currentModId = Node.getCurrentModId1(nodePtr)
             val oldCurrentModId2 = c.currentModId2
@@ -135,8 +135,8 @@ class Task
         }
 
         option = c.ddg.updated.find((timestamp: Timestamp) =>
-          Timestamp.>(timestamp.ptr, start.ptr) &&
-          Timestamp.<(timestamp.ptr, end.ptr))
+          Timestamp.>(timestamp.ptr, start) &&
+          Timestamp.<(timestamp.ptr, end))
       }
 
       true

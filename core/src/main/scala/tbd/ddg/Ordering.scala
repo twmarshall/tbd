@@ -27,7 +27,6 @@ class Ordering(basePointer: Pointer = -1) {
   Sublist.setNextSub(base.ptr, base.nextSub.ptr)
   base.previousSub = base.nextSub
 
-  base.nextSub.base.end = base.base
   Timestamp.setEndPtr(base.nextSub.base.ptr, base.base.ptr)
 
   def after(ptr: Pointer, nodePtr: Pointer): Pointer = {

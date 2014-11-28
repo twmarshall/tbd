@@ -22,7 +22,7 @@ import scala.collection.mutable.{Buffer, Map, Set}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.ddg.{DDG, Node, Timestamp}
+import tbd.ddg.{DDG, Node}
 import tbd.messages._
 import tbd.worker.Task
 

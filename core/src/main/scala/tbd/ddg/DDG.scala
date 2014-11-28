@@ -121,8 +121,8 @@ class DDG {
     pars(taskRef1) = timestamp
     pars(taskRef2) = timestamp
 
-    timestamp.end = c.ddg.nextTimestamp(parNodePointer, c)
-    Timestamp.setEndPtr(timestamp.ptr, timestamp.end.ptr)
+    val end = c.ddg.nextTimestamp(parNodePointer, c)
+    Timestamp.setEndPtr(timestamp.ptr, end.ptr)
 
     timestamp
   }
@@ -189,13 +189,14 @@ class DDG {
   // Removes the subdddg between start and end, inclusive. This is the only
   // place in the code where Nodes are removed from the graph, so this is where
   // we must call free on their pointers.
-  def splice(_start: Pointer, _end: Pointer, c: tbd.Context) {
+  def splice(_start: Pointer, endPtr: Pointer, c: tbd.Context) {
     val start = Timestamp.getTimestamp(_start)
-    val end = Timestamp.getTimestamp(_end)
+    val end = Timestamp.getTimestamp(endPtr)
 
     var time = start
-    while (Timestamp.<(time.ptr, end.ptr)) {
-      if (time.end != null) {
+    while (Timestamp.<(time.ptr, endPtr)) {
+      val timeEndPtr = Timestamp.getEndPtr(time.ptr)
+      if (timeEndPtr != -1) {
         val nodePtr = Timestamp.getNodePtr(time.ptr)
 
         Node.getType(nodePtr) match {
@@ -252,8 +253,8 @@ class DDG {
 
         MemoryAllocator.free(nodePtr)
 
-        if (Timestamp.>(time.end.ptr, end.ptr)) {
-          ordering.remove(time.end.ptr)
+        if (Timestamp.>(timeEndPtr, endPtr)) {
+          ordering.remove(timeEndPtr)
         }
       }
 
@@ -309,22 +310,22 @@ class DDG {
     def innerToString(time: Timestamp, prefix: String) {
       val nodePtr = Timestamp.getNodePtr(time.ptr)
 
+      val timeString = " time = " + time + " to " +
+        Timestamp.getEndPtr(time.ptr)
+
       val thisString =
         Node.getType(nodePtr) match {
           case Node.MemoNodeType =>
-            prefix + "MemoNode " + nodePtr + " time = " + time + " to " +
-            time.end + " signature=" +
+            prefix + "MemoNode " + nodePtr + timeString + " signature=" +
             MemoNode.getSignature(nodePtr) + "\n"
           case Node.ModizerNodeType =>
             prefix + "ModizerNode " + nodePtr + " modId1=)" +
             ModizerNode.getModId1(nodePtr) + ") modId2=(" +
-            ModizerNode.getModId1(nodePtr) + ") time = " + time + " to " +
-            time.end + "\n"
+            ModizerNode.getModId1(nodePtr) + ")" + timeString + "\n"
           case Node.ModNodeType =>
             prefix + "ModNode " + nodePtr + " modId1=)" +
             ModNode.getModId1(nodePtr) + ") modId2=(" +
-            ModNode.getModId1(nodePtr) + ") time = " + time + " to " +
-            time.end + "\n"
+            ModNode.getModId1(nodePtr) + ")" + timeString + "\n"
           case Node.ParNodeType =>
             val taskRef1 = tasks(ParNode.getTaskId1(nodePtr))
             val taskRef2 = tasks(ParNode.getTaskId2(nodePtr))
@@ -343,13 +344,11 @@ class DDG {
             prefix + "RootNode " + nodePtr + "\n"
           case Node.ReadNodeType =>
             prefix + "ReadNode " + nodePtr + " modId=(" +
-            ReadNode.getModId(nodePtr) + ") time=" + time + " to " +
-            time.end + "\n"
+            ReadNode.getModId(nodePtr) + ")" + timeString + "\n"
           case Node.Read2NodeType =>
             prefix + "Read2Node " + nodePtr + " modId1=(" +
             Read2Node.getModId1(nodePtr) + ") modId2=(" +
-            Read2Node.getModId2(nodePtr) + ") time=" + time + " to " +
-            time.end + "\n"
+            Read2Node.getModId2(nodePtr) + ")" + timeString + "\n"
           case Node.WriteNodeType =>
             prefix + "WriteNode " + nodePtr + " modId=(" +
             WriteNode.getModId1(nodePtr) + ")\n"
@@ -357,7 +356,8 @@ class DDG {
 
       out.append(thisString)
 
-      for (time <- getChildren(time, time.end)) {
+      val end = Timestamp.getTimestamp(Timestamp.getEndPtr(time.ptr))
+      for (time <- getChildren(time, end)) {
         innerToString(time, prefix + "-")
       }
     }
