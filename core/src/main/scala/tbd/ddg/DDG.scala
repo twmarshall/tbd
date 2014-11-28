@@ -29,10 +29,10 @@ class DDG {
   var root = RootNode.create()
   debug.TBD.nodes(root) = (Node.getId(), Tag.Root(), null)
 
-  val reads = Map[ModId, Buffer[Timestamp]]()
-  val pars = Map[ActorRef, Timestamp]()
+  val reads = Map[ModId, Buffer[Pointer]]()
+  val pars = Map[ActorRef, Pointer]()
 
-  var updated = TreeSet[Timestamp]()(new TimestampOrdering())
+  var updated = TreeSet[Pointer]()(new TimestampOrdering())
 
   private val ordering = new Ordering(root)
 
@@ -49,21 +49,21 @@ class DDG {
        reader: Any => Changeable[Any],
        currentModId1: ModId,
        currentModId2: ModId,
-       c: Context): Timestamp = {
+       c: Context): Pointer = {
     val readNodePointer = ReadNode.create(
       mod.id, nextReadId, currentModId1, currentModId2)
     readers(nextReadId) = reader
     nextReadId += 1
 
-    val timestamp = nextTimestamp(readNodePointer, c)
+    val timePtr = nextTimestamp(readNodePointer, c)
 
     if (reads.contains(mod.id)) {
-      reads(mod.id) :+= timestamp
+      reads(mod.id) :+= timePtr
     } else {
-      reads(mod.id) = Buffer(timestamp)
+      reads(mod.id) = Buffer(timePtr)
     }
 
-    timestamp
+    timePtr
   }
 
   def addRead2
@@ -74,37 +74,35 @@ class DDG {
        reader: (Any, Any) => Changeable[Any],
        currentModId1: ModId,
        currentModId2: ModId,
-       c: Context): Timestamp = {
+       c: Context): Pointer = {
     val read2NodePointer = Read2Node.create(
       mod1.id, mod2.id, nextReadId, currentModId1, currentModId2)
-    val timestamp = nextTimestamp(read2NodePointer, c)
+    val timePtr = nextTimestamp(read2NodePointer, c)
 
     read2ers(nextReadId) = reader
     nextReadId += 1
 
     if (reads.contains(mod1.id)) {
-      reads(mod1.id) :+= timestamp
+      reads(mod1.id) :+= timePtr
     } else {
-      reads(mod1.id) = Buffer(timestamp)
+      reads(mod1.id) = Buffer(timePtr)
     }
 
     if (reads.contains(mod2.id)) {
-      reads(mod2.id) :+= timestamp
+      reads(mod2.id) :+= timePtr
     } else {
-      reads(mod2.id) = Buffer(timestamp)
+      reads(mod2.id) = Buffer(timePtr)
     }
 
-    timestamp
+    timePtr
   }
 
   def addWrite
       (modId: ModId,
        modId2: ModId,
-       c: Context): Timestamp = {
+       c: Context): Pointer = {
     val writeNodePointer = WriteNode.create(modId, modId2)
-    val timestamp = nextTimestamp(writeNodePointer, c)
-
-    timestamp
+    nextTimestamp(writeNodePointer, c)
   }
 
   def addPar
@@ -112,19 +110,19 @@ class DDG {
        taskRef2: ActorRef,
        taskId1: TaskId,
        taskId2: TaskId,
-       c: Context): Timestamp = {
+       c: Context): Pointer = {
     val parNodePointer = ParNode.create(taskId1, taskId2)
-    val timestamp = nextTimestamp(parNodePointer, c)
+    val timePtr = nextTimestamp(parNodePointer, c)
 
     tasks(taskId1) = taskRef1
     tasks(taskId2) = taskRef2
-    pars(taskRef1) = timestamp
-    pars(taskRef2) = timestamp
+    pars(taskRef1) = timePtr
+    pars(taskRef2) = timePtr
 
-    val end = c.ddg.nextTimestamp(parNodePointer, c)
-    Timestamp.setEndPtr(timestamp.ptr, end.ptr)
+    val endPtr = c.ddg.nextTimestamp(parNodePointer, c)
+    Timestamp.setEndPtr(timePtr, endPtr)
 
-    timestamp
+    timePtr
   }
 
   def getLeftTask(ptr: Pointer): ActorRef = {
@@ -135,7 +133,7 @@ class DDG {
     tasks(ParNode.getTaskId2(ptr))
   }
 
-  def nextTimestamp(ptr: Pointer, c: Context): Timestamp = {
+  def nextTimestamp(ptr: Pointer, c: Context): Pointer = {
     val timePtr =
       if (c.initialRun)
         ordering.append(ptr)
@@ -144,15 +142,15 @@ class DDG {
 
     c.currentTime = timePtr
 
-    Timestamp.getTimestamp(timePtr)
+    timePtr
   }
 
-  def getChildren(start: Timestamp, end: Timestamp): Buffer[Timestamp] = {
-    val children = Buffer[Timestamp]()
+  def getChildren(startPtr: Pointer, endPtr: Pointer): Buffer[Pointer] = {
+    val children = Buffer[Pointer]()
 
-    var timePtr = Timestamp.getNext(start.ptr)
-    while (timePtr != end.ptr) {
-      children += Timestamp.getTimestamp(timePtr)
+    var timePtr = Timestamp.getNext(startPtr)
+    while (timePtr != endPtr) {
+      children += timePtr
       timePtr = Timestamp.getNext(Timestamp.getEndPtr(timePtr))
     }
 
@@ -160,19 +158,19 @@ class DDG {
   }
 
   def modUpdated(modId: ModId) {
-    for (timestamp <- reads(modId)) {
-      updated += timestamp
+    for (timePtr <- reads(modId)) {
+      updated += timePtr
     }
   }
 
   // Pebbles a par node. Returns true iff the pebble did not already exist.
   def parUpdated(taskRef: ActorRef, c: Context): Boolean = {
-    val timestamp = pars(taskRef)
+    val timePtr = pars(taskRef)
 
-    val nodePtr = Timestamp.getNodePtr(timestamp.ptr)
+    val nodePtr = Timestamp.getNodePtr(timePtr)
     if (!ParNode.getPebble1(nodePtr) &&
         !ParNode.getPebble2(nodePtr)) {
-      updated += timestamp
+      updated += timePtr
     }
 
     if (tasks(ParNode.getTaskId1(nodePtr)) == taskRef) {
@@ -189,24 +187,21 @@ class DDG {
   // Removes the subdddg between start and end, inclusive. This is the only
   // place in the code where Nodes are removed from the graph, so this is where
   // we must call free on their pointers.
-  def splice(_start: Pointer, endPtr: Pointer, c: tbd.Context) {
-    val start = Timestamp.getTimestamp(_start)
-    val end = Timestamp.getTimestamp(endPtr)
-
-    var time = start
-    while (Timestamp.<(time.ptr, endPtr)) {
-      val timeEndPtr = Timestamp.getEndPtr(time.ptr)
+  def splice(startPtr: Pointer, endPtr: Pointer, c: tbd.Context) {
+    var timePtr = startPtr
+    while (Timestamp.<(timePtr, endPtr)) {
+      val timeEndPtr = Timestamp.getEndPtr(timePtr)
       if (timeEndPtr != -1) {
-        val nodePtr = Timestamp.getNodePtr(time.ptr)
+        val nodePtr = Timestamp.getNodePtr(timePtr)
 
         Node.getType(nodePtr) match {
           case Node.MemoNodeType =>
             c.getMemoizer(MemoNode.getMemoizerId(nodePtr))
-              .removeEntry(time, MemoNode.getSignature(nodePtr))
+              .removeEntry(timePtr, MemoNode.getSignature(nodePtr))
 
           case Node.Memo1NodeType =>
             c.getMemoizer(Memo1Node.getMemoizerId(nodePtr))
-              .removeEntry(time, Memo1Node.getSignature(nodePtr))
+              .removeEntry(timePtr, Memo1Node.getSignature(nodePtr))
 
           case Node.ModizerNodeType =>
             val modizerId = ModizerNode.getModizerId(nodePtr)
@@ -237,16 +232,16 @@ class DDG {
             }
 
           case Node.ParNodeType =>
-            updated -= time
+            updated -= timePtr
 
           case Node.ReadNodeType =>
-            c.ddg.reads(ReadNode.getModId(nodePtr)) -= time
-            updated -= time
+            c.ddg.reads(ReadNode.getModId(nodePtr)) -= timePtr
+            updated -= timePtr
 
           case Node.Read2NodeType =>
-            c.ddg.reads(Read2Node.getModId1(nodePtr)) -= time
-            c.ddg.reads(Read2Node.getModId2(nodePtr)) -= time
-            updated -= time
+            c.ddg.reads(Read2Node.getModId1(nodePtr)) -= timePtr
+            c.ddg.reads(Read2Node.getModId2(nodePtr)) -= timePtr
+            updated -= timePtr
 
           case Node.WriteNodeType =>
         }
@@ -258,27 +253,26 @@ class DDG {
         }
       }
 
-      val nextPtr = Timestamp.getNext(time.ptr)
-      time = Timestamp.getTimestamp(nextPtr)
+      timePtr = Timestamp.getNext(timePtr)
     }
 
-    val startSublistPtr = Timestamp.getSublistPtr(start.ptr)
+    val startSublistPtr = Timestamp.getSublistPtr(startPtr)
     val startSublistBasePtr = Sublist.getBasePtr(startSublistPtr)
-    val endSublistPtr = Timestamp.getSublistPtr(end.ptr)
+    val endSublistPtr = Timestamp.getSublistPtr(endPtr)
     if (startSublistPtr == endSublistPtr) {
-      Timestamp.setNextTime(Timestamp.getPreviousTime(start.ptr), end.ptr)
-      Timestamp.setPreviousTime(end.ptr, Timestamp.getPreviousTime(start.ptr))
+      Timestamp.setNextTime(Timestamp.getPreviousTime(startPtr), endPtr)
+      Timestamp.setPreviousTime(endPtr, Timestamp.getPreviousTime(startPtr))
 
       val newSize = Sublist.calculateSize(startSublistBasePtr)
       Sublist.setSize(startSublistPtr, newSize)
     } else {
       val newStartSublistPtr =
-        if (Timestamp.getPreviousTime(start.ptr) ==
+        if (Timestamp.getPreviousTime(startPtr) ==
             Timestamp.getPreviousTime(startSublistBasePtr)) {
           Sublist.getPreviousSub(startSublistPtr)
         } else {
-          Timestamp.setNextTime(Timestamp.getPreviousTime(start.ptr), startSublistBasePtr)
-          Timestamp.setPreviousTime(startSublistBasePtr, Timestamp.getPreviousTime(start.ptr))
+          Timestamp.setNextTime(Timestamp.getPreviousTime(startPtr), startSublistBasePtr)
+          Timestamp.setPreviousTime(startSublistBasePtr, Timestamp.getPreviousTime(startPtr))
 
           val newSize = Sublist.calculateSize(startSublistBasePtr)
           Sublist.setSize(startSublistPtr, newSize)
@@ -289,8 +283,8 @@ class DDG {
       val startSublist = Sublist.getSublist(newStartSublistPtr)
       val endSublistBasePtr = Sublist.getBasePtr(endSublistPtr)
 
-      Timestamp.setPreviousTime(end.ptr, endSublistBasePtr)
-      Timestamp.setNextTime(endSublistBasePtr, end.ptr)
+      Timestamp.setPreviousTime(endPtr, endSublistBasePtr)
+      Timestamp.setNextTime(endSublistBasePtr, endPtr)
 
       val newSize = Sublist.calculateSize(endSublistBasePtr)
       Sublist.setSize(endSublistPtr, newSize)
@@ -302,17 +296,21 @@ class DDG {
     }
   }
 
-  def startTime = ordering.base.nextSub.base
+  def startTime = {
+    Sublist.getBasePtr(ordering.base.nextSub.ptr)
+  }
 
-  def endTime = ordering.base.base
+  def endTime = {
+    Sublist.getBasePtr(ordering.base.ptr)
+  }
 
   def toString(prefix: String): String = {
     val out = new StringBuffer("")
-    def innerToString(time: Timestamp, prefix: String) {
-      val nodePtr = Timestamp.getNodePtr(time.ptr)
+    def innerToString(timePtr: Pointer, prefix: String) {
+      val nodePtr = Timestamp.getNodePtr(timePtr)
 
-      val timeString = " time = " + time + " to " +
-        Timestamp.getEndPtr(time.ptr)
+      val timeString = " time = " + Timestamp.getTime(timePtr) + " to " +
+        Timestamp.getTime(Timestamp.getEndPtr(timePtr))
 
       val thisString =
         Node.getType(nodePtr) match {
@@ -357,13 +355,12 @@ class DDG {
 
       out.append(thisString)
 
-      val end = Timestamp.getTimestamp(Timestamp.getEndPtr(time.ptr))
-      for (time <- getChildren(time, end)) {
+      for (time <- getChildren(timePtr, Timestamp.getEndPtr(timePtr))) {
         innerToString(time, prefix + "-")
       }
     }
-    val nextPtr = Timestamp.getNext(startTime.ptr)
-    innerToString(Timestamp.getTimestamp(nextPtr), prefix)
+
+    innerToString(Timestamp.getNext(startTime), prefix)
 
     out.toString
   }

@@ -27,7 +27,7 @@ class Ordering(basePointer: Pointer = -1) {
   Sublist.setNextSub(base.ptr, base.nextSub.ptr)
   base.previousSub = base.nextSub
 
-  Timestamp.setEndPtr(base.nextSub.base.ptr, base.base.ptr)
+  Timestamp.setEndPtr(base.nextSub.basePtr, base.basePtr)
 
   def after(ptr: Pointer, nodePtr: Pointer): Pointer = {
     val previousSublistPtr =
@@ -38,7 +38,6 @@ class Ordering(basePointer: Pointer = -1) {
       }
 
     val newTimePtr = Sublist.after(previousSublistPtr, ptr, nodePtr)
-    val newTimestamp = Timestamp.getTimestamp(newTimePtr)
     if (Sublist.getSize(previousSublistPtr) > 63) {
       val newSublist = sublistAfter(previousSublistPtr)
       Sublist.split(previousSublistPtr, newSublist.ptr)

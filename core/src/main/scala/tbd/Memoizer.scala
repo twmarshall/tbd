@@ -78,17 +78,17 @@ class Memoizer[T](implicit c: Context) {
             memoizerId, signature, c.currentModId, c.currentModId2)
         }
 
-      val timestamp = c.ddg.nextTimestamp(memoNodePointer, c)
+      val timePtr = c.ddg.nextTimestamp(memoNodePointer, c)
 
       val value = func
 
-      val end = c.ddg.nextTimestamp(memoNodePointer, c)
-      Timestamp.setEndPtr(timestamp.ptr, end.ptr)
+      val endPtr = c.ddg.nextTimestamp(memoNodePointer, c)
+      Timestamp.setEndPtr(timePtr, endPtr)
 
       if (c.memoTable.contains(signature)) {
-        c.memoTable(signature) += ((timestamp.ptr, value))
+        c.memoTable(signature) += ((timePtr, value))
       } else {
-        c.memoTable += (signature -> Buffer((timestamp.ptr, value)))
+        c.memoTable += (signature -> Buffer((timePtr, value)))
       }
 
       ret = value
@@ -242,11 +242,11 @@ class Memoizer[T](implicit c: Context) {
     }
   }
 
-  def removeEntry(timestamp: Timestamp, signature: Seq[_]) {
+  def removeEntry(timePtr: Pointer, signature: Seq[_]) {
     var toRemove: (Pointer, Any) = null
 
     for ((_timePtr, value) <- c.memoTable(signature)) {
-      if (toRemove == null && _timePtr == timestamp.ptr) {
+      if (toRemove == null && _timePtr == timePtr) {
         toRemove = (_timePtr, value)
       }
     }

@@ -31,7 +31,7 @@ object TBD {
       (implicit c: Context): Changeable[U] = {
     val value = c.read(mod, c.task.self)
 
-    val timestamp = c.ddg.addRead(
+    val time = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
       value,
       reader.asInstanceOf[Any => Changeable[Any]],
@@ -41,8 +41,8 @@ object TBD {
 
     val changeable = reader(value)
 
-    val end = c.ddg.nextTimestamp(Timestamp.getNodePtr(timestamp.ptr), c)
-    Timestamp.setEndPtr(timestamp.ptr, end.ptr)
+    val end = c.ddg.nextTimestamp(Timestamp.getNodePtr(time), c)
+    Timestamp.setEndPtr(time, end)
 
     changeable
   }
@@ -52,7 +52,7 @@ object TBD {
       (implicit c: Context): (Changeable[U], Changeable[V]) = {
     val value = c.read(mod, c.task.self)
 
-    val timestamp = c.ddg.addRead(
+    val time = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
       value,
       reader.asInstanceOf[Any => Changeable[Any]],
@@ -62,8 +62,8 @@ object TBD {
 
     val changeables = reader(value)
 
-    val end = c.ddg.nextTimestamp(Timestamp.getNodePtr(timestamp.ptr), c)
-    Timestamp.setEndPtr(timestamp.ptr, end.ptr)
+    val end = c.ddg.nextTimestamp(Timestamp.getNodePtr(time), c)
+    Timestamp.setEndPtr(time, end)
 
     changeables
   }
@@ -74,7 +74,7 @@ object TBD {
     val value1 = c.read(mod1, c.task.self)
     val value2 = c.read(mod2, c.task.self)
 
-    val timestamp = c.ddg.addRead2(
+    val time = c.ddg.addRead2(
       mod1.asInstanceOf[Mod[Any]],
       mod2.asInstanceOf[Mod[Any]],
       value1,
@@ -86,8 +86,8 @@ object TBD {
 
     val changeable = reader(value1, value2)
 
-    val end = c.ddg.nextTimestamp(Timestamp.getNodePtr(timestamp.ptr), c)
-    Timestamp.setEndPtr(timestamp.ptr, end.ptr)
+    val end = c.ddg.nextTimestamp(Timestamp.getNodePtr(time), c)
+    Timestamp.setEndPtr(time, end)
 
     changeable
   }
@@ -121,12 +121,12 @@ object TBD {
     val modNodePointer = ModNode.create(
       modId1, modId2, currentModId, currentModId2)
 
-    val timestamp = c.ddg.nextTimestamp(modNodePointer, c)
+    val time = c.ddg.nextTimestamp(modNodePointer, c)
 
     initializer
 
     val end = c.ddg.nextTimestamp(modNodePointer, c)
-    Timestamp.setEndPtr(timestamp.ptr, end.ptr)
+    Timestamp.setEndPtr(time, end)
 
     c.currentModId = oldCurrentModId
     c.currentModId2 = oldCurrentModId2
@@ -154,12 +154,12 @@ object TBD {
     val modNodePointer = ModizerNode.create(
       modId1, modId2, modizerId, key, currentModId, currentModId2)
 
-    val timestamp = c.ddg.nextTimestamp(modNodePointer, c)
+    val time = c.ddg.nextTimestamp(modNodePointer, c)
 
     initializer
 
     val end = c.ddg.nextTimestamp(modNodePointer, c)
-    Timestamp.setEndPtr(timestamp.ptr, end.ptr)
+    Timestamp.setEndPtr(time, end)
 
     c.currentModId = oldCurrentModId
     c.currentModId2 = oldCurrentModId2

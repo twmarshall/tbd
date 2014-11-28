@@ -53,7 +53,7 @@ class Context
   // reexecuted.
   var reexecutionEnd: Pointer = _
 
-  var currentTime: Pointer = ddg.startTime.ptr
+  var currentTime: Pointer = ddg.startTime
 
   // The mod created by the most recent (in scope) call to mod. This is
   // what a call to write will write to.

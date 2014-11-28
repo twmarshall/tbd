@@ -53,7 +53,7 @@ object TBD {
     val changeable = tbd.TBD.read(mod)(reader)(c)
 
     val time = c.ddg.reads(mod.id).last
-    val nodePtr = Timestamp.getNodePtr(time.ptr)
+    val nodePtr = Timestamp.getNodePtr(time)
     nodes(nodePtr) = (internalId, tag, stack)
 
     changeable
@@ -79,7 +79,7 @@ object TBD {
     val changeable = tbd.TBD.read2(mod)(reader)(c)
 
     val time = c.ddg.reads(mod.id).last
-    val nodePtr = Timestamp.getNodePtr(time.ptr)
+    val nodePtr = Timestamp.getNodePtr(time)
     nodes(nodePtr) = (internalId, tag, stack)
 
     changeable
@@ -182,9 +182,9 @@ object TBD {
     val modId = changeable.modId
 
     val timestamp = c.ddg.addWrite(modId, -1, c)
-    val nodePtr = Timestamp.getNodePtr(timestamp.ptr)
+    val nodePtr = Timestamp.getNodePtr(timestamp)
     val end = c.ddg.nextTimestamp(nodePtr, c)
-    Timestamp.setEndPtr(timestamp.ptr, end.ptr)
+    Timestamp.setEndPtr(timestamp, end)
 
     val writes = List(SingleWriteTag(modId, c.readId(modId)))
     val tag = Tag.Write(writes)
@@ -203,9 +203,9 @@ object TBD {
     val modId2 = c.currentModId2
 
     val timestamp = c.ddg.addWrite(modId, modId2, c)
-    val nodePtr = Timestamp.getNodePtr(timestamp.ptr)
+    val nodePtr = Timestamp.getNodePtr(timestamp)
     val end = c.ddg.nextTimestamp(nodePtr, c)
-    Timestamp.setEndPtr(timestamp.ptr, end.ptr)
+    Timestamp.setEndPtr(timestamp, end)
 
     val writes = List(
       SingleWriteTag(modId, c.readId(modId)),
@@ -229,9 +229,9 @@ object TBD {
     val modId = c.currentModId
 
     val timestamp = c.ddg.addWrite(modId, -1, c)
-    val nodePtr = Timestamp.getNodePtr(timestamp.ptr)
+    val nodePtr = Timestamp.getNodePtr(timestamp)
     val end = c.ddg.nextTimestamp(nodePtr, c)
-    Timestamp.setEndPtr(timestamp.ptr, end.ptr)
+    Timestamp.setEndPtr(timestamp, end)
 
     val writes = List(SingleWriteTag(modId, c.readId(modId)))
     val tag = Tag.Write(writes)
@@ -253,9 +253,9 @@ object TBD {
     val modId2 = c.currentModId2
 
     val timestamp = c.ddg.addWrite(-1, modId2, c)
-    val nodePtr = Timestamp.getNodePtr(timestamp.ptr)
+    val nodePtr = Timestamp.getNodePtr(timestamp)
     val end = c.ddg.nextTimestamp(nodePtr, c)
-    Timestamp.setEndPtr(timestamp.ptr, end.ptr)
+    Timestamp.setEndPtr(timestamp, end)
 
     val writes = List(SingleWriteTag(modId2, c.readId(modId2)))
     val tag = Tag.Write(writes)

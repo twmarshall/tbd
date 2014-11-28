@@ -19,16 +19,6 @@ import tbd.MemoryAllocator
 import tbd.Constants._
 
 object Timestamp {
-  private val timestamps = scala.collection.mutable.Map[Pointer, Timestamp]()
-  private val lock = new java.util.concurrent.locks.ReentrantLock()
-
-  def getTimestamp(ptr: Pointer): Timestamp = {
-    lock.lock()
-    val t = timestamps(ptr)
-    lock.unlock()
-    t
-  }
-
   private val sublistPtrOffset = 0
   private val timeOffset = sublistPtrOffset + pointerSize
   private val nextTimeOffset = timeOffset + 8
@@ -41,8 +31,7 @@ object Timestamp {
      time: Double,
      nextTime: Pointer,
      previousTime: Pointer,
-     nodePtr: Pointer,
-     timestamp: Timestamp): Pointer = {
+     nodePtr: Pointer): Pointer = {
     val size = pointerSize * 5 + 8
     val ptr = MemoryAllocator.allocate(size)
 
@@ -52,10 +41,6 @@ object Timestamp {
     MemoryAllocator.putPointer(ptr + previousTimeOffset, previousTime)
     MemoryAllocator.putPointer(ptr + nodePtrOffset, nodePtr)
     MemoryAllocator.putPointer(ptr + endPtrOffset, -1)
-
-    lock.lock()
-    timestamps(ptr) = timestamp
-    lock.unlock()
 
     ptr
   }
@@ -158,23 +143,17 @@ object Timestamp {
 
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
-  val MAX_TIMESTAMP = new Timestamp()
-  MAX_TIMESTAMP.ptr = Timestamp.create(maxSublist.ptr, Int.MaxValue, -1, -1, -1, MAX_TIMESTAMP)
+  val MAX_TIMESTAMP = Timestamp.create(maxSublist.ptr, Int.MaxValue, -1, -1, -1)
 
   private val minSublist = new Sublist(Sublist.create(-1, -1), null)
 
   // A dummy timestamp which all real Timestamps are greater than.
-  val MIN_TIMESTAMP = new Timestamp()
-  MIN_TIMESTAMP.ptr = Timestamp.create(minSublist.ptr, -1, -1, -1, -1, MIN_TIMESTAMP)
+  val MIN_TIMESTAMP = Timestamp.create(minSublist.ptr, -1, -1, -1, -1)
 }
 
-class Timestamp {
-  var ptr: Long = -1
-}
-
-class TimestampOrdering extends scala.math.Ordering[Timestamp] {
-  def compare(one: Timestamp, two: Timestamp) = {
-    if (Timestamp.>(one.ptr, two.ptr)) {
+class TimestampOrdering extends scala.math.Ordering[Pointer] {
+  def compare(one: Pointer, two: Pointer) = {
+    if (Timestamp.>(one, two)) {
       1
     } else if (one == two) {
       0

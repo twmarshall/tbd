@@ -15,6 +15,7 @@
  */
 package tbd.visualization.graph
 
+import tbd.Constants._
 import tbd.debug.TBD
 import tbd.ddg
 
@@ -22,10 +23,10 @@ import tbd.ddg
  * Represents a visualizer DDG node.
  * Is created by copying all necessary properties of the TBD ddg node.
  */
-class Node(time: ddg.Timestamp) {
+class Node(time: Pointer) {
 
   val (internalId, tag, stacktrace) =
-    TBD.nodes(ddg.Timestamp.getNodePtr(time.ptr))
+    TBD.nodes(ddg.Timestamp.getNodePtr(time))
 
   override def toString = {
     tag.toString()

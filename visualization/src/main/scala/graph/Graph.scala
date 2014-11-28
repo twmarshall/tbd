@@ -83,9 +83,9 @@ object DDG {
   //Fetches child nodes for a given node. Takes extra care of par nodes.
   private def getChildren
       (ddg: tbd.ddg.DDG,
-       start: tbd.ddg.Timestamp,
-       end: tbd.ddg.Timestamp): Seq[tbd.ddg.Timestamp] = {
-    val nodePtr = tbd.ddg.Timestamp.getNodePtr(start.ptr)
+       start: Pointer,
+       end: Pointer): Seq[Pointer] = {
+    val nodePtr = tbd.ddg.Timestamp.getNodePtr(start)
     tbd.ddg.Node.getType(nodePtr) match {
       case tbd.ddg.Node.ParNodeType =>
         println("!!")
@@ -105,7 +105,7 @@ object DDG {
   private def append
       (ddg: tbd.ddg.DDG,
        node: Node,
-       time: tbd.ddg.Timestamp,
+       time: Pointer,
        result: DDG): Unit = {
     val newNode = new Node(time)
 
@@ -114,8 +114,7 @@ object DDG {
     result.adj(node) += new Edge.Control(node, newNode)
     result.adj(newNode) += new Edge.InverseControl(newNode, node)
 
-    val end = tbd.ddg.Timestamp.getTimestamp(tbd.ddg.Timestamp.getEndPtr(time.ptr))
-    getChildren(ddg, time, end).foreach(x => {
+    getChildren(ddg, time, tbd.ddg.Timestamp.getEndPtr(time)).foreach(x => {
       append(ddg, newNode, x, result)
     })
   }
