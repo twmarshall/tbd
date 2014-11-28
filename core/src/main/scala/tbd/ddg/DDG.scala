@@ -280,7 +280,6 @@ class DDG {
           startSublistPtr
         }
 
-      val startSublist = Sublist.getSublist(newStartSublistPtr)
       val endSublistBasePtr = Sublist.getBasePtr(endSublistPtr)
 
       Timestamp.setPreviousTime(endPtr, endSublistBasePtr)
@@ -289,19 +288,16 @@ class DDG {
       val newSize = Sublist.calculateSize(endSublistBasePtr)
       Sublist.setSize(endSublistPtr, newSize)
 
-      val endSublist = Sublist.getSublist(endSublistPtr)
-      startSublist.nextSub = endSublist
-      Sublist.setNextSub(startSublist.ptr, endSublistPtr)
-      endSublist.previousSub = startSublist
+      Sublist.setNextSub(newStartSublistPtr, endSublistPtr)
     }
   }
 
   def startTime = {
-    Sublist.getBasePtr(ordering.base.nextSub.ptr)
+    Sublist.getBasePtr(Sublist.getNextSub(ordering.basePtr))
   }
 
   def endTime = {
-    Sublist.getBasePtr(ordering.base.ptr)
+    Sublist.getBasePtr(ordering.basePtr)
   }
 
   def toString(prefix: String): String = {

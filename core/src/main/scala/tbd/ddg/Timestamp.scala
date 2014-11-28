@@ -139,16 +139,16 @@ object Timestamp {
     !(<(ptr1, ptr2))
   }
 
-  private val maxSublist = new Sublist(Sublist.create(Int.MaxValue, -1), null)
+  private val maxSublistPtr = Sublist.create(Int.MaxValue, -1)
 
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
-  val MAX_TIMESTAMP = Timestamp.create(maxSublist.ptr, Int.MaxValue, -1, -1, -1)
+  val MAX_TIMESTAMP = Timestamp.create(maxSublistPtr, Int.MaxValue, -1, -1, -1)
 
-  private val minSublist = new Sublist(Sublist.create(-1, -1), null)
+  private val minSublistPtr = Sublist.create(-1, -1)
 
   // A dummy timestamp which all real Timestamps are greater than.
-  val MIN_TIMESTAMP = Timestamp.create(minSublist.ptr, -1, -1, -1, -1)
+  val MIN_TIMESTAMP = Timestamp.create(minSublistPtr, -1, -1, -1, -1)
 }
 
 class TimestampOrdering extends scala.math.Ordering[Pointer] {
