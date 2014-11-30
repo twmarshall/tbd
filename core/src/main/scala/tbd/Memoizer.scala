@@ -43,7 +43,7 @@ class Memoizer[T](implicit c: Context) {
           found = true
 
           if (c.reexecutionStart < timestamp) {
-            c.ddg.splice(c.reexecutionStart, timestamp, c)
+            c.ddg.ordering.splice(c.reexecutionStart, timestamp, c)
           }
 
           // This ensures that we won't match anything under the currently

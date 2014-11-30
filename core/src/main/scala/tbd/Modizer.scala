@@ -24,15 +24,13 @@ import tbd.ddg.{FunctionTag, ModNode, Tag}
 import tbd.messages._
 
 trait Modizer[T] {
-  def remove(key: Any): Boolean
+  def remove(key: Any, c: Context): Boolean
 }
 
-class Modizer1[T](implicit c: Context) extends Modizer[T] {
+class Modizer1[T] extends Modizer[T] {
   val allocations = Map[Any, (Mod[T], Int)]()
 
-  val id = c.newModizerId(this)
-
-  def remove(key: Any): Boolean = {
+  def remove(key: Any, c: Context): Boolean = {
     if (allocations(key)._2 < c.epoch) {
       allocations -= key
       true
@@ -43,7 +41,8 @@ class Modizer1[T](implicit c: Context) extends Modizer[T] {
 
   def apply
       (key: Any)
-      (initializer: => Changeable[T]): Mod[T] = {
+      (initializer: => Changeable[T])
+      (implicit c: Context): Mod[T] = {
     val mod1 =
       if (allocations.contains(key)) {
 	allocations(key) = (allocations(key)._1, c.epoch)
@@ -55,17 +54,15 @@ class Modizer1[T](implicit c: Context) extends Modizer[T] {
 	mod1
       }
 
-    TBD.modInternal(initializer, mod1, id, key, c)
+    TBD.modInternal(initializer, mod1, this, key, c)
   }
 }
 
-class Modizer2[T, U](implicit c: Context) extends Modizer[(T, U)] {
+class Modizer2[T, U] extends Modizer[(T, U)] {
   val allocations = Map[Any, (Mod[T], Int)]()
   val allocations2 = Map[Any, (Mod[U], Int)]()
 
-  val id = c.newModizerId(this)
-
-  def remove(key: Any): Boolean = {
+  def remove(key: Any, c: Context): Boolean = {
     if (allocations.contains(key)) {
       if (allocations(key)._2 < c.epoch) {
 	allocations -= key
@@ -88,7 +85,8 @@ class Modizer2[T, U](implicit c: Context) extends Modizer[(T, U)] {
 
   def apply
       (key: Any)
-      (initializer: => (Changeable[T], Changeable[U])): (Mod[T], Mod[U]) = {
+      (initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Mod[T], Mod[U]) = {
     val modLeft =
       if (allocations.contains(key)) {
 	allocations(key) = (allocations(key)._1, c.epoch)
@@ -111,11 +109,12 @@ class Modizer2[T, U](implicit c: Context) extends Modizer[(T, U)] {
 	modRight
       }
 
-    TBD.mod2Internal(initializer, modLeft, modRight, id, key, c)
+    TBD.mod2Internal(initializer, modLeft, modRight, this, key, c)
   }
 
   def left(key: Any)
-      (initializer: => (Changeable[T], Changeable[U])): (Mod[T], Changeable[U]) = {
+      (initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Mod[T], Changeable[U]) = {
     val modLeft =
       if (allocations.contains(key)) {
 	allocations(key) = (allocations(key)._1, c.epoch)
@@ -127,11 +126,12 @@ class Modizer2[T, U](implicit c: Context) extends Modizer[(T, U)] {
 	modLeft
       }
 
-    TBD.modLeftInternal(initializer, modLeft, id, key, c)
+    TBD.modLeftInternal(initializer, modLeft, this, key, c)
   }
 
   def right(key: Any)
-      (initializer: => (Changeable[T], Changeable[U])): (Changeable[T], Mod[U]) = {
+      (initializer: => (Changeable[T], Changeable[U]))
+      (implicit c: Context): (Changeable[T], Mod[U]) = {
     val modRight =
       if (allocations2.contains(key)) {
 	allocations2(key) = (allocations2(key)._1, c.epoch)
@@ -143,6 +143,6 @@ class Modizer2[T, U](implicit c: Context) extends Modizer[(T, U)] {
 	modRight
       }
 
-    TBD.modRightInternal(initializer, modRight, id, key, c)
+    TBD.modRightInternal(initializer, modRight, this, key, c)
   }
 }

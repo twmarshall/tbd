@@ -18,7 +18,7 @@ package tbd
 import akka.actor.ActorRef
 import akka.event.Logging
 import akka.pattern.ask
-import scala.collection.mutable.{Buffer, Map, Set}
+import scala.collection.mutable.{Buffer, Set}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
@@ -51,7 +51,7 @@ class Context
   // reexecuted.
   var reexecutionEnd: Timestamp = _
 
-  var currentTime: Timestamp = ddg.startTime
+  var currentTime: Timestamp = ddg.ordering.base.next.base
 
   // The mod created by the most recent (in scope) call to mod. This is
   // what a call to write will write to.
@@ -62,10 +62,6 @@ class Context
   var currentModId2: ModId = _
 
   private var nextModId: ModId = 0
-
-  private var nextModizerId: ModizerId = 0
-
-  private var modizers = Map[ModizerId, Modizer[_]]()
 
   val pending = Buffer[Future[String]]()
 
@@ -79,19 +75,6 @@ class Context
     nextModId += 1
 
     newModId
-  }
-
-  def newModizerId(modizer: Modizer[_]): ModizerId = {
-    val newModizerId = nextModizerId
-    nextModizerId += 1
-
-    modizers(newModizerId) = modizer
-
-    newModizerId
-  }
-
-  def getModizer(modizerId: ModizerId): Modizer[_] = {
-    modizers(modizerId)
   }
 
   def read[T](mod: Mod[T], taskRef: ActorRef = null): T = {

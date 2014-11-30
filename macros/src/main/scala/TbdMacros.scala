@@ -81,13 +81,13 @@ object TbdMacros {
   }
 
   def modizerMacro[T]
-      (con: Context)(key: con.Tree)(initializer: con.Tree): con.Expr[T] = {
+      (con: Context)(key: con.Tree)(initializer: con.Tree)(c: con.Tree): con.Expr[T] = {
     import con.universe._
 
     val closedVars = createFreeVariableList(con)(initializer)
     val modFunc = getFunctionToInvoke(con)
     val id = Literal(Constant(getFuncId()))
-    con.Expr[T](q"$modFunc($key, $initializer, $id, $closedVars)")
+    con.Expr[T](q"$modFunc($key, $initializer, $c, $id, $closedVars)")
   }
 
   def modMacro[T]

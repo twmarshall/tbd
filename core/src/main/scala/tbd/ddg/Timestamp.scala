@@ -15,8 +15,6 @@
  */
 package tbd.ddg
 
-import tbd.Constants.Pointer
-
 object Timestamp {
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
@@ -33,8 +31,6 @@ class Timestamp
      var previous: Timestamp,
      val node: Node) {
   var end: Timestamp = null
-
-  var pointer: Pointer = _
 
   def <(that: Timestamp): Boolean = {
     if (sublist == that.sublist) {

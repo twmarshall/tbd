@@ -57,70 +57,78 @@ class Task
 
         node match {
           case readNode: ReadNode =>
-            val newValue = c.readId(ReadNode.getModId(timestamp.pointer))
+            if (readNode.updated) {
+              val newValue = c.readId(readNode.modId)
 
-            val oldStart = c.reexecutionStart
-            c.reexecutionStart = timestamp.getNext()
-            val oldEnd = c.reexecutionEnd
-            c.reexecutionEnd = timestamp.end
-            val oldCurrentModId = c.currentModId
-            c.currentModId = readNode.currentModId
-            val oldCurrentModId2 = c.currentModId2
-            c.currentModId2 = readNode.currentModId2
+              val oldStart = c.reexecutionStart
+              c.reexecutionStart = timestamp.getNext()
+              val oldEnd = c.reexecutionEnd
+              c.reexecutionEnd = timestamp.end
+              val oldCurrentModId = c.currentModId
+              c.currentModId = readNode.currentModId
+              val oldCurrentModId2 = c.currentModId2
+              c.currentModId2 = readNode.currentModId2
 
-            val oldCurrentTime = c.currentTime
-            c.currentTime = timestamp
+              val oldCurrentTime = c.currentTime
+              c.currentTime = timestamp
 
-            readNode.reader(newValue)
+              readNode.updated = false
+              readNode.reader(newValue)
 
-            if (c.reexecutionStart < c.reexecutionEnd) {
-              c.ddg.splice(c.reexecutionStart, c.reexecutionEnd, c)
+              if (c.reexecutionStart < c.reexecutionEnd) {
+                c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
+              }
+
+              c.reexecutionStart = oldStart
+              c.reexecutionEnd = oldEnd
+              c.currentModId = oldCurrentModId
+              c.currentModId2 = oldCurrentModId2
+              c.currentTime = oldCurrentTime
             }
-
-            c.reexecutionStart = oldStart
-            c.reexecutionEnd = oldEnd
-            c.currentModId = oldCurrentModId
-            c.currentModId2 = oldCurrentModId2
-            c.currentTime = oldCurrentTime
           case readNode: Read2Node =>
-            val newValue1 = c.readId(readNode.modId1)
-            val newValue2 = c.readId(readNode.modId2)
+            if (readNode.updated) {
+              val newValue1 = c.readId(readNode.modId1)
+              val newValue2 = c.readId(readNode.modId2)
 
-            val oldStart = c.reexecutionStart
-            c.reexecutionStart = timestamp.getNext()
-            val oldEnd = c.reexecutionEnd
-            c.reexecutionEnd = timestamp.end
-            val oldCurrentModId = c.currentModId
-            c.currentModId = readNode.currentModId
-            val oldCurrentModId2 = c.currentModId2
-            c.currentModId2 = readNode.currentModId2
+              val oldStart = c.reexecutionStart
+              c.reexecutionStart = timestamp.getNext()
+              val oldEnd = c.reexecutionEnd
+              c.reexecutionEnd = timestamp.end
+              val oldCurrentModId = c.currentModId
+              c.currentModId = readNode.currentModId
+              val oldCurrentModId2 = c.currentModId2
+              c.currentModId2 = readNode.currentModId2
 
-            val oldCurrentTime = c.currentTime
-            c.currentTime = timestamp
+              val oldCurrentTime = c.currentTime
+              c.currentTime = timestamp
 
-            readNode.reader(newValue1, newValue2)
+              readNode.updated = false
+              readNode.reader(newValue1, newValue2)
 
-            if (c.reexecutionStart < c.reexecutionEnd) {
-              c.ddg.splice(c.reexecutionStart, c.reexecutionEnd, c)
+              if (c.reexecutionStart < c.reexecutionEnd) {
+                c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
+              }
+
+              c.reexecutionStart = oldStart
+              c.reexecutionEnd = oldEnd
+              c.currentModId = oldCurrentModId
+              c.currentModId2 = oldCurrentModId2
+              c.currentTime = oldCurrentTime
             }
-
-            c.reexecutionStart = oldStart
-            c.reexecutionEnd = oldEnd
-            c.currentModId = oldCurrentModId
-            c.currentModId2 = oldCurrentModId2
-            c.currentTime = oldCurrentTime
           case parNode: ParNode =>
-            Await.result(Future.sequence(c.pending), DURATION)
-            c.pending.clear()
+            if (parNode.updated) {
+              Await.result(Future.sequence(c.pending), DURATION)
+              c.pending.clear()
 
-            val future1 = parNode.taskRef1 ? PropagateTaskMessage
-            val future2 = parNode.taskRef2 ? PropagateTaskMessage
+              val future1 = parNode.taskRef1 ? PropagateTaskMessage
+              val future2 = parNode.taskRef2 ? PropagateTaskMessage
 
-            parNode.pebble1 = false
-            parNode.pebble2 = false
+              parNode.pebble1 = false
+              parNode.pebble2 = false
 
-            Await.result(future1, DURATION)
-            Await.result(future2, DURATION)
+              Await.result(future1, DURATION)
+              Await.result(future2, DURATION)
+            }
         }
 
         option = c.ddg.updated.find((timestamp: Timestamp) =>
