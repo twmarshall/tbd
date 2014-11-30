@@ -22,13 +22,15 @@ import tbd.Constants._
 
 object OffHeapMap {
   val sizeOffset = 0
-  val pointersOffset = sizeOffset + 4
+  val numBucketsOffset = sizeOffset + 4
+  val pointersOffset = numBucketsOffset + 4
 
-  def create(numBuckets: Int = 100): Pointer = {
+  def create(numBuckets: Int = 1000): Pointer = {
     val size = 4 + numBuckets * pointerSize
     val ptr = MemoryAllocator.allocate(size)
 
-    MemoryAllocator.putInt(ptr + sizeOffset, numBuckets)
+    MemoryAllocator.putInt(ptr + sizeOffset, 0)
+    MemoryAllocator.putInt(ptr + numBucketsOffset, numBuckets)
 
     for (i <- 0 until numBuckets * pointerSize) {
       MemoryAllocator.putPointer(ptr + pointersOffset + i, 0)
@@ -39,6 +41,14 @@ object OffHeapMap {
 
   def getSize(thisPtr: Pointer): Int = {
     MemoryAllocator.getInt(thisPtr + sizeOffset)
+  }
+
+  def setSize(thisPtr: Pointer, newSize: Int) {
+    MemoryAllocator.putInt(thisPtr + sizeOffset, newSize)
+  }
+
+  def getNumBuckets(thisPtr: Pointer): Int = {
+    MemoryAllocator.getInt(thisPtr + numBucketsOffset)
   }
 
   def get(thisPtr: Pointer, key: String): Int = {
@@ -66,15 +76,16 @@ object OffHeapMap {
       val newNodePtr = MapNode.create(key, inc)
 
       MapNode.setNextNode(previousPtr, newNodePtr)
+      setSize(thisPtr, getSize(thisPtr) + 1)
     } else {
       MapNode.increment(nodePtr, inc)
     }
   }
 
   def merge(thisPtr: Pointer, thatPtr: Pointer): Pointer = {
-    val newPtr = create()
+    val newPtr = create(getSize(thisPtr) + getSize(thatPtr))
 
-    val thisSize = getSize(thisPtr)
+    val thisSize = getNumBuckets(thisPtr)
     for (i <- 0 until thisSize) {
       val binPtr = thisPtr + pointersOffset + i * pointerSize
       var nodePtr = MemoryAllocator.getPointer(binPtr)
@@ -88,7 +99,7 @@ object OffHeapMap {
       }
     }
 
-    val thatSize = getSize(thatPtr)
+    val thatSize = getNumBuckets(thatPtr)
     for (i <- 0 until thatSize) {
       val binPtr = thatPtr + pointersOffset + i * pointerSize
       var nodePtr = MemoryAllocator.getPointer(binPtr)
@@ -108,7 +119,7 @@ object OffHeapMap {
   def toBuffer(thisPtr: Pointer): Buffer[(String, Int)] = {
     val buf = Buffer[(String, Int)]()
 
-    val thisSize = getSize(thisPtr)
+    val thisSize = getNumBuckets(thisPtr)
     for (i <- 0 until thisSize) {
       val binPtr = thisPtr + pointersOffset + i * pointerSize
       var nodePtr = MemoryAllocator.getPointer(binPtr)
@@ -126,7 +137,7 @@ object OffHeapMap {
   }
 
   private def getBinPtr(thisPtr: Pointer, key: String): Pointer = {
-    val size = getSize(thisPtr)
+    val size = getNumBuckets(thisPtr)
     val hash = key.hashCode().abs % size
 
     thisPtr + pointersOffset + hash * pointerSize
