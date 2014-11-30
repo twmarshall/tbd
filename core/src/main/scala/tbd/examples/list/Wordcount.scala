@@ -105,6 +105,7 @@ object Wordcount {
       version("TBD 0.1 (c) 2014 Carnegie Mellon University")
       banner("Usage: master.sh [options]")
       val chunkSize = opt[Int]("chunkSize", 'c', default = Some(1))
+      val file = opt[String]("file", 'f', default = Some("wiki.xml"))
       val partitions = opt[Int]("partitions", 'p', default = Some(1))
       val timeout = opt[Int]("timeout", 't', default = Some(100))
 
@@ -117,7 +118,7 @@ object Wordcount {
     val mutator = new Mutator(MasterConnector(Conf.master.get.get))
 
     val listConf = new ListConf(
-      file = "wiki.xml",
+      file = Conf.file.get.get,
       partitions = Conf.partitions.get.get,
       chunkSize = Conf.chunkSize.get.get,
       double = true)
