@@ -49,6 +49,34 @@ class DoubleListNode[T, U]
     write(new DoubleListNode[V, W](newValue, newNextMod))
   }
 
+  def map2[V, W]
+      (f: ((T, U)) => ((V, W), (V, W)),
+       memo: Memoizer[(Mod[DoubleListNode[V, W]], Mod[DoubleListNode[V, W]])])
+      (implicit c: Context):
+        (Changeable[DoubleListNode[V, W]], Changeable[DoubleListNode[V, W]]) = {
+    val newValues = mod2 {
+      read2(value) {
+        case v =>
+          val (v1, v2) = f(v)
+          write2(v1, v2)
+      }
+    }
+
+    val (nextLeft, nextRight) = memo(nextMod) {
+      mod2 {
+        read2(nextMod) {
+          case null =>
+            write2[DoubleListNode[V, W], DoubleListNode[V, W]](null, null)
+          case next =>
+            next.map2(f, memo)
+        }
+      }
+    }
+
+    write2(new DoubleListNode[V, W](newValues._1, nextLeft),
+          new DoubleListNode[V, W](newValues._2, nextRight))
+  }
+
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[DoubleListNode[T, U]]) {
       false

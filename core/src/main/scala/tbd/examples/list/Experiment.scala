@@ -290,6 +290,9 @@ Options:
 		  case "map" =>
 		    new MapAlgorithm(conf, listConf)
 
+                  case "map2" =>
+                    new Map2Algorithm(conf, listConf)
+
 		  case "msort" =>
 		    new MergeSortAlgorithm(conf, listConf)
 

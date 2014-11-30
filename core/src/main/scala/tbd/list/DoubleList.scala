@@ -53,6 +53,25 @@ class DoubleList[T, U]
     )
   }
 
+  override def map2[V, W](f: ((T, U)) => ((V, W), (V, W)))
+      (implicit c: Context): (DoubleList[V, W], DoubleList[V, W]) = {
+    println("double list map2")
+    val memo =
+      new Memoizer[(Mod[DoubleListNode[V, W]], Mod[DoubleListNode[V, W]])]()
+
+    val (head1, head2) = mod2 {
+      read2(head) {
+        case null =>
+          write2[DoubleListNode[V, W], DoubleListNode[V, W]](null, null)
+        case node =>
+          node.map2(f, memo)
+      }
+    }
+
+    (new DoubleList(head1, false, workerId),
+     new DoubleList(head2, false, workerId))
+  }
+
   def merge(that: DoubleList[T, U])
       (implicit c: Context,
        ordering: Ordering[T]): DoubleList[T, U] = ???

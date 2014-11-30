@@ -53,6 +53,33 @@ class PartitionedDoubleList[T, U]
     new PartitionedDoubleList(innerMap(0))
   }
 
+  override def map2[V, W]
+      (f: ((T, U)) => ((V, W), (V, W)))
+      (implicit c: Context):
+        (PartitionedDoubleList[V, W], PartitionedDoubleList[V, W]) = {
+
+    def innerMap
+        (i: Int)
+        (implicit c: Context):
+          (Buffer[DoubleList[V, W]], Buffer[DoubleList[V, W]]) = {
+      if (i < partitions.size) {
+        val (mappedPartition, mappedRest) = parWithHint({
+          c => partitions(i).map2(f)(c)
+        }, partitions(i).workerId)({
+          c => innerMap(i + 1)(c)
+        })
+
+        (mappedRest._1 += mappedPartition._1,
+         mappedRest._2 += mappedPartition._2)
+      } else {
+        (Buffer[DoubleList[V, W]](), Buffer[DoubleList[V, W]]())
+      }
+    }
+
+    val (left, right) = innerMap(0)
+    (new PartitionedDoubleList(left), new PartitionedDoubleList(right))
+  }
+
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = {
 

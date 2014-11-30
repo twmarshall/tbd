@@ -66,6 +66,9 @@ trait AdjustableList[T, U] {
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): AdjustableList[V, W]
 
+  def map2[V, W](f: ((T, U)) => ((V, W), (V, W)))
+      (implicit c: Context): (AdjustableList[V, W], AdjustableList[V, W]) = ???
+
   /**
    * Returns a AdjustableList containing the results of applying the given
    * function to each of the values of this AdjustableList.

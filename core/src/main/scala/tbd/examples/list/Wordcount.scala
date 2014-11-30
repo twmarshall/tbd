@@ -35,6 +35,39 @@ class WordcountAdjust(list: AdjustableList[String, String])
   }
 }
 
+class Wordcount2Adjust(list: AdjustableList[String, String])
+  extends Adjustable[(Mod[(String, HashMap[String, Int])], Mod[(String, HashMap[String, Int])])] {
+
+  def mapper2
+      (pair: (String, String)): ((String, HashMap[String, Int]), (String, HashMap[String, Int])) = {
+    val counts = Map[String, Int]()
+    val counts2 = Map[String, Int]()
+
+    for (word <- pair._2.split("\\W+")) {
+      if (word.hashCode() % 2 == 0) {
+        if (counts.contains(word)) {
+          counts(word) += 1
+        } else {
+          counts(word) = 1
+        }
+      } else {
+        if (counts2.contains(word)) {
+          counts2(word) += 1
+        } else {
+          counts2(word) = 1
+        }
+      }
+    }
+
+    ((pair._1, HashMap(counts.toSeq: _*)), (pair._1, HashMap(counts.toSeq: _*)))
+  }
+
+  def run(implicit c: Context) = {
+    val (counts1, counts2) = list.map2(mapper2)
+    (counts1.reduce(Wordcount.reducer), counts2.reduce(Wordcount.reducer))
+  }
+}
+
 class ChunkWordcountAdjust(list: AdjustableList[String, String])
   extends Adjustable[Mod[(String, HashMap[String, Int])]] {
 
