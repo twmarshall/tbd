@@ -22,9 +22,11 @@ import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
 import scala.concurrent.forkjoin.ForkJoinPool
 
 import tbd._
+import tbd.Constants._
 import tbd.datastore.StringData
 import tbd.list._
 import tbd.TBD._
+import tbd.util._
 
 object WCAlgorithm {
   def wordcount(s: String): HashMap[String, Int] = {
@@ -75,27 +77,32 @@ object WCAlgorithm {
   }
 
   def mapper(pair: (Int, String)) = {
-    (pair._1, wordcount(pair._2))
+    val mapPtr = OffHeapMap.create()
+    for (word <- pair._2.split("\\W+")) {
+      OffHeapMap.increment(mapPtr, word, 1)
+    }
+
+    (pair._1, mapPtr)
   }
 
   def reducer
-      (pair1: (Int, HashMap[String, Int]),
-       pair2: (Int, HashMap[String, Int])) = {
-    (pair1._1, reduce(pair1._2, pair2._2))
+      (pair1: (Int, Pointer),
+       pair2: (Int, Pointer)) = {
+    (pair1._1, OffHeapMap.merge(pair1._2, pair2._2))
   }
 }
 
 class WCAdjust(list: AdjustableList[Int, String])
-  extends Adjustable[Mod[(Int, HashMap[String, Int])]] {
+  extends Adjustable[Mod[(Int, Pointer)]] {
 
-  def run(implicit c: Context): Mod[(Int, HashMap[String, Int])] = {
+  def run(implicit c: Context) = {
     val counts = list.map(WCAlgorithm.mapper)
     counts.reduce(WCAlgorithm.reducer)
   }
 }
 
 class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
+    extends Algorithm[String, Mod[(Int, Pointer)]](_conf, _listConf) {
   val input = mutator.createList[Int, String](listConf)
 
   val data = new StringData(input, count, mutations, Experiment.check)
@@ -121,9 +128,11 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
   def checkOutput(
       table: Map[Int, String],
-      output: Mod[(Int, HashMap[String, Int])]) = {
-    val answer = naiveHelper(table.values)
-    mutator.read(output)._2 == answer
+      output: Mod[(Int, Pointer)]) = {
+    val answer = naiveHelper(table.values).toBuffer.sortWith(_._1 < _._1)
+    val out = OffHeapMap.toBuffer(mutator.read(output)._2).sortWith(_._1 < _._1)
+
+    out == answer
   }
 }
 

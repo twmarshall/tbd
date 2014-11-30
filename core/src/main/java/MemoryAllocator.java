@@ -26,4 +26,28 @@ public class MemoryAllocator {
   public static void free(long pointer) {
     unsafe.freeMemory(pointer);
   }
+
+  public static char getChar(long ptr) {
+    return unsafe.getChar(ptr);
+  }
+
+  public static void putChar(long ptr, char c) {
+    unsafe.putChar(ptr, c);
+  }
+
+  public static int getInt(long ptr) {
+    return unsafe.getInt(ptr);
+  }
+
+  public static void putInt(long ptr, int i) {
+    unsafe.putInt(ptr, i);
+  }
+
+  public static long getPointer(long ptr) {
+    return unsafe.getLong(ptr);
+  }
+
+  public static void putPointer(long ptr, long p) {
+    unsafe.putLong(ptr, p);
+  }
 }
