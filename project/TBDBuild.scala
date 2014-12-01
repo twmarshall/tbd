@@ -65,8 +65,7 @@ object TBDBuild extends Build {
   IO.write(workerOut, worker)
   workerOut.setExecutable(true)
 
-        //val experiment = template.format(classpath, "tbd.examples.list.Experiment")
-        val experiment = template.format(classpath, "tbd.sql.SQLTest")
+        val experiment = template.format(classpath, "tbd.examples.list.Experiment")
         val experimentOut = baseDirectory.value / "../bin/experiment.sh"
         IO.write(experimentOut, experiment)
         experimentOut.setExecutable(true)
@@ -110,7 +109,7 @@ object TBDBuild extends Build {
         java -Xmx8g -Xss256m -classpath "%s" %s $@
         """
 
-        val sql = template.format(classpath, "tbd.sql.JsqlParser")
+        val sql = template.format(classpath, "tbd.sql.SQLTest")
         val sqlOut = baseDirectory.value / "../bin/sql.sh"
         IO.write(sqlOut, sql)
         sqlOut.setExecutable(true)

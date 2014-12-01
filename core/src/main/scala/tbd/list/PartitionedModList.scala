@@ -63,12 +63,12 @@ class PartitionedModList[T, U]
     new PartitionedModList(innerFlatMap(0))
   }
 
-  def join[V](that: AdjustableList[T, V])
+  def join[V](that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): PartitionedModList[T, (U, V)] = {
     def innerJoin(i: Int)(implicit c: Context): Buffer[ModList[T, (U, V)]] = {
       if (i < partitions.size) {
 	val (joinedPartition, joinedRest) = par {
-	  c => partitions(i).join(that)(c)
+	  c => partitions(i).join(that, condition)(c)
 	} and {
 	  c => innerJoin(i + 1)(c)
 	}

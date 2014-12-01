@@ -22,7 +22,10 @@ public interface Datum {
 	public boolean equals(Column col);
 	
 	public int compareTo(Datum d);
+	public Datum sumDatum(Datum input);
+	
 	public String getStringValue();
+
 	
 	public class dLong implements Datum {
 
@@ -91,19 +94,18 @@ public interface Datum {
 			else
 				return true;
 		}
-		
+		@Override
 		public int compareTo(Datum d) {
 			return this.value.compareTo(((dLong)d).value);
 		}
-
+		@Override
 		public Datum sumDatum(Datum input){
 			Datum sum = null;
 			if(input instanceof dLong){
 				long arg1 =(long) this.getValue();
 				long arg2 =(long)  ((dLong) input).getValue();
 				Long value = arg1+arg2;
-				String valueString = value.toString();
-				sum = new dLong(valueString,input.getColumn());
+				sum = new dLong(value,input.getColumn());
 			}
 			else if (input instanceof dString){
 				
@@ -180,16 +182,17 @@ public interface Datum {
 				return true;
 		}
 		
+		@Override
 		public int compareTo(Datum d) {
 			return this.value.compareTo(((dDecimal)d).value);
 		}
 
+		@Override
 		public Datum sumDatum(Datum input){
 			Datum sum = null;
 			if(input instanceof dDecimal){
 				Double value = this.getValue()+((dDecimal) input).getValue();
-				String valueString = value.toString();
-				sum = new dLong(valueString,input.getColumn());
+				sum = new dDecimal(value,input.getColumn());
 			}
 			else if (input instanceof dString){
 				
@@ -278,6 +281,12 @@ public interface Datum {
 		@Override
 		public String getStringValue() {
 			return value.toString();
+		}
+
+		@Override
+		public Datum sumDatum(Datum input) {
+			// TODO Auto-generated method stub
+			return null;
 		}
 
 	}
@@ -369,6 +378,12 @@ public interface Datum {
 		
 		@Override
 		public String getStringValue() {
+			// TODO Auto-generated method stub
+			return null;
+		}
+
+		@Override
+		public Datum sumDatum(Datum input) {
 			// TODO Auto-generated method stub
 			return null;
 		}

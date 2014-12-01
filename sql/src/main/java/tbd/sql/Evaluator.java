@@ -242,11 +242,11 @@ public class Evaluator implements ExpressionVisitor {
             } catch (InvocationTargetException e) {
             }
     }
-    /*
+    
     public void sum(List eList) {
         
         TupleStruct.setTupleTableMap(this.t);
-        CalcTools ct = new CalcTools(this.t);
+        Evaluator ct = new Evaluator(this.t);
         //lg.logger.log(Level.INFO, "OYOYOYOYOYOYOYOYO");
 
         //Assuming only one date is passed
@@ -264,7 +264,7 @@ public class Evaluator implements ExpressionVisitor {
     public void avg(List eList) {
         //lg.logger.log(Level.INFO, "DATE Function");
         TupleStruct.setTupleTableMap(this.t);
-        CalcTools ct = new CalcTools(this.t);
+        Evaluator ct = new Evaluator(this.t);
         //lg.logger.log(Level.INFO, "OYOYOYOYOYOYOYOYO");
         
         //Assuming only one date is passed
@@ -291,7 +291,7 @@ public class Evaluator implements ExpressionVisitor {
     public void min(List eList) {
         //lg.logger.log(Level.INFO, "MIN Function");
         TupleStruct.setTupleTableMap(this.t);
-        CalcTools ct = new CalcTools(this.t);
+        Evaluator ct = new Evaluator(this.t);
         //lg.logger.log(Level.INFO, "OYOYOYOYOYOYOYOYO");
         
         //Assuming only one date is passed
@@ -309,7 +309,7 @@ public class Evaluator implements ExpressionVisitor {
     public void max(List eList) {
         //lg.logger.log(Level.INFO, "MAX Function");
         TupleStruct.setTupleTableMap(this.t);
-        CalcTools ct = new CalcTools(this.t);
+        Evaluator ct = new Evaluator(this.t);
         //lg.logger.log(Level.INFO, "OYOYOYOYOYOYOYOYO");
         
         //Assuming only one date is passed
@@ -328,7 +328,7 @@ public class Evaluator implements ExpressionVisitor {
     public void date(List eList) {
         //lg.logger.log(Level.INFO, "DATE Function");
         TupleStruct.setTupleTableMap(this.t);
-        CalcTools ct = new CalcTools(this.t);
+        Evaluator ct = new Evaluator(this.t);
         //lg.logger.log(Level.INFO, "OYOYOYOYOYOYOYOYO");
         Date date = null;
 
@@ -349,7 +349,7 @@ public class Evaluator implements ExpressionVisitor {
 		this.accumulator = date;
         //lg.logger.log(Level.INFO, "DATE->>> "+this.accumulator.getClass().getName()+this.accumulator.toString());
     }
-    */
+    
 
 	@Override
 	public void visit(GreaterThan greaterThan) {

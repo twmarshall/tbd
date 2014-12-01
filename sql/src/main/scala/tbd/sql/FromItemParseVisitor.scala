@@ -10,11 +10,12 @@ import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
 class FromItemParseVisitor (val tablesMap: Map[String, ScalaTable])
-							extends FromItemVisitor {
+	extends FromItemVisitor {
 	
 	var oper: Operator = _
 	
 	def visit(table: Table) {
+	  tablesMap.get(table.getName()).get.table.setAlias(table.getAlias)
 	  oper = new TableScanOperator(table, tablesMap)
 	}
 	

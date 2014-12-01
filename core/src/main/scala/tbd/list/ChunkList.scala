@@ -57,7 +57,7 @@ class ChunkList[T, U]
     )
   }
 
-  def join[V](_that: AdjustableList[T, V])
+  def join[V](_that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): ChunkList[T, (U, V)] = {
     assert(_that.isInstanceOf[ChunkList[T, V]])
     val that = _that.asInstanceOf[ChunkList[T, V]]
@@ -68,7 +68,7 @@ class ChunkList[T, U]
       mod {
 	read(head) {
 	  case null => write[ChunkListNode[T, (U, V)]](null)
-	  case node => node.loopJoin(that, memo)
+	  case node => node.loopJoin(that, memo, condition)
 	}
       }, conf
     )

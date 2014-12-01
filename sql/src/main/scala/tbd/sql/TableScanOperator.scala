@@ -13,14 +13,11 @@ class TableScanOperator (val tableDef: net.sf.jsqlparser.schema.Table,
  
   //override def initialize() {}
   
-  override def processOp () = {
-    println("process tablescan")
-  }	
+  override def processOp () = {}	
   
   override def getTable: ScalaTable =  table
   
-  override def getAdjustable: tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]] = {
-    println("table scan adjustable: " + outputAdjustable)
-    outputAdjustable
-  }
+  override def getAdjustable: tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]] = outputAdjustable
+  
+  override def toBuffer = outputAdjustable.toBuffer(table.mutator).map(_._2.map(BufferUtils.getValue))
 }

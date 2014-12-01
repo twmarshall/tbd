@@ -28,13 +28,15 @@ class TableNameTakenException(tableName: String, nestedException: Throwable) ext
     
 }
 
-class TBDSqlContext[T: ClassTag: TypeTag]()  {
+class TBDSqlContext()  {
   
   var tablesMap: Map[String, ScalaTable] = Map()
+  val mutator = new Mutator()
   
-  //def this() = this(new ListConf(partitions = 1, chunkSize = 1))
   
-  def T2Datum (table: net.sf.jsqlparser.schema.Table,  t: T, members: Iterable[ru.Symbol]) : Seq[Datum] = {
+  def T2Datum[T: ClassTag: TypeTag] 
+		  (table: net.sf.jsqlparser.schema.Table,  
+		   t: T, members: Iterable[ru.Symbol]) : Seq[Datum] = {
     val m = ru.runtimeMirror(t.getClass.getClassLoader)
     val im = m.reflect(t)
     members.map( mem => {
@@ -54,39 +56,49 @@ class TBDSqlContext[T: ClassTag: TypeTag]()  {
 
   }
   
-  def csvFile (tableName: String, path: String, f: Array[String] => T, listConf: ListConf  = new ListConf(partitions = 1, chunkSize = 1)) =
-  	 {
+  def csvFile[T: ClassTag: TypeTag] 
+		  (tableName: String, 
+		   path: String, 
+		   f: Array[String] => T, 
+		   listConf: ListConf  = new ListConf(partitions = 1, chunkSize = 1)) = {
     if (tablesMap.contains(tableName)) throw new TableNameTakenException(tableName)
     val fileContents = Source.fromFile(path).getLines.map(_.split(",")).map(f)
     val members = typeOf[T].members.filter(!_.isMethod)
     val colnameMap: Map[String, ScalaColumn] = members.zipWithIndex.map( x => (x._1.name.toString(), ScalaColumn(x._1.name.toString(), x._2, x._1.typeSignature))).toMap
-    //val colname2typeMap: Map[String, Type] = members.map(x => (x.name.toString(), x.typeSignature)).toMap
-    val table = new net.sf.jsqlparser.schema.Table(tableName, tableName)
-    val listContents = fileContents.map(x => T2Datum(table, x, members))
     
-    tablesMap += (tableName -> new  ScalaTable(listContents, colnameMap, table, listConf))
-    println("added table")
+    val table = new net.sf.jsqlparser.schema.Table(tableName, tableName)
+    val listContents = fileContents.map(x => T2Datum[T](table, x, members))
+    
+    tablesMap += (tableName -> new  ScalaTable(listContents, colnameMap, table, mutator, listConf))
+
   }
   
-  def sql (query: String) = {
+  def sql (query: String): Operator = {
     val parserManager = new CCJSqlParserManager();
     val statement = parserManager.parse(new StringReader(query)).asInstanceOf[Select];
-    println(statement)
-    if (statement.isInstanceOf[Select]) {
+
+    val oper = if (statement.isInstanceOf[Select]) {
       val selectStmt = statement.asInstanceOf[Select]
               .getSelectBody();
       if (selectStmt.isInstanceOf[PlainSelect]) {
         val plainSelect = selectStmt.asInstanceOf[PlainSelect]
-        println("select:" + plainSelect)
+        
         val projectStmts = plainSelect.getSelectItems().toList//.foreach(node => node.asInstanceOf[SelectExpressionItem])
-        println("projection:" + projectStmts)
+        
         val whereClause = plainSelect.getWhere()
-        println("where:" + whereClause)
-        //val orderBy = plainSelect.getOrderByElements()
-        //val joins = plainSelect.getJoins()
+        
         val physicalPlan = new PhysicalPlan(tablesMap, selectStmt, projectStmts, plainSelect.getFromItem(), whereClause) 
         physicalPlan.execute()
+      } else {
+        None.asInstanceOf[Operator]
       }
+    } else {
+      None.asInstanceOf[Operator]
     }
+    oper
+  }
+  
+  def shutDownMutator () = {
+    this.mutator.shutdown
   }
 }

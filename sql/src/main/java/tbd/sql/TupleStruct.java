@@ -39,12 +39,15 @@ public class TupleStruct {
 			Table tableName = row.getColumn().getTable();
 			
 			String datumColumn = row.getColumn().getColumnName().toLowerCase();
-			//System.out.println("column name=" + datumColumn + ",datum #" + index + "=" + row);
+			
 			if(tableName != null) {
 				String alias = tableName.getAlias();
+			
 				if(alias !=null) {
+					
 					tupleTableMap.add(alias.toLowerCase()+"."+datumColumn);
 				} else if(joinCondition) {
+			
 					tupleTableMap.add(tableName.getName()+"."+datumColumn);
 				} else {
 					tupleTableMap.add(datumColumn);

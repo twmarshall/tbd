@@ -57,7 +57,7 @@ class ModList[T, U]
     )
   }
 
-  def join[V](_that: AdjustableList[T, V])
+  def join[V](_that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): ModList[T, (U, V)] = {
     assert(_that.isInstanceOf[ModList[T, V]])
     val that = _that.asInstanceOf[ModList[T, V]]
@@ -68,7 +68,7 @@ class ModList[T, U]
       mod {
 	read(head) {
 	  case null => write[ModListNode[T, (U, V)]](null)
-	  case node => node.loopJoin(that, memo)
+	  case node => node.loopJoin(that, memo, condition)
 	}
       }
     )
@@ -285,11 +285,9 @@ class ModList[T, U]
     }
   }
 
-  // reduceByKey[V, W] (:
   override def reduceByKey(f: (U, U) => U, comparator: ((T, U), (T, U) ) => Int)
       (implicit c: Context): ModList[T, U] = {
     val sorted = this.quicksort(comparator)
-
     val memo = new Memoizer[Changeable[ModListNode[T, U]]]()
     new ModList(
       mod {
@@ -298,7 +296,7 @@ class ModList[T, U]
 	    write(null)
 	  case node =>
 	    memo(node, node.value._1, null) {
-	      node.reduceByKey(f, node.value._1, null.asInstanceOf[U], memo)
+	      node.reduceByKey(f, comparator, node.value._1, null.asInstanceOf[U], memo)
 	    }
 	}
       }, true

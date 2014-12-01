@@ -53,7 +53,7 @@ class JoinTest(
   def run(implicit c: Context) = {
     val list = input.getAdjustableList()
     val list2 = input2.getAdjustableList()
-    list.join(list2)
+    list.join(list2, (pair1: (Int, Int), pair2:(Int, Int)) => (pair1._1 == pair2._1))
   }
 }
 

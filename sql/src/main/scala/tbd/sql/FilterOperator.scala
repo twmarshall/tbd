@@ -9,7 +9,9 @@ import tbd.datastore.IntData
 import tbd.list._
 
 
-class FilterAdjust(list: AdjustableList[Int, Seq[Datum]], val condition: Expression, var isTupleMapPresent: Boolean)
+class FilterAdjust(list: AdjustableList[Int, Seq[Datum]], 
+					val condition: Expression, 
+					var isTupleMapPresent: Boolean)
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
 
   def run (implicit c: Context) = {
@@ -40,14 +42,11 @@ class FilterOperator (val inputOper: Operator, val condition: Expression)
     inputAdjustable = inputOper.getAdjustable
     val adjustable = new FilterAdjust(inputAdjustable, condition, isTupleMapPresent)
     outputAdjustable = table.mutator.run(adjustable)
-    //println("table: " + table.printTable)
-    println("Filter output: " + outputAdjustable.toBuffer(table.mutator))
   }
   
   override def getTable: ScalaTable = table
   
-  override def getAdjustable: tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]] = {
-    println("filter adjustable: " + outputAdjustable)
-    outputAdjustable
-  } 
+  override def getAdjustable: tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]] = outputAdjustable
+  
+  override def toBuffer = outputAdjustable.toBuffer(table.mutator).map(_._2.map(BufferUtils.getValue))
 }

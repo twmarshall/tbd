@@ -56,7 +56,7 @@ trait AdjustableList[T, U] {
    *
    * Generally only defined where the type of that matches this.
    */
-  def join[V](that: AdjustableList[T, V])
+  def join[V](that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): AdjustableList[T, (U, V)]
 
   /**

@@ -11,11 +11,13 @@ import tbd.datastore.IntData
 import tbd.list._
 
 
-class ProjectionAdjust(list: AdjustableList[Int, Seq[Datum]], val projectStmt: List[_], var isTupleMapPresent: Boolean)
+class ProjectionAdjust(list: AdjustableList[Int, Seq[Datum]], 
+						val projectStmt: List[_], 
+						var isTupleMapPresent: Boolean)
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
-	println("new ProjectionAdjust")
+	
   def run (implicit c: Context) = {
-	  println("run projectionAdjust")
+	
     list.map((pair: (Int, Seq[Datum])) => {
       
     	val t = pair._2.toArray
@@ -51,15 +53,7 @@ class ProjectionAdjust(list: AdjustableList[Int, Seq[Datum]], val projectStmt: L
 	            new Datum.dDate(ob.asInstanceOf[java.util.Date], newCol)
 	          else 
 	            new Datum.dString(ob.toString, newCol)
-	            /*
-	          val datum = ob match {
-		        case l: Long => new Datum.dLong(ob.asInstanceOf[Long], newCol)
-		        case d: Double  => new Datum.dDecimal(ob.asInstanceOf[Double], newCol)
-		        case d: java.util.Date  => new Datum.dDate(ob.asInstanceOf[java.util.Date], newCol)
-		        case _ => new Datum.dString(ob.toString, newCol)
-		      }  
-		      *  *
-		      */
+
 	          newDatumList = newDatumList :+ datum
 	        } //end case SELECTEXPRESSIONITEM
 	      } //end match sv.getItemType
@@ -80,17 +74,19 @@ class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
   //def initialize() {}
   
   override def processOp () {
-    println("process projection")
+    
     childOperators.foreach(child => child.processOp)
     
     inputAdjustable = inputOper.getAdjustable
     val adjustable = new ProjectionAdjust(inputAdjustable, projectStmt, isTupleMapPresent)  
     outputAdjustable = table.mutator.run(adjustable)
-    //println("table: " + table.printTable)
-    println("Projection output: " + outputAdjustable.toBuffer(table.mutator))
+    
   }
   
   override def getTable: ScalaTable = table
   
   override def getAdjustable: tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]] = outputAdjustable
+  
+  override def toBuffer = outputAdjustable.toBuffer(table.mutator).map(_._2.map(BufferUtils.getValue))
+  
 } 
