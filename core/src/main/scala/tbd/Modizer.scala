@@ -21,7 +21,6 @@ import scala.concurrent.Await
 
 import tbd.Constants._
 import tbd.ddg.{FunctionTag, ModNode, Tag}
-import tbd.macros.{TbdMacros, functionToInvoke}
 import tbd.messages._
 
 trait Modizer[T] {
@@ -62,8 +61,6 @@ class Modizer1[T] extends Modizer[T] {
 class Modizer2[T, U] extends Modizer[(T, U)] {
   val allocations = Map[Any, (Mod[T], Int)]()
   val allocations2 = Map[Any, (Mod[U], Int)]()
-
-  import scala.language.experimental.macros
 
   def remove(key: Any, c: Context): Boolean = {
     if (allocations.contains(key)) {

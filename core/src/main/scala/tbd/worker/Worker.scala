@@ -27,30 +27,41 @@ import tbd.datastore.Datastore
 import tbd.messages._
 
 object Worker {
-  def props(masterRef: ActorRef) = Props(classOf[Worker], masterRef)
+  def props
+      (masterRef: ActorRef,
+       storeType: String = "memory",
+       cacheSize: Int = 10000) =
+    Props(classOf[Worker], masterRef, storeType, cacheSize)
 }
 
-class Worker(masterRef: ActorRef) extends Actor with ActorLogging {
+class Worker
+    (masterRef: ActorRef,
+     storeType: String,
+     cacheSize: Int) extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val datastore = context.actorOf(Datastore.props(), "datastore")
+  private val datastore = context.actorOf(
+    Datastore.props(storeType, cacheSize), "datastore")
 
   private val idFuture = masterRef ? RegisterWorkerMessage(self, datastore)
-  private val workerId = Await.result(idFuture.mapTo[String], DURATION)
+  private val workerId = Await.result(idFuture.mapTo[WorkerId], DURATION)
 
   datastore ! SetIdMessage(workerId)
 
-  // A unique id to assign to tasks forked from this context.
-  private var nextTaskId = 0
+  // A unique id to assign to tasks forked from this context. The datastore
+  // has TaskId = 0 for the purpose of creating ModIds.
+  private var nextTaskId: TaskId = 1
 
   def receive = {
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       sender ! "done"
 
     case ScheduleTaskMessage(parent: ActorRef, _) =>
-      val taskId = workerId + ":" + nextTaskId
+      var taskId = workerId.toInt
+      taskId = (taskId << 16) + nextTaskId
+
       val taskProps = Task.props(taskId, parent, datastore, masterRef)
-      val taskRef = context.actorOf(taskProps, taskId)
+      val taskRef = context.actorOf(taskProps, taskId + "")
 
       sender ! taskRef
 

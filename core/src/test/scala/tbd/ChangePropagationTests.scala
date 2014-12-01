@@ -33,11 +33,11 @@ class PropagationOrderTest(input: TableInput[Int, Int])
 
     mod {
       read(one) {
-	case v1 =>
+        case v1 =>
           assert(num == 0)
           num += 1
           read(one) {
-	    case v2 =>
+            case v2 =>
               assert(num == 1)
               num += 1
               write(v2)
@@ -45,7 +45,7 @@ class PropagationOrderTest(input: TableInput[Int, Int])
       }
 
       read(one) {
-	  case v3 =>
+          case v3 =>
           assert(num == 2)
           write(v3)
       }
@@ -78,18 +78,18 @@ class ParTest(input: TableInput[Int, Int]) extends Adjustable[Mod[Int]] {
 
     val pair = par {
       c =>
-	mod {
+        mod {
           read(one) {
             case oneValue => write(oneValue + 1)(c)
-	  } (c)
-	} (c)
+          } (c)
+        } (c)
     } and {
       c => 0
     }
 
     mod {
       read(pair._1) {
-	case value => write(value * 2)
+        case value => write(value * 2)
       }
     }
   }
@@ -112,23 +112,23 @@ class ModNoDestTest(input: TableInput[Int, Int])
   def twoMemo(memo: Memoizer[Changeable[Int]])(implicit c: Context) = {
     read(four)(fourValue => {
       if (fourValue == 4) {
-	mod {
-	  memo(five) {
-	    read(seven)(sevenValue => {
-	      write(sevenValue)
-	    })
-	  }
-	}
+        mod {
+          memo(five) {
+            read(seven)(sevenValue => {
+              write(sevenValue)
+            })
+          }
+        }
 
-	memo(six) {
-	  write(6)
-	}
+        memo(six) {
+          write(6)
+        }
       } else {
-	memo(five) {
-	  read(seven)(sevenValue => {
-	    write(sevenValue)
-	  })
-	}
+        memo(five) {
+          read(seven)(sevenValue => {
+            write(sevenValue)
+          })
+        }
       }
     })
   }
@@ -138,21 +138,21 @@ class ModNoDestTest(input: TableInput[Int, Int])
 
     mod {
       read(one)(oneValue => {
-	if (oneValue == 1) {
-	  val mod1 = mod {
-	    memo(two) {
-	      twoMemo(memo)
-	    }
-	  }
+        if (oneValue == 1) {
+          val mod1 = mod {
+            memo(two) {
+              twoMemo(memo)
+            }
+          }
 
-	  read(mod1)(value1 => {
-	    write(value1)
-	  })
-	} else {
-	  memo(two) {
-	    twoMemo(memo)
-	  }
-	}
+          read(mod1)(value1 => {
+            write(value1)
+          })
+        } else {
+          memo(two) {
+            twoMemo(memo)
+          }
+        }
       })
     }
   }

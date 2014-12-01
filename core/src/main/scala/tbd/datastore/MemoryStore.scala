@@ -17,7 +17,7 @@ package tbd.datastore
 
 import scala.collection.mutable.Map
 
-import tbd.Constants._
+import tbd.Constants.ModId
 
 class MemoryStore extends KVStore {
   private val values = Map[ModId, Any]()
@@ -32,6 +32,10 @@ class MemoryStore extends KVStore {
 
   def remove(key: ModId) {
     values -= key
+  }
+
+  def contains(key: ModId) = {
+    values.contains(key)
   }
 
   def shutdown() {

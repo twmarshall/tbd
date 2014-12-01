@@ -18,7 +18,6 @@ package tbd.test
 import org.scalatest._
 
 import tbd._
-import tbd.ddg.{MemoNode, ReadNode, RootNode}
 import tbd.table._
 import tbd.TBD._
 
@@ -37,25 +36,25 @@ class MemoTest(input: TableInput[Int, Int])
 
     mod {
       read(one) {
-	case oneValue =>
+        case oneValue =>
           if (oneValue == 3) {
             mod {
               read(one) {
-		case oneValueAgain => write(oneValueAgain)
+                case oneValueAgain => write(oneValueAgain)
               }
             }
           }
           val memoMod = memo(two) {
             mod {
-	      count += 1
-	      read(two) {
-		case twoValue => write(twoValue + 1)
-	      }
+              count += 1
+              read(two) {
+                case twoValue => write(twoValue + 1)
+              }
             }
           }
 
           read(memoMod) {
-	    case memoValue => write(oneValue + memoValue)
+            case memoValue => write(oneValue + memoValue)
           }
       }
     }
@@ -86,22 +85,22 @@ class AlreadyMatchedTest(input: TableInput[Int, Int])
 
     mod {
       read(one) {
-	case oneValue =>
+        case oneValue =>
           if (oneValue == 3) {
             mod {
               memo(two) {
-		count1 += 1
-		read(two) {
-		  case twoValue => write(twoValue + 2)
-		}
+                count1 += 1
+                read(two) {
+                  case twoValue => write(twoValue + 2)
+                }
               }
             }
           }
 
           memo(two) {
-	    count2 += 1
-	    read(two) {
-	      case twoValue => write(twoValue + 1)
+            count2 += 1
+            read(two) {
+              case twoValue => write(twoValue + 1)
             }
           }
       }
@@ -123,18 +122,18 @@ class OutOfScopeTest(input: TableInput[Int, Int])
 
     mod {
       read(one) {
-	case 1 => write(1)
-	case _ =>
-	  memo(two) {
-	    num += 1
-	    write(0)
-	  }
+        case 1 => write(1)
+        case _ =>
+          memo(two) {
+            num += 1
+            write(0)
+          }
       }
     }
 
     mod {
       memo(two) {
-	write(2)
+        write(2)
       }
     }
   }
@@ -155,7 +154,7 @@ class MatchingSignaturesTest(input: TableInput[Int, Int])
 
     mod {
       read(one) {
-	case oneValue =>
+        case oneValue =>
           memo(two) {
             count1 += 1
             write(0)
@@ -165,7 +164,7 @@ class MatchingSignaturesTest(input: TableInput[Int, Int])
 
     mod {
       read(one) {
-	case oneValue =>
+        case oneValue =>
           memo(two) {
             count2 += 1
             write(0)
@@ -194,16 +193,16 @@ class MatchParentTest(input: TableInput[Int, Int])
 
     mod {
       read(one) {
-	case 1 =>
+        case 1 =>
           memo(two) {
             count1 += 1
             memo(three) {
-	      count2 += 1
+              count2 += 1
             }
           }
 
-	  write(0)
-	case _ =>
+          write(0)
+        case _ =>
           memo(three) {
             count3 += 1
           }
@@ -232,17 +231,17 @@ class PropagateThroughMemoTest(input: TableInput[Int, Int])
 
     mod {
       read(one) {
-	case oneValue =>
+        case oneValue =>
           val four = memo(two) {
             mod {
               read(three) {
-		case threeValue => write(threeValue)
+                case threeValue => write(threeValue)
               }
-	    }
-	  }
+            }
+          }
 
           read(four) {
-	    case fourValue =>
+            case fourValue =>
               count += 1
               write(fourValue)
           }
@@ -265,11 +264,11 @@ class RepeatRunsTest(input: TableInput[Int, Int])
 
     mod {
       read(one) {
-	case oneValue =>
-	  memo(two) {
-	    count += 1
-	    write(0)
-	  }
+        case oneValue =>
+          memo(two) {
+            count += 1
+            write(0)
+          }
       }
     }
   }
@@ -294,24 +293,24 @@ class OutOfOrderMatchTest(input: TableInput[Int, Int])
 
     mod {
       read(one) {
-	case 1 =>
-	  memo(two) {
-	    count2 += 1
-	  }
-	  memo(three) {
-	    count3 += 1
-	  }
+        case 1 =>
+          memo(two) {
+            count2 += 1
+          }
+          memo(three) {
+            count3 += 1
+          }
 
-	  write(0)
-	case _ =>
-	  memo(three) {
-	    count3 += 1
-	  }
-	  memo(two) {
-	    count2 += 1
-	  }
+          write(0)
+        case _ =>
+          memo(three) {
+            count3 += 1
+          }
+          memo(two) {
+            count2 += 1
+          }
 
-	  write(0)
+          write(0)
       }
     }
   }
@@ -330,22 +329,22 @@ class NoDestTest(input: TableInput[Int, Int])
     def memoTwo = {
       memo(two) {
         read(four) {
-	  case value => write(value)
-	}
+          case value => write(value)
+        }
       }
     }
 
     mod {
       read(one) {
-	case 1 =>
+        case 1 =>
           mod {
-	    memoTwo
+            memoTwo
           }
           memo(three) {
             write(3)
           }
-	case _ =>
-	  memoTwo
+        case _ =>
+          memoTwo
       }
     }
   }
@@ -364,8 +363,8 @@ class NoDestTest2(input: TableInput[Int, Int])
     def memoTwo = {
       memo(two) {
         read(five) {
-	  case five => write(five)
-	}
+          case five => write(five)
+        }
       }
     }
 
@@ -374,25 +373,25 @@ class NoDestTest2(input: TableInput[Int, Int])
         val four = mod {
           if (one == 1) {
             mod {
-	      memoTwo
+              memoTwo
             }
             memo(three) {
               write(3)
             }
           } else {
-	    memoTwo
+            memoTwo
           }
         }
 
         read(four) {
-	  case four => write(four)
-	}
+          case four => write(four)
+        }
       })
     }
 
     mod {
       read(six) {
-	case six => write(six)
+        case six => write(six)
       }
     }
   }
@@ -551,7 +550,8 @@ class MemoTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 
-  "OutOfOrderMatchTest" should "not memo match if a later match has been made" in {
+  "OutOfOrderMatchTest" should
+    "not memo match if a later match has been made" in {
     val mutator = new Mutator()
     val input = TableInput[Int, Int](mutator)
     input.put(1, 1)

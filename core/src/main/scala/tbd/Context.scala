@@ -27,7 +27,7 @@ import tbd.messages._
 import tbd.worker.Task
 
 class Context
-    (id: String,
+    (taskId: TaskId,
      val task: Task,
      val datastore: ActorRef,
      val masterRef: ActorRef) {
@@ -55,21 +55,26 @@ class Context
 
   // The mod created by the most recent (in scope) call to mod. This is
   // what a call to write will write to.
-  var currentMod: Mod[Any] = _
+  var currentModId: ModId = _
 
   // The second mod created by the most recent call to mod2, if there
   // is one.
-  var currentMod2: Mod[Any] = _
+  var currentModId2: ModId = _
 
-  private var nextModId = 0
+  private var nextModId: ModId = 0
 
   val pending = Buffer[Future[String]]()
 
   var epoch = 0
 
   def newModId(): ModId = {
+    var newModId: Long = taskId
+    newModId = newModId << 32
+    newModId += nextModId
+
     nextModId += 1
-    id + "." + nextModId
+
+    newModId
   }
 
   def read[T](mod: Mod[T], taskRef: ActorRef = null): T = {
@@ -80,6 +85,16 @@ class Context
       case NullMessage => null
       case x => x
     }).asInstanceOf[T]
+  }
+
+  def readId(modId: ModId): Any = {
+    val future = datastore ? GetModMessage(modId, null)
+    val ret = Await.result(future, DURATION)
+
+    ret match {
+      case NullMessage => null
+      case x => x
+    }
   }
 
   def update[T](modId: ModId, value: T) {

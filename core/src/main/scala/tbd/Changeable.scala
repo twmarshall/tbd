@@ -15,4 +15,6 @@
  */
 package tbd
 
-class Changeable[T](var mod: Mod[T])
+import tbd.Constants.ModId
+
+class Changeable[T](var modId: ModId)

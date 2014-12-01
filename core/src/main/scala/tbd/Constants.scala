@@ -23,7 +23,25 @@ object Constants {
   var DURATION = 10.seconds
   implicit var TIMEOUT = Timeout(DURATION)
 
-  type ModId = String
+  type WorkerId = Short
+
+  // The first 16 bits of a TaskId represent the Worker the Task is running on.
+  // This allows us to generate unique ids in parallel.
+  type TaskId = Int
+
+  // The first 32 bits of a ModId represent the TaskId where the Mod was
+  // created. We can use this to request the value of the Mod from the Worker
+  // that owns it.
+  type ModId = Long
+
+  def getWorkerId(modId: ModId): WorkerId = {
+    (modId >> 48).toShort
+  }
+
+  def incrementWorkerId(workerId: WorkerId): WorkerId = {
+    (workerId + 1).toShort
+  }
+
   type InputId = Int
 
   val localhost = InetAddress.getLocalHost.getHostAddress

@@ -18,18 +18,19 @@ package tbd.ddg
 object Timestamp {
   // A dummy timestamp which all real Timestamps are less than. Only use for
   // comparison since it isn't actually attached to the ordering data structure.
-  val MAX_TIMESTAMP = new Timestamp(new Sublist(Int.MaxValue, null), Int.MaxValue, null, null)
+  val MAX_TIMESTAMP = new Timestamp(new Sublist(Int.MaxValue, null), Int.MaxValue, null, null, null)
 
   // A dummy timestamp which all real Timestamps are greater than.
-  val MIN_TIMESTAMP = new Timestamp(new Sublist(-1, null), -1, null, null)
+  val MIN_TIMESTAMP = new Timestamp(new Sublist(-1, null), -1, null, null, null)
 }
 
 class Timestamp
     (var sublist: Sublist,
      var time: Double,
      var next: Timestamp,
+     var previous: Timestamp,
      val node: Node) {
-  var previous: Timestamp = _
+  var end: Timestamp = null
 
   def <(that: Timestamp): Boolean = {
     if (sublist == that.sublist) {
@@ -82,11 +83,11 @@ class Timestamp
   override def toString = "(" + sublist.id + " " + time.toString + ")"
 }
 
-class TimestampOrdering extends scala.math.Ordering[Node] {
-  def compare(one: Node, two: Node) = {
-    if (one.timestamp < two.timestamp) {
+class TimestampOrdering extends scala.math.Ordering[Timestamp] {
+  def compare(one: Timestamp, two: Timestamp) = {
+    if (one < two) {
       1
-    } else if (one.timestamp == two.timestamp) {
+    } else if (one == two) {
       0
     } else {
       -1

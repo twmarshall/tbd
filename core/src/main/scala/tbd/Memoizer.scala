@@ -23,7 +23,7 @@ import tbd.ddg.{MemoNode, Timestamp}
 import tbd.master.Master
 
 class Memoizer[T](implicit c: Context) {
-  val memoTable = Map[Seq[Any], ArrayBuffer[MemoNode]]()
+  val memoTable = Map[Seq[Any], ArrayBuffer[Timestamp]]()
 
   import c.task.context.dispatcher
 
@@ -33,50 +33,52 @@ class Memoizer[T](implicit c: Context) {
     if (!c.initialRun && !updated(signature) && memoTable.contains(signature)) {
       // Search through the memo entries matching this signature to see if
       // there's one in the right time range.
-      for (memoNode <- memoTable(signature)) {
-        val timestamp = memoNode.timestamp
+      for (timestamp <- memoTable(signature)) {
+        val memoNode = timestamp.node.asInstanceOf[MemoNode]
+
         if (!found && timestamp >= c.reexecutionStart &&
-	    timestamp < c.reexecutionEnd) {
-          updateChangeables(memoNode, c.currentMod, c.currentMod2)
+      timestamp < c.reexecutionEnd) {
+          updateChangeables(timestamp)
 
           found = true
 
-	  if (c.reexecutionStart < memoNode.timestamp) {
-	    c.ddg.ordering.splice(c.reexecutionStart, memoNode.timestamp, c)
-	  }
+          if (c.reexecutionStart < timestamp) {
+            c.ddg.ordering.splice(c.reexecutionStart, timestamp, c)
+          }
 
-	  // This ensures that we won't match anything under the currently
-	  // reexecuting read that comes before this memo node, since then
-	  // the timestamps would be out of order.
-	  c.reexecutionStart = memoNode.endTime.getNext()
-	  c.currentTime = memoNode.endTime
+          // This ensures that we won't match anything under the currently
+          // reexecuting read that comes before this memo node, since then
+          // the timestamps would be out of order.
+          c.reexecutionStart = timestamp.end.getNext()
+          c.currentTime = timestamp.end
 
           ret = memoNode.value.asInstanceOf[T]
 
-	  val future = c.task.propagate(timestamp, memoNode.endTime)
+          val future = c.task.propagate(timestamp, timestamp.end)
           Await.result(future, DURATION)
-	  future onComplete {
-	    case scala.util.Failure(e) => e.printStackTrace()
-	    case _ =>
-	  }
-	}
+          future onComplete {
+            case scala.util.Failure(e) => e.printStackTrace()
+            case _ =>
+          }
+        }
       }
     }
 
     if (!found) {
-      val memoNode = c.ddg.addMemo(signature, this, c)
+      val timestamp = c.ddg.addMemo(signature, this, c)
+      val memoNode = timestamp.node.asInstanceOf[MemoNode]
 
       val value = func
 
-      memoNode.currentMod = c.currentMod
-      memoNode.currentMod2 = c.currentMod2
-      memoNode.endTime = c.ddg.nextTimestamp(memoNode, c)
+      memoNode.currentModId = c.currentModId
+      memoNode.currentModId2 = c.currentModId2
+      timestamp.end = c.ddg.nextTimestamp(memoNode, c)
       memoNode.value = value
 
       if (memoTable.contains(signature)) {
-        memoTable(signature) += memoNode
+        memoTable(signature) += timestamp
       } else {
-        memoTable += (signature -> ArrayBuffer(memoNode))
+        memoTable += (signature -> ArrayBuffer(timestamp))
       }
 
       ret = value
@@ -91,7 +93,7 @@ class Memoizer[T](implicit c: Context) {
     for (arg <- args) {
       if (arg.isInstanceOf[Mod[_]]) {
         if (c.updatedMods.contains(arg.asInstanceOf[Mod[_]].id)) {
-	  updated = true
+          updated = true
         }
       }
     }
@@ -99,42 +101,43 @@ class Memoizer[T](implicit c: Context) {
     updated
   }
 
-  private def updateChangeables(
-      memoNode: MemoNode,
-      currentMod: Mod[Any],
-      currentMod2: Mod[Any]) {
+  private def updateChangeables(timestamp: Timestamp) {
+    val memoNode = timestamp.node.asInstanceOf[MemoNode]
 
     memoNode.value match {
       case changeable: Changeable[_] =>
-	if (memoNode.currentMod != currentMod) {
-	  c.update(currentMod.id, c.read(changeable.mod))
+        if (memoNode.currentModId != c.currentModId) {
+          c.update(c.currentModId, c.readId(changeable.modId))
 
-	  c.ddg.replaceMods(memoNode, memoNode.currentMod, currentMod)
-	}
+          c.ddg.replaceMods(
+            timestamp, memoNode, memoNode.currentModId, c.currentModId)
+        }
 
       case (c1: Changeable[_], c2: Changeable[_]) =>
-	if (memoNode.currentMod != currentMod) {
-          c.update(currentMod.id, c.read(c1.mod))
+        if (memoNode.currentModId != c.currentModId) {
+          c.update(c.currentModId, c.readId(c1.modId))
 
-          c.ddg.replaceMods(memoNode, memoNode.currentMod, currentMod)
-	}
+          c.ddg.replaceMods(
+            timestamp, memoNode, memoNode.currentModId, c.currentModId)
+        }
 
-	if (memoNode.currentMod2 != currentMod2) {
-          c.update(currentMod2.id, c.read(c2.mod))
+        if (memoNode.currentModId2 != c.currentModId2) {
+          c.update(c.currentModId2, c.readId(c2.modId))
 
-          c.ddg.replaceMods(memoNode, memoNode.currentMod2, currentMod2)
-	}
+          c.ddg.replaceMods(
+            timestamp, memoNode, memoNode.currentModId2, c.currentModId2)
+        }
 
       case _ =>
     }
   }
 
   def removeEntry(timestamp: Timestamp, signature: Seq[_]) {
-    var toRemove: MemoNode = null
+    var toRemove: Timestamp = null
 
-    for (memoNode <- memoTable(signature)) {
-      if (toRemove == null && memoNode.timestamp == timestamp) {
-        toRemove = memoNode
+    for (_timestamp <- memoTable(signature)) {
+      if (toRemove == null && _timestamp == timestamp) {
+        toRemove = _timestamp
       }
     }
 

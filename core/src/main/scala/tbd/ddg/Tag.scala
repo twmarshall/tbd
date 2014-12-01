@@ -83,7 +83,7 @@ object Tag {
           "\nSignature:" + signature.foldLeft("")(_ + "\n   " + _)
       }
       case Tag.Mod(mod, initializer) => {
-          "Mod id " + mod.reduceLeft(_ + ", " + _) +
+          "Mod id " + mod.map(_.toString).reduceLeft(_ + ", " + _) +
           "\nInitializer " + formatFunctionTag(initializer)
       }
       case Tag.Par(fun1, fun2) => {

@@ -186,7 +186,7 @@ class DdgVisualizer extends GridBagPanel with Publisher {
           "<br>Signature:" + htmlEscape(signature.foldLeft("")(_ + "\n   " + _))
       }
       case Tag.Mod(dests, initializer) => {
-          "Mod id " + dests.reduceLeft(_ + ", " + _) +
+          "Mod id " + dests.map(_.toString).reduceLeft(_ + ", " + _) +
           "<br>Initializer " + formatFunctionTag(node, initializer)
       }
       case Tag.Par(fun1, fun2) => {

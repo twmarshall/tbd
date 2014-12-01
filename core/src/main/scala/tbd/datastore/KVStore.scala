@@ -15,7 +15,7 @@
  */
 package tbd.datastore
 
-import tbd.Constants._
+import tbd.Constants.ModId
 
 trait KVStore {
   def put(key: ModId, value: Any)
@@ -23,6 +23,8 @@ trait KVStore {
   def get(key: ModId): Any
 
   def remove(key: ModId)
+
+  def contains(key: ModId): Boolean
 
   def shutdown()
 }

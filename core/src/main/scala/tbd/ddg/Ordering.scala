@@ -21,9 +21,11 @@ import tbd.Constants.ModId
 
 class Ordering {
   val maxSize = Int.MaxValue / 2
-  var base = new Sublist(0, null)
+  val base = new Sublist(0, null)
   base.next = new Sublist(1, base)
   base.previous = base.next
+
+  base.next.base.end = base.base
 
   def after(t: Timestamp, node: Node): Timestamp = {
     val previousSublist =
@@ -141,13 +143,13 @@ class Ordering {
     while (time < base.previous.base.previous) {
       val node = time.node
 
-      if (time == node.timestamp) {
+      if (time.end != null) {
 	node match {
 	  case modNode: ModNode =>
-	    if (modNode.modId1 != null) {
+	    if (modNode.modId1 != -1) {
 	      mods += modNode.modId1
 	    }
-	    if (modNode.modId2 != null) {
+	    if (modNode.modId2 != -1) {
 	      mods += modNode.modId2
 	    }
 	  case _ =>
@@ -165,30 +167,30 @@ class Ordering {
     while (time < end) {
       val node = time.node
 
-      if (time == node.timestamp) {
+      if (time.end != null) {
 	node match {
 	  case readNode: ReadNode =>
-	    c.ddg.reads(readNode.mod.id) -= readNode
+	    c.ddg.reads(readNode.modId) -= time
 	    readNode.updated = false
 	  case memoNode: MemoNode =>
-	    memoNode.memoizer.removeEntry(memoNode.timestamp, memoNode.signature)
+	    memoNode.memoizer.removeEntry(time, memoNode.signature)
 	  case modNode: ModNode =>
 	    if (modNode.modizer != null) {
 	      if (modNode.modizer.remove(modNode.key, c)) {
-		if (modNode.modId1 != null) {
+		if (modNode.modId1 != -1) {
 		  c.remove(modNode.modId1)
 		}
 
-		if (modNode.modId2 != null) {
+		if (modNode.modId2 != -1) {
 		  c.remove(modNode.modId2)
 		}
 	      }
 	    } else {
-	      if (modNode.modId1 != null) {
+	      if (modNode.modId1 != -1) {
 		c.remove(modNode.modId1)
 	      }
 
-	      if (modNode.modId2 != null) {
+	      if (modNode.modId2 != -1) {
 		c.remove(modNode.modId2)
 	      }
 	    }
@@ -198,8 +200,8 @@ class Ordering {
 	  case _ =>
 	}
 
-	if (node.endTime > end) {
-	  remove(node.endTime)
+	if (time.end > end) {
+	  remove(time.end)
 	}
       }
 
@@ -252,23 +254,15 @@ class Ordering {
     }
   }
 
-  def getChildren(node: Node): Buffer[Node] = {
-    val children = Buffer[Node]()
+  def getChildren(start: Timestamp, end: Timestamp): Buffer[Timestamp] = {
+    println("getChildren " + start + " " + end)
+    val children = Buffer[Timestamp]()
 
-    node match {
-      case root: RootNode =>
-	var time = base.next.base.getNext()
-	while (time != base.base) {
-	  children += time.node
-	  time = time.node.endTime.getNext()
-	}
-      case node: Node =>
-	var time = node.timestamp.getNext()
-
-	while (time < node.endTime) {
-	  children += time.node
-	  time = time.node.endTime.getNext()
-	}
+    var time = start.getNext()
+    while (time != end) {
+      println(time + " " + end)
+      children += time
+      time = time.end.getNext()
     }
 
     children
@@ -279,6 +273,7 @@ class Ordering {
     var ret = base.toString
 
     while (node != base) {
+      print(node + " ")
       ret += ", " + node
       node = node.next
     }

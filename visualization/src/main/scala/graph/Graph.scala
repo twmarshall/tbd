@@ -72,8 +72,8 @@ object DDG {
     result.nodes += newNode
     result.adj += (newNode -> new ArrayBuffer[Edge]())
 
-    getChildren(ddg, ddg.root).foreach(x => {
-      append(ddg, newNode, x, result)
+    getChildren(ddg, ddg.startTime, ddg.endTime).foreach(time => {
+      append(ddg, newNode, time, result)
     })
 
     result
@@ -82,17 +82,18 @@ object DDG {
   //Fetches child nodes for a given node. Takes extra care of par nodes.
   private def getChildren
       (ddg: tbd.ddg.DDG,
-       node: tbd.ddg.Node): Seq[tbd.ddg.Node] = {
-    node match {
+       start: tbd.ddg.Timestamp,
+       end: tbd.ddg.Timestamp): Seq[tbd.ddg.Timestamp] = {
+    start.node match {
       case parNode: tbd.ddg.ParNode =>
 	val f1 = parNode.taskRef1 ? tbd.messages.GetTaskDDGMessage
 	val ddg1 = Await.result(f1.mapTo[tbd.ddg.DDG], DURATION)
 	val f2 = parNode.taskRef2 ? tbd.messages.GetTaskDDGMessage
 	val ddg2 = Await.result(f2.mapTo[tbd.ddg.DDG], DURATION)
 
-        ddg1.ordering.getChildren(ddg1.root) ++
-        ddg2.ordering.getChildren(ddg2.root)
-      case _ => ddg.ordering.getChildren(node)
+        ddg1.ordering.getChildren(ddg1.startTime, ddg1.endTime) ++
+        ddg2.ordering.getChildren(ddg2.startTime, ddg2.endTime)
+      case _ => ddg.ordering.getChildren(start, end)
     }
   }
 
@@ -100,8 +101,9 @@ object DDG {
   private def append
       (ddg: tbd.ddg.DDG,
        node: Node,
-       ddgNode: tbd.ddg.Node,
+       time: tbd.ddg.Timestamp,
        result: DDG): Unit = {
+    val ddgNode = time.node
     val newNode = new Node(ddgNode)
 
     result.nodes += newNode
@@ -109,7 +111,7 @@ object DDG {
     result.adj(node) += new Edge.Control(node, newNode)
     result.adj(newNode) += new Edge.InverseControl(newNode, node)
 
-    getChildren(ddg, ddgNode).foreach(x => {
+    getChildren(ddg, time, time.end).foreach(x => {
       append(ddg, newNode, x, result)
     })
   }
