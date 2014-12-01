@@ -34,7 +34,7 @@ class JoinTests extends FlatSpec with Matchers {
     var inputs = List[Rec]()
 
     for (input1 <- inputs1;
-    	input2 <- inputs2;
+      input2 <- inputs2;
           if input1.manipulate == input2.manipulate; 
           if input1.pairkey > input2.pairkey ){
             inputs = inputs :+ input1
@@ -78,7 +78,7 @@ class JoinTests extends FlatSpec with Matchers {
     var inputs = List[Rec]()
 
     for (input1 <- inputs1;
-    	input2 <- inputs2;
+      input2 <- inputs2;
           if input1.manipulate == input2.manipulate; 
           if input1.pairkey > input2.pairkey ){
             inputs = inputs :+ input1

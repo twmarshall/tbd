@@ -3,8 +3,8 @@ package tbd.sql
 import net.sf.jsqlparser.schema.Table;
 
 class TableScanOperator (val tableDef: net.sf.jsqlparser.schema.Table,
-						val tablesMap: Map[String, ScalaTable]) 
-						extends Operator{
+                        val tablesMap: Map[String, ScalaTable]) 
+      extends Operator{
   val table = tablesMap.get(tableDef.getName()).get
   val inputAdjustable = table.input.getAdjustableList
   var outputAdjustable = inputAdjustable
@@ -13,7 +13,7 @@ class TableScanOperator (val tableDef: net.sf.jsqlparser.schema.Table,
  
   //override def initialize() {}
   
-  override def processOp () = {}	
+  override def processOp () = {}  
   
   override def getTable: ScalaTable =  table
   

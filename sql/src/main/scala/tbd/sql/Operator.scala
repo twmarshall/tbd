@@ -3,11 +3,11 @@ package tbd.sql
 object BufferUtils {
   def getValue(d: tbd.sql.Datum) = {
     if (d.isInstanceOf[Datum.dLong]) 
-		   	d.asInstanceOf[Datum.dLong].getValue()
-	else if (d.isInstanceOf[Datum.dDecimal]) 
-		    d.asInstanceOf[Datum.dDecimal].getValue()
+        d.asInstanceOf[Datum.dLong].getValue()
+  else if (d.isInstanceOf[Datum.dDecimal]) 
+        d.asInstanceOf[Datum.dDecimal].getValue()
     else if (d.isInstanceOf[Datum.dDate]) 
-		    d.asInstanceOf[Datum.dDate].getValue()
+        d.asInstanceOf[Datum.dDate].getValue()
     else d.asInstanceOf[Datum.dString].getValue()    
   }
 }

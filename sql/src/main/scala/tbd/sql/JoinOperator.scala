@@ -9,10 +9,10 @@ import tbd.datastore.IntData
 import tbd.list._
 
 
-class JoinAdjust(leftList: AdjustableList[Int, Seq[Datum]], 
-				rightList: AdjustableList[Int, Seq[Datum]],
-				val conditionExp: Expression, 
-				var isTupleMapPresent: Boolean)
+class JoinAdjust (leftList: AdjustableList[Int, Seq[Datum]], 
+                  rightList: AdjustableList[Int, Seq[Datum]],
+                  val conditionExp: Expression, 
+                  var isTupleMapPresent: Boolean)
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
   
   def condition (pair1: (Int, Seq[Datum]), pair2: (Int, Seq[Datum])): Boolean = {
@@ -26,9 +26,6 @@ class JoinAdjust(leftList: AdjustableList[Int, Seq[Datum]],
       val eval = new Evaluator(row.toArray)
       
       conditionExp.accept(eval)
-      if (eval.getAccumulatorBoolean) {
-        println("row: " + row) 
-      }
       eval.getAccumulatorBoolean
   }
 
@@ -40,7 +37,7 @@ class JoinAdjust(leftList: AdjustableList[Int, Seq[Datum]],
 }
 
 class JoinOperator (val leftOper: Operator, val rightOper: Operator, val conditionExp: Expression) 
-	extends Operator{
+  extends Operator{
   var childOperators = List[Operator](leftOper, rightOper)
   val leftTable = leftOper.getTable
   val rightTable = rightOper.getTable

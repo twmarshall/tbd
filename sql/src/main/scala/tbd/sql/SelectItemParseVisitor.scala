@@ -20,18 +20,18 @@ class SelectItemParseVisitor extends SelectItemVisitor {
   import tbd.sql.SELECTTYPE._
   var selectType : SELECTTYPE = _
   
-  	override def visit(arg: AllColumns) {
-		selectType = SELECTTYPE.ALLCOLUMNS
-	}
+    override def visit(arg: AllColumns) {
+    selectType = SELECTTYPE.ALLCOLUMNS
+  }
 
-	override def visit(arg: AllTableColumns) {
-		selectType = SELECTTYPE.ALLTABLECOLUMNS
-	}
+  override def visit(arg: AllTableColumns) {
+    selectType = SELECTTYPE.ALLTABLECOLUMNS
+  }
 
-	override def visit(arg: SelectExpressionItem) {
-		selectType = SELECTTYPE.SELECTEXPRESSIONITEM
-		
-	}
+  override def visit(arg: SelectExpressionItem) {
+    selectType = SELECTTYPE.SELECTEXPRESSIONITEM
+    
+  }
     def getItemType: SELECTTYPE = selectType
   
 }

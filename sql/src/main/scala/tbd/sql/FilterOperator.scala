@@ -9,9 +9,9 @@ import tbd.datastore.IntData
 import tbd.list._
 
 
-class FilterAdjust(list: AdjustableList[Int, Seq[Datum]], 
-					val condition: Expression, 
-					var isTupleMapPresent: Boolean)
+class FilterAdjust (list: AdjustableList[Int, Seq[Datum]], 
+                    val condition: Expression, 
+                    var isTupleMapPresent: Boolean)
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
 
   def run (implicit c: Context) = {
@@ -28,7 +28,7 @@ class FilterAdjust(list: AdjustableList[Int, Seq[Datum]],
 }
 
 class FilterOperator (val inputOper: Operator, val condition: Expression) 
-	extends Operator{
+  extends Operator{
   var childOperators = List[Operator]():+ inputOper;
   val table = inputOper.getTable
   var inputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _

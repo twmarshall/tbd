@@ -20,7 +20,7 @@ class AggregateGroupByTests extends FlatSpec with Matchers {
     sqlContext.csvFile[Rec](tableName, path, f)
 
     var statement = "select  manipulate, count(pairkey), max(pairkey), min(pairkey), sum(pairvalue),  avg(pairvalue) " +
-    			    "from records where pairvalue > 10 group by manipulate"
+              "from records where pairvalue > 10 group by manipulate"
     var oper = sqlContext.sql(statement)
 
     val reduceFunc = (pair: (String, List[Rec])) => {

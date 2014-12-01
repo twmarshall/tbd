@@ -18,9 +18,9 @@ import tbd.datastore.IntData
 import tbd.list._
 
 class GroupByAdjust(list: AdjustableList[Int, Seq[Datum]],
-					groupbyList: List[_],
-					selectExpressionList: List[_],
-					var isTupleMapPresent: Boolean)
+                    groupbyList: List[_],
+                    selectExpressionList: List[_],
+                    var isTupleMapPresent: Boolean)
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
   
   var aggreFuncTypes = Seq[String]()

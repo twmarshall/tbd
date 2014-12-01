@@ -114,8 +114,6 @@ class ModListNode[T, U](var value: (T, U),
     tail: Mod[ModListNode[T, (V, U)]],
     memo: Memoizer[Changeable[ModListNode[T, (V, U)]]],
     condition: ((T, U), (T, V)) => Boolean)(implicit c: Context): Changeable[ModListNode[T, (V, U)]] = {
-    println("this value : " + value)
-    println("that value: " + thatValue)
     if (condition(value, thatValue)) {
       val newValue = (value._1, (thatValue._2, value._2))
 

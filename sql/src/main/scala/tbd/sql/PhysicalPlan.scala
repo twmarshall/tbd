@@ -36,11 +36,13 @@ class PhysicalPlan (
         val joinTable = joinIter.next().asInstanceOf[Join]
         val fromItemVisitor = new FromItemParseVisitor(tablesMap)
         joinTable.getRightItem().accept(fromItemVisitor);
-		
+    
         var rightOper = fromItemVisitor.getOperator
         oper = new JoinOperator(oper, rightOper,
-						joinTable.getOnExpression)
+            joinTable.getOnExpression)
       }
+    } else {
+      TupleStruct.setJoinCondition(false)
     }
     if (whereClause != null) {
       oper = new FilterOperator(oper, whereClause)
@@ -52,16 +54,16 @@ class PhysicalPlan (
       val groupByList = plainSelect.getGroupByColumnReferences().toList
       oper = new GroupByOperator(oper, groupByList, projectStmts)
     } else {
-    	oper = new ProjectionOperator(oper, projectStmts)  
+      oper = new ProjectionOperator(oper, projectStmts)  
     }
     
     
     
     if (plainSelect.getOrderByElements() != null) {
       val orderBy = plainSelect.getOrderByElements().toList
-    	oper = new OrderByOperator(oper, orderBy)
+      oper = new OrderByOperator(oper, orderBy)
     }
-    	
+      
     
     oper.processOp
 

@@ -35,14 +35,14 @@ class TBDSqlContext()  {
   
   
   def T2Datum[T: ClassTag: TypeTag] 
-		  (table: net.sf.jsqlparser.schema.Table,  
-		   t: T, members: Iterable[ru.Symbol]) : Seq[Datum] = {
+      (table: net.sf.jsqlparser.schema.Table,  
+       t: T, members: Iterable[ru.Symbol]) : Seq[Datum] = {
     val m = ru.runtimeMirror(t.getClass.getClassLoader)
     val im = m.reflect(t)
     members.map( mem => {
-      val termSymb = ru.typeOf[T].declaration(ru.newTermName(mem.name.toString)).asTerm
+      val termSymb = ru.typeOf[T].decl(ru.TermName(mem.name.toString)).asTerm
       val tFieldMirror = im.reflectField(termSymb)
-      println(tFieldMirror.get +"colName:" + mem.name)
+      
       val colName = mem.name.toString().trim()
       tFieldMirror.get match {
         case l: Long => new Datum.dLong(tFieldMirror.get.toString, new Column(table, colName))
@@ -57,10 +57,10 @@ class TBDSqlContext()  {
   }
   
   def csvFile[T: ClassTag: TypeTag] 
-		  (tableName: String, 
-		   path: String, 
-		   f: Array[String] => T, 
-		   listConf: ListConf  = new ListConf(partitions = 1, chunkSize = 1)) = {
+      (tableName: String, 
+       path: String, 
+       f: Array[String] => T, 
+       listConf: ListConf  = new ListConf(partitions = 1, chunkSize = 1)) = {
     if (tablesMap.contains(tableName)) throw new TableNameTakenException(tableName)
     val fileContents = Source.fromFile(path).getLines.map(_.split(",")).map(f)
     val members = typeOf[T].members.filter(!_.isMethod)
