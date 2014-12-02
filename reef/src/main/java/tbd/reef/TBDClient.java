@@ -122,14 +122,6 @@ public class TBDClient {
 
     this.isInteractive = false;
     this.prompt = null;
-    /*
-    // If command is not set, switch to interactive mode. (Yes, we compare pointers here)
-    this.isInteractive = this.command ==
-        TBDLaunch.Command.class.getAnnotation(NamedParameter.class).default_value();
-
-    this.prompt = this.isInteractive ?
-        new BufferedReader(new InputStreamReader(System.in)) : null;
-    */
 
     final JavaConfigurationBuilder configBuilder = Tang.Factory.getTang().newConfigurationBuilder();
     configBuilder.addConfiguration(
@@ -142,8 +134,6 @@ public class TBDClient {
             .set(DriverConfiguration.ON_CONTEXT_CLOSED, TBDDriver.ClosedContextHandler.class)
             .set(DriverConfiguration.ON_CONTEXT_FAILED, TBDDriver.FailedContextHandler.class)
             .set(DriverConfiguration.ON_TASK_RUNNING, TBDDriver.RunningTaskHandler.class)
-            //.set(DriverConfiguration.ON_TASK_COMPLETED, TBDDriver.CompletedTaskHandler.class)
-            //.set(DriverConfiguration.ON_CLIENT_MESSAGE, TBDDriver.ClientMessageHandler.class)
             .set(DriverConfiguration.ON_DRIVER_STARTED, TBDDriver.StartHandler.class)
             .set(DriverConfiguration.ON_DRIVER_STOP, TBDDriver.StopHandler.class)
             .build()
@@ -174,50 +164,6 @@ public class TBDClient {
   public void submit() {
     this.reef.submit(this.driverConfiguration);
   }
-
-  /**
-   * Send command to the job driver. Record timestamp when the command was sent.
-   * If this.command is set, use it; otherwise, ask user for the command.
-   */
-  /*
-  private synchronized void submitTask() {
-    if (this.isInteractive) {
-      String cmd;
-      try {
-        do {
-          System.out.print("\nRE> ");
-          cmd = this.prompt.readLine();
-        } while (cmd != null && cmd.trim().isEmpty());
-      } catch (final IOException ex) {
-        LOG.log(Level.FINE, "Error reading from stdin: {0}", ex);
-        cmd = null;
-      }
-      if (cmd == null || cmd.equals("exit")) {
-        this.runningJob.close();
-        stopAndNotify();
-      } else {
-        this.submitTask(cmd);
-      }
-    } else {
-      // non-interactive batch mode:
-      this.submitTask(this.command);
-    }
-  }
-  */
-
-  /**
-   * Send command to the job driver. Record timestamp when the command was sent.
-   *
-   * @param cmd shell command to execute in all Evaluators.
-   */
-  /*
-  private synchronized void submitTask(final String cmd) {
-    LOG.log(Level.FINE, "Submit task {0} \"{1}\" to {2}",
-        new Object[]{this.numRuns + 1, cmd, this.runningJob});
-    this.startTime = System.currentTimeMillis();
-    this.runningJob.send(CODEC.encode(cmd));
-  }
-  */
 
   /**
    * Notify the process in waitForCompletion() method that the main process has finished.
@@ -258,7 +204,6 @@ public class TBDClient {
       LOG.log(Level.FINE, "Running job: {0}", job.getId());
       synchronized (TBDClient.this) {
         TBDClient.this.runningJob = job;
-        //TBDClient.this.submitTask();
       }
     }
   }
@@ -273,32 +218,6 @@ public class TBDClient {
     public void onNext(final JobMessage message) {
       String masterAkka = CODEC.decode(message.get());
       System.out.println("master Akka:  " + masterAkka);
-      /*
-      synchronized (TBDClient.this) {
-
-        lastResult = CODEC.decode(message.get());
-        final long jobTime = System.currentTimeMillis() - startTime;
-        totalTime += jobTime;
-        ++numRuns;
-
-        LOG.log(Level.FINE, "TIME: Task {0} completed in {1} msec.:\n{2}",
-            new Object[]{"" + numRuns, "" + jobTime, lastResult});
-
-        System.out.println(lastResult);
-
-        if (runningJob != null) {
-          if (isInteractive || numRuns < maxRuns) {
-            submitTask();
-          } else {
-            LOG.log(Level.INFO,
-                "All {0} tasks complete; Average task time: {1}. Closing the job driver.",
-                new Object[]{maxRuns, totalTime / (double) maxRuns});
-            runningJob.close();
-            stopAndNotify();
-          }
-        }
-      }
-      */
     }
   }
 

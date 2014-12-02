@@ -96,63 +96,33 @@ public class DataLoadingDriver {
               .set(TaskConfiguration.IDENTIFIER, taskId)
               .set(TaskConfiguration.TASK, DataLoadingTask.class)
               .build());
-          
-          
           } else {
             activeContext.submitTask(TaskConfiguration.CONF
                 .set(TaskConfiguration.IDENTIFIER, taskId)
                 .set(TaskConfiguration.TASK, DataLoadingTask2.class)
                 .build());
           }
-          
         } catch (final BindException ex) {
           LOG.log(Level.INFO, "Configuration error in " + contextId, ex);
           throw new RuntimeException("Configuration error in " + contextId, ex);
         }
-        /*
-        final String lcContextId = "LineCountCtxt-" + ctrlCtxIds.getAndIncrement();
-        LOG.log(Level.INFO, "Submit LineCount context {0} to: {1}",
-            new Object[] { lcContextId, contextId });
-
-        final Configuration poisonedConfiguration = PoisonedConfiguration.CONTEXT_CONF
-            .set(PoisonedConfiguration.CRASH_PROBABILITY, "0.4")
-            .set(PoisonedConfiguration.CRASH_TIMEOUT, "1")
-            .build();
-
-        activeContext.submitContext(Tang.Factory.getTang()
-            .newConfigurationBuilder(poisonedConfiguration,
-                ContextConfiguration.CONF.set(ContextConfiguration.IDENTIFIER, lcContextId).build())
-            .build());
-        */
-        
-
       } else if (activeContext.getId().startsWith("LineCountCtxt")) {
 
         final String taskId = "LineCountTask-" + ctrlCtxIds.getAndIncrement();
         LOG.log(Level.INFO, "Submit LineCount task {0} to: {1}", new Object[] { taskId, contextId });
 
         try {
-          //if (firstTask) {
           activeContext.submitTask(TaskConfiguration.CONF
               .set(TaskConfiguration.IDENTIFIER, taskId)
               .set(TaskConfiguration.TASK, DataLoadingTask.class)
               .build());
           firstTask = false;
-          /*
-          } else {
-            activeContext.submitTask(TaskConfiguration.CONF
-                .set(TaskConfiguration.IDENTIFIER, taskId)
-                .set(TaskConfiguration.TASK, DataLoadingTask2.class)
-                .build());
-          }
-          */
         } catch (final BindException ex) {
           LOG.log(Level.INFO, "Configuration error in " + contextId, ex);
           throw new RuntimeException("Configuration error in " + contextId, ex);
         }
       } else {
         LOG.log(Level.INFO, "Unrecognized context: {0}", contextId);
-        //activeContext.close();
       }
     }
   }

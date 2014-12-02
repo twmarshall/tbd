@@ -104,7 +104,6 @@ public final class TBDLaunch {
         .set(ClientConfiguration.ON_RUNTIME_ERROR, TBDClient.RuntimeErrorHandler.class)
         .build();
 
-    // TODO: Remove the injector, have stuff injected.
     final Injector commandLineInjector = Tang.Factory.getTang().newInjector(commandLineConf);
     final boolean isLocal = commandLineInjector.getNamedInstance(Local.class);
     final Configuration runtimeConfiguration;
@@ -152,12 +151,6 @@ public final class TBDLaunch {
       LOG.log(Level.SEVERE, "Job configuration error", ex);
     }
   }
-
-  /*
-  @NamedParameter(doc = "The shell command", short_name = "cmd", default_value = "*INTERACTIVE*")
-  public static final class Command implements Name<String> {
-  }
-  */
 
   /**
    * Command line parameter: number of evaluators to allocate.

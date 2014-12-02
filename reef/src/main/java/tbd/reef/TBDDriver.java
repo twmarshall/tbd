@@ -113,7 +113,7 @@ public final class TBDDriver {
       LOG.log(Level.INFO, "Requested Evaluators.");
     }
   }
-  
+
   /**
    * Shutting down the job driver: close the evaluators.
    */
@@ -180,7 +180,7 @@ public final class TBDDriver {
       }
     }
   }
-  
+
   public final class EvaluatorFailedHandler implements EventHandler<FailedEvaluator> {
     @Override
     public void onNext(final FailedEvaluator eval) {
@@ -319,23 +319,7 @@ public final class TBDDriver {
   public final class CompletedTaskHandler implements EventHandler<CompletedTask> {
     @Override
     public void onNext(final CompletedTask task) {
-      /*
-      LOG.log(Level.INFO, "Completed task: {0}", task.getId());
-      // Take the message returned by the task and add it to the running result.
-      final String result = CODEC.decode(task.get());
-      synchronized (TBDDriver.this) {
-        TBDDriver.this.results.add(task.getId() + " :: " + result);
-        LOG.log(Level.INFO, "Task {0} result {1}: {2} state: {3}", new Object[]{
-            task.getId(), TBDDriver.this.results.size(), result, TBDDriver.this.state});
-        if (--TBDDriver.this.expectCount <= 0) {
-          TBDDriver.this.returnResults();
-          TBDDriver.this.state = State.READY;
-          if (TBDDriver.this.cmd != null) {
-            TBDDriver.this.submit(TBDDriver.this.cmd);
-          }
-        }
-      }
-      */
+
     }
   }
 
@@ -345,21 +329,7 @@ public final class TBDDriver {
   public final class ClientMessageHandler implements EventHandler<byte[]> {
     @Override
     public void onNext(final byte[] message) {
-      /*
-      synchronized (TBDDriver.this) {
-        final String command = CODEC.decode(message);
-        LOG.log(Level.INFO, "Client message: {0} state: {1}",
-            new Object[]{command, TBDDriver.this.state});
-        assert (TBDDriver.this.cmd == null);
-        if (TBDDriver.this.state == State.READY) {
-          TBDDriver.this.submit(command);
-        } else {
-          // not ready yet - save the command for better times.
-          assert (TBDDriver.this.state == State.WAIT_EVALUATORS);
-          TBDDriver.this.cmd = command;
-        }
-      }
-      */
+
     }
   }
 

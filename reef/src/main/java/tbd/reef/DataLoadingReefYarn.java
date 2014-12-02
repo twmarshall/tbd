@@ -120,18 +120,13 @@ public class DataLoadingReefYarn {
         .setInputFormatClass(TextInputFormat.class)
         .setInputPath(inputDir)
         .setNumberOfDesiredSplits(NUM_SPLITS)
-        //.setComputeRequest(computeRequest)
         .setDriverConfigurationModule(DriverConfiguration.CONF
             .set(DriverConfiguration.GLOBAL_LIBRARIES, EnvironmentUtils.getClassLocation(DataLoadingReefYarn.class))
             .set(DriverConfiguration.ON_CONTEXT_ACTIVE, DataLoadingDriver.ContextActiveHandler.class)
             .set(DriverConfiguration.ON_TASK_COMPLETED, DataLoadingDriver.TaskCompletedHandler.class)
-            //.set(DriverConfiguration.ON_DRIVER_STARTED, DataLoadingDriver.DriverStartedHandler.class)
             .set(DriverConfiguration.DRIVER_IDENTIFIER, "DataLoadingREEF"))
         .build();
 
-    
-
-    //start a hardcoded master on localhost
     String cp = DataLoadingReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile();
     LOG.log(Level.INFO, "cp: {0}", cp);
     ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp, "tbd.master.Main", "-i", "127.0.0.1", "-p", "2555");
