@@ -1,3 +1,18 @@
+/**
+ * Copyright (C) 2013 Carnegie Mellon University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package tbd.reef;
 
 import com.microsoft.reef.annotations.audience.ClientSide;
@@ -30,8 +45,8 @@ public class DataLoadingReefYarn {
   private static final Logger LOG = Logger.getLogger(DataLoadingReefYarn.class.getName());
 
   private static final int NUM_LOCAL_THREADS = 16;
-  private static final int NUM_SPLITS = 2;
   private static final int NUM_COMPUTE_EVALUATORS = 0;
+  private static int NUM_SPLITS;
 
   @NamedParameter(doc = "Whether or not to run on the local runtime",
       short_name = "local", default_value = "false")
@@ -47,6 +62,16 @@ public class DataLoadingReefYarn {
   public static final class InputDir implements Name<String> {
   }
 
+  @NamedParameter(doc = "Number of partitions, i.e., number of workers",
+      short_name = "partitions", default_value = "2")
+  public static final class Partitions implements Name<Integer> {
+  }
+
+  @NamedParameter(doc = "This should be set to the same to chunkSizes in TBD",
+      short_name = "chunkSizes", default_value = "1")
+  public static final class ChunkSizes implements Name<Integer> {
+  }
+
   public static void main(final String[] args)
       throws InjectionException, BindException, IOException {
 
@@ -58,6 +83,8 @@ public class DataLoadingReefYarn {
         .registerShortNameOfClass(Local.class)
         .registerShortNameOfClass(TimeOut.class)
         .registerShortNameOfClass(DataLoadingReefYarn.InputDir.class)
+        .registerShortNameOfClass(Partitions.class)
+        .registerShortNameOfClass(ChunkSizes.class)
         .processCommandLine(args);
 
     final Injector injector = tang.newInjector(cb.build());
@@ -65,6 +92,10 @@ public class DataLoadingReefYarn {
     final boolean isLocal = injector.getNamedInstance(Local.class);
     final int jobTimeout = injector.getNamedInstance(TimeOut.class) * 60 * 1000;
     final String inputDir = injector.getNamedInstance(DataLoadingReefYarn.InputDir.class);
+    final int partitions = injector.getNamedInstance(Partitions.class);
+    final int chunkSizes = injector.getNamedInstance(ChunkSizes.class);
+
+    NUM_SPLITS = partitions;
 
     final Configuration runtimeConfiguration;
     if (isLocal) {
@@ -97,6 +128,8 @@ public class DataLoadingReefYarn {
             //.set(DriverConfiguration.ON_DRIVER_STARTED, DataLoadingDriver.DriverStartedHandler.class)
             .set(DriverConfiguration.DRIVER_IDENTIFIER, "DataLoadingREEF"))
         .build();
+
+    
 
     //start a hardcoded master on localhost
     String cp = DataLoadingReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile();

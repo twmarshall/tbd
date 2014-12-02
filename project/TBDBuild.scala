@@ -22,8 +22,6 @@ object TBDBuild extends Build {
   val reefVer = "0.9"
   val hadoopVer = "2.2.0"
   val reefDeps = Seq (
-    //"org.apache.hadoop"           % "hadoop-common"        % hadoopVer,
-    //"org.apache.hadoop"           % "hadoop-mapreduce-client-core" % hadoopVer,
     "com.microsoft.reef"          % "reef-common"          % reefVer,
     "com.microsoft.reef"          % "reef-runtime-local"   % reefVer,
     "com.microsoft.reef"          % "reef-runtime-yarn"    % reefVer,
@@ -34,7 +32,7 @@ object TBDBuild extends Build {
   )
 
   val commonDeps = Seq (
-    "berkeleydb"                  % "je"                   % "3.2.76",
+    "com.sleepycat"               % "je"                   % "5.0.73",
 
     "com.typesafe.akka"          %% "akka-actor"           % "2.3.2",
     "com.typesafe.akka"          %% "akka-remote"          % "2.3.2",
@@ -49,7 +47,6 @@ object TBDBuild extends Build {
 
   val mkrun = TaskKey[File]("mkrun")
   val mkvisualization = TaskKey[File]("mkvisualization")
-  val mkreef = TaskKey[File]("mkreef")
 
   lazy val root = Project (
     "root",
@@ -104,24 +101,12 @@ object TBDBuild extends Build {
           exclude("javax.servlet", "servlet-api").
           exclude("javax.servlet.jsp", "jsp-api")
       )),
-      /*
-      libraryDependencies ++= (reefDeps
-                          ++ Seq(
-        ("org.apache.hadoop" % "hadoop-core" % "1.2.1").
-          exclude("org.mortbay.jetty", "servlet-api-2.5").
-          exclude("org.mortbay.jetty", "jsp-api-2.1").
-          exclude("org.mortbay.jetty", "jsp-2.1").
-          exclude("stax", "stax-api").
-          exclude("asm", "asm")
-      )),
-      */
       mergeStrategy in assembly := {
         case PathList(ps @ _*) if ps.last endsWith ".class" => MergeStrategy.first
         case x =>
           val oldStrategy = (mergeStrategy in assembly).value
           oldStrategy(x)
       }
-      
     )
   ) dependsOn(core)
 

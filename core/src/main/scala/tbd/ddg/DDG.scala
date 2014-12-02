@@ -29,10 +29,10 @@ class DDG {
   var root = new RootNode()
   debug.TBD.nodes(root) = (Node.getId(), Tag.Root(), null)
 
-  val reads = Map[ModId, Buffer[ReadNode]]()
-  val pars = Map[ActorRef, ParNode]()
+  val reads = Map[ModId, Buffer[Timestamp]]()
+  val pars = Map[ActorRef, Timestamp]()
 
-  var updated = TreeSet[Node]()((new TimestampOrdering()).reverse)
+  var updated = TreeSet[Timestamp]()((new TimestampOrdering()).reverse)
 
   val ordering = new Ordering()
 
@@ -40,18 +40,42 @@ class DDG {
       (mod: Mod[Any],
        value: Any,
        reader: Any => Changeable[Any],
-       c: Context): ReadNode = {
-    val readNode = new ReadNode(mod, reader)
+       c: Context): Timestamp = {
+    val readNode = new ReadNode(mod.id, reader)
     val timestamp = nextTimestamp(readNode, c)
-    readNode.timestamp = timestamp
 
     if (reads.contains(mod.id)) {
-      reads(mod.id) :+= readNode.asInstanceOf[ReadNode]
+      reads(mod.id) :+= timestamp
     } else {
-      reads(mod.id) = Buffer(readNode.asInstanceOf[ReadNode])
+      reads(mod.id) = Buffer(timestamp)
     }
 
-    readNode
+    timestamp
+  }
+
+  def addRead2
+      (mod1: Mod[Any],
+       mod2: Mod[Any],
+       value1: Any,
+       value2: Any,
+       reader: (Any, Any) => Changeable[Any],
+       c: Context): Timestamp = {
+    val readNode = new Read2Node(mod1.id, mod2.id, reader)
+    val timestamp = nextTimestamp(readNode, c)
+
+    if (reads.contains(mod1.id)) {
+      reads(mod1.id) :+= timestamp
+    } else {
+      reads(mod1.id) = Buffer(timestamp)
+    }
+
+    if (reads.contains(mod2.id)) {
+      reads(mod2.id) :+= timestamp
+    } else {
+      reads(mod2.id) = Buffer(timestamp)
+    }
+
+    timestamp
   }
 
   def addMod
@@ -59,23 +83,21 @@ class DDG {
        modId2: ModId,
        modizer: Modizer[Any],
        key: Any,
-       c: Context): ModNode = {
+       c: Context): Timestamp = {
     val modNode = new ModNode(modId1, modId2, modizer, key)
     val timestamp = nextTimestamp(modNode, c)
-    modNode.timestamp = timestamp
 
-    modNode
+    timestamp
   }
 
-  def addWrite[T]
-      (mod: Mod[Any],
-       mod2: Mod[Any],
-       c: Context): WriteNode = {
-    val writeNode = new WriteNode(mod, mod2)
+  def addWrite
+      (modId: ModId,
+       modId2: ModId,
+       c: Context): Timestamp = {
+    val writeNode = new WriteNode(modId, modId2)
     val timestamp = nextTimestamp(writeNode, c)
-    writeNode.timestamp = timestamp
 
-    writeNode
+    timestamp
   }
 
   def addPar
@@ -84,10 +106,11 @@ class DDG {
        c: Context): ParNode = {
     val parNode = new ParNode(taskRef1, taskRef2)
     val timestamp = nextTimestamp(parNode, c)
-    parNode.timestamp = timestamp
 
-    pars(taskRef1) = parNode
-    pars(taskRef2) = parNode
+    pars(taskRef1) = timestamp
+    pars(taskRef2) = timestamp
+
+    timestamp.end = c.ddg.nextTimestamp(parNode, c)
 
     parNode
   }
@@ -95,20 +118,19 @@ class DDG {
   def addMemo
       (signature: Seq[Any],
        memoizer: Memoizer[_],
-       c: Context): MemoNode = {
+       c: Context): Timestamp = {
     val memoNode = new MemoNode(signature, memoizer)
     val timestamp = nextTimestamp(memoNode, c)
-    memoNode.timestamp = timestamp
 
-    memoNode
+    timestamp
   }
 
   def nextTimestamp(node: Node, c: Context): Timestamp = {
     val time =
       if (c.initialRun)
-	ordering.append(node)
+        ordering.append(node)
       else
-	ordering.after(c.currentTime, node)
+        ordering.after(c.currentTime, node)
 
     c.currentTime = time
 
@@ -116,20 +138,22 @@ class DDG {
   }
 
   def modUpdated(modId: ModId) {
-    for (readNode <- reads(modId)) {
-      if (!readNode.updated) {
-        updated += readNode
+    for (timestamp <- reads(modId)) {
+      if (!timestamp.node.updated) {
+        updated += timestamp
 
-	readNode.updated = true
+        timestamp.node.updated = true
       }
     }
   }
 
   // Pebbles a par node. Returns true iff the pebble did not already exist.
   def parUpdated(taskRef: ActorRef): Boolean = {
-    val parNode = pars(taskRef)
+    val timestamp = pars(taskRef)
+    val parNode = timestamp.node.asInstanceOf[ParNode]
+
     if (!parNode.pebble1 && !parNode.pebble2) {
-      updated += parNode
+      updated += timestamp
       parNode.updated = true
     }
 
@@ -145,34 +169,40 @@ class DDG {
   }
 
   /**
-   * Replaces all of the mods equal to mod1 with mod2 in the subtree rooted at
-   * node. This is called when a memo match is made where the memo node has a
-   * currentMod that's different from the Context's currentMod.
+   * Replaces all of the mods equal to toReplace with newModId in the subtree
+   * rooted at node. This is called when a memo match is made where the memo
+   * node has a currentMod that's different from the Context's currentMod.
    */
-  def replaceMods(_node: Node, mod1: Mod[Any], mod2: Mod[Any]): Buffer[Node] = {
+  def replaceMods
+      (_timestamp: Timestamp,
+       _node: Node,
+       toReplace: ModId,
+       newModId: ModId): Buffer[Node] = {
     val buf = Buffer[Node]()
 
-    var time = _node.timestamp
-    while (time < _node.endTime) {
+    var time = _timestamp
+    while (time < _timestamp.end) {
       val node = time.node
 
-      if (node.currentMod == mod1) {
-	if (node.timestamp == time) {
+      if (time.end != null) {
+        if (node.currentModId == toReplace) {
 
-	  buf += time.node
-	  process(node, mod1, mod2)
+          buf += time.node
+          replace(node, toReplace, newModId)
 
-	  node.currentMod = mod2
-	}
-      } else if (node.currentMod2 == mod1) {
-	if (node.timestamp == time) {
-	  buf += time.node
-	  process(node, mod1, mod2)
+          node.currentModId = newModId
+        } else if (node.currentModId2 == toReplace) {
+          if (time.end != null) {
+            buf += time.node
+            replace(node, toReplace, newModId)
 
-	  node.currentMod2 = mod2
-	}
-      } else {
-	time = node.endTime
+            node.currentModId2 = newModId
+          }
+        } else {
+          // Skip the subtree rooted at this node since this node doesn't have
+          // toReplace as its currentModId and therefore no children can either.
+          time = time.end
+        }
       }
 
       time = time.getNext()
@@ -181,67 +211,69 @@ class DDG {
     buf
   }
 
-  private def process(node: Node, mod1: Mod[Any], mod2: Mod[Any]) {
+  private def replace(node: Node, toReplace: ModId, newModId: ModId) {
     node match {
       case memoNode: MemoNode =>
-	memoNode.value match {
-	  case changeable: Changeable[_] =>
-	    if (changeable.mod == mod1) {
-	      changeable.asInstanceOf[Changeable[Any]].mod = mod2
-	    }
-	  case (c1: Changeable[_], c2: Changeable[_]) =>
-	    if (c1.mod == mod1) {
-	      c1.asInstanceOf[Changeable[Any]].mod = mod2
-	    }
+        memoNode.value match {
+          case changeable: Changeable[_] =>
+            if (changeable.modId == toReplace) {
+              changeable.modId = newModId
+            }
+          case (c1: Changeable[_], c2: Changeable[_]) =>
+            if (c1.modId == toReplace) {
+              c1.modId = newModId
+            }
 
-	    if (c2.mod == mod1) {
-	      c2.asInstanceOf[Changeable[Any]].mod = mod2
-	    }
-	  case _ =>
-	}
+            if (c2.modId == toReplace) {
+              c2.modId = newModId
+            }
+          case _ =>
+        }
       case _ =>
     }
   }
+
+  def startTime = ordering.base.next.base
+
+  def endTime = ordering.base.base
 
   override def toString = toString("")
 
   def toString(prefix: String): String = {
     val out = new StringBuffer("")
-    def innerToString(node: Node, prefix: String) {
-      val thisString = node match {
-	case memo: MemoNode =>
-	  prefix + memo + " time=" + memo.timestamp + " to " + memo.endTime +
-	  " signature=" + memo.signature + "\n"
-	case mod: ModNode =>
-	  prefix + mod + " time=" + mod.timestamp + " to " + mod.endTime + "\n"
-	case par: ParNode =>
-	  val future1 = par.taskRef1 ? GetTaskDDGMessage
-	  val future2 = par.taskRef2 ? GetTaskDDGMessage
+    def innerToString(time: Timestamp, prefix: String) {
+      val thisString = time.node match {
+        case memo: MemoNode =>
+          prefix + memo + " time = " + time + " to " + time.end +
+          " signature=" + memo.signature + "\n"
+        case mod: ModNode =>
+          prefix + mod + " time = " + time + " to " + time.end + "\n"
+        case par: ParNode =>
+          val future1 = par.taskRef1 ? GetTaskDDGMessage
+          val future2 = par.taskRef2 ? GetTaskDDGMessage
 
-	  val ddg1 = Await.result(future1.mapTo[DDG], DURATION)
-	  val ddg2 = Await.result(future2.mapTo[DDG], DURATION)
+          val ddg1 = Await.result(future1.mapTo[DDG], DURATION)
+          val ddg2 = Await.result(future2.mapTo[DDG], DURATION)
 
-	  prefix + par + " time=" + par.timestamp + " pebbles=(" + par.pebble1 +
-	  ", " + par.pebble2 + ")\n" + ddg1.toString(prefix + "|") +
-	  ddg2.toString(prefix + "|")
-	case read: ReadNode =>
-	  prefix + read + " modId=(" + read.mod.id + ") " + " time=" +
-	  read.timestamp + " to " + read.endTime + " value=" + read.mod +
-	  " updated=(" + read.updated + ")\n"
-	case root: RootNode =>
-	  prefix + "RootNode=" + root + "\n"
-	case write: WriteNode =>
-	  prefix + write + " modId=(" + write.mod.id + ") " +
-	  " value=" + write.mod + " time=" + write.timestamp + "\n"
-	case _ => "???"
+          prefix + par + " pebbles=(" + par.pebble1 +
+          ", " + par.pebble2 + ")\n" + ddg1.toString(prefix + "|") +
+          ddg2.toString(prefix + "|")
+        case read: ReadNode =>
+          prefix + read + " modId=(" + read.modId + ") " + " time=" +
+          time + " to " + time.end + " updated=(" + read.updated + ")\n"
+        case root: RootNode =>
+          prefix + "RootNode=" + root + "\n"
+        case write: WriteNode =>
+          prefix + write + " modId=(" + write.modId + ")\n"
+        case x => "???"
       }
       out.append(thisString)
 
-      for (child <- ordering.getChildren(node)) {
-	innerToString(child, prefix + "-")
+      for (time <- ordering.getChildren(time, time.end)) {
+        innerToString(time, prefix + "-")
       }
     }
-    innerToString(root, prefix)
+    innerToString(startTime.getNext(), prefix)
 
     out.toString
   }

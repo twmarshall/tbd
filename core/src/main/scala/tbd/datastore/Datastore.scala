@@ -28,15 +28,22 @@ import tbd.list._
 import tbd.messages._
 
 object Datastore {
-  def props(data: String): Props = Props(classOf[Datastore], data)
+  def props(storeType: String, cacheSize: Int, data: String): Props =
+    Props(classOf[Datastore], storeType, cacheSize, data)
 }
 
-class Datastore(data: String) extends Actor with ActorLogging {
+class Datastore
+    (storeType: String,
+     cacheSize: Int,
+     data: String) extends Actor with ActorLogging {
   import context.dispatcher
 
-  var workerId: String = _
+  var workerId: WorkerId = _
 
-  private val mods = Map[ModId, Any]()
+  private val store = storeType match {
+    case "memory" => new MemoryStore()
+    case "berkeleydb" => new BerkeleyDBStore(cacheSize, context)
+  }
 
   private var nextModId = 0
 
@@ -47,33 +54,37 @@ class Datastore(data: String) extends Actor with ActorLogging {
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
   // Maps logical names of datastores to their references.
-  private val datastores = Map[String, ActorRef]()
+  private val datastores = Map[WorkerId, ActorRef]()
 
   private var misses = 0
 
   private val datafile = data
 
   def createMod[T](value: T): Mod[T] = {
-    val modId = workerId + ":" + nextModId
+    var newModId: Long = workerId
+    newModId = newModId << 48
+    newModId += nextModId
+
     nextModId += 1
 
-    mods(modId) = value
+    store.put(newModId, value)
 
-    new Mod(modId)
+    new Mod(newModId)
   }
 
   def read[T](mod: Mod[T]): T = {
-    mods(mod.id).asInstanceOf[T]
+    store.get(mod.id).asInstanceOf[T]
   }
 
   def getMod(modId: ModId, taskRef: ActorRef): Any = {
-    if (mods.contains(modId)) {
-      if (mods(modId) == null)
+    if (store.contains(modId)) {
+      val value = store.get(modId)
+      if (value == null)
         NullMessage
       else
-        mods(modId)
+        value
     } else {
-      val workerId = modId.split(":")(0)
+      val workerId = getWorkerId(modId)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)
 
       /*misses += 1
@@ -92,8 +103,8 @@ class Datastore(data: String) extends Actor with ActorLogging {
   def update[T](mod: Mod[T], value: T) {
     val futures = Buffer[Future[String]]()
 
-    if (!mods.contains(mod.id) || mods(mod.id) != value) {
-      mods(mod.id) = value
+    if (!store.contains(mod.id) || store.get(mod.id) != value) {
+      store.put(mod.id, value)
 
       if (dependencies.contains(mod.id)) {
         for (taskRef <- dependencies(mod.id)) {
@@ -112,8 +123,8 @@ class Datastore(data: String) extends Actor with ActorLogging {
        respondTo: ActorRef) {
     val futures = Buffer[Future[String]]()
 
-    if (!mods.contains(modId) || mods(modId) != value) {
-      mods(modId) = value
+    if (!store.contains(modId) || store.get(modId) != value) {
+      store.put(modId, value)
 
       if (dependencies.contains(modId)) {
         for (taskRef <- dependencies(modId)) {
@@ -162,7 +173,7 @@ class Datastore(data: String) extends Actor with ActorLogging {
 
     case RemoveModsMessage(modIds: Iterable[ModId]) =>
       for (modId <- modIds) {
-        mods -= modId
+        store.remove(modId)
         dependencies -= modId
       }
 
@@ -172,7 +183,9 @@ class Datastore(data: String) extends Actor with ActorLogging {
       val listId = nextListId + ""
       nextListId += 1
       val list =
-        if (conf.chunkSize == 1) {
+        if (conf.double) {
+          new DoubleListModifier[Any, Any](this)
+        } else if (conf.chunkSize == 1) {
           new ListModifier[Any, Any](this)
         } else {
           new ChunkListModifier[Any, Any](this, conf)
@@ -185,8 +198,8 @@ class Datastore(data: String) extends Actor with ActorLogging {
         val fileSize = file.length()
 
         val in = new BufferedReader(new FileReader(conf.file))
-        val partitionSize = (fileSize / conf.partitions).toInt
-        var buf = new Array[Char](partitionSize)
+        val partitionSize = fileSize / conf.partitions
+        var buf = new Array[Char](partitionSize.toInt)
 
         in.skip(partitionSize * conf.partitionIndex)
         in.read(buf)
@@ -264,10 +277,10 @@ class Datastore(data: String) extends Actor with ActorLogging {
       lists(listId).putAfter(key, newPair)
       sender ! "okay"
 
-    case RegisterDatastoreMessage(workerId: String, datastoreRef: ActorRef) =>
+    case RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef) =>
       datastores(workerId) = datastoreRef
 
-    case SetIdMessage(_workerId: String) =>
+    case SetIdMessage(_workerId: WorkerId) =>
       workerId = _workerId
 
     case x =>

@@ -41,7 +41,10 @@ abstract class Algorithm[Input, Output]
     if (Experiment.master != "") {
       MasterConnector(Experiment.master)
     } else {
-      MasterConnector(port = Experiment.port)
+      MasterConnector(
+        port = Experiment.port,
+        cacheSize = cacheSize,
+        storeType = store)
     }
 
   val mutator = new Mutator(connector)

@@ -20,8 +20,7 @@ import akka.pattern.ask
 import scala.concurrent.Await
 
 import tbd._
-import tbd.Constants._
-import tbd.messages._
+import tbd.Constants.ModId
 
 object Node {
   var id = 0
@@ -33,13 +32,11 @@ object Node {
 }
 
 abstract class Node {
-  var timestamp: Timestamp = _
+  var currentModId: ModId = -1
 
-  var endTime: Timestamp = _
+  var currentModId2: ModId = -1
 
-  var currentMod: Mod[Any] = null
-
-  var currentMod2: Mod[Any] = null
+  var updated = false
 }
 
 class MemoNode
@@ -58,18 +55,20 @@ class ModNode
 class ParNode
     (val taskRef1: ActorRef,
      val taskRef2: ActorRef) extends Node {
-
-  var updated = false
-
   var pebble1 = false
   var pebble2 = false
 }
 
-class ReadNode(val mod: Mod[Any], val reader: Any => Changeable[Any])
-  extends Node {
-  var updated = false
-}
+class ReadNode
+    (val modId: ModId,
+     val reader: Any => Changeable[Any])
+  extends Node
+
+class Read2Node
+    (val modId1: ModId,
+     val modId2: ModId,
+     val reader: (Any, Any) => Changeable[Any]) extends Node
 
 class RootNode extends Node
 
-class WriteNode(val mod: Mod[Any], val mod2: Mod[Any]) extends Node
+class WriteNode(val modId: ModId, val modId2: ModId) extends Node

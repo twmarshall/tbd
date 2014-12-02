@@ -31,6 +31,9 @@ object Main {
     object Conf extends ScallopConf(args) {
       version("TBD 0.1 (c) 2014 Carnegie Mellon University")
       banner("Usage: worker.sh [options] master")
+      val cacheSize = opt[Int]("cacheSize", 'c', default = Some(10000),
+        descr = "The number of elements to keep in the cache, if the " +
+                "berkeleydb store is being used")
       val ip = opt[String]("ip", 'i', default = Some(localhost),
         descr = "The ip address to bind to.")
       val port = opt[Int]("port", 'p', default = Some(2553),
@@ -38,13 +41,15 @@ object Main {
       val logging = opt[String]("log", 'l', default = Some("INFO"),
         descr = "The logging level. Options, by increasing verbosity, are " +
         "OFF, WARNING, INFO, or DEBUG")
+      val storeType = opt[String]("store", 's', default = Some("memory"),
+        descr = "The type of datastore to use, either memory or berkeleydb")
       val timeout = opt[Int]("timeout", 't', default = Some(100),
         descr = "How long Akka waits on message responses before timing out")
       val data = opt[String]("data", 'd', default = Some(""),
         descr = "path of partitioned data file on local disk, if empty, not loading data")
-      val partitions = opt[Int]("partitions", 's', default = Some(2),
+      val partitions = opt[Int]("partitions", 'w', default = Some(2),
         descr = "number of partitions of data")
-      val chunkSizes = opt[Int]("chunkSizes", 'c', default = Some(1),
+      val chunkSizes = opt[Int]("chunkSizes", 'u', default = Some(1),
         descr = "chunk sizes of data")
       val master = trailArg[String](required = true)
     }
@@ -69,12 +74,22 @@ object Main {
 
     val workerAkkaConf = ConfigFactory.parseString(conf)
 
-    val system = ActorSystem("workerSystem",
-                             ConfigFactory.load(workerAkkaConf))
+    val system = ActorSystem(
+      "workerSystem",
+      ConfigFactory.load(workerAkkaConf))
+
     val selection = system.actorSelection(master)
     val future = selection.resolveOne()
     val masterRef = Await.result(future.mapTo[ActorRef], DURATION)
 
-    system.actorOf(Worker.props(masterRef, data, partitions, chunkSizes), "worker")
+    system.actorOf(
+      Worker.props(
+        masterRef,
+        Conf.storeType.get.get,
+        Conf.cacheSize.get.get,
+        data,
+        partitions,
+        chunkSizes),
+      "worker")
   }
 }

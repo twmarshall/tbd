@@ -18,7 +18,7 @@ package tbd.ddg
 class Sublist(var id: Int, var next: Sublist) {
   var previous: Sublist = null
 
-  var base: Timestamp = new Timestamp(this, 0, null, null)
+  val base: Timestamp = new Timestamp(this, 0, null, null, null)
   base.next = base
   base.previous = base
 
@@ -34,16 +34,16 @@ class Sublist(var id: Int, var next: Sublist) {
 
     val newTimestamp =
       if (previous.next == base) {
-        new Timestamp(this, previous.time + 1, base, node)
+        new Timestamp(this, previous.time + 1, base, previous, node)
       } else {
         new Timestamp(
 	  this,
           (previous.time + previous.next.time) / 2,
           previous.next,
+          previous,
 	  node)
       }
 
-    newTimestamp.previous = previous
     previous.next = newTimestamp
     newTimestamp.next.previous = newTimestamp
     size += 1
@@ -53,9 +53,8 @@ class Sublist(var id: Int, var next: Sublist) {
 
   def append(node: Node): Timestamp = {
     val previous = base.previous
-    val newTimestamp = new Timestamp(this, previous.time + 1, base, node)
+    val newTimestamp = new Timestamp(this, previous.time + 1, base, previous, node)
 
-    newTimestamp.previous = previous
     previous.next = newTimestamp
     newTimestamp.next.previous = newTimestamp
     size += 1

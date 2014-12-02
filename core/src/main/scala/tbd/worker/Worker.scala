@@ -28,15 +28,27 @@ import tbd.datastore.Datastore
 import tbd.messages._
 
 object Worker {
-  def props(masterRef: ActorRef, data: String, partitions: Int, chunkSizes: Int) = 
-    Props(classOf[Worker], masterRef, data, partitions, chunkSizes)
+  def props
+      (masterRef: ActorRef,
+       storeType: String = "memory",
+       cacheSize: Int = 10000,
+       data: String,
+       partitions: Int,
+       chunkSizes: Int) = 
+    Props(classOf[Worker], masterRef, storeType, cacheSize, data, partitions, chunkSizes)
 }
 
-class Worker(masterRef: ActorRef, data: String, _partitions: Int, _chunkSizes: Int) 
-    extends Actor with ActorLogging {
+class Worker
+    (masterRef: ActorRef,
+     storeType: String,
+     cacheSize: Int,
+     data: String,
+     _partitions: Int,
+     _chunkSizes: Int) extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val datastore = context.actorOf(Datastore.props(data), "datastore")
+  private val datastore = context.actorOf(
+    Datastore.props(storeType, cacheSize, data), "datastore")
 
   private val partitions = _partitions
   private val chunkSizes = _chunkSizes
@@ -48,12 +60,13 @@ class Worker(masterRef: ActorRef, data: String, _partitions: Int, _chunkSizes: I
   }
 
   private val idFuture = masterRef ? RegisterWorkerMessage(self, datastore)
-  private val workerId = Await.result(idFuture.mapTo[String], DURATION)
+  private val workerId = Await.result(idFuture.mapTo[WorkerId], DURATION)
 
   datastore ! SetIdMessage(workerId)
 
-  // A unique id to assign to tasks forked from this context.
-  private var nextTaskId = 0
+  // A unique id to assign to tasks forked from this context. The datastore
+  // has TaskId = 0 for the purpose of creating ModIds.
+  private var nextTaskId: TaskId = 1
 
   def receive = {
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
@@ -66,9 +79,11 @@ class Worker(masterRef: ActorRef, data: String, _partitions: Int, _chunkSizes: I
       sender ! listId
 
     case ScheduleTaskMessage(parent: ActorRef, _) =>
-      val taskId = workerId + ":" + nextTaskId
+      var taskId = workerId.toInt
+      taskId = (taskId << 16) + nextTaskId
+
       val taskProps = Task.props(taskId, parent, datastore, masterRef)
-      val taskRef = context.actorOf(taskProps, taskId)
+      val taskRef = context.actorOf(taskProps, taskId + "")
 
       sender ! taskRef
 
