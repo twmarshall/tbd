@@ -45,7 +45,8 @@ public final class TBDLaunch {
   /**
    * Standard Java logger
    */
-  private static final Logger LOG = Logger.getLogger(TBDLaunch.class.getName());
+  private static final Logger LOG =
+      Logger.getLogger(TBDLaunch.class.getName());
 
   /**
    * This class should not be instantiated.
@@ -64,26 +65,34 @@ public final class TBDLaunch {
    */
   private static Configuration parseCommandLine(final String[] args)
       throws BindException, IOException {
-    final JavaConfigurationBuilder confBuilder = Tang.Factory.getTang().newConfigurationBuilder();
+    final JavaConfigurationBuilder confBuilder =
+        Tang.Factory.getTang().newConfigurationBuilder();
     final CommandLine cl = new CommandLine(confBuilder);
-    cl.registerShortNameOfClass(Local.class);
-    cl.registerShortNameOfClass(NumWorkers.class);
-    cl.registerShortNameOfClass(Timeout.class);
+    cl.registerShortNameOfClass(TBDLaunch.Local.class);
+    cl.registerShortNameOfClass(TBDLaunch.NumWorkers.class);
+    cl.registerShortNameOfClass(TBDLaunch.Timeout.class);
     cl.processCommandLine(args);
     return confBuilder.build();
   }
 
-  private static Configuration cloneCommandLineConfiguration(final Configuration commandLineConf)
-      throws InjectionException, BindException {
-    final Injector injector = Tang.Factory.getTang().newInjector(commandLineConf);
-    final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindNamedParameter(NumWorkers.class, String.valueOf(injector.getNamedInstance(NumWorkers.class)));
-    cb.bindNamedParameter(Timeout.class, String.valueOf(injector.getNamedInstance(Timeout.class)));
+  private static Configuration cloneCommandLineConfiguration(
+      final Configuration commandLineConf)
+          throws InjectionException, BindException {
+    final Injector injector =
+        Tang.Factory.getTang().newInjector(commandLineConf);
+    final JavaConfigurationBuilder cb =
+        Tang.Factory.getTang().newConfigurationBuilder();
+    cb.bindNamedParameter(TBDLaunch.NumWorkers.class,
+        String.valueOf(
+            injector.getNamedInstance(TBDLaunch.NumWorkers.class)));
+    cb.bindNamedParameter(TBDLaunch.Timeout.class,
+        String.valueOf(injector.getNamedInstance(TBDLaunch.Timeout.class)));
     return cb.build();
   }
 
   /**
-   * Parse command line arguments and create TANG configuration ready to be submitted to REEF.
+   * Parse command line arguments and create TANG configuration ready to be
+   * submitted to REEF.
    *
    * @param args Command line arguments, as passed into main().
    * @return (immutable) TANG Configuration object.
@@ -97,15 +106,22 @@ public final class TBDLaunch {
     final Configuration commandLineConf = parseCommandLine(args);
 
     final Configuration clientConfiguration = ClientConfiguration.CONF
-        .set(ClientConfiguration.ON_JOB_RUNNING, TBDClient.RunningJobHandler.class)
-        .set(ClientConfiguration.ON_JOB_MESSAGE, TBDClient.JobMessageHandler.class)
-        .set(ClientConfiguration.ON_JOB_COMPLETED, TBDClient.CompletedJobHandler.class)
-        .set(ClientConfiguration.ON_JOB_FAILED, TBDClient.FailedJobHandler.class)
-        .set(ClientConfiguration.ON_RUNTIME_ERROR, TBDClient.RuntimeErrorHandler.class)
+        .set(ClientConfiguration.ON_JOB_RUNNING,
+            TBDClient.RunningJobHandler.class)
+        .set(ClientConfiguration.ON_JOB_MESSAGE,
+            TBDClient.JobMessageHandler.class)
+        .set(ClientConfiguration.ON_JOB_COMPLETED,
+            TBDClient.CompletedJobHandler.class)
+        .set(ClientConfiguration.ON_JOB_FAILED,
+            TBDClient.FailedJobHandler.class)
+        .set(ClientConfiguration.ON_RUNTIME_ERROR,
+            TBDClient.RuntimeErrorHandler.class)
         .build();
 
-    final Injector commandLineInjector = Tang.Factory.getTang().newInjector(commandLineConf);
-    final boolean isLocal = commandLineInjector.getNamedInstance(Local.class);
+    final Injector commandLineInjector =
+        Tang.Factory.getTang().newInjector(commandLineConf);
+    final boolean isLocal =
+        commandLineInjector.getNamedInstance(TBDLaunch.Local.class);
     final Configuration runtimeConfiguration;
     if (isLocal) {
       LOG.log(Level.INFO, "Running on the local runtime");
@@ -128,7 +144,8 @@ public final class TBDLaunch {
    *
    * @return a string that contains last results from all evaluators.
    */
-  public static String run(final Configuration config) throws InjectionException {
+  public static String run(final Configuration config)
+      throws InjectionException {
     final Injector injector = Tang.Factory.getTang().newInjector(config);
     final TBDClient client = injector.getInstance(TBDClient.class);
     client.submit();
@@ -171,8 +188,10 @@ public final class TBDLaunch {
   /**
    * Command line parameter = true to run locally, or false to run on YARN.
    */
-  @NamedParameter(doc = "Timeout (in seconds), after which the REEF application will terminate",
-      short_name = "timeout", default_value = "600000")
+  @NamedParameter(
+      doc = "Timeout (in minutes), after which the REEF app will terminate",
+      short_name = "timeout",
+      default_value = "10")
   public static final class Timeout implements Name<Integer> {
   }
 }

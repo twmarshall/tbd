@@ -28,7 +28,8 @@ import javax.inject.Inject;
  * A worker node.
  */
 public final class TBDWorkerTask implements Task {
-  private static final Logger LOG = Logger.getLogger(TBDWorkerTask.class.getName());
+  private static final Logger LOG =
+      Logger.getLogger(TBDWorkerTask.class.getName());
   private final int timeout;
   private final String hostIP;
   private final String hostPort;
@@ -58,25 +59,17 @@ public final class TBDWorkerTask implements Task {
       LOG.log(Level.INFO, "worker sleep interrupted 1");
     }
 
-    /*
-    String cp = TBDWorkerTask.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+    String cp = TBDWorkerTask.class.getProtectionDomain()
+        .getCodeSource().getLocation().getFile();
     LOG.log(Level.INFO, "cp: {0}", cp);
-    String[] args = new String[] {"-i", hostIP, "-p", hostPort, masterAkka};
-    //Main.main(args);
+    
+    ProcessBuilder pb = new ProcessBuilder(
+        "java", "-Xmx2g", "-Xss4m",
+        "-cp", cp,
+        "tbd.worker.Main",
+        "-i", hostIP,
+        "-p", hostPort, masterAkka);
 
-    LOG.log(Level.INFO, "worker sleep");
-    try {
-      Thread.sleep(400000);
-    } catch (InterruptedException e) {
-      LOG.log(Level.INFO, "worker sleep interrupted");
-    }
-    */
-    
-    String cp = TBDWorkerTask.class.getProtectionDomain().getCodeSource().getLocation().getFile();
-    LOG.log(Level.INFO, "cp: {0}", cp);
-    
-    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", hostIP, "-p", hostPort, masterAkka);
-    //ProcessBuilder pb = new ProcessBuilder("java", "-Xmx2g", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", hostIP, "-p", hostPort, masterAkka);
     LOG.log(Level.INFO, "pb");
     
     pb.redirectErrorStream(true);
@@ -94,13 +87,12 @@ public final class TBDWorkerTask implements Task {
     
     LOG.log(Level.INFO, "worker sleep");
     try {
-      Thread.sleep(timeout);
+      Thread.sleep(timeout*60*1000);
     } catch (InterruptedException e) {
       LOG.log(Level.INFO, "worker sleep interrupted");
     }
-    
+
     p.destroy();
-    
 
     LOG.log(Level.INFO, "end worker");
     return null;

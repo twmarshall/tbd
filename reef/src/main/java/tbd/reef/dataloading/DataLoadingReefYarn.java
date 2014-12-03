@@ -19,7 +19,6 @@ import com.microsoft.reef.annotations.audience.ClientSide;
 import com.microsoft.reef.client.DriverConfiguration;
 import com.microsoft.reef.client.DriverLauncher;
 import com.microsoft.reef.client.LauncherStatus;
-import com.microsoft.reef.driver.evaluator.EvaluatorRequest;
 import com.microsoft.reef.io.data.loading.api.DataLoadingRequestBuilder;
 import com.microsoft.reef.runtime.local.client.LocalRuntimeConfiguration;
 import com.microsoft.reef.runtime.yarn.client.YarnClientConfiguration;
@@ -36,17 +35,22 @@ import com.microsoft.tang.formats.CommandLine;
 import org.apache.hadoop.mapred.TextInputFormat;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @ClientSide
 public class DataLoadingReefYarn {
 
-  private static final Logger LOG = Logger.getLogger(DataLoadingReefYarn.class.getName());
+  private static final Logger LOG =
+      Logger.getLogger(DataLoadingReefYarn.class.getName());
 
   private static final int NUM_LOCAL_THREADS = 16;
-  private static final int NUM_COMPUTE_EVALUATORS = 0;
   private static int NUM_SPLITS;
+  private static String masterIp;
+  private static String akka;
 
   @NamedParameter(doc = "Whether or not to run on the local runtime",
       short_name = "local", default_value = "false")
@@ -72,6 +76,13 @@ public class DataLoadingReefYarn {
   public static final class ChunkSizes implements Name<Integer> {
   }
 
+  @NamedParameter(
+      doc = "Master Akka system address",
+      short_name = "masterAkka",
+      default_value = "akka.tcp://masterSystem0@127.0.0.1:2555/user/master")
+  public static final class MasterAkka implements Name<String> {
+  }
+
   public static void main(final String[] args)
       throws InjectionException, BindException, IOException {
 
@@ -80,62 +91,94 @@ public class DataLoadingReefYarn {
     final JavaConfigurationBuilder cb = tang.newConfigurationBuilder();
 
     new CommandLine(cb)
-        .registerShortNameOfClass(Local.class)
-        .registerShortNameOfClass(TimeOut.class)
+        .registerShortNameOfClass(DataLoadingReefYarn.Local.class)
+        .registerShortNameOfClass(DataLoadingReefYarn.TimeOut.class)
         .registerShortNameOfClass(DataLoadingReefYarn.InputDir.class)
-        .registerShortNameOfClass(Partitions.class)
-        .registerShortNameOfClass(ChunkSizes.class)
+        .registerShortNameOfClass(DataLoadingReefYarn.Partitions.class)
+        .registerShortNameOfClass(DataLoadingReefYarn.ChunkSizes.class)
         .processCommandLine(args);
 
     final Injector injector = tang.newInjector(cb.build());
 
-    final boolean isLocal = injector.getNamedInstance(Local.class);
-    final int jobTimeout = injector.getNamedInstance(TimeOut.class) * 60 * 1000;
-    final String inputDir = injector.getNamedInstance(DataLoadingReefYarn.InputDir.class);
-    final int partitions = injector.getNamedInstance(Partitions.class);
-    final int chunkSizes = injector.getNamedInstance(ChunkSizes.class);
+    final boolean isLocal =
+        injector.getNamedInstance(DataLoadingReefYarn.Local.class);
+    final int jobTimeout =
+        injector.getNamedInstance(DataLoadingReefYarn.TimeOut.class);
+    final String inputDir =
+        injector.getNamedInstance(DataLoadingReefYarn.InputDir.class);
+    final int partitions =
+        injector.getNamedInstance(DataLoadingReefYarn.Partitions.class);
+    final int chunkSizes =
+        injector.getNamedInstance(DataLoadingReefYarn.ChunkSizes.class);
 
     NUM_SPLITS = partitions;
 
     final Configuration runtimeConfiguration;
     if (isLocal) {
-      LOG.log(Level.INFO, "Running Data Loading demo on the local runtime");
+      LOG.log(Level.INFO, "Running Data Loading on the local runtime");
       runtimeConfiguration = LocalRuntimeConfiguration.CONF
           .set(LocalRuntimeConfiguration.NUMBER_OF_THREADS, NUM_LOCAL_THREADS)
           .build();
     } else {
-      LOG.log(Level.INFO, "Running Data Loading demo on YARN");
+      LOG.log(Level.INFO, "Running Data Loading on YARN");
       runtimeConfiguration = YarnClientConfiguration.CONF.build();
     }
 
-    final EvaluatorRequest computeRequest = EvaluatorRequest.newBuilder()
-        .setNumber(NUM_COMPUTE_EVALUATORS)
-        .setMemory(512)
-        .setNumberOfCores(1)
+    Enumeration<NetworkInterface> e = NetworkInterface.getNetworkInterfaces();
+    outerloop:
+    while(e.hasMoreElements()) {
+        NetworkInterface n = (NetworkInterface) e.nextElement();
+        Enumeration<InetAddress> ee = n.getInetAddresses();
+        while (ee.hasMoreElements()) {
+            InetAddress i = (InetAddress) ee.nextElement();
+            String ip = i.getHostAddress();
+            LOG.log(Level.INFO, "IP of launching node: {0}", ip);
+            String[] parts = ip.split("\\.");
+            if (parts.length == 4 && !parts[0].equals("127")) {
+              masterIp = ip;
+              break outerloop;
+            }
+        }
+    }
+    akka = "akka.tcp://masterSystem0@"
+           + masterIp + ":" + "2555" + "/user/master";
+
+    final JavaConfigurationBuilder configBuilder =
+        Tang.Factory.getTang().newConfigurationBuilder();
+
+    final Configuration dataLoadConfiguration = 
+        new DataLoadingRequestBuilder()
+          .setMemoryMB(3072)
+          .setNumberOfCores(2)
+          .setInputFormatClass(TextInputFormat.class)
+          .setInputPath(inputDir)
+          .setNumberOfDesiredSplits(NUM_SPLITS)
+          .setDriverConfigurationModule(DriverConfiguration.CONF
+            .set(DriverConfiguration.GLOBAL_LIBRARIES,
+                EnvironmentUtils.getClassLocation(DataLoadingReefYarn.class))
+            .set(DriverConfiguration.ON_CONTEXT_ACTIVE,
+                DataLoadingDriver.ContextActiveHandler.class)
+            .set(DriverConfiguration.ON_TASK_COMPLETED,
+                DataLoadingDriver.TaskCompletedHandler.class)
+            .set(DriverConfiguration.DRIVER_IDENTIFIER,
+                "DataLoadingREEF"))
         .build();
 
-    final JavaConfigurationBuilder configBuilder = Tang.Factory.getTang().newConfigurationBuilder();
-    
-    final Configuration dataLoadConfiguration = new DataLoadingRequestBuilder()
-        .setMemoryMB(3072)
-        .setNumberOfCores(2)
-        .setInputFormatClass(TextInputFormat.class)
-        .setInputPath(inputDir)
-        .setNumberOfDesiredSplits(NUM_SPLITS)
-        .setDriverConfigurationModule(DriverConfiguration.CONF
-            .set(DriverConfiguration.GLOBAL_LIBRARIES, EnvironmentUtils.getClassLocation(DataLoadingReefYarn.class))
-            .set(DriverConfiguration.ON_CONTEXT_ACTIVE, DataLoadingDriver.ContextActiveHandler.class)
-            .set(DriverConfiguration.ON_TASK_COMPLETED, DataLoadingDriver.TaskCompletedHandler.class)
-            .set(DriverConfiguration.DRIVER_IDENTIFIER, "DataLoadingREEF"))
-        .build();
-    
     configBuilder.addConfiguration(dataLoadConfiguration);
-    configBuilder.bindNamedParameter(Partitions.class, ""+partitions);
-    configBuilder.bindNamedParameter(ChunkSizes.class, ""+partitions);
+    configBuilder.bindNamedParameter(
+        DataLoadingReefYarn.Partitions.class, "" + partitions);
+    configBuilder.bindNamedParameter(
+        DataLoadingReefYarn.ChunkSizes.class, "" + chunkSizes);
+    configBuilder.bindNamedParameter(
+        DataLoadingReefYarn.MasterAkka.class, "" + akka);
+    configBuilder.bindNamedParameter(
+        DataLoadingReefYarn.TimeOut.class, "" + jobTimeout);
 
-    String cp = DataLoadingReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+    String cp = DataLoadingReefYarn.class.getProtectionDomain()
+        .getCodeSource().getLocation().getFile();
     LOG.log(Level.INFO, "cp: {0}", cp);
-    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp, "tbd.master.Main", "-i", "127.0.0.1", "-p", "2555");
+    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp,
+        "tbd.master.Main", "-i", masterIp, "-p", "2555");
     LOG.log(Level.INFO, "pb");
     pb.redirectErrorStream(true);
     pb.inheritIO();
@@ -146,13 +189,18 @@ public class DataLoadingReefYarn {
       p = pb.start();
       LOG.log(Level.INFO, "after start");
     }
-    catch (IOException e) {
+    catch (IOException ex) {
       LOG.log(Level.INFO, "master process IO exception");
     }
+    System.out.println();
+    System.out.println();
+    System.out.println(akka);
+    System.out.println();
+    System.out.println();
 
     final LauncherStatus state =
-        //DriverLauncher.getLauncher(runtimeConfiguration).run(dataLoadConfiguration, jobTimeout);
-        DriverLauncher.getLauncher(runtimeConfiguration).run(configBuilder.build(), jobTimeout);
+        DriverLauncher.getLauncher(runtimeConfiguration).
+        run(configBuilder.build(), jobTimeout);
 
     LOG.log(Level.INFO, "REEF job completed: {0}", state);
 

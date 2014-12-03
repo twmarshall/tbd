@@ -15,7 +15,6 @@
  */
 package tbd.reef.dataloading;
 
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -26,24 +25,23 @@ import javax.inject.Inject;
 
 import com.microsoft.reef.annotations.audience.DriverSide;
 import com.microsoft.reef.driver.context.ActiveContext;
-import com.microsoft.reef.driver.context.ContextConfiguration;
 import com.microsoft.reef.driver.task.CompletedTask;
 import com.microsoft.reef.driver.task.TaskConfiguration;
 import com.microsoft.reef.io.data.loading.api.DataLoadingService;
-import com.microsoft.reef.poison.PoisonedConfiguration;
-import com.microsoft.tang.Configuration;
+import com.microsoft.tang.JavaConfigurationBuilder;
 import com.microsoft.tang.Tang;
 import com.microsoft.tang.annotations.Name;
 import com.microsoft.tang.annotations.NamedParameter;
+import com.microsoft.tang.annotations.Parameter;
 import com.microsoft.tang.annotations.Unit;
 import com.microsoft.tang.exceptions.BindException;
 import com.microsoft.wake.EventHandler;
-import com.microsoft.wake.time.event.StartTime;
 
 @DriverSide
 @Unit
 public class DataLoadingDriver {
-  private static final Logger LOG = Logger.getLogger(DataLoadingDriver.class.getName());
+  private static final Logger LOG =
+      Logger.getLogger(DataLoadingDriver.class.getName());
 
   private final AtomicInteger ctrlCtxIds = new AtomicInteger();
   private final AtomicInteger lineCnt = new AtomicInteger();
@@ -51,28 +49,44 @@ public class DataLoadingDriver {
 
   private final DataLoadingService dataLoadingService;
 
-  private boolean firstTask = true;
+  private int timeout;
+  private int chunkSizes;
+  private int partitions;
+  private String akka;
+  private final Integer masterPort = 2555;
 
-  private Map<String, ActiveContext> contexts = new HashMap<String, ActiveContext>();
+  private Map<String, ActiveContext> contexts =
+      new HashMap<String, ActiveContext>();
   private Map<String, String> ctxt2ip = new HashMap<String, String>();
   private Map<String, Integer> ctxt2port = new HashMap<String, Integer>();
 
-  @NamedParameter(doc = "IP address", short_name = "ip", default_value = "127.0.0.1")
+  @NamedParameter(doc = "IP address",
+      short_name = "ip",
+      default_value = "127.0.0.1")
   final class HostIP implements Name<String> {
   }
 
-  @NamedParameter(doc = "port number", short_name = "port", default_value = "2555")
+  @NamedParameter(doc = "port number",
+      short_name = "port",
+      default_value = "2555")
   final class HostPort implements Name<String> {
   }
 
-  @NamedParameter(doc = "master akka", short_name = "master", default_value = "akka.tcp://masterSystem0@127.0.0.1:2555/user/master")
-  final class MasterAkka implements Name<String> {
-  }
-
   @Inject
-  public DataLoadingDriver(final DataLoadingService dataLoadingService) {
+  public DataLoadingDriver(
+      final DataLoadingService dataLoadingService,
+      @Parameter(DataLoadingReefYarn.Partitions.class) final int partitions,
+      @Parameter(DataLoadingReefYarn.ChunkSizes.class) final int chunkSizes,
+      @Parameter(DataLoadingReefYarn.MasterAkka.class) final String akka,
+      @Parameter(DataLoadingReefYarn.TimeOut.class) final int timeout) {
     this.dataLoadingService = dataLoadingService;
     this.completedDataTasks.set(dataLoadingService.getNumberOfPartitions());
+    this.timeout = timeout;
+    this.partitions = partitions;
+    this.chunkSizes = chunkSizes;
+    this.akka = akka;
+    LOG.log(Level.INFO, "partitions: {0}, chunkSizes: {1}",
+        new Object[] { partitions, chunkSizes });
   }
 
   public class ContextActiveHandler implements EventHandler<ActiveContext> {
@@ -83,43 +97,51 @@ public class DataLoadingDriver {
       final String contextId = activeContext.getId();
       LOG.log(Level.INFO, "Context active: {0}", contextId);
 
-      if (dataLoadingService.isDataLoadedContext(activeContext) && !contexts.keySet().contains(contextId)) {
+      if (dataLoadingService.isDataLoadedContext(activeContext)
+          && !contexts.keySet().contains(contextId)) {
+
         contexts.put(contextId, activeContext);
-        
-        final String taskId = "LineCountTask-" + ctrlCtxIds.getAndIncrement();
-        LOG.log(Level.INFO, "Submit LineCount task {0} to: {1}", new Object[] { taskId, contextId });
+
+        String socketAddr = activeContext.getEvaluatorDescriptor().
+            getNodeDescriptor().getInetSocketAddress().toString();
+        String ip = socketAddr.substring(
+            socketAddr.indexOf("/")+1, socketAddr.indexOf(":"));
+        Integer port = ctrlCtxIds.get() + 1 + masterPort;
+
+        ctxt2ip.put(contextId, ip);
+        ctxt2port.put(contextId, port);
+
+        final String taskId = "Task-" + ctrlCtxIds.getAndIncrement();
+        LOG.log(Level.INFO, "Submit task {0} to: {1}",
+            new Object[] { taskId, contextId });
 
         try {
-          if (firstTask) {
-            firstTask = false;
-          activeContext.submitTask(TaskConfiguration.CONF
+          final JavaConfigurationBuilder cb =
+              Tang.Factory.getTang().newConfigurationBuilder();
+          cb.addConfiguration(TaskConfiguration.CONF
               .set(TaskConfiguration.IDENTIFIER, taskId)
               .set(TaskConfiguration.TASK, DataLoadingTask.class)
               .build());
-          } else {
-            activeContext.submitTask(TaskConfiguration.CONF
-                .set(TaskConfiguration.IDENTIFIER, taskId)
-                .set(TaskConfiguration.TASK, DataLoadingTask2.class)
-                .build());
-          }
+
+          cb.bindNamedParameter(
+              DataLoadingReefYarn.Partitions.class, "" + partitions);
+          cb.bindNamedParameter(
+              DataLoadingReefYarn.ChunkSizes.class, "" + chunkSizes);
+          cb.bindNamedParameter(
+              DataLoadingReefYarn.MasterAkka.class, "" + akka);
+          cb.bindNamedParameter(
+              DataLoadingReefYarn.TimeOut.class, "" + timeout);
+          cb.bindNamedParameter(
+              DataLoadingDriver.HostIP.class, "" + ip);
+          cb.bindNamedParameter(
+              DataLoadingDriver.HostPort.class, "" + port);
+
+          activeContext.submitTask(cb.build());
+
         } catch (final BindException ex) {
           LOG.log(Level.INFO, "Configuration error in " + contextId, ex);
-          throw new RuntimeException("Configuration error in " + contextId, ex);
-        }
-      } else if (activeContext.getId().startsWith("LineCountCtxt")) {
-
-        final String taskId = "LineCountTask-" + ctrlCtxIds.getAndIncrement();
-        LOG.log(Level.INFO, "Submit LineCount task {0} to: {1}", new Object[] { taskId, contextId });
-
-        try {
-          activeContext.submitTask(TaskConfiguration.CONF
-              .set(TaskConfiguration.IDENTIFIER, taskId)
-              .set(TaskConfiguration.TASK, DataLoadingTask.class)
-              .build());
-          firstTask = false;
-        } catch (final BindException ex) {
-          LOG.log(Level.INFO, "Configuration error in " + contextId, ex);
-          throw new RuntimeException("Configuration error in " + contextId, ex);
+          throw new RuntimeException("Configuration error in "
+              + contextId, ex);
         }
       } else {
         LOG.log(Level.INFO, "Unrecognized context: {0}", contextId);
@@ -135,8 +157,10 @@ public class DataLoadingDriver {
       LOG.log(Level.INFO, "Completed Task: {0}", taskId);
 
       final byte[] retBytes = completedTask.get();
-      final String retStr = retBytes == null ? "No RetVal": new String(retBytes);
-      LOG.log(Level.INFO, "Line count from {0} : {1}", new String[] { taskId, retStr });
+      final String retStr =
+          retBytes == null ? "No RetVal": new String(retBytes);
+      LOG.log(Level.INFO, "Line count from {0} : {1}",
+          new String[] {taskId, retStr});
 
       lineCnt.addAndGet(Integer.parseInt(retStr));
 

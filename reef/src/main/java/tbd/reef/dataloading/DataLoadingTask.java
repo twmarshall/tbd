@@ -19,6 +19,8 @@ import com.microsoft.reef.annotations.audience.TaskSide;
 import com.microsoft.reef.io.data.loading.api.DataSet;
 import com.microsoft.reef.io.network.util.Pair;
 import com.microsoft.reef.task.Task;
+import com.microsoft.tang.annotations.Parameter;
+
 import org.apache.hadoop.io.LongWritable;
 import org.apache.hadoop.io.Text;
 
@@ -36,13 +38,33 @@ import java.util.logging.Logger;
 @TaskSide
 public class DataLoadingTask implements Task {
 
-  private static final Logger LOG = Logger.getLogger(DataLoadingTask.class.getName());
+  private static final Logger LOG =
+      Logger.getLogger(DataLoadingTask.class.getName());
 
   private final DataSet<LongWritable, Text> dataSet;
 
+  private Integer partitions;
+  private Integer chunkSizes;
+  private String masterAkka;
+  private Integer timeout;
+  private String ip;
+  private String port;
+
   @Inject
-  public DataLoadingTask(final DataSet<LongWritable, Text> dataSet) {
+  public DataLoadingTask(final DataSet<LongWritable, Text> dataSet,
+      @Parameter(DataLoadingReefYarn.Partitions.class) final int partitions,
+      @Parameter(DataLoadingReefYarn.ChunkSizes.class) final int chunkSizes,
+      @Parameter(DataLoadingReefYarn.MasterAkka.class) final String akka,
+      @Parameter(DataLoadingReefYarn.TimeOut.class) final int timeout,
+      @Parameter(DataLoadingDriver.HostIP.class) final String hostIp,
+      @Parameter(DataLoadingDriver.HostPort.class) final String hostPort) {
     this.dataSet = dataSet;
+    this.partitions = partitions;
+    this.chunkSizes = chunkSizes;
+    this.masterAkka = akka;
+    this.timeout = timeout;
+    this.ip = hostIp;
+    this.port = hostPort;
   }
 
   @Override
@@ -62,12 +84,13 @@ public class DataLoadingTask implements Task {
     }
     bw.close();
 
-    String cp = DataLoadingTask.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+    String cp = DataLoadingTask.class.getProtectionDomain()
+        .getCodeSource().getLocation().getFile();
     LOG.log(Level.INFO, "cp: {0}", cp);
 
-    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", "127.0.0.1", "-p", "2556", "-d", filename,
-        "-s", "2", "-c", "1", "akka.tcp://masterSystem0@127.0.0.1:2555/user/master");
-    //ProcessBuilder pb = new ProcessBuilder("java", "-Xmx2g", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", hostIP, "-p", hostPort, masterAkka);
+    ProcessBuilder pb = new ProcessBuilder("java", "-Xmx2g", "-Xss4m",
+        "-cp", cp, "tbd.worker.Main", "-i", ip, "-p", port, "-d", filename,
+        "-w", partitions.toString(), "-u", chunkSizes.toString(), masterAkka);
     LOG.log(Level.INFO, "pb");
 
     pb.redirectErrorStream(true);
@@ -85,7 +108,7 @@ public class DataLoadingTask implements Task {
 
     LOG.log(Level.INFO, "worker sleep");
     try {
-      Thread.sleep(5*60*1000);
+      Thread.sleep(timeout*60*1000);
     } catch (InterruptedException e) {
       LOG.log(Level.INFO, "worker sleep interrupted");
     }

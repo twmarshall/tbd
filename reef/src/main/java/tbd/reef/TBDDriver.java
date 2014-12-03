@@ -48,8 +48,10 @@ import javax.inject.Inject;
 
 @Unit
 public final class TBDDriver {
-  private static final Logger LOG = Logger.getLogger(TBDDriver.class.getName());
-  private static final ObjectSerializableCodec<String> CODEC = new ObjectSerializableCodec<>();
+  private static final Logger LOG =
+      Logger.getLogger(TBDDriver.class.getName());
+  private static final ObjectSerializableCodec<String> CODEC =
+      new ObjectSerializableCodec<>();
 
   private final EvaluatorRequestor requestor;
   private final JobMessageObserver jobMessageObserver;
@@ -64,30 +66,41 @@ public final class TBDDriver {
   private final Integer masterPort = 2555;
   private String masterAkka = "";
 
-  private Map<String, ActiveContext> contexts = new HashMap<String, ActiveContext>();
+  private Map<String, ActiveContext> contexts =
+      new HashMap<String, ActiveContext>();
   private Map<String, String> ctxt2ip = new HashMap<String, String>();
   private Map<String, Integer> ctxt2port = new HashMap<String, Integer>();
 
-  @NamedParameter(doc = "IP address", short_name = "ip", default_value = "127.0.0.1")
+  @NamedParameter(doc = "IP address",
+      short_name = "ip",
+      default_value = "127.0.0.1")
   final class HostIP implements Name<String> {
   }
 
-  @NamedParameter(doc = "port number", short_name = "port", default_value = "2555")
+  @NamedParameter(doc = "port number",
+      short_name = "port",
+      default_value = "2555")
   final class HostPort implements Name<String> {
   }
 
-  @NamedParameter(doc = "master akka", short_name = "master", default_value = "akka.tcp://masterSystem0@127.0.0.1:2555/user/master")
+  @NamedParameter(doc = "master akka",
+      short_name = "master",
+      default_value = "akka.tcp://masterSystem0@127.0.0.1:2555/user/master")
   final class MasterAkka implements Name<String> {
   }
 
   /**
    * Job driver constructor - instantiated via TANG.
    *
-   * @param requestor evaluator requestor object used to create new evaluator containers.
+   * @param requestor  evaluator requestor object used to create
+   *                   new evaluator containers.
    */
   @Inject
-  public TBDDriver(final EvaluatorRequestor requestor, final JobMessageObserver jobMessageObserver,
-      @Parameter(TBDLaunch.NumWorkers.class) final int numWorkers, @Parameter(TBDLaunch.Timeout.class) final int timeout) {
+  public TBDDriver(
+      final EvaluatorRequestor requestor,
+      final JobMessageObserver jobMessageObserver,
+      @Parameter(TBDLaunch.NumWorkers.class) final int numWorkers,
+      @Parameter(TBDLaunch.Timeout.class) final int timeout) {
     this.requestor = requestor;
     this.jobMessageObserver = jobMessageObserver;
     this.numWorkers = numWorkers;
@@ -106,8 +119,8 @@ public final class TBDDriver {
 
       TBDDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
           .setNumber(numEvaluators)
-          .setMemory(3072)
-          //.setMemory(6144)
+          //.setMemory(3072)
+          .setMemory(6144)
           .setNumberOfCores(2)
           .build());
       LOG.log(Level.INFO, "Requested Evaluators.");
@@ -130,14 +143,22 @@ public final class TBDDriver {
   /**
    * Handles AllocatedEvaluator: Submit the Task
    */
-  public final class EvaluatorAllocatedHandler implements EventHandler<AllocatedEvaluator> {
+  public final class EvaluatorAllocatedHandler
+      implements EventHandler<AllocatedEvaluator> {
     @Override
     public void onNext(final AllocatedEvaluator allocatedEvaluator) {
-      LOG.log(Level.INFO, "TIME: Evaluator Allocated {0}", allocatedEvaluator.getId());
-      LOG.log(Level.INFO, "Socket address {0}", allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress());
+      LOG.log(Level.INFO, "TIME: Evaluator Allocated {0}",
+          allocatedEvaluator.getId());
+      LOG.log(Level.INFO, "Socket address {0}",
+          allocatedEvaluator
+          .getEvaluatorDescriptor()
+          .getNodeDescriptor()
+          .getInetSocketAddress());
 
-      final String socketAddr = allocatedEvaluator.getEvaluatorDescriptor().getNodeDescriptor().getInetSocketAddress().toString();
-      final String hostIP = socketAddr.substring(socketAddr.indexOf("/")+1, socketAddr.indexOf(":"));
+      final String socketAddr = allocatedEvaluator.getEvaluatorDescriptor()
+          .getNodeDescriptor().getInetSocketAddress().toString();
+      final String hostIP = socketAddr.substring(
+          socketAddr.indexOf("/")+1, socketAddr.indexOf(":"));
       final int nEval;
       final boolean masterEval;
       final boolean workerEval;
@@ -151,7 +172,8 @@ public final class TBDDriver {
           ++numEvalAlloced;
           masterEvalAlloced = true;
           masterIP = hostIP;
-          masterAkka = "akka.tcp://masterSystem0@" + hostIP + ":" + masterPort + "/user/master";
+          masterAkka = "akka.tcp://masterSystem0@" + hostIP + ":"
+              + masterPort + "/user/master";
         } else if (workerEval) {
           ++numEvalAlloced;
         }
@@ -168,28 +190,35 @@ public final class TBDDriver {
         ctxt2ip.put(contextId, hostIP);
         ctxt2port.put(contextId, masterPort+nEval-1);
 
-        final JavaConfigurationBuilder contextConfigBuilder = Tang.Factory.getTang().newConfigurationBuilder();
+        final JavaConfigurationBuilder contextConfigBuilder =
+            Tang.Factory.getTang().newConfigurationBuilder();
         contextConfigBuilder.addConfiguration(ContextConfiguration.CONF
             .set(ContextConfiguration.IDENTIFIER, contextId)
             .build());
+
         allocatedEvaluator.submitContext(contextConfigBuilder.build());
-        LOG.log(Level.INFO, "Submit context {0} to evaluator {1}", new Object[]{contextId, allocatedEvaluator.getId()});
+        LOG.log(Level.INFO, "Submit context {0} to evaluator {1}",
+            new Object[]{contextId, allocatedEvaluator.getId()});
       } else {
-        LOG.log(Level.INFO, "Close Evaluator {0}", allocatedEvaluator.getId());
+        LOG.log(Level.INFO, "Close Evaluator {0}",
+            allocatedEvaluator.getId());
         allocatedEvaluator.close();
       }
     }
   }
 
-  public final class EvaluatorFailedHandler implements EventHandler<FailedEvaluator> {
+  public final class EvaluatorFailedHandler
+      implements EventHandler<FailedEvaluator> {
     @Override
     public void onNext(final FailedEvaluator eval) {
       synchronized (TBDDriver.this) {
         LOG.log(Level.SEVERE, "FailedEvaluator", eval);
-        for (final FailedContext failedContext : eval.getFailedContextList()) {
+        for (final FailedContext failedContext 
+            : eval.getFailedContextList()) {
           TBDDriver.this.contexts.remove(failedContext.getId());
         }
-        throw new RuntimeException("Failed Evaluator: ", eval.getEvaluatorException());
+        throw new RuntimeException("Failed Evaluator: ",
+            eval.getEvaluatorException());
       }
     }
   }
@@ -197,7 +226,8 @@ public final class TBDDriver {
   /**
    * Receive notification that the Context is active.
    */
-  public final class ActiveContextHandler implements EventHandler<ActiveContext> {
+  public final class ActiveContextHandler
+      implements EventHandler<ActiveContext> {
     @Override
     public void onNext(final ActiveContext context) {
       LOG.log(Level.INFO, "TIME: Active Context {0}", context.getId());
@@ -218,29 +248,35 @@ public final class TBDDriver {
         contexts.put(contextId, context);
         final String taskId = String.format("task_master_%06d", 0);
         
-        final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
+        final JavaConfigurationBuilder cb =
+            Tang.Factory.getTang().newConfigurationBuilder();
         cb.addConfiguration(
             TaskConfiguration.CONF
                 .set(TaskConfiguration.IDENTIFIER, taskId)
                 .set(TaskConfiguration.TASK, TBDMasterTask.class)
                 .build()
         );
-        cb.bindNamedParameter(HostIP.class, masterIP);
-        cb.bindNamedParameter(HostPort.class, masterPort.toString());
+        cb.bindNamedParameter(TBDDriver.HostIP.class, masterIP);
+        cb.bindNamedParameter(TBDDriver.HostPort.class,
+            masterPort.toString());
         cb.bindNamedParameter(TBDLaunch.Timeout.class, "" + timeout);
+
         context.submitTask(cb.build());
-        LOG.log(Level.INFO, "Submit {0} to context {1}", new Object[]{taskId, contextId});
+        LOG.log(Level.INFO, "Submit {0} to context {1}",
+            new Object[]{taskId, contextId});
       } else if (workerCtxt) {
         contexts.put(contextId, context);
         LOG.log(Level.INFO, "Context active: {0}", contextId);
       } else {
-        LOG.log(Level.INFO, "Close context {0} : {1}", new Object[]{contextId.split("_")[1], contextId});
+        LOG.log(Level.INFO, "Close context {0} : {1}",
+            new Object[]{contextId.split("_")[1], contextId});
         context.close();
       }
     }
   }
 
-  public final class ClosedContextHandler implements EventHandler<ClosedContext> {
+  public final class ClosedContextHandler
+      implements EventHandler<ClosedContext> {
     @Override
     public void onNext(final ClosedContext context) {
       LOG.log(Level.INFO, "Completed Context: {0}", context.getId());
@@ -250,7 +286,8 @@ public final class TBDDriver {
     }
   }
 
-  public final class FailedContextHandler implements EventHandler<FailedContext> {
+  public final class FailedContextHandler
+      implements EventHandler<FailedContext> {
     @Override
     public void onNext(final FailedContext context) {
       LOG.log(Level.SEVERE, "FailedContext", context);
@@ -264,14 +301,15 @@ public final class TBDDriver {
   /**
    * Receive notification that the Task is running.
    */
-  public final class RunningTaskHandler implements EventHandler<RunningTask> {
+  public final class RunningTaskHandler
+      implements EventHandler<RunningTask> {
     @Override
     public void onNext(final RunningTask task) {
       LOG.log(Level.INFO, "TIME: Running Task {0}", task.getId());
-      
+
       final String contextId = task.getActiveContext().getId();
       final String character = contextId.split("_")[1];
-      
+
       if (character.equals("worker")) {
         return;
       } else if (character.equals("master")) {
@@ -287,19 +325,25 @@ public final class TBDDriver {
         ActiveContext context = e.getValue();
         if (contextId.startsWith("context_worker")) {
           final String taskId = contextId.replaceFirst("context", "task");
-          final JavaConfigurationBuilder cb = Tang.Factory.getTang().newConfigurationBuilder();
+
+          final JavaConfigurationBuilder cb =
+              Tang.Factory.getTang().newConfigurationBuilder();
           cb.addConfiguration(
               TaskConfiguration.CONF
                   .set(TaskConfiguration.IDENTIFIER, taskId)
                   .set(TaskConfiguration.TASK, TBDWorkerTask.class)
                   .build()
           );
-          cb.bindNamedParameter(HostIP.class, ctxt2ip.get(contextId));
-          cb.bindNamedParameter(HostPort.class, ctxt2port.get(contextId).toString());
-          cb.bindNamedParameter(MasterAkka.class, masterAkka);
+          cb.bindNamedParameter(TBDDriver.HostIP.class,
+              ctxt2ip.get(contextId));
+          cb.bindNamedParameter(TBDDriver.HostPort.class,
+              ctxt2port.get(contextId).toString());
+          cb.bindNamedParameter(TBDDriver.MasterAkka.class, masterAkka);
           cb.bindNamedParameter(TBDLaunch.Timeout.class, "" + timeout);
+
           context.submitTask(cb.build());
-          LOG.log(Level.INFO, "Submit {0} to context {1}", new Object[]{taskId, contextId});
+          LOG.log(Level.INFO, "Submit {0} to context {1}",
+              new Object[]{taskId, contextId});
         }
       }
       this.jobMessageObserver.sendMessageToClient(CODEC.encode(masterAkka));
@@ -316,7 +360,8 @@ public final class TBDDriver {
     }
   }
 
-  public final class CompletedTaskHandler implements EventHandler<CompletedTask> {
+  public final class CompletedTaskHandler
+      implements EventHandler<CompletedTask> {
     @Override
     public void onNext(final CompletedTask task) {
 

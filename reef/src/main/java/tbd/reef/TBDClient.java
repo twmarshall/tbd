@@ -19,18 +19,14 @@ import com.microsoft.reef.client.*;
 import com.microsoft.tang.Configuration;
 import com.microsoft.tang.JavaConfigurationBuilder;
 import com.microsoft.tang.Tang;
-import com.microsoft.tang.annotations.NamedParameter;
 import com.microsoft.tang.annotations.Parameter;
 import com.microsoft.tang.annotations.Unit;
 import com.microsoft.tang.exceptions.BindException;
-import com.microsoft.reef.util.EnvironmentUtils;
 import com.microsoft.wake.EventHandler;
 import com.microsoft.wake.remote.impl.ObjectSerializableCodec;
 
 import javax.inject.Inject;
 import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -43,12 +39,14 @@ public class TBDClient {
   /**
    * Standard java logger.
    */
-  private static final Logger LOG = Logger.getLogger(TBDClient.class.getName());
+  private static final Logger LOG =
+      Logger.getLogger(TBDClient.class.getName());
 
   /**
    * Codec to translate messages to and from the job driver
    */
-  private static final ObjectSerializableCodec<String> CODEC = new ObjectSerializableCodec<>();
+  private static final ObjectSerializableCodec<String> CODEC =
+      new ObjectSerializableCodec<>();
 
   /**
    * Reference to the REEF framework.
@@ -62,7 +60,7 @@ public class TBDClient {
   private final Configuration driverConfiguration;
 
   /**
-   * If true, take commands from stdin; otherwise, use -cmd parameter in batch mode.
+   * If true, take commands from stdin; otherwise, in non-interactive mode.
    */
   private final boolean isInteractive;
 
@@ -72,7 +70,8 @@ public class TBDClient {
   private final BufferedReader prompt;
 
   /**
-   * A reference to the running job that allows client to send messages back to the job driver
+   * A reference to the running job that allows client to
+   * send messages back to the job driver
    */
   private RunningJob runningJob;
 
@@ -114,7 +113,8 @@ public class TBDClient {
   @Inject
   TBDClient(final REEF reef,
             @Parameter(TBDLaunch.NumWorkers.class) final Integer numWorkers,
-            @Parameter(TBDLaunch.Timeout.class) final Integer timeout) throws BindException {
+            @Parameter(TBDLaunch.Timeout.class) final Integer timeout)
+                throws BindException {
 
     this.reef = reef;
     this.numWorkers = numWorkers;
@@ -123,36 +123,55 @@ public class TBDClient {
     this.isInteractive = false;
     this.prompt = null;
 
-    final JavaConfigurationBuilder configBuilder = Tang.Factory.getTang().newConfigurationBuilder();
+    final JavaConfigurationBuilder configBuilder =
+        Tang.Factory.getTang().newConfigurationBuilder();
     configBuilder.addConfiguration(
         DriverConfiguration.CONF
-            .set(DriverConfiguration.GLOBAL_LIBRARIES, TBDReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile())
+            .set(DriverConfiguration.GLOBAL_LIBRARIES,
+                TBDClient.class.getProtectionDomain()
+                  .getCodeSource().getLocation().getFile())
             .set(DriverConfiguration.DRIVER_IDENTIFIER, "TBDReefYarn")
-            .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED, TBDDriver.EvaluatorAllocatedHandler.class)
-            .set(DriverConfiguration.ON_EVALUATOR_FAILED, TBDDriver.EvaluatorFailedHandler.class)
-            .set(DriverConfiguration.ON_CONTEXT_ACTIVE, TBDDriver.ActiveContextHandler.class)
-            .set(DriverConfiguration.ON_CONTEXT_CLOSED, TBDDriver.ClosedContextHandler.class)
-            .set(DriverConfiguration.ON_CONTEXT_FAILED, TBDDriver.FailedContextHandler.class)
-            .set(DriverConfiguration.ON_TASK_RUNNING, TBDDriver.RunningTaskHandler.class)
-            .set(DriverConfiguration.ON_DRIVER_STARTED, TBDDriver.StartHandler.class)
-            .set(DriverConfiguration.ON_DRIVER_STOP, TBDDriver.StopHandler.class)
+            .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED,
+                TBDDriver.EvaluatorAllocatedHandler.class)
+            .set(DriverConfiguration.ON_EVALUATOR_FAILED,
+                TBDDriver.EvaluatorFailedHandler.class)
+            .set(DriverConfiguration.ON_CONTEXT_ACTIVE,
+                TBDDriver.ActiveContextHandler.class)
+            .set(DriverConfiguration.ON_CONTEXT_CLOSED,
+                TBDDriver.ClosedContextHandler.class)
+            .set(DriverConfiguration.ON_CONTEXT_FAILED,
+                TBDDriver.FailedContextHandler.class)
+            .set(DriverConfiguration.ON_TASK_RUNNING,
+                TBDDriver.RunningTaskHandler.class)
+            .set(DriverConfiguration.ON_DRIVER_STARTED,
+                TBDDriver.StartHandler.class)
+            .set(DriverConfiguration.ON_DRIVER_STOP,
+                TBDDriver.StopHandler.class)
             .build()
     );
-    configBuilder.bindNamedParameter(TBDLaunch.NumWorkers.class, "" + numWorkers);
-    configBuilder.bindNamedParameter(TBDLaunch.Timeout.class, "" + timeout);
+    configBuilder.bindNamedParameter(TBDLaunch.NumWorkers.class,
+        "" + numWorkers);
+    configBuilder.bindNamedParameter(TBDLaunch.Timeout.class,
+        "" + timeout);
     this.driverConfiguration = configBuilder.build();
   }
 
   /**
-   * @return a Configuration binding the ClientConfiguration.* event handlers to this Client.
+   * @return a Configuration binding the ClientConfiguration
+   *         event handlers to this Client.
    */
   public static Configuration getClientConfiguration() {
     return ClientConfiguration.CONF
-        .set(ClientConfiguration.ON_JOB_RUNNING, TBDClient.RunningJobHandler.class)
-        .set(ClientConfiguration.ON_JOB_MESSAGE, TBDClient.JobMessageHandler.class)
-        .set(ClientConfiguration.ON_JOB_COMPLETED, TBDClient.CompletedJobHandler.class)
-        .set(ClientConfiguration.ON_JOB_FAILED, TBDClient.FailedJobHandler.class)
-        .set(ClientConfiguration.ON_RUNTIME_ERROR, TBDClient.RuntimeErrorHandler.class)
+        .set(ClientConfiguration.ON_JOB_RUNNING,
+            TBDClient.RunningJobHandler.class)
+        .set(ClientConfiguration.ON_JOB_MESSAGE,
+            TBDClient.JobMessageHandler.class)
+        .set(ClientConfiguration.ON_JOB_COMPLETED,
+            TBDClient.CompletedJobHandler.class)
+        .set(ClientConfiguration.ON_JOB_FAILED,
+            TBDClient.FailedJobHandler.class)
+        .set(ClientConfiguration.ON_RUNTIME_ERROR,
+            TBDClient.RuntimeErrorHandler.class)
         .build();
   }
 
@@ -166,7 +185,8 @@ public class TBDClient {
   }
 
   /**
-   * Notify the process in waitForCompletion() method that the main process has finished.
+   * Notify the process in waitForCompletion() method that
+   * the main process has finished.
    */
   private synchronized void stopAndNotify() {
     this.runningJob = null;
@@ -175,7 +195,8 @@ public class TBDClient {
   }
 
   /**
-   * Wait for the job driver to complete. This method is called from Launch.main()
+   * Wait for the job driver to complete. This method is called
+   * from Launch.main()
    */
   public String waitForCompletion() {
     while (this.isBusy) {
@@ -210,8 +231,7 @@ public class TBDClient {
 
   /**
    * Receive message from the job driver.
-   * There is only one message, which comes at the end of the driver execution
-   * and contains shell command output on each node.
+   * There is only one message, master's akka address.
    */
   final class JobMessageHandler implements EventHandler<JobMessage> {
     @Override
@@ -227,13 +247,15 @@ public class TBDClient {
   final class FailedJobHandler implements EventHandler<FailedJob> {
     @Override
     public void onNext(final FailedJob job) {
-      LOG.log(Level.SEVERE, "Failed job: " + job.getId(), job.getReason().orElse(null));
+      LOG.log(Level.SEVERE, "Failed job: " + job.getId(),
+          job.getReason().orElse(null));
       stopAndNotify();
     }
   }
 
   /**
-   * Receive notification from the job driver that the job had completed successfully.
+   * Receive notification from the job driver that
+   * the job had completed successfully.
    */
   final class CompletedJobHandler implements EventHandler<CompletedJob> {
     @Override
@@ -244,12 +266,14 @@ public class TBDClient {
   }
 
   /**
-   * Receive notification that there was an exception thrown from the job driver.
+   * Receive notification that there was an exception
+   * thrown from the job driver.
    */
   final class RuntimeErrorHandler implements EventHandler<FailedRuntime> {
     @Override
     public void onNext(final FailedRuntime error) {
-      LOG.log(Level.SEVERE, "Error in job driver: " + error, error.getReason().orElse(null));
+      LOG.log(Level.SEVERE,
+          "Error in job driver: " + error, error.getReason().orElse(null));
       stopAndNotify();
     }
   }
