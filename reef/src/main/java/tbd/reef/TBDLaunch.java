@@ -186,7 +186,7 @@ public final class TBDLaunch {
   }
 
   /**
-   * Command line parameter = true to run locally, or false to run on YARN.
+   * Command line parameter = system timeout in minutes.
    */
   @NamedParameter(
       doc = "Timeout (in minutes), after which the REEF app will terminate",

@@ -64,7 +64,9 @@ public final class TBDWorkerTask implements Task {
     LOG.log(Level.INFO, "cp: {0}", cp);
     
     ProcessBuilder pb = new ProcessBuilder(
-        "java", "-Xmx2g", "-Xss4m",
+        "java",
+        //"-Xmx2g",
+        "-Xss4m",
         "-cp", cp,
         "tbd.worker.Main",
         "-i", hostIP,

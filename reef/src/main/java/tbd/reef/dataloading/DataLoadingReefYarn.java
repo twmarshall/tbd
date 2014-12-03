@@ -59,11 +59,11 @@ public class DataLoadingReefYarn {
 
   @NamedParameter(doc = "Number of minutes before timeout",
       short_name = "timeout", default_value = "10")
-  public static final class TimeOut implements Name<Integer> {
+  public static final class Timeout implements Name<Integer> {
   }
 
   @NamedParameter(short_name = "input")
-  public static final class InputDir implements Name<String> {
+  public static final class Input implements Name<String> {
   }
 
   @NamedParameter(doc = "Number of partitions, i.e., number of workers",
@@ -92,8 +92,8 @@ public class DataLoadingReefYarn {
 
     new CommandLine(cb)
         .registerShortNameOfClass(DataLoadingReefYarn.Local.class)
-        .registerShortNameOfClass(DataLoadingReefYarn.TimeOut.class)
-        .registerShortNameOfClass(DataLoadingReefYarn.InputDir.class)
+        .registerShortNameOfClass(DataLoadingReefYarn.Timeout.class)
+        .registerShortNameOfClass(DataLoadingReefYarn.Input.class)
         .registerShortNameOfClass(DataLoadingReefYarn.Partitions.class)
         .registerShortNameOfClass(DataLoadingReefYarn.ChunkSizes.class)
         .processCommandLine(args);
@@ -103,9 +103,9 @@ public class DataLoadingReefYarn {
     final boolean isLocal =
         injector.getNamedInstance(DataLoadingReefYarn.Local.class);
     final int jobTimeout =
-        injector.getNamedInstance(DataLoadingReefYarn.TimeOut.class);
+        injector.getNamedInstance(DataLoadingReefYarn.Timeout.class);
     final String inputDir =
-        injector.getNamedInstance(DataLoadingReefYarn.InputDir.class);
+        injector.getNamedInstance(DataLoadingReefYarn.Input.class);
     final int partitions =
         injector.getNamedInstance(DataLoadingReefYarn.Partitions.class);
     final int chunkSizes =
@@ -172,7 +172,7 @@ public class DataLoadingReefYarn {
     configBuilder.bindNamedParameter(
         DataLoadingReefYarn.MasterAkka.class, "" + akka);
     configBuilder.bindNamedParameter(
-        DataLoadingReefYarn.TimeOut.class, "" + jobTimeout);
+        DataLoadingReefYarn.Timeout.class, "" + jobTimeout);
 
     String cp = DataLoadingReefYarn.class.getProtectionDomain()
         .getCodeSource().getLocation().getFile();

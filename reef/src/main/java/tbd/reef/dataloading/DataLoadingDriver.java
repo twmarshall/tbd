@@ -78,7 +78,7 @@ public class DataLoadingDriver {
       @Parameter(DataLoadingReefYarn.Partitions.class) final int partitions,
       @Parameter(DataLoadingReefYarn.ChunkSizes.class) final int chunkSizes,
       @Parameter(DataLoadingReefYarn.MasterAkka.class) final String akka,
-      @Parameter(DataLoadingReefYarn.TimeOut.class) final int timeout) {
+      @Parameter(DataLoadingReefYarn.Timeout.class) final int timeout) {
     this.dataLoadingService = dataLoadingService;
     this.completedDataTasks.set(dataLoadingService.getNumberOfPartitions());
     this.timeout = timeout;
@@ -130,7 +130,7 @@ public class DataLoadingDriver {
           cb.bindNamedParameter(
               DataLoadingReefYarn.MasterAkka.class, "" + akka);
           cb.bindNamedParameter(
-              DataLoadingReefYarn.TimeOut.class, "" + timeout);
+              DataLoadingReefYarn.Timeout.class, "" + timeout);
           cb.bindNamedParameter(
               DataLoadingDriver.HostIP.class, "" + ip);
           cb.bindNamedParameter(

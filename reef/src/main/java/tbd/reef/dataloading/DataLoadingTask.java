@@ -55,7 +55,7 @@ public class DataLoadingTask implements Task {
       @Parameter(DataLoadingReefYarn.Partitions.class) final int partitions,
       @Parameter(DataLoadingReefYarn.ChunkSizes.class) final int chunkSizes,
       @Parameter(DataLoadingReefYarn.MasterAkka.class) final String akka,
-      @Parameter(DataLoadingReefYarn.TimeOut.class) final int timeout,
+      @Parameter(DataLoadingReefYarn.Timeout.class) final int timeout,
       @Parameter(DataLoadingDriver.HostIP.class) final String hostIp,
       @Parameter(DataLoadingDriver.HostPort.class) final String hostPort) {
     this.dataSet = dataSet;
