@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef;
+package tbd.reef.dataloading;
 
 import com.microsoft.reef.annotations.audience.TaskSide;
 import com.microsoft.reef.io.data.loading.api.DataSet;
@@ -34,14 +34,14 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 @TaskSide
-public class DataLoadingTask implements Task {
+public class DataLoadingTask2 implements Task {
 
-  private static final Logger LOG = Logger.getLogger(DataLoadingTask.class.getName());
+  private static final Logger LOG = Logger.getLogger(DataLoadingTask2.class.getName());
 
   private final DataSet<LongWritable, Text> dataSet;
 
   @Inject
-  public DataLoadingTask(final DataSet<LongWritable, Text> dataSet) {
+  public DataLoadingTask2(final DataSet<LongWritable, Text> dataSet) {
     this.dataSet = dataSet;
   }
 
@@ -61,19 +61,19 @@ public class DataLoadingTask implements Task {
       numEx++;
     }
     bw.close();
-
-    String cp = DataLoadingTask.class.getProtectionDomain().getCodeSource().getLocation().getFile();
+    
+    String cp = DataLoadingTask2.class.getProtectionDomain().getCodeSource().getLocation().getFile();
     LOG.log(Level.INFO, "cp: {0}", cp);
-
-    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", "127.0.0.1", "-p", "2556", "-d", filename,
+    
+    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", "127.0.0.1", "-p", "2557", "-d", filename,
         "-s", "2", "-c", "1", "akka.tcp://masterSystem0@127.0.0.1:2555/user/master");
     //ProcessBuilder pb = new ProcessBuilder("java", "-Xmx2g", "-Xss4m", "-cp", cp, "tbd.worker.Main", "-i", hostIP, "-p", hostPort, masterAkka);
     LOG.log(Level.INFO, "pb");
-
+    
     pb.redirectErrorStream(true);
     pb.inheritIO();
     pb.redirectErrorStream(true);
-
+    
     Process p = null;
     try {
       LOG.log(Level.INFO, "before start");
@@ -82,16 +82,16 @@ public class DataLoadingTask implements Task {
     } catch (IOException e1) {
       LOG.log(Level.INFO, "worker start failed");
     }
-
+    
     LOG.log(Level.INFO, "worker sleep");
     try {
-      Thread.sleep(5*60*1000);
+      Thread.sleep(4*60*1000);
     } catch (InterruptedException e) {
       LOG.log(Level.INFO, "worker sleep interrupted");
     }
-
+    
     p.destroy();
-
+    
     LOG.log(Level.INFO, "task finished: read {0} lines", numEx);
     return Integer.toString(numEx).getBytes();
   }

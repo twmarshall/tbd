@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef;
+package tbd.reef.dataloading;
 
 import com.microsoft.reef.annotations.audience.ClientSide;
 import com.microsoft.reef.client.DriverConfiguration;
@@ -114,6 +114,8 @@ public class DataLoadingReefYarn {
         .setNumberOfCores(1)
         .build();
 
+    final JavaConfigurationBuilder configBuilder = Tang.Factory.getTang().newConfigurationBuilder();
+    
     final Configuration dataLoadConfiguration = new DataLoadingRequestBuilder()
         .setMemoryMB(3072)
         .setNumberOfCores(2)
@@ -126,6 +128,10 @@ public class DataLoadingReefYarn {
             .set(DriverConfiguration.ON_TASK_COMPLETED, DataLoadingDriver.TaskCompletedHandler.class)
             .set(DriverConfiguration.DRIVER_IDENTIFIER, "DataLoadingREEF"))
         .build();
+    
+    configBuilder.addConfiguration(dataLoadConfiguration);
+    configBuilder.bindNamedParameter(Partitions.class, ""+partitions);
+    configBuilder.bindNamedParameter(ChunkSizes.class, ""+partitions);
 
     String cp = DataLoadingReefYarn.class.getProtectionDomain().getCodeSource().getLocation().getFile();
     LOG.log(Level.INFO, "cp: {0}", cp);
@@ -145,7 +151,8 @@ public class DataLoadingReefYarn {
     }
 
     final LauncherStatus state =
-        DriverLauncher.getLauncher(runtimeConfiguration).run(dataLoadConfiguration, jobTimeout);
+        //DriverLauncher.getLauncher(runtimeConfiguration).run(dataLoadConfiguration, jobTimeout);
+        DriverLauncher.getLauncher(runtimeConfiguration).run(configBuilder.build(), jobTimeout);
 
     LOG.log(Level.INFO, "REEF job completed: {0}", state);
 
