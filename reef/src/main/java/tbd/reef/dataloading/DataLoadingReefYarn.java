@@ -148,7 +148,8 @@ public class DataLoadingReefYarn {
 
     final Configuration dataLoadConfiguration = 
         new DataLoadingRequestBuilder()
-          .setMemoryMB(3072)
+          //.setMemoryMB(6144)
+          .setMemoryMB(2048)
           .setNumberOfCores(2)
           .setInputFormatClass(TextInputFormat.class)
           .setInputPath(inputDir)
@@ -162,7 +163,7 @@ public class DataLoadingReefYarn {
                 DataLoadingDriver.TaskCompletedHandler.class)
             .set(DriverConfiguration.DRIVER_IDENTIFIER,
                 "DataLoadingREEF"))
-        .build();
+          .build();
 
     configBuilder.addConfiguration(dataLoadConfiguration);
     configBuilder.bindNamedParameter(
@@ -177,8 +178,13 @@ public class DataLoadingReefYarn {
     String cp = DataLoadingReefYarn.class.getProtectionDomain()
         .getCodeSource().getLocation().getFile();
     LOG.log(Level.INFO, "cp: {0}", cp);
-    ProcessBuilder pb = new ProcessBuilder("java", "-Xss4m", "-cp", cp,
-        "tbd.master.Main", "-i", masterIp, "-p", "2555");
+    ProcessBuilder pb = new ProcessBuilder(
+        "java",
+        "-Xss4m",
+        "-cp", cp,
+        "tbd.master.Main",
+        "-i", masterIp,
+        "-p", "2555");
     LOG.log(Level.INFO, "pb");
     pb.redirectErrorStream(true);
     pb.inheritIO();

@@ -88,9 +88,18 @@ public class DataLoadingTask implements Task {
         .getCodeSource().getLocation().getFile();
     LOG.log(Level.INFO, "cp: {0}", cp);
 
-    ProcessBuilder pb = new ProcessBuilder("java", "-Xmx2g", "-Xss4m",
-        "-cp", cp, "tbd.worker.Main", "-i", ip, "-p", port, "-d", filename,
-        "-w", partitions.toString(), "-u", chunkSizes.toString(), masterAkka);
+    ProcessBuilder pb = new ProcessBuilder(
+        "java",
+        //"-Xmx2g",
+        "-Xss4m",
+        "-cp", cp,
+        "tbd.worker.Main",
+        "-i", ip,
+        "-p", port,
+        "-d", filename,
+        "-w", partitions.toString(),
+        "-u", chunkSizes.toString(),
+        masterAkka);
     LOG.log(Level.INFO, "pb");
 
     pb.redirectErrorStream(true);

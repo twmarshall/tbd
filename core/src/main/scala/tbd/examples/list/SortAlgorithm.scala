@@ -32,11 +32,7 @@ class QuickSortAdjust(list: AdjustableList[Int, Int])
 
 class QuickSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = 
-    if (_conf("dataLoaded").equals("false"))
-      mutator.createList[Int, Int](listConf)
-    else
-      mutator.getLists[Int, Int](listConf)
+  val input = mutator.createList[Int, Int](listConf)
 
   val adjust = new QuickSortAdjust(input.getAdjustableList())
 

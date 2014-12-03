@@ -57,8 +57,6 @@ Options:
                                'berkeleydb' (default: 'memory').
   --cacheSizes n,n,...       The number of mods to store in the in-memory cache
                                when using the 'berkeleydb' store.
-  --dataLoaded               Initial data is loaded to worker datastore or not.
-                               Default is false.
   """
 
   var repeat = 3
@@ -83,7 +81,6 @@ Options:
                   ("partitions" -> Array("8")),
                   ("runs" -> Array("naive", "initial", ".01", ".05", ".1")),
                   ("output" -> Array("algorithms", "runs", "counts")),
-                  ("dataLoaded" -> Array("false")),
 		  ("store" -> Array("memory")))
 
   val allResults = Map[Map[String, _], Map[String, Double]]()
@@ -217,9 +214,6 @@ Options:
 	case "--master" =>
 	  master = args(i + 1)
 	  i += 1
-	case "--dataLoaded" =>
-	  confs("dataLoaded") = Array(args(i + 1))
-	  i += 1
         case _ =>
           println("Unknown option " + args(i * 2) + "\n" + usage)
           sys.exit()
@@ -277,8 +271,7 @@ Options:
 			       ("partitions" -> partitions),
 			       ("runs" -> confs("runs")),
 			       ("repeat" -> i),
-			       ("store" -> confs("store")(0)),
-			       ("dataLoaded" -> confs("dataLoaded")(0)))
+			       ("store" -> confs("store")(0)))
 
 		val listConf = new ListConf("", partitions.toInt, 0,
 					    chunkSize.toInt, _ => 1)
