@@ -13,7 +13,8 @@ import tbd.sql._
 class OrderByTests extends FlatSpec with Matchers {
 
   "Orderby Test" should "return the sorted rows" in {
-    val sqlContext = new TBDSqlContext()
+    val mutator = new Mutator()
+    val sqlContext = new TBDSqlContext(mutator)
     val f = (row: Array[String]) => Rec(row(0), row(1).trim.toLong, row(2).trim.toDouble)
     val tableName = "records"
     val path = "data.csv"
@@ -35,7 +36,7 @@ class OrderByTests extends FlatSpec with Matchers {
 
     oper.toBuffer should be(inputs.toBuffer.sortWith((r1, r2) => r1(1).asInstanceOf[Long] > r2(1).asInstanceOf[Long]))
 
-    sqlContext.shutDownMutator
+    mutator.shutdown()
   }
 
 }

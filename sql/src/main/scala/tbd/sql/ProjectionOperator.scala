@@ -79,7 +79,7 @@ class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
     
     inputAdjustable = inputOper.getAdjustable
     val adjustable = new ProjectionAdjust(inputAdjustable, projectStmt, isTupleMapPresent)  
-    outputAdjustable = table.mutator.run(adjustable)
+    outputAdjustable = table.mutator.run[AdjustableList[Int,Seq[tbd.sql.Datum]]](adjustable)
     
   }
   

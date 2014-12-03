@@ -12,15 +12,45 @@ import tbd.sql._
 
 class AggregateGroupByTests extends FlatSpec with Matchers {
 
-  "Aggregate and GroupBy Test" should "check the GroupBy operator" in {
-    val sqlContext = new TBDSqlContext()
+  "Aggregate Test" should "check the Aggregate operator(without GroupBy)" in {
+    val mutator = new Mutator()
+    val sqlContext = new TBDSqlContext(mutator)
     val f = (row: Array[String]) => Rec(row(0), row(1).trim.toLong, row(2).trim.toDouble)
     val tableName = "records"
     val path = "data.csv"
     sqlContext.csvFile[Rec](tableName, path, f)
 
-    var statement = "select  manipulate, count(pairkey), max(pairkey), min(pairkey), sum(pairvalue),  avg(pairvalue) " +
-              "from records where pairvalue > 10 group by manipulate"
+    var statement = "select pairkey, sum(pairvalue) " +
+              "from records "
+    var oper = sqlContext.sql(statement)
+
+    val inputs = Source.fromFile(path).getLines.map(_.split(",")).map(f).toList
+    val sum = inputs.foldLeft(0.0)(_ + _.pairvalue)
+    println (sum)
+    println(inputs.toBuffer)
+    println(inputs.map(rec => Seq(rec.pairkey, sum)))
+    val outputs = inputs.map(rec => {
+      println(rec + ", " + Seq(rec.pairkey, sum))
+      Seq(rec.pairkey, sum)
+    })
+    
+    oper.toBuffer should be(outputs.toBuffer)
+
+
+    mutator.shutdown()
+  }
+
+  "Aggregate and GroupBy Test" should "check the Aggregate and GroupBy operator" in {
+    val mutator = new Mutator()
+    val sqlContext = new TBDSqlContext(mutator)
+    val f = (row: Array[String]) => Rec(row(0), row(1).trim.toLong, row(2).trim.toDouble)
+    val tableName = "records"
+    val path = "data.csv"
+    sqlContext.csvFile[Rec](tableName, path, f)
+
+    var statement = "select  manipulate, count(pairkey), max(pairkey), " + 
+    				"min(pairkey), sum(pairvalue),  avg(pairvalue) " +
+    				"from records where pairvalue > 10 group by manipulate"
     var oper = sqlContext.sql(statement)
 
     val reduceFunc = (pair: (String, List[Rec])) => {
@@ -39,7 +69,7 @@ class AggregateGroupByTests extends FlatSpec with Matchers {
       r1(0).asInstanceOf[String].compareTo(r2(0).asInstanceOf[String]) < 0))
 
 
-    sqlContext.shutDownMutator
+    mutator.shutdown()
   }
 
 }

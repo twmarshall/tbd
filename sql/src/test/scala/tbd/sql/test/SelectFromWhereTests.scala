@@ -13,7 +13,8 @@ import tbd.sql._
 class SelectFromWhereTests extends FlatSpec with Matchers {
 
   "Select From Where Test" should "implement  TableScan, Filter and Projection operator" in {
-    val sqlContext = new TBDSqlContext()
+    val mutator = new Mutator()
+    val sqlContext = new TBDSqlContext(mutator)
     val f = (row: Array[String]) => Rec(row(0), row(1).trim.toLong, row(2).trim.toDouble)
     val tableName = "records"
     val path = "data.csv"
@@ -48,7 +49,7 @@ class SelectFromWhereTests extends FlatSpec with Matchers {
       r.pairvalue > 10).map(r => Seq(r.pairvalue * 2, r.pairkey))
 
     oper.toBuffer should be(inputs.toBuffer)
-    sqlContext.shutDownMutator
+    mutator.shutdown()
   }
 
 }

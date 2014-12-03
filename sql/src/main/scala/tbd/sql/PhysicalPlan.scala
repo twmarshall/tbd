@@ -48,10 +48,20 @@ class PhysicalPlan (
       oper = new FilterOperator(oper, whereClause)
     }
     
+    var hasFunction = false;
+    for(sei <- projectStmts) {
+      if (sei.isInstanceOf[SelectExpressionItem]){
+        val e = sei.asInstanceOf[SelectExpressionItem].getExpression();
+        if(e.isInstanceOf[Function]) 
+          hasFunction = true;
+      }
+    }
     
-    
-    if (plainSelect.getGroupByColumnReferences() != null) {
-      val groupByList = plainSelect.getGroupByColumnReferences().toList
+    if (hasFunction || plainSelect.getGroupByColumnReferences() != null) {
+      val groupByColumns = plainSelect.getGroupByColumnReferences()
+      val groupByList = if (groupByColumns != null)
+                            groupByColumns.toList
+                        else null
       oper = new GroupByOperator(oper, groupByList, projectStmts)
     } else {
       oper = new ProjectionOperator(oper, projectStmts)  

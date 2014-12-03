@@ -4,7 +4,7 @@ import net.sf.jsqlparser.expression._
 import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.expression.operators.relational.ExpressionList;
-import net.sf.jsqlparser.schema.Column;
+import net.sf.jsqlparser.schema.TBDColumn;
 import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
@@ -59,23 +59,29 @@ class GroupByAdjust(list: AdjustableList[Int, Seq[Datum]],
     val datumColumnName = TupleStruct.getTupleTableMap()
     var keyCols = Seq[Datum](new Datum.dLong(pair._1, null))
     var valCols = Seq[Datum]()
-    for (groupByColumnName <- groupbyList) {
-      val grpColName = groupByColumnName.asInstanceOf[Column].getWholeColumnName().toLowerCase
-      if (datumColumnName.contains(grpColName)) {
-        val index = datumColumnName.indexOf(grpColName)
-        singleDatum = row(index)
-        keyCols = keyCols :+ singleDatum
+    if ( groupbyList != null) {
+      for (groupByColumnName <- groupbyList) {
+        val grpColName = groupByColumnName.asInstanceOf[TBDColumn].getWholeColumnName().toLowerCase
+        if (datumColumnName.contains(grpColName)) {
+          val index = datumColumnName.indexOf(grpColName)
+          singleDatum = row(index)
+          keyCols = keyCols :+ singleDatum
+        }
       }
-    }
+      } else {
+        keyCols = keyCols :+ new Datum.dLong(0, null)
+      }
+    
     for (selectExpressionItem <- selectExpressionList) {
       val selectItem = selectExpressionItem.asInstanceOf[SelectExpressionItem]
-      //println("select: " + selectItem)
+      
       val e = selectItem.getExpression
+      
       val eval = new Evaluator(pair._2.toArray)
       e.accept(eval);
       val newCol =
         if (selectItem.getAlias() != null) {
-          new Column(null, selectItem.getAlias())
+          new TBDColumn(null, selectItem.getAlias())
         } else {
           eval.getColumn()
         }

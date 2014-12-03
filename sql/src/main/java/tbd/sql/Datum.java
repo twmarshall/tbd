@@ -1,6 +1,7 @@
 package tbd.sql;
 
 
+import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
@@ -9,17 +10,17 @@ import java.util.Locale;
 
 import net.sf.jsqlparser.schema.Column;
 
-public interface Datum {
+public interface Datum extends Serializable{
 
 	public String toString();
 
 	public String toComString();
 
-	public Column getColumn();
+	public TBDColumn getColumn();
 
-	public void setColumn(Column column);
+	public void setColumn(TBDColumn column);
 
-	public boolean equals(Column col);
+	public boolean equals(TBDColumn col);
 	
 	public int compareTo(Datum d);
 	public Datum sumDatum(Datum input);
@@ -30,22 +31,22 @@ public interface Datum {
 	public class dLong implements Datum {
 
 		Long value;
-		Column column;
+		TBDColumn column;
 
-		public Column getColumn() {
+		public TBDColumn getColumn() {
 			return column;
 		}
 
-		public void setColumn(Column column) {
+		public void setColumn(TBDColumn column) {
 			this.column = column;
 		}
 
-		public dLong(String s, Column col) {
+		public dLong(String s, TBDColumn col) {
 			value = Long.parseLong(s);
 			this.column = col;
 		}
 		
-		public dLong(Long s, Column col) {
+		public dLong(Long s, TBDColumn col) {
 			value = s;
 			this.column = col;
 		}
@@ -84,7 +85,7 @@ public interface Datum {
 		       return (this.value == test.value)? true: false;
 		   }
 		@Override
-		public boolean equals(Column col) {
+		public boolean equals(TBDColumn col) {
 			if (col == null)
 				return false;
 //			else if (!column.getTable().getName().equalsIgnoreCase(col.getTable().getName()))
@@ -128,27 +129,27 @@ public interface Datum {
 	public class dDecimal implements Datum {
 
 		Double value;
-		Column column;
+		TBDColumn column;
 
-		public Column getColumn() {
+		public TBDColumn getColumn() {
 			return column;
 		}
 
-		public void setColumn(Column column) {
+		public void setColumn(TBDColumn column) {
 			this.column = column;
 		}
 
-		public dDecimal(String s, Column col) {
+		public dDecimal(String s, TBDColumn col) {
 			value = Double.parseDouble(s);
 			this.column = col;
 		}
 		
-		public dDecimal(Double s, Column col) {
+		public dDecimal(Double s, TBDColumn col) {
 			value = s;
 			this.column = col;
 		}
 		
-		public dDecimal(Integer s, Column col) {
+		public dDecimal(Integer s, TBDColumn col) {
 			value = Double.parseDouble(s.toString());
 			this.column = col;
 		}
@@ -171,7 +172,7 @@ public interface Datum {
 		}
 
 		@Override
-		public boolean equals(Column col) {
+		public boolean equals(TBDColumn col) {
 			if (col == null)
 				return false;
 //			else if (!column.getTable().getName().equalsIgnoreCase(col.getTable().getName()))
@@ -213,18 +214,18 @@ public interface Datum {
 	public class dString implements Datum {
 
 		String value;
-		Column column;
+		TBDColumn column;
 
-		public dString(String s, Column col) {
+		public dString(String s, TBDColumn col) {
 			value = s;
 			column = col;
 		}
 		
-		public Column getColumn() {
+		public TBDColumn getColumn() {
 			return column;
 		}
 
-		public void setColumn(Column column) {
+		public void setColumn(TBDColumn column) {
 			this.column = column;
 		}
 
@@ -246,7 +247,7 @@ public interface Datum {
 		}
 
 		@Override
-		public boolean equals(Column col) {
+		public boolean equals(TBDColumn col) {
 			if (col == null)
 				return false;
 //			else if (!column.getTable().getName().equalsIgnoreCase(col.getTable().getName()))
@@ -297,9 +298,9 @@ public interface Datum {
 		int year;
 		int month;
 		int day;
-		Column column;
+		TBDColumn column;
 
-		public dDate(String s, Column col) {
+		public dDate(String s, TBDColumn col) {
 //			System.out.println(s);
 			
 			try {
@@ -326,7 +327,7 @@ public interface Datum {
 			}
 		}
 		
-		public dDate(Date s, Column col) {
+		public dDate(Date s, TBDColumn col) {
 			value = s;
 			this.column = col;
 		}
@@ -350,18 +351,18 @@ public interface Datum {
 		}
 
 		@Override
-		public Column getColumn() {
+		public TBDColumn getColumn() {
 			return column;
 		}
 
 		@Override
-		public void setColumn(Column column) {
+		public void setColumn(TBDColumn column) {
 			this.column = column;
 
 		}
 
 		@Override
-		public boolean equals(Column col) {
+		public boolean equals(TBDColumn col) {
 			if (col == null)
 				return false;
 //			else if (!column.getTable().getName().equalsIgnoreCase(col.getTable().getName()))

@@ -28,10 +28,9 @@ class TableNameTakenException(tableName: String, nestedException: Throwable) ext
     
 }
 
-class TBDSqlContext()  {
+class TBDSqlContext(val mutator: Mutator)  {
   
   var tablesMap: Map[String, ScalaTable] = Map()
-  val mutator = new Mutator()
   
   
   def T2Datum[T: ClassTag: TypeTag] 
@@ -45,12 +44,12 @@ class TBDSqlContext()  {
       
       val colName = mem.name.toString().trim()
       tFieldMirror.get match {
-        case l: Long => new Datum.dLong(tFieldMirror.get.toString, new Column(table, colName))
-        case i: Int => new Datum.dLong(tFieldMirror.get.toString, new Column(table,colName))
-        case d: Double  => new Datum.dDecimal(tFieldMirror.get.toString, new Column(table, colName))
-        case f: Float  => new Datum.dDecimal(tFieldMirror.get.toString, new Column(table, colName))
-        case d: java.util.Date  => new Datum.dDate(tFieldMirror.get.asInstanceOf[Date], new Column(table, colName))
-        case _ => new Datum.dString(tFieldMirror.get.toString, new Column(table,colName))
+        case l: Long => new Datum.dLong(tFieldMirror.get.toString, new TBDColumn(table, colName))
+        case i: Int => new Datum.dLong(tFieldMirror.get.toString, new TBDColumn(table,colName))
+        case d: Double  => new Datum.dDecimal(tFieldMirror.get.toString, new TBDColumn(table, colName))
+        case f: Float  => new Datum.dDecimal(tFieldMirror.get.toString, new TBDColumn(table, colName))
+        case d: java.util.Date  => new Datum.dDate(tFieldMirror.get.asInstanceOf[Date], new TBDColumn(table, colName))
+        case _ => new Datum.dString(tFieldMirror.get.toString, new TBDColumn(table,colName))
       }      
     }).toSeq
 
@@ -97,8 +96,9 @@ class TBDSqlContext()  {
     }
     oper
   }
-  
+  /*
   def shutDownMutator () = {
     this.mutator.shutdown
   }
+  */
 }

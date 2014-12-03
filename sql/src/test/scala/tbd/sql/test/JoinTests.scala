@@ -14,7 +14,8 @@ import tbd.sql._
 class JoinTests extends FlatSpec with Matchers {
 
   "Join Test" should "check the Join operator" in {
-    val sqlContext = new TBDSqlContext()
+    val mutator = new Mutator()
+    val sqlContext = new TBDSqlContext(mutator)
     val f = (row: Array[String]) => Rec(row(0), row(1).trim.toLong, row(2).trim.toDouble)
     val tableName1 = "records1"
     val tableName2 = "records2"
@@ -53,11 +54,12 @@ class JoinTests extends FlatSpec with Matchers {
     oper = sqlContext.sql(statement)
     oper.toBuffer should be(inputs.map(r => Seq(r.manipulate, r.pairkey, r.pairvalue)).toBuffer)
 
-    sqlContext.shutDownMutator
+    mutator.shutdown()
   }
   
   "Join Integrate Test" should "check the integration of Join operator to others" in {
-    val sqlContext = new TBDSqlContext()
+    val mutator = new Mutator()
+    val sqlContext = new TBDSqlContext(mutator)
     val f = (row: Array[String]) => Rec(row(0), row(1).trim.toLong, row(2).trim.toDouble)
     val tableName1 = "records1"
     val tableName2 = "records2"
@@ -89,7 +91,7 @@ class JoinTests extends FlatSpec with Matchers {
     oper.toBuffer should be(outputs.toBuffer.sortWith((r1, r2) => 
       r1(0).asInstanceOf[String].compareTo(r2(0).asInstanceOf[String]) < 0))
     
-    sqlContext.shutDownMutator
+    mutator.shutdown()
   }
 
 }
