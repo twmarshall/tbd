@@ -65,7 +65,7 @@ public final class TBDWorkerTask implements Task {
     
     ProcessBuilder pb = new ProcessBuilder(
         "java",
-        //"-Xmx2g",
+        "-Xmx2g",
         "-Xss4m",
         "-cp", cp,
         "tbd.worker.Main",

@@ -148,8 +148,8 @@ public class DataLoadingReefYarn {
 
     final Configuration dataLoadConfiguration = 
         new DataLoadingRequestBuilder()
-          //.setMemoryMB(6144)
-          .setMemoryMB(2048)
+          .setMemoryMB(6144)
+          //.setMemoryMB(3072)
           .setNumberOfCores(2)
           .setInputFormatClass(TextInputFormat.class)
           .setInputPath(inputDir)
@@ -206,7 +206,7 @@ public class DataLoadingReefYarn {
 
     final LauncherStatus state =
         DriverLauncher.getLauncher(runtimeConfiguration).
-        run(configBuilder.build(), jobTimeout);
+        run(configBuilder.build(), jobTimeout * 60 *1000);
 
     LOG.log(Level.INFO, "REEF job completed: {0}", state);
 

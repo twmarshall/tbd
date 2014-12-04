@@ -106,12 +106,12 @@ public class DataLoadingDriver {
             getNodeDescriptor().getInetSocketAddress().toString();
         String ip = socketAddr.substring(
             socketAddr.indexOf("/")+1, socketAddr.indexOf(":"));
-        Integer port = ctrlCtxIds.get() + 1 + masterPort;
+        Integer port = ctrlCtxIds.incrementAndGet() + masterPort;
 
         ctxt2ip.put(contextId, ip);
         ctxt2port.put(contextId, port);
 
-        final String taskId = "Task-" + ctrlCtxIds.getAndIncrement();
+        final String taskId = "Task-" + (port - masterPort);
         LOG.log(Level.INFO, "Submit task {0} to: {1}",
             new Object[] { taskId, contextId });
 
