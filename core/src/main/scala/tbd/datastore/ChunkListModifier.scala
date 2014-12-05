@@ -199,7 +199,7 @@ class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     datastore.update(nodes(key), newNode)
   } //ensuring(isValid())
 
-  def remove(key: T) {
+  def remove(key: T, value: U) {
     val node = datastore.read(nodes(key))
 
     var oldValue: U = null.asInstanceOf[U]

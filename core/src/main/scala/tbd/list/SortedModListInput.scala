@@ -87,7 +87,7 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
     mutator.updateMod(nodes(key), newNode)
   }
 
-  def remove(key: T) {
+  def remove(key: T, value: U) {
     val node = mutator.read(nodes(key))
     val nextNode = mutator.read(node.nextMod)
 

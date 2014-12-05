@@ -15,7 +15,7 @@
  */
 package tbd.datastore
 
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Buffer, Map}
 
 import tbd.{Mod, Mutator}
 import tbd.list._
@@ -23,7 +23,7 @@ import tbd.list._
 class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
   private var tailMod = datastore.createMod[DoubleListNode[T, U]](null)
 
-  val nodes = Map[T, Mod[DoubleListNode[T, U]]]()
+  val nodes = Map[T, Buffer[Mod[DoubleListNode[T, U]]]]()
 
   val modList = new DoubleList[T, U](tailMod, false, datastore.workerId)
 
@@ -40,11 +40,11 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
       headNode = new DoubleListNode(valueMod, tail)
       tail = datastore.createMod(headNode)
 
-      nodes(key) = tail
+      nodes(key) = Buffer(tail)
     }
 
     datastore.update(tailMod, headNode)
-    nodes(headValue._1) = tailMod
+    nodes(headValue._1) = Buffer(tailMod)
     tailMod = newTail
   }
 
@@ -55,54 +55,73 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
 
     datastore.update(tailMod, newNode)
 
-    nodes(key) = tailMod
+    if (nodes.contains(key)) {
+      nodes(key) += tailMod
+    } else {
+      nodes(key) = Buffer(tailMod)
+    }
+
     tailMod = newTail
   }
 
   def putAfter(key: T, pair: (T, U)) {
-    val before = datastore.read(nodes(key))
+    val before = datastore.read(nodes(key).head)
 
     val valueMod = datastore.createMod(pair)
     val newNode = new DoubleListNode(valueMod, before.nextMod)
     val newNodeMod = datastore.createMod(newNode)
 
     val newBefore = new DoubleListNode(before.value, newNodeMod)
-    datastore.update(nodes(key), newBefore)
+    datastore.update(nodes(key).head, newBefore)
 
-    nodes(pair._1) = newNodeMod
+    nodes(pair._1) += newNodeMod
   }
 
   def update(key: T, value: U) {
-    val nextMod = datastore.read(nodes(key)).nextMod
+    if (nodes(key).size > 1) {
+      println("?????" + key)
+    }
+    val nextMod = datastore.read(nodes(key).head).nextMod
     val valueMod = datastore.createMod((key, value))
     val newNode = new DoubleListNode(valueMod, nextMod)
 
-    datastore.update(nodes(key), newNode)
+    datastore.update(nodes(key).head, newNode)
   }
 
-  def remove(key: T) {
-    val node = datastore.read(nodes(key))
+  def remove(key: T, value: U) {
+    var node: DoubleListNode[T, U] = null
+    var mod: Mod[DoubleListNode[T, U]] = null
+
+    for (_mod <- nodes(key)) {
+      val _node = datastore.read(_mod)
+      val _value = datastore.read(_node.value)
+      if (_value._2 == value) {
+        node = _node
+        mod = _mod
+      }
+    }
+
     val nextNode = datastore.read(node.nextMod)
 
     if (nextNode == null) {
       // We're removing the last element in the last.
       assert(tailMod == node.nextMod)
-      tailMod = nodes(key)
+      tailMod = mod
     } else {
       val value = datastore.read(nextNode.value)
-      nodes(value._1) = nodes(key)
+      nodes(value._1) += mod
     }
 
-    datastore.update(nodes(key), nextNode)
+    datastore.update(mod, nextNode)
 
-    nodes -= key
+    nodes(key) = nodes(key) - mod
   }
 
   def contains(key: T): Boolean = {
     nodes.contains(key)
   }
 
-  def getAdjustableList(): AdjustableList[T, U] = {
+  def getAdjustableList(): DoubleList[T, U] = {
     modList
   }
 }

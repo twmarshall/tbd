@@ -88,7 +88,7 @@ class IntData(
       while (!table.contains(key)) {
         key = rand.nextInt(maxKey)
       }
-      input.remove(key)
+      input.remove(key, table(key))
 
       log("removing " + (key, table(key)))
 

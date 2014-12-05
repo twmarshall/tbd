@@ -45,7 +45,7 @@ case class CreateListMessage(conf: ListConf)
 case class GetAdjustableListMessage(listId: String)
 case class PutMessage(listId: String, key: Any, value: Any)
 case class UpdateMessage(listId: String, key: Any, value: Any)
-case class RemoveMessage(listId: String, key: Any)
+case class RemoveMessage(listId: String, key: Any, value: Any)
 case class PutAfterMessage(listId: String, key: Any, newPair: (Any, Any))
 case class LoadMessage(listId: String, data: Map[Any, Any])
 

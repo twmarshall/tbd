@@ -19,11 +19,35 @@ import java.io.Serializable
 import scala.collection.mutable.Map
 
 import tbd._
+import tbd.datastore.DoubleListModifier
 import tbd.TBD._
 
 class DoubleListNode[T, U]
     (var value: Mod[(T, U)],
      val nextMod: Mod[DoubleListNode[T, U]]) extends Serializable {
+
+  def hashPartitionedFlatMap[V, W]
+      (f: ((T, U)) => Iterable[(V, W)],
+       input: ListInput[V, W],
+       memo: Memoizer[Unit])
+      (implicit c: Context): Unit = {
+    readAny(value) {
+      case v =>
+        val out = f(v)
+        for (pair <- out) {
+          put(input, pair._1, pair._2)
+        }
+    }
+
+    readAny(nextMod) {
+      case null =>
+      case node =>
+        //memo(node) {
+          node.hashPartitionedFlatMap(f, input, memo)
+        //}
+    }
+  }
+
   def map[V, W]
       (f: ((T, U)) => (V, W),
        memo: Memoizer[Mod[DoubleListNode[V, W]]],

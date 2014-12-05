@@ -38,8 +38,8 @@ class ModListInput[T, U]
     Await.result(future, DURATION)
   }
 
-  def remove(key: T) = {
-    val future = datastoreRef ? RemoveMessage(listId, key)
+  def remove(key: T, value: U) = {
+    val future = datastoreRef ? RemoveMessage(listId, key, value)
     Await.result(future, DURATION)
   }
 

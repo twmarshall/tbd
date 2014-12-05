@@ -113,7 +113,7 @@ class StringData(
       while (!table.contains(key)) {
         key = rand.nextInt(maxKey)
       }
-      input.remove(key)
+      input.remove(key, table(key))
       table -= key
     } else {
       addValue()

@@ -172,6 +172,10 @@ class Ordering {
 	  case readNode: ReadNode =>
 	    c.ddg.reads(readNode.modId) -= time
 	    readNode.updated = false
+          case read2Node: Read2Node =>
+            c.ddg.reads(read2Node.modId1) -= time
+            c.ddg.reads(read2Node.modId2) -= time
+            read2Node.updated = false
 	  case memoNode: MemoNode =>
 	    memoNode.memoizer.removeEntry(time, memoNode.signature)
 	  case modNode: ModNode =>
@@ -197,7 +201,9 @@ class Ordering {
 
 	  case parNode: ParNode =>
 	    parNode.updated = false
-	  case _ =>
+          case putNode: PutNode =>
+            putNode.input.remove(putNode.key, putNode.value)
+	  case x => println("Tried to splice unknown node type " + x)
 	}
 
 	if (time.end > end) {

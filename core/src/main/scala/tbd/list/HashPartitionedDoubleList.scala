@@ -15,17 +15,13 @@
  */
 package tbd.list
 
-import akka.pattern.ask
 import java.io.Serializable
 import scala.collection.mutable.Buffer
-import scala.concurrent.Await
 
 import tbd._
-import tbd.Constants._
-import tbd.messages._
 import tbd.TBD._
 
-class PartitionedDoubleList[T, U]
+class HashPartitionedDoubleList[T, U]
     (val partitions: Buffer[DoubleList[T, U]])
   extends AdjustableList[T, U] with Serializable {
 
@@ -39,24 +35,7 @@ class PartitionedDoubleList[T, U]
       (f: ((T, U)) => Iterable[(V, W)],
        numPartitions: Int)
       (implicit c: Context): AdjustableList[V, W] = {
-    //println("pdl.hpfm")
-    val conf = ListConf(partitions = partitions.size, double = true)
-    val future = c.masterRef ? CreateListMessage(conf)
-    val input = Await.result(future.mapTo[ListInput[V, W]], DURATION)
-
-    def innerMap(i: Int)(implicit c: Context) {
-      if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = parWithHint({
-          c => partitions(i).hashPartitionedFlatMap(f, input)(c)
-        }, partitions(i).workerId)({
-          c => innerMap(i + 1)(c)
-        })
-      }
-    }
-
-    innerMap(0)
-
-    input.getAdjustableList()
+    ???
   }
 
   def join[V](that: AdjustableList[T, V])

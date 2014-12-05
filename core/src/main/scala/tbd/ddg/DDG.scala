@@ -22,6 +22,7 @@ import scala.concurrent.Await
 
 import tbd._
 import tbd.Constants._
+import tbd.list.ListInput
 import tbd.master.Master
 import tbd.messages._
 
@@ -35,6 +36,17 @@ class DDG {
   var updated = TreeSet[Timestamp]()((new TimestampOrdering()).reverse)
 
   val ordering = new Ordering()
+
+  def addPut
+      (input: ListInput[Any, Any],
+       key: Any,
+       value: Any,
+       c: Context): Timestamp = {
+    val putNode = new PutNode(input, key, value)
+    val timestamp = nextTimestamp(putNode, c)
+
+    timestamp
+  }
 
   def addRead
       (mod: Mod[Any],

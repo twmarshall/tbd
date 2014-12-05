@@ -29,8 +29,8 @@ class PartitionedDoubleListInput[T, U]
     partitions(key.hashCode() % partitions.size).update(key, value)
   }
 
-  def remove(key: T) = {
-    partitions(key.hashCode() % partitions.size).remove(key)
+  def remove(key: T, value: U) = {
+    partitions(key.hashCode() % partitions.size).remove(key, value)
   }
 
   def load(data: Map[T, U]) = {

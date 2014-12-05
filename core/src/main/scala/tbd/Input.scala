@@ -20,5 +20,5 @@ trait Input[T, U] {
 
   def update(key: T, value: U)
 
-  def remove(key: T)
+  def remove(key: T, value: U)
 }

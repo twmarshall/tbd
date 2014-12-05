@@ -21,6 +21,7 @@ import scala.concurrent.Await
 
 import tbd._
 import tbd.Constants.ModId
+import tbd.list.ListInput
 
 object Node {
   var id = 0
@@ -58,6 +59,11 @@ class ParNode
   var pebble1 = false
   var pebble2 = false
 }
+
+class PutNode
+    (val input: ListInput[Any, Any],
+     val key: Any,
+     val value: Any) extends Node
 
 class ReadNode
     (val modId: ModId,

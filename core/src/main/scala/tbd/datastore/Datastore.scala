@@ -247,11 +247,12 @@ class Datastore
       sender ! "okay"
 
     case UpdateMessage(listId: String, key: Any, value: Any) =>
+      println("update message " + key)
       lists(listId).update(key, value)
       sender ! "okay"
 
-    case RemoveMessage(listId: String, key: Any) =>
-      lists(listId).remove(key)
+    case RemoveMessage(listId: String, key: Any, value: Any) =>
+      lists(listId).remove(key, value)
       sender ! "okay"
 
     case PutAfterMessage(listId: String, key: Any, newPair: (Any, Any)) =>

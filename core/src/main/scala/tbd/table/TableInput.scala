@@ -32,7 +32,7 @@ class TableInput[T, U](mutator: Mutator) extends Input[T, U] {
     mutator.updateMod(table.table(key), value)
   }
 
-  def remove(key: T) = ???
+  def remove(key: T, value: U) = ???
 
   def getTable(): ModTable[T, U] = table
 }

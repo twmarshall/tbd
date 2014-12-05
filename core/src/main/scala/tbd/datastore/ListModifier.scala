@@ -71,7 +71,7 @@ class ListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
     datastore.update(nodes(key), newNode)
   }
 
-  def remove(key: T) {
+  def remove(key: T, value: U) {
     val node = datastore.read(nodes(key))
     val nextNode = datastore.read(node.nextMod)
 

@@ -21,10 +21,21 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 
 import tbd.Constants._
+import tbd.list.ListInput
 import tbd.messages._
 import tbd.TBD._
 
 object TBD {
+  def put[T, U](input: ListInput[T, U], key: T, value: U)
+      (implicit c: Context) {
+    val timestamp =
+      c.ddg.addPut(input.asInstanceOf[ListInput[Any, Any]], key, value, c)
+
+    input.put(key, value)
+
+    timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
+  }
+
   def read[T, U](mod: Mod[T])
       (reader: T => Changeable[U])
       (implicit c: Context): Changeable[U] = {
@@ -43,6 +54,26 @@ object TBD {
     timestamp.end = c.ddg.nextTimestamp(readNode, c)
 
     changeable
+  }
+
+  def readAny[T](mod: Mod[T])
+      (reader: T => Any)
+      (implicit c: Context): Any = {
+    val value = c.read(mod, c.task.self)
+
+    val timestamp = c.ddg.addRead(
+      mod.asInstanceOf[Mod[Any]],
+      value,
+      reader.asInstanceOf[Any => Changeable[Any]],
+      c)
+    val readNode = timestamp.node
+
+    val ret = reader(value)
+
+    readNode.currentModId = c.currentModId
+    timestamp.end = c.ddg.nextTimestamp(readNode, c)
+
+    ret
   }
 
   def read2[T, U, V](mod: Mod[T])

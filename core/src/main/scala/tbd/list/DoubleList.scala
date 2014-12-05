@@ -20,6 +20,7 @@ import scala.collection.mutable.{Buffer, Map}
 
 import tbd._
 import tbd.Constants._
+import tbd.datastore.DoubleListModifier
 import tbd.TBD._
 
 class DoubleList[T, U]
@@ -27,12 +28,23 @@ class DoubleList[T, U]
      val sorted: Boolean = false,
      val workerId: WorkerId = -1)
   extends AdjustableList[T, U] with Serializable {
-
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): DoubleList[T, U] = ???
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): DoubleList[V, W] = ???
+
+  def hashPartitionedFlatMap[V, W]
+      (f: ((T, U)) => Iterable[(V, W)],
+       input: ListInput[V, W])
+      (implicit c: Context) {
+    //println("dl.hpfm")
+    val memo = new Memoizer[Unit]()
+    readAny(head) {
+      case null =>
+      case node => node.hashPartitionedFlatMap(f, input, memo)
+    }
+  }
 
   def join[V](_that: AdjustableList[T, V])
       (implicit c: Context): DoubleList[T, (U, V)] = ???
@@ -66,7 +78,7 @@ class DoubleList[T, U]
 
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = {
-    println("doubleList reduce")
+    //println("doubleList reduce")
     // Each round we need a hasher and a memo, and we need to guarantee that the
     // same hasher and memo are used for a given round during change
     // propagation, even if the first mod of the list is deleted.
