@@ -73,7 +73,7 @@ public final class TBDWorkerTask implements Task {
         "-p", hostPort, masterAkka);
 
     LOG.log(Level.INFO, "pb");
-    
+
     pb.redirectErrorStream(true);
     pb.inheritIO();
     pb.redirectErrorStream(true);
@@ -86,7 +86,7 @@ public final class TBDWorkerTask implements Task {
     } catch (IOException e1) {
       LOG.log(Level.INFO, "worker start failed");
     }
-    
+
     LOG.log(Level.INFO, "worker sleep");
     try {
       Thread.sleep(timeout*60*1000);
