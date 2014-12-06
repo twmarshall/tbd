@@ -13,29 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.sql
+package tbd.sql;
 
-object BufferUtils {
-  def getValue(d: tbd.sql.Datum) = {
-    if (d.isInstanceOf[Datum.dLong]) 
-        d.asInstanceOf[Datum.dLong].getValue()
-  else if (d.isInstanceOf[Datum.dDecimal]) 
-        d.asInstanceOf[Datum.dDecimal].getValue()
-    else if (d.isInstanceOf[Datum.dDate]) 
-        d.asInstanceOf[Datum.dDate].getValue()
-    else d.asInstanceOf[Datum.dString].getValue()
-  }
-}
+import java.io.Serializable;
 
-trait Operator {
+/*
+ * A Wrapper of the AllColumns class, such that it can be serializable
+ */
+public class SerAllColumns extends
+  net.sf.jsqlparser.statement.select.AllColumns implements Serializable {
 
-  def initialize() {}
-
-  def processOp () {}
-
-  def getTable: ScalaTable 
-
-  def getAdjustable: tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]]
-
-  def toBuffer: Any
+	private static final long serialVersionUID = 1L;
+	
+	public SerAllColumns() {}
 }

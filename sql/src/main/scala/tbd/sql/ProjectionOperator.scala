@@ -1,6 +1,22 @@
+/**
+ * Copyright (C) 2013 Carnegie Mellon University
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package tbd.sql
 
 import net.sf.jsqlparser.expression._
+import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem
 import net.sf.jsqlparser.statement.select.SelectItem
 import scala.collection.{GenIterable, GenMap, Seq}
@@ -11,17 +27,18 @@ import tbd.datastore.IntData
 import tbd.list._
 
 
-class ProjectionAdjust (list: AdjustableList[Int, Seq[Datum]], 
-                        val projectStmt: List[_], 
-                        var isTupleMapPresent: Boolean)
+class ProjectionAdjust (
+  list: AdjustableList[Int, Seq[Datum]],
+  val projectStmt: List[_],
+  var isTupleMapPresent: Boolean)
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
-  
+
   def run (implicit c: Context) = {
-  
+
     list.map((pair: (Int, Seq[Datum])) => {
-      
+
       val t = pair._2.toArray
-      //println("tuple:" + t)
+
       var newDatumList = List[Datum]()
       if (isTupleMapPresent) {
           TupleStruct.setTupleTableMap(pair._2.toArray)
@@ -31,19 +48,24 @@ class ProjectionAdjust (list: AdjustableList[Int, Seq[Datum]],
         val selectItem = item.asInstanceOf[SelectItem]
         val sv = new SelectItemParseVisitor
         selectItem.accept(sv)
-       // println("select type:" + sv.getItemType)
+
         sv.getItemType match {
-          case SELECTTYPE.ALLCOLUMNS | SELECTTYPE.ALLTABLECOLUMNS => newDatumList = newDatumList ++ t.toList ;
+          case SELECTTYPE.ALLCOLUMNS | SELECTTYPE.ALLTABLECOLUMNS =>
+            newDatumList = newDatumList ++ t.toList;
           case SELECTTYPE.SELECTEXPRESSIONITEM => {
             val e = selectItem.asInstanceOf[SelectExpressionItem].getExpression()
             val eval = new Evaluator(t.toArray)
             e.accept(eval)
-            val newCol = selectItem.asInstanceOf[SelectExpressionItem].getAlias() match {
-              case null => eval.getColumn()
-              case _ => new net.sf.jsqlparser.schema.Column(null, selectItem.asInstanceOf[SelectExpressionItem].getAlias())
-            }
+            val newCol = 
+              selectItem.asInstanceOf[SelectExpressionItem].getAlias() match {
+                case null => if (eval.getColumn != null) 
+                                new SerColumn(eval.getColumn())
+                             else null.asInstanceOf[SerColumn]
+                case _ => new SerColumn(null,
+                  selectItem.asInstanceOf[SelectExpressionItem].getAlias())
+              }
             val ob = eval.getResult()
-           // println("select Item: " + e + " val=" + ob)
+
             val datum = 
             if (ob.isInstanceOf[Long]) 
               new Datum.dLong(ob.asInstanceOf[Long], newCol)
@@ -63,7 +85,7 @@ class ProjectionAdjust (list: AdjustableList[Int, Seq[Datum]],
   }
 }
 
-class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_]) 
+class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
     extends Operator{
   var childOperators = List[Operator]():+ inputOper;
   val table = inputOper.getTable
@@ -71,22 +93,20 @@ class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
   var outputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   val colnameMap = table.colnameMap
   var isTupleMapPresent = true
-  //def initialize() {}
-  
+
   override def processOp () {
-    
+
     childOperators.foreach(child => child.processOp)
-    
+
     inputAdjustable = inputOper.getAdjustable
     val adjustable = new ProjectionAdjust(inputAdjustable, projectStmt, isTupleMapPresent)  
     outputAdjustable = table.mutator.run[AdjustableList[Int,Seq[tbd.sql.Datum]]](adjustable)
-    
   }
-  
+
   override def getTable: ScalaTable = table
-  
-  override def getAdjustable: tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]] = outputAdjustable
-  
-  override def toBuffer = outputAdjustable.toBuffer(table.mutator).map(_._2.map(BufferUtils.getValue))
-  
-} 
+
+  override def getAdjustable: tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]] =
+    outputAdjustable
+  override def toBuffer = outputAdjustable.toBuffer(table.mutator).
+    map(_._2.map(BufferUtils.getValue))
+}

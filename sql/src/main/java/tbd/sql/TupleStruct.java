@@ -31,7 +31,6 @@ public class TupleStruct {
 	public static void setTupleTableMap(Datum[] t) {
 		int index;
 		tupleTableMap = new ArrayList<String>(t.length);
-		//System.out.println("set tuple Table map: tuple length=" + t.length);
 		for(index = 0;index < t.length;index++) {
 			
 			Datum row = (Datum) t[index];
@@ -39,10 +38,10 @@ public class TupleStruct {
 			Table tableName = row.getColumn().getTable();
 			
 			String datumColumn = row.getColumn().getColumnName().toLowerCase();
-//			System.out.println("table=" + tableName + ", column=" + datumColumn);
+
 			if(tableName != null) {
 				String alias = tableName.getAlias();
-				//System.out.println("alias=" + alias);
+
 				if(alias !=null) {
 					
 					tupleTableMap.add(alias.toLowerCase()+"."+datumColumn);
@@ -55,13 +54,10 @@ public class TupleStruct {
 			} else {
 				tupleTableMap.add(datumColumn);
 			}
-			
-				
 		}
 	}
 	
 	public static List<String> getTupleTableMap () {
 		return tupleTableMap;
-	}
-	
+	}	
 }

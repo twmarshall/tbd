@@ -23,8 +23,6 @@ object TBDBuild extends Build {
     "com.typesafe.akka"          %% "akka-actor"           % "2.3.2",
     "com.typesafe.akka"          %% "akka-remote"          % "2.3.2",
     "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
-    
-    "net.sf.jsqlparser"           % "jsqlparser"           % "0.8.0",
 
     "org.rogach"                  % "scallop_2.11"         % "0.9.5",
 
@@ -101,7 +99,8 @@ object TBDBuild extends Build {
     "sql",
     file("sql"),
     settings = buildSettings ++ Seq (
-      libraryDependencies ++= (commonDeps 
+      libraryDependencies ++= (commonDeps
+                          //    ++ Seq("org.codehaus.mojo" % "javacc-maven-plugin" % "2.6")),
                           ++ Seq("net.sf.jsqlparser" % "jsqlparser" % "0.8.0")),
       mksql := {
         val classpath = (fullClasspath in Runtime).value.files.absString

@@ -16,11 +16,11 @@ public interface Datum extends Serializable{
 
 	public String toComString();
 
-	public TBDColumn getColumn();
+	public SerColumn getColumn();
 
-	public void setColumn(TBDColumn column);
+	public void setColumn(SerColumn column);
 
-	public boolean equals(TBDColumn col);
+	public boolean equals(SerColumn col);
 	
 	public int compareTo(Datum d);
 	public Datum sumDatum(Datum input);
@@ -30,23 +30,26 @@ public interface Datum extends Serializable{
 	
 	public class dLong implements Datum {
 
+		private static final long serialVersionUID = 1L;
 		Long value;
-		TBDColumn column;
+		SerColumn column;
+		
+		public dLong() {}
 
-		public TBDColumn getColumn() {
+		public SerColumn getColumn() {
 			return column;
 		}
 
-		public void setColumn(TBDColumn column) {
+		public void setColumn(SerColumn column) {
 			this.column = column;
 		}
 
-		public dLong(String s, TBDColumn col) {
+		public dLong(String s, SerColumn col) {
 			value = Long.parseLong(s);
 			this.column = col;
 		}
 		
-		public dLong(Long s, TBDColumn col) {
+		public dLong(Long s, SerColumn col) {
 			value = s;
 			this.column = col;
 		}
@@ -64,8 +67,9 @@ public interface Datum extends Serializable{
 		}
 
 		public String toComString() {
-			return column.getTable().getName() + ":" + column.getTable().getAlias() + ":" + column.getWholeColumnName() + ":" + column.getTable().getAlias() 
-					+ ":" + String.valueOf(value) + "\t";
+			return column.getTable().getName() + ":" + column.getTable().getAlias() +
+				":" + column.getWholeColumnName() + ":" + column.getTable().getAlias() +
+				":" + String.valueOf(value) + "\t";
 		}
 		public int hashCode() {
 			 long hash = 7;
@@ -85,11 +89,9 @@ public interface Datum extends Serializable{
 		       return (this.value == test.value)? true: false;
 		   }
 		@Override
-		public boolean equals(TBDColumn col) {
+		public boolean equals(SerColumn col) {
 			if (col == null)
 				return false;
-//			else if (!column.getTable().getName().equalsIgnoreCase(col.getTable().getName()))
-//				return false;
 			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
 				return false;
 			else
@@ -114,7 +116,7 @@ public interface Datum extends Serializable{
 			else if (input instanceof dDate){
 				
 			}
-		return sum;
+			return sum;
 		}
 
 		@Override
@@ -128,28 +130,31 @@ public interface Datum extends Serializable{
 	
 	public class dDecimal implements Datum {
 
+		private static final long serialVersionUID = 1L;
+		
 		Double value;
-		TBDColumn column;
+		SerColumn column;
 
-		public TBDColumn getColumn() {
+		public dDecimal(){}
+		public SerColumn getColumn() {
 			return column;
 		}
 
-		public void setColumn(TBDColumn column) {
+		public void setColumn(SerColumn column) {
 			this.column = column;
 		}
 
-		public dDecimal(String s, TBDColumn col) {
+		public dDecimal(String s, SerColumn col) {
 			value = Double.parseDouble(s);
 			this.column = col;
 		}
 		
-		public dDecimal(Double s, TBDColumn col) {
+		public dDecimal(Double s, SerColumn col) {
 			value = s;
 			this.column = col;
 		}
 		
-		public dDecimal(Integer s, TBDColumn col) {
+		public dDecimal(Integer s, SerColumn col) {
 			value = Double.parseDouble(s.toString());
 			this.column = col;
 		}
@@ -167,16 +172,15 @@ public interface Datum extends Serializable{
 		}
 
 		public String toComString() {
-			return column.getTable().getName() + ":" + column.getTable().getAlias() + ":" + column.getWholeColumnName() + ":" + column.getTable().getAlias() 
-					+ ":" + String.valueOf(value) + "\t";
+			return column.getTable().getName() + ":" + column.getTable().getAlias() +
+				":" + column.getWholeColumnName() + ":" + column.getTable().getAlias()+ 
+				":" + String.valueOf(value) + "\t";
 		}
 
 		@Override
-		public boolean equals(TBDColumn col) {
+		public boolean equals(SerColumn col) {
 			if (col == null)
 				return false;
-//			else if (!column.getTable().getName().equalsIgnoreCase(col.getTable().getName()))
-//				return false;
 			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
 				return false;
 			else
@@ -213,19 +217,21 @@ public interface Datum extends Serializable{
 
 	public class dString implements Datum {
 
+		private static final long serialVersionUID = 1L;
 		String value;
-		TBDColumn column;
+		SerColumn column;
 
-		public dString(String s, TBDColumn col) {
+		public dString(){}
+		public dString(String s, SerColumn col) {
 			value = s;
 			column = col;
 		}
 		
-		public TBDColumn getColumn() {
+		public SerColumn getColumn() {
 			return column;
 		}
 
-		public void setColumn(TBDColumn column) {
+		public void setColumn(SerColumn column) {
 			this.column = column;
 		}
 
@@ -242,16 +248,14 @@ public interface Datum extends Serializable{
 		}
 
 		public String toComString() {
-			return column.getTable().getName() + ":" + column.getTable().getAlias() + ":" + column.getWholeColumnName()
-					+ ":" + value + "\t";
+			return column.getTable().getName() + ":" + column.getTable().getAlias() +
+				":" + column.getWholeColumnName() + ":" + value + "\t";
 		}
 
 		@Override
-		public boolean equals(TBDColumn col) {
+		public boolean equals(SerColumn col) {
 			if (col == null)
 				return false;
-//			else if (!column.getTable().getName().equalsIgnoreCase(col.getTable().getName()))
-//				return false;
 			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
 				return false;
 			else
@@ -286,7 +290,6 @@ public interface Datum extends Serializable{
 
 		@Override
 		public Datum sumDatum(Datum input) {
-			// TODO Auto-generated method stub
 			return null;
 		}
 
@@ -294,40 +297,35 @@ public interface Datum extends Serializable{
 
 	public class dDate implements Datum {
 
+		private static final long serialVersionUID = 1L;
 		Date value;
 		int year;
 		int month;
 		int day;
-		TBDColumn column;
+		SerColumn column;
 
-		public dDate(String s, TBDColumn col) {
-//			System.out.println(s);
+		
+		public dDate(){}
+		public dDate(String s, SerColumn col) {
 			
 			try {
 				value = (new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
 						.parse(s));
-//				System.out.println(value.toString());
 				Calendar cal = Calendar.getInstance();
 				cal.setTime(value);
 				if (value != null) {
-//					year = value.getYear();
 					year = cal.get(Calendar.YEAR);
-
-//					month = value.getMonth();
 					month = cal.get(Calendar.MONTH)+1;
-
-//					day = value.getDay();
 					day = cal.get(Calendar.DAY_OF_MONTH);
 
 				}
 				column = col;
 			} catch (ParseException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 		}
 		
-		public dDate(Date s, TBDColumn col) {
+		public dDate(Date s, SerColumn col) {
 			value = s;
 			this.column = col;
 		}
@@ -345,28 +343,26 @@ public interface Datum extends Serializable{
 		}
 
 		public String toComString() {
-			return column.getTable().getName() + ":" + column.getTable().getAlias() + ":" + column.getWholeColumnName()
-					+ ":" + String.format("%04d-%02d-%02d", year, month, day)
-					+ "\t";
+			return column.getTable().getName() + ":" + column.getTable().getAlias() +
+				":" + column.getWholeColumnName() + ":" +
+				String.format("%04d-%02d-%02d", year, month, day) + "\t";
 		}
 
 		@Override
-		public TBDColumn getColumn() {
+		public SerColumn getColumn() {
 			return column;
 		}
 
 		@Override
-		public void setColumn(TBDColumn column) {
+		public void setColumn(SerColumn column) {
 			this.column = column;
 
 		}
 
 		@Override
-		public boolean equals(TBDColumn col) {
+		public boolean equals(SerColumn col) {
 			if (col == null)
 				return false;
-//			else if (!column.getTable().getName().equalsIgnoreCase(col.getTable().getName()))
-//				return false;
 			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
 				return false;
 			else
@@ -379,13 +375,11 @@ public interface Datum extends Serializable{
 		
 		@Override
 		public String getStringValue() {
-			// TODO Auto-generated method stub
 			return null;
 		}
 
 		@Override
 		public Datum sumDatum(Datum input) {
-			// TODO Auto-generated method stub
 			return null;
 		}
 
