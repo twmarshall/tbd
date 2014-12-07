@@ -29,13 +29,13 @@ class PartitionedChunkList[T, U]
       (implicit c: Context): PartitionedModList[V, W] = {
     def innerChunkMap(i: Int)(implicit c: Context): Buffer[ModList[V, W]] = {
       if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = par {
+        val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).chunkMap(f)(c)
-        } and {
+        }, partitions(i).workerId)({
           c => innerChunkMap(i + 1)(c)
-        }
+        })
 
-	mappedRest += mappedPartition
+        mappedRest += mappedPartition
       } else {
         Buffer[ModList[V, W]]()
       }
@@ -51,13 +51,13 @@ class PartitionedChunkList[T, U]
       (implicit c: Context): PartitionedChunkList[V, W] = {
     def innerMap(i: Int)(implicit c: Context): Buffer[ChunkList[V, W]] = {
       if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = par {
+        val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).flatMap(f)(c)
-        } and {
+        }, partitions(i).workerId)({
           c => innerMap(i + 1)(c)
-        }
+        })
 
-	mappedRest += mappedPartition
+        mappedRest += mappedPartition
       } else {
         Buffer[ChunkList[V, W]]()
       }
@@ -73,13 +73,13 @@ class PartitionedChunkList[T, U]
       (implicit c: Context): PartitionedChunkList[V, W] = {
     def innerMap(i: Int)(implicit c: Context): Buffer[ChunkList[V, W]] = {
       if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = par {
+        val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).map(f)(c)
-        } and {
+        }, partitions(i).workerId)({
           c => innerMap(i + 1)(c)
-        }
+        })
 
-	mappedRest += mappedPartition
+        mappedRest += mappedPartition
       } else {
         Buffer[ChunkList[V, W]]()
       }
