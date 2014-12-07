@@ -38,8 +38,8 @@ class StringData(
     val elems = scala.xml.XML.loadFile("/capstone/tbd/data/wiki.xml")
 
     var i = 0
-    (elems \\ "page").map(elem => {
-      (elem \\ "title").map(value => {
+    (elems \\ "doc").map(elem => {
+      (elem \\ "abstract").map(value => {
 	chunks += value.text
       })
     })
@@ -50,8 +50,8 @@ class StringData(
       val elems = scala.xml.XML.loadFile("/capstone/tbd/data/wiki.xml")
 
       var i = table.size
-      (elems \\ "page").map(elem => {
-        (elem \\ "title").map(value => {
+      (elems \\ "doc").map(elem => {
+        (elem \\ "abstract").map(value => {
           if (table.size < count) {
             table += (i -> value.text)
             i += 1
