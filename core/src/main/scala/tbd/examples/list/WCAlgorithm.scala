@@ -27,9 +27,9 @@ import tbd.list._
 import tbd.TBD._
 
 class WCHashAdjust(list: AdjustableList[Int, String])
-    extends Adjustable[Mod[(Int, HashMap[String, Int])]] {
+    extends Adjustable[Iterable[Mod[(Int, HashMap[String, Int])]]] {
 
-  val mappedPartitions = 2
+  val mappedPartitions = 4
 
   def wordcount(pair: (Int, String)): Map[Int, HashMap[String, Int]] = {
     val counts = Map[Int, Map[String, Int]]()
@@ -47,14 +47,55 @@ class WCHashAdjust(list: AdjustableList[Int, String])
       }
     }
 
-    counts.map((pair: (Int, Map[String, Int])) =>
-      (pair._1, HashMap(pair._2.toSeq: _*)))
+    counts.map((pair: (Int, Map[String, Int])) => {
+      (pair._1, HashMap(pair._2.toSeq: _*))
+    })
   }
 
   var mapped: AdjustableList[Int, HashMap[String, Int]] = _
   def run(implicit c: Context) = {
     mapped = list.hashPartitionedFlatMap(wordcount, 8)
-    mapped.reduce(WCAlgorithm.reducer)
+    mapped.partitionedReduce(WCAlgorithm.reducer)
+  }
+}
+
+class WCHashAlgorithm(_conf: Map[String, _], _listConf: ListConf)
+    extends Algorithm[String, Iterable[Mod[(Int, HashMap[String, Int])]]](_conf, _listConf) {
+  val input = mutator.createList[Int, String](listConf.copy(double = true))
+
+  val data = new StringData(input, count, mutations, Experiment.check)
+  //val data = new StringFileData(input, "data.txt")
+
+  val adjust = new WCHashAdjust(input.getAdjustableList())
+
+  var naiveTable: ParIterable[String] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = Vector(data.table.values.toSeq: _*).par
+    naiveTable.tasksupport =
+      new ForkJoinTaskSupport(new ForkJoinPool(partitions * 2))
+  }
+
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
+
+  private def naiveHelper(input: GenIterable[String] = naiveTable) = {
+    input.aggregate(Map[String, Int]())((x, line) =>
+      WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
+  }
+
+  def checkOutput(
+      table: Map[Int, String],
+      output: Iterable[Mod[(Int, HashMap[String, Int])]]) = {
+    val answer = naiveHelper(table.values)
+    var out = HashMap[String, Int]()
+
+    for (mod <- output) {
+      out = out ++ mutator.read(mod)._2
+    }
+
+    out == answer
   }
 }
 
@@ -131,10 +172,10 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
   val input = mutator.createList[Int, String](listConf)
 
-  val data = new RandomStringData(input, count, mutations, Experiment.check)
+  val data = new StringData(input, count, mutations, Experiment.check)
   //val data = new StringFileData(input, "data.txt")
 
-  val adjust = new WCHashAdjust(input.getAdjustableList())
+  val adjust = new WCAdjust(input.getAdjustableList())
 
   var naiveTable: ParIterable[String] = _
   def generateNaive() {

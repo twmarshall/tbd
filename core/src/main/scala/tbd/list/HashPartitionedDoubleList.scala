@@ -22,116 +22,27 @@ import tbd._
 import tbd.TBD._
 
 class HashPartitionedDoubleList[T, U]
-    (val partitions: Buffer[DoubleList[T, U]])
-  extends AdjustableList[T, U] with Serializable {
+    (_partitions: Buffer[DoubleList[T, U]])
+  extends PartitionedDoubleList[T, U](_partitions) with Serializable {
 
-  def filter(pred: ((T, U)) => Boolean)
-      (implicit c: Context): PartitionedDoubleList[T, U] = ???
+  override def partitionedReduce(f: ((T, U), (T, U)) => (T, U))
+      (implicit c: Context): Iterable[Mod[(T, U)]] = {
 
-  def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
-      (implicit c: Context): PartitionedDoubleList[V, W] = ???
-
-  override def hashPartitionedFlatMap[V, W]
-      (f: ((T, U)) => Iterable[(V, W)],
-       numPartitions: Int)
-      (implicit c: Context): AdjustableList[V, W] = {
-    ???
-  }
-
-  def join[V](that: AdjustableList[T, V])
-      (implicit c: Context): PartitionedDoubleList[T, (U, V)] = ???
-
-  def map[V, W](f: ((T, U)) => (V, W))
-      (implicit c: Context): PartitionedDoubleList[V, W] = {
-    def innerMap(i: Int)(implicit c: Context): Buffer[DoubleList[V, W]] = {
+    def innerReduce(i: Int)(implicit c: Context): Buffer[Mod[(T, U)]] = {
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({
-          c => partitions(i).map(f)(c)
+          c => partitions(i).reduce(f)(c)
         }, partitions(i).workerId)({
-          c => innerMap(i + 1)(c)
+          c => innerReduce(i + 1)(c)
         })
 
         mappedRest += mappedPartition
       } else {
-        Buffer[DoubleList[V, W]]()
+        Buffer[Mod[(T, U)]]()
       }
     }
 
-    new PartitionedDoubleList(innerMap(0))
+    innerReduce(0)
   }
 
-  def reduce(f: ((T, U), (T, U)) => (T, U))
-      (implicit c: Context): Mod[(T, U)] = {
-
-    def innerReduce
-        (next: DoubleList[T, U],
-         remaining: Buffer[DoubleList[T, U]])
-        (implicit c: Context): Mod[(T, U)] = {
-      val newNextOption = remaining.find(_.workerId == next.workerId)
-
-      val (reducedPartition, reducedRest) =
-        newNextOption match {
-          case Some(newNext) =>
-            parWithHint({
-              c => next.reduce(f)(c)
-            }, next.workerId)({
-              c => innerReduce(newNext, remaining - newNext)(c)
-            }, newNext.workerId)
-        case None =>
-          if (remaining.size > 0) {
-            parWithHint({
-              c => next.reduce(f)(c)
-            }, next.workerId)({
-              c => innerReduce(remaining(0), remaining.tail)(c)
-            }, remaining(0).workerId)
-          } else {
-            parWithHint({
-              c => next.reduce(f)(c)
-            }, next.workerId)({
-              c => mod { write[(T, U)](null)(c) }(c)
-            }, next.workerId)
-          }
-        }
-
-      mod {
-        read(reducedPartition) {
-          case null =>
-            read(reducedRest) {
-              case null => write(null)
-              case rest => write(rest)
-            }
-          case partition =>
-            read(reducedRest) {
-              case null => write(partition)
-              case rest => write(f(partition, rest))
-            }
-        }
-      }
-    }
-
-    parWithHint({
-      c => innerReduce(partitions(0), partitions.tail)(c)
-    }, partitions(0).workerId)({
-      c =>
-    })._1
-  }
-
-  def sortJoin[V](that: AdjustableList[T, V])
-      (implicit c: Context,
-       ordering: Ordering[T]): AdjustableList[T, (U, V)] = ???
-
-  def split(pred: ((T, U)) => Boolean)
-      (implicit c: Context):
-    (PartitionedDoubleList[T, U], PartitionedDoubleList[T, U]) = ???
-
-  /* Meta Operations */
-  def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
-    val buf = Buffer[(T, U)]()
-
-    for (partition <- partitions) {
-      buf ++= partition.toBuffer(mutator)
-    }
-
-    buf
-  }
 }

@@ -87,6 +87,9 @@ trait AdjustableList[T, U] {
       (implicit c: Context,
        ordering: Ordering[T]): AdjustableList[T, U] = ???
 
+  def partitionedReduce(f: ((T, U), (T, U)) => (T, U))
+      (implicit c: Context): Iterable[Mod[(T, U)]] = ???
+
   /**
    * Sorts the list, using the quicksort algorithm.
    */

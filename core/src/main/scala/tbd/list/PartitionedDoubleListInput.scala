@@ -47,6 +47,6 @@ class PartitionedDoubleListInput[T, U]
       adjustablePartitions += partition.getAdjustableList()
     }
 
-    new PartitionedDoubleList(adjustablePartitions)
+    new HashPartitionedDoubleList(adjustablePartitions)
   }
 }
