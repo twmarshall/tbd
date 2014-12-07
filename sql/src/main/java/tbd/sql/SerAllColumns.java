@@ -26,4 +26,5 @@ public class SerAllColumns extends
 	private static final long serialVersionUID = 1L;
 	
 	public SerAllColumns() {}
+
 }

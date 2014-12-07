@@ -22,8 +22,7 @@ case class Rec (val manipulate: String, val pairkey: Int, val pairvalue: Double)
 
 object SQLTest {
   def main (args: Array[String]) {
-    val connector = MasterConnector("akka.tcp://masterSystem0@128.237.217.40:2552/user/master")
-
+    val connector = MasterConnector("akka.tcp://masterSystem0@192.168.1.107:2552/user/master")
     val listConf =  new ListConf(partitions = 2, chunkSize = 1)
     val mutator = new Mutator(connector)
     val sqlContext = new TBDSqlContext(mutator)

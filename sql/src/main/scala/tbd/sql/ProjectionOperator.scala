@@ -46,9 +46,14 @@ class ProjectionAdjust (
       }
       projectStmt.foreach( item => {
         val selectItem = item.asInstanceOf[SelectItem]
+        if (selectItem.isInstanceOf[SerAllColumns]) {
+          newDatumList = newDatumList ++ t.toList;
+        }
+        /*
         val sv = new SelectItemParseVisitor
         selectItem.accept(sv)
 
+        
         sv.getItemType match {
           case SELECTTYPE.ALLCOLUMNS | SELECTTYPE.ALLTABLECOLUMNS =>
             newDatumList = newDatumList ++ t.toList;
@@ -79,6 +84,7 @@ class ProjectionAdjust (
             newDatumList = newDatumList :+ datum
           } //end case SELECTEXPRESSIONITEM
         } //end match sv.getItemType
+        */
       })
       (pair._1, newDatumList.toSeq)
     })

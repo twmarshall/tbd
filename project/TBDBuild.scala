@@ -25,6 +25,7 @@ object TBDBuild extends Build {
     "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
 
     "org.rogach"                  % "scallop_2.11"         % "0.9.5",
+    "com.github.jsqlparser"       % "jsqlparser"       % "0.8.6",
 
     "org.scala-lang"             %% "scala-pickling"       % "0.8.0",
     "org.scalatest"              %% "scalatest"            % "2.1.3" % "test",
@@ -99,9 +100,7 @@ object TBDBuild extends Build {
     "sql",
     file("sql"),
     settings = buildSettings ++ Seq (
-      libraryDependencies ++= (commonDeps
-                          //    ++ Seq("org.codehaus.mojo" % "javacc-maven-plugin" % "2.6")),
-                          ++ Seq("net.sf.jsqlparser" % "jsqlparser" % "0.8.0")),
+      libraryDependencies ++= (commonDeps),
       mksql := {
         val classpath = (fullClasspath in Runtime).value.files.absString
         val template = """#!/bin/sh

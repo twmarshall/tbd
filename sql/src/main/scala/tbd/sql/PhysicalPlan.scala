@@ -20,14 +20,7 @@ import net.sf.jsqlparser.expression.Expression;
 import net.sf.jsqlparser.expression.Function;
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.schema.Table;
-import net.sf.jsqlparser.statement.select.FromItem;
-import net.sf.jsqlparser.statement.select.Join;
-import net.sf.jsqlparser.statement.select.PlainSelect;
-import net.sf.jsqlparser.statement.select.Select;
-import net.sf.jsqlparser.statement.select.SelectBody;
-import net.sf.jsqlparser.statement.select.SelectExpressionItem;
-import net.sf.jsqlparser.statement.select.SubJoin;
-import net.sf.jsqlparser.statement.select.SubSelect;
+import net.sf.jsqlparser.statement.select._;
 
 class PhysicalPlan (
     val tablesMap: Map[String, ScalaTable],
@@ -78,7 +71,15 @@ class PhysicalPlan (
                         else null
       oper = new GroupByOperator(oper, groupByList, projectStmts)
     } else {
-      oper = new ProjectionOperator(oper, projectStmts)
+      val projectStmt = projectStmts.map( item => {
+        val selectItem = item.asInstanceOf[SelectItem]
+        val serItem = selectItem match {
+          case a: AllColumns => new SerAllColumns()
+          case a: AllTableColumns => new SerAllTableColumns()
+        }
+        serItem
+        })
+      oper = new ProjectionOperator(oper, projectStmt)
     }
 
     if (plainSelect.getOrderByElements() != null) {

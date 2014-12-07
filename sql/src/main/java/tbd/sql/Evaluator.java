@@ -384,6 +384,10 @@ public class Evaluator implements ExpressionVisitor {
 	}
 
 	@Override
+	public void visit(OracleHierarchicalExpression oracleHierarchicalExpression) {
+	}
+
+	@Override
 	public void visit(LikeExpression likeExpression) {
 		visitBinaryExpression(likeExpression);
 	}
