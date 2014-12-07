@@ -42,9 +42,9 @@ class DoubleListNode[T, U]
     readAny(nextMod) {
       case null =>
       case node =>
-        //memo(node) {
+        memo(node) {
           node.hashPartitionedFlatMap(f, input, memo)
-        //}
+        }
     }
   }
 

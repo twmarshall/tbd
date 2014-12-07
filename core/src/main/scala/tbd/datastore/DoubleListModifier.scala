@@ -89,15 +89,18 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
   }
 
   def remove(key: T, value: U) {
+    val beforeSize = size()
     var node: DoubleListNode[T, U] = null
     var mod: Mod[DoubleListNode[T, U]] = null
 
-    for (_mod <- nodes(key)) {
+    var found = false
+    for (_mod <- nodes(key); if !found) {
       val _node = datastore.read(_mod)
       val _value = datastore.read(_node.value)
       if (_value._2 == value) {
         node = _node
         mod = _mod
+        found = true
       }
     }
 
@@ -108,13 +111,15 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
       assert(tailMod == node.nextMod)
       tailMod = mod
     } else {
-      val value = datastore.read(nextNode.value)
-      nodes(value._1) += mod
+      val nextValue = datastore.read(nextNode.value)
+      nodes(nextValue._1) += mod
+      nodes(nextValue._1) -= node.nextMod
     }
 
     datastore.update(mod, nextNode)
+    nodes(key) -= mod
 
-    nodes(key) = nodes(key) - mod
+    assert(size() == (beforeSize - 1))
   }
 
   def contains(key: T): Boolean = {
@@ -123,5 +128,30 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
 
   def getAdjustableList(): DoubleList[T, U] = {
     modList
+  }
+
+  override def toString(): String = {
+    val buf = new StringBuffer()
+
+    var node = datastore.read(modList.head)
+    while (node != null) {
+      val value = datastore.read(node.value)
+      buf.append(value + ", " + node.nextMod + " = ")
+      node = datastore.read(node.nextMod)
+    }
+
+    buf.toString()
+  }
+
+  def size(): Int = {
+    var size = 0
+
+    var node = datastore.read(modList.head)
+    while (node != null) {
+      size += 1
+      node = datastore.read(node.nextMod)
+    }
+
+    size
   }
 }

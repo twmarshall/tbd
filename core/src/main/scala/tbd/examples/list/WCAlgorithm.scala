@@ -22,7 +22,7 @@ import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
 import scala.concurrent.forkjoin.ForkJoinPool
 
 import tbd._
-import tbd.datastore.StringData
+import tbd.datastore._
 import tbd.list._
 import tbd.TBD._
 
@@ -51,8 +51,9 @@ class WCHashAdjust(list: AdjustableList[Int, String])
       (pair._1, HashMap(pair._2.toSeq: _*)))
   }
 
+  var mapped: AdjustableList[Int, HashMap[String, Int]] = _
   def run(implicit c: Context) = {
-    val mapped = list.hashPartitionedFlatMap(wordcount, 8)
+    mapped = list.hashPartitionedFlatMap(wordcount, 8)
     mapped.reduce(WCAlgorithm.reducer)
   }
 }
@@ -112,7 +113,8 @@ object WCAlgorithm {
   def reducer
       (pair1: (Int, HashMap[String, Int]),
        pair2: (Int, HashMap[String, Int])) = {
-    (pair1._1, reduce(pair1._2, pair2._2))
+    val reduced = reduce(pair1._2, pair2._2)
+    (pair1._1, reduced)
   }
 }
 
@@ -129,7 +131,8 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
   val input = mutator.createList[Int, String](listConf)
 
-  val data = new StringData(input, count, mutations, Experiment.check)
+  val data = new RandomStringData(input, count, mutations, Experiment.check)
+  //val data = new StringFileData(input, "data.txt")
 
   val adjust = new WCHashAdjust(input.getAdjustableList())
 
@@ -155,10 +158,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
       output: Mod[(Int, HashMap[String, Int])]) = {
     val answer = naiveHelper(table.values)
     val out = mutator.read(output)._2
-    //println(answer)
-    //println(out)
 
-    //println("\n\n" + (out -- answer.keys))
     out == answer
   }
 }

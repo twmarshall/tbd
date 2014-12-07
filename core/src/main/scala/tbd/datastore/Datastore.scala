@@ -247,7 +247,6 @@ class Datastore
       sender ! "okay"
 
     case UpdateMessage(listId: String, key: Any, value: Any) =>
-      println("update message " + key)
       lists(listId).update(key, value)
       sender ! "okay"
 

@@ -38,7 +38,6 @@ class DoubleList[T, U]
       (f: ((T, U)) => Iterable[(V, W)],
        input: ListInput[V, W])
       (implicit c: Context) {
-    //println("dl.hpfm")
     val memo = new Memoizer[Unit]()
     readAny(head) {
       case null =>
@@ -51,7 +50,6 @@ class DoubleList[T, U]
 
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): DoubleList[V, W] = {
-    println("double list map")
     val memo = new Memoizer[Mod[DoubleListNode[V, W]]]()
     val modizer = new Modizer1[DoubleListNode[V, W]]()
 
@@ -78,7 +76,6 @@ class DoubleList[T, U]
 
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = {
-    //println("doubleList reduce")
     // Each round we need a hasher and a memo, and we need to guarantee that the
     // same hasher and memo are used for a given round during change
     // propagation, even if the first mod of the list is deleted.
