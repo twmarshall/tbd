@@ -104,8 +104,9 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
 
       mutations += Deletion(key, table(key))
 
+      input.remove(key, table(key))
       table -= key
-      input.remove(key)
+
       freeList = (freeList :+ key)
   }
 
