@@ -19,12 +19,14 @@ import java.io.Serializable
 import scala.collection.mutable.Buffer
 
 import tbd._
-import tbd.Constants.ModId
+import tbd.Constants._
 import tbd.TBD._
 
 class ChunkList[T, U]
     (val head: Mod[ChunkListNode[T, U]],
-     conf: ListConf) extends AdjustableList[T, U] with Serializable {
+     conf: ListConf,
+     val workerId: WorkerId = -1)
+  extends AdjustableList[T, U] with Serializable {
 
   override def chunkMap[V, W](f: (Vector[(T, U)]) => (V, W))
       (implicit c: Context): ModList[V, W] = {
@@ -33,10 +35,10 @@ class ChunkList[T, U]
     new ModList(
       mod {
         read(head) {
-	  case null => write[ModListNode[V, W]](null)
-	  case node => node.chunkMap(f, memo)
+          case null => write[ModListNode[V, W]](null)
+          case node => node.chunkMap(f, memo)
         }
-      }
+      }, false, workerId
     )
   }
 
@@ -50,10 +52,10 @@ class ChunkList[T, U]
     new ChunkList(
       mod {
         read(head) {
-	  case null => write[ChunkListNode[V, W]](null)
-	  case node => node.flatMap(f, conf.chunkSize, memo)
+          case null => write[ChunkListNode[V, W]](null)
+          case node => node.flatMap(f, conf.chunkSize, memo)
         }
-      }, conf
+      }, conf, workerId
     )
   }
 
@@ -95,10 +97,10 @@ class ChunkList[T, U]
     new ChunkList(
       mod {
         read(head) {
-	  case null => write[ChunkListNode[V, W]](null)
-	  case node => node.map(f, memo)
+          case null => write[ChunkListNode[V, W]](null)
+          case node => node.map(f, memo)
         }
-      }, conf
+      }, conf, workerId
     )
   }
 
