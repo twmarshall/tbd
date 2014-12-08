@@ -70,11 +70,7 @@ class StringData(
     }
   }
 
-  def clearValues() {
-    for ((key, value) <- table) {
-      table(key) = ""
-    }
-  }
+  def clearValues() {}
 
   def update(n: Int) {
     for (i <- 1 to n) {
@@ -98,11 +94,7 @@ class StringData(
     }
     input.put(key, chunks.head)
 
-    if (check) {
-      table += (key -> chunks.head)
-    } else {
-      table += (key -> "")
-    }
+    table += (key -> chunks.head)
 
     chunks -= chunks.head
   }
@@ -113,6 +105,7 @@ class StringData(
       while (!table.contains(key)) {
         key = rand.nextInt(maxKey)
       }
+
       input.remove(key, table(key))
       table -= key
     } else {
@@ -132,9 +125,7 @@ class StringData(
     }
     input.update(key, chunks.head)
 
-    if (check) {
-      table(key) = chunks.head
-    }
+    table(key) = chunks.head
 
     chunks -= chunks.head
   }
