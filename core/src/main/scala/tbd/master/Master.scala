@@ -136,27 +136,56 @@ class Master extends Actor with ActorLogging {
     case CreateListMessage(conf: ListConf) =>
       val input =
         if (conf.double) {
-          val futures = Buffer[(Future[String], ActorRef)]()
+	  if (conf.hash) {
+            val futures = Buffer[(Future[String], ActorRef, WorkerId)]()
 
-          var index = 0
-          for (i <- 1 to conf.partitions) {
-            val datastoreRef = datastoreRefs(nextWorker)
-            cycleWorkers()
+            var index = 0
+            for (i <- 1 to conf.partitions) {
+              val datastoreRef = datastoreRefs(nextWorker)
 
-            val message = CreateListMessage(conf.copy(partitionIndex = index))
-            val future = datastoreRef ? message
-            futures += ((future.mapTo[String], datastoreRef))
+              val message = CreateListMessage(conf.copy(partitionIndex = index))
+              val future = datastoreRef ? message
+              futures += ((future.mapTo[String], datastoreRef, nextWorker))
 
-            index += 1
-          }
+              cycleWorkers()
+              index += 1
+            }
 
-          val partitions = Buffer[DoubleListInput[Any, Any]]()
-          for ((future, datastoreRef) <- futures) {
-            val listId = Await.result(future, DURATION)
-            partitions += new DoubleListInput(listId, datastoreRef)
-          }
+            val partitions = Map[WorkerId, Buffer[DoubleListInput[Any, Any]]]()
+            for ((future, datastoreRef, workerId) <- futures) {
+              val listId = Await.result(future, DURATION)
 
-          new PartitionedDoubleListInput(partitions)
+	      if (partitions.contains(workerId)) {
+		partitions(workerId) += new DoubleListInput(listId, datastoreRef)
+	      } else {
+		partitions(workerId) = Buffer(new DoubleListInput(listId, datastoreRef))
+	      }
+            }
+
+            new HashPartitionedDoubleListInput(partitions)
+	  } else {
+	    val futures = Buffer[(Future[String], ActorRef)]()
+
+            var index = 0
+            for (i <- 1 to conf.partitions) {
+              val datastoreRef = datastoreRefs(nextWorker)
+              cycleWorkers()
+
+              val message = CreateListMessage(conf.copy(partitionIndex = index))
+              val future = datastoreRef ? message
+              futures += ((future.mapTo[String], datastoreRef))
+
+              index += 1
+            }
+
+            val partitions = Buffer[DoubleListInput[Any, Any]]()
+            for ((future, datastoreRef) <- futures) {
+              val listId = Await.result(future, DURATION)
+              partitions += new DoubleListInput(listId, datastoreRef)
+            }
+
+            new PartitionedDoubleListInput(partitions)
+	  }
         } else if (conf.chunkSize == 1) {
           if (conf.partitions == 1) {
             val datastoreRef = datastoreRefs(nextWorker)

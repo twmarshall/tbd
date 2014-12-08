@@ -39,10 +39,10 @@ class PartitionedDoubleList[T, U]
       (f: ((T, U)) => Iterable[(V, W)],
        numPartitions: Int)
       (implicit c: Context): AdjustableList[V, W] = {
-    val conf = ListConf(partitions = partitions.size, double = true)
+    val conf = ListConf(partitions = partitions.size, double = true, hash = true)
     val future = c.masterRef ? CreateListMessage(conf)
     val input =
-      Await.result(future.mapTo[PartitionedDoubleListInput[V, W]], DURATION)
+      Await.result(future.mapTo[HashPartitionedDoubleListInput[V, W]], DURATION)
 
     def innerMap(i: Int)(implicit c: Context) {
       if (i < partitions.size) {

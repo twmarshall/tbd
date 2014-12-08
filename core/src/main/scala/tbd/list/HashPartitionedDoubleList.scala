@@ -16,14 +16,21 @@
 package tbd.list
 
 import java.io.Serializable
-import scala.collection.mutable.Buffer
+import scala.collection.mutable.{Buffer, Map}
 
 import tbd._
+import tbd.Constants.WorkerId
 import tbd.TBD._
 
 class HashPartitionedDoubleList[T, U]
-    (_partitions: Buffer[DoubleList[T, U]])
-  extends PartitionedDoubleList[T, U](_partitions) with Serializable {
+    (_partitions: Map[WorkerId, Buffer[DoubleList[T, U]]])
+  extends PartitionedDoubleList[T, U](_partitions.flatMap(_._2).toBuffer) with Serializable {
+
+
+  println("HashPartitionedDoubleList " + _partitions.size)
+  for ((workerId, buf) <- _partitions) {
+    println(workerId + " " + buf.size)
+  }
 
   override def partitionedReduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Iterable[Mod[(T, U)]] = {

@@ -22,4 +22,5 @@ case class ListConf
      chunkSize: Int = 1,
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
-     double: Boolean = false)
+     double: Boolean = false,
+     hash: Boolean = false)
