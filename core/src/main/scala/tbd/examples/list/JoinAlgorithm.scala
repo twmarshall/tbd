@@ -18,12 +18,13 @@ package tbd.examples.list
 import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
-import tbd.{ Adjustable, Context }
-import tbd.datastore.{ IntData, IntFileData }
+import tbd.{Adjustable, Context}
+import tbd.datastore.{IntData, IntFileData}
 import tbd.list._
 
-class JoinAdjust(list1: AdjustableList[Int, Int],
-  list2: AdjustableList[Int, Int])
+class JoinAdjust
+    (list1: AdjustableList[Int, Int],
+     list2: AdjustableList[Int, Int])
   extends Adjustable[AdjustableList[Int, (Int, Int)]] {
 
   def condition (pair1: (Int, Int), pair2:(Int, Int)): Boolean = {
@@ -35,7 +36,7 @@ class JoinAdjust(list1: AdjustableList[Int, Int],
 }
 
 class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-  extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
+    extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
   val input = mutator.createList[Int, Int](listConf)
   val data = new IntData(input, count, mutations, "data.txt")
   //val data = new IntFileData(input, "data.txt")
@@ -70,8 +71,8 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def checkOutput(
-    input: Map[Int, Int],
-    output: AdjustableList[Int, (Int, Int)]): Boolean = {
+      input: Map[Int, Int],
+      output: AdjustableList[Int, (Int, Int)]): Boolean = {
     val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
     val answer = naiveHelper(input, data2.table)
     val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
@@ -127,8 +128,8 @@ class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def checkOutput(
-    input: Map[Int, Int],
-    output: AdjustableList[Int, (Int, Int)]): Boolean = {
+      input: Map[Int, Int],
+      output: AdjustableList[Int, (Int, Int)]): Boolean = {
     val sortedOutput = output.toBuffer(mutator).map(_._2).sortWith(_._1 < _._1)
     val answer = naiveHelper(input, data2.table)
     val sortedAnswer = answer.values.toBuffer.sortWith(_._1 < _._1)
@@ -139,8 +140,9 @@ class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 }
 
-class SortJoinAdjust(list1: AdjustableList[Int, Int],
-  list2: AdjustableList[Int, Int])
+class SortJoinAdjust
+    (list1: AdjustableList[Int, Int],
+     list2: AdjustableList[Int, Int])
   extends Adjustable[AdjustableList[Int, (Int, Int)]] {
 
   def run(implicit c: Context) = {
@@ -149,7 +151,7 @@ class SortJoinAdjust(list1: AdjustableList[Int, Int],
 }
 
 class SortJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-  extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
+    extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
   val input = mutator.createList[Int, Int](listConf)
   val data = new IntData(input, count, mutations, "data.txt")
   //val data = new IntFileData(input, "data.txt")
@@ -194,8 +196,8 @@ class SortJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 
   def checkOutput(
-    input: Map[Int, Int],
-    output: AdjustableList[Int, (Int, Int)]): Boolean = {
+      input: Map[Int, Int],
+      output: AdjustableList[Int, (Int, Int)]): Boolean = {
     val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
     val answer = naiveHelper(input, data2.table)
     val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)

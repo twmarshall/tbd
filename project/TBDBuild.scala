@@ -25,7 +25,7 @@ object TBDBuild extends Build {
     "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
 
     "org.rogach"                  % "scallop_2.11"         % "0.9.5",
-    "com.github.jsqlparser"       % "jsqlparser"       % "0.8.6",
+    "com.github.jsqlparser"       % "jsqlparser"           % "0.8.6",
 
     "org.scala-lang"             %% "scala-pickling"       % "0.8.0",
     "org.scalatest"              %% "scalatest"            % "2.1.3" % "test",
@@ -59,10 +59,10 @@ object TBDBuild extends Build {
         IO.write(masterOut, master)
         masterOut.setExecutable(true)
 
-  val worker = template.format(classpath, "tbd.worker.Main")
-  val workerOut = baseDirectory.value / "../bin/worker.sh"
-  IO.write(workerOut, worker)
-  workerOut.setExecutable(true)
+        val worker = template.format(classpath, "tbd.worker.Main")
+        val workerOut = baseDirectory.value / "../bin/worker.sh"
+        IO.write(workerOut, worker)
+        workerOut.setExecutable(true)
 
         val experiment = template.format(classpath, "tbd.examples.list.Experiment")
         val experimentOut = baseDirectory.value / "../bin/experiment.sh"
@@ -111,11 +111,6 @@ object TBDBuild extends Build {
         val sqlOut = baseDirectory.value / "../bin/sql.sh"
         IO.write(sqlOut, sql)
         sqlOut.setExecutable(true)
-
-        //val test = template.format(classpath, "tbd.sql.Test")
-        //val testOut = baseDirectory.value / "../bin/test.sh"
-        //IO.write(testOut, test)
-        //testOut.setExecutable(true)
 
         sqlOut
         

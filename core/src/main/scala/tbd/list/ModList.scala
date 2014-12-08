@@ -114,7 +114,7 @@ class ModList[T, U]
       (that: ModList[T, U],
        memo: Memoizer[Changeable[ModListNode[T, U]]],
        modizer: Modizer1[ModListNode[T, U]],
-      comparator: ((T, U), (T, U)) => Int)
+       comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): ModList[T, U] = {
     new ModList(
       modizer(head.id) {

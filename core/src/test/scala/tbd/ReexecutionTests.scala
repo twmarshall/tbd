@@ -33,7 +33,8 @@ class ChunkMergeTest(input: ListInput[Int, Int], input2: ListInput[Int, Int])
     val list2 = input2.getAdjustableList()
 
     list.asInstanceOf[ChunkList[Int, Int]]
-      .merge(list2.asInstanceOf[ChunkList[Int, Int]], (pair1: (Int, Int), pair2:(Int, Int)) => pair1._1 - pair2._1)
+      .merge(list2.asInstanceOf[ChunkList[Int, Int]], 
+        (pair1: (Int, Int), pair2:(Int, Int)) => pair1._1 - pair2._1)
   }
 }
 
@@ -92,7 +93,8 @@ class MergeTest(input: ListInput[Int, Int], input2: ListInput[Int, Int])
     val list2 = input2.getAdjustableList()
 
     list.asInstanceOf[ModList[Int, Int]]
-      .merge(list2.asInstanceOf[ModList[Int, Int]], ((pair1: (Int, Int), pair2:(Int, Int)) => pair1._1 - pair2._1))
+      .merge(list2.asInstanceOf[ModList[Int, Int]], 
+        ((pair1: (Int, Int), pair2:(Int, Int)) => pair1._1 - pair2._1))
   }
 }
 
