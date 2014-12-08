@@ -27,8 +27,11 @@ class JoinAdjust
      list2: AdjustableList[Int, Int])
   extends Adjustable[AdjustableList[Int, (Int, Int)]] {
 
+  def condition (pair1: (Int, Int), pair2:(Int, Int)): Boolean = {
+    pair1._1 == pair2._1
+  }
   def run(implicit c: Context) = {
-    list1.join(list2)
+    list1.join(list2, condition)
   }
 }
 
@@ -58,9 +61,9 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val output = Map[Int, (Int, Int)]()
     for ((key, value) <- input) {
       for ((key2, value2) <- input2) {
-	if (key == key2) {
-	  output(key) = (value, value2)
-	}
+        if (key == key2) {
+          output(key) = (value, value2)
+        }
       }
     }
 
@@ -78,18 +81,21 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 }
 
-class ChunkJoinAdjust
-    (list1: AdjustableList[Int, Int],
-     list2: AdjustableList[Int, Int])
+class ChunkJoinAdjust(list1: AdjustableList[Int, Int],
+  list2: AdjustableList[Int, Int])
   extends Adjustable[AdjustableList[Int, (Int, Int)]] {
 
+  def condition (pair1: (Int, Int), pair2:(Int, Int)): Boolean = {
+    pair1._1 == pair2._1
+  }
+  
   def run(implicit c: Context) = {
-    list1.join(list2)
+    list1.join(list2, condition)
   }
 }
 
 class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
+  extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
   val input = mutator.createList[Int, Int](listConf)
   val data = new IntData(input, count, mutations)
 
@@ -112,9 +118,9 @@ class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val output = Map[Int, (Int, Int)]()
     for ((key, value) <- input) {
       for ((key2, value2) <- input2) {
-	if (key == key2) {
-	  output(key) = (value, value2)
-	}
+        if (key == key2) {
+          output(key) = (value, value2)
+        }
       }
     }
 
@@ -173,14 +179,14 @@ class SortJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     val output = Map[Int, (Int, Int)]()
     def merge(one: Seq[(Int, Int)], two: Seq[(Int, Int)]) {
       if (one.size > 0 && two.size > 0) {
-	if (one.head._1 == two.head._1) {
-	  output(one.head._1) = (one.head._2, two.head._2)
-	  merge(one.tail, two.tail)
-	} else if (one.head._1 < two.head._1) {
-	  merge(one.tail, two)
-	} else {
-	  merge(one, two.tail)
-	}
+        if (one.head._1 == two.head._1) {
+          output(one.head._1) = (one.head._2, two.head._2)
+          merge(one.tail, two.tail)
+        } else if (one.head._1 < two.head._1) {
+          merge(one.tail, two)
+        } else {
+          merge(one, two.tail)
+        }
       }
     }
 
