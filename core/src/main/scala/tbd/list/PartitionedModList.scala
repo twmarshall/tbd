@@ -35,7 +35,7 @@ class PartitionedModList[T, U]
           c => parFilter(i + 1)(c)
         })
 
-	filteredRest += filteredPartition
+        filteredRest += filteredPartition
       } else {
         Buffer[ModList[T, U]]()
       }
@@ -48,13 +48,13 @@ class PartitionedModList[T, U]
       (implicit c: Context): PartitionedModList[V, W] = {
     def innerFlatMap(i: Int)(implicit c: Context): Buffer[ModList[V, W]] = {
       if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = par {
+        val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).flatMap(f)(c)
-        } and {
+        }, partitions(i).workerId)({
           c => innerFlatMap(i + 1)(c)
-        }
+        })
 
-	mappedRest += mappedPartition
+        mappedRest += mappedPartition
       } else {
         Buffer[ModList[V, W]]()
       }
@@ -92,7 +92,7 @@ class PartitionedModList[T, U]
           c => innerMap(i + 1)(c)
         })
 
-	mappedRest += mappedPartition
+        mappedRest += mappedPartition
       } else {
         Buffer[ModList[V, W]]()
       }
