@@ -92,7 +92,10 @@ class WCHashAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     var out = HashMap[String, Int]()
 
     for (mod <- output) {
-      out = out ++ mutator.read(mod)._2
+      val value = mutator.read(mod)
+      if (value != null) {
+        out = out ++ value._2
+      }
     }
 
     out == answer
