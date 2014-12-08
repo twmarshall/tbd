@@ -81,8 +81,9 @@ class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   }
 }
 
-class ChunkJoinAdjust(list1: AdjustableList[Int, Int],
-  list2: AdjustableList[Int, Int])
+class ChunkJoinAdjust
+    (list1: AdjustableList[Int, Int],
+     list2: AdjustableList[Int, Int])
   extends Adjustable[AdjustableList[Int, (Int, Int)]] {
 
   def condition (pair1: (Int, Int), pair2:(Int, Int)): Boolean = {
@@ -95,7 +96,7 @@ class ChunkJoinAdjust(list1: AdjustableList[Int, Int],
 }
 
 class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-  extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
+    extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
   val input = mutator.createList[Int, Int](listConf)
   val data = new IntData(input, count, mutations)
 

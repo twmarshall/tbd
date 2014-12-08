@@ -46,7 +46,8 @@ class ProjectionAdjust (
       }
       projectStmt.foreach( item => {
         val selectItem = item.asInstanceOf[SelectItem]
-        if (selectItem.isInstanceOf[SerAllColumns]) {
+        if (selectItem.isInstanceOf[SerAllColumns] ||
+            selectItem.isInstanceOf[SerAllTableColumns]) {
           newDatumList = newDatumList ++ t.toList;
         }
         /*
@@ -58,16 +59,17 @@ class ProjectionAdjust (
           case SELECTTYPE.ALLCOLUMNS | SELECTTYPE.ALLTABLECOLUMNS =>
             newDatumList = newDatumList ++ t.toList;
           case SELECTTYPE.SELECTEXPRESSIONITEM => {
-            val e = selectItem.asInstanceOf[SelectExpressionItem].getExpression()
+            */
+            else {
+            val expItem = selectItem.asInstanceOf[SerSelectExpressionItem]
+            val e = expItem.getExpression()
             val eval = new Evaluator(t.toArray)
             e.accept(eval)
-            val newCol = 
-              selectItem.asInstanceOf[SelectExpressionItem].getAlias() match {
+            val newCol = expItem.getAlias() match {
                 case null => if (eval.getColumn != null) 
                                 new SerColumn(eval.getColumn())
                              else null.asInstanceOf[SerColumn]
-                case _ => new SerColumn(null,
-                  selectItem.asInstanceOf[SelectExpressionItem].getAlias())
+                case _ => new SerColumn(null, expItem.getAlias())
               }
             val ob = eval.getResult()
 
@@ -82,9 +84,9 @@ class ProjectionAdjust (
               new Datum.dString(ob.toString, newCol)
 
             newDatumList = newDatumList :+ datum
-          } //end case SELECTEXPRESSIONITEM
+          //} //end case SELECTEXPRESSIONITEM
         } //end match sv.getItemType
-        */
+        
       })
       (pair._1, newDatumList.toSeq)
     })

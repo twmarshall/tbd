@@ -76,6 +76,8 @@ class PhysicalPlan (
         val serItem = selectItem match {
           case a: AllColumns => new SerAllColumns()
           case a: AllTableColumns => new SerAllTableColumns()
+          case i: SelectExpressionItem => 
+            new SerSelectExpressionItem(selectItem.asInstanceOf[SelectExpressionItem])
         }
         serItem
         })
