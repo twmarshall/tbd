@@ -34,12 +34,12 @@ object TBDBuild extends Build {
 
   val mkrun = TaskKey[File]("mkrun")
   val mkvisualization = TaskKey[File]("mkvisualization")
-  val mksql = TaskKey[File]("mksql")
+  //val mksql = TaskKey[File]("mksql")
 
   lazy val root = Project (
     "root",
     file(".")
-  ) aggregate(macros, core, visualization, sql)
+  ) aggregate(macros, core, visualization)
 
   lazy val core = Project (
     "core",
@@ -69,6 +69,11 @@ object TBDBuild extends Build {
         IO.write(experimentOut, experiment)
         experimentOut.setExecutable(true)
 
+        val sql = template.format(classpath, "tbd.sql.SQLTest")
+        val sqlOut = baseDirectory.value / "../bin/sql.sh"
+        IO.write(sqlOut, sql)
+        sqlOut.setExecutable(true)
+
         masterOut
       }
     )
@@ -96,6 +101,7 @@ object TBDBuild extends Build {
     )
   ) dependsOn(core)
 
+/*
   lazy val sql = Project(
     "sql",
     file("sql"),
@@ -117,7 +123,7 @@ object TBDBuild extends Build {
       }
     )
   ) dependsOn(core)
-
+*/
   lazy val macros = Project(
     "macros",
     file("macros"),
