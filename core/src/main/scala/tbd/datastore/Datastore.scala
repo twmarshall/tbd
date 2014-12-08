@@ -113,6 +113,22 @@ class Datastore
     Await.result(Future.sequence(futures), DURATION)
   }
 
+  def asyncUpdate[T](mod: Mod[T], value: T): Future[_] = {
+    val futures = Buffer[Future[String]]()
+
+    if (!store.contains(mod.id) || store.get(mod.id) != value) {
+      store.put(mod.id, value)
+
+      if (dependencies.contains(mod.id)) {
+        for (taskRef <- dependencies(mod.id)) {
+          futures += (taskRef ? ModUpdatedMessage(mod.id)).mapTo[String]
+        }
+      }
+    }
+
+    Future.sequence(futures)
+  }
+
   def updateMod
       (modId: ModId,
        value: Any,

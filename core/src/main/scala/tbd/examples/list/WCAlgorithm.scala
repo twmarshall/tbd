@@ -26,10 +26,8 @@ import tbd.datastore._
 import tbd.list._
 import tbd.TBD._
 
-class WCHashAdjust(list: AdjustableList[Int, String])
+class WCHashAdjust(list: AdjustableList[Int, String], mappedPartitions: Int)
     extends Adjustable[Iterable[Mod[(Int, HashMap[String, Int])]]] {
-
-  val mappedPartitions = 4
 
   def wordcount(pair: (Int, String)): Map[Int, HashMap[String, Int]] = {
     val counts = Map[Int, Map[String, Int]]()
@@ -54,7 +52,7 @@ class WCHashAdjust(list: AdjustableList[Int, String])
 
   var mapped: AdjustableList[Int, HashMap[String, Int]] = _
   def run(implicit c: Context) = {
-    mapped = list.hashPartitionedFlatMap(wordcount, 8)
+    mapped = list.hashPartitionedFlatMap(wordcount, mappedPartitions)
     mapped.partitionedReduce(WCAlgorithm.reducer)
   }
 }
@@ -66,7 +64,7 @@ class WCHashAlgorithm(_conf: Map[String, _], _listConf: ListConf)
   val data = new StringData(input, count, mutations, Experiment.check)
   //val data = new StringFileData(input, "data.txt")
 
-  val adjust = new WCHashAdjust(input.getAdjustableList())
+  val adjust = new WCHashAdjust(input.getAdjustableList(), partitions)
 
   var naiveTable: ParIterable[String] = _
   def generateNaive() {
@@ -173,7 +171,7 @@ class WCAdjust(list: AdjustableList[Int, String])
 
 class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
-  val input = mutator.createList[Int, String](listConf)
+  val input = mutator.createList[Int, String](listConf.copy(double = true))
 
   val data = new StringData(input, count, mutations, Experiment.check)
   //val data = new StringFileData(input, "data.txt")

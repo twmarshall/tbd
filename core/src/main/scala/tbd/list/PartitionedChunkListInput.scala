@@ -22,8 +22,12 @@ class PartitionedChunkListInput2[T, U]
      conf: ListConf)
   extends ListInput[T, U] with java.io.Serializable {
 
-  def put(key: T, value: U) = {
+  def put(key: T, value: U) {
     partitions(key.hashCode() % partitions.size).put(key, value)
+  }
+
+  def asyncPut(key: T, value: U) = {
+    partitions(key.hashCode() % partitions.size).asyncPut(key, value)
   }
 
   def update(key: T, value: U) = {

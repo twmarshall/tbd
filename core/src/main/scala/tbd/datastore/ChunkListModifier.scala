@@ -16,8 +16,10 @@
 package tbd.datastore
 
 import scala.collection.mutable.Map
+import scala.concurrent.{Await, Future}
 
 import tbd.{Mod, Mutator}
+import tbd.Constants._
 import tbd.list._
 
 class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
@@ -94,6 +96,10 @@ class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
   }
 
   def put(key: T, value: U) {
+    Await.result(asyncPut(key, value), DURATION)
+  }
+
+  def asyncPut(key: T, value: U): Future[_] = {
     val lastNode = datastore.read(lastNodeMod)
 
     val newNode =
@@ -123,7 +129,7 @@ class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
 
     nodes(key) = lastNodeMod
 
-    datastore.update(lastNodeMod, newNode)
+    datastore.asyncUpdate(lastNodeMod, newNode)
   } //ensuring(isValid())
 
   private def calculateSize(chunk: Vector[(T, U)]) = {

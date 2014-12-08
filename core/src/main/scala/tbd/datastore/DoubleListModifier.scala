@@ -16,8 +16,10 @@
 package tbd.datastore
 
 import scala.collection.mutable.{Buffer, Map}
+import scala.concurrent.{Await, Future}
 
 import tbd.{Mod, Mutator}
+import tbd.Constants._
 import tbd.list._
 
 class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
@@ -49,11 +51,15 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
   }
 
   def put(key: T, value: U) {
+    Await.result(asyncPut(key, value), DURATION)
+  }
+
+  def asyncPut(key: T, value: U): Future[_] = {
     val newTail = datastore.createMod[DoubleListNode[T, U]](null)
     val valueMod = datastore.createMod((key, value))
     val newNode = new DoubleListNode(valueMod, newTail)
 
-    datastore.update(tailMod, newNode)
+    val future = datastore.asyncUpdate(tailMod, newNode)
 
     if (nodes.contains(key)) {
       nodes(key) += tailMod
@@ -62,6 +68,8 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
     }
 
     tailMod = newTail
+
+    future
   }
 
   def putAfter(key: T, pair: (T, U)) {

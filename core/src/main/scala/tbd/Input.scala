@@ -15,8 +15,12 @@
  */
 package tbd
 
+import scala.concurrent.Future
+
 trait Input[T, U] {
   def put(key: T, value: U)
+
+  def asyncPut(key: T, value: U): Future[_]
 
   def update(key: T, value: U)
 

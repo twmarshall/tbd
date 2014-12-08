@@ -20,7 +20,6 @@ import scala.collection.mutable.{Buffer, Map}
 
 import tbd._
 import tbd.Constants._
-import tbd.datastore.DoubleListModifier
 import tbd.TBD._
 
 class DoubleList[T, U]

@@ -63,7 +63,7 @@ class Context
 
   private var nextModId: ModId = 0
 
-  val pending = Buffer[Future[String]]()
+  val pending = Buffer[Future[Any]]()
 
   var epoch = 0
 

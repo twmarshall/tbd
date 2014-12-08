@@ -31,7 +31,10 @@ object TBD {
     val timestamp =
       c.ddg.addPut(input.asInstanceOf[ListInput[Any, Any]], key, value, c)
 
-    input.put(key, value)
+    val future = input.asyncPut(key, value)
+    if (!c.initialRun) {
+      c.pending += future
+    }
 
     timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
   }
