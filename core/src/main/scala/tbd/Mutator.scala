@@ -70,6 +70,11 @@ class Mutator(_connector: MasterConnector = null) {
     Await.result(future.mapTo[ListInput[T, U]], DURATION)
   }
 
+  def getLists[T, U](conf: ListConf = new ListConf()): ListInput[T, U] = {
+    val future = masterRef ? GetListsMessage(conf)
+    Await.result(future.mapTo[ListInput[T, U]], DURATION)
+  }
+
   def run[T](adjust: Adjustable[T]): T = {
     Await.result(Future.sequence(futures), DURATION)
     futures.clear()
