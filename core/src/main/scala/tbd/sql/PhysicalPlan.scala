@@ -80,7 +80,6 @@ class PhysicalPlan (
         }
         serItem
         })
-      println("projectStmt:" + projectStmt)
       oper = new ProjectionOperator(oper, projectStmt)
     }
 

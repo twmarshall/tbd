@@ -20,7 +20,7 @@ import java.net.InetAddress
 import scala.concurrent.duration._
 
 object Constants {
-  var DURATION = 10.seconds
+  var DURATION = 1000.seconds
   implicit var TIMEOUT = Timeout(DURATION)
 
   type WorkerId = Short

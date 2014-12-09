@@ -65,7 +65,7 @@ object TBDBuild extends Build {
       mkrun := {
         val classpath = (fullClasspath in Runtime).value.files.absString
         val template = """#!/bin/sh
-        java -Xmx2g -Xss4m -classpath "%s" %s $@
+        java -Xmx2g -Xss128m -classpath "%s" %s $@
         """
 
         val master = template.format(classpath, "tbd.master.Main")

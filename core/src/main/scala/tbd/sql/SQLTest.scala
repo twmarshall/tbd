@@ -21,7 +21,8 @@ import tbd.{Adjustable, Context, Mod, Mutator}
 import tbd.list.ListConf
 import tbd.master.{Master, MasterConnector}
 
-case class Rec (val manipulate: String, val pairkey: Int, val pairvalue: Double)
+//case class Rec (val manipulate: String, val pairkey: Int, val pairvalue: Double)
+case class Rec (val url: String, val rank: Int, val duration: Int)
 
 object SQLTest {
     
@@ -45,19 +46,28 @@ object SQLTest {
       val partitionSize = Conf.partitionSize.get.get
       val path = Conf.path.get.get
 
-    val connector = MasterConnector()
+    val connector = MasterConnector(master)
     val listConf =  new ListConf(partitions = partitionSize, chunkSize = 1)
     val mutator = new Mutator(connector)
     val sqlContext = new TBDSqlContext(mutator)
-    var f = (row: Array[String])  => Rec(row(0), row(1).trim.toInt, row(2).trim.toDouble)
+//    var f = (row: Array[String])  => Rec(row(0), row(1).trim.toInt, row(2).trim.toDouble)
+    var f = (row: Array[String])  => Rec(row(0), row(1).trim.toInt, row(2).trim.toInt)
     val tableName1 = "records"
     //val path = "sql/data.csv"
 
+      var before = System.currentTimeMillis()
+    println("Loading data...")
     sqlContext.csvFile[Rec](tableName1, path, f, listConf)
+    var elapsed = System.currentTimeMillis() - before
+    println("Done loading data. Time elapsed:" + elapsed)
 //    sqlContext.csvFile[Rec](tableName2, path, f)
 //    val statement = "select  * from records1 "
+
+     before = System.currentTimeMillis()
+    println("Running SQL...")
     val oper = sqlContext.sql(statement)
-    println(oper.toBuffer)
+    elapsed = System.currentTimeMillis() - before
+    println("Done running. Time elapsed:" + elapsed)
     mutator.shutdown()
   }
 }

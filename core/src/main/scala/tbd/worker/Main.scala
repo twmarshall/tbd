@@ -43,7 +43,7 @@ object Main {
         "OFF, WARNING, INFO, or DEBUG")
       val storeType = opt[String]("store", 's', default = Some("memory"),
         descr = "The type of datastore to use, either memory or berkeleydb")
-      val timeout = opt[Int]("timeout", 't', default = Some(100),
+      val timeout = opt[Int]("timeout", 't', default = Some(1000),
         descr = "How long Akka waits on message responses before timing out")
       val data = opt[String]("data", 'd', default = Some(""),
         descr = "path of partitioned data file on local disk, if empty, not loading data")
