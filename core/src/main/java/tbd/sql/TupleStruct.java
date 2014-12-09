@@ -31,12 +31,11 @@ public class TupleStruct {
 	public static void setTupleTableMap(Datum[] t) {
 		int index;
 		tupleTableMap = new ArrayList<String>(t.length);
-		System.out.println(t);
 
 		for(index = 0;index < t.length;index++) {
-			
+
 			Datum row = (Datum) t[index];
-System.out.println("datum: " + row);
+
 			Table tableName = row.getColumn().getTable();
 			
 			String datumColumn = row.getColumn().getColumnName().toLowerCase();

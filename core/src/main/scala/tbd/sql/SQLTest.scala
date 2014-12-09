@@ -55,7 +55,8 @@ object SQLTest {
 //    var f = (row: Array[String])  => Rec(row(0), row(1).trim.toInt, row(2).trim.toInt)
     val tableName1 = "records"
     //val path = "sql/data.csv"
-   val statement = "select * from records" //"select pairkey, pairvalue*3.14- 2 from records "
+
+   val statement = "select pairkey from records" //"select pairkey, pairvalue*3.14- 2 from records "
 //    	"where pairkey > 10 and pairvalue < 100 "
 
       var before = System.currentTimeMillis()
