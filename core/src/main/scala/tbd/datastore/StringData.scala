@@ -35,11 +35,11 @@ class StringData(
 
   private def loadChunks(
       chunks: ArrayBuffer[String]) {
-    val elems = scala.xml.XML.loadFile("wiki.xml")
+    val elems = scala.xml.XML.loadFile("/capstone/tbd/data/wiki.xml")
 
     var i = 0
-    (elems \\ "elem").map(elem => {
-      (elem \\ "value").map(value => {
+    (elems \\ "doc").map(elem => {
+      (elem \\ "abstract").map(value => {
 	chunks += value.text
       })
     })
@@ -47,11 +47,11 @@ class StringData(
 
   def generate() {
     while (table.size < count) {
-      val elems = scala.xml.XML.loadFile("wiki.xml")
+      val elems = scala.xml.XML.loadFile("/capstone/tbd/data/wiki.xml")
 
       var i = table.size
-      (elems \\ "elem").map(elem => {
-        (elem \\ "value").map(value => {
+      (elems \\ "doc").map(elem => {
+        (elem \\ "abstract").map(value => {
           if (table.size < count) {
             table += (i -> value.text)
             i += 1

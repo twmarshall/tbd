@@ -16,11 +16,11 @@ public interface Datum extends Serializable{
 
 	public String toComString();
 
-	public SerColumn getColumn();
+	public Column getColumn();
 
-	public void setColumn(SerColumn column);
+	public void setColumn(Column column);
 
-	public boolean equals(SerColumn col);
+	public boolean equals(Column col);
 	
 	public int compareTo(Datum d);
 	public Datum sumDatum(Datum input);
@@ -32,24 +32,24 @@ public interface Datum extends Serializable{
 
 		private static final long serialVersionUID = 1L;
 		Long value;
-		SerColumn column;
+		Column column;
 		
 		public dLong() {}
 
-		public SerColumn getColumn() {
+		public Column getColumn() {
 			return column;
 		}
 
-		public void setColumn(SerColumn column) {
+		public void setColumn(Column column) {
 			this.column = column;
 		}
 
-		public dLong(String s, SerColumn col) {
+		public dLong(String s, Column col) {
 			value = Long.parseLong(s);
 			this.column = col;
 		}
 		
-		public dLong(Long s, SerColumn col) {
+		public dLong(Long s, Column col) {
 			value = s;
 			this.column = col;
 		}
@@ -89,7 +89,7 @@ public interface Datum extends Serializable{
 		       return (this.value == test.value)? true: false;
 		   }
 		@Override
-		public boolean equals(SerColumn col) {
+		public boolean equals(Column col) {
 			if (col == null)
 				return false;
 			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
@@ -133,28 +133,28 @@ public interface Datum extends Serializable{
 		private static final long serialVersionUID = 1L;
 		
 		Double value;
-		SerColumn column;
+		Column column;
 
 		public dDecimal(){}
-		public SerColumn getColumn() {
+		public Column getColumn() {
 			return column;
 		}
 
-		public void setColumn(SerColumn column) {
+		public void setColumn(Column column) {
 			this.column = column;
 		}
 
-		public dDecimal(String s, SerColumn col) {
+		public dDecimal(String s, Column col) {
 			value = Double.parseDouble(s);
 			this.column = col;
 		}
 		
-		public dDecimal(Double s, SerColumn col) {
+		public dDecimal(Double s, Column col) {
 			value = s;
 			this.column = col;
 		}
 		
-		public dDecimal(Integer s, SerColumn col) {
+		public dDecimal(Integer s, Column col) {
 			value = Double.parseDouble(s.toString());
 			this.column = col;
 		}
@@ -178,7 +178,7 @@ public interface Datum extends Serializable{
 		}
 
 		@Override
-		public boolean equals(SerColumn col) {
+		public boolean equals(Column col) {
 			if (col == null)
 				return false;
 			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
@@ -219,19 +219,19 @@ public interface Datum extends Serializable{
 
 		private static final long serialVersionUID = 1L;
 		String value;
-		SerColumn column;
+		Column column;
 
 		public dString(){}
-		public dString(String s, SerColumn col) {
+		public dString(String s, Column col) {
 			value = s;
 			column = col;
 		}
 		
-		public SerColumn getColumn() {
+		public Column getColumn() {
 			return column;
 		}
 
-		public void setColumn(SerColumn column) {
+		public void setColumn(Column column) {
 			this.column = column;
 		}
 
@@ -253,7 +253,7 @@ public interface Datum extends Serializable{
 		}
 
 		@Override
-		public boolean equals(SerColumn col) {
+		public boolean equals(Column col) {
 			if (col == null)
 				return false;
 			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
@@ -302,11 +302,11 @@ public interface Datum extends Serializable{
 		int year;
 		int month;
 		int day;
-		SerColumn column;
+		Column column;
 
 		
 		public dDate(){}
-		public dDate(String s, SerColumn col) {
+		public dDate(String s, Column col) {
 			
 			try {
 				value = (new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
@@ -325,7 +325,7 @@ public interface Datum extends Serializable{
 			}
 		}
 		
-		public dDate(Date s, SerColumn col) {
+		public dDate(Date s, Column col) {
 			value = s;
 			this.column = col;
 		}
@@ -349,18 +349,18 @@ public interface Datum extends Serializable{
 		}
 
 		@Override
-		public SerColumn getColumn() {
+		public Column getColumn() {
 			return column;
 		}
 
 		@Override
-		public void setColumn(SerColumn column) {
+		public void setColumn(Column column) {
 			this.column = column;
 
 		}
 
 		@Override
-		public boolean equals(SerColumn col) {
+		public boolean equals(Column col) {
 			if (col == null)
 				return false;
 			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))

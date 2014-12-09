@@ -27,7 +27,7 @@ case class ScalaColumn (val columnName: String, val index: Int,
 class ScalaTable (
   val rows: Iterator[Seq[Datum]],
   val colnameMap: Map[String, ScalaColumn],
-  val table: SerTable,
+  val table: net.sf.jsqlparser.schema.Table,
   val mutator: Mutator,
   val listConf: ListConf) {
 

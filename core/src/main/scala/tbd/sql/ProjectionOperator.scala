@@ -17,8 +17,8 @@ package tbd.sql
 
 import net.sf.jsqlparser.expression._
 import net.sf.jsqlparser.schema.Column;
-import net.sf.jsqlparser.statement.select.SelectExpressionItem
-import net.sf.jsqlparser.statement.select.SelectItem
+import net.sf.jsqlparser.statement.select._
+//import net.sf.jsqlparser.statement.select.SelectItem
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
@@ -46,34 +46,19 @@ class ProjectionAdjust (
       }
       projectStmt.foreach( item => {
         val selectItem = item.asInstanceOf[SelectItem]
-        if (selectItem.isInstanceOf[SerAllColumns] ||
-            selectItem.isInstanceOf[SerAllTableColumns]) {
+        if (selectItem.isInstanceOf[AllColumns] ||
+            selectItem.isInstanceOf[AllTableColumns]) {
           newDatumList = newDatumList ++ t.toList;
-        } else if (selectItem.isInstanceOf[SerSelectExpressionItem]){
-            val expItem = selectItem.asInstanceOf[SerSelectExpressionItem]
+        } else if (selectItem.isInstanceOf[SelectExpressionItem]){
+            val expItem = selectItem.asInstanceOf[SelectExpressionItem]
             var e = expItem.getExpression
-            /*
-            if (e.isInstanceOf[SerColumn]) {
-              e = new SerColumn(e.asInstanceOf[Column])
-            }
-            */
-            println("Column: " + e + "isInstanceOf[SerColumn]?" + e.isInstanceOf[SerColumn]) 
-/*
-            if (expItem.getExpression.isInstanceOf[SerColumn]) {
-              println("SerColumn: " + expItem.getExpression) 
-              expItem.getExpression.asInstanceOf[SerColumn]
-            } else {
-              expItem.getExpression
-                            println("Column: " + expItem.getExpression) 
-            }
-*/
             val eval = new Evaluator(t.toArray)
             e.accept(eval)
             val newCol = expItem.getAlias() match {
                 case null => if (eval.getColumn != null) 
-                                new SerColumn(eval.getColumn())
-                             else null.asInstanceOf[SerColumn]
-                case _ => new SerColumn(null, expItem.getAlias())
+                                eval.getColumn()
+                             else null.asInstanceOf[Column]
+                case _ => new Column(null, expItem.getAlias())
               }
             val ob = eval.getResult()
 

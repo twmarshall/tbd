@@ -64,6 +64,11 @@ class PhysicalPlan (
       }
     }
 
+    if (plainSelect.getOrderByElements() != null) {
+      val orderBy = plainSelect.getOrderByElements().toList
+      oper = new OrderByOperator(oper, orderBy)
+    }
+
     if (hasFunction || plainSelect.getGroupByColumnReferences() != null) {
       val groupByColumns = plainSelect.getGroupByColumnReferences()
       val groupByList = if (groupByColumns != null)
@@ -71,22 +76,10 @@ class PhysicalPlan (
                         else null
       oper = new GroupByOperator(oper, groupByList, projectStmts)
     } else {
-      val projectStmt = projectStmts.map( item => {
-        val selectItem = item.asInstanceOf[SelectItem]
-        val serItem = selectItem match {
-          case a: AllColumns => new SerAllColumns()
-          case a: AllTableColumns => new SerAllTableColumns()
-          case i: SelectExpressionItem => new SerSelectExpressionItem(selectItem.asInstanceOf[SelectExpressionItem])
-        }
-        serItem
-        })
-        oper = new ProjectionOperator(oper, projectStmt)
+      oper = new ProjectionOperator(oper, projectStmts)
     }
 
-    if (plainSelect.getOrderByElements() != null) {
-      val orderBy = plainSelect.getOrderByElements().toList
-      oper = new OrderByOperator(oper, orderBy)
-    }
+    
     oper.processOp
 
     oper

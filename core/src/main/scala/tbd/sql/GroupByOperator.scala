@@ -99,11 +99,11 @@ class GroupByAdjust(
       e.accept(eval);
       val newCol =
         if (selectItem.getAlias() != null) {
-          new SerColumn(null, selectItem.getAlias())
+          new Column(null, selectItem.getAlias())
         } else if (eval.getColumn == null) {
-          null.asInstanceOf[SerColumn]
+          null.asInstanceOf[Column]
         } else{
-          new SerColumn(eval.getColumn())
+          eval.getColumn()
         }
       val ob = eval.getResult()
 

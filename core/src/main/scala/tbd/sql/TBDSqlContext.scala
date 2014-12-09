@@ -63,22 +63,22 @@ class TBDSqlContext(val mutator: Mutator)  {
       tFieldMirror.get match {
         case l: Long =>
           new Datum.dLong(tFieldMirror.get.toString,
-            new SerColumn(table, colName))
+            new Column(table, colName))
         case i: Int =>
           new Datum.dLong(tFieldMirror.get.toString,
-            new SerColumn(table,colName))
+            new Column(table,colName))
         case d: Double =>
           new Datum.dDecimal(tFieldMirror.get.toString,
-            new SerColumn(table, colName))
+            new Column(table, colName))
         case f: Float =>
           new Datum.dDecimal(tFieldMirror.get.toString,
-            new SerColumn(table, colName))
+            new Column(table, colName))
         case d: java.util.Date =>
           new Datum.dDate(tFieldMirror.get.asInstanceOf[Date],
-            new SerColumn(table, colName))
+            new Column(table, colName))
         case _ =>
           new Datum.dString(tFieldMirror.get.toString,
-            new SerColumn(table,colName))
+            new Column(table,colName))
       }
     }).toSeq
 
@@ -99,7 +99,7 @@ class TBDSqlContext(val mutator: Mutator)  {
         ScalaColumn(x._1.name.toString(), x._2, x._1.typeSignature))
       ).toMap
 
-    val table = new SerTable(tableName, tableName)
+    val table = new Table(tableName, tableName)
     val listContents = fileContents.map(x => T2Datum[T](table, x, members))
 
     tablesMap += (tableName -> new  ScalaTable(listContents,

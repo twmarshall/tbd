@@ -42,6 +42,8 @@ case class ScheduleTaskMessage(parent: ActorRef, workerId: WorkerId = -1)
 case class ShutdownMutatorMessage(mutatorId: Int)
 
 case class CreateListMessage(conf: ListConf)
+case class GetListsMessage(conf: ListConf)
+case class GetListIdMessage(conf: ListConf)
 case class GetAdjustableListMessage(listId: String)
 case class PutMessage(listId: String, key: Any, value: Any)
 case class UpdateMessage(listId: String, key: Any, value: Any)

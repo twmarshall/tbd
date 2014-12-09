@@ -68,42 +68,16 @@ public class Evaluator implements ExpressionVisitor {
 			return columnValue;
 	}
 
-	public void visit(SerColumn column) {
-	//	System.out.println("SerColumn:" + column);
-		int index=-1;
-		if(firstEntry==null){
-			columnValue = column;
-		}
-		tupleTableMap = TupleStruct.getTupleTableMap();
-		String columnName = column.getWholeColumnName().toLowerCase();
-		if(tupleTableMap.contains(columnName)) {
-			index = tupleTableMap.indexOf(columnName);
-		}
-		
-		Datum row = t[index];
-
-    if (row instanceof Datum.dLong) {
-			accumulator = ((Datum.dLong) row).getValue();
-
-		} else if (row instanceof Datum.dDate) {
-			accumulator = ((Datum.dDate) row).getValue();
-
-		} else if (row instanceof Datum.dString) {
-			accumulator = ((Datum.dString) row).getValue();
-
-		} else if (row instanceof Datum.dDecimal) {
-			accumulator = ((Datum.dDecimal) row).getValue();
-		}
-	}
-
 	public void visit(Column column) {
-//System.out.println("Column:" + column + "is instanceof SerColumn?" + (column instanceof SerColumn));
+		System.out.println("Column:" + column);
+
 		int index=-1;
 		if(firstEntry==null){
 			columnValue = column;
 		}
 		tupleTableMap = TupleStruct.getTupleTableMap();
 		String columnName = column.getWholeColumnName().toLowerCase();
+				System.out.println("Columnname:" + columnName);
 		if(tupleTableMap.contains(columnName)) {
 			index = tupleTableMap.indexOf(columnName);
 		}
@@ -123,6 +97,7 @@ public class Evaluator implements ExpressionVisitor {
 			accumulator = ((Datum.dDecimal) row).getValue();
 		}
 	}
+
 
 	@Override
 	public void visit(AndExpression andExpression) {
