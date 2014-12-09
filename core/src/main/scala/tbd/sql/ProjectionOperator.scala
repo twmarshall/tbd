@@ -21,6 +21,7 @@ import net.sf.jsqlparser.statement.select._
 //import net.sf.jsqlparser.statement.select.SelectItem
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
+import scala.util.control.Breaks._
 
 import tbd._
 import tbd.datastore.IntData
@@ -34,16 +35,16 @@ class ProjectionAdjust (
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
 
   def run (implicit c: Context) = {
-    var isTupleMapPresent = isPresent
+//    var isTupleMapPresent = isPresent
     list.map((pair: (Int, Seq[Datum])) => {
 
       val t = pair._2.toArray
 
       var newDatumList = List[Datum]()
-      if (isTupleMapPresent) {
+//      if (isTupleMapPresent) {
           TupleStruct.setTupleTableMap(pair._2.toArray)
-          isTupleMapPresent = false;
-      }
+//          isTupleMapPresent = false;
+//      }
       projectStmt.foreach( item => {
         val selectItem = item.asInstanceOf[SelectItem]
         if (selectItem.isInstanceOf[AllColumns] ||
