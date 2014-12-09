@@ -90,14 +90,14 @@ class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
   var inputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   var outputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   val colnameMap = table.colnameMap
-  var isTupleMapPresent = true
+//  var isTupleMapPresent = true
 
   override def processOp () {
 
     childOperators.foreach(child => child.processOp)
 
     inputAdjustable = inputOper.getAdjustable
-    val adjustable = new ProjectionAdjust(inputAdjustable, projectStmt, isTupleMapPresent)  
+    val adjustable = new ProjectionAdjust(inputAdjustable, projectStmt, true)  
     outputAdjustable = table.mutator.run[AdjustableList[Int,Seq[tbd.sql.Datum]]](adjustable)
   }
 
