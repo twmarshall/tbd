@@ -30,11 +30,11 @@ import tbd.list._
 class ProjectionAdjust (
   list: AdjustableList[Int, Seq[Datum]],
   val projectStmt: List[_],
-  var isTupleMapPresent: Boolean)
+  val isPresent: Boolean)
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
 
   def run (implicit c: Context) = {
-
+    var isTupleMapPresent = isPresent
     list.map((pair: (Int, Seq[Datum])) => {
 
       val t = pair._2.toArray
