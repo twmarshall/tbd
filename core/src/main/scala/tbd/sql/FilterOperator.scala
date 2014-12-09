@@ -32,10 +32,10 @@ class FilterAdjust (
 
   def run (implicit c: Context) = {
     list.filter(pair => {
-      if (isTupleMapPresent) {
+      //if (isTupleMapPresent) {
         TupleStruct.setTupleTableMap(pair._2.toArray)
-        isTupleMapPresent = false;
-      }
+//        isTupleMapPresent = false;
+//      }
       val eval = new Evaluator(pair._2.toArray)
       condition.accept(eval)
       eval.getAccumulatorBoolean

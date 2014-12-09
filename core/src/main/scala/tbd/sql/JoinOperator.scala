@@ -35,10 +35,10 @@ class JoinAdjust (
     if (conditionExp == null) return true
     val row = pair1._2 ++ pair2._2
 
-    if (isTupleMapPresent) {
+//    if (isTupleMapPresent) {
         TupleStruct.setTupleTableMap(row.toArray)
-        isTupleMapPresent = false;
-      }
+//        isTupleMapPresent = false;
+//      }
       val eval = new Evaluator(row.toArray)
 
       conditionExp.accept(eval)

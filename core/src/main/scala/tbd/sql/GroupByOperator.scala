@@ -69,10 +69,10 @@ class GroupByAdjust(
     var row = pair._2
     var groupByDatumList = Seq[Datum]()
     var singleDatum: Datum = null.asInstanceOf[Datum]
-    if (isTupleMapPresent) {
+//    if (isTupleMapPresent) {
       TupleStruct.setTupleTableMap(pair._2.toArray)
-      isTupleMapPresent = false;
-    }
+//      isTupleMapPresent = false;
+//    }
     val datumColumnName = TupleStruct.getTupleTableMap()
     var keyCols = Seq[Datum](new Datum.dLong(pair._1, null))
     var valCols = Seq[Datum]()

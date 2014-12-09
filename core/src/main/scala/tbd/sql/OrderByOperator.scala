@@ -32,10 +32,10 @@ class MergeSortAdjust (
   
   def run(implicit c: Context) = {  
     list.mergesort((pair1: (Int, Seq[Datum]), pair2:(Int, Seq[Datum])) => {
-      if (isTupleMapPresent) {
+//      if (isTupleMapPresent) {
         TupleStruct.setTupleTableMap(pair1._2.toArray)
-        isTupleMapPresent = false;
-      }
+//        isTupleMapPresent = false;
+//      }
       var cmp = 0
       breakable {
          elements.foreach(element => {
