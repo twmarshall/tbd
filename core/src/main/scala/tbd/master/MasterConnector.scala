@@ -68,7 +68,8 @@ object MasterConnector {
 
     if (singleNode) {
       val workerRef = system.actorOf(
-        Worker.props(masterRef, storeType, cacheSize), "worker")
+        Worker.props(masterRef, storeType, cacheSize, "", 1, 1), "worker")
+
       Await.result(workerRef ? "started", DURATION)
     }
 

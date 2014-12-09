@@ -45,7 +45,12 @@ object Main {
         descr = "The type of datastore to use, either memory or berkeleydb")
       val timeout = opt[Int]("timeout", 't', default = Some(100),
         descr = "How long Akka waits on message responses before timing out")
-
+      val data = opt[String]("data", 'd', default = Some(""),
+        descr = "path of partitioned data file on local disk, if empty, not loading data")
+      val partitions = opt[Int]("partitions", 'w', default = Some(2),
+        descr = "number of partitions of data")
+      val chunkSizes = opt[Int]("chunkSizes", 'u', default = Some(1),
+        descr = "chunk sizes of data")
       val master = trailArg[String](required = true)
     }
 
@@ -56,6 +61,9 @@ object Main {
     val port = Conf.port.get.get
     val master = Conf.master.get.get
     val logging = Conf.logging.get.get
+    val data = Conf.data.get.get
+    val partitions = Conf.partitions.get.get
+    val chunkSizes = Conf.chunkSizes.get.get
 
     val conf = akkaConf + s"""
       akka.loglevel = $logging
@@ -78,7 +86,10 @@ object Main {
       Worker.props(
         masterRef,
         Conf.storeType.get.get,
-        Conf.cacheSize.get.get),
+        Conf.cacheSize.get.get,
+        data,
+        partitions,
+        chunkSizes),
       "worker")
   }
 }
