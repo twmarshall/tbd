@@ -21,8 +21,8 @@ import tbd.{Adjustable, Context, Mod, Mutator}
 import tbd.list.ListConf
 import tbd.master.{Master, MasterConnector}
 
-case class Rec (val manipulate: String, val pairkey: Int, val pairvalue: Double)
-//case class Rec (val url: String, val rank: Int, val duration: Int)
+//case class Rec (val manipulate: String, val pairkey: Int, val pairvalue: Double)
+case class Rec (val url: String, val rank: Int, val duration: Int)
 
 object SQLTest {
     
@@ -51,14 +51,18 @@ object SQLTest {
     val listConf =  new ListConf(partitions = partitionSize, chunkSize = 1)
     val mutator = new Mutator(connector)
     val sqlContext = new TBDSqlContext(mutator)
-    var f = (row: Array[String])  => Rec(row(0), row(1).trim.toInt, row(2).trim.toDouble)
-//    var f = (row: Array[String])  => Rec(row(0), row(1).trim.toInt, row(2).trim.toInt)
+//    var f = (row: Array[String])  => Rec(row(0), row(1).trim.toInt, row(2).trim.toDouble)
+    var f = (row: Array[String])  => Rec(row(0), row(1).trim.toInt, row(2).trim.toInt)
     val tableName1 = "records"
     //val path = "sql/data.csv"
-
-   val statement = "select pairkey from records" //"select pairkey, pairvalue*3.14- 2 from records "
-//    	"where pairkey > 10 and pairvalue < 100 "
-
+/*
+   val statement = "select pairkey, pairvalue*3.14- 2 from records " +
+    	"where pairkey > 10 and pairvalue < 100 " + 
+	"order by pairkey"
+*/
+	val statement = "select url from records " +
+	"where duration > 10 " +
+	"order by rank"	
       var before = System.currentTimeMillis()
     println("Loading data...")
     sqlContext.csvFile[Rec](tableName1, path, f, listConf)
@@ -71,8 +75,8 @@ object SQLTest {
     println("Running SQL...")
     val oper = sqlContext.sql(statement)
     elapsed = System.currentTimeMillis() - before
-    println(oper.toBuffer)    
     println("Done running. Time elapsed:" + elapsed)
+//    println(oper.toBuffer)    
     mutator.shutdown()
   }
 }

@@ -69,7 +69,6 @@ public class Evaluator implements ExpressionVisitor {
 	}
 
 	public void visit(Column column) {
-		System.out.println("Column:" + column);
 
 		int index=-1;
 		if(firstEntry==null){
@@ -77,7 +76,7 @@ public class Evaluator implements ExpressionVisitor {
 		}
 		tupleTableMap = TupleStruct.getTupleTableMap();
 		String columnName = column.getWholeColumnName().toLowerCase();
-				System.out.println("Columnname:" + columnName);
+
 		if(tupleTableMap.contains(columnName)) {
 			index = tupleTableMap.indexOf(columnName);
 		}

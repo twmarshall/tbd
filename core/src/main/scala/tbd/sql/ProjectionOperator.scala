@@ -33,7 +33,7 @@ class ProjectionAdjust (
   val projectStmt: List[_],
   val isPresent: Boolean)
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
-println("isPresent=" + isPresent)
+
   def run (implicit c: Context) = {
 //    var isTupleMapPresent = isPresent
     list.map((pair: (Int, Seq[Datum])) => {
