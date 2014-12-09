@@ -80,8 +80,7 @@ class PhysicalPlan (
         }
         serItem
         })
-      println("projectStmt:" + projectStmt)
-      oper = new ProjectionOperator(oper, projectStmt)
+        oper = new ProjectionOperator(oper, projectStmt)
     }
 
     if (plainSelect.getOrderByElements() != null) {

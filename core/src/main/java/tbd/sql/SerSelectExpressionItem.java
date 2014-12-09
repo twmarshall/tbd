@@ -38,7 +38,7 @@ public class SerSelectExpressionItem
 		this.setAlias(item.getAlias());
 		Expression exp = item.getExpression();
 		if (exp instanceof net.sf.jsqlparser.schema.Column) {
-			exp = new SerColumn((net.sf.jsqlparser.schema.Column)exp);
+			exp = new SerColumn((net.sf.jsqlparser.schema.Column)	exp);
 		}
 		this.setExpression(exp);
 	}

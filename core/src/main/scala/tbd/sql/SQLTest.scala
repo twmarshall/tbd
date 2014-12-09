@@ -53,11 +53,19 @@ object SQLTest {
     val tableName1 = "records"
     //val path = "sql/data.csv"
 
+    var before = System.currentTimeMillis()
     sqlContext.csvFile[Rec](tableName1, path, f, listConf)
+    var elapsed = System.currentTimeMillis() - before
+    println("Done loading. Time elapsed: " + elapsed)
 //    sqlContext.csvFile[Rec](tableName2, path, f)
 //    val statement = "select  * from records1 "
+    before = System.currentTimeMillis()
+   // output = mutator.run[Output](adjust)
+
     val oper = sqlContext.sql(statement)
-    println(oper.toBuffer)
+    elapsed = System.currentTimeMillis() - before
+        println("Done running. Time elapsed: " + elapsed)
+    //println(oper.toBuffer)
     mutator.shutdown()
   }
 }
