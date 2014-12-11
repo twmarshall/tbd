@@ -18,9 +18,9 @@ package tbd.sql
 import net.sf.jsqlparser.expression._
 import net.sf.jsqlparser.schema.Column;
 import net.sf.jsqlparser.statement.select._
-//import net.sf.jsqlparser.statement.select.SelectItem
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
+import scala.collection.JavaConversions._
 import scala.util.control.Breaks._
 
 import tbd._
@@ -31,20 +31,16 @@ import tbd.list._
 class ProjectionAdjust (
   list: AdjustableList[Int, Seq[Datum]],
   val projectStmt: List[_],
-  val isPresent: Boolean)
+  val tupleTableMap: List[String])
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
 
   def run (implicit c: Context) = {
-//    var isTupleMapPresent = isPresent
+
     list.map((pair: (Int, Seq[Datum])) => {
 
       val t = pair._2.toArray
-
       var newDatumList = List[Datum]()
-//      if (isTupleMapPresent) {
-          TupleStruct.setTupleTableMap(pair._2.toArray)
-//          isTupleMapPresent = false;
-//      }
+
       projectStmt.foreach( item => {
         val selectItem = item.asInstanceOf[SelectItem]
         if (selectItem.isInstanceOf[AllColumns] ||
@@ -53,7 +49,7 @@ class ProjectionAdjust (
         } else if (selectItem.isInstanceOf[SelectExpressionItem]){
             val expItem = selectItem.asInstanceOf[SelectExpressionItem]
             var e = expItem.getExpression
-            val eval = new Evaluator(t.toArray)
+            val eval = new Evaluator(t.toArray, tupleTableMap)
             e.accept(eval)
             val newCol = expItem.getAlias() match {
                 case null => if (eval.getColumn != null) 
@@ -90,15 +86,36 @@ class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
   val table = inputOper.getTable
   var inputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   var outputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
-  val colnameMap = table.colnameMap
-//  var isTupleMapPresent = true
+  
+  var tupleTableMap = List[String]()
+  override def getTupleTableMap = tupleTableMap
+  
+  def setTupleTableMap (childTupleTableMap: List[String]) = {
+    projectStmt.foreach(item => {
+      val selectItem = item.asInstanceOf[SelectItem]
+      if (selectItem.isInstanceOf[AllColumns] ||
+          selectItem.isInstanceOf[AllTableColumns]) {
+        tupleTableMap = tupleTableMap ++ childTupleTableMap;
+      } else if (selectItem.isInstanceOf[SelectExpressionItem]){
+          val expItem = selectItem.asInstanceOf[SelectExpressionItem]
+          var e = expItem.getExpression
+          val newCol = if (e.isInstanceOf[Column]) 
+                          e.asInstanceOf[Column].getWholeColumnName.toLowerCase
+                       else expItem.getAlias() 
+          tupleTableMap = tupleTableMap :+ newCol
+      }
+    })
+  }
 
   override def processOp () {
 
     childOperators.foreach(child => child.processOp)
 
     inputAdjustable = inputOper.getAdjustable
-    val adjustable = new ProjectionAdjust(inputAdjustable, projectStmt, true)  
+    val childOperator = childOperators(0)
+    val childTupleTableMap = childOperator.getTupleTableMap
+    setTupleTableMap (childTupleTableMap)
+    val adjustable = new ProjectionAdjust(inputAdjustable, projectStmt, childTupleTableMap)  
     outputAdjustable = table.mutator.run[AdjustableList[Int,Seq[tbd.sql.Datum]]](adjustable)
   }
 

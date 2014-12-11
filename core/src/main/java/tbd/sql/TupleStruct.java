@@ -8,7 +8,7 @@ import net.sf.jsqlparser.schema.Table;
 
 public class TupleStruct {
 
-	static List<String> tupleTableMap;
+	static List<String> tupleTableMap = null;
 	static boolean joinCondition;
 	static boolean nestedCondition = false;
 	
@@ -57,7 +57,7 @@ public class TupleStruct {
 			}
 		}
 	}
-	
+
 	public static List<String> getTupleTableMap () {
 		return tupleTableMap;
 	}	

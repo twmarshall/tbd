@@ -55,7 +55,10 @@ object SQLTest {
 //    var f = (row: Array[String])  => Rec(row(0), row(1).trim.toInt, row(2).trim.toInt)
     val tableName1 = "records"
     //val path = "sql/data.csv"
-    val statement = "select * from records where pairkey > 10"
+    val statement = "select r1.pairkey, r1.pairvalue, r2.pairkey from records as r1 " +
+                    "inner join records as r2 on r1.pairkey > r2.pairkey "
+                    //"where pairkey > 10 and pairvalue<100 " +
+                    //"group by manipulate"
 
       var before = System.currentTimeMillis()
     println("Loading data...")
@@ -69,7 +72,7 @@ object SQLTest {
     println("Running SQL...")
     val oper = sqlContext.sql(statement)
     elapsed = System.currentTimeMillis() - before
-    println(oper.toBuffer)    
+    println(oper.toBuffer) 
     println("Done running. Time elapsed:" + elapsed)
     mutator.shutdown()
   }

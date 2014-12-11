@@ -18,6 +18,7 @@ package tbd.sql
 import net.sf.jsqlparser.expression._
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
+import scala.collection.JavaConversions._
 
 import tbd._
 import tbd.datastore.IntData
@@ -27,16 +28,12 @@ import tbd.list._
 class FilterAdjust (
   list: AdjustableList[Int, Seq[Datum]],
   val condition: Expression,
-  var isTupleMapPresent: Boolean)
+  val tupleTableMap: List[String])
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
 
   def run (implicit c: Context) = {
     list.filter(pair => {
-      //if (isTupleMapPresent) {
-        TupleStruct.setTupleTableMap(pair._2.toArray)
-//        isTupleMapPresent = false;
-//      }
-      val eval = new Evaluator(pair._2.toArray)
+      val eval = new Evaluator(pair._2.toArray,  tupleTableMap)
       condition.accept(eval)
       eval.getAccumulatorBoolean
     })
@@ -50,13 +47,20 @@ class FilterOperator (val inputOper: Operator, val condition: Expression)
   var inputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   var outputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   var isTupleMapPresent = true
+  var tupleTableMap = List[String]()
+  override def getTupleTableMap = tupleTableMap
 
   override def processOp () {
+    
     childOperators.foreach(child => child.processOp)
 
     inputAdjustable = inputOper.getAdjustable
+    val childOperator = childOperators(0)
+    val childTupleTableMap = childOperator.getTupleTableMap
+    tupleTableMap = childTupleTableMap
+
     val adjustable = new FilterAdjust(inputAdjustable,
-      condition, isTupleMapPresent)
+      condition, childTupleTableMap)
     outputAdjustable = table.mutator.run(adjustable)
   }
 

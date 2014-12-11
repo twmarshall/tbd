@@ -27,6 +27,7 @@ import net.sf.jsqlparser.statement.select.SelectItem;
 
 import scala.collection.{ GenIterable, GenMap, Seq }
 import scala.collection.mutable.Map
+import scala.collection.JavaConversions._
 
 import tbd._
 import tbd.datastore.IntData
@@ -36,7 +37,7 @@ class GroupByAdjust(
   list: AdjustableList[Int, Seq[Datum]],
   groupbyList: List[_],
   selectExpressionList: List[_],
-  var isTupleMapPresent: Boolean)
+  val tupleTableMap: List[String])
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
 
   var aggreFuncTypes = Seq[String]()
@@ -70,10 +71,10 @@ class GroupByAdjust(
     var groupByDatumList = Seq[Datum]()
     var singleDatum: Datum = null.asInstanceOf[Datum]
 //    if (isTupleMapPresent) {
-      TupleStruct.setTupleTableMap(pair._2.toArray)
+//      TupleStruct.setTupleTableMap(pair._2.toArray)
 //      isTupleMapPresent = false;
 //    }
-    val datumColumnName = TupleStruct.getTupleTableMap()
+    val datumColumnName = tupleTableMap
     var keyCols = Seq[Datum](new Datum.dLong(pair._1, null))
     var valCols = Seq[Datum]()
     if ( groupbyList != null) {
@@ -95,8 +96,9 @@ class GroupByAdjust(
 
       val e = selectItem.getExpression
 
-      val eval = new Evaluator(pair._2.toArray)
+      val eval = new Evaluator(pair._2.toArray, tupleTableMap)
       e.accept(eval);
+
       val newCol =
         if (selectItem.getAlias() != null) {
           new Column(null, selectItem.getAlias())
@@ -210,12 +212,32 @@ class GroupByOperator(
   var outputAdjustable: AdjustableList[Int, Seq[tbd.sql.Datum]] = _
   var isTupleMapPresent = true
 
+  var tupleTableMap = List[String]()
+  override def getTupleTableMap = tupleTableMap
+  
+  def setTupleTableMap (childTupleTableMap: List[String]) = {
+    selectExpressionList.foreach(item => {
+      val selectItem = item.asInstanceOf[SelectItem]
+      if (selectItem.isInstanceOf[SelectExpressionItem]){
+          val expItem = selectItem.asInstanceOf[SelectExpressionItem]
+          var e = expItem.getExpression
+          val newCol = if (e.isInstanceOf[Column]) 
+                          e.asInstanceOf[Column].getWholeColumnName.toLowerCase
+                       else expItem.getAlias() 
+          tupleTableMap = tupleTableMap :+ newCol
+      }
+    })
+  }
+  
   override def processOp() {
     childOperators.foreach(child => child.processOp)
 
     var inputAdjustable = inputOper.getAdjustable
+    val childOperator = childOperators(0)
+    val childTupleTableMap = childOperator.getTupleTableMap
+    setTupleTableMap (childTupleTableMap)
     val adjustable = new GroupByAdjust(inputAdjustable,
-      groupbyList, selectExpressionList, isTupleMapPresent)
+      groupbyList, selectExpressionList, childTupleTableMap)
     outputAdjustable = table.mutator.run(adjustable)
   }
 

@@ -37,6 +37,13 @@ public class Evaluator implements ExpressionVisitor {
 	public Evaluator(Datum[] t2) {
 		t = t2;
 		firstEntry=null;
+		List<String> tupleTableMap = null;
+	}
+
+	public Evaluator(Datum[] t2, List<String> tupleTableMap) {
+		this(t2);
+		//System.out.println("init map: " + tupleTableMap);
+		this.tupleTableMap = tupleTableMap;
 	}
 
 	@Override
@@ -69,15 +76,20 @@ public class Evaluator implements ExpressionVisitor {
 	}
 
 	public void visit(Column column) {
-		System.out.println("Column:" + column);
+//		System.out.println("Column:" + column);
 
 		int index=-1;
 		if(firstEntry==null){
 			columnValue = column;
 		}
-		tupleTableMap = TupleStruct.getTupleTableMap();
+/*
+		if (TupleStruct.getTupleTableMap() != null) {
+			tupleTableMap = TupleStruct.getTupleTableMap();
+		}
+		*/
 		String columnName = column.getWholeColumnName().toLowerCase();
-				System.out.println("Columnname:" + columnName);
+//				System.out.println("Columnname:" + columnName);
+//				System.out.println("map: " + tupleTableMap);
 		if(tupleTableMap.contains(columnName)) {
 			index = tupleTableMap.indexOf(columnName);
 		}
@@ -213,9 +225,7 @@ public class Evaluator implements ExpressionVisitor {
     }
 
     public void sum(List eList) {
-
-        TupleStruct.setTupleTableMap(this.t);
-        Evaluator ct = new Evaluator(this.t);
+    		Evaluator ct = new Evaluator(this.t, this.tupleTableMap);
         Expression e = (Expression) eList.get(0);
         columnValue = new Column(null, e.toString());
         e.accept(ct);
@@ -224,8 +234,7 @@ public class Evaluator implements ExpressionVisitor {
     }
 
     public void avg(List eList) {
-        TupleStruct.setTupleTableMap(this.t);
-        Evaluator ct = new Evaluator(this.t);
+        Evaluator ct = new Evaluator(this.t, this.tupleTableMap);
         Expression e = (Expression) eList.get(0);
         columnValue = new Column(null, e.toString());
         e.accept(ct);
@@ -237,8 +246,7 @@ public class Evaluator implements ExpressionVisitor {
     }
 
     public void min(List eList) {
-        TupleStruct.setTupleTableMap(this.t);
-        Evaluator ct = new Evaluator(this.t);
+        Evaluator ct = new Evaluator(this.t, this.tupleTableMap);
         
         //Assuming only one date is passed
         //Hence index is 0
@@ -250,8 +258,7 @@ public class Evaluator implements ExpressionVisitor {
     }
     
     public void max(List eList) {
-        TupleStruct.setTupleTableMap(this.t);
-        Evaluator ct = new Evaluator(this.t);
+        Evaluator ct = new Evaluator(this.t, this.tupleTableMap);
         //Assuming only one date is passed
         //Hence index is 0
         Expression e = (Expression) eList.get(0);
@@ -261,8 +268,7 @@ public class Evaluator implements ExpressionVisitor {
     }
 
     public void date(List eList) {
-        TupleStruct.setTupleTableMap(this.t);
-        Evaluator ct = new Evaluator(this.t);
+        Evaluator ct = new Evaluator(this.t, this.tupleTableMap);
         Date date = null;
         //Assuming only one date is passed
         //Hence index is 0

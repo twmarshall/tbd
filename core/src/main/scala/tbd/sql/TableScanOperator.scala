@@ -27,6 +27,25 @@ class TableScanOperator (
 
   var childOperators = List[Operator]();
 
+  var tupleTableMap = List[String]()
+
+  def setTupleTableMap (hasJoinCondition: Boolean = false) = {
+    val alias = table.table.getAlias
+    val colIter = table.colnameMap.keysIterator
+    while (colIter.hasNext) {
+      val datumnColumn = colIter.next
+      if (alias != null) {
+        tupleTableMap = tupleTableMap :+ (alias.toLowerCase + "." + datumnColumn)
+      } else if (hasJoinCondition) {
+        tupleTableMap = tupleTableMap :+ (table.table.getName + "." + datumnColumn)
+      } else {
+        tupleTableMap = tupleTableMap :+ datumnColumn
+      }
+    } 
+  }
+  
+  override def getTupleTableMap = tupleTableMap
+
   override def processOp () = {}  
 
   override def getTable: ScalaTable =  table

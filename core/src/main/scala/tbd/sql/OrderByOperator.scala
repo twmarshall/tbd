@@ -19,6 +19,7 @@ import net.sf.jsqlparser.expression._
 import net.sf.jsqlparser.statement.select.OrderByElement
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
+import scala.collection.JavaConversions._
 import scala.util.control.Breaks._
 
 import tbd._
@@ -27,24 +28,20 @@ import tbd.list._
 class MergeSortAdjust (
   list: AdjustableList[Int, Seq[Datum]],
   elements: List[_], 
-  var isTupleMapPresent: Boolean)
+  val childTupleTableMap: List[String])
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
   
   def run(implicit c: Context) = {  
     list.mergesort((pair1: (Int, Seq[Datum]), pair2:(Int, Seq[Datum])) => {
-//      if (isTupleMapPresent) {
-        TupleStruct.setTupleTableMap(pair1._2.toArray)
-//        isTupleMapPresent = false;
-//      }
       var cmp = 0
       breakable {
          elements.foreach(element => {
           val elem = element.asInstanceOf[OrderByElement]
           val exp = elem.getExpression()
           val isAsc = elem.isAsc()
-          val eval1 = new Evaluator(pair1._2.toArray)
+          val eval1 = new Evaluator(pair1._2.toArray, childTupleTableMap)
           exp.accept(eval1)
-          val eval2 = new Evaluator(pair2._2.toArray)
+          val eval2 = new Evaluator(pair2._2.toArray, childTupleTableMap)
           exp.accept(eval2)
           val op1 = eval1.getResult()
           val op2 = eval2.getResult()
@@ -61,7 +58,6 @@ class MergeSortAdjust (
           if (cmp != 0) break
         })
       }
-
       cmp
     })
   }
@@ -73,12 +69,18 @@ class OrderByOperator (val inputOper: Operator, val elements: List[_])
   val table = inputOper.getTable
   var inputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   var outputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
+  
+  var tupleTableMap = List[String]()
+  override def getTupleTableMap = tupleTableMap
 
   override def processOp () {
     childOperators.foreach(child => child.processOp)
-
     inputAdjustable = inputOper.getAdjustable
-    val adjustable = new MergeSortAdjust(inputAdjustable, elements, true)
+    
+    val childOperator = childOperators(0)
+    val childTupleTableMap = childOperator.getTupleTableMap
+    tupleTableMap = childTupleTableMap
+    val adjustable = new MergeSortAdjust(inputAdjustable, elements, childTupleTableMap)
     outputAdjustable = table.mutator.run(adjustable)
   }
 

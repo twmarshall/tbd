@@ -95,7 +95,7 @@ class TBDSqlContext(val mutator: Mutator)  {
     val members = typeOf[T].members.filter(!_.isMethod)
     val colnameMap: Map[String, ScalaColumn] = 
       members.zipWithIndex.map( x => (
-        x._1.name.toString(),
+        x._1.name.toString().trim,
         ScalaColumn(x._1.name.toString(), x._2, x._1.typeSignature))
       ).toMap
 

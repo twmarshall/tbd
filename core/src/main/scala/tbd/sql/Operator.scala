@@ -34,6 +34,8 @@ trait Operator {
   def processOp () {}
 
   def getTable: ScalaTable 
+  
+  def getTupleTableMap: List[String]
 
   def getAdjustable: tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]]
 

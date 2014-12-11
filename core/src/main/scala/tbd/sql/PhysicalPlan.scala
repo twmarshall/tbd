@@ -31,13 +31,15 @@ class PhysicalPlan (
 
   def execute(): Operator = {
     val plainSelect = selectBody.asInstanceOf[PlainSelect]
+    val tableJoins = plainSelect.getJoins()
+    val hasJoin =  (tableJoins != null)
     val fromItemVisitor = new FromItemParseVisitor(tablesMap)
     fromItems.accept(fromItemVisitor)
     var oper = fromItemVisitor.getOperator
 
-    val tableJoins = plainSelect.getJoins()
+    oper.asInstanceOf[TableScanOperator].setTupleTableMap(hasJoin)
+
     if (tableJoins != null) {
-      TupleStruct.setJoinCondition(true)
       val joinIter = tableJoins.iterator()
       while (joinIter.hasNext()){
         val joinTable = joinIter.next().asInstanceOf[Join]
@@ -45,11 +47,10 @@ class PhysicalPlan (
         joinTable.getRightItem().accept(fromItemVisitor);
 
         var rightOper = fromItemVisitor.getOperator
+        rightOper.asInstanceOf[TableScanOperator].setTupleTableMap(hasJoin)
         oper = new JoinOperator(oper, rightOper,
             joinTable.getOnExpression)
       }
-    } else {
-      TupleStruct.setJoinCondition(false)
     }
     if (whereClause != null) {
       oper = new FilterOperator(oper, whereClause)
@@ -78,6 +79,7 @@ class PhysicalPlan (
     } else {
       oper = new ProjectionOperator(oper, projectStmts)
     }
+
 
     
     oper.processOp

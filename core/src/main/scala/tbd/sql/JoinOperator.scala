@@ -18,6 +18,7 @@ package tbd.sql
 import net.sf.jsqlparser.expression._
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
+import scala.collection.JavaConversions._
 
 import tbd._
 import tbd.datastore.IntData
@@ -28,19 +29,13 @@ class JoinAdjust (
   leftList: AdjustableList[Int, Seq[Datum]],
   rightList: AdjustableList[Int, Seq[Datum]],
   val conditionExp: Expression, 
-  var isTupleMapPresent: Boolean)
+  val childTupleTableMap: List[String])
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
 
   def condition (pair1: (Int, Seq[Datum]), pair2: (Int, Seq[Datum])): Boolean = {
     if (conditionExp == null) return true
     val row = pair1._2 ++ pair2._2
-
-//    if (isTupleMapPresent) {
-        TupleStruct.setTupleTableMap(row.toArray)
-//        isTupleMapPresent = false;
-//      }
-      val eval = new Evaluator(row.toArray)
-
+      val eval = new Evaluator(row.toArray, childTupleTableMap)
       conditionExp.accept(eval)
       eval.getAccumulatorBoolean
   }
@@ -65,15 +60,20 @@ class JoinOperator (
   var rightAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   var outputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   var isTupleMapPresent = true
-
+  
+  var tupleTableMap = List[String]()
+  override def getTupleTableMap = tupleTableMap
+  
+  
   override def processOp () {
     childOperators.foreach(child => child.processOp)
-
+    val childTupleTableMap = rightOper.getTupleTableMap ++ leftOper.getTupleTableMap
+    tupleTableMap = childTupleTableMap
     leftAdjustable = leftOper.getAdjustable
     rightAdjustable = rightOper.getAdjustable
-
+    
     val adjustable = new JoinAdjust(leftAdjustable, rightAdjustable, 
-      conditionExp, isTupleMapPresent)
+      conditionExp, childTupleTableMap)
     outputAdjustable = leftTable.mutator.run(adjustable)
   }
 
