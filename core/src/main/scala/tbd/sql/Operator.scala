@@ -15,29 +15,31 @@
  */
 package tbd.sql
 
-object BufferUtils {
-  def getValue(d: tbd.sql.Datum) = {
-    if (d.isInstanceOf[Datum.dLong]) 
-        d.asInstanceOf[Datum.dLong].getValue()
-  else if (d.isInstanceOf[Datum.dDecimal]) 
-        d.asInstanceOf[Datum.dDecimal].getValue()
-    else if (d.isInstanceOf[Datum.dDate]) 
-        d.asInstanceOf[Datum.dDate].getValue()
-    else d.asInstanceOf[Datum.dString].getValue()
-  }
-}
-
+/*
+ * Operator is responsible to executing the SQL clause
+ * and defining schema
+ */
 trait Operator {
-
-  def initialize() {}
-
-  def processOp () {}
-
+  
   def getTable: ScalaTable 
   
+  /*
+   * Process the operator. execute the query statement
+   */
+  def processOp () {}
+  
+  /*
+   * Get the column definition of the processed schema
+   */
   def getTupleTableMap: List[String]
 
+  /*
+   * Return the processed adjustable list
+   */
   def getAdjustable: tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]]
 
+  /*
+   * Convert the adjustable list to Buffer
+   */
   def toBuffer: Any
 }

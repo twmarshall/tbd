@@ -33,6 +33,11 @@ import tbd._
 import tbd.datastore.IntData
 import tbd.list._
 
+/*
+ * GroupBy operation execute in two steps:
+ * 1. map out the rows by keys of groupby columns
+ * 2. reduce the  rows by key, applying the aggregation functions 
+ */
 class GroupByAdjust(
   list: AdjustableList[Int, Seq[Datum]],
   groupbyList: List[_],
@@ -51,6 +56,8 @@ class GroupByAdjust(
         val funcName = e.asInstanceOf[net.sf.jsqlparser.expression.Function].
           getName()
         if (funcName.equalsIgnoreCase("avg")) {
+          // AVG computes from the division of two aggregate functions: 
+          // SUM and COUNT
           aggreFuncTypes = aggreFuncTypes :+ "avgsum"
           aggreFuncTypes = aggreFuncTypes :+ "avgcount"
           hasAvg = true
@@ -64,16 +71,16 @@ class GroupByAdjust(
 
       }
   }
-
+  
+  /*
+   * map out by groupby columns
+   */
   def mapper(pair: (Int, Seq[Datum])): (Seq[Datum], Seq[Datum]) = {
 
     var row = pair._2
     var groupByDatumList = Seq[Datum]()
     var singleDatum: Datum = null.asInstanceOf[Datum]
-//    if (isTupleMapPresent) {
-//      TupleStruct.setTupleTableMap(pair._2.toArray)
-//      isTupleMapPresent = false;
-//    }
+
     val datumColumnName = tupleTableMap
     var keyCols = Seq[Datum](new Datum.dLong(pair._1, null))
     var valCols = Seq[Datum]()
@@ -138,6 +145,9 @@ class GroupByAdjust(
     (keyCols, valCols)
   }
 
+  /*
+   * compare to group by keys, in order to sort rows by the group by columns
+   */
   def groupByComparator(
     pair1: (Seq[Datum], Seq[Datum]),
     pair2: (Seq[Datum], Seq[Datum])): Int = {
@@ -169,6 +179,9 @@ class GroupByAdjust(
     newDatumList.toSeq
   }
 
+  /*
+   * Compute AVG from SUM and COUNT
+   */
   def mapper2 (pair: (Seq[Datum], Seq[Datum])) : (Int, Seq[Datum]) = {
 
     val idx = pair._1(0).asInstanceOf[Datum.dLong].getValue().asInstanceOf[Int]
@@ -201,6 +214,9 @@ class GroupByAdjust(
   }
 }
 
+/*
+ * GroupByOperator implements the GROUP BY and AGGREGATION clauses
+ */
 class GroupByOperator(
   val inputOper: Operator,
   val groupbyList: List[_],
@@ -215,6 +231,9 @@ class GroupByOperator(
   var tupleTableMap = List[String]()
   override def getTupleTableMap = tupleTableMap
   
+  /*
+   * set the list of column names
+   */
   def setTupleTableMap (childTupleTableMap: List[String]) = {
     selectExpressionList.foreach(item => {
       val selectItem = item.asInstanceOf[SelectItem]

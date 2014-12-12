@@ -35,7 +35,7 @@ class JoinTests extends FlatSpec with Matchers {
       Rec(row(0), row(1).trim.toLong, row(2).trim.toDouble)
     val tableName1 = "records1"
     val tableName2 = "records2"
-    val path = "data.csv"
+    val path = "data/data.csv"
 
     sqlContext.csvFile[Rec](tableName1, path, f)
     sqlContext.csvFile[Rec](tableName2, path, f)
@@ -81,7 +81,7 @@ class JoinTests extends FlatSpec with Matchers {
       Rec(row(0), row(1).trim.toLong, row(2).trim.toDouble)
     val tableName1 = "records1"
     val tableName2 = "records2"
-    val path = "data.csv"
+    val path = "data/data.csv"
 
     sqlContext.csvFile[Rec](tableName1, path, f)
     sqlContext.csvFile[Rec](tableName2, path, f)

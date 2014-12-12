@@ -24,11 +24,20 @@ import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SubJoin;
 import net.sf.jsqlparser.statement.select.SubSelect;
 
+/*
+ * Entry to visiting the FROM items (table, sub select, etc)
+ * retrieves the operator that scan the schema speficied by the 
+ * FROM clause
+ */
 class FromItemParseVisitor (val tablesMap: Map[String, ScalaTable])
   extends FromItemVisitor {
 
   var oper: Operator = _
 
+  /*
+   * Get the operator that scans the table,
+   * set alias if any.
+   */
   def visit(table: Table) {
     tablesMap.get(table.getName()).get.table.setAlias(table.getAlias)
     oper = new TableScanOperator(table, tablesMap)

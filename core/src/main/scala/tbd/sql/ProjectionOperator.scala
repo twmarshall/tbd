@@ -27,7 +27,10 @@ import tbd._
 import tbd.datastore.IntData
 import tbd.list._
 
-
+/*
+ * ProjectionAdjust maps a row to a new one with columns
+ * specified by the SELECT clause
+ */
 class ProjectionAdjust (
   list: AdjustableList[Int, Seq[Datum]],
   val projectStmt: List[_],
@@ -80,6 +83,9 @@ class ProjectionAdjust (
   }
 }
 
+/*
+ * ProjectionOperator execute the SELECT clause
+ */
 class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
     extends Operator{
   var childOperators = List[Operator]():+ inputOper;
@@ -90,6 +96,9 @@ class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
   var tupleTableMap = List[String]()
   override def getTupleTableMap = tupleTableMap
   
+  /*
+   * Set the column definition
+   */
   def setTupleTableMap (childTupleTableMap: List[String]) = {
     projectStmt.foreach(item => {
       val selectItem = item.asInstanceOf[SelectItem]

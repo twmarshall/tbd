@@ -14,7 +14,6 @@ object TBDBuild extends Build {
     scalaVersion := buildScalaVersion,
     fork         := true,
     autoScalaLibrary := true,
-    //unmanagedJars in Compile += file("lib/jsqlparser-0.8.6.jar"),
     scalacOptions ++= Seq("-feature", "-deprecation")
   )
 
@@ -40,7 +39,6 @@ object TBDBuild extends Build {
     "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
 
     "org.rogach"                  % "scallop_2.11"         % "0.9.5",
-    //"com.github.jsqlparser"       % "jsqlparser"           % "0.8.6",
 
     "org.scala-lang"             %% "scala-pickling"       % "0.8.0",
     "org.scalatest"              %% "scalatest"            % "2.1.3" % "test",
@@ -49,7 +47,6 @@ object TBDBuild extends Build {
 
   val mkrun = TaskKey[File]("mkrun")
   val mkvisualization = TaskKey[File]("mkvisualization")
-  //val mksql = TaskKey[File]("mksql")
 
   lazy val root = Project (
     "root",
@@ -140,29 +137,6 @@ object TBDBuild extends Build {
     )
   ) dependsOn(core)
 
-/*
-  lazy val sql = Project(
-    "sql",
-    file("sql"),
-    settings = buildSettings ++ Seq (
-      libraryDependencies ++= (commonDeps),
-      mksql := {
-        val classpath = (fullClasspath in Runtime).value.files.absString
-        val template = """#!/bin/sh
-        java -Xmx8g -Xss256m -classpath "%s" %s $@
-        """
-
-        val sql = template.format(classpath, "tbd.sql.SQLTest")
-        val sqlOut = baseDirectory.value / "../bin/sql.sh"
-        IO.write(sqlOut, sql)
-        sqlOut.setExecutable(true)
-
-        sqlOut
-        
-      }
-    )
-  ) dependsOn(core)
-*/
   lazy val macros = Project(
     "macros",
     file("macros"),

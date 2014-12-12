@@ -29,6 +29,9 @@ class TableScanOperator (
 
   var tupleTableMap = List[String]()
 
+  /*
+   * set the list of column names
+   */
   def setTupleTableMap (hasJoinCondition: Boolean = false) = {
     val alias = table.table.getAlias
     val colIter = table.colnameMap.keysIterator

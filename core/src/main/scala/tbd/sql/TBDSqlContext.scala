@@ -46,10 +46,16 @@ class TableNameTakenException(
   def this(nestedException : Throwable) = this("", nestedException)
 }
 
+/*
+ * Entry of the the SQL engine 
+ */
 class TBDSqlContext(val mutator: Mutator)  {
 
   var tablesMap: Map[String, ScalaTable] = Map()
 
+  /*
+   * Transform an object of Type T to a row of datum
+   */
   def T2Datum[T: ClassTag: TypeTag]
       (table: net.sf.jsqlparser.schema.Table,
        t: T, members: Iterable[ru.Symbol]) : Seq[Datum] = {
@@ -84,6 +90,9 @@ class TBDSqlContext(val mutator: Mutator)  {
 
   }
 
+  /*
+   * load data from .csv file
+   */
   def csvFile[T: ClassTag: TypeTag]
       (tableName: String,
        path: String,
@@ -101,12 +110,15 @@ class TBDSqlContext(val mutator: Mutator)  {
 
     val table = new Table(tableName, tableName)
     val listContents = fileContents.map(x => T2Datum[T](table, x, members))
-
+    // register table
     tablesMap += (tableName -> new  ScalaTable(listContents,
       colnameMap, table, mutator, listConf))
 
   }
 
+  /*
+   * Execute SQL statement
+   */
   def sql (query: String): Operator = {
     val parserManager = new CCJSqlParserManager();
     val statement = parserManager.parse(

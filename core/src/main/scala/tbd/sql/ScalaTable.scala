@@ -24,6 +24,9 @@ import tbd.TBD._
 case class ScalaColumn (val columnName: String, val index: Int,
   val colType: ru.Type)
 
+/*
+ * Table representation in TBD
+ */
 class ScalaTable (
   val rows: Iterator[Seq[Datum]],
   val colnameMap: Map[String, ScalaColumn],
@@ -32,12 +35,15 @@ class ScalaTable (
   val listConf: ListConf) {
 
   val input = mutator.createList[Int, Seq[Datum]](listConf)
-
+  // load data into the adjustable list
   rows.zipWithIndex.foreach( row => {
     input.put(row._2, row._1)
   })
 
   def printTable = {
-    print(input.getAdjustableList.toBuffer(mutator))
+    input.getAdjustableList.toBuffer(mutator).foreach(pair => {
+      pair._2.foreach { d => print (d + "\t|") }
+      println
+    })
   }
 }

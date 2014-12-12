@@ -40,6 +40,9 @@ class FilterAdjust (
   }
 }
 
+/*
+ * Filter Operator execute the WHERE clause
+ */
 class FilterOperator (val inputOper: Operator, val condition: Expression)
   extends Operator{
   var childOperators = List[Operator]():+ inputOper;

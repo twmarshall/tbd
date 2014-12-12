@@ -8,7 +8,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-import java.util.logging.Level;
 
 import net.sf.jsqlparser.expression.*;
 import net.sf.jsqlparser.expression.operators.arithmetic.*;
@@ -42,7 +41,6 @@ public class Evaluator implements ExpressionVisitor {
 
 	public Evaluator(Datum[] t2, List<String> tupleTableMap) {
 		this(t2);
-		//System.out.println("init map: " + tupleTableMap);
 		this.tupleTableMap = tupleTableMap;
 	}
 
@@ -76,20 +74,11 @@ public class Evaluator implements ExpressionVisitor {
 	}
 
 	public void visit(Column column) {
-//		System.out.println("Column:" + column);
-
 		int index=-1;
 		if(firstEntry==null){
 			columnValue = column;
 		}
-/*
-		if (TupleStruct.getTupleTableMap() != null) {
-			tupleTableMap = TupleStruct.getTupleTableMap();
-		}
-		*/
 		String columnName = column.getWholeColumnName().toLowerCase();
-//				System.out.println("Columnname:" + columnName);
-//				System.out.println("map: " + tupleTableMap);
 		if(tupleTableMap.contains(columnName)) {
 			index = tupleTableMap.indexOf(columnName);
 		}
@@ -307,7 +296,6 @@ public class Evaluator implements ExpressionVisitor {
 			}
 		} else if (leftValue instanceof Long && rightValue instanceof Long) {
 			if ((Long)leftValue > (Long)rightValue) {
-				 //lg.logger.log(Level.INFO, "GREATER than");
 				accumulatorBoolean = true;
 			}
 		} else if (leftValue instanceof Long && rightValue instanceof Double) {

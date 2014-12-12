@@ -33,7 +33,7 @@ class OrderByTests extends FlatSpec with Matchers {
     val f = (row: Array[String]) =>
       Rec(row(0), row(1).trim.toLong, row(2).trim.toDouble)
     val tableName = "records"
-    val path = "data.csv"
+    val path = "data/data.csv"
     sqlContext.csvFile[Rec](tableName, path, f)
 
     var statement = "select   2* pairvalue, pairkey " +
