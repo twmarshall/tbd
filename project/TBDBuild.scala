@@ -1,7 +1,5 @@
 import sbt._
 import Keys._
-import sbtassembly.Plugin._
-import AssemblyKeys._
 
 object TBDBuild extends Build {
   val buildOrganization = "edu.cmu.cs"
@@ -18,18 +16,6 @@ object TBDBuild extends Build {
   )
 
   val mavenResolver = "Maven Central Server" at "http://central.maven.org/maven2"
-
-  val reefVer = "0.9"
-  val hadoopVer = "2.2.0"
-  val reefDeps = Seq (
-    "com.microsoft.reef"          % "reef-common"          % reefVer,
-    "com.microsoft.reef"          % "reef-runtime-local"   % reefVer,
-    "com.microsoft.reef"          % "reef-runtime-yarn"    % reefVer,
-    "com.microsoft.reef"          % "reef-checkpoint"      % reefVer,
-    "com.microsoft.reef"          % "reef-io"              % reefVer,
-    "com.microsoft.reef"          % "reef-annotations"     % reefVer,
-    "com.microsoft.reef"          % "reef-poison"          % reefVer
-  )
 
   val commonDeps = Seq (
     "com.sleepycat"               % "je"                   % "5.0.73",
@@ -51,7 +37,7 @@ object TBDBuild extends Build {
   lazy val root = Project (
     "root",
     file(".")
-  ) aggregate(macros, core, visualization, reef)
+  ) aggregate(macros, core, visualization)
 
   lazy val core = Project (
     "core",
@@ -63,7 +49,7 @@ object TBDBuild extends Build {
       mkrun := {
         val classpath = (fullClasspath in Runtime).value.files.absString
         val template = """#!/bin/sh
-        java -Xmx2g -Xss128m -classpath "%s" %s $@
+        java -Xmx2g -Xss4m -classpath "%s" %s $@
         """
 
         val master = template.format(classpath, "tbd.master.Main")
@@ -71,10 +57,10 @@ object TBDBuild extends Build {
         IO.write(masterOut, master)
         masterOut.setExecutable(true)
 
-        val worker = template.format(classpath, "tbd.worker.Main")
-        val workerOut = baseDirectory.value / "../bin/worker.sh"
-        IO.write(workerOut, worker)
-        workerOut.setExecutable(true)
+       val worker = template.format(classpath, "tbd.worker.Main")
+       val workerOut = baseDirectory.value / "../bin/worker.sh"
+       IO.write(workerOut, worker)
+       workerOut.setExecutable(true)
 
         val experiment = template.format(classpath, "tbd.examples.list.Experiment")
         val experimentOut = baseDirectory.value / "../bin/experiment.sh"
@@ -90,30 +76,6 @@ object TBDBuild extends Build {
       }
     )
   ) dependsOn(macros)
-
-  lazy val reef = Project (
-    "reef",
-    file("reef"),
-    settings = buildSettings ++ assemblySettings ++ Seq (
-      libraryDependencies ++= (reefDeps
-                          ++ Seq(
-        ("org.apache.hadoop" % "hadoop-common" % "2.2.0").
-          exclude("org.sonatype.sisu.inject", "cglib").
-          exclude("javax.servlet", "servlet-api").
-          exclude("javax.servlet.jsp", "jsp-api"),
-        ("org.apache.hadoop" % "hadoop-mapreduce-client-core" % "2.2.0").
-          exclude("org.sonatype.sisu.inject", "cglib").
-          exclude("javax.servlet", "servlet-api").
-          exclude("javax.servlet.jsp", "jsp-api")
-      )),
-      mergeStrategy in assembly := {
-        case PathList(ps @ _*) if ps.last endsWith ".class" => MergeStrategy.first
-        case x =>
-          val oldStrategy = (mergeStrategy in assembly).value
-          oldStrategy(x)
-      }
-    )
-  ) dependsOn(core)
 
   lazy val visualization = Project(
     "visualization",
