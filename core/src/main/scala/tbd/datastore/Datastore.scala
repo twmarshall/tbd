@@ -233,7 +233,6 @@ class Datastore
         }
       }
 
-
       sender ! listId
 
     case GetAdjustableListMessage(listId: String) =>

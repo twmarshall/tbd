@@ -57,7 +57,6 @@ object Main {
     val master = Conf.master.get.get
     val logging = Conf.logging.get.get
 
-
     val conf = akkaConf + s"""
       akka.loglevel = $logging
 
