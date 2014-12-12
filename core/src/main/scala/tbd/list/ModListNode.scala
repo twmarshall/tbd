@@ -246,6 +246,7 @@ class ModListNode[T, U](var value: (T, U),
           value._2
         else
           f(runningValue, value._2)
+
       read(nextMod) {
         case null =>
           val tail = mod { write[ModListNode[T, U]](null) }

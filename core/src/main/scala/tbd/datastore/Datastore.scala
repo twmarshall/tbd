@@ -28,14 +28,13 @@ import tbd.list._
 import tbd.messages._
 
 object Datastore {
-  def props(storeType: String, cacheSize: Int, data: String): Props =
-    Props(classOf[Datastore], storeType, cacheSize, data)
+  def props(storeType: String, cacheSize: Int): Props =
+    Props(classOf[Datastore], storeType, cacheSize)
 }
 
 class Datastore
     (storeType: String,
-     cacheSize: Int,
-     data: String) extends Actor with ActorLogging {
+     cacheSize: Int) extends Actor with ActorLogging {
   import context.dispatcher
 
   var workerId: WorkerId = _
@@ -57,8 +56,6 @@ class Datastore
   private val datastores = Map[WorkerId, ActorRef]()
 
   private var misses = 0
-
-  private val datafile = data
 
   def createMod[T](value: T): Mod[T] = {
     var newModId: Long = workerId
@@ -236,21 +233,6 @@ class Datastore
         }
       }
 
-      if (datafile != "") {
-        val file = new File(datafile)
-        val fileSize = file.length()
-        val in = new BufferedReader(new FileReader(datafile))
-        var buf = new Array[Char](fileSize.toInt)
-        in.read(buf)
-
-        val regex =
-          Pattern.compile("""(?s)<key>(.*?)</key>[\s]*?<value>(.*?)</value>""")
-        val str = new String(buf)
-        val matcher = regex.matcher(str)
-        while (matcher.find()) {
-          list.put(matcher.group(1).toInt, matcher.group(2).toInt)
-        }
-      }
 
       sender ! listId
 

@@ -35,7 +35,7 @@ object Main {
       val logging = opt[String]("log", 'l', default = Some("INFO"),
         descr = "The logging level. Options, by increasing verbosity, are " +
         "OFF, WARNING, INFO, or DEBUG")
-      val timeout = opt[Int]("timeout", 't', default = Some(1000),
+      val timeout = opt[Int]("timeout", 't', default = Some(100),
         descr = "How long Akka waits on message responses before timing out")
     }
 
