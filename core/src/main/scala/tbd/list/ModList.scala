@@ -114,7 +114,7 @@ class ModList[T, U]
       (that: ModList[T, U],
        memo: Memoizer[Changeable[ModListNode[T, U]]],
        modizer: Modizer1[ModListNode[T, U]],
-       comparator: ((T, U), (T, U)) => Int)
+      comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): ModList[T, U] = {
     new ModList(
       modizer(head.id) {
@@ -304,7 +304,7 @@ class ModList[T, U]
   }
 
   def sortJoin[V](_that: AdjustableList[T, V])
-      (implicit c: Context, 
+      (implicit c: Context,
           ordering: Ordering[T]): AdjustableList[T, (U, V)] = {
     assert(_that.isInstanceOf[ModList[T, V]])
     val that = _that.asInstanceOf[ModList[T, V]]

@@ -72,13 +72,7 @@ class Worker
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       sender ! "done"
 
-    case GetListIdMessage(conf: ListConf) =>
-      if (partitions != conf.partitions || chunkSizes != conf.chunkSize) {
-        log.warning("Wrong partitions or chunkSizes.")
-      }
-      sender ! listId
-
-    case ScheduleTaskMessage(parent: ActorRef, _) =>
+    case CreateTaskMessage(parent: ActorRef) =>
       var taskId = workerId.toInt
       taskId = (taskId << 16) + nextTaskId
 
