@@ -311,6 +311,8 @@ Options:
 		      new ChunkWCAlgorithm(conf, listConf)
 		    else
 		      new WCAlgorithm(conf, listConf)
+                  case "wch" =>
+                    new WCHashAlgorithm(conf, listConf)
 		}
 
 		val results = alg.run()

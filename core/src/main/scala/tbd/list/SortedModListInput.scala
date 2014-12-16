@@ -17,6 +17,7 @@ package tbd.list
 
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.Map
+import scala.concurrent.Await
 
 import tbd.{Mod, Mutator}
 
@@ -48,29 +49,33 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
     tailMod = newTail
   }
 
+
+  def asyncPut(key: T, value: U) = ???
+
   def put(key: T, value: U) {
-    val nextOption = nodes.find { case (_key, _value) => ordering.lt(key, _key) }
+    val nextOption =
+      nodes.find { case (_key, _value) => ordering.lt(key, _key) }
 
     nextOption match {
       case None =>
-	val newTail = mutator.createMod[ModListNode[T, U]](null)
-	val newNode = new ModListNode((key, value), newTail)
+        val newTail = mutator.createMod[ModListNode[T, U]](null)
+        val newNode = new ModListNode((key, value), newTail)
 
-	mutator.updateMod(tailMod, newNode)
+        mutator.updateMod(tailMod, newNode)
 
-	nodes += ((key, tailMod))
-	tailMod = newTail
+        nodes += ((key, tailMod))
+        tailMod = newTail
       case Some(nextPair) =>
-	val (nextKey, nextMod) = nextPair
+        val (nextKey, nextMod) = nextPair
 
         val nextNode = mutator.read(nextMod)
-	val newNextMod = mutator.createMod[ModListNode[T, U]](nextNode)
+        val newNextMod = mutator.createMod[ModListNode[T, U]](nextNode)
 
-	val newNode = new ModListNode((key, value), newNextMod)
-	mutator.updateMod(nextMod, newNode)
+        val newNode = new ModListNode((key, value), newNextMod)
+        mutator.updateMod(nextMod, newNode)
 
-	nodes += ((nextKey, newNextMod))
-	nodes += ((key, nextMod))
+        nodes += ((nextKey, newNextMod))
+        nodes += ((key, nextMod))
     }
   }
 
@@ -87,7 +92,7 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
     mutator.updateMod(nodes(key), newNode)
   }
 
-  def remove(key: T) {
+  def remove(key: T, value: U) {
     val node = mutator.read(nodes(key))
     val nextNode = mutator.read(node.nextMod)
 

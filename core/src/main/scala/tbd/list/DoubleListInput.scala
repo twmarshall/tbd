@@ -33,13 +33,17 @@ class DoubleListInput[T, U]
     Await.result(future, DURATION)
   }
 
+  def asyncPut(key: T, value: U) = {
+    datastoreRef ? PutMessage(listId, key, value)
+  }
+
   def update(key: T, value: U) = {
     val future = datastoreRef ? UpdateMessage(listId, key, value)
     Await.result(future, DURATION)
   }
 
-  def remove(key: T) = {
-    val future = datastoreRef ? RemoveMessage(listId, key)
+  def remove(key: T, value: U) = {
+    val future = datastoreRef ? RemoveMessage(listId, key, value)
     Await.result(future, DURATION)
   }
 

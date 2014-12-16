@@ -15,10 +15,14 @@
  */
 package tbd.list
 
+import akka.pattern.ask
 import java.io.Serializable
 import scala.collection.mutable.Buffer
+import scala.concurrent.Await
 
 import tbd._
+import tbd.Constants._
+import tbd.messages._
 import tbd.TBD._
 
 class PartitionedDoubleList[T, U]
@@ -30,6 +34,30 @@ class PartitionedDoubleList[T, U]
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): PartitionedDoubleList[V, W] = ???
+
+  override def hashPartitionedFlatMap[V, W]
+      (f: ((T, U)) => Iterable[(V, W)],
+       numPartitions: Int)
+      (implicit c: Context): AdjustableList[V, W] = {
+    val conf = ListConf(partitions = partitions.size, double = true, hash = true)
+    val future = c.masterRef ? CreateListMessage(conf)
+    val input =
+      Await.result(future.mapTo[HashPartitionedDoubleListInput[V, W]], DURATION)
+
+    def innerMap(i: Int)(implicit c: Context) {
+      if (i < partitions.size) {
+        val (mappedPartition, mappedRest) = parWithHint({
+          c => partitions(i).hashPartitionedFlatMap(f, input)(c)
+        }, partitions(i).workerId)({
+          c => innerMap(i + 1)(c)
+        })
+      }
+    }
+
+    innerMap(0)
+
+    input.getAdjustableList()
+  }
 
   def join[V](that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): PartitionedDoubleList[T, (U, V)] = ???
@@ -126,5 +154,13 @@ class PartitionedDoubleList[T, U]
     }
 
     buf
+  }
+
+  def toString(mutator: Mutator): String = {
+    val buf = new StringBuffer()
+    for (partition <- partitions) {
+      buf.append(partition.toBuffer(mutator).toString)
+    }
+    buf.toString()
   }
 }

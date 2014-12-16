@@ -166,7 +166,7 @@ class ListTests extends FlatSpec with Matchers {
     mutator.propagate()
     output.toBuffer(mutator).map(_._2) should be (Buffer(-1, 0, 1, 2, 3, 4, 5))
 
-    input.remove(3)
+    input.remove(3, 3)
     mutator.propagate()
     output.toBuffer(mutator).map(_._2) should be (Buffer(-1, 0, 1, 2, 4, 5))
 
@@ -224,8 +224,8 @@ class ListTests extends FlatSpec with Matchers {
     output._1.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(0, 2, 4, 8))
     output._2.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(1))
 
-    input.remove(4)
-    input.remove(3)
+    input.remove(4, 2)
+    input.remove(3, 1)
     mutator.propagate()
 
     output._1.toBuffer(mutator).map(_._2).sortWith(_ < _) should be (Buffer(0, 4, 8))

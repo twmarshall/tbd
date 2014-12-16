@@ -28,11 +28,13 @@ class TableInput[T, U](mutator: Mutator) extends Input[T, U] {
     table.table(key) = mutator.createMod(value)
   }
 
+  def asyncPut(key: T, value: U) = ???
+
   def update(key: T, value: U) {
     mutator.updateMod(table.table(key), value)
   }
 
-  def remove(key: T) = ???
+  def remove(key: T, value: U) = ???
 
   def getTable(): ModTable[T, U] = table
 

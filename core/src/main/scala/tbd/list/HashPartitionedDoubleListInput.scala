@@ -17,40 +17,59 @@ package tbd.list
 
 import scala.collection.mutable.{Buffer, Map}
 
-class PartitionedDoubleListInput[T, U]
-    (partitions: Buffer[DoubleListInput[T, U]])
+import tbd.Constants.WorkerId
+
+class HashPartitionedDoubleListInput[T, U]
+    (workers: Map[WorkerId, Buffer[DoubleListInput[T, U]]])
   extends ListInput[T, U] with java.io.Serializable {
 
+  val workerIds = workers.keys.toBuffer
+
+  val nextPartition = workerIds.map(_ => 0)
+
+  val numWorkers = workerIds.size
+
+  private def getPartition(key: T) = {
+    val worker = workerIds(key.hashCode() % numWorkers)
+
+    nextPartition(worker) = (nextPartition(worker) + 1) % workers(worker).size
+
+    workers(worker)(nextPartition(worker))
+  }
+
   def put(key: T, value: U) = {
-    partitions(key.hashCode() % partitions.size).put(key, value)
+    getPartition(key).put(key, value)
   }
 
   def asyncPut(key: T, value: U) = {
-    partitions(key.hashCode() % partitions.size).asyncPut(key, value)
+    getPartition(key).asyncPut(key, value)
   }
 
   def update(key: T, value: U) = {
-    partitions(key.hashCode() % partitions.size).update(key, value)
+    getPartition(key).update(key, value)
   }
 
   def remove(key: T, value: U) = {
-    partitions(key.hashCode() % partitions.size).remove(key, value)
+    getPartition(key).remove(key, value)
   }
 
   def load(data: Map[T, U]) = {
     for ((key, value) <- data) {
-      partitions(key.hashCode() % partitions.size).put(key, value)
+      getPartition(key).put(key, value)
     }
   }
 
   def putAfter(key: T, newPair: (T, U)) = ???
 
   def getAdjustableList(): AdjustableList[T, U] = {
-    val adjustablePartitions = Buffer[DoubleList[T, U]]()
-    for (partition <- partitions) {
-      adjustablePartitions += partition.getAdjustableList()
+    val adjustablePartitions = Map[WorkerId, Buffer[DoubleList[T, U]]]()
+    for ((workerId, partitions) <- workers) {
+      adjustablePartitions(workerId) = Buffer[DoubleList[T, U]]()
+      for (partition <- partitions) {
+	adjustablePartitions(workerId) += partition.getAdjustableList()
+      }
     }
 
-    new PartitionedDoubleList(adjustablePartitions)
+    new HashPartitionedDoubleList(adjustablePartitions)
   }
 }

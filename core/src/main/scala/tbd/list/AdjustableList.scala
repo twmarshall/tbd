@@ -50,6 +50,11 @@ trait AdjustableList[T, U] {
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): AdjustableList[V, W]
 
+  def hashPartitionedFlatMap[V, W]
+      (f: ((T, U)) => Iterable[(V, W)],
+       numPartitions: Int)
+      (implicit c: Context): AdjustableList[V, W] = ???
+
   /**
    * Returns an AdjustableList mapping each key that is present in both lists
    * to a pair containing the corresponding values from each list.
@@ -80,6 +85,9 @@ trait AdjustableList[T, U] {
    */
   def mergesort(comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): AdjustableList[T, U] = ???
+
+  def partitionedReduce(f: ((T, U), (T, U)) => (T, U))
+      (implicit c: Context): Iterable[Mod[(T, U)]] = ???
 
   /**
    * Sorts the list, using the quicksort algorithm.
