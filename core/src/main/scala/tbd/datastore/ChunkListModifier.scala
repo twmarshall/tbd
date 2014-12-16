@@ -33,7 +33,7 @@ class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
   val nodes = Map[T, Mod[ChunkListNode[T, U]]]()
   val previous = Map[T, Mod[ChunkListNode[T, U]]]()
 
-  val list = new ChunkList[T, U](lastNodeMod, conf)
+  val list = new ChunkList[T, U](lastNodeMod, conf, datastore.workerId)
 
   def load(data: Map[T, U]) {
     var chunk = Vector[(T, U)]()

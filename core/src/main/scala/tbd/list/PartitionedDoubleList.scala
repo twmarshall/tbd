@@ -59,7 +59,7 @@ class PartitionedDoubleList[T, U]
     input.getAdjustableList()
   }
 
-  def join[V](that: AdjustableList[T, V])
+  def join[V](that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): PartitionedDoubleList[T, (U, V)] = ???
 
   def map[V, W](f: ((T, U)) => (V, W))

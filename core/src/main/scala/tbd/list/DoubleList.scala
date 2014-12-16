@@ -44,7 +44,7 @@ class DoubleList[T, U]
     }
   }
 
-  def join[V](_that: AdjustableList[T, V])
+  def join[V](_that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): DoubleList[T, (U, V)] = ???
 
   def map[V, W](f: ((T, U)) => (V, W))

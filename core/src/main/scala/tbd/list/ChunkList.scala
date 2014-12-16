@@ -19,12 +19,14 @@ import java.io.Serializable
 import scala.collection.mutable.Buffer
 
 import tbd._
-import tbd.Constants.ModId
+import tbd.Constants._
 import tbd.TBD._
 
 class ChunkList[T, U]
     (val head: Mod[ChunkListNode[T, U]],
-     conf: ListConf) extends AdjustableList[T, U] with Serializable {
+     conf: ListConf,
+     val workerId: WorkerId = -1)
+  extends AdjustableList[T, U] with Serializable {
 
   override def chunkMap[V, W](f: (Vector[(T, U)]) => (V, W))
       (implicit c: Context): ModList[V, W] = {
@@ -33,10 +35,10 @@ class ChunkList[T, U]
     new ModList(
       mod {
         read(head) {
-	  case null => write[ModListNode[V, W]](null)
-	  case node => node.chunkMap(f, memo)
+          case null => write[ModListNode[V, W]](null)
+          case node => node.chunkMap(f, memo)
         }
-      }
+      }, false, workerId
     )
   }
 
@@ -50,14 +52,14 @@ class ChunkList[T, U]
     new ChunkList(
       mod {
         read(head) {
-	  case null => write[ChunkListNode[V, W]](null)
-	  case node => node.flatMap(f, conf.chunkSize, memo)
+          case null => write[ChunkListNode[V, W]](null)
+          case node => node.flatMap(f, conf.chunkSize, memo)
         }
-      }, conf
+      }, conf, workerId
     )
   }
 
-  def join[V](_that: AdjustableList[T, V])
+  def join[V](_that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): ChunkList[T, (U, V)] = {
     assert(_that.isInstanceOf[ChunkList[T, V]])
     val that = _that.asInstanceOf[ChunkList[T, V]]
@@ -68,7 +70,7 @@ class ChunkList[T, U]
       mod {
 	read(head) {
 	  case null => write[ChunkListNode[T, (U, V)]](null)
-	  case node => node.loopJoin(that, memo)
+	  case node => node.loopJoin(that, memo, condition)
 	}
       }, conf
     )
@@ -95,24 +97,23 @@ class ChunkList[T, U]
     new ChunkList(
       mod {
         read(head) {
-	  case null => write[ChunkListNode[V, W]](null)
-	  case node => node.map(f, memo)
+          case null => write[ChunkListNode[V, W]](null)
+          case node => node.map(f, memo)
         }
-      }, conf
+      }, conf, workerId
     )
   }
 
-  def merge(that: ChunkList[T, U])
-      (implicit c: Context,
-       ordering: Ordering[T]): ChunkList[T, U] = {
-    merge(that, new Memoizer[Changeable[ChunkListNode[T, U]]]())
+  def merge(that: ChunkList[T, U], comparator: ((T, U), (T, U)) => Int)
+      (implicit c: Context): ChunkList[T, U] = {
+    merge(that, new Memoizer[Changeable[ChunkListNode[T, U]]](), comparator)
   }
 
   def merge
       (that: ChunkList[T, U],
-       memo: Memoizer[Changeable[ChunkListNode[T, U]]])
-      (implicit c: Context,
-       ordering: Ordering[T]): ChunkList[T, U] = {
+       memo: Memoizer[Changeable[ChunkListNode[T, U]]],
+       comparator: ((T, U), (T, U)) => Int)
+      (implicit c: Context): ChunkList[T, U] = {
 
     def innerMerge
         (one: ChunkListNode[T, U],
@@ -145,7 +146,7 @@ class ChunkList[T, U]
 	} else {
 	  val buf = Buffer[(T, U)]()
 	  while (i < oneR.size && j < twoR.size) {
-	    if (ordering.lt(oneR(i)._1, twoR(j)._1)) {
+	    if (comparator(oneR(i), twoR(j)) < 0) {
 	      buf += oneR(i)
 	      i += 1
 	    } else {
@@ -222,11 +223,10 @@ class ChunkList[T, U]
     )
   }
 
-  override def mergesort()
-      (implicit c: Context,
-       ordering: Ordering[T]): ChunkList[T, U] = {
+  override def mergesort(cmp: ((T, U), (T, U)) => Int)
+      (implicit c: Context): ChunkList[T, U] = {
     def comparator(pair1: (T, U), pair2: (T, U)) = {
-      ordering.lt(pair1._1, pair2._1)
+      cmp(pair1, pair2) < 0
     }
 
     val modizer = new Modizer1[ChunkListNode[T, U]]()
@@ -244,7 +244,7 @@ class ChunkList[T, U]
       val merged = memo(pair1._2, pair2._2) {
         val memoizer = new Memoizer[Changeable[ChunkListNode[T, U]]]()
 
-	pair2._2.merge(pair1._2, memoizer)
+	pair2._2.merge(pair1._2, memoizer, cmp)
       }
 
       (pair1._1 + pair2._1, merged)
@@ -266,10 +266,9 @@ class ChunkList[T, U]
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = ???
 
-  override def reduceByKey(f: (U, U) => U)
-      (implicit c: Context,
-       ordering: Ordering[T]): ChunkList[T, U] = {
-    val sorted = this.mergesort()
+  override def reduceByKey(f: (U, U) => U, comparator: ((T, U), (T, U)) => Int)
+      (implicit c: Context): ChunkList[T, U] = {
+    val sorted = this.mergesort( comparator)
 
     new ChunkList(
       mod {
