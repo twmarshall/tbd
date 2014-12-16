@@ -56,7 +56,7 @@ class Worker
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       sender ! "done"
 
-    case ScheduleTaskMessage(parent: ActorRef, _) =>
+    case CreateTaskMessage(parent: ActorRef) =>
       var taskId = workerId.toInt
       taskId = (taskId << 16) + nextTaskId
 
