@@ -71,15 +71,20 @@ object TBDBuild extends Build {
         IO.write(masterOut, master)
         masterOut.setExecutable(true)
 
-	val worker = template.format(classpath, "tbd.worker.Main")
-	val workerOut = baseDirectory.value / "../bin/worker.sh"
-	IO.write(workerOut, worker)
-	workerOut.setExecutable(true)
+       val worker = template.format(classpath, "tbd.worker.Main")
+       val workerOut = baseDirectory.value / "../bin/worker.sh"
+       IO.write(workerOut, worker)
+       workerOut.setExecutable(true)
 
         val experiment = template.format(classpath, "tbd.examples.list.Experiment")
         val experimentOut = baseDirectory.value / "../bin/experiment.sh"
         IO.write(experimentOut, experiment)
         experimentOut.setExecutable(true)
+
+        val sql = template.format(classpath, "tbd.sql.SQLTest")
+        val sqlOut = baseDirectory.value / "../bin/sql.sh"
+        IO.write(sqlOut, sql)
+        sqlOut.setExecutable(true)
 
         masterOut
       }
