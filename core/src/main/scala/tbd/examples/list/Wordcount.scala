@@ -155,34 +155,38 @@ object Wordcount {
 
     val algorithm = Conf.algorithm.get.get
 
-    val mutator = new Mutator(MasterConnector(Conf.master.get.get))
+    for (i <- 0 to 3) {
+      val connector = MasterConnector(Conf.master.get.get)
+      val mutator = new Mutator(connector)
 
-    val listConf = new ListConf(
-      file = Conf.file.get.get,
-      partitions = Conf.partitions.get.get,
-      chunkSize = Conf.chunkSize.get.get,
-      double = true)
+      val listConf = new ListConf(
+        file = Conf.file.get.get,
+        partitions = Conf.partitions.get.get,
+        chunkSize = Conf.chunkSize.get.get,
+        double = true)
 
-    val beforeLoad = System.currentTimeMillis()
-    var input = mutator.createList[String, String](listConf)
-    println("load time = " + (System.currentTimeMillis() - beforeLoad))
+      val beforeLoad = System.currentTimeMillis()
+      var input = mutator.createList[String, String](listConf)
+      println("load time = " + (System.currentTimeMillis() - beforeLoad))
 
-    if (algorithm == "wc") {
-      val beforeInitial = System.currentTimeMillis()
-      val output = mutator.run(new WordcountAdjust(input.getAdjustableList()))
-      println("initial run time = " + (System.currentTimeMillis - beforeInitial))
+      if (algorithm == "wc") {
+        val beforeInitial = System.currentTimeMillis()
+        val output = mutator.run(new WordcountAdjust(input.getAdjustableList()))
+        println("initial run time = " + (System.currentTimeMillis - beforeInitial))
 
-      //val file = new BufferedWriter(new FileWriter("wordcount.out"))
-      //file.write(mutator.read(output)._2.toString)
-    } else {
-      val beforeInitial = System.currentTimeMillis()
-      val output = mutator.run(new WordcountHashAdjust(input.getAdjustableList(), listConf.partitions))
-      println("initial run time = " + (System.currentTimeMillis - beforeInitial))
-    }
+        //val file = new BufferedWriter(new FileWriter("wordcount.out"))
+        //file.write(mutator.read(output)._2.toString)
+      } else {
+        val beforeInitial = System.currentTimeMillis()
+        val output = mutator.run(new WordcountHashAdjust(input.getAdjustableList(), listConf.partitions))
+        println("initial run time = " + (System.currentTimeMillis - beforeInitial))
+      }
       /*} else {
-        mutator.run(new ChunkWordcountAdjust(input.getAdjustableList()))
-      }*/
+       mutator.run(new ChunkWordcountAdjust(input.getAdjustableList()))
+       }*/
 
-    mutator.shutdown()
+      mutator.shutdown()
+      connector.shutdown()
+    }
   }
 }
