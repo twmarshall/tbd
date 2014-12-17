@@ -14,21 +14,18 @@ object TBDBuild extends Build {
     scalaVersion := buildScalaVersion,
     fork         := true,
     autoScalaLibrary := true,
+    resolvers += "Local Maven Repository" at "file://" +
+      Path.userHome.absolutePath + "/.m2/repository",
     scalacOptions ++= Seq("-feature", "-deprecation")
   )
 
   val mavenResolver = "Maven Central Server" at "http://central.maven.org/maven2"
 
-  val reefVer = "0.9"
-  val hadoopVer = "2.2.0"
+  val reefVer = "0.10-incubating-SNAPSHOT"
+  val hadoopVer = "2.4.0"
   val reefDeps = Seq (
-    "com.microsoft.reef"          % "reef-common"          % reefVer,
-    "com.microsoft.reef"          % "reef-runtime-local"   % reefVer,
-    "com.microsoft.reef"          % "reef-runtime-yarn"    % reefVer,
-    "com.microsoft.reef"          % "reef-checkpoint"      % reefVer,
-    "com.microsoft.reef"          % "reef-io"              % reefVer,
-    "com.microsoft.reef"          % "reef-annotations"     % reefVer,
-    "com.microsoft.reef"          % "reef-poison"          % reefVer
+    "org.apache.reef" % "reef-runtime-local" % reefVer,
+    "org.apache.reef" % "reef-runtime-yarn"  % reefVer
   )
 
   val commonDeps = Seq (
@@ -51,7 +48,7 @@ object TBDBuild extends Build {
   lazy val root = Project (
     "root",
     file(".")
-  ) aggregate(macros, core, visualization, reef)
+  ) aggregate(macros, core, visualization)
 
   lazy val core = Project (
     "core",
@@ -97,11 +94,11 @@ object TBDBuild extends Build {
     settings = buildSettings ++ assemblySettings ++ Seq (
       libraryDependencies ++= (reefDeps
                           ++ Seq(
-        ("org.apache.hadoop" % "hadoop-common" % "2.2.0").
+        ("org.apache.hadoop" % "hadoop-common" % hadoopVer).
           exclude("org.sonatype.sisu.inject", "cglib").
           exclude("javax.servlet", "servlet-api").
           exclude("javax.servlet.jsp", "jsp-api"),
-        ("org.apache.hadoop" % "hadoop-mapreduce-client-core" % "2.2.0").
+        ("org.apache.hadoop" % "hadoop-mapreduce-client-core" % hadoopVer).
           exclude("org.sonatype.sisu.inject", "cglib").
           exclude("javax.servlet", "servlet-api").
           exclude("javax.servlet.jsp", "jsp-api")
@@ -120,7 +117,7 @@ object TBDBuild extends Build {
     file("visualization"),
     settings = buildSettings ++ Seq (
       libraryDependencies ++= (commonDeps
-                          ++ Seq("org.scala-lang" % "scala-swing" % "2.11.0-M7")),
+                               ++ Seq("org.scala-lang" % "scala-swing" % "2.11.0-M7")),
       mkvisualization := {
         val classpath = (fullClasspath in Runtime).value.files.absString
         val template = """#!/bin/sh

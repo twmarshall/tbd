@@ -15,19 +15,19 @@
  */
 package tbd.reef;
 
-import com.microsoft.reef.client.ClientConfiguration;
-import com.microsoft.reef.runtime.local.client.LocalRuntimeConfiguration;
-import com.microsoft.reef.runtime.yarn.client.YarnClientConfiguration;
-import com.microsoft.tang.Configuration;
-import com.microsoft.tang.Injector;
-import com.microsoft.tang.JavaConfigurationBuilder;
-import com.microsoft.tang.Tang;
-import com.microsoft.tang.annotations.Name;
-import com.microsoft.tang.annotations.NamedParameter;
-import com.microsoft.tang.exceptions.BindException;
-import com.microsoft.tang.exceptions.InjectionException;
-import com.microsoft.tang.formats.AvroConfigurationSerializer;
-import com.microsoft.tang.formats.CommandLine;
+import org.apache.reef.client.ClientConfiguration;
+import org.apache.reef.runtime.local.client.LocalRuntimeConfiguration;
+import org.apache.reef.runtime.yarn.client.YarnClientConfiguration;
+import org.apache.reef.tang.Configuration;
+import org.apache.reef.tang.Injector;
+import org.apache.reef.tang.JavaConfigurationBuilder;
+import org.apache.reef.tang.Tang;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
+import org.apache.reef.tang.exceptions.BindException;
+import org.apache.reef.tang.exceptions.InjectionException;
+import org.apache.reef.tang.formats.AvroConfigurationSerializer;
+import org.apache.reef.tang.formats.CommandLine;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -36,8 +36,6 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import tbd.reef.param.Memory;
-import tbd.reef.param.WorkerXmx;
-import tbd.reef.param.WorkerXss;
 
 /**
  * TBD REEF application launcher - main class.
@@ -80,8 +78,6 @@ public final class TBDLaunch {
     cl.registerShortNameOfClass(TBDLaunch.NumWorkers.class);
     cl.registerShortNameOfClass(TBDLaunch.Timeout.class);
     cl.registerShortNameOfClass(Memory.class);
-    cl.registerShortNameOfClass(WorkerXmx.class);
-    cl.registerShortNameOfClass(WorkerXss.class);
     cl.processCommandLine(args);
     return confBuilder.build();
   }
@@ -100,10 +96,6 @@ public final class TBDLaunch {
         String.valueOf(injector.getNamedInstance(TBDLaunch.Timeout.class)));
     cb.bindNamedParameter(Memory.class,
         String.valueOf(injector.getNamedInstance(Memory.class)));
-    cb.bindNamedParameter(WorkerXmx.class,
-        String.valueOf(injector.getNamedInstance(WorkerXmx.class)));
-    cb.bindNamedParameter(WorkerXss.class,
-        String.valueOf(injector.getNamedInstance(WorkerXss.class)));
     return cb.build();
   }
 
