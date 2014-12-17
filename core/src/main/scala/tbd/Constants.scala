@@ -29,10 +29,16 @@ object Constants {
   // This allows us to generate unique ids in parallel.
   type TaskId = Int
 
+  // The size of TaskIds, in bytes.
+  val taskIdSize = 4
+
   // The first 32 bits of a ModId represent the TaskId where the Mod was
   // created. We can use this to request the value of the Mod from the Worker
   // that owns it.
   type ModId = Long
+
+  // The size of ModIds, in bytes.
+  val modIdSize = 8
 
   def getWorkerId(modId: ModId): WorkerId = {
     (modId >> 48).toShort
@@ -43,6 +49,21 @@ object Constants {
   }
 
   type InputId = Int
+
+  type Pointer = Long
+
+  // The size of Pointers, in bytes.
+  val pointerSize = 8
+
+  type ModizerId = Int
+
+  // The size of ModizerIds, in bytes.
+  val modizerIdSize = 4
+
+  type MemoizerId = Int
+
+  // The size of MemoizerIds, in bytes.
+  val memoizerIdSize = 4
 
   val localhost = InetAddress.getLocalHost.getHostAddress
 

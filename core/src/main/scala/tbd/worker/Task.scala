@@ -45,94 +45,98 @@ class Task
 
   private val c = new Context(taskId, this, datastore, masterRef)
 
-  def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
-                end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
+  def propagate(start: Pointer = Timestamp.MIN_TIMESTAMP,
+                end: Pointer = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
     Future {
-      var option = c.ddg.updated.find((timestamp: Timestamp) =>
-        timestamp > start && timestamp < end)
+      var option = c.ddg.updated.find((timestamp: Pointer) =>
+        Timestamp.>(timestamp, start) &&
+        Timestamp.<(timestamp, end))
       while (!option.isEmpty) {
         val timestamp = option.get
-        val node = timestamp.node
         c.ddg.updated -= timestamp
 
-        node match {
-          case readNode: ReadNode =>
-            if (readNode.updated) {
-              val newValue = c.readId(readNode.modId)
+        val nodePtr = Timestamp.getNodePtr(timestamp)
+        Node.getType(nodePtr) match {
+          case Node.ParNodeType =>
+            Await.result(Future.sequence(c.pending), DURATION)
+            c.pending.clear()
 
-              val oldStart = c.reexecutionStart
-              c.reexecutionStart = timestamp.getNext()
-              val oldEnd = c.reexecutionEnd
-              c.reexecutionEnd = timestamp.end
-              val oldCurrentModId = c.currentModId
-              c.currentModId = readNode.currentModId
-              val oldCurrentModId2 = c.currentModId2
-              c.currentModId2 = readNode.currentModId2
+            val future1 =
+              c.ddg.getLeftTask(nodePtr) ? PropagateTaskMessage
+            val future2 =
+                c.ddg.getRightTask(nodePtr) ? PropagateTaskMessage
 
-              val oldCurrentTime = c.currentTime
-              c.currentTime = timestamp
+            ParNode.setPebble1(nodePtr, false)
+            ParNode.setPebble2(nodePtr, false)
 
-              readNode.updated = false
-              readNode.reader(newValue)
+            Await.result(future1, DURATION)
+            Await.result(future2, DURATION)
 
-              if (c.reexecutionStart < c.reexecutionEnd) {
-                c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
-              }
+          case Node.ReadNodeType =>
+            val newValue = c.readId(ReadNode.getModId(nodePtr))
 
-              c.reexecutionStart = oldStart
-              c.reexecutionEnd = oldEnd
-              c.currentModId = oldCurrentModId
-              c.currentModId2 = oldCurrentModId2
-              c.currentTime = oldCurrentTime
+            val oldStart = c.reexecutionStart
+            c.reexecutionStart = Timestamp.getNext(timestamp)
+            val oldEnd = c.reexecutionEnd
+            c.reexecutionEnd = Timestamp.getEndPtr(timestamp)
+            val oldCurrentModId = c.currentModId
+            c.currentModId = Node.getCurrentModId1(nodePtr)
+            val oldCurrentModId2 = c.currentModId2
+            c.currentModId2 = Node.getCurrentModId2(nodePtr)
+
+            val oldCurrentTime = c.currentTime
+            c.currentTime = timestamp
+
+            val reader =
+              c.ddg.readers(ReadNode.getReaderId(nodePtr))
+            reader(newValue)
+
+            if (Timestamp.<(c.reexecutionStart, c.reexecutionEnd)) {
+              c.ddg.splice(c.reexecutionStart, c.reexecutionEnd, c)
             }
-          case readNode: Read2Node =>
-            if (readNode.updated) {
-              val newValue1 = c.readId(readNode.modId1)
-              val newValue2 = c.readId(readNode.modId2)
 
-              val oldStart = c.reexecutionStart
-              c.reexecutionStart = timestamp.getNext()
-              val oldEnd = c.reexecutionEnd
-              c.reexecutionEnd = timestamp.end
-              val oldCurrentModId = c.currentModId
-              c.currentModId = readNode.currentModId
-              val oldCurrentModId2 = c.currentModId2
-              c.currentModId2 = readNode.currentModId2
+            c.reexecutionStart = oldStart
+            c.reexecutionEnd = oldEnd
+            c.currentModId = oldCurrentModId
+            c.currentModId2 = oldCurrentModId2
+            c.currentTime = oldCurrentTime
 
-              val oldCurrentTime = c.currentTime
-              c.currentTime = timestamp
+          case Node.Read2NodeType =>
+            val newValue1 = c.readId(Read2Node.getModId1(nodePtr))
+            val newValue2 = c.readId(Read2Node.getModId2(nodePtr))
 
-              readNode.updated = false
-              readNode.reader(newValue1, newValue2)
+            val oldStart = c.reexecutionStart
+            c.reexecutionStart = Timestamp.getNext(timestamp)
+            val oldEnd = c.reexecutionEnd
+            c.reexecutionEnd = Timestamp.getEndPtr(timestamp)
+            val oldCurrentModId = c.currentModId
+            c.currentModId = Node.getCurrentModId1(nodePtr)
+            val oldCurrentModId2 = c.currentModId2
+            c.currentModId2 = Node.getCurrentModId2(nodePtr)
 
-              if (c.reexecutionStart < c.reexecutionEnd) {
-                c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
-              }
+            val oldCurrentTime = c.currentTime
+            c.currentTime = timestamp
 
-              c.reexecutionStart = oldStart
-              c.reexecutionEnd = oldEnd
-              c.currentModId = oldCurrentModId
-              c.currentModId2 = oldCurrentModId2
-              c.currentTime = oldCurrentTime
+            val reader = c.ddg.read2ers(
+              Read2Node.getReaderId(nodePtr))
+            reader(newValue1, newValue2)
+
+            if (Timestamp.<(c.reexecutionStart, c.reexecutionEnd)) {
+              c.ddg.splice(c.reexecutionStart, c.reexecutionEnd, c)
             }
-          case parNode: ParNode =>
-            if (parNode.updated) {
-              Await.result(Future.sequence(c.pending), DURATION)
-              c.pending.clear()
 
-              val future1 = parNode.taskRef1 ? PropagateTaskMessage
-              val future2 = parNode.taskRef2 ? PropagateTaskMessage
+            c.reexecutionStart = oldStart
+            c.reexecutionEnd = oldEnd
+            c.currentModId = oldCurrentModId
+            c.currentModId2 = oldCurrentModId2
+            c.currentTime = oldCurrentTime
 
-              parNode.pebble1 = false
-              parNode.pebble2 = false
-
-              Await.result(future1, DURATION)
-              Await.result(future2, DURATION)
-            }
+          case x => println("unknown node type " + x)
         }
 
-        option = c.ddg.updated.find((timestamp: Timestamp) =>
-          timestamp > start && timestamp < end)
+        option = c.ddg.updated.find((timestamp: Pointer) =>
+          Timestamp.>(timestamp, start) &&
+          Timestamp.<(timestamp, end))
       }
 
       true
@@ -153,12 +157,12 @@ class Task
       c.pending.clear()
 
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
-      val newPebble = c.ddg.parUpdated(taskRef)
+      val newPebble = c.ddg.parUpdated(taskRef, c)
 
       if (newPebble) {
         (parent ? PebbleMessage(self, modId)) pipeTo sender
       } else {
-	sender ! "done"
+        sender ! "done"
       }
 
     case PropagateTaskMessage =>
@@ -169,15 +173,15 @@ class Task
       val respondTo = sender
       val future = propagate()
       future onComplete {
-	case Success(t) =>
-	  c.updatedMods.clear()
+        case Success(t) =>
+          c.updatedMods.clear()
 
           Await.result(Future.sequence(c.pending), DURATION)
           c.pending.clear()
 
           respondTo ! "done"
-	case Failure(e) =>
-	  e.printStackTrace()
+        case Failure(e) =>
+          e.printStackTrace()
       }
 
     case GetTaskDDGMessage =>
@@ -191,7 +195,7 @@ class Task
         futures += actorRef ? ShutdownTaskMessage
       }
 
-      datastore ? RemoveModsMessage(c.ddg.getMods())
+      //datastore ? RemoveModsMessage(c.ddg.getMods())
 
       Future.sequence(futures) pipeTo sender
 

@@ -15,96 +15,185 @@
  */
 package tbd.ddg
 
-class Sublist(var id: Int, var next: Sublist) {
-  var previous: Sublist = null
+import tbd.MemoryAllocator
+import tbd.Constants._
 
-  val base: Timestamp = new Timestamp(this, 0, null, null, null)
-  base.next = base
-  base.previous = base
+object Sublist {
+  val idOffset = 0
+  val sizeOffset = idOffset + 4
+  val nextSubOffset = sizeOffset + 4
+  val previousSubOffset = nextSubOffset + pointerSize
+  val baseOffset = previousSubOffset + pointerSize
 
-  var size = 0
+  def create(id: Int, nextSub: Pointer, basePointer: Pointer = -1): Pointer = {
+    val size = 4 * 2 + pointerSize * 3
+    val ptr = MemoryAllocator.allocate(size)
 
-  def after(t: Timestamp, node: Node): Timestamp = {
-    val previous =
-      if (t == null) {
-        base
+    MemoryAllocator.putInt(ptr + idOffset, id)
+    MemoryAllocator.putInt(ptr + sizeOffset, 0)
+    MemoryAllocator.putPointer(ptr + nextSubOffset, nextSub)
+    MemoryAllocator.putPointer(ptr + previousSubOffset, -1)
+    MemoryAllocator.putPointer(ptr + baseOffset, -1)
+
+    val basePtr = Timestamp.create(ptr, 0, -1, -1, basePointer)
+    Sublist.setBasePtr(ptr, basePtr)
+
+    Timestamp.setNextTime(basePtr, basePtr)
+    Timestamp.setPreviousTime(basePtr, basePtr)
+
+    ptr
+  }
+
+  def getId(ptr: Pointer): Int = {
+    MemoryAllocator.getInt(ptr + idOffset)
+  }
+
+  def setId(ptr: Pointer, newId: Int) {
+    MemoryAllocator.putInt(ptr + idOffset, newId)
+  }
+
+  def getSize(ptr: Pointer): Int = {
+    MemoryAllocator.getInt(ptr + sizeOffset)
+  }
+
+  def setSize(ptr: Pointer, newSize: Int) {
+    MemoryAllocator.putInt(ptr + sizeOffset, newSize)
+  }
+
+  def getNextSub(ptr: Pointer): Pointer = {
+    MemoryAllocator.getPointer(ptr + nextSubOffset)
+  }
+
+  def setNextSub(ptr: Pointer, newNextSub: Pointer) {
+    MemoryAllocator.putPointer(ptr + nextSubOffset, newNextSub)
+  }
+
+  def getPreviousSub(ptr: Pointer): Pointer = {
+    MemoryAllocator.getPointer(ptr + previousSubOffset)
+  }
+
+  def setPreviousSub(thisPtr: Pointer, newPreviousSub: Pointer) {
+    MemoryAllocator.putPointer(thisPtr + previousSubOffset, newPreviousSub)
+  }
+
+  def getBasePtr(thisPtr: Pointer): Pointer = {
+    MemoryAllocator.getPointer(thisPtr + baseOffset)
+  }
+
+  def setBasePtr(thisPtr: Pointer, newBasePtr: Pointer) {
+    MemoryAllocator.putPointer(thisPtr + baseOffset, newBasePtr)
+  }
+
+  def after(thisPtr: Pointer, t: Pointer, nodePtr: Pointer): Pointer = {
+    val basePtr = getBasePtr(thisPtr)
+    val previousPtr =
+      if (t == -1) {
+        basePtr
       } else {
         t
       }
 
-    val newTimestamp =
-      if (previous.next == base) {
-        new Timestamp(this, previous.time + 1, base, previous, node)
+    val newTimePtr =
+      if (Timestamp.getNextTime(previousPtr) == basePtr) {
+        Timestamp.create(thisPtr, Timestamp.getTime(previousPtr) + 1,
+                         basePtr, previousPtr, nodePtr)
       } else {
-        new Timestamp(
-	  this,
-          (previous.time + previous.next.time) / 2,
-          previous.next,
-          previous,
-	  node)
+        val nextTimePtr = Timestamp.getNextTime(previousPtr)
+        val newTime = (Timestamp.getTime(previousPtr) +
+                       Timestamp.getTime(nextTimePtr)) / 2
+
+        Timestamp.create(thisPtr, newTime, nextTimePtr, previousPtr, nodePtr)
       }
 
-    previous.next = newTimestamp
-    newTimestamp.next.previous = newTimestamp
-    size += 1
+    Timestamp.setNextTime(previousPtr, newTimePtr)
+    Timestamp.setPreviousTime(Timestamp.getNextTime(newTimePtr), newTimePtr)
+    Sublist.setSize(thisPtr, Sublist.getSize(thisPtr) + 1)
 
-    newTimestamp
+    newTimePtr
   }
 
-  def append(node: Node): Timestamp = {
-    val previous = base.previous
-    val newTimestamp = new Timestamp(this, previous.time + 1, base, previous, node)
+  def append(thisPtr: Pointer, nodePtr: Pointer): Pointer = {
+    val basePtr = getBasePtr(thisPtr)
 
-    previous.next = newTimestamp
-    newTimestamp.next.previous = newTimestamp
-    size += 1
+    val previousPtr = Timestamp.getPreviousTime(basePtr)
+    val newTimePtr = Timestamp.create(
+      thisPtr,
+      Timestamp.getTime(previousPtr) + 1,
+      basePtr,
+      previousPtr,
+      nodePtr)
 
-    newTimestamp
+    Timestamp.setNextTime(previousPtr, newTimePtr)
+    Timestamp.setPreviousTime(Timestamp.getNextTime(newTimePtr), newTimePtr)
+    Sublist.setSize(thisPtr, Sublist.getSize(thisPtr) + 1)
+
+    newTimePtr
   }
 
-  def remove(t: Timestamp) {
-    t.previous.next = t.next
-    t.next.previous = t.previous
-    size -= 1
+  def remove(thisPtr: Pointer, toRemove: Pointer) {
+    val previousPtr = Timestamp.getPreviousTime(toRemove)
+    val nextPtr = Timestamp.getNextTime(toRemove)
+
+    Timestamp.setNextTime(previousPtr, nextPtr)
+    Timestamp.setPreviousTime(nextPtr, previousPtr)
+    Sublist.setSize(thisPtr, Sublist.getSize(thisPtr) - 1)
   }
 
-  def split(newSublist: Sublist) {
-    var node = base
+  def split(thisPtr: Pointer, newSublistPtr: Pointer) {
+    val basePtr = getBasePtr(thisPtr)
+
+    var nodePtr = basePtr
     var i = 0
     while (i < 32) {
-      node = node.next
-      node.time = i + 1
+      nodePtr = Timestamp.getNextTime(nodePtr)
+      Timestamp.setTime(nodePtr, i + 1)
       i += 1
     }
-    val newStart = node.next
-    newSublist.base.next = newStart
-    newStart.previous = newSublist.base
+    val newStartPtr = Timestamp.getNextTime(nodePtr)
+    val newBasePtr = getBasePtr(newSublistPtr)
+    Timestamp.setNextTime(newBasePtr, newStartPtr)
+    Timestamp.setPreviousTime(newStartPtr, newBasePtr)
 
-    node.next = base
-    base.previous = node
-    this.size = i
+    Timestamp.setNextTime(nodePtr, basePtr)
+    Timestamp.setPreviousTime(basePtr, nodePtr)
+    Sublist.setSize(thisPtr, i)
 
-    node = newSublist.base
+    nodePtr = newBasePtr
     i = 0
-    while (node.next != base) {
-      node = node.next
-      node.time = i + 1
-      node.sublist = newSublist
+    while (Timestamp.getNextTime(nodePtr) != basePtr) {
+      nodePtr = Timestamp.getNextTime(nodePtr)
+      Timestamp.setTime(nodePtr, i + 1)
+
+      Timestamp.setSublistPtr(nodePtr, newSublistPtr)
+
       i += 1
     }
 
-    newSublist.base.previous = node
-    node.next = newSublist.base
-    newSublist.size = i
+    Timestamp.setPreviousTime(newBasePtr, nodePtr)
+    Timestamp.setNextTime(nodePtr, newBasePtr)
+    Sublist.setSize(newSublistPtr, i)
   }
 
-  override def toString = {
-    var node = base.next
-    var ret = "(" + size + ") {"
+  def calculateSize(ptr: Pointer): Int = {
+    var timePtr = Timestamp.getNextTime(ptr)
 
-    while (node != base) {
-      ret += node + ", "
-      node = node.next
+    var size = 0
+    while (timePtr != ptr) {
+      size += 1
+      timePtr = Timestamp.getNextTime(timePtr)
+    }
+
+    size
+  }
+
+  def toString(thisPtr: Pointer): String = {
+    val basePtr = getBasePtr(thisPtr)
+    var nodePtr = Timestamp.getNextTime(basePtr)
+    var ret = "(" + getSize(thisPtr) + ") {"
+
+    while (nodePtr != basePtr) {
+      ret += Timestamp.toString(nodePtr) + ", "
+      nodePtr = Timestamp.getNextTime(nodePtr)
     }
     ret + "}"
   }

@@ -309,5 +309,7 @@ class ChunkList[T, U]
     }
   }
 
+  override def hashCode() = head.hashCode()
+
   override def toString = "ChunkList[" + head.toString + "]"
 }

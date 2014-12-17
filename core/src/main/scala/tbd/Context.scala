@@ -18,11 +18,11 @@ package tbd
 import akka.actor.ActorRef
 import akka.event.Logging
 import akka.pattern.ask
-import scala.collection.mutable.{Buffer, Set}
+import scala.collection.mutable.{Buffer, Map, Set}
 import scala.concurrent.{Await, Future}
 
 import tbd.Constants._
-import tbd.ddg.{DDG, Node, Timestamp}
+import tbd.ddg.{DDG, Node}
 import tbd.messages._
 import tbd.worker.Task
 
@@ -37,6 +37,8 @@ class Context
 
   val ddg = new DDG()
 
+  val memoTable = Map[Seq[Any], Buffer[(Pointer, Any)]]()
+
   var initialRun = true
 
   // Contains a list of mods that have been updated since the last run of change
@@ -45,13 +47,13 @@ class Context
 
   // The timestamp of the read currently being reexecuting during change
   // propagation.
-  var reexecutionStart: Timestamp = _
+  var reexecutionStart: Pointer = _
 
   // The timestamp of the node immediately after the end of the read being
   // reexecuted.
-  var reexecutionEnd: Timestamp = _
+  var reexecutionEnd: Pointer = _
 
-  var currentTime: Timestamp = ddg.ordering.base.next.base
+  var currentTime: Pointer = ddg.startTime
 
   // The mod created by the most recent (in scope) call to mod. This is
   // what a call to write will write to.
@@ -62,6 +64,14 @@ class Context
   var currentModId2: ModId = _
 
   private var nextModId: ModId = 0
+
+  private var nextModizerId: ModizerId = 0
+
+  private val modizers = Map[ModizerId, Modizer[_]]()
+
+  private var nextMemoizerId: MemoizerId = 0
+
+  private val memoizers = Map[MemoizerId, Memoizer[_]]()
 
   val pending = Buffer[Future[Any]]()
 
@@ -75,6 +85,32 @@ class Context
     nextModId += 1
 
     newModId
+  }
+
+  def newModizerId(modizer: Modizer[_]): ModizerId = {
+    val newModizerId = nextModizerId
+    nextModizerId += 1
+
+    modizers(newModizerId) = modizer
+
+    newModizerId
+  }
+
+  def getModizer(modizerId: ModizerId): Modizer[_] = {
+    modizers(modizerId)
+  }
+
+  def addMemoizer(memoizer: Memoizer[_]): MemoizerId = {
+    val newMemoizerId = nextMemoizerId
+    nextMemoizerId += 1
+
+    memoizers(newMemoizerId) = memoizer
+
+    newMemoizerId
+  }
+
+  def getMemoizer(memoizerId: MemoizerId): Memoizer[_] = {
+    memoizers(memoizerId)
   }
 
   def read[T](mod: Mod[T], taskRef: ActorRef = null): T = {

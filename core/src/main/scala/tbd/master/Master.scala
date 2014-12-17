@@ -91,10 +91,11 @@ class Master extends Actor with ActorLogging {
     case RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int) =>
       log.info("Starting initial run for mutator " + mutatorId)
 
-      val taskRefFuture = workers(nextWorker) ?
+      val future = workers(nextWorker) ?
         CreateTaskMessage(workers(nextWorker))
       cycleWorkers()
-      val taskRef = Await.result(taskRefFuture.mapTo[ActorRef], DURATION)
+      val (taskId, taskRef) =
+        Await.result(future.mapTo[(TaskId ,ActorRef)], DURATION)
 
       (taskRef ? RunTaskMessage(adjust)) pipeTo sender
 

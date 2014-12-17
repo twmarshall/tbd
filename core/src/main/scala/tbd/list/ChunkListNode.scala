@@ -282,5 +282,7 @@ class ChunkListNode[T, U]
     }
   }
 
-  override def toString = "Node(" + chunk + ", " + nextMod + ")"
+  override def hashCode() = chunk.hashCode() * nextMod.hashCode()
+
+  override def toString = "ChunkNode(" + chunk + ", " + nextMod + ")"
 }

@@ -66,7 +66,8 @@ object DDG {
   //Recursivley creates a visualizer DDG from a TBD DDG.
   def create(ddg: tbd.ddg.DDG): DDG = {
 
-    val newNode = new Node(ddg.root)
+    val newNode = new Node(ddg.startTime)
+
     val result = new DDG(newNode)
 
     result.nodes += newNode
@@ -82,18 +83,21 @@ object DDG {
   //Fetches child nodes for a given node. Takes extra care of par nodes.
   private def getChildren
       (ddg: tbd.ddg.DDG,
-       start: tbd.ddg.Timestamp,
-       end: tbd.ddg.Timestamp): Seq[tbd.ddg.Timestamp] = {
-    start.node match {
-      case parNode: tbd.ddg.ParNode =>
-	val f1 = parNode.taskRef1 ? tbd.messages.GetTaskDDGMessage
-	val ddg1 = Await.result(f1.mapTo[tbd.ddg.DDG], DURATION)
-	val f2 = parNode.taskRef2 ? tbd.messages.GetTaskDDGMessage
-	val ddg2 = Await.result(f2.mapTo[tbd.ddg.DDG], DURATION)
+       start: Pointer,
+       end: Pointer): Seq[Pointer] = {
+    val nodePtr = tbd.ddg.Timestamp.getNodePtr(start)
+    tbd.ddg.Node.getType(nodePtr) match {
+      case tbd.ddg.Node.ParNodeType =>
+        println("!!")
+        val f1 = ddg.getLeftTask(nodePtr) ? tbd.messages.GetTaskDDGMessage
+        val ddg1 = Await.result(f1.mapTo[tbd.ddg.DDG], DURATION)
+        val f2 =
+          ddg.getRightTask(nodePtr) ? tbd.messages.GetTaskDDGMessage
+        val ddg2 = Await.result(f2.mapTo[tbd.ddg.DDG], DURATION)
 
-        ddg1.ordering.getChildren(ddg1.startTime, ddg1.endTime) ++
-        ddg2.ordering.getChildren(ddg2.startTime, ddg2.endTime)
-      case _ => ddg.ordering.getChildren(start, end)
+        ddg1.getChildren(ddg1.startTime, ddg1.endTime) ++
+        ddg2.getChildren(ddg2.startTime, ddg2.endTime)
+      case _ => ddg.getChildren(start, end)
     }
   }
 
@@ -101,17 +105,16 @@ object DDG {
   private def append
       (ddg: tbd.ddg.DDG,
        node: Node,
-       time: tbd.ddg.Timestamp,
+       time: Pointer,
        result: DDG): Unit = {
-    val ddgNode = time.node
-    val newNode = new Node(ddgNode)
+    val newNode = new Node(time)
 
     result.nodes += newNode
     result.adj += (newNode -> new ArrayBuffer[Edge]())
     result.adj(node) += new Edge.Control(node, newNode)
     result.adj(newNode) += new Edge.InverseControl(newNode, node)
 
-    getChildren(ddg, time, time.end).foreach(x => {
+    getChildren(ddg, time, tbd.ddg.Timestamp.getEndPtr(time)).foreach(x => {
       append(ddg, newNode, x, result)
     })
   }

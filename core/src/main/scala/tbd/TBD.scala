@@ -21,6 +21,7 @@ import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 
 import tbd.Constants._
+import tbd.ddg._
 import tbd.list.ListInput
 import tbd.messages._
 import tbd.TBD._
@@ -28,7 +29,7 @@ import tbd.TBD._
 object TBD {
   def put[T, U](input: ListInput[T, U], key: T, value: U)
       (implicit c: Context) {
-    val timestamp =
+    val time =
       c.ddg.addPut(input.asInstanceOf[ListInput[Any, Any]], key, value, c)
 
     val future = input.asyncPut(key, value)
@@ -36,7 +37,8 @@ object TBD {
       c.pending += future
     }
 
-    timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
+    val end = c.ddg.nextTimestamp(Timestamp.getNodePtr(time), c)
+    Timestamp.setEndPtr(time, end)
   }
 
   def read[T, U](mod: Mod[T])
@@ -44,17 +46,18 @@ object TBD {
       (implicit c: Context): Changeable[U] = {
     val value = c.read(mod, c.task.self)
 
-    val timestamp = c.ddg.addRead(
+    val time = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
       value,
       reader.asInstanceOf[Any => Changeable[Any]],
+      c.currentModId,
+      -1,
       c)
-    val readNode = timestamp.node
 
     val changeable = reader(value)
 
-    readNode.currentModId = c.currentModId
-    timestamp.end = c.ddg.nextTimestamp(readNode, c)
+    val end = c.ddg.nextTimestamp(Timestamp.getNodePtr(time), c)
+    Timestamp.setEndPtr(time, end)
 
     changeable
   }
@@ -64,17 +67,18 @@ object TBD {
       (implicit c: Context): Any = {
     val value = c.read(mod, c.task.self)
 
-    val timestamp = c.ddg.addRead(
+    val time = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
       value,
       reader.asInstanceOf[Any => Changeable[Any]],
+      c.currentModId,
+      -1,
       c)
-    val readNode = timestamp.node
 
     val ret = reader(value)
 
-    readNode.currentModId = c.currentModId
-    timestamp.end = c.ddg.nextTimestamp(readNode, c)
+    val end = c.ddg.nextTimestamp(Timestamp.getNodePtr(time), c)
+    Timestamp.setEndPtr(time, end)
 
     ret
   }
@@ -84,18 +88,18 @@ object TBD {
       (implicit c: Context): (Changeable[U], Changeable[V]) = {
     val value = c.read(mod, c.task.self)
 
-    val timestamp = c.ddg.addRead(
+    val time = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
       value,
       reader.asInstanceOf[Any => Changeable[Any]],
+      c.currentModId,
+      c.currentModId2,
       c)
-    val readNode = timestamp.node
 
     val changeables = reader(value)
 
-    readNode.currentModId = c.currentModId
-    readNode.currentModId2 = c.currentModId2
-    timestamp.end = c.ddg.nextTimestamp(readNode, c)
+    val end = c.ddg.nextTimestamp(Timestamp.getNodePtr(time), c)
+    Timestamp.setEndPtr(time, end)
 
     changeables
   }
@@ -106,19 +110,20 @@ object TBD {
     val value1 = c.read(mod1, c.task.self)
     val value2 = c.read(mod2, c.task.self)
 
-    val timestamp = c.ddg.addRead2(
+    val time = c.ddg.addRead2(
       mod1.asInstanceOf[Mod[Any]],
       mod2.asInstanceOf[Mod[Any]],
       value1,
       value2,
       reader.asInstanceOf[(Any, Any) => Changeable[Any]],
+      c.currentModId,
+      -1,
       c)
-    val read2Node = timestamp.node
 
     val changeable = reader(value1, value2)
 
-    read2Node.currentModId = c.currentModId
-    timestamp.end = c.ddg.nextTimestamp(read2Node, c)
+    val end = c.ddg.nextTimestamp(Timestamp.getNodePtr(time), c)
+    Timestamp.setEndPtr(time, end)
 
     changeable
   }
@@ -127,34 +132,73 @@ object TBD {
      (implicit c: Context): Mod[T] = {
     val mod1 = new Mod[T](c.newModId())
 
-    modInternal(initializer, mod1, null, null, c)
+    modHelper(initializer, mod1.id, -1, -1, -1, c)
+
+    mod1
   }
 
-  def modInternal[T]
-      (initializer: => Changeable[T],
-       mod1: Mod[T],
-       modizer: Modizer[T],
-       key: Any,
-       c: Context): Mod[T] = {
+  def modHelper[T, U]
+      (initializer: => Any,
+       modId1: ModId,
+       modId2: ModId,
+       currentModId: ModId,
+       currentModId2: ModId,
+       c: Context): Unit = {
     val oldCurrentModId = c.currentModId
+    if (modId1 != -1) {
+      c.currentModId = modId1
+    }
 
-    c.currentModId = mod1.id
+    val oldCurrentModId2 = c.currentModId2
+    if (modId2 != -1) {
+      c.currentModId2 = modId2
+    }
 
-    val timestamp = c.ddg.addMod(
-      mod1.id,
-      -1,
-      modizer.asInstanceOf[Modizer[Any]],
-      key,
-      c)
-    val modNode = timestamp.node
+    val modNodePointer = ModNode.create(
+      modId1, modId2, currentModId, currentModId2)
+
+    val time = c.ddg.nextTimestamp(modNodePointer, c)
 
     initializer
 
-    timestamp.end = c.ddg.nextTimestamp(modNode, c)
+    val end = c.ddg.nextTimestamp(modNodePointer, c)
+    Timestamp.setEndPtr(time, end)
 
     c.currentModId = oldCurrentModId
+    c.currentModId2 = oldCurrentModId2
+  }
 
-    mod1
+  def modizerHelper[T, U]
+      (initializer: => Any,
+       modId1: ModId,
+       modId2: ModId,
+       modizerId: ModizerId,
+       key: Any,
+       currentModId: ModId,
+       currentModId2: ModId,
+       c: Context): Unit = {
+    val oldCurrentModId = c.currentModId
+    if (modId1 != -1) {
+      c.currentModId = modId1
+    }
+
+    val oldCurrentModId2 = c.currentModId2
+    if (modId2 != -1) {
+      c.currentModId2 = modId2
+    }
+
+    val modNodePointer = ModizerNode.create(
+      modId1, modId2, modizerId, key, currentModId, currentModId2)
+
+    val time = c.ddg.nextTimestamp(modNodePointer, c)
+
+    initializer
+
+    val end = c.ddg.nextTimestamp(modNodePointer, c)
+    Timestamp.setEndPtr(time, end)
+
+    c.currentModId = oldCurrentModId
+    c.currentModId2 = oldCurrentModId2
   }
 
   def mod2[T, U](initializer: => (Changeable[T], Changeable[U]))
@@ -162,103 +206,24 @@ object TBD {
     val mod1 = new Mod[T](c.newModId())
     val mod2 = new Mod[U](c.newModId())
 
-    mod2Internal(initializer, mod1, mod2, null, null, c)
-  }
+    modHelper(initializer, mod1.id, mod2.id, -1, -1, c)
 
-  def mod2Internal[T, U]
-      (initializer: => (Changeable[T], Changeable[U]),
-       modLeft: Mod[T],
-       modRight: Mod[U],
-       modizer: Modizer2[T, U],
-       key: Any,
-       c: Context): (Mod[T], Mod[U]) = {
-    val oldCurrentModId = c.currentModId
-    c.currentModId = modLeft.id
-
-    val oldCurrentModId2 = c.currentModId2
-    c.currentModId2 = modRight.id
-
-    val timestamp = c.ddg.addMod(
-      modLeft.id,
-      modRight.id,
-      modizer.asInstanceOf[Modizer[Any]],
-      key,
-      c)
-    val modNode = timestamp.node
-
-    initializer
-
-    timestamp.end = c.ddg.nextTimestamp(modNode, c)
-
-    c.currentModId = oldCurrentModId
-    c.currentModId2 = oldCurrentModId2
-
-    (modLeft, modRight)
+    (mod1, mod2)
   }
 
   def modLeft[T, U](initializer: => (Changeable[T], Changeable[U]))
       (implicit c: Context): (Mod[T], Changeable[U]) = {
-    modLeftInternal(initializer, new Mod[T](c.newModId()), null, null, c)
-  }
+    val modLeft = new Mod[T](c.newModId())
 
-  def modLeftInternal[T, U]
-      (initializer: => (Changeable[T], Changeable[U]),
-       modLeft: Mod[T],
-       modizer: Modizer2[T, U],
-       key: Any,
-       c: Context): (Mod[T], Changeable[U]) = {
-
-    val oldCurrentModId = c.currentModId
-    c.currentModId = modLeft.id
-
-    val timestamp = c.ddg.addMod(
-      modLeft.id,
-      -1,
-      modizer.asInstanceOf[Modizer[Any]],
-      key,
-      c)
-    val modNode = timestamp.node
-
-    modNode.currentModId2 = c.currentModId2
-
-    initializer
-
-    timestamp.end = c.ddg.nextTimestamp(modNode, c)
-
-    c.currentModId = oldCurrentModId
+    modHelper(initializer, modLeft.id, -1, -1, c.currentModId2, c)
 
     (modLeft, new Changeable[U](c.currentModId2))
   }
 
   def modRight[T, U](initializer: => (Changeable[T], Changeable[U]))
       (implicit c: Context): (Changeable[T], Mod[U]) = {
-    modRightInternal(initializer, new Mod[U](c.newModId()), null, null, c)
-  }
-
-  def modRightInternal[T, U]
-      (initializer: => (Changeable[T], Changeable[U]),
-       modRight: Mod[U],
-       modizer: Modizer2[T, U],
-       key: Any,
-       c: Context): (Changeable[T], Mod[U]) = {
-    val oldCurrentModId2 = c.currentModId2
-    c.currentModId2 = modRight.id
-
-    val timestamp = c.ddg.addMod(
-      -1,
-      modRight.id,
-      modizer.asInstanceOf[Modizer[Any]],
-      key,
-      c)
-    val modNode = timestamp.node
-
-    modNode.currentModId = c.currentModId
-
-    initializer
-
-    timestamp.end = c.ddg.nextTimestamp(modNode, c)
-
-    c.currentModId2 = oldCurrentModId2
+    val modRight = new Mod[U](c.newModId())
+    modHelper(initializer, -1, modRight.id, c.currentModId, -1, c)
 
     (new Changeable[T](c.currentModId), modRight)
   }
@@ -295,22 +260,24 @@ object TBD {
      new Changeable[U](c.currentModId2))
   }
 
-  def parWithHint[T, U](one: Context => T, workerId1: WorkerId = -1)
-      (two: Context => U, workerId2: WorkerId = -1)
+  def parWithHint[T, U](one: Context => T, hint1: WorkerId = -1)
+      (two: Context => U, hint2: WorkerId = -1)
       (implicit c: Context): (T, U) = {
-    val future1 = c.masterRef ? ScheduleTaskMessage(c.task.self, workerId1)
-    val taskRef1 = Await.result(future1.mapTo[ActorRef], DURATION)
+    val future1 = c.masterRef ? ScheduleTaskMessage(c.task.self, hint1)
+    val (taskId1, taskRef1) =
+      Await.result(future1.mapTo[(TaskId, ActorRef)], DURATION)
 
     val adjust1 = new Adjustable[T] { def run(implicit c: Context) = one(c) }
     val oneFuture = taskRef1 ? RunTaskMessage(adjust1)
 
-    val future2 = c.masterRef ? ScheduleTaskMessage(c.task.self, workerId2)
-    val taskRef2 = Await.result(future2.mapTo[ActorRef], DURATION)
+    val future2 = c.masterRef ? ScheduleTaskMessage(c.task.self, hint2)
+    val (taskId2, taskRef2) =
+      Await.result(future2.mapTo[(TaskId, ActorRef)], DURATION)
 
     val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
     val twoFuture = taskRef2 ? RunTaskMessage(adjust2)
 
-    val parNode = c.ddg.addPar(taskRef1, taskRef2, c)
+    val parNode = c.ddg.addPar(taskRef1, taskRef2, taskId1, taskId2, c)
 
     val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
     val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]

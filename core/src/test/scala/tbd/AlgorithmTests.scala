@@ -75,7 +75,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
     Experiment.run(Experiment.confs ++ conf)
   }*/
 
-  "PageRankTest" should "run page rank successfully." in {
+  /*"PageRankTest" should "run page rank successfully." in {
     val conf = Map(
       "algorithms" -> Array("pgrank"),
       "chunkSizes" -> Array("1"),
@@ -83,7 +83,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
       "partitions" -> Array("1"))
 
     Experiment.run(Experiment.confs ++ conf)
-  }
+  }*/
 
   "ReduceByKeyTest" should "run reduceByKey successfully" in {
     val conf = Map(
