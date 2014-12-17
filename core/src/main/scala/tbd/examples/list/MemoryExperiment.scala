@@ -24,8 +24,8 @@ import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.duration._
 
 import tbd._
-import tbd.datastore.StringData
 import tbd.list._
+import tbd.util._
 
 class MemoryExperiment(input: ListInput[Int, String])
     extends Adjustable[Mod[(Int, HashMap[String, Int])]] {

@@ -20,8 +20,8 @@ import scala.collection.immutable.TreeSet
 import scala.collection.mutable.Map
 
 import tbd._
-import tbd.datastore.{IntData, IntFileData}
 import tbd.list._
+import tbd.util._
 
 class QuickSortAdjust(list: AdjustableList[Int, Int])
   extends Adjustable[AdjustableList[Int, Int]] {

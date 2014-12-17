@@ -19,8 +19,8 @@ import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 
 import tbd._
-import tbd.datastore.StringData
 import tbd.list._
+import tbd.util._
 
 object SplitAlgorithm {
   def predicate(pair: (Int, String)): Boolean = {

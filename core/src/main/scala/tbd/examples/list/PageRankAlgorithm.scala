@@ -19,8 +19,8 @@ import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
 import tbd._
-import tbd.datastore.GraphData
 import tbd.list._
+import tbd.util._
 
 object PageRankAlgorithm {
   val iters = 2

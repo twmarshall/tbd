@@ -19,8 +19,8 @@ import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.{Buffer, Map}
 
 import tbd._
-import tbd.datastore.IntData
 import tbd.list._
+import tbd.util._
 
 object ReduceByKeyAlgorithm {
   def mapper(pair: (Int, Int)) = {

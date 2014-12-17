@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.datastore
+package tbd.util
 
 import scala.collection.GenIterable
 import scala.collection.mutable.Map

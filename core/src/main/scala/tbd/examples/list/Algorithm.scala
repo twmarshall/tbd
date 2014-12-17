@@ -19,9 +19,9 @@ import scala.collection.{GenIterable, GenMap}
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator}
-import tbd.datastore.Data
 import tbd.list.ListConf
 import tbd.master.MasterConnector
+import tbd.util.Data
 
 abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
 

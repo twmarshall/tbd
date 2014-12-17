@@ -22,9 +22,9 @@ import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
 import scala.concurrent.forkjoin.ForkJoinPool
 
 import tbd._
-import tbd.datastore._
 import tbd.list._
 import tbd.TBD._
+import tbd.util._
 
 class WCHashAdjust(list: AdjustableList[Int, String], mappedPartitions: Int)
     extends Adjustable[Iterable[Mod[(Int, HashMap[String, Int])]]] {

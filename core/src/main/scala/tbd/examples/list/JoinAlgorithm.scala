@@ -19,8 +19,8 @@ import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
 import tbd.{ Adjustable, Context }
-import tbd.datastore.{ IntData, IntFileData }
 import tbd.list._
+import tbd.util._
 
 class JoinAdjust(list1: AdjustableList[Int, Int],
   list2: AdjustableList[Int, Int])

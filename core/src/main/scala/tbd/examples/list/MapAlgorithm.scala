@@ -21,8 +21,8 @@ import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
 import scala.concurrent.forkjoin.ForkJoinPool
 
 import tbd._
-import tbd.datastore.StringData
 import tbd.list._
+import tbd.util._
 
 object MapAlgorithm {
   def mapper(pair: (Int, String)): (Int, Int) = {

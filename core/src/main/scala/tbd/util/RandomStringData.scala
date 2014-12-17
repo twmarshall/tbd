@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.datastore
+package tbd.util
 
 import scala.collection.GenIterable
 import scala.collection.mutable.{ArrayBuffer, Map}
 
 import tbd.{Input, Mutator}
 
-class StringData(
+class RandomStringData(
     input: Input[Int, String],
     count: Int,
-    mutations: List[String],
+    mutations: Array[String],
     check: Boolean
   ) extends Data[String] {
 
@@ -33,44 +33,36 @@ class StringData(
 
   val file = "data.txt"
 
-  private def loadChunks(
-      chunks: ArrayBuffer[String]) {
-    val elems = scala.xml.XML.loadFile("wiki.xml")
-
-    var i = 0
-    (elems \\ "elem").map(elem => {
-      (elem \\ "value").map(value => {
-        chunks += value.text
-      })
-    })
-  }
+  val words = Array("apple", "boy", "cat", "dog", "ear", "foo")
 
   def generate() {
+    var key = 0
     while (table.size < count) {
-      val elems = scala.xml.XML.loadFile("wiki.xml")
-
-      var i = table.size
-      (elems \\ "elem").map(elem => {
-        (elem \\ "value").map(value => {
-          if (table.size < count) {
-            table += (i -> value.text)
-            i += 1
-          } else {
-            chunks += value.text
-          }
-        })
-      })
+      table(key) = makeString()
+      log("generated " + (key, table(key)))
+      key += 1
     }
   }
 
-  val chunks = new ArrayBuffer[String]()
+  private def makeString(): String = {
+    val buf = new StringBuffer()
+    for (i <- 1 until rand.nextInt(10) + 2) {
+      buf.append(words(rand.nextInt(6)) + " ")
+    }
+    buf.toString()
+  }
+
   def load() {
     for (pair <- table) {
       input.put(pair._1, pair._2)
     }
   }
 
-  def clearValues() {}
+  def clearValues() {
+    for ((key, value) <- table) {
+      table(key) = ""
+    }
+  }
 
   def update(n: Int) {
     for (i <- 1 to n) {
@@ -80,23 +72,23 @@ class StringData(
         case "update" => updateValue()
       }
     }
+    log("---")
   }
 
   def addValue() {
-    if (chunks.size == 0) {
-      loadChunks(chunks)
-    }
-
     var key = rand.nextInt(maxKey)
-    val value = rand.nextInt(Int.MaxValue)
+    val value = makeString()
     while (table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-    input.put(key, chunks.head)
+    input.put(key, value)
+    log("adding " + (key, value))
 
-    table += (key -> chunks.head)
-
-    chunks -= chunks.head
+    if (check) {
+      table += (key -> value)
+    } else {
+      table += (key -> "")
+    }
   }
 
   def removeValue() {
@@ -105,8 +97,8 @@ class StringData(
       while (!table.contains(key)) {
         key = rand.nextInt(maxKey)
       }
-
       input.remove(key, table(key))
+      log("removing " + (key, table(key)))
       table -= key
     } else {
       addValue()
@@ -114,20 +106,17 @@ class StringData(
   }
 
   def updateValue() {
-    if (chunks.size == 0) {
-      loadChunks(chunks)
-    }
-
     var key = rand.nextInt(maxKey)
-    val value = rand.nextInt(Int.MaxValue)
+    val value = makeString()
     while (!table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-    input.update(key, chunks.head)
+    input.update(key, value)
+    log("updating " + (key, value))
 
-    table(key) = chunks.head
-
-    chunks -= chunks.head
+    if (check) {
+      table(key) = value
+    }
   }
 
   def hasUpdates() = true

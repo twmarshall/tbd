@@ -18,8 +18,8 @@ package tbd.test
 import org.scalatest._
 
 import tbd._
-import tbd.datastore.IntData
 import tbd.list._
+import tbd.util._
 
 class ListTest(input: ListInput[Int, Int])
   extends Adjustable[AdjustableList[Int, Int]] {
