@@ -195,6 +195,8 @@ class BerkeleyDBStore
     pIdx.contains(key)
   }
 
+  def clear() = ???
+
   def shutdown() {
     println("Shutting down. writes = " + writeCount + ", reads = " +
             readCount + ", deletes = " + deleteCount)
