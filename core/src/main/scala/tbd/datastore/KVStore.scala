@@ -26,5 +26,7 @@ trait KVStore {
 
   def contains(key: ModId): Boolean
 
+  def clear()
+
   def shutdown()
 }
