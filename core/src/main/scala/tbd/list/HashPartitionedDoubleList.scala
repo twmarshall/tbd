@@ -26,15 +26,11 @@ class HashPartitionedDoubleList[T, U]
     (_partitions: Map[WorkerId, Buffer[DoubleList[T, U]]])
   extends PartitionedDoubleList[T, U](_partitions.flatMap(_._2).toBuffer) with Serializable {
 
-
-  println("HashPartitionedDoubleList " + _partitions.size)
-  for ((workerId, buf) <- _partitions) {
-    println(workerId + " " + buf.size)
-  }
+  println("new HashPartitionedDoubleList")
 
   override def partitionedReduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Iterable[Mod[(T, U)]] = {
-
+    println("HashPartitionedDoubleList.partitionedReduce")
     def innerReduce(i: Int)(implicit c: Context): Buffer[Mod[(T, U)]] = {
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({

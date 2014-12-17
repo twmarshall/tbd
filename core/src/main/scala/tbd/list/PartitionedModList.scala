@@ -84,6 +84,7 @@ class PartitionedModList[T, U]
 
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): PartitionedModList[V, W] = {
+    println("PartitionedModList.map")
     def innerMap(i: Int)(implicit c: Context): Buffer[ModList[V, W]] = {
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({
@@ -148,7 +149,7 @@ class PartitionedModList[T, U]
 
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = {
-
+    println("PartitionedModList.reduce")
     def innerReduce
         (next: ModList[T, U],
          remaining: Buffer[ModList[T, U]])
