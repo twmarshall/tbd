@@ -52,7 +52,8 @@ public final class TBDLaunch {
   private static final Logger LOG =
       Logger.getLogger(TBDLaunch.class.getName());
 
-  private static final BufferedReader prompt = new BufferedReader(new InputStreamReader(System.in));
+  private static final BufferedReader prompt =
+    new BufferedReader(new InputStreamReader(System.in));
 
   /**
    * This class should not be instantiated.

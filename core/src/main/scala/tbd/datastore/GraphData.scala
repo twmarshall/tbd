@@ -40,16 +40,16 @@ class GraphData(
       val tokens = line.split("\\s+")
 
       if (tokens.size != 2) {
-	println("WARNING: Graph input " + line + " not formatted correctly.")
+        println("WARNING: Graph input " + line + " not formatted correctly.")
       }
 
       val start = tokens(0).toInt
       val end = tokens(1).toInt
 
       if (table.contains(start)) {
-	table(start) :+= end
+        table(start) :+= end
       } else {
-	table(start) = Array(end)
+        table(start) = Array(end)
       }
     }*/
 
@@ -67,7 +67,7 @@ class GraphData(
     val n = keys.size / averageDegree
     for (key <- keys) {
       if (rand.nextInt(n) == 0) {
-	edges :+= key
+        edges :+= key
       }
     }
 

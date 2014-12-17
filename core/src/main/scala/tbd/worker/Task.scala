@@ -158,7 +158,7 @@ class Task
       if (newPebble) {
         (parent ? PebbleMessage(self, modId)) pipeTo sender
       } else {
-	sender ! "done"
+        sender ! "done"
       }
 
     case PropagateTaskMessage =>
@@ -169,15 +169,15 @@ class Task
       val respondTo = sender
       val future = propagate()
       future onComplete {
-	case Success(t) =>
-	  c.updatedMods.clear()
+        case Success(t) =>
+          c.updatedMods.clear()
 
           Await.result(Future.sequence(c.pending), DURATION)
           c.pending.clear()
 
           respondTo ! "done"
-	case Failure(e) =>
-	  e.printStackTrace()
+        case Failure(e) =>
+          e.printStackTrace()
       }
 
     case GetTaskDDGMessage =>

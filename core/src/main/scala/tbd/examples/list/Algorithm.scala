@@ -97,44 +97,44 @@ abstract class Algorithm[Input, Output]
 
     if (Experiment.verbosity > 1) {
       if (mapCount != 0) {
-	println("map count = " + mapCount)
-	mapCount = 0
+        println("map count = " + mapCount)
+        mapCount = 0
       }
       if (reduceCount != 0) {
-	println("reduce count = " + reduceCount)
-	reduceCount = 0
+        println("reduce count = " + reduceCount)
+        reduceCount = 0
       }
       println("starting prop")
     }
 
     if (Experiment.file == "") {
       for (run <- runs) {
-	run match {
-	  case "naive" | "initial" =>
-	  case run =>
-	    val updateCount =
-	      if (run.toDouble < 1)
-		 (run.toDouble * count).toInt
-	      else
-		run.toInt
+        run match {
+          case "naive" | "initial" =>
+          case run =>
+            val updateCount =
+              if (run.toDouble < 1)
+                 (run.toDouble * count).toInt
+              else
+                run.toInt
 
-	    val (updateTime, updateLoad, updateNoGC) = update(updateCount)
+            val (updateTime, updateLoad, updateNoGC) = update(updateCount)
             results(run) = updateTime
-	    results(run + "-load") = updateLoad
-	    results(run + "-nogc") = updateNoGC
-	}
+            results(run + "-load") = updateLoad
+            results(run + "-nogc") = updateNoGC
+        }
       }
     } else {
       var r = 1
       runs = Array("naive", "initial")
 
       while (data.hasUpdates()) {
-	val (updateTime, updateLoad, updateNoGC) = update(-1)
+        val (updateTime, updateLoad, updateNoGC) = update(-1)
         results(r + "") = updateTime
-	results(r + "-load") = updateLoad
-	results(r + "-nogc") = updateNoGC
-	runs :+= r + ""
-	r += 1
+        results(r + "-load") = updateLoad
+        results(r + "-nogc") = updateNoGC
+        runs :+= r + ""
+        r += 1
       }
 
       Experiment.confs("runs") = runs
@@ -142,9 +142,9 @@ abstract class Algorithm[Input, Output]
 
     if (Experiment.verbosity > 1) {
       if (mapCount != 0)
-	println("map count = " + mapCount)
+        println("map count = " + mapCount)
       if (reduceCount != 0)
-	println("reduce count = " + reduceCount)
+        println("reduce count = " + reduceCount)
     }
 
     mutator.shutdown()

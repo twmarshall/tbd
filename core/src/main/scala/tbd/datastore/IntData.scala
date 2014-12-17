@@ -34,7 +34,7 @@ class IntData(
       var key = rand.nextInt(maxKey)
       val value = rand.nextInt(maxKey)
       while (table.contains(key)) {
-	key = rand.nextInt(maxKey)
+        key = rand.nextInt(maxKey)
       }
 
       table += (key -> value)
@@ -51,9 +51,9 @@ class IntData(
   def update(n: Int) {
     for (i <- 1 to n) {
       mutations(rand.nextInt(mutations.size)) match {
-	case "insert" => addValue()
-	case "remove" => removeValue()
-	case "update" => updateValue()
+        case "insert" => addValue()
+        case "remove" => removeValue()
+        case "update" => updateValue()
       }
     }
     log("---")
@@ -103,7 +103,7 @@ class IntData(
       var key = rand.nextInt(maxKey)
       val value = rand.nextInt(maxKey)
       while (!table.contains(key)) {
-	key = rand.nextInt(maxKey)
+        key = rand.nextInt(maxKey)
       }
 
       log("updating " + (key, value))

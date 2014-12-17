@@ -1,6 +1,5 @@
 package tbd.sql;
 
-
 import java.io.Serializable;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -12,377 +11,369 @@ import net.sf.jsqlparser.schema.Column;
 
 public interface Datum extends Serializable{
 
-	public String toString();
+  public String toString();
 
-	public String toComString();
+  public String toComString();
 
-	public Column getColumn();
+  public Column getColumn();
 
-	public void setColumn(Column column);
+  public void setColumn(Column column);
 
-	public boolean equals(Column col);
-	
-	public int compareTo(Datum d);
-	public Datum sumDatum(Datum input);
-	
-	public String getStringValue();
+  public boolean equals(Column col);
 
-	
-	public class dLong implements Datum {
+  public int compareTo(Datum d);
+  public Datum sumDatum(Datum input);
 
-		private static final long serialVersionUID = 1L;
-		Long value;
-		Column column;
-		
-		public dLong() {}
+  public String getStringValue();
 
-		public Column getColumn() {
-			return column;
-		}
+  public class dLong implements Datum {
 
-		public void setColumn(Column column) {
-			this.column = column;
-		}
+    private static final long serialVersionUID = 1L;
+    Long value;
+    Column column;
 
-		public dLong(String s, Column col) {
-			value = Long.parseLong(s);
-			this.column = col;
-		}
-		
-		public dLong(Long s, Column col) {
-			value = s;
-			this.column = col;
-		}
+    public dLong() {}
 
-		public long getValue() {
-			return value;
-		}
+    public Column getColumn() {
+      return column;
+    }
 
-		public void setValue(long value) {
-			this.value = value;
-		}
+    public void setColumn(Column column) {
+      this.column = column;
+    }
 
-		public String toString() {
-			return String.valueOf(value);
-		}
+    public dLong(String s, Column col) {
+      value = Long.parseLong(s);
+      this.column = col;
+    }
 
-		public String toComString() {
-			return column.getTable().getName() + ":" + column.getTable().getAlias() +
-				":" + column.getWholeColumnName() + ":" + column.getTable().getAlias() +
-				":" + String.valueOf(value) + "\t";
-		}
-		public int hashCode() {
-			 long hash = 7;
-		        hash = (31 * hash) + value;
-		        hash = (31 * hash) + (null == value ? 0 : value.hashCode());
-		        return (int) hash;
-	    }
-		
-		public boolean equals(Object obj)
-		    {
-		        if(this == obj)
-		            return true;
-		        if((obj == null) || (obj.getClass() != this.getClass()))
-		            return false;
-		        // object must be Test at this point
-		        dLong test = (dLong) obj;
-		       return (this.value == test.value)? true: false;
-		   }
-		@Override
-		public boolean equals(Column col) {
-			if (col == null)
-				return false;
-			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
-				return false;
-			else
-				return true;
-		}
-		@Override
-		public int compareTo(Datum d) {
-			return this.value.compareTo(((dLong)d).value);
-		}
-		@Override
-		public Datum sumDatum(Datum input){
-			Datum sum = null;
-			if(input instanceof dLong){
-				long arg1 =(long) this.getValue();
-				long arg2 =(long)  ((dLong) input).getValue();
-				Long value = arg1+arg2;
-				sum = new dLong(value,input.getColumn());
-			}
-			else if (input instanceof dString){
-				
-			}
-			else if (input instanceof dDate){
-				
-			}
-			return sum;
-		}
+    public dLong(Long s, Column col) {
+      value = s;
+      this.column = col;
+    }
 
-		@Override
-		public String getStringValue() {
-			
-			return value.toString();
-			
-		}
+    public long getValue() {
+      return value;
+    }
 
-	}
-	
-	public class dDecimal implements Datum {
+    public void setValue(long value) {
+      this.value = value;
+    }
 
-		private static final long serialVersionUID = 1L;
-		
-		Double value;
-		Column column;
+    public String toString() {
+      return String.valueOf(value);
+    }
 
-		public dDecimal(){}
-		public Column getColumn() {
-			return column;
-		}
+    public String toComString() {
+      return column.getTable().getName() + ":" + column.getTable().getAlias() +
+        ":" + column.getWholeColumnName() + ":" + column.getTable().getAlias() +
+        ":" + String.valueOf(value) + "\t";
+    }
+    public int hashCode() {
+       long hash = 7;
+            hash = (31 * hash) + value;
+            hash = (31 * hash) + (null == value ? 0 : value.hashCode());
+            return (int) hash;
+      }
 
-		public void setColumn(Column column) {
-			this.column = column;
-		}
+    public boolean equals(Object obj)
+        {
+            if(this == obj)
+                return true;
+            if((obj == null) || (obj.getClass() != this.getClass()))
+                return false;
+            // object must be Test at this point
+            dLong test = (dLong) obj;
+           return (this.value == test.value)? true: false;
+       }
+    @Override
+    public boolean equals(Column col) {
+      if (col == null)
+        return false;
+      else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
+        return false;
+      else
+        return true;
+    }
+    @Override
+    public int compareTo(Datum d) {
+      return this.value.compareTo(((dLong)d).value);
+    }
+    @Override
+    public Datum sumDatum(Datum input){
+      Datum sum = null;
+      if(input instanceof dLong){
+        long arg1 =(long) this.getValue();
+        long arg2 =(long)  ((dLong) input).getValue();
+        Long value = arg1+arg2;
+        sum = new dLong(value,input.getColumn());
+      }
+      else if (input instanceof dString){
+      }
+      else if (input instanceof dDate){
+      }
+      return sum;
+    }
 
-		public dDecimal(String s, Column col) {
-			value = Double.parseDouble(s);
-			this.column = col;
-		}
-		
-		public dDecimal(Double s, Column col) {
-			value = s;
-			this.column = col;
-		}
-		
-		public dDecimal(Integer s, Column col) {
-			value = Double.parseDouble(s.toString());
-			this.column = col;
-		}
+    @Override
+    public String getStringValue() {
+      return value.toString();
+    }
 
-		public Double getValue() {
-			return value;
-		}
+  }
 
-		public void setValue(Double value) {
-			this.value = value;
-		}
+  public class dDecimal implements Datum {
 
-		public String toString() {
-			return String.format("%.2f", value);
-		}
+    private static final long serialVersionUID = 1L;
 
-		public String toComString() {
-			return column.getTable().getName() + ":" + column.getTable().getAlias() +
-				":" + column.getWholeColumnName() + ":" + column.getTable().getAlias()+ 
-				":" + String.valueOf(value) + "\t";
-		}
+    Double value;
+    Column column;
 
-		@Override
-		public boolean equals(Column col) {
-			if (col == null)
-				return false;
-			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
-				return false;
-			else
-				return true;
-		}
-		
-		@Override
-		public int compareTo(Datum d) {
-			return this.value.compareTo(((dDecimal)d).value);
-		}
+    public dDecimal(){}
+    public Column getColumn() {
+      return column;
+    }
 
-		@Override
-		public Datum sumDatum(Datum input){
-			Datum sum = null;
-			if(input instanceof dDecimal){
-				Double value = this.getValue()+((dDecimal) input).getValue();
-				sum = new dDecimal(value,input.getColumn());
-			}
-			else if (input instanceof dString){
-				
-			}
-			else if (input instanceof dDate){
-				
-			}
-		return sum;
-		}
+    public void setColumn(Column column) {
+      this.column = column;
+    }
 
-		@Override
-		public String getStringValue() {
-			return value.toString();
-		}
+    public dDecimal(String s, Column col) {
+      value = Double.parseDouble(s);
+      this.column = col;
+    }
 
-	}
+    public dDecimal(Double s, Column col) {
+      value = s;
+      this.column = col;
+    }
 
-	public class dString implements Datum {
+    public dDecimal(Integer s, Column col) {
+      value = Double.parseDouble(s.toString());
+      this.column = col;
+    }
 
-		private static final long serialVersionUID = 1L;
-		String value;
-		Column column;
+    public Double getValue() {
+      return value;
+    }
 
-		public dString(){}
-		public dString(String s, Column col) {
-			value = s;
-			column = col;
-		}
-		
-		public Column getColumn() {
-			return column;
-		}
+    public void setValue(Double value) {
+      this.value = value;
+    }
 
-		public void setColumn(Column column) {
-			this.column = column;
-		}
+    public String toString() {
+      return String.format("%.2f", value);
+    }
 
-		public String getValue() {
-			return value;
-		}
+    public String toComString() {
+      return column.getTable().getName() + ":" + column.getTable().getAlias() +
+        ":" + column.getWholeColumnName() + ":" + column.getTable().getAlias() +
+        ":" + String.valueOf(value) + "\t";
+    }
 
-		public void setValue(String value) {
-			this.value = value;
-		}
+    @Override
+    public boolean equals(Column col) {
+      if (col == null)
+        return false;
+      else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
+        return false;
+      else
+        return true;
+    }
 
-		public String toString() {
-			return value;
-		}
+    @Override
+    public int compareTo(Datum d) {
+      return this.value.compareTo(((dDecimal)d).value);
+    }
 
-		public String toComString() {
-			return column.getTable().getName() + ":" + column.getTable().getAlias() +
-				":" + column.getWholeColumnName() + ":" + value + "\t";
-		}
+    @Override
+    public Datum sumDatum(Datum input){
+      Datum sum = null;
+      if(input instanceof dDecimal){
+        Double value = this.getValue()+((dDecimal) input).getValue();
+        sum = new dDecimal(value,input.getColumn());
+      }
+      else if (input instanceof dString){
 
-		@Override
-		public boolean equals(Column col) {
-			if (col == null)
-				return false;
-			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
-				return false;
-			else
-				return true;
-		}
-		public int compareTo(Datum d) {
-			return this.value.compareTo(((dString)d).value);
-		}
-		
-		public int hashCode() {
-			 String hash = "hash";
-			 int ret;
-		        hash = hash.concat(value);
-		        ret = hash.hashCode()+ (null == value ? 0 : value.hashCode());
-		        return ret;
-	    }
-		
-		public boolean equals(Object obj)
-		    {
-		        if(this == obj)
-		            return true;
-		        if((obj == null) || (obj.getClass() != this.getClass()))
-		            return false;
-		        dString test = (dString) obj;
-		       return (this.value.equals(test.value))? true: false;
-		   }
+      }
+      else if (input instanceof dDate){
 
-		@Override
-		public String getStringValue() {
-			return value.toString();
-		}
+      }
+    return sum;
+    }
 
-		@Override
-		public Datum sumDatum(Datum input) {
-			return null;
-		}
+    @Override
+    public String getStringValue() {
+      return value.toString();
+    }
 
-	}
+  }
 
-	public class dDate implements Datum {
+  public class dString implements Datum {
 
-		private static final long serialVersionUID = 1L;
-		Date value;
-		int year;
-		int month;
-		int day;
-		Column column;
+    private static final long serialVersionUID = 1L;
+    String value;
+    Column column;
 
-		
-		public dDate(){}
-		public dDate(String s, Column col) {
-			
-			try {
-				value = (new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
-						.parse(s));
-				Calendar cal = Calendar.getInstance();
-				cal.setTime(value);
-				if (value != null) {
-					year = cal.get(Calendar.YEAR);
-					month = cal.get(Calendar.MONTH)+1;
-					day = cal.get(Calendar.DAY_OF_MONTH);
+    public dString(){}
+    public dString(String s, Column col) {
+      value = s;
+      column = col;
+    }
 
-				}
-				column = col;
-			} catch (ParseException e) {
-				e.printStackTrace();
-			}
-		}
-		
-		public dDate(Date s, Column col) {
-			value = s;
-			this.column = col;
-		}
+    public Column getColumn() {
+      return column;
+    }
 
-		public Date getValue() {
-			return value;
-		}
+    public void setColumn(Column column) {
+      this.column = column;
+    }
 
-		public void setValue(Date value) {
-			this.value = value;
-		}
+    public String getValue() {
+      return value;
+    }
 
-		public String toString() {
-			return String.format("%04d-%02d-%02d", year, month, day);
-		}
+    public void setValue(String value) {
+      this.value = value;
+    }
 
-		public String toComString() {
-			return column.getTable().getName() + ":" + column.getTable().getAlias() +
-				":" + column.getWholeColumnName() + ":" +
-				String.format("%04d-%02d-%02d", year, month, day) + "\t";
-		}
+    public String toString() {
+      return value;
+    }
 
-		@Override
-		public Column getColumn() {
-			return column;
-		}
+    public String toComString() {
+      return column.getTable().getName() + ":" + column.getTable().getAlias() +
+        ":" + column.getWholeColumnName() + ":" + value + "\t";
+    }
 
-		@Override
-		public void setColumn(Column column) {
-			this.column = column;
+    @Override
+    public boolean equals(Column col) {
+      if (col == null)
+        return false;
+      else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
+        return false;
+      else
+        return true;
+    }
+    public int compareTo(Datum d) {
+      return this.value.compareTo(((dString)d).value);
+    }
 
-		}
+    public int hashCode() {
+       String hash = "hash";
+       int ret;
+            hash = hash.concat(value);
+            ret = hash.hashCode()+ (null == value ? 0 : value.hashCode());
+            return ret;
+      }
 
-		@Override
-		public boolean equals(Column col) {
-			if (col == null)
-				return false;
-			else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
-				return false;
-			else
-				return true;
-		}
-		
-		public int compareTo(Datum d) {
-			return this.value.compareTo(((dDate)d).value);
-		}
-		
-		@Override
-		public String getStringValue() {
-			return null;
-		}
+    public boolean equals(Object obj)
+        {
+            if(this == obj)
+                return true;
+            if((obj == null) || (obj.getClass() != this.getClass()))
+                return false;
+            dString test = (dString) obj;
+           return (this.value.equals(test.value))? true: false;
+       }
 
-		@Override
-		public Datum sumDatum(Datum input) {
-			return null;
-		}
+    @Override
+    public String getStringValue() {
+      return value.toString();
+    }
 
-	}
+    @Override
+    public Datum sumDatum(Datum input) {
+      return null;
+    }
 
+  }
+
+  public class dDate implements Datum {
+
+    private static final long serialVersionUID = 1L;
+    Date value;
+    int year;
+    int month;
+    int day;
+    Column column;
+
+    public dDate(){}
+    public dDate(String s, Column col) {
+
+      try {
+        value = (new SimpleDateFormat("yyyy-MM-dd", Locale.ENGLISH)
+            .parse(s));
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(value);
+        if (value != null) {
+          year = cal.get(Calendar.YEAR);
+          month = cal.get(Calendar.MONTH)+1;
+          day = cal.get(Calendar.DAY_OF_MONTH);
+
+        }
+        column = col;
+      } catch (ParseException e) {
+        e.printStackTrace();
+      }
+    }
+
+    public dDate(Date s, Column col) {
+      value = s;
+      this.column = col;
+    }
+
+    public Date getValue() {
+      return value;
+    }
+
+    public void setValue(Date value) {
+      this.value = value;
+    }
+
+    public String toString() {
+      return String.format("%04d-%02d-%02d", year, month, day);
+    }
+
+    public String toComString() {
+      return column.getTable().getName() + ":" + column.getTable().getAlias() +
+        ":" + column.getWholeColumnName() + ":" +
+        String.format("%04d-%02d-%02d", year, month, day) + "\t";
+    }
+
+    @Override
+    public Column getColumn() {
+      return column;
+    }
+
+    @Override
+    public void setColumn(Column column) {
+      this.column = column;
+
+    }
+
+    @Override
+    public boolean equals(Column col) {
+      if (col == null)
+        return false;
+      else if (!column.getColumnName().equalsIgnoreCase(col.getColumnName()))
+        return false;
+      else
+        return true;
+    }
+
+    public int compareTo(Datum d) {
+      return this.value.compareTo(((dDate)d).value);
+    }
+
+    @Override
+    public String getStringValue() {
+      return null;
+    }
+
+    @Override
+    public Datum sumDatum(Datum input) {
+      return null;
+    }
+  }
 }

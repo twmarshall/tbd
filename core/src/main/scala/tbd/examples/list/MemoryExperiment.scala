@@ -65,8 +65,8 @@ object MemoryExperiment {
       (elems \\ "elem").map(elem => {
         (elem \\ "value").map(value => {
         if (vec.size < count) {
-	  vec :+= value.text
-	  }
+          vec :+= value.text
+          }
         })
       })
     }
@@ -94,7 +94,7 @@ object MemoryExperiment {
       val rand = new scala.util.Random()
       var i = 0
       while (i < 500) {
-	println(i)
+        println(i)
         input.update(1)
 
         mutator.propagate()

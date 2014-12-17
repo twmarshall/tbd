@@ -20,7 +20,7 @@ class Hasher(
   k: Int,
   m: Int) {
 
-  val bigM = BigInt(m) 
+  val bigM = BigInt(m)
   var coefs:List[BigInt] = null
 
   def hash(x: Int) = {

@@ -38,7 +38,7 @@ object MasterConnector {
     val selection = system.actorSelection(masterURL)
     val future = selection.resolveOne()
 
-    val masterRef = Await.result(future.mapTo[ActorRef], DURATION)    
+    val masterRef = Await.result(future.mapTo[ActorRef], DURATION)
 
     new MasterConnector(masterRef, system)
   }

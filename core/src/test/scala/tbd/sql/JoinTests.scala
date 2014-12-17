@@ -31,7 +31,7 @@ class JoinTests extends FlatSpec with Matchers {
   "Join Test" should "check the Join operator" in {
     val mutator = new Mutator()
     val sqlContext = new TBDSqlContext(mutator)
-    val f = (row: Array[String]) => 
+    val f = (row: Array[String]) =>
       Rec(row(0), row(1).trim.toLong, row(2).trim.toDouble)
     val tableName1 = "records1"
     val tableName2 = "records2"
@@ -44,7 +44,7 @@ class JoinTests extends FlatSpec with Matchers {
       "from records1 as r1 inner join records2 as r2 " +
       "on r1.manipulate=r2.manipulate where r1.pairkey > r2.pairkey and r1.pairkey < 50 "
     var oper = sqlContext.sql(statement)
-    
+
     val inputs1 = Source.fromFile(path).getLines.map(_.split(",")).
       map(f).toList
     val inputs2 = Source.fromFile(path).getLines.map(_.split(",")).
@@ -54,14 +54,14 @@ class JoinTests extends FlatSpec with Matchers {
 
     for (input2 <- inputs2)
       for (input1 <- inputs1)
-          if (input1.manipulate == input2.manipulate && 
+          if (input1.manipulate == input2.manipulate &&
            input1.pairkey > input2.pairkey && input1.pairkey < 50 ){
             inputs = inputs :+ input1
     }
 
     oper.toBuffer should be(inputs.map(r =>
       Seq(r.manipulate, r.pairkey, r.pairvalue)).toBuffer)
-  
+
     statement = "select  r1.manipulate, r1.pairkey, r1.pairvalue " +
       "from records1 as r1 inner join records2 as r2 " +
       "where r1.manipulate=r2.manipulate and r1.pairkey > r2.pairkey and r1.pairkey < 50"
@@ -109,7 +109,7 @@ class JoinTests extends FlatSpec with Matchers {
     val outputs =  inputs.groupBy(r => r.manipulate).map(pair => {
       Seq(pair._1, pair._2.length, pair._2.foldLeft(0.0)(_ max _.pairvalue))
     })
-    oper.toBuffer should be(outputs.toBuffer.sortWith((r1, r2) => 
+    oper.toBuffer should be(outputs.toBuffer.sortWith((r1, r2) =>
       r1(0).asInstanceOf[String].compareTo(r2(0).asInstanceOf[String]) < 0))
 
     mutator.shutdown()

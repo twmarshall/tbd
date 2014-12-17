@@ -60,7 +60,7 @@ class PhysicalPlan (
     for(sei <- projectStmts) {
       if (sei.isInstanceOf[SelectExpressionItem]){
         val e = sei.asInstanceOf[SelectExpressionItem].getExpression();
-        if(e.isInstanceOf[Function]) 
+        if(e.isInstanceOf[Function])
           hasFunction = true;
       }
     }
@@ -80,8 +80,6 @@ class PhysicalPlan (
       oper = new ProjectionOperator(oper, projectStmts)
     }
 
-
-    
     oper.processOp
 
     oper

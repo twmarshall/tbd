@@ -220,7 +220,7 @@ public final class TBDDriver {
     public void onNext(final FailedEvaluator eval) {
       synchronized (TBDDriver.this) {
         LOG.log(Level.SEVERE, "FailedEvaluator", eval);
-        for (final FailedContext failedContext 
+        for (final FailedContext failedContext
             : eval.getFailedContextList()) {
           TBDDriver.this.contexts.remove(failedContext.getId());
         }
@@ -254,7 +254,7 @@ public final class TBDDriver {
       if (masterCtxt) {
         contexts.put(contextId, context);
         final String taskId = String.format("task_master_%06d", 0);
-        
+
         final JavaConfigurationBuilder cb =
             Tang.Factory.getTang().newConfigurationBuilder();
         cb.addConfiguration(

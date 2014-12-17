@@ -68,10 +68,10 @@ class ChunkList[T, U]
 
     new ChunkList(
       mod {
-	read(head) {
-	  case null => write[ChunkListNode[T, (U, V)]](null)
-	  case node => node.loopJoin(that, memo, condition)
-	}
+        read(head) {
+          case null => write[ChunkListNode[T, (U, V)]](null)
+          case node => node.loopJoin(that, memo, condition)
+        }
       }, conf
     )
   }
@@ -83,8 +83,8 @@ class ChunkList[T, U]
     new ModList(
       mod {
         read(head) {
-	  case null => write[ModListNode[V, W]](null)
-	  case node => node.keyedChunkMap(f, memo, head.id)
+          case null => write[ModListNode[V, W]](null)
+          case node => node.keyedChunkMap(f, memo, head.id)
         }
       }
     )
@@ -123,79 +123,79 @@ class ChunkList[T, U]
          memo: Memoizer[Changeable[ChunkListNode[T, U]]])
         (implicit c: Context): Changeable[ChunkListNode[T, U]] = {
       val oneR =
-	if (one == null)
-	  _oneR
-	else
-	  _oneR ++ one.chunk
+        if (one == null)
+          _oneR
+        else
+          _oneR ++ one.chunk
 
       val twoR =
-	if (two == null)
-	  _twoR
-	else
-	  _twoR ++ two.chunk
+        if (two == null)
+          _twoR
+        else
+          _twoR ++ two.chunk
 
       var i = 0
       var j = 0
       val newChunk =
-	if (oneR.size == 0) {
-	  j = twoR.size
-	  twoR
-	} else if (twoR.size == 0) {
-	  i = oneR.size
-	  oneR
-	} else {
-	  val buf = Buffer[(T, U)]()
-	  while (i < oneR.size && j < twoR.size) {
-	    if (comparator(oneR(i), twoR(j)) < 0) {
-	      buf += oneR(i)
-	      i += 1
-	    } else {
-	      buf += twoR(j)
-	      j += 1
-	    }
-	  }
+        if (oneR.size == 0) {
+          j = twoR.size
+          twoR
+        } else if (twoR.size == 0) {
+          i = oneR.size
+          oneR
+        } else {
+          val buf = Buffer[(T, U)]()
+          while (i < oneR.size && j < twoR.size) {
+            if (comparator(oneR(i), twoR(j)) < 0) {
+              buf += oneR(i)
+              i += 1
+            } else {
+              buf += twoR(j)
+              j += 1
+            }
+          }
 
-	  buf.toVector
-	}
+          buf.toVector
+        }
 
       val newOneR = oneR.drop(i)
       val newTwoR = twoR.drop(j)
 
       val newNext = mod {
-	if (one == null) {
-	  if (two == null) {
+        if (one == null) {
+          if (two == null) {
             val rest = newOneR ++ newTwoR
             if (rest.size > 0) {
               val newTail = mod[ChunkListNode[T, U]]{ write(null) }
-	      write(new ChunkListNode(rest, newTail))
+              write(new ChunkListNode(rest, newTail))
             } else {
               write[ChunkListNode[T, U]](null)
             }
-	  } else {
-	    read(two.nextMod) {
-	      case twoNode =>
-		memo(null, twoNode, newOneR, newTwoR) {
-		  innerMerge(null, twoNode, newOneR, newTwoR, memo)
-		}
-	    }
-	  }
-	} else {
-	  read(one.nextMod) {
-	    case oneNode =>
-	      if (two == null) {
-		memo(oneNode, null, newOneR, newTwoR) {
-		  innerMerge(oneNode, null, newOneR, newTwoR, memo)
-		}
-	      } else {
-		read(two.nextMod) {
-		  case twoNode =>
-		    memo(oneNode, twoNode, newOneR, newTwoR) {
-		      innerMerge(oneNode, twoNode, newOneR, newTwoR, memo)
-		    }
-		}
-	      }
-	  }
-	}
+          } else {
+            read(two.nextMod) {
+              case twoNode =>
+                memo(null, twoNode, newOneR, newTwoR) {
+                  innerMerge(null, twoNode, newOneR, newTwoR, memo)
+                }
+            }
+          }
+        } else {
+          read(one.nextMod) {
+            case oneNode =>
+              if (two == null) {
+                memo(oneNode, null, newOneR, newTwoR) {
+                  innerMerge(oneNode, null, newOneR, newTwoR, memo)
+                }
+              } else {
+                read(two.nextMod) {
+                  case twoNode =>
+                    memo(oneNode, twoNode, newOneR, newTwoR) {
+                      innerMerge(oneNode, twoNode, newOneR, newTwoR, memo)
+                    }
+                }
+              }
+          }
+        }
       }
 
       if (newChunk.size == 0) {
@@ -207,18 +207,18 @@ class ChunkList[T, U]
 
     new ChunkList(
       mod {
-	read(head) {
-	  case null => read(that.head) { write(_) }
-	  case node =>
-	    read(that.head) {
-	      case null => write(node)
-	      case thatNode =>
+        read(head) {
+          case null => read(that.head) { write(_) }
+          case node =>
+            read(that.head) {
+              case null => write(node)
+              case thatNode =>
                 val empty = Vector[(T, U)]()
-		memo(node, thatNode, empty, empty) {
-		  innerMerge(node, thatNode, empty, empty, memo)
-		}
-	    }
-	}
+                memo(node, thatNode, empty, empty) {
+                  innerMerge(node, thatNode, empty, empty, memo)
+                }
+            }
+        }
       }, conf
     )
   }
@@ -232,7 +232,7 @@ class ChunkList[T, U]
     val modizer = new Modizer1[ChunkListNode[T, U]]()
     def mapper(chunk: Vector[(T, U)], key: ModId) = {
       val tail = modizer(key) {
-	write(new ChunkListNode[T, U]((chunk.toBuffer.sortWith(comparator).toVector), mod({ write(null) })))
+        write(new ChunkListNode[T, U]((chunk.toBuffer.sortWith(comparator).toVector), mod({ write(null) })))
       }
 
       ("", new ChunkList(tail, conf))
@@ -244,7 +244,7 @@ class ChunkList[T, U]
       val merged = memo(pair1._2, pair2._2) {
         val memoizer = new Memoizer[Changeable[ChunkListNode[T, U]]]()
 
-	pair2._2.merge(pair1._2, memoizer, cmp)
+        pair2._2.merge(pair1._2, memoizer, cmp)
       }
 
       (pair1._1 + pair2._1, merged)
@@ -256,7 +256,7 @@ class ChunkList[T, U]
     new ChunkList(
       mod {
         read(reduced) {
-	  case null => write(null)
+          case null => write(null)
           case (key, list) => read(list.head) { write(_) }
         }
       }, conf
@@ -272,12 +272,12 @@ class ChunkList[T, U]
 
     new ChunkList(
       mod {
-	read(sorted.head) {
-	  case null =>
-	    write(null)
-	  case node =>
-	    node.reduceByKey(f, node.chunk.head._1, null.asInstanceOf[U])
-	}
+        read(sorted.head) {
+          case null =>
+            write(null)
+          case node =>
+            node.reduceByKey(f, node.chunk.head._1, null.asInstanceOf[U])
+        }
       }, conf
     )
   }
@@ -294,8 +294,8 @@ class ChunkList[T, U]
     if (head != null) {
       var node = mutator.read(head)
       while (node != null) {
-	buf ++= node.chunk
-	node = mutator.read(node.nextMod)
+        buf ++= node.chunk
+        node = mutator.read(node.nextMod)
       }
     }
 

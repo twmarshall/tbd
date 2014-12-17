@@ -54,15 +54,15 @@ class IntFileData(
       val value = split(1).toInt
 
       command match {
-	case "adding" =>
-	  input.put(key, value)
-	  table(key) = value
-	case "removing" =>
-	  input.remove(key, table(key))
-	  table -= key
-	case "updating" =>
-	  input.update(key, value)
-	  table(key) = value
+        case "adding" =>
+          input.put(key, value)
+          table(key) = value
+        case "removing" =>
+          input.remove(key, table(key))
+          table -= key
+        case "updating" =>
+          input.update(key, value)
+          table(key) = value
       }
 
       lines = lines.tail

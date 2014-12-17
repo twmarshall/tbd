@@ -55,28 +55,27 @@ class ProjectionAdjust (
             val eval = new Evaluator(t.toArray, tupleTableMap)
             e.accept(eval)
             val newCol = expItem.getAlias() match {
-                case null => if (eval.getColumn != null) 
+                case null => if (eval.getColumn != null)
                                 eval.getColumn()
                              else null.asInstanceOf[Column]
                 case _ => new Column(null, expItem.getAlias())
               }
             val ob = eval.getResult()
 
-            val datum = 
-            if (ob.isInstanceOf[Long]) 
-              new Datum.dLong(ob.asInstanceOf[Long], newCol)
-            else if (ob.isInstanceOf[Double]) 
-              new Datum.dDecimal(ob.asInstanceOf[Double], newCol)
-            else if (ob.isInstanceOf[java.util.Date]) 
-              new Datum.dDate(ob.asInstanceOf[java.util.Date], newCol)
-            else 
-              new Datum.dString(ob.toString, newCol)
+            val datum =
+              if (ob.isInstanceOf[Long])
+                new Datum.dLong(ob.asInstanceOf[Long], newCol)
+              else if (ob.isInstanceOf[Double])
+                new Datum.dDecimal(ob.asInstanceOf[Double], newCol)
+              else if (ob.isInstanceOf[java.util.Date])
+                new Datum.dDate(ob.asInstanceOf[java.util.Date], newCol)
+              else
+                new Datum.dString(ob.toString, newCol)
 
             newDatumList = newDatumList :+ datum
         } else {
           println("unrecogized selectItem:" + selectItem)
         }
-        
       })
       (pair._1, newDatumList.toSeq)
     })
@@ -92,10 +91,10 @@ class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
   val table = inputOper.getTable
   var inputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   var outputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
-  
+
   var tupleTableMap = List[String]()
   override def getTupleTableMap = tupleTableMap
-  
+
   /*
    * Set the column definition
    */
@@ -108,9 +107,9 @@ class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
       } else if (selectItem.isInstanceOf[SelectExpressionItem]){
           val expItem = selectItem.asInstanceOf[SelectExpressionItem]
           var e = expItem.getExpression
-          val newCol = if (e.isInstanceOf[Column]) 
+          val newCol = if (e.isInstanceOf[Column])
                           e.asInstanceOf[Column].getWholeColumnName.toLowerCase
-                       else expItem.getAlias() 
+                       else expItem.getAlias()
           tupleTableMap = tupleTableMap :+ newCol
       }
     })
@@ -124,7 +123,7 @@ class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
     val childOperator = childOperators(0)
     val childTupleTableMap = childOperator.getTupleTableMap
     setTupleTableMap (childTupleTableMap)
-    val adjustable = new ProjectionAdjust(inputAdjustable, projectStmt, childTupleTableMap)  
+    val adjustable = new ProjectionAdjust(inputAdjustable, projectStmt, childTupleTableMap)
     outputAdjustable = table.mutator.run[AdjustableList[Int,Seq[tbd.sql.Datum]]](adjustable)
   }
 

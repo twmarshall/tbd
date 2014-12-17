@@ -25,7 +25,7 @@ import tbd.master.{Master, MasterConnector}
 case class Rec (val manipulate: String, val pairkey: Int, val pairvalue: Double)
 
 object SQLTest {
-    
+
   def main (args: Array[String]) {
     object Conf extends ScallopConf(args) {
       version("TBD 0.1 (c) 2014 Carnegie Mellon University")
@@ -53,7 +53,7 @@ object SQLTest {
     val tableName1 = "records"
 
     var statement = "select * from records"
-    
+
     var before = System.currentTimeMillis()
     println("Loading data...")
     sqlContext.csvFile[Rec](tableName1, path, f, listConf)
@@ -67,7 +67,7 @@ object SQLTest {
       println("Running SQL...")
       val oper = sqlContext.sql(statement)
       elapsed = System.currentTimeMillis() - before
-  
+
       BufferUtils.printOperator(oper)
       println("Done running. Time elapsed:" + elapsed)
       println("Input a SQL statement:")

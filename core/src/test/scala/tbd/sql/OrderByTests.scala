@@ -55,7 +55,7 @@ class OrderByTests extends FlatSpec with Matchers {
       map(f).filter(r =>
       r.pairvalue > 10).map(r => Seq(r.pairvalue * 2, r.pairkey))
 
-    oper.toBuffer should be(inputs.toBuffer.sortWith((r1, r2) => 
+    oper.toBuffer should be(inputs.toBuffer.sortWith((r1, r2) =>
       r1(1).asInstanceOf[Long] > r2(1).asInstanceOf[Long]))
 
     mutator.shutdown()

@@ -47,46 +47,46 @@ class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
       size += conf.chunkSizer(value)
 
       if (size >= conf.chunkSize) {
-	val newNode = new ChunkListNode(chunk, tail, size)
-	tail = datastore.createMod(newNode)
-	for ((k, v) <- chunk) {
-	  nodes(k) = tail
-	}
+        val newNode = new ChunkListNode(chunk, tail, size)
+        tail = datastore.createMod(newNode)
+        for ((k, v) <- chunk) {
+          nodes(k) = tail
+        }
 
-	if (lastChunk != null) {
-	  for ((k, v) <- lastChunk) {
-	    previous(k) = tail
-	  }
-	}
+        if (lastChunk != null) {
+          for ((k, v) <- lastChunk) {
+            previous(k) = tail
+          }
+        }
 
-	if (newLastNodeMod == null) {
-	  newLastNodeMod = tail
-	}
+        if (newLastNodeMod == null) {
+          newLastNodeMod = tail
+        }
 
-	lastChunk = chunk
-	chunk = Vector[(T, U)]()
-	size  = 0
+        lastChunk = chunk
+        chunk = Vector[(T, U)]()
+        size  = 0
       }
     }
 
     if (size > 0) {
       for ((k, v) <- chunk) {
-	nodes(k) = lastNodeMod
-	previous(k) = null
+        nodes(k) = lastNodeMod
+        previous(k) = null
       }
 
       if (lastChunk != null) {
-	for ((k, v) <- lastChunk) {
-	  previous(k) = lastNodeMod
-	}
+        for ((k, v) <- lastChunk) {
+          previous(k) = lastNodeMod
+        }
       }
 
       datastore.update(lastNodeMod, new ChunkListNode(chunk, tail, size))
     } else {
       val head = datastore.read(tail)
       for ((k, v) <- head.chunk) {
-	nodes(k) = lastNodeMod
-	previous(k) = null
+        nodes(k) = lastNodeMod
+        previous(k) = null
       }
 
       datastore.update(lastNodeMod, head)
@@ -133,7 +133,8 @@ class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
   } //ensuring(isValid())
 
   private def calculateSize(chunk: Vector[(T, U)]) = {
-    chunk.aggregate(0)((sum: Int, pair: (T, U)) => sum + conf.chunkSizer(pair), _ + _)
+    chunk.aggregate(0)(
+      (sum: Int, pair: (T, U)) => sum + conf.chunkSizer(pair), _ + _)
   }
 
   def putAfter(key: T, newPair: (T, U)) {

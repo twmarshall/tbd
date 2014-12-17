@@ -20,14 +20,14 @@ package tbd.sql
  * and defining schema
  */
 trait Operator {
-  
-  def getTable: ScalaTable 
-  
+
+  def getTable: ScalaTable
+
   /*
    * Process the operator. execute the query statement
    */
   def processOp () {}
-  
+
   /*
    * Get the column definition of the processed schema
    */

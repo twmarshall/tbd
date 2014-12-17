@@ -48,10 +48,10 @@ class Ordering {
   def append(node: Node): Timestamp = {
     val newTimestamp =
       if (base.previous.size > 31) {
-	val newSublist = sublistAppend()
-	newSublist.append(node)
+        val newSublist = sublistAppend()
+        newSublist.append(node)
       } else {
-	base.previous.append(node)
+        base.previous.append(node)
       }
 
     newTimestamp
@@ -144,16 +144,16 @@ class Ordering {
       val node = time.node
 
       if (time.end != null) {
-	node match {
-	  case modNode: ModNode =>
-	    if (modNode.modId1 != -1) {
-	      mods += modNode.modId1
-	    }
-	    if (modNode.modId2 != -1) {
-	      mods += modNode.modId2
-	    }
-	  case _ =>
-	}
+        node match {
+          case modNode: ModNode =>
+            if (modNode.modId1 != -1) {
+              mods += modNode.modId1
+            }
+            if (modNode.modId2 != -1) {
+              mods += modNode.modId2
+            }
+          case _ =>
+        }
       }
 
       time = time.getNext()
@@ -168,47 +168,47 @@ class Ordering {
       val node = time.node
 
       if (time.end != null) {
-	node match {
-	  case readNode: ReadNode =>
-	    c.ddg.reads(readNode.modId) -= time
-	    readNode.updated = false
+        node match {
+          case readNode: ReadNode =>
+            c.ddg.reads(readNode.modId) -= time
+            readNode.updated = false
           case read2Node: Read2Node =>
             c.ddg.reads(read2Node.modId1) -= time
             c.ddg.reads(read2Node.modId2) -= time
             read2Node.updated = false
-	  case memoNode: MemoNode =>
-	    memoNode.memoizer.removeEntry(time, memoNode.signature)
-	  case modNode: ModNode =>
-	    if (modNode.modizer != null) {
-	      if (modNode.modizer.remove(modNode.key, c)) {
-		if (modNode.modId1 != -1) {
-		  c.remove(modNode.modId1)
-		}
+          case memoNode: MemoNode =>
+            memoNode.memoizer.removeEntry(time, memoNode.signature)
+          case modNode: ModNode =>
+            if (modNode.modizer != null) {
+              if (modNode.modizer.remove(modNode.key, c)) {
+                if (modNode.modId1 != -1) {
+                  c.remove(modNode.modId1)
+                }
 
-		if (modNode.modId2 != -1) {
-		  c.remove(modNode.modId2)
-		}
-	      }
-	    } else {
-	      if (modNode.modId1 != -1) {
-		c.remove(modNode.modId1)
-	      }
+                if (modNode.modId2 != -1) {
+                  c.remove(modNode.modId2)
+                }
+              }
+            } else {
+              if (modNode.modId1 != -1) {
+                c.remove(modNode.modId1)
+              }
 
-	      if (modNode.modId2 != -1) {
-		c.remove(modNode.modId2)
-	      }
-	    }
+              if (modNode.modId2 != -1) {
+                c.remove(modNode.modId2)
+              }
+            }
 
-	  case parNode: ParNode =>
-	    parNode.updated = false
+          case parNode: ParNode =>
+            parNode.updated = false
           case putNode: PutNode =>
             putNode.input.remove(putNode.key, putNode.value)
-	  case x => println("Tried to splice unknown node type " + x)
-	}
+          case x => println("Tried to splice unknown node type " + x)
+        }
 
-	if (time.end > end) {
-	  remove(time.end)
-	}
+        if (time.end > end) {
+          remove(time.end)
+        }
       }
 
       time = time.getNext()
@@ -221,28 +221,28 @@ class Ordering {
       var size = 0
       var stamp = start.sublist.base.next
       while (stamp != start.sublist.base) {
-	size += 1
-	stamp = stamp.next
+        size += 1
+        stamp = stamp.next
       }
       start.sublist.size = size
     } else {
       val startSublist =
-	if (start.previous == start.sublist.base) {
-	  start.sublist.previous
-	} else {
-	  start.previous.next = start.sublist.base
-	  start.sublist.base.previous = start.previous
+        if (start.previous == start.sublist.base) {
+          start.sublist.previous
+        } else {
+          start.previous.next = start.sublist.base
+          start.sublist.base.previous = start.previous
 
-	  var size = 0
-	  var stamp = start.sublist.base.next
-	  while (stamp != start.sublist.base) {
-	    size += 1
-	    stamp = stamp.next
-	  }
-	  start.sublist.size = size
+          var size = 0
+          var stamp = start.sublist.base.next
+          while (stamp != start.sublist.base) {
+            size += 1
+            stamp = stamp.next
+          }
+          start.sublist.size = size
 
-	  start.sublist
-	}
+          start.sublist
+        }
 
       end.previous = end.sublist.base
       end.sublist.base.next = end
@@ -250,8 +250,8 @@ class Ordering {
       var size = 0
       var stamp = end.sublist.base.next
       while (stamp != end.sublist.base) {
-	size += 1
-	stamp = stamp.next
+        size += 1
+        stamp = stamp.next
       }
       end.sublist.size = size
 
