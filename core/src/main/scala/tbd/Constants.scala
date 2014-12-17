@@ -53,6 +53,6 @@ object Constants {
 
     akka.remote.enabled-transports = [akka.remote.netty.tcp]
 
-    akka.remote.netty.tcp.maximum-frame-size = 8000000b
+    akka.remote.netty.tcp.maximum-frame-size = 80000000b
   """
 }
