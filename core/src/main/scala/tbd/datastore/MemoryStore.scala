@@ -38,6 +38,10 @@ class MemoryStore extends KVStore {
     values.contains(key)
   }
 
+  def clear() {
+    values.clear()
+  }
+
   def shutdown() {
     values.clear()
   }

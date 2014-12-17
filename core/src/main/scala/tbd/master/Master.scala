@@ -70,8 +70,8 @@ class Master extends Actor with ActorLogging {
       nextWorkerId = incrementWorkerId(nextWorkerId)
 
       for ((thatWorkerId, thatDatastoreRef) <- datastoreRefs) {
-	thatDatastoreRef ! RegisterDatastoreMessage(workerId, datastoreRef)
-	datastoreRef ! RegisterDatastoreMessage(thatWorkerId, thatDatastoreRef)
+        thatDatastoreRef ! RegisterDatastoreMessage(workerId, datastoreRef)
+        datastoreRef ! RegisterDatastoreMessage(thatWorkerId, thatDatastoreRef)
       }
 
     case ScheduleTaskMessage(parent: ActorRef, workerId: WorkerId) =>
@@ -142,7 +142,7 @@ class Master extends Actor with ActorLogging {
     case CreateListMessage(conf: ListConf) =>
       val input =
         if (conf.double) {
-	  if (conf.hash) {
+          if (conf.hash) {
             val futures = Buffer[(Future[String], ActorRef, WorkerId)]()
 
             var index = 0
@@ -161,16 +161,16 @@ class Master extends Actor with ActorLogging {
             for ((future, datastoreRef, workerId) <- futures) {
               val listId = Await.result(future, DURATION)
 
-	      if (partitions.contains(workerId)) {
-		partitions(workerId) += new DoubleListInput(listId, datastoreRef)
-	      } else {
-		partitions(workerId) = Buffer(new DoubleListInput(listId, datastoreRef))
-	      }
+              if (partitions.contains(workerId)) {
+                partitions(workerId) += new DoubleListInput(listId, datastoreRef)
+              } else {
+                partitions(workerId) = Buffer(new DoubleListInput(listId, datastoreRef))
+              }
             }
 
             new HashPartitionedDoubleListInput(partitions)
-	  } else {
-	    val futures = Buffer[(Future[String], ActorRef)]()
+          } else {
+            val futures = Buffer[(Future[String], ActorRef)]()
 
             var index = 0
             for (i <- 1 to conf.partitions) {
@@ -191,7 +191,7 @@ class Master extends Actor with ActorLogging {
             }
 
             new PartitionedDoubleListInput(partitions)
-	  }
+          }
         } else if (conf.chunkSize == 1) {
           if (conf.partitions == 1) {
             val datastoreRef = datastoreRefs(nextWorker)
@@ -260,6 +260,6 @@ class Master extends Actor with ActorLogging {
 
     case x =>
       log.warning("Master actor received unhandled message " +
-		  x + " from " + sender + " " + x.getClass)
+                  x + " from " + sender + " " + x.getClass)
   }
 }

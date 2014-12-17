@@ -26,7 +26,7 @@ import net.sf.jsqlparser.statement.select.SubSelect;
 
 /*
  * Entry to visiting the FROM items (table, sub select, etc)
- * retrieves the operator that scan the schema speficied by the 
+ * retrieves the operator that scan the schema speficied by the
  * FROM clause
  */
 class FromItemParseVisitor (val tablesMap: Map[String, ScalaTable])

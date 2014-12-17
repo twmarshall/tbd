@@ -72,7 +72,7 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     for (i <- 1 to PageRankAlgorithm.iters) {
       val joined = Map[Int, (Array[Int], Double)]()
       for ((url, rank) <- ranks) {
-	joined(url) = (links(url), rank)
+        joined(url) = (links(url), rank)
       }
 
       val contribs = joined.values.flatMap { case (links, rank) =>
@@ -82,7 +82,7 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
 
       val reducedContribs = Map[Int, Double]()
       for ((url, contrib) <- contribs) {
-	reducedContribs(url) = contrib + reducedContribs.getOrElse(url, 0.0)
+        reducedContribs(url) = contrib + reducedContribs.getOrElse(url, 0.0)
       }
       ranks = reducedContribs.map(pair => (pair._1, .15 + .85 * pair._2))
     }
@@ -98,7 +98,7 @@ class PageRankAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     var check = out.size == answer.size
     for ((node, rank) <- out) {
       if (!answer.contains(node) || (answer(node) - rank).abs > epsilon) {
-	check = false
+        check = false
       }
     }
 

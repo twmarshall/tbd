@@ -141,8 +141,8 @@ class Context
       pending += future
 
       if (ddg.reads.contains(modId)) {
-	updatedMods += modId
-	ddg.modUpdated(modId)
+        updatedMods += modId
+        ddg.modUpdated(modId)
       }
     }
   }

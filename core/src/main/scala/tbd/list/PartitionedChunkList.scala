@@ -98,9 +98,9 @@ class PartitionedChunkList[T, U]
           c => innerSort(i + 1)(c)
         }
 
-	sortedPartition.merge(sortedRest, comparator)
+        sortedPartition.merge(sortedRest, comparator)
       } else {
-	new ChunkList[T, U](mod { write[ChunkListNode[T, U]](null) }, conf)
+        new ChunkList[T, U](mod { write[ChunkListNode[T, U]](null) }, conf)
       }
     }
 

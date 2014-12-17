@@ -35,8 +35,8 @@ class ModList[T, U]
     new ModList(
       mod {
         read(head) {
-	  case null => write[ModListNode[T, U]](null)
-	  case node => node.filter(pred, memo)
+          case null => write[ModListNode[T, U]](null)
+          case node => node.filter(pred, memo)
         }
       }
     )
@@ -66,10 +66,10 @@ class ModList[T, U]
 
     new ModList(
       mod {
-	read(head) {
-	  case null => write[ModListNode[T, (U, V)]](null)
-	  case node => node.loopJoin(that, memo, condition)
-	}
+        read(head) {
+          case null => write[ModListNode[T, (U, V)]](null)
+          case node => node.loopJoin(that, memo, condition)
+        }
       }
     )
   }
@@ -107,7 +107,7 @@ class ModList[T, U]
   def merge(that: ModList[T, U], comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): ModList[T, U] = {
     merge(that, new Memoizer[Changeable[ModListNode[T, U]]](),
-	  new Modizer1[ModListNode[T, U]](), comparator)
+          new Modizer1[ModListNode[T, U]](), comparator)
   }
 
   def merge
@@ -118,19 +118,19 @@ class ModList[T, U]
       (implicit c: Context): ModList[T, U] = {
     new ModList(
       modizer(head.id) {
-	read(head) {
-	  case null =>
-	    read(that.head) { write(_) }
-	  case node =>
-	    read(that.head) {
-	      case null =>
-		write(node)
-	      case thatNode =>
-		memo(node, thatNode) {
-		  node.merge(thatNode, memo, modizer, comparator)
-		}
-	    }
-	}
+        read(head) {
+          case null =>
+            read(that.head) { write(_) }
+          case node =>
+            read(that.head) {
+              case null =>
+                write(node)
+              case thatNode =>
+                memo(node, thatNode) {
+                  node.merge(thatNode, memo, modizer, comparator)
+                }
+            }
+        }
       }
     )
   }
@@ -140,7 +140,7 @@ class ModList[T, U]
     val modizer = new Modizer1[ModListNode[T, U]]()
     def mapper(pair: (T, U)) = {
       val tail = modizer(pair._1) {
-	write(new ModListNode[T, U](pair, modizer(pair._1 + "null") { write(null) }))
+        write(new ModListNode[T, U](pair, modizer(pair._1 + "null") { write(null) }))
       }
 
       ("" + pair._1, new ModList(tail))
@@ -154,8 +154,8 @@ class ModList[T, U]
 
       val merged = memo(pair1, pair2) {
         val memoizer = new Memoizer[Changeable[ModListNode[T, U]]]()
-	val modizer = new Modizer1[ModListNode[T, U]]()
-	pair2._2.merge(pair1._2, memoizer, modizer, comparator)
+        val modizer = new Modizer1[ModListNode[T, U]]()
+        pair2._2.merge(pair1._2, memoizer, modizer, comparator)
       }
 
       //println("merged - " + merged)
@@ -168,7 +168,7 @@ class ModList[T, U]
     new ModList(
       mod {
         read(reduced) {
-	  case null => write(null)
+          case null => write(null)
           case (key, list) => read(list.head) { write(_) }
         }
       }, true
@@ -181,7 +181,7 @@ class ModList[T, U]
       read(head) {
         case null => write[ModListNode[T, U]](null)
         case node =>
-	  node.quicksort(mod { write(null) }, comparator)
+          node.quicksort(mod { write(null) }, comparator)
       }
     }
 
@@ -204,7 +204,7 @@ class ModList[T, U]
           (new Hasher(2, 4),
            new Memoizer[Mod[ModListNode[T, U]]](),
            new RoundMemoizer())
-	}
+        }
     }
 
     def randomReduceList
@@ -216,7 +216,7 @@ class ModList[T, U]
       val tuple = roundMemoizer.getTuple()
 
       val halfListMod = mod {
-	halfList(head.value, nextMod, round, tuple._1, tuple._2)
+        halfList(head.value, nextMod, round, tuple._1, tuple._2)
       }
 
       read(halfListMod) {
@@ -246,8 +246,8 @@ class ModList[T, U]
 
       if(binaryHash(node.nextMod.id, round, hasher)) {
         val newNextMod = memo(node.nextMod) {
-	  mod {
-	    read(node.nextMod) {
+          mod {
+            read(node.nextMod) {
               case null => write[ModListNode[T, U]](null)
               case next =>
                 read(next.nextMod) {
@@ -255,19 +255,19 @@ class ModList[T, U]
                     val tail = mod { write[ModListNode[T, U]](null) }
                     write(new ModListNode(next.value, tail))
                   case nextNext =>
-	            halfList(next.value, nextNext, round, hasher, memo)
+                    halfList(next.value, nextNext, round, hasher, memo)
                 }
             }
-	  }
-	}
+          }
+        }
         write(new ModListNode(newAcc, newNextMod))
       } else {
         read(node.nextMod) {
           case null =>
-	    val tail = mod[ModListNode[T, U]] { write(null) }
+            val tail = mod[ModListNode[T, U]] { write(null) }
             write(new ModListNode(newAcc, tail))
           case next =>
-	    halfList(newAcc, next, round, hasher, memo)
+            halfList(newAcc, next, round, hasher, memo)
         }
       }
     }
@@ -291,14 +291,14 @@ class ModList[T, U]
     val memo = new Memoizer[Changeable[ModListNode[T, U]]]()
     new ModList(
       mod {
-	read(sorted.head) {
-	  case null =>
-	    write(null)
-	  case node =>
-	    memo(node, node.value._1, null) {
-	      node.reduceByKey(f, comparator, node.value._1, null.asInstanceOf[U], memo)
-	    }
-	}
+        read(sorted.head) {
+          case null =>
+            write(null)
+          case node =>
+            memo(node, node.value._1, null) {
+              node.reduceByKey(f, comparator, node.value._1, null.asInstanceOf[U], memo)
+            }
+        }
       }, true
     )
   }
@@ -316,30 +316,30 @@ class ModList[T, U]
 
     val thisSorted =
       if (this.sorted)
-	this
+        this
       else
-	this.mergesort(comp)
+        this.mergesort(comp)
 
     val thatSorted =
       if (that.sorted)
-	that
+        that
       else
-	that.mergesort(comp)
+        that.mergesort(comp)
 
     val memo = new Memoizer[Changeable[ModListNode[T, (U, V)]]]()
     new ModList(
       mod {
-	read(thisSorted.head) {
-	  case null => write(null)
-	  case thisHead =>
-	    read(thatSorted.head) {
-	      case null => write(null)
-	      case thatHead =>
-		memo(thisHead, thatHead) {
-		  thisHead.sortJoinMerge(thatHead, memo)
-		}
-	    }
-	}
+        read(thisSorted.head) {
+          case null => write(null)
+          case thisHead =>
+            read(thatSorted.head) {
+              case null => write(null)
+              case thatHead =>
+                memo(thisHead, thatHead) {
+                  thisHead.sortJoinMerge(thatHead, memo)
+                }
+            }
+        }
       }
     )
   }
@@ -351,12 +351,12 @@ class ModList[T, U]
 
     val result = modizer(head.id) {
       read2(head) {
-	case null =>
-	  write2[ModListNode[T, U], ModListNode[T, U]](null, null)
-	case node =>
-	  memo(node) {
-	    node.split(pred, memo, modizer)
-	  }
+        case null =>
+          write2[ModListNode[T, U], ModListNode[T, U]](null, null)
+        case node =>
+          memo(node) {
+            node.split(pred, memo, modizer)
+          }
       }
     }
 

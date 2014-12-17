@@ -121,16 +121,16 @@ class ModListNode[T, U](var value: (T, U),
       // are unique. We'll want to define alternate version of join that work
       // when this assumption isn't true.
       read(nextMod) {
-	case null =>
-	  write(new ModListNode[T, (V, U)](newValue, tail))
-	case node =>
-	  val newNextMod = mod {
-	    memo(node) {
-	      node.joinHelper(thatValue, tail, memo, condition)
-	    }
-	  }
+        case null =>
+          write(new ModListNode[T, (V, U)](newValue, tail))
+        case node =>
+          val newNextMod = mod {
+            memo(node) {
+              node.joinHelper(thatValue, tail, memo, condition)
+            }
+          }
 
-	  write(new ModListNode[T, (V, U)](newValue, newNextMod))
+          write(new ModListNode[T, (V, U)](newValue, newNextMod))
       }
       //write(new ModListNode[T, (V, U)](newValue, tail))
     } else {

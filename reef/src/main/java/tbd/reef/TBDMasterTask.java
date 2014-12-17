@@ -15,10 +15,9 @@
  */
 package tbd.reef;
 
-import com.microsoft.tang.annotations.Parameter;
-import com.microsoft.reef.task.Task;
+import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.task.Task;
 
-import java.io.IOException;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -49,32 +48,8 @@ public final class TBDMasterTask implements Task {
     LOG.log(Level.INFO, "master IP: {0}", masterIP);
     LOG.log(Level.INFO, "master port: {0}", masterPort);
 
-    String cp = TBDMasterTask.class.getProtectionDomain()
-        .getCodeSource().getLocation().getFile();
-    LOG.log(Level.INFO, "cp: {0}", cp);
-
-    ProcessBuilder pb = new ProcessBuilder(
-        "java",
-        "-cp", cp,
-        "tbd.master.Main",
-        "-i", masterIP,
-        "-p", masterPort);
-
-    LOG.log(Level.INFO, "pb");
-
-    pb.redirectErrorStream(true);
-    pb.inheritIO();
-    pb.redirectErrorStream(true);
-
-    Process p = null;
-    try {
-      LOG.log(Level.INFO, "before start");
-      p = pb.start();
-      LOG.log(Level.INFO, "after start");
-    }
-    catch (IOException e) {
-      LOG.log(Level.INFO, "master process IO exception");
-    }
+   String[] args = {"-i", masterIP, "-p", masterPort};
+   tbd.master.Main.main(args);
 
     LOG.log(Level.INFO, "master sleep");
     try {
@@ -82,8 +57,6 @@ public final class TBDMasterTask implements Task {
     } catch (InterruptedException e) {
       LOG.log(Level.INFO, "master sleep interrupted");
     }
-
-    p.destroy();
 
     LOG.log(Level.INFO, "end master");
     return null;

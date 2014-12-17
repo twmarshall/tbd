@@ -26,7 +26,7 @@ import tbd.Constants.ModId
  * node equality. Basically the analysis package assumes that two nodes are
  * equal, iff the primary parameter lists of their tags are equal.
  * The secondary parameter lists can be used to hold additional information, for
- * example for debugging purposes. 
+ * example for debugging purposes.
  */
 abstract class Tag
 
@@ -53,7 +53,8 @@ object Tag {
    * A mod tag, consisting of a list of created mods and the tag of the
    * function invoked.
    */
-  case class Mod(val mods: List[ModId], val initializer: FunctionTag) extends Tag
+  case class Mod(
+    val mods: List[ModId], val initializer: FunctionTag) extends Tag
   /*
    * A par tag, consisting of two function tags for the two invoked functions.
    */

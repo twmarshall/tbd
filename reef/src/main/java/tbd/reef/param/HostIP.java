@@ -15,8 +15,8 @@
  */
 package tbd.reef.param;
 
-import com.microsoft.tang.annotations.Name;
-import com.microsoft.tang.annotations.NamedParameter;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
 
 /**
  * Internal parameter = IP address to start TBD component (master/worker).

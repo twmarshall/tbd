@@ -15,12 +15,9 @@
  */
 package tbd.reef;
 
-import com.microsoft.tang.annotations.Parameter;
-import com.microsoft.reef.task.Task;
+import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.task.Task;
 
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -38,24 +35,17 @@ public final class TBDWorkerTask implements Task {
   private final String hostIP;
   private final String hostPort;
   private final String masterAkka;
-  private final String xmx;
-  private final String xss;
 
   @Inject
   TBDWorkerTask(@Parameter(TBDDriver.HostIP.class) final String ip,
       @Parameter(TBDDriver.HostPort.class) final String port,
       @Parameter(TBDDriver.MasterAkka.class) final String master,
-      @Parameter(TBDLaunch.Timeout.class) final int tout,
-      @Parameter(WorkerXmx.class) final int workerXmx,
-      @Parameter(WorkerXss.class) final int workerXss
+      @Parameter(TBDLaunch.Timeout.class) final int tout
       ) {
     hostIP = ip;
     hostPort = port;
     masterAkka = master;
     timeout = tout;
-    xmx = (workerXmx == 0) ?
-        "" : "-Xmx" + Integer.toString(workerXmx/1024) + "g";
-    xss = "-Xss" + Integer.toString(workerXss) + "m";
   }
 
   @Override
@@ -71,40 +61,8 @@ public final class TBDWorkerTask implements Task {
       LOG.log(Level.INFO, "worker sleep interrupted");
     }
 
-    String cp = TBDWorkerTask.class.getProtectionDomain()
-        .getCodeSource().getLocation().getFile();
-    LOG.log(Level.INFO, "cp: {0}", cp);
-    
-    List<String> args = new ArrayList<String>();
-    args.add("java");
-    if (!xmx.equals("")){
-      args.add(xmx);
-    }
-    args.add(xss);
-    args.add("-cp");
-    args.add(cp);
-    args.add("tbd.worker.Main");
-    args.add("-i");
-    args.add(hostIP);
-    args.add("-p");
-    args.add(hostPort);
-    args.add(masterAkka);
-    ProcessBuilder pb = new ProcessBuilder(args);
-
-    LOG.log(Level.INFO, "process initialized");
-
-    pb.redirectErrorStream(true);
-    pb.inheritIO();
-    pb.redirectErrorStream(true);
-    
-    Process p = null;
-    try {
-      LOG.log(Level.INFO, "before start");
-      p = pb.start();
-      LOG.log(Level.INFO, "after start");
-    } catch (IOException e1) {
-      LOG.log(Level.INFO, "worker start failed");
-    }
+    String[] args = {"-i", hostIP, "-p", hostPort, masterAkka};
+    tbd.worker.Main.main(args);
 
     LOG.log(Level.INFO, "worker sleep");
     try {
@@ -112,8 +70,6 @@ public final class TBDWorkerTask implements Task {
     } catch (InterruptedException e) {
       LOG.log(Level.INFO, "worker sleep interrupted");
     }
-
-    p.destroy();
 
     LOG.log(Level.INFO, "end worker");
     return null;

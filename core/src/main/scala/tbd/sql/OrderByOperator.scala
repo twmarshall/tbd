@@ -27,11 +27,11 @@ import tbd.list._
 
 class MergeSortAdjust (
   list: AdjustableList[Int, Seq[Datum]],
-  elements: List[_], 
+  elements: List[_],
   val childTupleTableMap: List[String])
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
-  
-  def run(implicit c: Context) = {  
+
+  def run(implicit c: Context) = {
     list.mergesort((pair1: (Int, Seq[Datum]), pair2:(Int, Seq[Datum])) => {
       var cmp = 0
       breakable {
@@ -48,11 +48,11 @@ class MergeSortAdjust (
 
           cmp = if (op1.isInstanceOf[Long])
               op1.asInstanceOf[Long].compare(op2.asInstanceOf[Long])
-            else if (op1.isInstanceOf[Double]) 
+            else if (op1.isInstanceOf[Double])
               op1.asInstanceOf[Double].compare(op2.asInstanceOf[Double])
-            else if (op1.isInstanceOf[java.util.Date]) 
+            else if (op1.isInstanceOf[java.util.Date])
               op1.asInstanceOf[java.util.Date].compareTo(op2.asInstanceOf[java.util.Date])
-            else 
+            else
               op1.asInstanceOf[String].compare(op2.asInstanceOf[String])
           if ( ! isAsc) cmp = cmp * -1
           if (cmp != 0) break
@@ -63,20 +63,20 @@ class MergeSortAdjust (
   }
 }
 
-class OrderByOperator (val inputOper: Operator, val elements: List[_]) 
-  extends Operator{
+class OrderByOperator (val inputOper: Operator, val elements: List[_])
+  extends Operator {
   var childOperators = List[Operator]():+ inputOper;
   val table = inputOper.getTable
   var inputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   var outputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
-  
+
   var tupleTableMap = List[String]()
   override def getTupleTableMap = tupleTableMap
 
   override def processOp () {
     childOperators.foreach(child => child.processOp)
     inputAdjustable = inputOper.getAdjustable
-    
+
     val childOperator = childOperators(0)
     val childTupleTableMap = childOperator.getTupleTableMap
     tupleTableMap = childTupleTableMap

@@ -54,8 +54,8 @@ class ChunkListNode[T, U]
       (implicit c: Context): Changeable[ChunkListNode[V, W]] = {
     var tail = mod {
       read(nextMod) {
-	case null => write[ChunkListNode[V, W]](null)
-	case next =>
+        case null => write[ChunkListNode[V, W]](null)
+        case next =>
           memo(nextMod) {
             next.flatMap(f, chunkSize, memo)
           }
@@ -67,7 +67,7 @@ class ChunkListNode[T, U]
     while (mapped.size > chunkSize) {
       val (start, end) = mapped.splitAt(chunkSize)
       tail = mod {
-	write(new ChunkListNode[V, W](start, tail))
+        write(new ChunkListNode[V, W](start, tail))
       }
       mapped = end
     }
@@ -82,29 +82,29 @@ class ChunkListNode[T, U]
       (implicit c: Context): Changeable[ChunkListNode[T, (U, V)]] = {
     val newNext = mod {
       read(nextMod) {
-	case null =>
-	  write[ChunkListNode[T, (U, V)]](null)
-	case node =>
-	  memo(node) {
-	    node.loopJoin(that, memo, condition)
-	  }
+        case null =>
+          write[ChunkListNode[T, (U, V)]](null)
+        case node =>
+          memo(node) {
+            node.loopJoin(that, memo, condition)
+          }
       }
     }
 
     read(that.head) {
       case null =>
-	read(newNext) { write(_) }
+        read(newNext) { write(_) }
       case node =>
-	var tail = newNext
-	for (i <- 0 until chunk.size - 1) {
-	  tail = mod {
-	    val memo2 = new Memoizer[Changeable[ChunkListNode[T, (U, V)]]]()
-	    node.joinHelper(chunk(i),  tail, memo2, condition)
-	  }
-	}
+        var tail = newNext
+        for (i <- 0 until chunk.size - 1) {
+          tail = mod {
+            val memo2 = new Memoizer[Changeable[ChunkListNode[T, (U, V)]]]()
+            node.joinHelper(chunk(i),  tail, memo2, condition)
+          }
+        }
 
-	val memo2 = new Memoizer[Changeable[ChunkListNode[T, (U, V)]]]()
-	node.joinHelper(chunk(chunk.size - 1), tail, memo2, condition)
+        val memo2 = new Memoizer[Changeable[ChunkListNode[T, (U, V)]]]()
+        node.joinHelper(chunk(chunk.size - 1), tail, memo2, condition)
     }
   }
 
@@ -119,32 +119,32 @@ class ChunkListNode[T, U]
     var newChunk = Vector[(T, (V, U))]()
     for (value <- chunk) {
       if (condition(value, thatValue)) {
-	val newValue = (value._1, (thatValue._2, value._2))
-	newChunk :+= newValue
+        val newValue = (value._1, (thatValue._2, value._2))
+        newChunk :+= newValue
       }
     }
 
     if (newChunk.size > 0) {
       read(nextMod) {
-	case null =>
-	  write(new ChunkListNode[T, (V, U)](newChunk, tail))
-	case node =>
-	  val newNext = mod {
-	    memo(node) {
-	      node.joinHelper(thatValue, tail, memo, condition)
-	    }
-	  }
+        case null =>
+          write(new ChunkListNode[T, (V, U)](newChunk, tail))
+        case node =>
+          val newNext = mod {
+            memo(node) {
+              node.joinHelper(thatValue, tail, memo, condition)
+            }
+          }
 
-	  write(new ChunkListNode[T, (V, U)](newChunk, newNext))
+          write(new ChunkListNode[T, (V, U)](newChunk, newNext))
       }
     } else {
       read(nextMod) {
-	case null =>
-	  read(tail) { write(_) }
-	case node =>
-	  memo(node) {
-	    node.joinHelper(thatValue, tail, memo, condition)
-	  }
+        case null =>
+          read(tail) { write(_) }
+        case node =>
+          memo(node) {
+            node.joinHelper(thatValue, tail, memo, condition)
+          }
       }
     }
   }
@@ -175,8 +175,8 @@ class ChunkListNode[T, U]
     val newChunk = chunk.map(f)
     val newNext = mod {
       read(nextMod) {
-	case null => write[ChunkListNode[V, W]](null)
-	case next =>
+        case null => write[ChunkListNode[V, W]](null)
+        case next =>
           memo(nextMod) {
             next.map(f, memo)
           }
@@ -199,74 +199,74 @@ class ChunkListNode[T, U]
 
     while (remaining.size > 0) {
       while (remaining.size > 0 && remaining.head._1 == newPreviousKey) {
-	newRunningValue =
-	  if (newRunningValue == null)
-	    remaining.head._2
-	  else
-	    f(newRunningValue, remaining.head._2)
+        newRunningValue =
+          if (newRunningValue == null)
+            remaining.head._2
+          else
+            f(newRunningValue, remaining.head._2)
 
-	remaining = remaining.tail
+        remaining = remaining.tail
       }
 
       if (remaining.size > 0) {
-	reduced += ((newPreviousKey, newRunningValue))
-	newPreviousKey = remaining.head._1
-	newRunningValue = null.asInstanceOf[U]
+        reduced += ((newPreviousKey, newRunningValue))
+        newPreviousKey = remaining.head._1
+        newRunningValue = null.asInstanceOf[U]
       }
     }
 
     if (reduced.size > 0) {
       var tail = mod {
-	read(nextMod) {
-	  case null =>
-	    val tail = mod { write[ChunkListNode[T, U]](null) }
-	    write(new ChunkListNode(Vector((newPreviousKey, newRunningValue)), tail))
-	  case node =>
-	    node.reduceByKey(f, newPreviousKey, newRunningValue)
-	}
+        read(nextMod) {
+          case null =>
+            val tail = mod { write[ChunkListNode[T, U]](null) }
+            write(new ChunkListNode(Vector((newPreviousKey, newRunningValue)), tail))
+          case node =>
+            node.reduceByKey(f, newPreviousKey, newRunningValue)
+        }
       }
 
       while (reduced.size > 1) {
-	tail = mod {
-	  write(new ChunkListNode(Vector(reduced.head), tail))
-	}
-	reduced = reduced.tail
+        tail = mod {
+          write(new ChunkListNode(Vector(reduced.head), tail))
+        }
+        reduced = reduced.tail
       }
 
       write(new ChunkListNode(Vector(reduced.head), tail))
     } else {
       read(nextMod) {
-	case null =>
-	  val tail = mod { write[ChunkListNode[T, U]](null) }
-	  write(new ChunkListNode(Vector((newPreviousKey, newRunningValue)), tail))
-	case node =>
-	  node.reduceByKey(f, newPreviousKey, newRunningValue)
+        case null =>
+          val tail = mod { write[ChunkListNode[T, U]](null) }
+          write(new ChunkListNode(Vector((newPreviousKey, newRunningValue)), tail))
+        case node =>
+          node.reduceByKey(f, newPreviousKey, newRunningValue)
       }
     }
 
     /*if (value._1 == previousKey) {
       val newRunningValue =
-	if (runningValue == null)
-	  value._2
-	else
-	  f(runningValue, value._2)
+        if (runningValue == null)
+          value._2
+        else
+          f(runningValue, value._2)
 
       read(nextMod) {
-	case null =>
-	  val tail = mod { write[ChunkListNode[T, U]](null) }
-	  write(new ChunkListNode((value._1, newRunningValue), tail))
-	case node =>
-	  node.reduceByKey(f, value._1, newRunningValue)
+        case null =>
+          val tail = mod { write[ChunkListNode[T, U]](null) }
+          write(new ChunkListNode((value._1, newRunningValue), tail))
+        case node =>
+          node.reduceByKey(f, value._1, newRunningValue)
       }
     } else {
       val newNextMod = mod {
-	read(nextMod) {
-	  case null =>
-	    val tail = mod { write[ChunkListNode[T, U]](null) }
-	    write(new ChunkListNode(value, tail))
-	  case node =>
-	    node.reduceByKey(f, value._1, value._2)
-	}
+        read(nextMod) {
+          case null =>
+            val tail = mod { write[ChunkListNode[T, U]](null) }
+            write(new ChunkListNode(value, tail))
+          case node =>
+            node.reduceByKey(f, value._1, value._2)
+        }
       }
 
       write(new ChunkListNode((previousKey, runningValue), newNextMod))

@@ -40,7 +40,7 @@ class StringData(
     var i = 0
     (elems \\ "elem").map(elem => {
       (elem \\ "value").map(value => {
-	chunks += value.text
+        chunks += value.text
       })
     })
   }
@@ -56,7 +56,7 @@ class StringData(
             table += (i -> value.text)
             i += 1
           } else {
-	    chunks += value.text
+            chunks += value.text
           }
         })
       })
@@ -75,9 +75,9 @@ class StringData(
   def update(n: Int) {
     for (i <- 1 to n) {
       mutations(rand.nextInt(mutations.size)) match {
-	case "insert" => addValue()
-	case "remove" => removeValue()
-	case "update" => updateValue()
+        case "insert" => addValue()
+        case "remove" => removeValue()
+        case "update" => updateValue()
       }
     }
   }

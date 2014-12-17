@@ -47,7 +47,7 @@ class TableNameTakenException(
 }
 
 /*
- * Entry of the the SQL engine 
+ * Entry of the the SQL engine
  */
 class TBDSqlContext(val mutator: Mutator)  {
 
@@ -98,11 +98,11 @@ class TBDSqlContext(val mutator: Mutator)  {
        path: String,
        f: Array[String] => T,
        listConf: ListConf  = new ListConf(partitions = 1, chunkSize = 1)) = {
-    if (tablesMap.contains(tableName)) throw 
+    if (tablesMap.contains(tableName)) throw
       new TableNameTakenException(tableName)
     val fileContents = Source.fromFile(path).getLines.map(_.split(",")).map(f)
     val members = typeOf[T].members.filter(!_.isMethod)
-    val colnameMap: Map[String, ScalaColumn] = 
+    val colnameMap: Map[String, ScalaColumn] =
       members.zipWithIndex.map( x => (
         x._1.name.toString().trim,
         ScalaColumn(x._1.name.toString(), x._2, x._1.typeSignature))

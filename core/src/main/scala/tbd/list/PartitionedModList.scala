@@ -67,15 +67,15 @@ class PartitionedModList[T, U]
       (implicit c: Context): PartitionedModList[T, (U, V)] = {
     def innerJoin(i: Int)(implicit c: Context): Buffer[ModList[T, (U, V)]] = {
       if (i < partitions.size) {
-	val (joinedPartition, joinedRest) = par {
-	  c => partitions(i).join(that, condition)(c)
-	} and {
-	  c => innerJoin(i + 1)(c)
-	}
+        val (joinedPartition, joinedRest) = par {
+          c => partitions(i).join(that, condition)(c)
+        } and {
+          c => innerJoin(i + 1)(c)
+        }
 
-	joinedRest += joinedPartition
+        joinedRest += joinedPartition
       } else {
-	Buffer[ModList[T, (U, V)]]()
+        Buffer[ModList[T, (U, V)]]()
       }
     }
 
@@ -112,7 +112,7 @@ class PartitionedModList[T, U]
           c => innerSort(i + 1)(c)
         }
 
-	sortedPartition.merge(sortedRest, comparator)
+        sortedPartition.merge(sortedRest, comparator)
       } else {
         new ModList[T, U](mod { write[ModListNode[T, U]](null) })
       }
@@ -134,10 +134,10 @@ class PartitionedModList[T, U]
         /*
         val comp = (pair1: (T, _), pair2: (T, _)) => {
           comparator(pair1, pair2)
-	      //ordering.compare(pair1._1, pair2._1)
-	    }
-		*/
-	sortedPartition.merge(sortedRest, comparator)
+              //ordering.compare(pair1._1, pair2._1)
+            }
+                */
+        sortedPartition.merge(sortedRest, comparator)
       } else {
         new ModList[T, U](mod { write[ModListNode[T, U]](null) })
       }

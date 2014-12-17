@@ -15,15 +15,15 @@
  */
 package tbd.reef;
 
-import com.microsoft.reef.client.*;
-import com.microsoft.tang.Configuration;
-import com.microsoft.tang.JavaConfigurationBuilder;
-import com.microsoft.tang.Tang;
-import com.microsoft.tang.annotations.Parameter;
-import com.microsoft.tang.annotations.Unit;
-import com.microsoft.tang.exceptions.BindException;
-import com.microsoft.wake.EventHandler;
-import com.microsoft.wake.remote.impl.ObjectSerializableCodec;
+import org.apache.reef.client.*;
+import org.apache.reef.tang.Configuration;
+import org.apache.reef.tang.JavaConfigurationBuilder;
+import org.apache.reef.tang.Tang;
+import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.tang.annotations.Unit;
+import org.apache.reef.tang.exceptions.BindException;
+import org.apache.reef.wake.EventHandler;
+import org.apache.reef.wake.remote.impl.ObjectSerializableCodec;
 
 import javax.inject.Inject;
 import java.io.BufferedReader;
@@ -117,9 +117,7 @@ public class TBDClient {
   TBDClient(final REEF reef,
             @Parameter(TBDLaunch.NumWorkers.class) final Integer numWorkers,
             @Parameter(TBDLaunch.Timeout.class) final Integer timeout,
-            @Parameter(Memory.class) final Integer memory,
-            @Parameter(WorkerXmx.class) final Integer workerXmx,
-            @Parameter(WorkerXss.class) final Integer workerXss)
+            @Parameter(Memory.class) final Integer memory)
                 throws BindException {
 
     this.reef = reef;
@@ -163,8 +161,6 @@ public class TBDClient {
     configBuilder.bindNamedParameter(TBDLaunch.Timeout.class,
         "" + timeout);
     configBuilder.bindNamedParameter(Memory.class, "" + memory);
-    configBuilder.bindNamedParameter(WorkerXmx.class, "" + workerXmx);
-    configBuilder.bindNamedParameter(WorkerXss.class, "" + workerXss);
     this.driverConfiguration = configBuilder.build();
   }
 

@@ -85,8 +85,12 @@ Scroll by dragging the mouse.
 Zoom with the scroll wheel. 
 
 ## REEF
+
+You'll need to apply reef/tbd-reef.patch to Reef and then install it on your machine.
+
 ```
 > sbt/sbt
+> project reef
 > assembly
 ```
 

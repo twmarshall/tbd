@@ -49,6 +49,6 @@ object Main {
     val connector = MasterConnector(ip = ip, port = port, logging = logging,
       singleNode = false)
     println("New master started at: akka.tcp://" + connector.system.name +
-	    "@" + ip + ":" + port + "/user/master")
+            "@" + ip + ":" + port + "/user/master")
   }
 }

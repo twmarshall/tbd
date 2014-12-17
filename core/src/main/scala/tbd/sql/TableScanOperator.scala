@@ -44,12 +44,12 @@ class TableScanOperator (
       } else {
         tupleTableMap = tupleTableMap :+ datumnColumn
       }
-    } 
+    }
   }
-  
+
   override def getTupleTableMap = tupleTableMap
 
-  override def processOp () = {}  
+  override def processOp () = {}
 
   override def getTable: ScalaTable =  table
 

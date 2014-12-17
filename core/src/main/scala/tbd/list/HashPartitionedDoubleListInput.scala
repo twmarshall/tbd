@@ -66,7 +66,7 @@ class HashPartitionedDoubleListInput[T, U]
     for ((workerId, partitions) <- workers) {
       adjustablePartitions(workerId) = Buffer[DoubleList[T, U]]()
       for (partition <- partitions) {
-	adjustablePartitions(workerId) += partition.getAdjustableList()
+        adjustablePartitions(workerId) += partition.getAdjustableList()
       }
     }
 

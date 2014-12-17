@@ -28,7 +28,7 @@ import tbd.list._
 class JoinAdjust (
   leftList: AdjustableList[Int, Seq[Datum]],
   rightList: AdjustableList[Int, Seq[Datum]],
-  val conditionExp: Expression, 
+  val conditionExp: Expression,
   val childTupleTableMap: List[String])
   extends Adjustable[AdjustableList[Int, Seq[Datum]]] {
 
@@ -51,7 +51,7 @@ class JoinOperator (
   val leftOper: Operator,
   val rightOper: Operator,
   val conditionExp: Expression)
-  extends Operator{
+  extends Operator {
 
   var childOperators = List[Operator](leftOper, rightOper)
   val leftTable = leftOper.getTable
@@ -60,19 +60,18 @@ class JoinOperator (
   var rightAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   var outputAdjustable : AdjustableList[Int,Seq[tbd.sql.Datum]] = _
   var isTupleMapPresent = true
-  
+
   var tupleTableMap = List[String]()
   override def getTupleTableMap = tupleTableMap
-  
-  
+
   override def processOp () {
     childOperators.foreach(child => child.processOp)
     val childTupleTableMap = rightOper.getTupleTableMap ++ leftOper.getTupleTableMap
     tupleTableMap = childTupleTableMap
     leftAdjustable = leftOper.getAdjustable
     rightAdjustable = rightOper.getAdjustable
-    
-    val adjustable = new JoinAdjust(leftAdjustable, rightAdjustable, 
+
+    val adjustable = new JoinAdjust(leftAdjustable, rightAdjustable,
       conditionExp, childTupleTableMap)
     outputAdjustable = leftTable.mutator.run(adjustable)
   }

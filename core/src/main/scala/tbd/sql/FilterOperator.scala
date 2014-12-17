@@ -54,7 +54,6 @@ class FilterOperator (val inputOper: Operator, val condition: Expression)
   override def getTupleTableMap = tupleTableMap
 
   override def processOp () {
-    
     childOperators.foreach(child => child.processOp)
 
     inputAdjustable = inputOper.getAdjustable
@@ -69,7 +68,7 @@ class FilterOperator (val inputOper: Operator, val condition: Expression)
 
   override def getTable: ScalaTable = table
 
-  override def getAdjustable: 
+  override def getAdjustable:
     tbd.list.AdjustableList[Int,Seq[tbd.sql.Datum]] = outputAdjustable
 
   override def toBuffer = outputAdjustable.toBuffer(table.mutator).

@@ -36,7 +36,7 @@ import tbd.list._
 /*
  * GroupBy operation execute in two steps:
  * 1. map out the rows by keys of groupby columns
- * 2. reduce the  rows by key, applying the aggregation functions 
+ * 2. reduce the  rows by key, applying the aggregation functions
  */
 class GroupByAdjust(
   list: AdjustableList[Int, Seq[Datum]],
@@ -56,7 +56,7 @@ class GroupByAdjust(
         val funcName = e.asInstanceOf[net.sf.jsqlparser.expression.Function].
           getName()
         if (funcName.equalsIgnoreCase("avg")) {
-          // AVG computes from the division of two aggregate functions: 
+          // AVG computes from the division of two aggregate functions:
           // SUM and COUNT
           aggreFuncTypes = aggreFuncTypes :+ "avgsum"
           aggreFuncTypes = aggreFuncTypes :+ "avgcount"
@@ -71,7 +71,7 @@ class GroupByAdjust(
 
       }
   }
-  
+
   /*
    * map out by groupby columns
    */
@@ -185,7 +185,7 @@ class GroupByAdjust(
   def mapper2 (pair: (Seq[Datum], Seq[Datum])) : (Int, Seq[Datum]) = {
 
     val idx = pair._1(0).asInstanceOf[Datum.dLong].getValue().asInstanceOf[Int]
-    if (! hasAvg) (idx, pair._2) 
+    if (! hasAvg) (idx, pair._2)
     else {
       var newDatumList = List[Datum]()
       for (i <- 0 until aggreFuncTypes.length) {
@@ -201,7 +201,7 @@ class GroupByAdjust(
               pair._2(i).asInstanceOf[Datum.dDecimal].getValue()
           }
           val count = pair._2(i+1).asInstanceOf[Datum.dLong].getValue()
-          newDatumList = newDatumList :+ 
+          newDatumList = newDatumList :+
             new Datum.dDecimal(sum.asInstanceOf[Double]/count, pair._2(i).getColumn())
         }
       }
@@ -230,7 +230,7 @@ class GroupByOperator(
 
   var tupleTableMap = List[String]()
   override def getTupleTableMap = tupleTableMap
-  
+
   /*
    * set the list of column names
    */
@@ -240,14 +240,14 @@ class GroupByOperator(
       if (selectItem.isInstanceOf[SelectExpressionItem]){
           val expItem = selectItem.asInstanceOf[SelectExpressionItem]
           var e = expItem.getExpression
-          val newCol = if (e.isInstanceOf[Column]) 
+          val newCol = if (e.isInstanceOf[Column])
                           e.asInstanceOf[Column].getWholeColumnName.toLowerCase
-                       else expItem.getAlias() 
+                       else expItem.getAlias()
           tupleTableMap = tupleTableMap :+ newCol
       }
     })
   }
-  
+
   override def processOp() {
     childOperators.foreach(child => child.processOp)
 

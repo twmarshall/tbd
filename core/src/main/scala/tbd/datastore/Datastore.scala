@@ -286,6 +286,7 @@ class Datastore
       workerId = _workerId
 
     case ClearMessage() =>
+      store.clear()
       lists.clear()
 
     case x =>

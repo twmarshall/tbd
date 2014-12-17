@@ -15,28 +15,28 @@
  */
 package tbd.reef;
 
-import com.microsoft.reef.driver.task.CompletedTask;
-import com.microsoft.reef.driver.task.RunningTask;
-import com.microsoft.reef.driver.client.JobMessageObserver;
-import com.microsoft.reef.driver.context.ActiveContext;
-import com.microsoft.reef.driver.context.ClosedContext;
-import com.microsoft.reef.driver.context.ContextConfiguration;
-import com.microsoft.reef.driver.context.FailedContext;
-import com.microsoft.reef.driver.evaluator.AllocatedEvaluator;
-import com.microsoft.reef.driver.evaluator.EvaluatorRequest;
-import com.microsoft.reef.driver.evaluator.EvaluatorRequestor;
-import com.microsoft.reef.driver.evaluator.FailedEvaluator;
-import com.microsoft.reef.driver.task.TaskConfiguration;
-import com.microsoft.tang.JavaConfigurationBuilder;
-import com.microsoft.tang.Tang;
-import com.microsoft.tang.annotations.Name;
-import com.microsoft.tang.annotations.NamedParameter;
-import com.microsoft.tang.annotations.Parameter;
-import com.microsoft.tang.annotations.Unit;
-import com.microsoft.wake.EventHandler;
-import com.microsoft.wake.remote.impl.ObjectSerializableCodec;
-import com.microsoft.wake.time.event.StartTime;
-import com.microsoft.wake.time.event.StopTime;
+import org.apache.reef.driver.task.CompletedTask;
+import org.apache.reef.driver.task.RunningTask;
+import org.apache.reef.driver.client.JobMessageObserver;
+import org.apache.reef.driver.context.ActiveContext;
+import org.apache.reef.driver.context.ClosedContext;
+import org.apache.reef.driver.context.ContextConfiguration;
+import org.apache.reef.driver.context.FailedContext;
+import org.apache.reef.driver.evaluator.AllocatedEvaluator;
+import org.apache.reef.driver.evaluator.EvaluatorRequest;
+import org.apache.reef.driver.evaluator.EvaluatorRequestor;
+import org.apache.reef.driver.evaluator.FailedEvaluator;
+import org.apache.reef.driver.task.TaskConfiguration;
+import org.apache.reef.tang.JavaConfigurationBuilder;
+import org.apache.reef.tang.Tang;
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
+import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.tang.annotations.Unit;
+import org.apache.reef.wake.EventHandler;
+import org.apache.reef.wake.remote.impl.ObjectSerializableCodec;
+import org.apache.reef.wake.time.event.StartTime;
+import org.apache.reef.wake.time.event.StopTime;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -59,8 +59,6 @@ public final class TBDDriver {
   private final JobMessageObserver jobMessageObserver;
   private final int timeout;
   private final int memory;
-  private final int workerXmx;
-  private final int workerXss;
 
   private int numWorkers;
   private int numEvaluators;
@@ -108,17 +106,13 @@ public final class TBDDriver {
       final JobMessageObserver jobMessageObserver,
       @Parameter(TBDLaunch.NumWorkers.class) final int numWorkers,
       @Parameter(TBDLaunch.Timeout.class) final int timeout,
-      @Parameter(Memory.class) final int memory,
-      @Parameter(WorkerXmx.class) final int workerXmx,
-      @Parameter(WorkerXss.class) final int workerXss
+      @Parameter(Memory.class) final int memory
       ) {
     this.requestor = requestor;
     this.jobMessageObserver = jobMessageObserver;
     this.numWorkers = numWorkers;
     this.timeout = timeout;
     this.memory = memory;
-    this.workerXmx = workerXmx;
-    this.workerXss = workerXss;
     this.numEvaluators = numWorkers + 1;
     LOG.log(Level.INFO, "Instantiated 'TBDDriver'");
   }
@@ -226,7 +220,7 @@ public final class TBDDriver {
     public void onNext(final FailedEvaluator eval) {
       synchronized (TBDDriver.this) {
         LOG.log(Level.SEVERE, "FailedEvaluator", eval);
-        for (final FailedContext failedContext 
+        for (final FailedContext failedContext
             : eval.getFailedContextList()) {
           TBDDriver.this.contexts.remove(failedContext.getId());
         }
@@ -260,7 +254,7 @@ public final class TBDDriver {
       if (masterCtxt) {
         contexts.put(contextId, context);
         final String taskId = String.format("task_master_%06d", 0);
-        
+
         final JavaConfigurationBuilder cb =
             Tang.Factory.getTang().newConfigurationBuilder();
         cb.addConfiguration(
@@ -353,8 +347,6 @@ public final class TBDDriver {
               ctxt2port.get(contextId).toString());
           cb.bindNamedParameter(TBDDriver.MasterAkka.class, masterAkka);
           cb.bindNamedParameter(TBDLaunch.Timeout.class, "" + timeout);
-          cb.bindNamedParameter(WorkerXmx.class, "" + workerXmx);
-          cb.bindNamedParameter(WorkerXss.class, "" + workerXss);
 
           context.submitTask(cb.build());
           LOG.log(Level.INFO, "Submit {0} to context {1}",
