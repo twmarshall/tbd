@@ -259,6 +259,11 @@ class Datastore
       sender ! "okay"
 
     case PutMessage(listId: String, key: Any, value: Any) =>
+      // This solves a bug where sometimes deserialized Scala objects show up as
+      // null in matches. We should figure out a better way of solving this.
+      key.toString
+      value.toString
+
       lists(listId).put(key, value)
       sender ! "okay"
 
