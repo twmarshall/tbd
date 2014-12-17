@@ -20,7 +20,7 @@ import tbd.list.ListInput
 class IntData(
     input: ListInput[Int, Int],
     count: Int,
-    mutations: Array[String] = Array("insert", "update", "remove"),
+    mutations: List[String] = List("insert", "update", "remove"),
     _file: String = "data.txt"
   ) extends Data[Int] {
   val maxKey = count * 10

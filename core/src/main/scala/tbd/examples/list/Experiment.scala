@@ -16,6 +16,7 @@
 package tbd.examples.list
 
 import akka.util.Timeout
+import org.rogach.scallop._
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.duration._
 
@@ -23,43 +24,6 @@ import tbd.{Constants, Mutator}
 import tbd.list.ListConf
 
 object Experiment {
-  val usage ="""Usage: run.sh [OPTION]...
-
-Options:
-  -a, --algorithms s,s,...   Algorithms to run, where s could be: filter,
-                               flatMap, join, map, msort, pgrank, qsort, rbk,
-                               sjoin, split, or wc.
-  -c, --check                Turns output checking on, for debugging.
-  -f, --file                 File to read the workload from. If none is
-                               specified, the data will be randomly generated.
-                               This option overrides --counts and --runs.
-  -h, --help                 Display this message.
-  -m, --mutations s,s,...    Mutations to perform on the input data. Must be
-                               one of 'update', 'insert', or 'remove'.
-  -n, --counts n,n,...       Number of chunks to load initially.
-  -o, --output chart,line,x  How to format the printed results - each of
-                               'chart', 'line', and 'x' must be one of
-                               'algorithms', 'chunkSizes', 'counts',
-                               'partitons', or 'runs', with one required
-                               to be 'runs'.
-  -p, --partitions n,n,...   Number of partitions for the input data.
-  -s, --chunkSizes n,n,...   Size of each chunk in the list, in KB.
-  -r, --runs f,f,...         What test runs to execute. 'naive' and 'initial'
-                               are included automatically, so this is a list
-                               of update sizes (f >= 1) or update percentages
-                               (0 < f < 1).
-  -v, --verbosity            Adjusts the amount of output, with 0 indicating no
-                               output. (default: '1')
-  --repeat n                 Number of times to repeat each experiment.
-  --load                     If specified, loading times will be included in
-                               formatted output.
-  --store type               The type of datastore to use, either 'memory' or
-                               'berkeleydb' (default: 'memory').
-  --cacheSizes n,n,...       The number of mods to store in the in-memory cache
-                               when using the 'berkeleydb' store.
-  """
-
-  var repeat = 3
 
   var verbosity = 1
 
@@ -73,17 +37,7 @@ Options:
 
   var port = 2252
 
-  val confs = Map(("algorithms" -> Array("map")),
-                  ("cacheSizes" -> Array("100000")),
-                  ("counts" -> Array("1000")),
-                  ("chunkSizes" -> Array("2")),
-                  ("mutations" -> Array("insert", "update", "remove")),
-                  ("partitions" -> Array("8")),
-                  ("runs" -> Array("naive", "initial", ".01", ".05", ".1")),
-                  ("output" -> Array("algorithms", "runs", "counts")),
-                  ("store" -> Array("memory")))
-
-  val allResults = Map[Map[String, _], Map[String, Double]]()
+  val allResults = Map[AlgorithmConf, Map[String, Double]]()
 
   def round(value: Double): Double = {
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
@@ -98,7 +52,13 @@ Options:
    * don't make any sense unless you vary initial vs. propagation. They must
    * also be three distinct values.
    */
-  def printCharts(charts: String, lines: String, x: String) {
+  def printCharts
+      (charts: String, lines: String, x: String, conf: ExperimentConf) {
+    val confs = Map[String, List[String]]()
+    confs("algorithms") = conf.algorithms.get.get
+    confs("runs") = conf.runs.get.get
+    confs("counts") = conf.counts.get.get
+
     for (chart <- confs(charts)) {
       print(chart + "\t")
       for (line <- confs(lines)) {
@@ -161,68 +121,18 @@ Options:
   }
 
   def main(args: Array[String]) {
+    val conf = new ExperimentConf(args)
+
+    verbosity = conf.verbosity.get.get
+    check = conf.check.get.get
+    displayLoad = conf.load.get.get
+    file = conf.file.get.get
+    master = conf.master.get.get
+
     Constants.DURATION = 1000.seconds
     Constants.TIMEOUT = Timeout(1000.seconds)
 
-    var i = 0
-    while (i < args.size) {
-      args(i) match {
-        case "--algorithms" | "-a" =>
-          confs("algorithms") = args(i + 1).split(",")
-          i += 1
-        case "--check" | "-c" =>
-          check = true
-        case "--counts" | "-n" =>
-          confs("counts") = args(i + 1).split(",")
-          i += 1
-        case "--file" | "-f" =>
-          file = args(i + 1)
-          i += 1
-        case "--help" | "-h" =>
-          println(usage)
-          sys.exit()
-        case "--mutations" | "-m" =>
-          confs("mutations") = args(i + 1).split(",")
-          i += 1
-        case "--partitions" | "-p" =>
-          confs("partitions") = args(i + 1).split(",")
-          i += 1
-        case "--runs" | "-r" =>
-          confs("runs") = "naive" +: "initial" +: args(i + 1).split(",")
-          i += 1
-        case "--output" | "-o" =>
-          confs("output") = args(i + 1).split(",")
-          i += 1
-          assert(confs("output").size == 3)
-        case "--chunkSizes" | "-s" =>
-          confs("chunkSizes") = args(i + 1).split(",")
-          i += 1
-        case "--verbosity" | "-v" =>
-          verbosity = args(i + 1).toInt
-          i += 1
-        case "--repeat" =>
-          repeat = args(i + 1).toInt
-          i += 1
-        case "--load" =>
-          displayLoad = true
-        case "--store" =>
-          confs("store") = Array(args(i + 1))
-          i += 1
-        case "--cacheSizes" =>
-          confs("cacheSizes") = args(i + 1).split(",")
-          i += 1
-        case "--master" =>
-          master = args(i + 1)
-          i += 1
-        case _ =>
-          println("Unknown option " + args(i * 2) + "\n" + usage)
-          sys.exit()
-      }
-
-      i += 1
-    }
-
-    if (!confs("output").contains("runs")) {
+    /*if (!confs("output").contains("runs")) {
       println("WARNING: 'output' must contain 'runs'")
     }
 
@@ -243,13 +153,13 @@ Options:
         println("WARNING: " + key + " is being varied but isn't listed in " +
                 "'output', so the final results may not make sense.")
       }
-    }
+    }*/
 
-    run(confs)
+    run(conf)
   }
 
-  def run(confs: Map[String, Array[String]]) {
-    for (i <- 0 to repeat) {
+  def run(conf: ExperimentConf) {
+    for (i <- 0 to conf.repeat.get.get) {
       if (verbosity > 0) {
         if (i == 0) {
           println("warmup")
@@ -258,61 +168,62 @@ Options:
         }
       }
 
-      for (algorithm <- confs("algorithms")) {
-        for (cacheSize <- confs("cacheSizes")) {
-          for (chunkSize <- confs("chunkSizes")) {
-            for (count <- confs("counts")) {
-              for (partitions <- confs("partitions")) {
-                val conf = Map(("algorithms" -> algorithm),
-                               ("cacheSizes" -> cacheSize),
-                               ("chunkSizes" -> chunkSize),
-                               ("counts" -> count),
-                               ("mutations" -> confs("mutations")),
-                               ("partitions" -> partitions),
-                               ("runs" -> confs("runs")),
-                               ("repeat" -> i),
-                               ("store" -> confs("store")(0)))
+      for (algorithm <- conf.algorithms()) {
+        for (cacheSize <- conf.cacheSizes()) {
+          for (chunkSize <- conf.chunkSizes()) {
+            for (count <- conf.counts()) {
+              for (partitions <- conf.partitions()) {
+                val listConf = new ListConf(
+                  partitions = partitions.toInt,
+                  chunkSize = chunkSize.toInt)
 
-                val listConf = new ListConf("", partitions.toInt, 0,
-                                            chunkSize.toInt, _ => 1)
+                val algConf = AlgorithmConf(
+                  algorithm = algorithm,
+                  cacheSize = cacheSize.toInt,
+                  count = count.toInt,
+                  mutations = conf.mutations(),
+                  runs = conf.runs(),
+                  repeat = i,
+                  store = conf.store(),
+                  listConf = listConf)
 
                 val alg = algorithm match {
-                  case "filter" => new FilterAlgorithm(conf, listConf)
+                  case "filter" => new FilterAlgorithm(algConf)
 
-                  case "flatMap" => new FlatMapAlgorithm(conf, listConf)
+                  case "flatMap" => new FlatMapAlgorithm(algConf)
 
                   case "join" =>
                     if (listConf.chunkSize > 1)
-                      new ChunkJoinAlgorithm(conf, listConf)
+                      new ChunkJoinAlgorithm(algConf)
                     else
-                      new JoinAlgorithm(conf, listConf)
+                      new JoinAlgorithm(algConf)
 
                   case "map" =>
-                    new MapAlgorithm(conf, listConf)
+                    new MapAlgorithm(algConf)
 
                   case "msort" =>
-                    new MergeSortAlgorithm(conf, listConf)
+                    new MergeSortAlgorithm(algConf)
 
-                  case "pgrank" => new PageRankAlgorithm(conf, listConf)
+                  case "pgrank" => new PageRankAlgorithm(algConf)
 
                   case "qsort" =>
-                    new QuickSortAlgorithm(conf, listConf)
+                    new QuickSortAlgorithm(algConf)
 
-                  case "rbk" => new ReduceByKeyAlgorithm(conf, listConf)
+                  case "rbk" => new ReduceByKeyAlgorithm(algConf)
 
                   case "sjoin" =>
-                    new SortJoinAlgorithm(conf, listConf)
+                    new SortJoinAlgorithm(algConf)
 
                   case "split" =>
-                    new SplitAlgorithm(conf, listConf)
+                    new SplitAlgorithm(algConf)
 
                   case "wc" =>
                     if (listConf.chunkSize > 1)
-                      new ChunkWCAlgorithm(conf, listConf)
+                      new ChunkWCAlgorithm(algConf)
                     else
-                      new WCAlgorithm(conf, listConf)
+                      new WCAlgorithm(algConf)
                   case "wch" =>
-                    new WCHashAlgorithm(conf, listConf)
+                    new WCHashAlgorithm(algConf)
                 }
 
                 val results = alg.run()
@@ -322,7 +233,7 @@ Options:
                 }
 
                 if (i != 0) {
-                  Experiment.allResults += (conf -> results)
+                  Experiment.allResults += (algConf -> results)
                 }
               }
             }
@@ -332,7 +243,76 @@ Options:
     }
 
     if (verbosity > 0) {
-      printCharts(confs("output")(0), confs("output")(1), confs("output")(2))
+      printCharts(conf.output()(0), conf.output()(1), conf.output()(2), conf)
     }
   }
+}
+
+class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
+  version("TBD 0.1 (c) 2014 Carnegie Mellon University")
+  banner("Usage: experiment.sh [options]")
+  val algorithms = opt[List[String]]("algorithms", 'a',
+    default = Some(List("wc")), descr = "Algorithms to run, where s " +
+    "could be: filter, flatMap, join, map, msort, pgrank, qsort, rbk, " +
+    "sjoin, split, or wc.")
+  val check = opt[Boolean]("check", 'c', default = Some(false),
+    descr = "Turns output checking on, for debugging.")
+  val counts = opt[List[String]]("counts", 'n',
+    default = Some(List("1000")),
+    descr = "Number of elements to load initially.")
+  val file = opt[String]("file", 'f', default = Some("wiki.xml"),
+    descr = "File to read the workload from. If none is specified, the " +
+    "data will be randomly generated. This option overrides --counts and " +
+    "--runs.")
+  val mutations = opt[List[String]]("mutations",
+    default = Some(List("insert", "update", "remove")),
+    descr = "Mutations to perform on the input data. Must be one of " +
+    "'update', 'insert', or 'remove'.")
+  val partitions = opt[List[String]]("partitions", 'p',
+    default = Some(List("8")),
+    descr = "Number of partitions to divide the input into.")
+  val runs = opt[List[String]]("runs", 'r',
+    default = Some(List("1", "10")),
+    descr = "What test runs to execute. 'naive' and 'initial' are " +
+    "included automatically, so this is a list of update sizes (f >= 1) " +
+    "or update percentages (0 < f < 1).")
+  val output = opt[List[String]]("output", 'o',
+    default = Some(List("algorithms", "runs", "counts")),
+    descr = "How to format the printed results - each of 'chart', " +
+    "'line', and 'x' must be one of 'algorithms', 'chunkSizes', " +
+    "'counts', 'partitons', or 'runs', with one required to be 'runs'.")
+  val chunkSizes = opt[List[String]]("chunkSizes", 's',
+    default = Some(List("1")),
+    descr = "Size of each chunk, by number of elements")
+  val verbosity = opt[Int]("verbosity", 'v', default = Some(1),
+    descr = "Adjusts the amount of output, with 0 indicating no output.")
+  val repeat = opt[Int]("repeat", 'q', default = Some(3),
+    descr = "The number of times to repeat the test.")
+  val load = opt[Boolean]("load", 'l', default = Some(false),
+    descr = "If true, loading times will be included in output.")
+  val store = opt[String]("store", 'w', default = Some("memory"),
+    descr = "The data store type to use - memory or berkeleydb.")
+  val cacheSizes = opt[List[String]]("cacheSizes", 'h',
+    default = Some(List("10000")),
+    descr = "The size of the cache.")
+  val master = opt[String]("master", default = None,
+    descr = "The master Akka url to connect to. If unspecified, we'll " +
+    "launch a master.")
+}
+
+case class AlgorithmConf(
+  algorithm: String,
+  cacheSize: Int,
+  count: Int,
+  mutations: List[String],
+  runs: List[String],
+  repeat: Int,
+  store: String,
+  listConf: ListConf) {
+
+  def apply(param: String): String =
+    param match {
+      case "algorithms" => algorithm
+      case "counts" => count.toString
+    }
 }

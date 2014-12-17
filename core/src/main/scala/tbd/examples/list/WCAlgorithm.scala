@@ -57,21 +57,22 @@ class WCHashAdjust(list: AdjustableList[Int, String], mappedPartitions: Int)
   }
 }
 
-class WCHashAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[String, Iterable[Mod[(Int, HashMap[String, Int])]]](_conf, _listConf) {
-  val input = mutator.createList[Int, String](listConf.copy(double = true))
+class WCHashAlgorithm(_conf: AlgorithmConf)
+    extends Algorithm[String, Iterable[Mod[(Int, HashMap[String, Int])]]](_conf) {
+  val input = mutator.createList[Int, String](conf.listConf.copy(double = true))
 
-  val data = new StringData(input, count, mutations, Experiment.check)
+  val data = new StringData(input, conf.count, conf.mutations, Experiment.check)
   //val data = new StringFileData(input, "data.txt")
 
-  val adjust = new WCHashAdjust(input.getAdjustableList(), partitions)
+  val adjust =
+    new WCHashAdjust(input.getAdjustableList(), conf.listConf.partitions)
 
   var naiveTable: ParIterable[String] = _
   def generateNaive() {
     data.generate()
     naiveTable = Vector(data.table.values.toSeq: _*).par
     naiveTable.tasksupport =
-      new ForkJoinTaskSupport(new ForkJoinPool(partitions * 2))
+      new ForkJoinTaskSupport(new ForkJoinPool(conf.listConf.partitions * 2))
   }
 
   def runNaive() {
@@ -169,11 +170,11 @@ class WCAdjust(list: AdjustableList[Int, String])
   }
 }
 
-class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
-  val input = mutator.createList[Int, String](listConf.copy(double = true))
+class WCAlgorithm(_conf: AlgorithmConf)
+    extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf) {
+  val input = mutator.createList[Int, String](conf.listConf.copy(double = true))
 
-  val data = new StringData(input, count, mutations, Experiment.check)
+  val data = new StringData(input, conf.count, conf.mutations, Experiment.check)
   //val data = new StringFileData(input, "data.txt")
 
   val adjust = new WCAdjust(input.getAdjustableList())
@@ -183,7 +184,7 @@ class WCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     data.generate()
     naiveTable = Vector(data.table.values.toSeq: _*).par
     naiveTable.tasksupport =
-      new ForkJoinTaskSupport(new ForkJoinPool(partitions * 2))
+      new ForkJoinTaskSupport(new ForkJoinPool(conf.listConf.partitions * 2))
   }
 
   def runNaive() {
@@ -230,11 +231,11 @@ class ChunkWCAdjust(list: AdjustableList[Int, String])
   }
 }
 
-class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf, _listConf) {
-  val input = mutator.createList[Int, String](listConf)
+class ChunkWCAlgorithm(_conf: AlgorithmConf)
+    extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf) {
+  val input = mutator.createList[Int, String](conf.listConf)
 
-  val data = new StringData(input, count, mutations, Experiment.check)
+  val data = new StringData(input, conf.count, conf.mutations, Experiment.check)
 
   val adjust = new ChunkWCAdjust(input.getAdjustableList())
 
@@ -243,7 +244,7 @@ class ChunkWCAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     data.generate()
     naiveTable = Vector(data.table.values.toSeq: _*).par
     naiveTable.tasksupport =
-      new ForkJoinTaskSupport(new ForkJoinPool(partitions * 2))
+      new ForkJoinTaskSupport(new ForkJoinPool(conf.listConf.partitions * 2))
   }
 
   def runNaive() {

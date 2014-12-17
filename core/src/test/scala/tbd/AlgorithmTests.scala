@@ -17,10 +17,9 @@ package tbd.examples.test
 
 import org.scalatest._
 
-import tbd.examples.list.Experiment
+import tbd.examples.list._
 
 class AlgorithmTests extends FlatSpec with Matchers {
-  Experiment.repeat = 0
   Experiment.verbosity = 0
   Experiment.check = true
   Experiment.port = 2553
@@ -28,54 +27,56 @@ class AlgorithmTests extends FlatSpec with Matchers {
   val intensity = 10
 
   "FilterTest" should "run filter successfully." in {
-    val conf = Map(
-      "algorithms" -> Array("filter"),
-      "chunkSizes" -> Array("1"),
-      "counts" -> Array(intensity.toString),
-      "partitions" -> Array("1", "4"))
+    val conf = new ExperimentConf(
+      Array("--algorithms", "filter",
+            "--chunkSizes", "1",
+            "--counts", intensity.toString,
+            "--partitions", "1", "4",
+            "--repeat", "0"))
 
-    Experiment.run(Experiment.confs ++ conf)
+    Experiment.run(conf)
   }
 
   "FlatMapTest" should "run flatMap successfully" in {
-    val conf = Map(
-      "algorithms" -> Array("flatMap"),
-      "chunkSizes" -> Array("1", "4"),
-      "counts" -> Array(intensity.toString),
-      "partitions" -> Array("1", "4"))
+    val conf = new ExperimentConf(
+      Array("--algorithms", "flatMap",
+            "--chunkSizes", "1", "4",
+            "--counts", intensity.toString,
+            "--partitions", "1", "4"))
 
-    Experiment.run(Experiment.confs ++ conf)
+    Experiment.run(conf)
   }
 
   "JoinTest" should "run join successfully." in {
-    val nestedLoopConf = Map(
-      "algorithms" -> Array("join"),
-      "chunkSizes" -> Array("1", "4"),
-      "counts" -> Array(intensity.toString),
-      "partitions" -> Array("1"))
+    val nestedLoopConf = new ExperimentConf(
+      Array("--algorithms", "join",
+            "--chunkSizes", "1", "4",
+            "--counts", intensity.toString,
+            "--partitions", "1"))
 
-    Experiment.run(Experiment.confs ++ nestedLoopConf)
+    Experiment.run(nestedLoopConf)
 
-    val sortConf = Map(
-      "algorithms" -> Array("sjoin"),
-      "chunkSizes" -> Array("1"),
-      "counts" -> Array(intensity.toString),
-      "partitions" -> Array("1"))
 
-    Experiment.run(Experiment.confs ++ sortConf)
+    val sortConf = new ExperimentConf(
+      Array("--algorithms", "sjoin",
+            "--chunkSizes", "1",
+            "--counts", intensity.toString,
+            "--partitions", "1"))
+
+    Experiment.run(sortConf)
   }
 
-  /*"MapTest" should "run map successfully." in {
-    val conf = Map(
-      "algorithms" -> Array("map"),
-      "chunkSizes" -> Array("1", "4"),
-      "counts" -> Array(intensity.toString),
-      "partitions" -> Array("1", "4"))
+  "MapTest" should "run map successfully." in {
+    val conf = new ExperimentConf(
+      Array("--algorithms", "map",
+            "--chunkSizes", "1", "4",
+            "--counts", intensity.toString,
+            "--partitions", "1", "4"))
 
-    Experiment.run(Experiment.confs ++ conf)
-  }*/
+    Experiment.run(conf)
+  }
 
-  "PageRankTest" should "run page rank successfully." in {
+  /*"PageRankTest" should "run page rank successfully." in {
     val conf = Map(
       "algorithms" -> Array("pgrank"),
       "chunkSizes" -> Array("1"),
@@ -83,45 +84,45 @@ class AlgorithmTests extends FlatSpec with Matchers {
       "partitions" -> Array("1"))
 
     Experiment.run(Experiment.confs ++ conf)
-  }
+  }*/
 
   "ReduceByKeyTest" should "run reduceByKey successfully" in {
-    val conf = Map(
-      "algorithms" -> Array("rbk"),
-      "chunkSizes" -> Array("1", "4"),
-      "counts" -> Array(intensity.toString),
-      "partitions" -> Array("1"))
+    val conf = new ExperimentConf(
+      Array("--algorithms", "rbk",
+            "--chunkSizes","1", "4",
+            "--counts", intensity.toString,
+            "--partitions", "1"))
 
-    Experiment.run(Experiment.confs ++ conf)
+    Experiment.run(conf)
   }
 
   "SortTest" should "run sort successfully." in {
-    val quickConf = Map(
-      "algorithms" -> Array("qsort"),
-      "chunkSizes" -> Array("1"),
-      "counts" -> Array(intensity.toString),
-      "partitions" -> Array("1", "4"))
+    val quickConf = new ExperimentConf(
+      Array("--algorithms", "qsort",
+            "--chunkSizes", "1",
+            "--counts", intensity.toString,
+            "--partitions", "1", "4"))
 
-    Experiment.run(Experiment.confs ++ quickConf)
+    Experiment.run(quickConf)
 
-    val mergeConf = Map(
-      "algorithms" -> Array("msort"),
-      "chunkSizes" -> Array("1", "2"),
-      "counts" -> Array(intensity.toString),
-      "partitions" -> Array("1", "4"))
+    val mergeConf = new ExperimentConf(
+      Array("--algorithms", "msort",
+            "--chunkSizes", "1", "2",
+            "--counts", intensity.toString,
+            "--partitions", "1", "4"))
 
-    Experiment.run(Experiment.confs ++ mergeConf)
+    Experiment.run(mergeConf)
   }
 
-  /*"SplitTest" should "run split successfully." in {
-    val conf = Map(
-      "algorithms" -> Array("split"),
-      "chunkSizes" -> Array("1"),
-      "counts" -> Array(intensity.toString),
-      "partitions" -> Array("1"))
+  "SplitTest" should "run split successfully." in {
+    val conf = new ExperimentConf(
+      Array("--algorithms", "split",
+            "--chunkSizes", "1",
+            "--counts", intensity.toString,
+            "--partitions", "1"))
 
-    Experiment.run(Experiment.confs ++ conf)
-  }*/
+    Experiment.run(conf)
+  }
 
   /*"WordcountTest" should "run wordcount successfully." in {
     val conf = Map(

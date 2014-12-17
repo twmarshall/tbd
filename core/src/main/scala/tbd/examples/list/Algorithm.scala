@@ -23,19 +23,9 @@ import tbd.datastore.Data
 import tbd.list.ListConf
 import tbd.master.MasterConnector
 
-abstract class Algorithm[Input, Output]
-    (_conf: Map[String, _],
-     _listConf: ListConf) {
-  val conf = _conf
-  val listConf = _listConf
+abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
 
-  val count = conf("counts").asInstanceOf[String].toInt
-  val cacheSize = conf("cacheSizes").asInstanceOf[String].toInt
-  val chunkSize = conf("chunkSizes").asInstanceOf[String].toInt
-  val mutations = conf("mutations").asInstanceOf[Array[String]]
-  val partitions = conf("partitions").asInstanceOf[String].toInt
-  var runs = conf("runs").asInstanceOf[Array[String]]
-  val store = conf("store").asInstanceOf[String]
+  var runs = conf.runs
 
   val connector =
     if (Experiment.master != "") {
@@ -43,8 +33,8 @@ abstract class Algorithm[Input, Output]
     } else {
       MasterConnector(
         port = Experiment.port,
-        cacheSize = cacheSize,
-        storeType = store)
+        cacheSize = conf.cacheSize,
+        storeType = conf.store)
     }
 
   val mutator = new Mutator(connector)
@@ -114,7 +104,7 @@ abstract class Algorithm[Input, Output]
           case run =>
             val updateCount =
               if (run.toDouble < 1)
-                 (run.toDouble * count).toInt
+                 (run.toDouble * conf.count).toInt
               else
                 run.toInt
 
@@ -126,7 +116,7 @@ abstract class Algorithm[Input, Output]
       }
     } else {
       var r = 1
-      runs = Array("naive", "initial")
+      runs = List("naive", "initial")
 
       while (data.hasUpdates()) {
         val (updateTime, updateLoad, updateNoGC) = update(-1)
@@ -137,7 +127,7 @@ abstract class Algorithm[Input, Output]
         r += 1
       }
 
-      Experiment.confs("runs") = runs
+      //Experiment.confs("runs") = runs
     }
 
     if (Experiment.verbosity > 1) {

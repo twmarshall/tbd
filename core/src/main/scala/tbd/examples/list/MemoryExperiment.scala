@@ -85,7 +85,7 @@ object MemoryExperiment {
 
       val mutator = new Mutator()
       val list = mutator.createList[Int, String](new ListConf(partitions = 4, chunkSize = 100))
-      val input = new StringData(list, max, Array("insert", "remove", "update"), false)
+      val input = new StringData(list, max, List("insert", "remove", "update"), false)
       input.generate()
       input.load()
       input.clearValues()

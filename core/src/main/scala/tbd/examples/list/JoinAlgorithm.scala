@@ -34,14 +34,14 @@ class JoinAdjust(list1: AdjustableList[Int, Int],
   }
 }
 
-class JoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-  extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
-  val input = mutator.createList[Int, Int](listConf)
-  val data = new IntData(input, count, mutations, "data.txt")
+class JoinAlgorithm(_conf: AlgorithmConf)
+  extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf) {
+  val input = mutator.createList[Int, Int](conf.listConf)
+  val data = new IntData(input, conf.count, conf.mutations, "data.txt")
   //val data = new IntFileData(input, "data.txt")
 
-  val input2 = mutator.createList[Int, Int](listConf.copy(partitions = 1))
-  val data2 = new IntData(input2, count, mutations, "data2.txt")
+  val input2 = mutator.createList[Int, Int](conf.listConf.copy(partitions = 1))
+  val data2 = new IntData(input2, conf.count, conf.mutations, "data2.txt")
   //val data2 = new IntFileData(input2, "data2.txt")
 
   val adjust = new JoinAdjust(input.getAdjustableList(), input2.getAdjustableList())
@@ -93,13 +93,13 @@ class ChunkJoinAdjust(list1: AdjustableList[Int, Int],
   }
 }
 
-class ChunkJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-  extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
-  val input = mutator.createList[Int, Int](listConf)
-  val data = new IntData(input, count, mutations)
+class ChunkJoinAlgorithm(_conf: AlgorithmConf)
+  extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf) {
+  val input = mutator.createList[Int, Int](conf.listConf)
+  val data = new IntData(input, conf.count, conf.mutations)
 
-  val input2 = mutator.createList[Int, Int](listConf)
-  val data2 = new IntData(input2, count)
+  val input2 = mutator.createList[Int, Int](conf.listConf)
+  val data2 = new IntData(input2, conf.count)
 
   val adjust = new ChunkJoinAdjust(input.getAdjustableList(), input2.getAdjustableList())
 
@@ -148,14 +148,14 @@ class SortJoinAdjust(list1: AdjustableList[Int, Int],
   }
 }
 
-class SortJoinAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-  extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf, _listConf) {
-  val input = mutator.createList[Int, Int](listConf)
-  val data = new IntData(input, count, mutations, "data.txt")
+class SortJoinAlgorithm(_conf: AlgorithmConf)
+  extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf) {
+  val input = mutator.createList[Int, Int](conf.listConf)
+  val data = new IntData(input, conf.count, conf.mutations, "data.txt")
   //val data = new IntFileData(input, "data.txt")
 
-  val input2 = mutator.createList[Int, Int](listConf)
-  val data2 = new IntData(input2, count, mutations, "data2.txt")
+  val input2 = mutator.createList[Int, Int](conf.listConf)
+  val data2 = new IntData(input2, conf.count, conf.mutations, "data2.txt")
 
   //val data2 = new IntFileData(input2, "data2.txt")
   val adjust = new SortJoinAdjust(input.getAdjustableList(), input2.getAdjustableList())

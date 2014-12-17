@@ -48,7 +48,7 @@ class MutatorTests extends FlatSpec with Matchers {
     }
 
     val data = new IntData(
-      input, intensity, Array("insert", "remove", "update"))
+      input, intensity, List("insert", "remove", "update"))
     data.generate()
     data.load()
 

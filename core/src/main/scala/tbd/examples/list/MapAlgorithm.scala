@@ -41,20 +41,20 @@ class MapAdjust(list: AdjustableList[Int, String])
   }
 }
 
-class MapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[String, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = mutator.createList[Int, String](listConf)
+class MapAlgorithm(_conf: AlgorithmConf)
+    extends Algorithm[String, AdjustableList[Int, Int]](_conf) {
+  val input = mutator.createList[Int, String](conf.listConf)
 
   val adjust = new MapAdjust(input.getAdjustableList())
 
-  val data = new StringData(input, count, mutations, Experiment.check)
+  val data = new StringData(input, conf.count, conf.mutations, Experiment.check)
 
   var naiveTable: ParIterable[String] = _
   def generateNaive() {
     data.generate()
     naiveTable = Vector(data.table.values.toSeq: _*).par
     naiveTable.tasksupport =
-      new ForkJoinTaskSupport(new ForkJoinPool(partitions * 2))
+      new ForkJoinTaskSupport(new ForkJoinPool(conf.listConf.partitions * 2))
   }
 
   def runNaive() {

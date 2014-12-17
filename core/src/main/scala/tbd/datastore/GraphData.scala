@@ -23,7 +23,7 @@ import tbd.list.ListInput
 class GraphData(
     input: ListInput[Int, Array[Int]],
     count: Int,
-    mutations: Array[String]
+    mutations: List[String]
   ) extends Data[Array[Int]] {
 
   val maxKey = count * 100

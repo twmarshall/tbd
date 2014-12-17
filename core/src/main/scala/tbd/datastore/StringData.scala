@@ -23,7 +23,7 @@ import tbd.{Input, Mutator}
 class StringData(
     input: Input[Int, String],
     count: Int,
-    mutations: Array[String],
+    mutations: List[String],
     check: Boolean
   ) extends Data[String] {
 

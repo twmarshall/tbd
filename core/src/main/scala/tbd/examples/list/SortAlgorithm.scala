@@ -30,9 +30,9 @@ class QuickSortAdjust(list: AdjustableList[Int, Int])
   }
 }
 
-class QuickSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = mutator.createList[Int, Int](listConf)
+class QuickSortAlgorithm(_conf: AlgorithmConf)
+    extends Algorithm[Int, AdjustableList[Int, Int]](_conf) {
+  val input = mutator.createList[Int, Int](conf.listConf)
 
   val adjust = new QuickSortAdjust(input.getAdjustableList())
 
@@ -40,7 +40,7 @@ class QuickSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     if (Experiment.file != "")
       new IntFileData(input, Experiment.file)
     else
-      new IntData(input, count, mutations)
+      new IntData(input, conf.count, conf.mutations)
 
   def generateNaive() {
     data.generate()
@@ -74,9 +74,9 @@ class MergeSortAdjust(list: AdjustableList[Int, Int])
   }
 }
 
-class MergeSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = mutator.createList[Int, Int](listConf)
+class MergeSortAlgorithm(_conf: AlgorithmConf)
+    extends Algorithm[Int, AdjustableList[Int, Int]](_conf) {
+  val input = mutator.createList[Int, Int](conf.listConf)
 
   val adjust = new MergeSortAdjust(input.getAdjustableList())
 
@@ -84,7 +84,7 @@ class MergeSortAlgorithm(_conf: Map[String, _], _listConf: ListConf)
     if (Experiment.file != "")
       new IntFileData(input, Experiment.file)
     else
-      new IntData(input, count, mutations)
+      new IntData(input, conf.count, conf.mutations)
 
   def generateNaive() {
     data.generate()

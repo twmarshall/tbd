@@ -36,11 +36,11 @@ class FlatMapAdjust(list: AdjustableList[Int, Int])
   }
 }
 
-class FlatMapAlgorithm(_conf: Map[String, _], _listConf: ListConf)
-    extends Algorithm[Int, AdjustableList[Int, Int]](_conf, _listConf) {
-  val input = mutator.createList[Int, Int](listConf)
+class FlatMapAlgorithm(_conf: AlgorithmConf)
+    extends Algorithm[Int, AdjustableList[Int, Int]](_conf) {
+  val input = mutator.createList[Int, Int](conf.listConf)
 
-  val data = new IntData(input, count, mutations)
+  val data = new IntData(input, conf.count, conf.mutations)
 
   val adjust = new FlatMapAdjust(input.getAdjustableList())
 
