@@ -43,7 +43,7 @@ class SplitAlgorithm(_conf: AlgorithmConf)
 
   val input = mutator.createList[Int, String](conf.listConf)
 
-  val data = new StringData(input, conf.count, conf.mutations, Experiment.check)
+  val data = new StringData(input, conf.count, conf.mutations, Experiment.check, conf.runs)
 
   val adjust = new SplitAdjust(input.getAdjustableList())
 

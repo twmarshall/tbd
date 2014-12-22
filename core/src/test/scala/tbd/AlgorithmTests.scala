@@ -24,6 +24,8 @@ class AlgorithmTests extends FlatSpec with Matchers {
   Experiment.check = true
   Experiment.port = 2553
 
+  val defaults = Array("--verbosity", "0")
+
   val intensity = 10
 
   "FilterTest" should "run filter successfully." in {
@@ -32,7 +34,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
             "--chunkSizes", "1",
             "--counts", intensity.toString,
             "--partitions", "1", "4",
-            "--repeat", "0"))
+            "--repeat", "0") ++ defaults)
 
     Experiment.run(conf)
   }
@@ -42,7 +44,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
       Array("--algorithms", "flatMap",
             "--chunkSizes", "1", "4",
             "--counts", intensity.toString,
-            "--partitions", "1", "4"))
+            "--partitions", "1", "4") ++ defaults)
 
     Experiment.run(conf)
   }
@@ -52,7 +54,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
       Array("--algorithms", "join",
             "--chunkSizes", "1", "4",
             "--counts", intensity.toString,
-            "--partitions", "1"))
+            "--partitions", "1") ++ defaults)
 
     Experiment.run(nestedLoopConf)
 
@@ -61,7 +63,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
       Array("--algorithms", "sjoin",
             "--chunkSizes", "1",
             "--counts", intensity.toString,
-            "--partitions", "1"))
+            "--partitions", "1") ++ defaults)
 
     Experiment.run(sortConf)
   }
@@ -71,7 +73,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
       Array("--algorithms", "map",
             "--chunkSizes", "1", "4",
             "--counts", intensity.toString,
-            "--partitions", "1", "4"))
+            "--partitions", "1", "4") ++ defaults)
 
     Experiment.run(conf)
   }
@@ -91,7 +93,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
       Array("--algorithms", "rbk",
             "--chunkSizes","1", "4",
             "--counts", intensity.toString,
-            "--partitions", "1"))
+            "--partitions", "1") ++ defaults)
 
     Experiment.run(conf)
   }
@@ -101,7 +103,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
       Array("--algorithms", "qsort",
             "--chunkSizes", "1",
             "--counts", intensity.toString,
-            "--partitions", "1", "4"))
+            "--partitions", "1", "4") ++ defaults)
 
     Experiment.run(quickConf)
 
@@ -109,7 +111,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
       Array("--algorithms", "msort",
             "--chunkSizes", "1", "2",
             "--counts", intensity.toString,
-            "--partitions", "1", "4"))
+            "--partitions", "1", "4") ++ defaults)
 
     Experiment.run(mergeConf)
   }
@@ -119,7 +121,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
       Array("--algorithms", "split",
             "--chunkSizes", "1",
             "--counts", intensity.toString,
-            "--partitions", "1"))
+            "--partitions", "1") ++ defaults)
 
     Experiment.run(conf)
   }

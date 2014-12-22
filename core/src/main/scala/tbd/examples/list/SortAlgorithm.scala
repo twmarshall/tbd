@@ -36,11 +36,7 @@ class QuickSortAlgorithm(_conf: AlgorithmConf)
 
   val adjust = new QuickSortAdjust(input.getAdjustableList())
 
-  val data =
-    if (Experiment.file != "")
-      new IntFileData(input, Experiment.file)
-    else
-      new IntData(input, conf.count, conf.mutations)
+  val data = new IntData(input, conf.runs, conf.count, conf.mutations)
 
   def generateNaive() {
     data.generate()
@@ -80,11 +76,7 @@ class MergeSortAlgorithm(_conf: AlgorithmConf)
 
   val adjust = new MergeSortAdjust(input.getAdjustableList())
 
-  val data =
-    if (Experiment.file != "")
-      new IntFileData(input, Experiment.file)
-    else
-      new IntData(input, conf.count, conf.mutations)
+  val data = new IntData(input, conf.runs, conf.count, conf.mutations)
 
   def generateNaive() {
     data.generate()

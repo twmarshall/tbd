@@ -61,7 +61,7 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[String, Iterable[Mod[(Int, HashMap[String, Int])]]](_conf) {
   val input = mutator.createList[Int, String](conf.listConf.copy(double = true))
 
-  val data = new StringData(input, conf.count, conf.mutations, Experiment.check)
+  val data = new StringData(input, conf.count, conf.mutations, Experiment.check, conf.runs)
   //val data = new StringFileData(input, "data.txt")
 
   val adjust =
@@ -174,7 +174,7 @@ class WCAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf) {
   val input = mutator.createList[Int, String](conf.listConf.copy(double = true))
 
-  val data = new StringData(input, conf.count, conf.mutations, Experiment.check)
+  val data = new StringData(input, conf.count, conf.mutations, Experiment.check, conf.runs)
   //val data = new StringFileData(input, "data.txt")
 
   val adjust = new WCAdjust(input.getAdjustableList())
@@ -235,7 +235,7 @@ class ChunkWCAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf) {
   val input = mutator.createList[Int, String](conf.listConf)
 
-  val data = new StringData(input, conf.count, conf.mutations, Experiment.check)
+  val data = new StringData(input, conf.count, conf.mutations, Experiment.check, conf.runs)
 
   val adjust = new ChunkWCAdjust(input.getAdjustableList())
 

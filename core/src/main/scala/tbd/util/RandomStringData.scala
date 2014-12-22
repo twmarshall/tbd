@@ -20,12 +20,12 @@ import scala.collection.mutable.{ArrayBuffer, Map}
 
 import tbd.{Input, Mutator}
 
-class RandomStringData(
-    input: Input[Int, String],
-    count: Int,
-    mutations: Array[String],
-    check: Boolean
-  ) extends Data[String] {
+class RandomStringData
+    (input: Input[Int, String],
+     count: Int,
+     mutations: Array[String],
+     check: Boolean,
+     runs: List[String]) extends Data[String] {
 
   val maxKey = count * 10
 
@@ -34,6 +34,8 @@ class RandomStringData(
   val file = "data.txt"
 
   val words = Array("apple", "boy", "cat", "dog", "ear", "foo")
+
+  var remainingRuns = runs
 
   def generate() {
     var key = 0
@@ -64,8 +66,17 @@ class RandomStringData(
     }
   }
 
-  def update(n: Int) {
-    for (i <- 1 to n) {
+  def update() {
+    val run = remainingRuns.head
+    val updateCount =
+      if (run.toDouble < 1)
+         (run.toDouble * count).toInt
+      else
+        run.toInt
+
+    remainingRuns = remainingRuns.tail
+
+    for (i <- 1 to updateCount) {
       mutations(rand.nextInt(mutations.size)) match {
         case "insert" => addValue()
         case "remove" => removeValue()
@@ -119,5 +130,5 @@ class RandomStringData(
     }
   }
 
-  def hasUpdates() = true
+  def hasUpdates() = remainingRuns.size > 0
 }

@@ -37,8 +37,8 @@ trait Data[Input] {
   // experiments with large datasets that don't care about checking the output.
   def clearValues()
 
-  // Changes n values (possibly updates, removals, or insertions).
-  def update(n: Int)
+  // Updates some values.
+  def update()
 
   // Returns true if this Data can generate more updates.
   def hasUpdates(): Boolean

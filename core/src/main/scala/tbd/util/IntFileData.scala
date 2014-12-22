@@ -16,13 +16,13 @@
 package tbd.util
 
 import java.io._
+import scala.collection.mutable.Buffer
 
 import tbd.Input
 
-class IntFileData(
-    input: Input[Int, Int],
-    fileName: String
-  ) extends Data[Int] {
+class IntFileData
+    (input: Input[Int, Int],
+     fileName: String) extends Data[Int] {
   var lines = io.Source.fromFile(fileName).getLines().toBuffer
 
   val file = "data.txt"
@@ -44,7 +44,7 @@ class IntFileData(
 
   def clearValues() {}
 
-  def update(n: Int) {
+  def update() {
     while (lines.head != "---") {
       val space = lines.head.indexOf(" ")
       val (command, pair) = lines.head.splitAt(space)

@@ -20,11 +20,11 @@ import scala.collection.mutable.Map
 
 import tbd.list.ListInput
 
-class GraphData(
-    input: ListInput[Int, Array[Int]],
-    count: Int,
-    mutations: List[String]
-  ) extends Data[Array[Int]] {
+class GraphData
+    (input: ListInput[Int, Array[Int]],
+     count: Int,
+     mutations: List[String],
+     runs: List[String]) extends Data[Array[Int]] {
 
   val maxKey = count * 100
 
@@ -33,6 +33,8 @@ class GraphData(
   val rand = new scala.util.Random()
 
   val file = "data.txt"
+
+  var remainingRuns = runs
 
   def generate() {
     /*val lines = io.Source.fromFile("graph.txt").getLines
@@ -83,7 +85,16 @@ class GraphData(
   def clearValues() {
   }
 
-  def update(n: Int) {
+  def update() {
+    val run = remainingRuns.head
+    val updateCount =
+      if (run.toDouble < 1)
+         (run.toDouble * count).toInt
+      else
+        run.toInt
+
+    remainingRuns = remainingRuns.tail
+
     var key = rand.nextInt(maxKey)
     while (!table.contains(key)) {
       key = rand.nextInt(maxKey)
@@ -93,5 +104,5 @@ class GraphData(
     input.update(key, table(key))
   }
 
-  def hasUpdates() = true
+  def hasUpdates() = remainingRuns.size > 0
 }

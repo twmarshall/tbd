@@ -17,10 +17,9 @@ package tbd.util
 
 import tbd.list.ListInput
 
-class GraphFileData(
-    input: ListInput[Int, Array[Int]],
-    fileName: String
-  ) extends Data[Array[Int]] {
+class GraphFileData
+    (input: ListInput[Int, Array[Int]],
+     fileName: String) extends Data[Array[Int]] {
   var lines = io.Source.fromFile(fileName).getLines().toBuffer
 
   val file = "data2.txt"
@@ -47,7 +46,7 @@ class GraphFileData(
 
   def clearValues() = {}
 
-  def update(n: Int) = {
+  def update() = {
     val split = lines.head.split(" -> ")
     assert(split.size == 2)
     val key = split(0).toInt

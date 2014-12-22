@@ -41,7 +41,7 @@ class ReduceByKeyAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[Int, AdjustableList[Int, Int]](_conf) {
   val input = mutator.createList[Int, Int](conf.listConf)
 
-  val data = new IntData(input, conf.count, conf.mutations)
+  val data = new IntData(input, conf.runs, conf.count, conf.mutations)
 
   val adjust = new ReduceByKeyAdjust(input.getAdjustableList())
 

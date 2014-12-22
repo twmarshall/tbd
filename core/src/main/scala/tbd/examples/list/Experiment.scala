@@ -16,7 +16,6 @@
 package tbd.examples.list
 
 import akka.util.Timeout
-import org.rogach.scallop._
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.duration._
 
@@ -31,13 +30,13 @@ object Experiment {
 
   var displayLoad = false
 
-  var file = ""
-
-  var master = ""
-
   var port = 2252
 
   val allResults = Map[AlgorithmConf, Map[String, Double]]()
+
+  var runs = List[String]()
+
+  val confs = Map[String, List[String]]()
 
   def round(value: Double): Double = {
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
@@ -54,11 +53,6 @@ object Experiment {
    */
   def printCharts
       (charts: String, lines: String, x: String, conf: ExperimentConf) {
-    val confs = Map[String, List[String]]()
-    confs("algorithms") = conf.algorithms.get.get
-    confs("runs") = conf.runs.get.get
-    confs("counts") = conf.counts.get.get
-
     for (chart <- confs(charts)) {
       print(chart + "\t")
       for (line <- confs(lines)) {
@@ -126,40 +120,49 @@ object Experiment {
     verbosity = conf.verbosity.get.get
     check = conf.check.get.get
     displayLoad = conf.load.get.get
-    file = conf.file.get.get
-    master = conf.master.get.get
 
     Constants.DURATION = 1000.seconds
     Constants.TIMEOUT = Timeout(1000.seconds)
-
-    /*if (!confs("output").contains("runs")) {
-      println("WARNING: 'output' must contain 'runs'")
-    }
-
-    println("Options:")
-    for ((key, value) <- confs) {
-      print(key)
-
-      if (key.size < 7) {
-        print("\t\t")
-      } else {
-        print("\t")
-      }
-
-      println(value.mkString("(", ", ", ")"))
-
-      if (key != "output" && key != "mutations" &&
-          value.size > 1 && !confs("output").contains(key)) {
-        println("WARNING: " + key + " is being varied but isn't listed in " +
-                "'output', so the final results may not make sense.")
-      }
-    }*/
 
     run(conf)
   }
 
   def run(conf: ExperimentConf) {
-    for (i <- 0 to conf.repeat.get.get) {
+    confs("algorithms") = conf.algorithms()
+    confs("counts") = conf.counts()
+    confs("runs") = conf.runs()
+    confs("partitions") = conf.partitions()
+    confs("mutations") = conf.mutations()
+    confs("output") = conf.output()
+    confs("chunkSizes") = conf.chunkSizes()
+    confs("cacheSizes") = conf.cacheSizes()
+
+    if (conf.verbosity() > 0) {
+      if (!conf.output().contains("runs")) {
+        println("WARNING: 'output' must contain 'runs'")
+      }
+
+      println("Options:")
+      for ((key, value) <- confs) {
+        print(key)
+
+        if (key.size < 7) {
+          print("\t\t")
+        } else {
+          print("\t")
+        }
+
+        println(value.mkString("(", ", ", ")"))
+
+        if (key != "output" && key != "mutations" &&
+            value.size > 1 && !confs("output").contains(key)) {
+          println("WARNING: " + key + " is being varied but isn't listed in " +
+                  "'output', so the final results may not make sense.")
+        }
+      }
+    }
+
+    for (i <- 0 to conf.repeat()) {
       if (verbosity > 0) {
         if (i == 0) {
           println("warmup")
@@ -181,6 +184,7 @@ object Experiment {
                   algorithm = algorithm,
                   cacheSize = cacheSize.toInt,
                   count = count.toInt,
+                  master = conf.master(),
                   mutations = conf.mutations(),
                   runs = conf.runs(),
                   repeat = i,
@@ -246,73 +250,4 @@ object Experiment {
       printCharts(conf.output()(0), conf.output()(1), conf.output()(2), conf)
     }
   }
-}
-
-class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
-  version("TBD 0.1 (c) 2014 Carnegie Mellon University")
-  banner("Usage: experiment.sh [options]")
-  val algorithms = opt[List[String]]("algorithms", 'a',
-    default = Some(List("wc")), descr = "Algorithms to run, where s " +
-    "could be: filter, flatMap, join, map, msort, pgrank, qsort, rbk, " +
-    "sjoin, split, or wc.")
-  val check = opt[Boolean]("check", 'c', default = Some(false),
-    descr = "Turns output checking on, for debugging.")
-  val counts = opt[List[String]]("counts", 'n',
-    default = Some(List("1000")),
-    descr = "Number of elements to load initially.")
-  val file = opt[String]("file", 'f', default = Some("wiki.xml"),
-    descr = "File to read the workload from. If none is specified, the " +
-    "data will be randomly generated. This option overrides --counts and " +
-    "--runs.")
-  val mutations = opt[List[String]]("mutations",
-    default = Some(List("insert", "update", "remove")),
-    descr = "Mutations to perform on the input data. Must be one of " +
-    "'update', 'insert', or 'remove'.")
-  val partitions = opt[List[String]]("partitions", 'p',
-    default = Some(List("8")),
-    descr = "Number of partitions to divide the input into.")
-  val runs = opt[List[String]]("runs", 'r',
-    default = Some(List("1", "10")),
-    descr = "What test runs to execute. 'naive' and 'initial' are " +
-    "included automatically, so this is a list of update sizes (f >= 1) " +
-    "or update percentages (0 < f < 1).")
-  val output = opt[List[String]]("output", 'o',
-    default = Some(List("algorithms", "runs", "counts")),
-    descr = "How to format the printed results - each of 'chart', " +
-    "'line', and 'x' must be one of 'algorithms', 'chunkSizes', " +
-    "'counts', 'partitons', or 'runs', with one required to be 'runs'.")
-  val chunkSizes = opt[List[String]]("chunkSizes", 's',
-    default = Some(List("1")),
-    descr = "Size of each chunk, by number of elements")
-  val verbosity = opt[Int]("verbosity", 'v', default = Some(1),
-    descr = "Adjusts the amount of output, with 0 indicating no output.")
-  val repeat = opt[Int]("repeat", 'q', default = Some(3),
-    descr = "The number of times to repeat the test.")
-  val load = opt[Boolean]("load", 'l', default = Some(false),
-    descr = "If true, loading times will be included in output.")
-  val store = opt[String]("store", 'w', default = Some("memory"),
-    descr = "The data store type to use - memory or berkeleydb.")
-  val cacheSizes = opt[List[String]]("cacheSizes", 'h',
-    default = Some(List("10000")),
-    descr = "The size of the cache.")
-  val master = opt[String]("master", default = None,
-    descr = "The master Akka url to connect to. If unspecified, we'll " +
-    "launch a master.")
-}
-
-case class AlgorithmConf(
-  algorithm: String,
-  cacheSize: Int,
-  count: Int,
-  mutations: List[String],
-  runs: List[String],
-  repeat: Int,
-  store: String,
-  listConf: ListConf) {
-
-  def apply(param: String): String =
-    param match {
-      case "algorithms" => algorithm
-      case "counts" => count.toString
-    }
 }

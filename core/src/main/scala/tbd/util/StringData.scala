@@ -20,12 +20,12 @@ import scala.collection.mutable.{ArrayBuffer, Map}
 
 import tbd.{Input, Mutator}
 
-class StringData(
-    input: Input[Int, String],
-    count: Int,
-    mutations: List[String],
-    check: Boolean
-  ) extends Data[String] {
+class StringData
+    (input: Input[Int, String],
+     count: Int,
+     mutations: List[String],
+     check: Boolean,
+     runs: List[String]) extends Data[String] {
 
   val maxKey = count * 10
 
@@ -33,8 +33,9 @@ class StringData(
 
   val file = "data.txt"
 
-  private def loadChunks(
-      chunks: ArrayBuffer[String]) {
+  var remainingRuns = runs
+
+  private def loadChunks(chunks: ArrayBuffer[String]) {
     val elems = scala.xml.XML.loadFile("wiki.xml")
 
     var i = 0
@@ -72,8 +73,17 @@ class StringData(
 
   def clearValues() {}
 
-  def update(n: Int) {
-    for (i <- 1 to n) {
+  def update() {
+    val run = remainingRuns.head
+    val updateCount =
+      if (run.toDouble < 1)
+         (run.toDouble * count).toInt
+      else
+        run.toInt
+
+    remainingRuns = remainingRuns.tail
+
+    for (i <- 1 to updateCount) {
       mutations(rand.nextInt(mutations.size)) match {
         case "insert" => addValue()
         case "remove" => removeValue()
@@ -130,5 +140,7 @@ class StringData(
     chunks -= chunks.head
   }
 
-  def hasUpdates() = true
+  def hasUpdates() = {
+    remainingRuns.size > 0
+  }
 }

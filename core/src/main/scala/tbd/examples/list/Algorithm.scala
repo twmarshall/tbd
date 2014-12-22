@@ -15,7 +15,7 @@
  */
 package tbd.examples.list
 
-import scala.collection.{GenIterable, GenMap}
+import java.lang.management.ManagementFactory
 import scala.collection.mutable.Map
 
 import tbd.{Adjustable, Mutator}
@@ -28,8 +28,8 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
   var runs = conf.runs
 
   val connector =
-    if (Experiment.master != "") {
-      MasterConnector(Experiment.master)
+    if (conf.master != "") {
+      MasterConnector(conf.master)
     } else {
       MasterConnector(
         port = Experiment.port,
@@ -97,38 +97,19 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
       println("starting prop")
     }
 
-    if (Experiment.file == "") {
-      for (run <- runs) {
-        run match {
-          case "naive" | "initial" =>
-          case run =>
-            val updateCount =
-              if (run.toDouble < 1)
-                 (run.toDouble * conf.count).toInt
-              else
-                run.toInt
+    var r = 1
+    runs = List("naive", "initial")
 
-            val (updateTime, updateLoad, updateNoGC) = update(updateCount)
-            results(run) = updateTime
-            results(run + "-load") = updateLoad
-            results(run + "-nogc") = updateNoGC
-        }
-      }
-    } else {
-      var r = 1
-      runs = List("naive", "initial")
-
-      while (data.hasUpdates()) {
-        val (updateTime, updateLoad, updateNoGC) = update(-1)
-        results(r + "") = updateTime
-        results(r + "-load") = updateLoad
-        results(r + "-nogc") = updateNoGC
-        runs :+= r + ""
-        r += 1
-      }
-
-      //Experiment.confs("runs") = runs
+    while (data.hasUpdates()) {
+      val (updateTime, updateLoad, updateNoGC) = update()
+      results(r + "") = updateTime
+      results(r + "-load") = updateLoad
+      results(r + "-nogc") = updateNoGC
+      runs :+= r + ""
+      r += 1
     }
+
+    Experiment.confs("runs") = runs
 
     if (Experiment.verbosity > 1) {
       if (mapCount != 0)
@@ -173,13 +154,13 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
     (elapsed, loadElapsed, noGCElapsed)
   }
 
-  def update(count: Int) = {
+  def update() = {
     if (Experiment.verbosity > 1) {
-      println("Updating " + count)
+      println("Updating")
     }
 
     val beforeLoad = System.currentTimeMillis()
-    data.update(count)
+    data.update()
     val loadElapsed = System.currentTimeMillis() - beforeLoad
 
     if (Experiment.verbosity > 1) {
@@ -202,7 +183,7 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
   private def getGCTime(): Long = {
     var garbageCollectionTime: Long = 0
 
-    val iter = java.lang.management.ManagementFactory.getGarbageCollectorMXBeans().iterator()
+    val iter = ManagementFactory.getGarbageCollectorMXBeans().iterator()
     while (iter.hasNext()) {
       val gc = iter.next()
 

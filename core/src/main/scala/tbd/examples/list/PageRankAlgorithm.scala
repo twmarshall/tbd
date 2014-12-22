@@ -52,7 +52,7 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[Array[Int], AdjustableList[Int, Double]](_conf) {
   val input = mutator.createList[Int, Array[Int]](conf.listConf)
 
-  val data = new GraphData(input, conf.count, conf.mutations)
+  val data = new GraphData(input, conf.count, conf.mutations, conf.runs)
 
   val adjust = new PageRankAdjust(input.getAdjustableList())
 

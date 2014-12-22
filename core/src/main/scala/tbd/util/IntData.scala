@@ -17,17 +17,19 @@ package tbd.util
 
 import tbd.list.ListInput
 
-class IntData(
-    input: ListInput[Int, Int],
-    count: Int,
-    mutations: List[String] = List("insert", "update", "remove"),
-    _file: String = "data.txt"
-  ) extends Data[Int] {
+class IntData
+    (input: ListInput[Int, Int],
+     runs: List[String],
+     count: Int,
+     mutations: List[String] = List("insert", "update", "remove"),
+     _file: String = "data.txt") extends Data[Int] {
   val maxKey = count * 10
 
   val rand = new scala.util.Random()
 
   val file = _file
+
+  var remainingRuns = runs
 
   def generate() {
     while (table.size < count) {
@@ -48,8 +50,17 @@ class IntData(
 
   def clearValues() {}
 
-  def update(n: Int) {
-    for (i <- 1 to n) {
+  def update() {
+    val run = remainingRuns.head
+    val updateCount =
+      if (run.toDouble < 1)
+         (run.toDouble * count).toInt
+      else
+        run.toInt
+
+    remainingRuns = remainingRuns.tail
+
+    for (i <- 1 to updateCount) {
       mutations(rand.nextInt(mutations.size)) match {
         case "insert" => addValue()
         case "remove" => removeValue()
@@ -116,5 +127,5 @@ class IntData(
     }
   }
 
-  def hasUpdates() = true
+  def hasUpdates() = remainingRuns.size > 0
 }

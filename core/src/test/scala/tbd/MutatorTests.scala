@@ -48,7 +48,7 @@ class MutatorTests extends FlatSpec with Matchers {
     }
 
     val data = new IntData(
-      input, intensity, List("insert", "remove", "update"))
+      input, List[String](), intensity, List("insert", "remove", "update"))
     data.generate()
     data.load()
 
@@ -70,10 +70,10 @@ class MutatorTests extends FlatSpec with Matchers {
       assert(check(output, data))
     }
 
-    for (j <- 0 to intensity) {
-      data.update(1)
+    /*for (j <- 0 to intensity) {
+      data.update()
       assert(check(output, data))
-    }
+    }*/
   }
 
   "AdjustableListTests" should "update the AdjustableList correctly" in {

@@ -44,7 +44,7 @@ class StringFileData(
 
   def clearValues() {}
 
-  def update(n: Int) {
+  def update() {
     while (lines.head != "---") {
       val space = lines.head.indexOf(" ")
       val (command, pair) = lines.head.splitAt(space)
