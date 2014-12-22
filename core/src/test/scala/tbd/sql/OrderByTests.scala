@@ -20,7 +20,6 @@ import scala.collection.mutable.{ ArrayBuffer, Buffer, Map }
 import org.scalatest._
 
 import tbd.{ Adjustable, Context, Mod, Mutator }
-import tbd.datastore.IntData
 import tbd.list._
 import tbd.TBD._
 import tbd.sql._

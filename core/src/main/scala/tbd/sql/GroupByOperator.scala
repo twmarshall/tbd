@@ -30,7 +30,6 @@ import scala.collection.mutable.Map
 import scala.collection.JavaConversions._
 
 import tbd._
-import tbd.datastore.IntData
 import tbd.list._
 
 /*

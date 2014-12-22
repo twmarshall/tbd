@@ -17,7 +17,6 @@ package tbd.sql
 
 import scala.reflect.runtime.{ universe => ru}
 import tbd.{Adjustable, Context, Mod, Mutator}
-import tbd.datastore.IntData
 import tbd.list.{ListConf, ListInput}
 import tbd.TBD._
 
