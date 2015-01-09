@@ -84,10 +84,8 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
       WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
   }
 
-  def checkOutput(
-      table: Map[Int, String],
-      output: Iterable[Mod[(Int, HashMap[String, Int])]]) = {
-    val answer = naiveHelper(table.values)
+  def checkOutput(output: Iterable[Mod[(Int, HashMap[String, Int])]]) = {
+    val answer = naiveHelper(data.table.values)
     var out = HashMap[String, Int]()
 
     for (mod <- output) {
@@ -196,10 +194,8 @@ class WCAlgorithm(_conf: AlgorithmConf)
       WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
   }
 
-  def checkOutput(
-      table: Map[Int, String],
-      output: Mod[(Int, HashMap[String, Int])]) = {
-    val answer = naiveHelper(table.values)
+  def checkOutput(output: Mod[(Int, HashMap[String, Int])]) = {
+    val answer = naiveHelper(data.table.values)
     val out = mutator.read(output)._2
 
     out == answer
@@ -256,10 +252,8 @@ class ChunkWCAlgorithm(_conf: AlgorithmConf)
       WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
   }
 
-  def checkOutput(
-      table: Map[Int, String],
-      output: Mod[(Int, HashMap[String, Int])]) = {
-    val answer = naiveHelper(table.values)
+  def checkOutput(output: Mod[(Int, HashMap[String, Int])]) = {
+    val answer = naiveHelper(data.table.values)
     mutator.read(output)._2 == answer
   }
 }

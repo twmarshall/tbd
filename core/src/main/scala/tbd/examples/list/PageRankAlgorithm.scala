@@ -91,9 +91,9 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
   }
 
   val epsilon = 0.000001
-  def checkOutput(table: Map[Int, Array[Int]], output: AdjustableList[Int, Double]) = {
+  def checkOutput(output: AdjustableList[Int, Double]) = {
     val out = output.toBuffer(mutator)
-    val answer = naiveHelper(table)
+    val answer = naiveHelper(data.table)
 
     var check = out.size == answer.size
     for ((node, rank) <- out) {

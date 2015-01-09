@@ -65,9 +65,9 @@ class ReduceByKeyAlgorithm(_conf: AlgorithmConf)
     reduced
   }
 
-  def checkOutput(table: Map[Int, Int], output: AdjustableList[Int, Int]) = {
+  def checkOutput(output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
-    val answer = naiveHelper(table)
+    val answer = naiveHelper(data.table)
     val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
 
     sortedOutput == sortedAnswer

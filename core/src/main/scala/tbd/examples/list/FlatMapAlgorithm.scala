@@ -58,9 +58,9 @@ class FlatMapAlgorithm(_conf: AlgorithmConf)
     input.flatMap(FlatMapAlgorithm.mapper(0, _))
   }
 
-  def checkOutput(table: Map[Int, Int], output: AdjustableList[Int, Int]) = {
+  def checkOutput(output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer(mutator).map(_._2).sortWith(_ < _)
-    val answer = naiveHelper(table.values)
+    val answer = naiveHelper(data.table.values)
 
     sortedOutput == answer.map(_._2).toBuffer.sortWith(_ < _)
   }

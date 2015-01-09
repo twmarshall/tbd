@@ -50,11 +50,9 @@ class QuickSortAlgorithm(_conf: AlgorithmConf)
     input.toBuffer.sortWith(_._1 < _._1)
   }
 
-  def checkOutput(
-      input: Map[Int, Int],
-      output: AdjustableList[Int, Int]) = {
+  def checkOutput(output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer(mutator)
-    val answer = naiveHelper(input)
+    val answer = naiveHelper(data.table)
 
     //println(sortedOutput)
     //println(answer.toBuffer)
@@ -90,11 +88,9 @@ class MergeSortAlgorithm(_conf: AlgorithmConf)
     input.toBuffer.sortWith(_._1 < _._1)
   }
 
-  def checkOutput(
-      input: Map[Int, Int],
-      output: AdjustableList[Int, Int]) = {
+  def checkOutput(output: AdjustableList[Int, Int]) = {
     val sortedOutput = output.toBuffer(mutator)
-    val answer = naiveHelper(input)
+    val answer = naiveHelper(data.table)
 
     //println(sortedOutput)
     //println(answer.toBuffer)

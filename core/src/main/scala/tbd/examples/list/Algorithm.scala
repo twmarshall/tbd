@@ -54,7 +54,7 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
 
   protected def runNaive(): Any
 
-  protected def checkOutput(table: Map[Int, Input], output: Output): Boolean
+  protected def checkOutput(output: Output): Boolean
 
   def run(): Map[String, Double] = {
     val results = Map[String, Double]()
@@ -144,7 +144,7 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
     val noGCElapsed = elapsed - (getGCTime() - gcBefore)
 
     if (Experiment.check) {
-      assert(checkOutput(data.table, output))
+      assert(checkOutput(output))
     }
 
     (elapsed, loadElapsed, noGCElapsed)
@@ -170,7 +170,7 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
     val noGCElapsed = elapsed - (getGCTime() - gcBefore)
 
     if (Experiment.check) {
-      assert(checkOutput(data.table, output))
+      assert(checkOutput(output))
     }
 
     (elapsed, loadElapsed, noGCElapsed)

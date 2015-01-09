@@ -63,11 +63,11 @@ class SplitAlgorithm(_conf: AlgorithmConf)
     })
   }
 
-  def checkOutput(input: Map[Int, String], output: SplitAlgorithm.SplitResult): Boolean = {
+  def checkOutput(output: SplitAlgorithm.SplitResult): Boolean = {
     val sortedOutputA = output._1.toBuffer(mutator).map(_._2).sortWith(_ < _)
     val sortedOutputB = output._2.toBuffer(mutator).map(_._2).sortWith(_ < _)
 
-    val answer = naiveHelper(input.values)
+    val answer = naiveHelper(data.table.values)
 
     sortedOutputA == answer._1.toBuffer.sortWith(_ < _)
     sortedOutputB == answer._2.toBuffer.sortWith(_ < _)
