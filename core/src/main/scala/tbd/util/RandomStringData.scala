@@ -60,12 +60,6 @@ class RandomStringData
     }
   }
 
-  def clearValues() {
-    for ((key, value) <- table) {
-      table(key) = ""
-    }
-  }
-
   def update() {
     val run = remainingRuns.head
     val updateCount =

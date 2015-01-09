@@ -33,10 +33,6 @@ trait Data[Input] {
   // Transfers to data in 'table' into an Input object.
   def load()
 
-  // Removed all of the values in 'table' while keeping the keys - intended for
-  // experiments with large datasets that don't care about checking the output.
-  def clearValues()
-
   // Updates some values.
   def update()
 

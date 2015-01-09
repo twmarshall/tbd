@@ -94,7 +94,6 @@ object MemoryExperiment {
 
       input.generate()
       input.load()
-      input.clearValues()
       val output = mutator.run(new MemoryExperiment(list))
 
       val rand = new scala.util.Random()

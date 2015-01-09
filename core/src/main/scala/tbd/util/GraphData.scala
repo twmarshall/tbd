@@ -82,9 +82,6 @@ class GraphData
     }
   }
 
-  def clearValues() {
-  }
-
   def update() {
     val run = remainingRuns.head
     val updateCount =

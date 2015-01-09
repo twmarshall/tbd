@@ -71,8 +71,6 @@ class StringData
     }
   }
 
-  def clearValues() {}
-
   def update() {
     val run = remainingRuns.head
     val updateCount =

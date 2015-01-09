@@ -133,10 +133,6 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
     data.load()
     val loadElapsed = naiveLoadElapsed + System.currentTimeMillis() - beforeLoad
 
-    if (!Experiment.check) {
-      data.clearValues()
-    }
-
     if (Experiment.verbosity > 1) {
       println("Initial run.")
     }

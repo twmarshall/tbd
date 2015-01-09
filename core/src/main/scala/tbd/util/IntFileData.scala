@@ -42,8 +42,6 @@ class IntFileData
     }
   }
 
-  def clearValues() {}
-
   def update() {
     while (lines.head != "---") {
       val space = lines.head.indexOf(" ")

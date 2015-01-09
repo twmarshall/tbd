@@ -48,8 +48,6 @@ class IntData
     input.load(table)
   }
 
-  def clearValues() {}
-
   def update() {
     val run = remainingRuns.head
     val updateCount =

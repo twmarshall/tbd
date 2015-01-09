@@ -44,8 +44,6 @@ class GraphFileData
     }
   }
 
-  def clearValues() = {}
-
   def update() = {
     val split = lines.head.split(" -> ")
     assert(split.size == 2)
