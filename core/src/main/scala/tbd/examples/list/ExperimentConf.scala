@@ -35,6 +35,8 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
   val counts = opt[List[String]]("counts", 'n',
     default = Some(List("1000")),
     descr = "Number of elements to load initially.")
+  val file = opt[String]("file", 'f', default = None,
+    descr = "The file to load the input from.")
   val load = opt[Boolean]("load", 'l', default = Some(false),
     descr = "If true, loading times will be included in output.")
   val master = opt[String]("master", default = Some(""),

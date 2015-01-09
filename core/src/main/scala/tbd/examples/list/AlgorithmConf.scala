@@ -21,6 +21,7 @@ case class AlgorithmConf(
   algorithm: String,
   cacheSize: Int,
   count: Int,
+  file: Option[String],
   master: String,
   mutations: List[String],
   runs: List[String],

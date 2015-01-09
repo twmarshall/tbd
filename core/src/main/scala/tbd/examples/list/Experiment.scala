@@ -184,6 +184,7 @@ object Experiment {
                   algorithm = algorithm,
                   cacheSize = cacheSize.toInt,
                   count = count.toInt,
+                  file = conf.file.get,
                   master = conf.master(),
                   mutations = conf.mutations(),
                   runs = conf.runs(),
