@@ -21,7 +21,7 @@ case class AlgorithmConf(
   algorithm: String,
   cacheSize: Int,
   count: Int,
-  file: Option[String],
+  file: String,
   master: String,
   mutations: List[String],
   runs: List[String],
@@ -33,6 +33,7 @@ case class AlgorithmConf(
     param match {
       case "algorithms" => algorithm
       case "counts" => count.toString
+      case "files" => file
       case "partitions" => listConf.partitions.toString
     }
 }

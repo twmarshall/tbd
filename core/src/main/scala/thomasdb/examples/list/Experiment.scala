@@ -130,6 +130,7 @@ object Experiment {
   def run(conf: ExperimentConf) {
     confs("algorithms") = conf.algorithms()
     confs("counts") = conf.counts()
+    confs("files") = conf.files()
     confs("runs") = conf.runs()
     confs("partitions") = conf.partitions()
     confs("mutations") = conf.mutations()
@@ -140,6 +141,10 @@ object Experiment {
     if (conf.verbosity() > 0) {
       if (!conf.output().contains("runs")) {
         println("WARNING: 'output' must contain 'runs'")
+      }
+
+      if (conf.output().size != 3) {
+        println("Must specify three parameters to output")
       }
 
       println("Options:")
@@ -171,78 +176,75 @@ object Experiment {
         }
       }
 
-      for (algorithm <- conf.algorithms()) {
-        for (cacheSize <- conf.cacheSizes()) {
-          for (chunkSize <- conf.chunkSizes()) {
-            for (count <- conf.counts()) {
-              for (partitions <- conf.partitions()) {
-                val listConf = new ListConf(
-                  partitions = partitions.toInt,
-                  chunkSize = chunkSize.toInt)
+      for (algorithm <- conf.algorithms();
+           cacheSize <- conf.cacheSizes();
+           chunkSize <- conf.chunkSizes();
+           count <- conf.counts();
+           file <- conf.files();
+           partitions <- conf.partitions()) {
+        val listConf = new ListConf(
+          partitions = partitions.toInt,
+          chunkSize = chunkSize.toInt)
 
-                val algConf = AlgorithmConf(
-                  algorithm = algorithm,
-                  cacheSize = cacheSize.toInt,
-                  count = count.toInt,
-                  file = conf.file.get,
-                  master = conf.master(),
-                  mutations = conf.mutations(),
-                  runs = conf.runs(),
-                  repeat = i,
-                  store = conf.store(),
-                  listConf = listConf)
+        val algConf = AlgorithmConf(
+          algorithm = algorithm,
+          cacheSize = cacheSize.toInt,
+          count = count.toInt,
+          file = file,
+          master = conf.master(),
+          mutations = conf.mutations(),
+          runs = conf.runs(),
+          repeat = i,
+          store = conf.store(),
+          listConf = listConf)
 
-                val alg = algorithm match {
-                  case "filter" => new FilterAlgorithm(algConf)
+        val alg = algorithm match {
+          case "filter" => new FilterAlgorithm(algConf)
 
-                  case "flatMap" => new FlatMapAlgorithm(algConf)
+          case "flatMap" => new FlatMapAlgorithm(algConf)
 
-                  case "join" =>
-                    if (listConf.chunkSize > 1)
-                      new ChunkJoinAlgorithm(algConf)
-                    else
-                      new JoinAlgorithm(algConf)
+          case "join" =>
+            if (listConf.chunkSize > 1)
+              new ChunkJoinAlgorithm(algConf)
+            else
+              new JoinAlgorithm(algConf)
 
-                  case "map" =>
-                    new MapAlgorithm(algConf)
+          case "map" =>
+            new MapAlgorithm(algConf)
 
-                  case "msort" =>
-                    new MergeSortAlgorithm(algConf)
+          case "msort" =>
+            new MergeSortAlgorithm(algConf)
 
-                  case "pgrank" => new PageRankAlgorithm(algConf)
+          case "pgrank" => new PageRankAlgorithm(algConf)
 
-                  case "qsort" =>
-                    new QuickSortAlgorithm(algConf)
+          case "qsort" =>
+            new QuickSortAlgorithm(algConf)
 
-                  case "rbk" => new ReduceByKeyAlgorithm(algConf)
+          case "rbk" => new ReduceByKeyAlgorithm(algConf)
 
-                  case "sjoin" =>
-                    new SortJoinAlgorithm(algConf)
+          case "sjoin" =>
+            new SortJoinAlgorithm(algConf)
 
-                  case "split" =>
-                    new SplitAlgorithm(algConf)
+          case "split" =>
+            new SplitAlgorithm(algConf)
 
-                  case "wc" =>
-                    if (listConf.chunkSize > 1)
-                      new ChunkWCAlgorithm(algConf)
-                    else
-                      new WCAlgorithm(algConf)
-                  case "wch" =>
-                    new WCHashAlgorithm(algConf)
-                }
+          case "wc" =>
+            if (listConf.chunkSize > 1)
+              new ChunkWCAlgorithm(algConf)
+            else
+              new WCAlgorithm(algConf)
+          case "wch" =>
+            new WCHashAlgorithm(algConf)
+        }
 
-                val results = alg.run()
+        val results = alg.run()
 
-                if (verbosity > 0) {
-                  println(results)
-                }
+        if (verbosity > 0) {
+          println(results)
+        }
 
-                if (i != 0) {
-                  Experiment.allResults += (algConf -> results)
-                }
-              }
-            }
-          }
+        if (i != 0) {
+          Experiment.allResults += (algConf -> results)
         }
       }
     }

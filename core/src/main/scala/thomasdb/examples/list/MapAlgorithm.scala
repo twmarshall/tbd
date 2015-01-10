@@ -69,7 +69,7 @@ class MapAlgorithm(_conf: AlgorithmConf)
   override def loadInitial() {
     input =
       mutator.createList[String, String](
-        conf.listConf.copy(file = conf.file.get))
+        conf.listConf.copy(file = conf.file))
     adjust = new MapAdjust(input.getAdjustableList())
   }
 
