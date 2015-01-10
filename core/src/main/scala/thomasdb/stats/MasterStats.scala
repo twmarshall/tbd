@@ -20,15 +20,42 @@ import org.mashupbots.socko.events.HttpRequestEvent
 
 class MasterStats extends Actor with ActorLogging {
 
+  val imgSrc = "http://thomasdb.cs.cmu.edu/wordpress/wp-content/uploads/2014/08/thomasdb-white.png"
+
   def receive = {
     case "tick" =>
 
     case event: HttpRequestEvent => {
-      var s = "Master\n"
+      var s = s"""
+        <html>
+          <head>
+            <title>ThomasDB Master</title>
+            <style>
+              body {
+                font-family: calibri;
+              }
+              table tr td {
+                padding: 10px;
+              }
+            </style>
+          </head>
+          <body>
+           <table>
+             <tr>
+               <td style=\"background-color: 990000\">
+                 <img src=\"$imgSrc\" width=\"50px\">
+               </td>
+               <td style=\"font-size: 24pt; color: 990000\">
+                 ThomasDB Master
+               </td>
+             </tr>
+           </table>"""
 
       for (address <- Stats.registeredWorkers) {
         s += s"""<a href=\"http://$address\">$address</a>"""
       }
+
+      s += "</body></html>"
 
       event.response.write(s, "text/html; charset=UTF-8")
     }
