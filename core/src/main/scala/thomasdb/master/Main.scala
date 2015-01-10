@@ -21,6 +21,7 @@ import org.rogach.scallop._
 import scala.concurrent.duration._
 
 import thomasdb.Constants
+import thomasdb.stats.Stats
 
 object Main {
   def main(args: Array[String]) {
@@ -37,6 +38,7 @@ object Main {
         "OFF, WARNING, INFO, or DEBUG")
       val timeout = opt[Int]("timeout", 't', default = Some(100),
         descr = "How long Akka waits on message responses before timing out")
+      val webui_port = opt[Int]("webui_port", 'w', default = Some(8888))
     }
 
     Constants.DURATION = Conf.timeout.get.get.seconds
@@ -45,10 +47,13 @@ object Main {
     val ip = Conf.ip.get.get
     val port = Conf.port.get.get
     val logging = Conf.logging.get.get
+    val webui_port = Conf.webui_port.get.get
 
     val connector = MasterConnector(ip = ip, port = port, logging = logging,
       singleNode = false)
     println("New master started at: akka.tcp://" + connector.system.name +
             "@" + ip + ":" + port + "/user/master")
+
+    Stats.launch(connector.system, "master", ip, webui_port)
   }
 }

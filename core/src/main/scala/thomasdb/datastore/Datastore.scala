@@ -26,6 +26,7 @@ import thomasdb.Mod
 import thomasdb.Constants._
 import thomasdb.list._
 import thomasdb.messages._
+import thomasdb.stats.Stats
 
 object Datastore {
   def props(storeType: String, cacheSize: Int): Props =
@@ -84,8 +85,7 @@ class Datastore
       val workerId = getWorkerId(modId)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)
 
-      /*misses += 1
-      log.info(misses + " misses")*/
+      Stats.datastoreMisses += 1
 
       val result = Await.result(future, DURATION)
 

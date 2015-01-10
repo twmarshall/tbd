@@ -27,6 +27,7 @@ import thomasdb.Constants._
 import thomasdb.datastore.Datastore
 import thomasdb.messages._
 import thomasdb.list._
+import thomasdb.stats.Stats
 import thomasdb.worker.{Task, Worker}
 
 object Master {
@@ -35,6 +36,8 @@ object Master {
 
 class Master extends Actor with ActorLogging {
   import context.dispatcher
+
+  Stats.registeredWorkers.clear()
 
   log.info("Master launched.")
 
@@ -59,8 +62,11 @@ class Master extends Actor with ActorLogging {
 
   def receive = {
     // Worker
-    case RegisterWorkerMessage(workerRef: ActorRef, datastoreRef: ActorRef) =>
+    case RegisterWorkerMessage(
+        workerRef: ActorRef, datastoreRef: ActorRef, webuiAddress: String) =>
       log.info("Registering worker at " + workerRef)
+
+      Stats.registeredWorkers += webuiAddress
 
       val workerId = nextWorkerId
       workers(workerId) = workerRef

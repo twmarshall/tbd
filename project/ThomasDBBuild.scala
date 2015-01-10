@@ -35,6 +35,8 @@ object ThomasDBBuild extends Build {
     "com.typesafe.akka"          %% "akka-remote"          % "2.3.2",
     "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
 
+    "org.mashupbots.socko"        % "socko-webserver_2.11" % "0.5.0",
+
     "org.rogach"                  % "scallop_2.11"         % "0.9.5",
 
     "org.scala-lang"             %% "scala-pickling"       % "0.8.0",

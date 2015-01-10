@@ -25,6 +25,7 @@ import scala.concurrent.duration._
 import thomasdb.Constants
 import thomasdb.Constants._
 import thomasdb.messages._
+import thomasdb.stats.Stats
 
 object Main {
   def main(args: Array[String]) {
@@ -45,7 +46,7 @@ object Main {
         descr = "The type of datastore to use, either memory or berkeleydb")
       val timeout = opt[Int]("timeout", 't', default = Some(100),
         descr = "How long Akka waits on message responses before timing out")
-
+      val webui_port = opt[Int]("webui_port", 'w', default = Some(8889))
       val master = trailArg[String](required = true)
     }
 
@@ -56,6 +57,7 @@ object Main {
     val port = Conf.port.get.get
     val master = Conf.master.get.get
     val logging = Conf.logging.get.get
+    val webui_port = Conf.webui_port.get.get
 
     val conf = akkaConf + s"""
       akka.loglevel = $logging
@@ -78,7 +80,10 @@ object Main {
       Worker.props(
         masterRef,
         Conf.storeType.get.get,
-        Conf.cacheSize.get.get),
+        Conf.cacheSize.get.get,
+        ip + ":" + webui_port),
       "worker")
+
+    Stats.launch(system, "worker", ip, webui_port)
   }
 }

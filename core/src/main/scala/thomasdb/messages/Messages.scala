@@ -51,7 +51,8 @@ case class PutAfterMessage(listId: String, key: Any, newPair: (Any, Any))
 case class LoadMessage(listId: String, data: Map[Any, Any])
 
 // Worker
-case class RegisterWorkerMessage(worker: ActorRef, datastoreRef: ActorRef)
+case class RegisterWorkerMessage(
+  worker: ActorRef, datastoreRef: ActorRef, webuiAddress: String)
 case class CreateTaskMessage(parent: ActorRef)
 case class GetDatastoreMessage()
 

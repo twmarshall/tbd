@@ -21,6 +21,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 
 import thomasdb.Constants._
+import thomasdb.stats.Stats
 import thomasdb.worker.Worker
 
 object MasterConnector {
@@ -68,7 +69,8 @@ object MasterConnector {
 
     if (singleNode) {
       val workerRef = system.actorOf(
-        Worker.props(masterRef, storeType, cacheSize), "worker")
+        Worker.props(masterRef, storeType, cacheSize, ""), "worker")
+
       Await.result(workerRef ? "started", DURATION)
     }
 

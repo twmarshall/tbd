@@ -29,22 +29,27 @@ import thomasdb.messages._
 object Worker {
   def props
       (masterRef: ActorRef,
-       storeType: String = "memory",
-       cacheSize: Int = 10000) =
-    Props(classOf[Worker], masterRef, storeType, cacheSize)
+       storeType: String,
+       cacheSize: Int,
+       webuiAddress: String) =
+    Props(classOf[Worker], masterRef, storeType, cacheSize, webuiAddress)
 }
 
 class Worker
     (masterRef: ActorRef,
      storeType: String,
-     cacheSize: Int) extends Actor with ActorLogging {
+     cacheSize: Int,
+     webuiAddress: String) extends Actor with ActorLogging {
   import context.dispatcher
 
   private val datastore = context.actorOf(
     Datastore.props(storeType, cacheSize), "datastore")
 
-  private val idFuture = masterRef ? RegisterWorkerMessage(self, datastore)
-  private val workerId = Await.result(idFuture.mapTo[WorkerId], DURATION)
+  private val workerId =
+    Await.result(
+      (masterRef ? RegisterWorkerMessage(self, datastore, webuiAddress))
+        .mapTo[WorkerId],
+      DURATION)
 
   datastore ! SetIdMessage(workerId)
 

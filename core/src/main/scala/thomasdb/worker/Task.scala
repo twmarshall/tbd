@@ -25,6 +25,7 @@ import thomasdb.Constants._
 import thomasdb.{Adjustable, Context}
 import thomasdb.ddg._
 import thomasdb.messages._
+import thomasdb.stats.Stats
 
 object Task {
   def props
@@ -42,6 +43,8 @@ class Task
      masterRef: ActorRef)
   extends Actor with ActorLogging {
   import context.dispatcher
+
+  Stats.numTasks += 1
 
   private val c = new Context(taskId, this, datastore, masterRef)
 
