@@ -13,4 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef;
+package thomasdb.reef.param;
+
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
+
+/**
+ * Internal parameter = IP address to start ThomasDB component (master/worker).
+ */
+@NamedParameter(
+    doc = "IP address",
+    short_name = "ip",
+    default_value = "127.0.0.1")
+public final class HostIP implements Name<String> {
+
+}

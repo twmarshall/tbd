@@ -13,4 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef.param;
+package thomasdb.reef.param;
+
+import org.apache.reef.tang.annotations.Name;
+import org.apache.reef.tang.annotations.NamedParameter;
+
+/**
+ * Command line parameter: number of evaluators to allocate.
+ */
+@NamedParameter(
+    doc = "Number of workers",
+    short_name = "numWorkers",
+    default_value = "2")
+public final class NumWorkers implements Name<Integer> {
+
+}

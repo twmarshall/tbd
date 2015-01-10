@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef.param;
+package thomasdb.reef.param;
 
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
 /**
- * Command line parameter = system timeout in minutes.
+ * Command line parameter = true to run locally, or false to run on YARN.
  */
 @NamedParameter(
-    doc = "Timeout (in minutes), after which the REEF app will terminate",
-    short_name = "timeout",
-    default_value = "10")
-public final class Timeout implements Name<Integer> {
+    doc = "Whether or not to run on the local runtime",
+    short_name = "local",
+    default_value = "true")
+public final class Local implements Name<Boolean> {
 
 }

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef;
+package thomasdb.reef;
 
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.task.Task;
@@ -23,24 +23,24 @@ import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
-import tbd.reef.param.*;
+import thomasdb.reef.param.*;
 
 /**
  * A worker node.
  */
-public final class TBDWorkerTask implements Task {
+public final class WorkerTask implements Task {
   private static final Logger LOG =
-      Logger.getLogger(TBDWorkerTask.class.getName());
+      Logger.getLogger(WorkerTask.class.getName());
   private final int timeout;
   private final String hostIP;
   private final String hostPort;
   private final String masterAkka;
 
   @Inject
-  TBDWorkerTask(@Parameter(TBDDriver.HostIP.class) final String ip,
-      @Parameter(TBDDriver.HostPort.class) final String port,
-      @Parameter(TBDDriver.MasterAkka.class) final String master,
-      @Parameter(TBDLaunch.Timeout.class) final int tout
+  WorkerTask(@Parameter(Driver.HostIP.class) final String ip,
+      @Parameter(Driver.HostPort.class) final String port,
+      @Parameter(Driver.MasterAkka.class) final String master,
+      @Parameter(Main.Timeout.class) final int tout
       ) {
     hostIP = ip;
     hostPort = port;
@@ -62,7 +62,7 @@ public final class TBDWorkerTask implements Task {
     }
 
     String[] args = {"-i", hostIP, "-p", hostPort, masterAkka};
-    tbd.worker.Main.main(args);
+    thomasdb.worker.Main.main(args);
 
     LOG.log(Level.INFO, "worker sleep");
     try {

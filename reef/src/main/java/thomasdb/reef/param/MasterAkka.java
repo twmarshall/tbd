@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef.param;
+package thomasdb.reef.param;
 
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
 /**
- * Command line parameter = true to run locally, or false to run on YARN.
+ * Internal parameter = ThomasDB master Akka address.
  */
 @NamedParameter(
-    doc = "Whether or not to run on the local runtime",
-    short_name = "local",
-    default_value = "true")
-public final class Local implements Name<Boolean> {
+    doc = "master akka",
+    short_name = "master",
+    default_value = "akka.tcp://masterSystem0@127.0.0.1:2555/user/master")
+public final class MasterAkka implements Name<String> {
 
 }

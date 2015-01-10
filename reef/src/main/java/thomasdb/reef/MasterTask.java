@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef;
+package thomasdb.reef;
 
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.task.Task;
@@ -26,17 +26,17 @@ import javax.inject.Inject;
 /**
  * A master node.
  */
-public final class TBDMasterTask implements Task {
+public final class MasterTask implements Task {
   private static final Logger LOG =
-      Logger.getLogger(TBDMasterTask.class.getName());
+      Logger.getLogger(MasterTask.class.getName());
   private final int timeout;
   private final String masterIP;
   private final String masterPort;
 
   @Inject
-  TBDMasterTask(@Parameter(TBDDriver.HostIP.class) final String ip,
-      @Parameter(TBDDriver.HostPort.class) final String port,
-      @Parameter(TBDLaunch.Timeout.class) final int tout) {
+  MasterTask(@Parameter(Driver.HostIP.class) final String ip,
+      @Parameter(Driver.HostPort.class) final String port,
+      @Parameter(Main.Timeout.class) final int tout) {
     masterIP = ip;
     masterPort = port;
     timeout = tout;
@@ -49,7 +49,7 @@ public final class TBDMasterTask implements Task {
     LOG.log(Level.INFO, "master port: {0}", masterPort);
 
    String[] args = {"-i", masterIP, "-p", masterPort};
-   tbd.master.Main.main(args);
+   thomasdb.master.Main.main(args);
 
     LOG.log(Level.INFO, "master sleep");
     try {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef;
+package thomasdb.reef;
 
 import org.apache.reef.client.ClientConfiguration;
 import org.apache.reef.runtime.local.client.LocalRuntimeConfiguration;
@@ -35,12 +35,12 @@ import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import tbd.reef.param.Memory;
+import thomasdb.reef.param.Memory;
 
 /**
- * TBD REEF application launcher - main class.
+ * ThomasDB REEF application launcher - main class.
  */
-public final class TBDLaunch {
+public final class Main {
 
   /**
    * Number of REEF worker threads in local mode.
@@ -50,7 +50,7 @@ public final class TBDLaunch {
    * Standard Java logger
    */
   private static final Logger LOG =
-      Logger.getLogger(TBDLaunch.class.getName());
+      Logger.getLogger(Main.class.getName());
 
   private static final BufferedReader prompt =
     new BufferedReader(new InputStreamReader(System.in));
@@ -58,7 +58,7 @@ public final class TBDLaunch {
   /**
    * This class should not be instantiated.
    */
-  private TBDLaunch() {
+  private Main() {
     throw new RuntimeException("Do not instantiate this class!");
   }
 
@@ -75,9 +75,9 @@ public final class TBDLaunch {
     final JavaConfigurationBuilder confBuilder =
         Tang.Factory.getTang().newConfigurationBuilder();
     final CommandLine cl = new CommandLine(confBuilder);
-    cl.registerShortNameOfClass(TBDLaunch.Local.class);
-    cl.registerShortNameOfClass(TBDLaunch.NumWorkers.class);
-    cl.registerShortNameOfClass(TBDLaunch.Timeout.class);
+    cl.registerShortNameOfClass(Main.Local.class);
+    cl.registerShortNameOfClass(Main.NumWorkers.class);
+    cl.registerShortNameOfClass(Main.Timeout.class);
     cl.registerShortNameOfClass(Memory.class);
     cl.processCommandLine(args);
     return confBuilder.build();
@@ -90,11 +90,11 @@ public final class TBDLaunch {
         Tang.Factory.getTang().newInjector(commandLineConf);
     final JavaConfigurationBuilder cb =
         Tang.Factory.getTang().newConfigurationBuilder();
-    cb.bindNamedParameter(TBDLaunch.NumWorkers.class,
+    cb.bindNamedParameter(Main.NumWorkers.class,
         String.valueOf(
-            injector.getNamedInstance(TBDLaunch.NumWorkers.class)));
-    cb.bindNamedParameter(TBDLaunch.Timeout.class,
-        String.valueOf(injector.getNamedInstance(TBDLaunch.Timeout.class)));
+            injector.getNamedInstance(Main.NumWorkers.class)));
+    cb.bindNamedParameter(Main.Timeout.class,
+        String.valueOf(injector.getNamedInstance(Main.Timeout.class)));
     cb.bindNamedParameter(Memory.class,
         String.valueOf(injector.getNamedInstance(Memory.class)));
     return cb.build();
@@ -117,21 +117,21 @@ public final class TBDLaunch {
 
     final Configuration clientConfiguration = ClientConfiguration.CONF
         .set(ClientConfiguration.ON_JOB_RUNNING,
-            TBDClient.RunningJobHandler.class)
+            Client.RunningJobHandler.class)
         .set(ClientConfiguration.ON_JOB_MESSAGE,
-            TBDClient.JobMessageHandler.class)
+            Client.JobMessageHandler.class)
         .set(ClientConfiguration.ON_JOB_COMPLETED,
-            TBDClient.CompletedJobHandler.class)
+            Client.CompletedJobHandler.class)
         .set(ClientConfiguration.ON_JOB_FAILED,
-            TBDClient.FailedJobHandler.class)
+            Client.FailedJobHandler.class)
         .set(ClientConfiguration.ON_RUNTIME_ERROR,
-            TBDClient.RuntimeErrorHandler.class)
+            Client.RuntimeErrorHandler.class)
         .build();
 
     final Injector commandLineInjector =
         Tang.Factory.getTang().newInjector(commandLineConf);
     final boolean isLocal =
-        commandLineInjector.getNamedInstance(TBDLaunch.Local.class);
+        commandLineInjector.getNamedInstance(Main.Local.class);
     final Configuration runtimeConfiguration;
     if (isLocal) {
       LOG.log(Level.INFO, "Running on the local runtime");
@@ -157,7 +157,7 @@ public final class TBDLaunch {
   public static void run(final Configuration config)
       throws InjectionException {
     final Injector injector = Tang.Factory.getTang().newInjector(config);
-    final TBDClient client = injector.getInstance(TBDClient.class);
+    final Client client = injector.getInstance(Client.class);
     client.submit();
     //return client.waitForCompletion();
 

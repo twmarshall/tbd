@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef.param;
+package thomasdb.reef.param;
 
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
 /**
- * Internal parameter = IP address to start TBD component (master/worker).
+ * Command line parameter = chunkSizes in ThomasDB datastore.
  */
 @NamedParameter(
-    doc = "IP address",
-    short_name = "ip",
-    default_value = "127.0.0.1")
-public final class HostIP implements Name<String> {
+    doc = "This should be set to the same to chunkSizes in ThomasDB",
+    short_name = "chunkSizes",
+    default_value = "1")
+public final class ChunkSizes implements Name<Integer> {
 
 }

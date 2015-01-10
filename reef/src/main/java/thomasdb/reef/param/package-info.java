@@ -13,18 +13,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef.param;
-
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
-
-/**
- * Internal parameter = port number to start TBD component (master/worker).
- */
-@NamedParameter(
-    doc = "port number",
-    short_name = "port",
-    default_value = "2555")
-public final class HostPort implements Name<String> {
-
-}
+package thomasdb.reef.param;

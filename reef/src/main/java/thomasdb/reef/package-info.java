@@ -13,18 +13,4 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef.param;
-
-import org.apache.reef.tang.annotations.Name;
-import org.apache.reef.tang.annotations.NamedParameter;
-
-/**
- * Internal parameter = TBD master Akka address.
- */
-@NamedParameter(
-    doc = "master akka",
-    short_name = "master",
-    default_value = "akka.tcp://masterSystem0@127.0.0.1:2555/user/master")
-public final class MasterAkka implements Name<String> {
-
-}
+package thomasdb.reef;

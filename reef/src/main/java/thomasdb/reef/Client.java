@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef;
+package thomasdb.reef;
 
 import org.apache.reef.client.*;
 import org.apache.reef.tang.Configuration;
@@ -32,19 +32,19 @@ import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import tbd.reef.param.*;
+import thomasdb.reef.param.*;
 
 /**
- * TBD REEF application client.
+ * ThomasDB REEF application client.
  */
 @Unit
-public class TBDClient {
+public class Client {
 
   /**
    * Standard java logger.
    */
   private static final Logger LOG =
-      Logger.getLogger(TBDClient.class.getName());
+      Logger.getLogger(Client.class.getName());
 
   /**
    * Codec to translate messages to and from the job driver
@@ -108,15 +108,15 @@ public class TBDClient {
   private final int timeout;
 
   /**
-   * TBD REEF application client.
+   * ThomasDB REEF application client.
    * Parameters are injected automatically by TANG.
    *
    * @param reef    Reference to the REEF framework.
    */
   @Inject
-  TBDClient(final REEF reef,
-            @Parameter(TBDLaunch.NumWorkers.class) final Integer numWorkers,
-            @Parameter(TBDLaunch.Timeout.class) final Integer timeout,
+  Client(final REEF reef,
+            @Parameter(Main.NumWorkers.class) final Integer numWorkers,
+            @Parameter(Main.Timeout.class) final Integer timeout,
             @Parameter(Memory.class) final Integer memory)
                 throws BindException {
 
@@ -133,32 +133,32 @@ public class TBDClient {
     configBuilder.addConfiguration(
         DriverConfiguration.CONF
             .set(DriverConfiguration.GLOBAL_LIBRARIES,
-                TBDClient.class.getProtectionDomain()
+                Client.class.getProtectionDomain()
                   .getCodeSource().getLocation().getFile())
-            .set(DriverConfiguration.DRIVER_IDENTIFIER, "TBDReefYarn")
+            .set(DriverConfiguration.DRIVER_IDENTIFIER, "ThomasDBReefYarn")
             .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED,
-                TBDDriver.EvaluatorAllocatedHandler.class)
+                Driver.EvaluatorAllocatedHandler.class)
             .set(DriverConfiguration.ON_EVALUATOR_FAILED,
-                TBDDriver.EvaluatorFailedHandler.class)
+                Driver.EvaluatorFailedHandler.class)
             .set(DriverConfiguration.ON_CONTEXT_ACTIVE,
-                TBDDriver.ActiveContextHandler.class)
+                Driver.ActiveContextHandler.class)
             .set(DriverConfiguration.ON_CONTEXT_CLOSED,
-                TBDDriver.ClosedContextHandler.class)
+                Driver.ClosedContextHandler.class)
             .set(DriverConfiguration.ON_CONTEXT_FAILED,
-                TBDDriver.FailedContextHandler.class)
+                Driver.FailedContextHandler.class)
             .set(DriverConfiguration.ON_TASK_RUNNING,
-                TBDDriver.RunningTaskHandler.class)
+                Driver.RunningTaskHandler.class)
             .set(DriverConfiguration.ON_DRIVER_STARTED,
-                TBDDriver.StartHandler.class)
+                Driver.StartHandler.class)
             .set(DriverConfiguration.ON_DRIVER_STOP,
-                TBDDriver.StopHandler.class)
+                Driver.StopHandler.class)
             .set(DriverConfiguration.ON_CLIENT_MESSAGE,
-                TBDDriver.ClientMessageHandler.class)
+                Driver.ClientMessageHandler.class)
             .build()
     );
-    configBuilder.bindNamedParameter(TBDLaunch.NumWorkers.class,
+    configBuilder.bindNamedParameter(Main.NumWorkers.class,
         "" + numWorkers);
-    configBuilder.bindNamedParameter(TBDLaunch.Timeout.class,
+    configBuilder.bindNamedParameter(Main.Timeout.class,
         "" + timeout);
     configBuilder.bindNamedParameter(Memory.class, "" + memory);
     this.driverConfiguration = configBuilder.build();
@@ -171,15 +171,15 @@ public class TBDClient {
   public static Configuration getClientConfiguration() {
     return ClientConfiguration.CONF
         .set(ClientConfiguration.ON_JOB_RUNNING,
-            TBDClient.RunningJobHandler.class)
+            Client.RunningJobHandler.class)
         .set(ClientConfiguration.ON_JOB_MESSAGE,
-            TBDClient.JobMessageHandler.class)
+            Client.JobMessageHandler.class)
         .set(ClientConfiguration.ON_JOB_COMPLETED,
-            TBDClient.CompletedJobHandler.class)
+            Client.CompletedJobHandler.class)
         .set(ClientConfiguration.ON_JOB_FAILED,
-            TBDClient.FailedJobHandler.class)
+            Client.FailedJobHandler.class)
         .set(ClientConfiguration.ON_RUNTIME_ERROR,
-            TBDClient.RuntimeErrorHandler.class)
+            Client.RuntimeErrorHandler.class)
         .build();
   }
 
@@ -260,8 +260,8 @@ public class TBDClient {
     @Override
     public void onNext(final RunningJob job) {
       LOG.log(Level.FINE, "Running job: {0}", job.getId());
-      synchronized (TBDClient.this) {
-        TBDClient.this.runningJob = job;
+      synchronized (Client.this) {
+        Client.this.runningJob = job;
       }
     }
   }

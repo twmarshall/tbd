@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.reef;
+package thomasdb.reef;
 
 import org.apache.reef.driver.task.CompletedTask;
 import org.apache.reef.driver.task.RunningTask;
@@ -46,12 +46,12 @@ import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
-import tbd.reef.param.*;
+import thomasdb.reef.param.*;
 
 @Unit
-public final class TBDDriver {
+public final class Driver {
   private static final Logger LOG =
-      Logger.getLogger(TBDDriver.class.getName());
+      Logger.getLogger(Driver.class.getName());
   private static final ObjectSerializableCodec<String> CODEC =
       new ObjectSerializableCodec<>();
 
@@ -101,11 +101,11 @@ public final class TBDDriver {
    *                   new evaluator containers.
    */
   @Inject
-  public TBDDriver(
+  public Driver(
       final EvaluatorRequestor requestor,
       final JobMessageObserver jobMessageObserver,
-      @Parameter(TBDLaunch.NumWorkers.class) final int numWorkers,
-      @Parameter(TBDLaunch.Timeout.class) final int timeout,
+      @Parameter(Main.NumWorkers.class) final int numWorkers,
+      @Parameter(Main.Timeout.class) final int timeout,
       @Parameter(Memory.class) final int memory
       ) {
     this.requestor = requestor;
@@ -114,7 +114,7 @@ public final class TBDDriver {
     this.timeout = timeout;
     this.memory = memory;
     this.numEvaluators = numWorkers + 1;
-    LOG.log(Level.INFO, "Instantiated 'TBDDriver'");
+    LOG.log(Level.INFO, "Instantiated 'Driver'");
   }
 
   /**
@@ -125,7 +125,7 @@ public final class TBDDriver {
     public void onNext(final StartTime startTime) {
       LOG.log(Level.INFO, "TIME: Start Driver.");
 
-      TBDDriver.this.requestor.submit(EvaluatorRequest.newBuilder()
+      Driver.this.requestor.submit(EvaluatorRequest.newBuilder()
           .setNumber(numEvaluators)
           .setMemory(memory)
           .setNumberOfCores(2)
@@ -171,7 +171,7 @@ public final class TBDDriver {
       final boolean workerEval;
       final boolean legalEval;
 
-      synchronized (TBDDriver.this) {
+      synchronized (Driver.this) {
         masterEval = !masterEvalAlloced;
         workerEval = masterEvalAlloced && (numEvalAlloced < numEvaluators);
         legalEval = masterEval || workerEval;
@@ -218,11 +218,11 @@ public final class TBDDriver {
       implements EventHandler<FailedEvaluator> {
     @Override
     public void onNext(final FailedEvaluator eval) {
-      synchronized (TBDDriver.this) {
+      synchronized (Driver.this) {
         LOG.log(Level.SEVERE, "FailedEvaluator", eval);
         for (final FailedContext failedContext
             : eval.getFailedContextList()) {
-          TBDDriver.this.contexts.remove(failedContext.getId());
+          Driver.this.contexts.remove(failedContext.getId());
         }
         throw new RuntimeException("Failed Evaluator: ",
             eval.getEvaluatorException());
@@ -244,7 +244,7 @@ public final class TBDDriver {
       final boolean masterCtxt = character.equals("master");
       final boolean workerCtxt = character.equals("worker");
 
-      synchronized (TBDDriver.this) {
+      synchronized (Driver.this) {
         if (masterCtxt) {
         } else if (workerCtxt){
           ++numWorkerContexts;
@@ -260,13 +260,13 @@ public final class TBDDriver {
         cb.addConfiguration(
             TaskConfiguration.CONF
                 .set(TaskConfiguration.IDENTIFIER, taskId)
-                .set(TaskConfiguration.TASK, TBDMasterTask.class)
+                .set(TaskConfiguration.TASK, MasterTask.class)
                 .build()
         );
-        cb.bindNamedParameter(TBDDriver.HostIP.class, masterIP);
-        cb.bindNamedParameter(TBDDriver.HostPort.class,
+        cb.bindNamedParameter(Driver.HostIP.class, masterIP);
+        cb.bindNamedParameter(Driver.HostPort.class,
             masterPort.toString());
-        cb.bindNamedParameter(TBDLaunch.Timeout.class, "" + timeout);
+        cb.bindNamedParameter(Main.Timeout.class, "" + timeout);
 
         context.submitTask(cb.build());
         LOG.log(Level.INFO, "Submit {0} to context {1}",
@@ -287,8 +287,8 @@ public final class TBDDriver {
     @Override
     public void onNext(final ClosedContext context) {
       LOG.log(Level.INFO, "Completed Context: {0}", context.getId());
-      synchronized (TBDDriver.this) {
-        TBDDriver.this.contexts.remove(context.getId());
+      synchronized (Driver.this) {
+        Driver.this.contexts.remove(context.getId());
       }
     }
   }
@@ -298,8 +298,8 @@ public final class TBDDriver {
     @Override
     public void onNext(final FailedContext context) {
       LOG.log(Level.SEVERE, "FailedContext", context);
-      synchronized (TBDDriver.this) {
-        TBDDriver.this.contexts.remove(context.getId());
+      synchronized (Driver.this) {
+        Driver.this.contexts.remove(context.getId());
       }
       throw new RuntimeException("Failed context: ", context.asError());
     }
@@ -338,15 +338,15 @@ public final class TBDDriver {
           cb.addConfiguration(
               TaskConfiguration.CONF
                   .set(TaskConfiguration.IDENTIFIER, taskId)
-                  .set(TaskConfiguration.TASK, TBDWorkerTask.class)
+                  .set(TaskConfiguration.TASK, WorkerTask.class)
                   .build()
           );
-          cb.bindNamedParameter(TBDDriver.HostIP.class,
+          cb.bindNamedParameter(Driver.HostIP.class,
               ctxt2ip.get(contextId));
-          cb.bindNamedParameter(TBDDriver.HostPort.class,
+          cb.bindNamedParameter(Driver.HostPort.class,
               ctxt2port.get(contextId).toString());
-          cb.bindNamedParameter(TBDDriver.MasterAkka.class, masterAkka);
-          cb.bindNamedParameter(TBDLaunch.Timeout.class, "" + timeout);
+          cb.bindNamedParameter(Driver.MasterAkka.class, masterAkka);
+          cb.bindNamedParameter(Main.Timeout.class, "" + timeout);
 
           context.submitTask(cb.build());
           LOG.log(Level.INFO, "Submit {0} to context {1}",
