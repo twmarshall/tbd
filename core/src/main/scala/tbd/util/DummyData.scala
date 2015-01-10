@@ -13,26 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tbd.examples.list
+package tbd.util
 
-import tbd.list.ListConf
+import java.io._
+import scala.collection.mutable.Buffer
 
-case class AlgorithmConf(
-  algorithm: String,
-  cacheSize: Int,
-  count: Int,
-  file: Option[String],
-  master: String,
-  mutations: List[String],
-  runs: List[String],
-  repeat: Int,
-  store: String,
-  listConf: ListConf) {
+import tbd.Input
 
-  def apply(param: String): String =
-    param match {
-      case "algorithms" => algorithm
-      case "counts" => count.toString
-      case "partitions" => listConf.partitions.toString
-    }
+class DummyData extends Data[String] {
+  val file = ""
+
+  def generate() {}
+
+  def load() {}
+
+  def update() {}
+
+  def hasUpdates() = false
 }

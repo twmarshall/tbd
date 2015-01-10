@@ -54,6 +54,10 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
 
   protected def runNaive(): Any
 
+  protected def loadInitial() {
+    data.load()
+  }
+
   protected def checkOutput(output: Output): Boolean
 
   def run(): Map[String, Double] = {
@@ -130,7 +134,7 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
     }
 
     val beforeLoad = System.currentTimeMillis()
-    data.load()
+    loadInitial()
     val loadElapsed = naiveLoadElapsed + System.currentTimeMillis() - beforeLoad
 
     if (Experiment.verbosity > 1) {

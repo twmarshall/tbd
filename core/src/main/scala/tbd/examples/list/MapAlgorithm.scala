@@ -25,7 +25,7 @@ import tbd.list._
 import tbd.util._
 
 object MapAlgorithm {
-  def mapper(pair: (Int, String)): (Int, Int) = {
+  def mapper(pair: (String, String)): (String, Int) = {
     var count = 0
     for (word <- pair._2.split("\\W+")) {
       count += 1
@@ -34,42 +34,56 @@ object MapAlgorithm {
   }
 }
 
-class MapAdjust(list: AdjustableList[Int, String])
-  extends Adjustable[AdjustableList[Int, Int]] {
+class MapAdjust(list: AdjustableList[String, String])
+  extends Adjustable[AdjustableList[String, Int]] {
   def run(implicit c: Context) = {
     list.map(MapAlgorithm.mapper)
   }
 }
 
 class MapAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, AdjustableList[Int, Int]](_conf) {
-  val input = mutator.createList[Int, String](conf.listConf)
+    extends Algorithm[String, AdjustableList[String, Int]](_conf) {
+  val dummyInput = mutator.createList[Int, String](conf.listConf)
+  var adjust: MapAdjust = null
 
-  val adjust = new MapAdjust(input.getAdjustableList())
-
-  val data = new StringData(input, conf.count, conf.mutations, Experiment.check, conf.runs)
+  val data = new DummyData()
   //val data = new StringFileData(input, conf.file)
 
   var naiveTable: ParIterable[String] = _
   def generateNaive() {
-    data.generate()
+    /*data.generate()
     naiveTable = Vector(data.table.values.toSeq: _*).par
     naiveTable.tasksupport =
-      new ForkJoinTaskSupport(new ForkJoinPool(conf.listConf.partitions * 2))
+      new ForkJoinTaskSupport(new ForkJoinPool(conf.listConf.partitions * 2))*/
   }
 
   def runNaive() {
-    naiveHelper(naiveTable)
+    //naiveHelper(naiveTable)
   }
 
-  private def naiveHelper(input: GenIterable[String]) = {
-    input.map(MapAlgorithm.mapper(0, _)._2)
+  private def naiveHelper(input: GenIterable[(String, String)]) = {
+    input.map(MapAlgorithm.mapper)
   }
 
-  def checkOutput(output: AdjustableList[Int, Int]) = {
-    val sortedOutput = output.toBuffer(mutator).map(_._2).sortWith(_ < _)
-    val answer = naiveHelper(data.table.values)
+  var input: ListInput[String, String] = null
+  override def loadInitial() {
+    input =
+      mutator.createList[String, String](
+        conf.listConf.copy(file = conf.file.get))
+    adjust = new MapAdjust(input.getAdjustableList())
+  }
 
-    sortedOutput == answer.toBuffer.sortWith(_ < _)
+  def checkOutput(output: AdjustableList[String, Int]) = {
+    val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
+    val sortedAnswer =
+      naiveHelper(input.getAdjustableList.toBuffer(mutator))
+        .toBuffer.sortWith(_._1 < _._1)
+
+    if (Experiment.verbosity > 1) {
+      println(sortedOutput)
+      println(sortedAnswer)
+    }
+
+    sortedOutput == sortedAnswer
   }
 }
