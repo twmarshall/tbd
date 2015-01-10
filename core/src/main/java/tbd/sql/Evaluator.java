@@ -1,4 +1,4 @@
-package tbd.sql;
+package thomasdb.sql;
 
 import java.lang.reflect.InvocationTargetException;
 import java.text.ParseException;
