@@ -97,10 +97,14 @@ class ChunkJoinAdjust(list1: AdjustableList[Int, Int],
 class ChunkJoinAlgorithm(_conf: AlgorithmConf)
   extends Algorithm[Int, AdjustableList[Int, (Int, Int)]](_conf) {
   val input = mutator.createList[Int, Int](conf.listConf)
-  val data = new IntData(input, conf.runs, conf.count, conf.mutations)
+  val data =
+    new IntData(input, conf.runs, conf.count, conf.mutations, "data.txt")
+  //val data = new IntFileData(input, "data.txt")
 
   val input2 = mutator.createList[Int, Int](conf.listConf)
-  val data2 = new IntData(input2, conf.runs, conf.count)
+  val data2 =
+    new IntData(input2, conf.runs, conf.count, conf.mutations, "data2.txt")
+  //val data2 = new IntFileData(input2, "data2.txt")
 
   val adjust = new ChunkJoinAdjust(input.getAdjustableList(), input2.getAdjustableList())
 
@@ -128,9 +132,9 @@ class ChunkJoinAlgorithm(_conf: AlgorithmConf)
   }
 
   def checkOutput(output: AdjustableList[Int, (Int, Int)]): Boolean = {
-    val sortedOutput = output.toBuffer(mutator).map(_._2).sortWith(_._1 < _._1)
+    val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
     val answer = naiveHelper(data.table, data2.table)
-    val sortedAnswer = answer.values.toBuffer.sortWith(_._1 < _._1)
+    val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
 
     //println(sortedAnswer)
     //println(sortedOutput)
