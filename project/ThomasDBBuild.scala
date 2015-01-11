@@ -95,7 +95,7 @@ object ThomasDBBuild extends Build {
     "reef",
     file("reef"),
     settings = buildSettings ++ assemblySettings ++ Seq (
-      libraryDependencies ++= (reefDeps
+      libraryDependencies ++= (reefDeps ++ commonDeps
                           ++ Seq(
         ("org.apache.hadoop" % "hadoop-common" % hadoopVer).
           exclude("org.sonatype.sisu.inject", "cglib").
