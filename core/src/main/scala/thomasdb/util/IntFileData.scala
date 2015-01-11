@@ -23,7 +23,7 @@ import thomasdb.Input
 class IntFileData
     (input: Input[Int, Int],
      fileName: String) extends Data[Int] {
-  var lines = io.Source.fromFile(fileName).getLines().toBuffer
+  var lines = scala.io.Source.fromFile(fileName).getLines().toBuffer
 
   val file = "data.txt"
 

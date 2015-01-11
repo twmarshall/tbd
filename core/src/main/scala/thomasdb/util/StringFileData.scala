@@ -23,7 +23,7 @@ class StringFileData(
     input: Input[Int, String],
     fileName: String
   ) extends Data[String] {
-  var lines = io.Source.fromFile(fileName).getLines().toBuffer
+  var lines = scala.io.Source.fromFile(fileName).getLines().toBuffer
 
   val file = "data.txt"
 
