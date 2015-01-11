@@ -20,44 +20,27 @@ import org.mashupbots.socko.events.HttpRequestEvent
 
 class MasterStats extends Actor with ActorLogging {
 
-  val imgSrc = "http://thomasdb.cs.cmu.edu/wordpress/wp-content/uploads/2014/08/thomasdb-white.png"
-
   def receive = {
     case "tick" =>
 
     case event: HttpRequestEvent => {
-      var s = s"""
-        <html>
-          <head>
-            <title>ThomasDB Master</title>
-            <style>
-              body {
-                font-family: calibri;
-              }
-              table tr td {
-                padding: 10px;
-              }
-            </style>
-          </head>
-          <body>
-           <table>
-             <tr>
-               <td style=\"background-color: 990000\">
-                 <img src=\"$imgSrc\" width=\"50px\">
-               </td>
-               <td style=\"font-size: 24pt; color: 990000\">
-                 ThomasDB Master
-               </td>
-             </tr>
-           </table>"""
+      var body = s"""
+        <table id=\"workerTable\">
+          <tr><th>worker id</th><th>webui</th></tr>"""
 
-      for (address <- Stats.registeredWorkers) {
-        s += s"""<a href=\"http://$address\">$address</a>"""
+      for (workerInfo <- Stats.registeredWorkers) {
+        val address = workerInfo.webuiAddress
+        val workerId = workerInfo.workerId
+
+        body += s"""
+          <tr>
+            <td>$workerId</td>
+            <td><a href=\"http://$address\">$address</a></td>
+          </tr>"""
       }
+      body += "</table>"
 
-      s += "</body></html>"
-
-      event.response.write(s, "text/html; charset=UTF-8")
+      event.response.write(Stats.createPage(body), "text/html; charset=UTF-8")
     }
 
     case x =>

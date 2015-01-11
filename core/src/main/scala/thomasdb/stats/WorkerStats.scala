@@ -19,18 +19,18 @@ import akka.actor.{Actor, ActorLogging}
 import org.mashupbots.socko.events.HttpRequestEvent
 import scala.collection.mutable.Map
 
-class WorkerInfo
+class WorkerTick
     (val numTasks: Int,
      val datastoreMisses: Int)
 
 class WorkerStats extends Actor with ActorLogging {
-  val stats = Map[Int, WorkerInfo]()
+  val stats = Map[Int, WorkerTick]()
 
   var nextTick = 0
 
   def receive = {
     case "tick" =>
-      stats(nextTick) = new WorkerInfo(Stats.numTasks, Stats.datastoreMisses)
+      stats(nextTick) = new WorkerTick(Stats.numTasks, Stats.datastoreMisses)
       nextTick += 1
 
     case event: HttpRequestEvent => {
@@ -44,7 +44,7 @@ class WorkerStats extends Actor with ActorLogging {
       }
       s += "</table>"
 
-      event.response.write(s, "text/html; charset=UTF-8")
+      event.response.write(Stats.createPage(s), "text/html; charset=UTF-8")
     }
 
     case x =>

@@ -24,12 +24,14 @@ import scala.collection.mutable.Buffer
 import scala.concurrent.duration._
 
 object Stats {
-  var registeredWorkers = Buffer[String]()
+  var registeredWorkers = Buffer[WorkerInfo]()
 
   // Worker
   var numTasks = 0
 
   var datastoreMisses = 0
+
+  val imgSrc = "http://thomasdb.cs.cmu.edu/wordpress/wp-content/uploads/2014/08/thomasdb-white.png"
 
   def launch(system: ActorSystem, mode: String, host: String, port: Int) {
     val statsActor =
@@ -60,4 +62,75 @@ object Stats {
         statsActor,
         "tick")
   }
+
+  def createPage(body: String): String =
+    s"""
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>ThomasDB Master</title>
+          <style>
+            body {
+              font-family: calibri;
+              color: #333333;
+            }
+
+            body a {
+              text-decoration: none;
+            }
+
+            body a:hover {
+              text-decoration: underline;
+            }
+
+            #mainTable tr td {
+              padding: 10px;
+            }
+
+            #workerTable {
+              font-family: \"Trebuchet MS\", Arial, Helvetica, sans-serif;
+              width: 100%;
+              border-collapse: collapse;
+            }
+
+            #workerTable td, #workerTable th {
+              font-size: 1em;
+              border: 1px solid #333333;
+              padding: 3px 7px 2px 7px;
+            }
+
+            #workerTable th {
+              font-size: 1.1em;
+              text-align: left;
+              padding-top: 5px;
+              padding-bottom: 4px;
+              background-color: #333333;
+              color: #ffffff;
+            }
+          </style>
+          <script src=\"Chart.js\"></script>
+          <script type=\"text/javascript\">
+            // Get the context of the canvas element we want to select
+var ctx = document.getElementById(\"myChart\").getContext(\"2d\");
+var myNewChart = new Chart(ctx).PolarArea(data);
+          </script>
+        </head>
+        <body>
+          <table id=\"mainTable\">
+            <tr>
+              <td style=\"background-color: #990000;\">
+                <img src=\"$imgSrc\" width=\"50px\">
+              </td>
+              <td style=\"font-size: 24pt;\">
+                ThomasDB Master
+              </td>
+            </tr>
+            <tr>
+              <td colspan=2>$body
+<canvas id=\"myChart\" width=\"400\" height=\"400\"></canvas>
+              </td>
+            </tr>
+          </table>
+        </body>
+      </html>"""
 }

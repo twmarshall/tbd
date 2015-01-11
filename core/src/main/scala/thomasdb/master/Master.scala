@@ -27,7 +27,7 @@ import thomasdb.Constants._
 import thomasdb.datastore.Datastore
 import thomasdb.messages._
 import thomasdb.list._
-import thomasdb.stats.Stats
+import thomasdb.stats.{Stats, WorkerInfo}
 import thomasdb.worker.{Task, Worker}
 
 object Master {
@@ -66,7 +66,6 @@ class Master extends Actor with ActorLogging {
         workerRef: ActorRef, datastoreRef: ActorRef, webuiAddress: String) =>
       log.info("Registering worker at " + workerRef)
 
-      Stats.registeredWorkers += webuiAddress
 
       val workerId = nextWorkerId
       workers(workerId) = workerRef
@@ -74,6 +73,8 @@ class Master extends Actor with ActorLogging {
 
       sender ! workerId
       nextWorkerId = incrementWorkerId(nextWorkerId)
+
+      Stats.registeredWorkers += WorkerInfo(workerId, webuiAddress)
 
       for ((thatWorkerId, thatDatastoreRef) <- datastoreRefs) {
         thatDatastoreRef ! RegisterDatastoreMessage(workerId, datastoreRef)
