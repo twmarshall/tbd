@@ -221,8 +221,8 @@ class Datastore
           (partitionSize * conf.partitionIndex) + " length " +
            partitionSize)
 
-        val regex =
-          Pattern.compile("""(?s)<key>(.*?)</key>[\s]*?<value>(.*?)</value>""")
+        val regex = Pattern.compile(
+          "(?s)(.*?)" + unitSeparator + "(.*?)\n")
         val str = new String(buf)
         val matcher = regex.matcher(str)
 
