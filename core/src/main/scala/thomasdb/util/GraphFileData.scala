@@ -20,7 +20,7 @@ import thomasdb.list.ListInput
 class GraphFileData
     (input: ListInput[Int, Array[Int]],
      fileName: String) extends Data[Array[Int]] {
-  var lines = io.Source.fromFile(fileName).getLines().toBuffer
+  var lines = scala.io.Source.fromFile(fileName).getLines().toBuffer
 
   val file = "data2.txt"
 

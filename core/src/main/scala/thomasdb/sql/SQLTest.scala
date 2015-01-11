@@ -61,7 +61,7 @@ object SQLTest {
     println("Done loading data. Time elapsed:" + elapsed)
 
     println("Input a SQL statement:")
-    for (statement <- io.Source.stdin.getLines;
+    for (statement <- scala.io.Source.stdin.getLines;
          if statement != null){
       before = System.currentTimeMillis()
       println("Running SQL...")
