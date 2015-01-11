@@ -73,7 +73,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
       Array("--algorithms", "map",
             "--chunkSizes", "1", "4",
             "--counts", intensity.toString,
-            "--files", "wiki.xml",
+            "--files", "wiki2.xml",
             "--partitions", "1", "4") ++ defaults)
 
     Experiment.run(conf)
