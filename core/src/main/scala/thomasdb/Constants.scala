@@ -56,5 +56,6 @@ object Constants {
     akka.remote.netty.tcp.maximum-frame-size = 80000000b
   """
 
+  val recordSeparator = 30.toChar
   val unitSeparator = 31.toChar
 }
