@@ -9,15 +9,16 @@ object Generate {
     val output = new BufferedWriter(new OutputStreamWriter(
       new FileOutputStream("wiki.xml"), "utf-8"))
 
+    val rs = 30.toChar
     val us = 31.toChar
-    val s = "1" + us + "asdf\n" +
-            "2" + us + "fdsa\n" +
-            "3" + us + "qwer\n" +
-            "4" + us + "rewq\n" +
-            "5" + us + "zxcv\n" +
-            "6" + us + "vcxz\n" +
-            "7" + us + "uiop\n" +
-            "8" + us + "poiu"
+    val s = rs + "1" + us + "asdf\n" +
+            rs + "2" + us + "fdsa\n" +
+            rs + "3" + us + "qwer\n" +
+            rs + "4" + us + "rewq\n" +
+            rs + "5" + us + "zxcv\n" +
+            rs + "6" + us + "vcxz\n" +
+            rs + "7" + us + "uiop\n" +
+            rs + "8" + us + "poiu" + rs
     output.write(s)
 
     output.close()
