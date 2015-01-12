@@ -233,7 +233,7 @@ class Datastore
            partitionSize)
 
         val regex = Pattern.compile(
-          "(.*?)" + unitSeparator + "(.*?)" + recordSeparator)
+          recordSeparator + "(.*?)" + unitSeparator + "(.*?)" + recordSeparator)
         val str = new String(buf)
         val matcher = regex.matcher(str)
 
@@ -249,7 +249,6 @@ class Datastore
           var remaining = str.substring(end)
           var done = false
           while (!done) {
-
             val smallBuf = new Array[Char](partitionSize.toInt)
             in.read(smallBuf)
 

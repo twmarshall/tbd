@@ -11,13 +11,13 @@ object Generate {
 
     val rs = 30.toChar
     val us = 31.toChar
-    val s = rs + "1" + us + "asdf" +
-            rs + "2" + us + "fdsa" +
-            rs + "3" + us + "qwer" +
-            rs + "4" + us + "rewq" +
-            rs + "5" + us + "zxcv" +
-            rs + "6" + us + "vcxz" +
-            rs + "7" + us + "uiop" +
+    val s = rs + "1" + us + "asdf" + rs +
+            rs + "2" + us + "fdsa" + rs +
+            rs + "3" + us + "qwer" + rs +
+            rs + "4" + us + "rewq" + rs +
+            rs + "5" + us + "zxcv" + rs +
+            rs + "6" + us + "vcxz" + rs +
+            rs + "7" + us + "uiop" + rs +
             rs + "8" + us + "poiu" + rs
     output.write(s)
 
