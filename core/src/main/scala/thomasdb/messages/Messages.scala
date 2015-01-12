@@ -33,6 +33,8 @@ case class NullMessage()
 case class RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef)
 case class SetIdMessage(workerId: WorkerId)
 case class ClearMessage()
+case class CreateListIdsMessage(
+  conf: ListConf, numPartitions: Int, numWorkers: Int, workerIndex: Int)
 
 // Master
 case class RegisterMutatorMessage()

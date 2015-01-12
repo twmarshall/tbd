@@ -43,7 +43,6 @@ class MapAdjust(list: AdjustableList[String, String])
 
 class MapAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[String, AdjustableList[String, Int]](_conf) {
-  val dummyInput = mutator.createList[Int, String](conf.listConf)
   var adjust: MapAdjust = null
 
   val data = new DummyData()

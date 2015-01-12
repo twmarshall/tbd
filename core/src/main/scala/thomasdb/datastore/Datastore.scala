@@ -192,64 +192,78 @@ class Datastore
 
       sender ! "done"
 
-    case CreateListMessage(conf: ListConf) =>
-      val listId = nextListId + ""
-      nextListId += 1
-      val list =
-        if (conf.double) {
-          new DoubleListModifier[Any, Any](this)
-        } else if (conf.chunkSize == 1) {
-          new ListModifier[Any, Any](this)
-        } else {
-          new ChunkListModifier[Any, Any](this, conf)
-        }
+    case CreateListIdsMessage
+        (conf: ListConf,
+         numPartitions: Int,
+         numWorkers: Int,
+         workerIndex: Int) =>
+      val listIds = Buffer[String]()
 
-      lists(listId) = list
+      val newLists = Buffer[ListInput[Any, Any]]()
+      for (i <- 1 to numPartitions) {
+        val listId = nextListId + ""
+        nextListId += 1
+        val list =
+          if (conf.double) {
+            new DoubleListModifier[Any, Any](this)
+          } else if (conf.chunkSize == 1) {
+            new ListModifier[Any, Any](this)
+          } else {
+            new ChunkListModifier[Any, Any](this, conf)
+          }
+
+        lists(listId) = list
+        newLists += list
+        listIds += listId
+      }
 
       if (conf.file != "") {
         val file = new File(conf.file)
         val fileSize = file.length()
 
         val in = new BufferedReader(new FileReader(conf.file))
-        val partitionSize = fileSize / conf.partitions
+        val partitionSize = fileSize / numWorkers
         var buf = new Array[Char](partitionSize.toInt)
 
-        in.skip(partitionSize * conf.partitionIndex)
+        in.skip(partitionSize * workerIndex)
         in.read(buf)
 
         log.debug("Reading " + conf.file + " from " +
-          (partitionSize * conf.partitionIndex) + " length " +
+          (partitionSize * workerIndex) + " length " +
            partitionSize)
 
         val regex = Pattern.compile(
-          recordSeparator + "(.*?)" + unitSeparator + "(.*?)" + recordSeparator)
+          "(.*?)" + unitSeparator + "(.*?)" + recordSeparator)
         val str = new String(buf)
         val matcher = regex.matcher(str)
 
+        var nextList = 0
         var end = 0
         while (matcher.find()) {
-          list.put(matcher.group(1), matcher.group(2))
+          newLists(nextList).put(matcher.group(1), matcher.group(2))
           end = matcher.end()
+          nextList = (nextList + 1) % newLists.size
         }
 
-        if (conf.partitionIndex != conf.partitions - 1) {
+        if (workerIndex != numWorkers - 1) {
           var remaining = str.substring(end)
           var done = false
           while (!done) {
+
             val smallBuf = new Array[Char](partitionSize.toInt)
             in.read(smallBuf)
 
             remaining += new String(smallBuf)
             val matcher = regex.matcher(remaining)
             if (matcher.find()) {
-              list.put(matcher.group(1), matcher.group(2))
+              newLists.head.put(matcher.group(1), matcher.group(2))
               done = true
             }
           }
         }
       }
 
-      sender ! listId
+      sender ! listIds
 
     case GetAdjustableListMessage(listId: String) =>
       sender ! lists(listId).getAdjustableList()

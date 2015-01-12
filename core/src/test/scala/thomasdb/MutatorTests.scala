@@ -15,6 +15,7 @@
  */
 package thomasdb.test
 
+import scala.collection.mutable.Buffer
 import org.scalatest._
 
 import thomasdb._
@@ -23,6 +24,13 @@ import thomasdb.util._
 
 class ListTest(input: ListInput[Int, Int])
   extends Adjustable[AdjustableList[Int, Int]] {
+  def run(implicit c: Context) = {
+    input.getAdjustableList()
+  }
+}
+
+class FileLoadTest(input: ListInput[String, String])
+  extends Adjustable[AdjustableList[String, String]] {
   def run(implicit c: Context) = {
     input.getAdjustableList()
   }
@@ -87,6 +95,26 @@ class MutatorTests extends FlatSpec with Matchers {
 
         mutator.shutdown()
       }
+    }
+  }
+
+  "FileLoadTest" should "load the file data correctly" in {
+    for (partitions <- List(1, 2, 4);
+         chunkSize <- List(1, 2)) {
+      val mutator = new Mutator()
+
+      val conf = new ListConf(
+        partitions = partitions, chunkSize = chunkSize, file = "wiki2.xml")
+      val input = mutator.createList[String, String](conf)
+
+      val output = mutator.run(new FileLoadTest(input))
+      val answer =
+        Buffer(("1", "asdf"), ("2", "fdsa"), ("3", "qwer"), ("4", "rewq"),
+               ("5", "zxcv"), ("6", "vcxz"), ("7", "uiop"), ("8", "poiu"))
+
+      assert(output.toBuffer(mutator) == answer)
+
+      mutator.shutdown()
     }
   }
 
