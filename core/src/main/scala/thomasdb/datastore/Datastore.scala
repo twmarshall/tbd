@@ -249,7 +249,7 @@ class Datastore
           var remaining = str.substring(end)
           var done = false
           while (!done) {
-            val smallBuf = new Array[Char](partitionSize.toInt)
+            val smallBuf = new Array[Char](4096)
             in.read(smallBuf)
 
             remaining += new String(smallBuf)
