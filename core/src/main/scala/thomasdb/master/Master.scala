@@ -173,7 +173,7 @@ class Master extends Actor with ActorLogging {
             }
           val future = datastoreRef ? CreateListIdsMessage(
             conf, partitions, workers.size, index)
-          futures += ((future.mapTo[Buffer[String]], datastoreRef, nextWorker))
+          futures += ((future.mapTo[Buffer[String]], datastoreRef, workerId))
 
           index += 1
         }
