@@ -222,27 +222,47 @@ class Datastore
         val fileSize = file.length()
 
         val in = new BufferedReader(new FileReader(conf.file))
-        val partitionSize = fileSize / numWorkers
-        var buf = new Array[Char](partitionSize.toInt)
+        val totalReadSize = fileSize / numWorkers
 
-        in.skip(partitionSize * workerIndex)
-        in.read(buf)
+        val numReads =
+          if (totalReadSize > Int.MaxValue) {
+            (totalReadSize / Int.MaxValue).toInt + 1
+          } else {
+            1
+          }
 
-        log.debug("Reading " + conf.file + " from " +
-          (partitionSize * workerIndex) + " length " +
-           partitionSize)
+        in.skip(totalReadSize * workerIndex)
 
         val regex = Pattern.compile(
           recordSeparator + "(.*?)" + unitSeparator + "(.*?)" + recordSeparator)
-        val str = new String(buf)
-        val matcher = regex.matcher(str)
 
-        var nextList = 0
         var end = 0
-        while (matcher.find()) {
-          newLists(nextList).put(matcher.group(1), matcher.group(2))
-          end = matcher.end()
-          nextList = (nextList + 1) % newLists.size
+        var str = ""
+        for (i <- 1 to numReads) {
+          val readSize =
+            if (i == numReads && totalReadSize % numReads != 0) {
+              totalReadSize % numReads
+            } else {
+              totalReadSize / numReads
+            }
+
+          var buf = new Array[Char](readSize.toInt)
+
+          in.read(buf)
+
+          log.debug("Reading " + conf.file + " from " +
+                    (totalReadSize * workerIndex) + " length " +
+                    totalReadSize)
+
+          str = new String(buf)
+          val matcher = regex.matcher(str)
+
+          var nextList = 0
+          while (matcher.find()) {
+            newLists(nextList).put(matcher.group(1), matcher.group(2))
+            end = matcher.end()
+            nextList = (nextList + 1) % newLists.size
+          }
         }
 
         if (workerIndex != numWorkers - 1) {
