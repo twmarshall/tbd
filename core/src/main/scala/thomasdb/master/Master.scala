@@ -163,10 +163,9 @@ class Master extends Actor with ActorLogging {
         var index = 0
         for ((workerId, workerRef) <- workers) {
           val datastoreRef = datastoreRefs(workerId)
-
           val partitions =
             if (index == workers.size - 1 &&
-                workers.size % partitionsPerWorker != 0) {
+                conf.partitions % workers.size != 0) {
               workers.size % partitionsPerWorker
             } else {
               partitionsPerWorker
