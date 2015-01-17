@@ -25,16 +25,18 @@ class HashPartitionedDoubleListInput[T, U]
 
   val workerIds = workers.keys.toBuffer
 
+  val partitions = workers.flatMap {
+    case (workerId, buf) => buf
+  }.toBuffer
+
   val nextPartition = workerIds.map(_ => 0)
 
   val numWorkers = workerIds.size
 
+  val numPartitions = partitions.size
+
   private def getPartition(key: T) = {
-    val worker = workerIds(key.hashCode() % numWorkers)
-
-    nextPartition(worker) = (nextPartition(worker) + 1) % workers(worker).size
-
-    workers(worker)(nextPartition(worker))
+    partitions(key.hashCode() % numPartitions)
   }
 
   def put(key: T, value: U) = {

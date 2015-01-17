@@ -121,14 +121,18 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
     val writer = new BufferedWriter(new OutputStreamWriter(
       new FileOutputStream("wc-output.txt"), "utf-8"))
 
-    val sortedOutput = output.toBuffer.map((x: Mod[(Int, HashMap[String, Int])]) => {
-      mutator.read(x)
+    val sortedOutput = output.toBuffer.flatMap((x: Mod[(Int, HashMap[String, Int])]) => {
+      val v = mutator.read(x)
+
+      if (v == null) {
+        List()
+      } else {
+        v._2
+      }
     }).sortWith(_._1 < _._1)
 
-    for ((key, hashMap) <- sortedOutput) {
-      for ((word, count) <- hashMap.toBuffer.sortWith(_._1 < _._1)) {
-        writer.write(word + " -> " + count + "\n")
-      }
+    for ((word, count) <- sortedOutput) {
+      writer.write(word + " -> " + count + "\n")
     }
     writer.close()
 
