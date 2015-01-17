@@ -112,7 +112,7 @@ class MutatorTests extends FlatSpec with Matchers {
         Buffer(("1", "asdf"), ("2", "fdsa"), ("3", "qwer"), ("4", "rewq"),
                ("5", "zxcv"), ("6", "vcxz"), ("7", "uiop"), ("8", "poiu"))
 
-      assert(output.toBuffer(mutator) == answer)
+      assert(output.toBuffer(mutator).sortWith(_._1 < _._1) == answer)
 
       mutator.shutdown()
     }
