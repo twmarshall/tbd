@@ -28,7 +28,7 @@ class ChunkList[T, U]
      val workerId: WorkerId = -1)
   extends AdjustableList[T, U] with Serializable {
 
-  override def chunkMap[V, W](f: (Vector[(T, U)]) => (V, W))
+  override def chunkMap[V, W](f: Iterable[(T, U)] => (V, W))
       (implicit c: Context): ModList[V, W] = {
     val memo = new Memoizer[Mod[ModListNode[V, W]]]()
 

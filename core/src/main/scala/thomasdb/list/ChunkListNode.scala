@@ -30,7 +30,7 @@ class ChunkListNode[T, U]
      val size: Int = 0) extends Serializable {
 
   def chunkMap[V, W]
-      (f: (Vector[(T, U)]) => (V, W),
+      (f: Iterable[(T, U)] => (V, W),
        memo: Memoizer[Mod[ModListNode[V, W]]])
       (implicit c: Context): Changeable[ModListNode[V, W]] = {
     val newNextMod = memo(nextMod) {

@@ -39,7 +39,7 @@ class MemoryExperiment(input: ListInput[Int, String])
     (pair1._1, WCAlgorithm.reduce(pair1._2, pair2._2))
    }
 
-  def chunkMapper(chunk: Vector[(Int, String)]) = {
+  def chunkMapper(chunk: Iterable[(Int, String)]) = {
     var counts = Map[String, Int]()
 
     for (page <- chunk) {

@@ -25,7 +25,7 @@ class PartitionedChunkList[T, U]
     (val partitions: Buffer[ChunkList[T, U]],
      conf: ListConf) extends AdjustableList[T, U] with Serializable {
 
-  override def chunkMap[V, W](f: (Vector[(T, U)]) => (V, W))
+  override def chunkMap[V, W](f: Iterable[(T, U)] => (V, W))
       (implicit c: Context): PartitionedModList[V, W] = {
     def innerChunkMap(i: Int)(implicit c: Context): Buffer[ModList[V, W]] = {
       if (i < partitions.size) {

@@ -33,7 +33,7 @@ trait AdjustableList[T, U] {
    * function to each chunk of this AdjustableList. Only defined for chunked
    * lists.
    */
-  def chunkMap[V, W](f: (Vector[(T, U)]) => (V, W))
+  def chunkMap[V, W](f: Iterable[(T, U)] => (V, W))
       (implicit c: Context): AdjustableList[V, W] = ???
 
   /**

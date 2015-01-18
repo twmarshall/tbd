@@ -246,7 +246,7 @@ class WCAlgorithm(_conf: AlgorithmConf)
 class ChunkWCAdjust(list: AdjustableList[Int, String])
   extends Adjustable[Mod[(Int, HashMap[String, Int])]] {
 
-  def chunkMapper(chunk: Vector[(Int, String)]) = {
+  def chunkMapper(chunk: Iterable[(Int, String)]) = {
     var counts = Map[String, Int]()
 
     for (page <- chunk) {

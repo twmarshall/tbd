@@ -127,7 +127,7 @@ object Wordcount {
     (pair1._1, reduce(pair1._2, pair2._2))
   }
 
-  def chunkMapper(chunk: Vector[(String, String)]) = {
+  def chunkMapper(chunk: Iterable[(String, String)]) = {
     var counts = Map[String, Int]()
 
     for (page <- chunk) {
