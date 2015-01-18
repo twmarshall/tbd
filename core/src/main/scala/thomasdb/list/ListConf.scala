@@ -18,7 +18,6 @@ package thomasdb.list
 case class ListConf
     (file: String = "",
      partitions: Int = 8,
-     partitionIndex: Int = 0,
      chunkSize: Int = 1,
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
