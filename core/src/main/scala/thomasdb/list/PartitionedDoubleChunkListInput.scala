@@ -18,7 +18,8 @@ package thomasdb.list
 import scala.collection.mutable.{Buffer, Map}
 
 class PartitionedDoubleChunkListInput[T, U]
-    (partitions: Buffer[DoubleChunkListInput[T, U]])
+    (partitions: Buffer[DoubleChunkListInput[T, U]],
+     conf: ListConf)
   extends ListInput[T, U] with java.io.Serializable {
 
   def put(key: T, value: U) = {
@@ -51,6 +52,6 @@ class PartitionedDoubleChunkListInput[T, U]
       adjustablePartitions += partition.getAdjustableList()
     }
 
-    new PartitionedDoubleChunkList(adjustablePartitions)
+    new PartitionedDoubleChunkList(adjustablePartitions, conf)
   }
 }

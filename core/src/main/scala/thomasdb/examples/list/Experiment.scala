@@ -234,7 +234,10 @@ object Experiment {
             else
               new WCAlgorithm(algConf)
           case "wch" =>
-            new WCHashAlgorithm(algConf)
+            if (listConf.chunkSize > 1)
+              new WCChunkHashAlgorithm(algConf)
+            else
+              new WCHashAlgorithm(algConf)
         }
 
         val results = alg.run()

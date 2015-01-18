@@ -15,7 +15,6 @@
  */
 package thomasdb.examples.list
 
-import java.io._
 import scala.collection.{GenIterable, GenMap}
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.Map
@@ -26,119 +25,6 @@ import thomasdb._
 import thomasdb.list._
 import thomasdb.ThomasDB._
 import thomasdb.util._
-
-class WCHashAdjust(list: AdjustableList[String, String], mappedPartitions: Int)
-    extends Adjustable[Iterable[Mod[(Int, HashMap[String, Int])]]] {
-
-  def wordcount(pair: (String, String)) = {
-    val counts = Map[Int, Map[String, Int]]()
-
-    for (i <- 0 until mappedPartitions) {
-      counts(i) = Map[String, Int]()
-    }
-
-    for (word <- pair._2.split("\\W+")) {
-      val hash = word.hashCode().abs % mappedPartitions
-      if (counts(hash).contains(word)) {
-        counts(hash)(word) += 1
-      } else {
-        counts(hash)(word) = 1
-      }
-    }
-
-    counts.map((pair: (Int, Map[String, Int])) => {
-      (pair._1, HashMap(pair._2.toSeq: _*))
-    })
-  }
-
-  def reducer
-      (pair1: (Int, HashMap[String, Int]),
-       pair2: (Int, HashMap[String, Int])) = {
-    val reduced = reduce(pair1._2, pair2._2)
-    (pair1._1, reduced)
-  }
-
-  def reduce(map1: HashMap[String, Int], map2: HashMap[String, Int]) = {
-    map1.merged(map2)({ case ((k, v1),(_, v2)) => (k, v1 + v2)})
-  }
-
-  var mapped: AdjustableList[Int, HashMap[String, Int]] = _
-  def run(implicit c: Context) = {
-    mapped = list.hashPartitionedFlatMap(wordcount, mappedPartitions)
-    mapped.partitionedReduce(reducer)
-  }
-}
-
-class WCHashAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, Iterable[Mod[(Int, HashMap[String, Int])]]](_conf) {
-  //val input = mutator.createList[Int, String](conf.listConf.copy(double = true))
-
-  //val data = new StringData(input, conf.count, conf.mutations, Experiment.check, conf.runs)
-  //val data = new StringFileData(input, "data.txt")
-  val data = new DummyData()
-
-  var adjust: WCHashAdjust = null
-    //new WCHashAdjust(input.getAdjustableList(), conf.listConf.partitions)
-
-  var naiveTable: ParIterable[String] = _
-  def generateNaive() {
-    /*data.generate()
-    naiveTable = Vector(data.table.values.toSeq: _*).par
-    naiveTable.tasksupport =
-      new ForkJoinTaskSupport(new ForkJoinPool(conf.listConf.partitions * 2))*/
-  }
-
-  def runNaive() {
-    //naiveHelper(naiveTable)
-  }
-
-  private def naiveHelper(input: GenIterable[String] = naiveTable) = {
-    input.aggregate(Map[String, Int]())((x, line) =>
-      WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
-  }
-
-  var input: ListInput[String, String] = null
-  override def loadInitial() {
-    input =
-      mutator.createList[String, String](
-        conf.listConf.copy(file = conf.file, double = true))
-    adjust = new WCHashAdjust(input.getAdjustableList(), 2)
-  }
-
-  def checkOutput(output: Iterable[Mod[(Int, HashMap[String, Int])]]) = {
-    /*val answer = naiveHelper(data.table.values)
-    var out = HashMap[String, Int]()
-
-    for (mod <- output) {
-      val value = mutator.read(mod)
-      if (value != null) {
-        out = out ++ value._2
-      }
-    }
-
-    out == answer*/
-
-    val writer = new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream("wc-output.txt"), "utf-8"))
-
-    val sortedOutput = output.toBuffer.flatMap((x: Mod[(Int, HashMap[String, Int])]) => {
-      val v = mutator.read(x)
-
-      if (v == null) {
-        List()
-      } else {
-        v._2
-      }
-    }).sortWith(_._1 < _._1)
-
-    for ((word, count) <- sortedOutput) {
-      writer.write(word + " -> " + count + "\n")
-    }
-    writer.close()
-
-    true
-  }
-}
 
 object WCAlgorithm {
   def wordcount(s: String): HashMap[String, Int] = {

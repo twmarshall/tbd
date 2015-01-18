@@ -26,35 +26,40 @@ import thomasdb.messages._
 import thomasdb.ThomasDB._
 
 class PartitionedDoubleChunkList[T, U]
-    (val partitions: Buffer[DoubleChunkList[T, U]])
+    (val partitions: Buffer[DoubleChunkList[T, U]],
+     conf: ListConf)
   extends AdjustableList[T, U] with Serializable {
 
   println("new PartitionedDoubleChunkList")
-
-  override def chunkMap[V, W](f: Iterable[(T, U)] => (V, W))
-      (implicit c: Context): PartitionedDoubleList[V, W] = {
-    def innerChunkMap(i: Int)(implicit c: Context): Buffer[DoubleList[V, W]] = {
-      if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = parWithHint({
-          c => partitions(i).chunkMap(f)(c).asInstanceOf[DoubleList[V, W]]
-        }, partitions(i).workerId)({
-          c => innerChunkMap(i + 1)(c)
-        })
-
-        mappedRest += mappedPartition
-      } else {
-        Buffer[DoubleList[V, W]]()
-      }
-    }
-
-    new PartitionedDoubleList(innerChunkMap(0))
-  }
 
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): PartitionedDoubleChunkList[T, U] = ???
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): PartitionedDoubleChunkList[V, W] = ???
+
+  override def hashChunkMap[V, W](f: Iterable[(T, U)] => Iterable[(V, W)])
+      (implicit c: Context): AdjustableList[V, W] = {
+    val _conf = ListConf(
+      partitions = partitions.size, double = true, hash = true)
+    val future = c.masterRef ? CreateListMessage(_conf)
+    val input = Await.result(
+      future.mapTo[HashPartitionedDoubleListInput[V, W]], DURATION)
+
+    def innerChunkMap(i: Int)(implicit c: Context) {
+      if (i < partitions.size) {
+        val (mappedPartition, mappedRest) = parWithHint({
+          c => partitions(i).hashChunkMap(f, input)(c)
+        }, partitions(i).workerId)({
+          c => innerChunkMap(i + 1)(c)
+        })
+      }
+    }
+
+    innerChunkMap(0)
+
+    input.getAdjustableList()
+  }
 
   override def hashPartitionedFlatMap[V, W]
       (f: ((T, U)) => Iterable[(V, W)],
@@ -100,7 +105,7 @@ class PartitionedDoubleChunkList[T, U]
       }
     }
 
-    new PartitionedDoubleChunkList(innerMap(0))
+    new PartitionedDoubleChunkList(innerMap(0), conf)
   }
 
   def reduce(f: ((T, U), (T, U)) => (T, U))

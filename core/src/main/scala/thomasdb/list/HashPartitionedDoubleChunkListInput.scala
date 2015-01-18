@@ -20,7 +20,8 @@ import scala.collection.mutable.{Buffer, Map}
 import thomasdb.Constants.WorkerId
 
 class HashPartitionedDoubleChunkListInput[T, U]
-    (workers: Map[WorkerId, Buffer[DoubleChunkListInput[T, U]]])
+    (workers: Map[WorkerId, Buffer[DoubleChunkListInput[T, U]]],
+     conf: ListConf)
   extends ListInput[T, U] with java.io.Serializable {
 
   val workerIds = workers.keys.toBuffer
@@ -72,6 +73,6 @@ class HashPartitionedDoubleChunkListInput[T, U]
       }
     }
 
-    new HashPartitionedDoubleChunkList(adjustablePartitions)
+    new HashPartitionedDoubleChunkList(adjustablePartitions, conf)
   }
 }

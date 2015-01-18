@@ -198,31 +198,55 @@ class Master extends Actor with ActorLogging {
         }
       }
 
-      val input =
-        if (conf.double) {
-          if (conf.hash) {
-            val partitions = Map[WorkerId, Buffer[DoubleListInput[Any, Any]]]()
-            makePartitions {
-              case (listId, datastoreRef, workerId) =>
-                if (partitions.contains(workerId)) {
-                  partitions(workerId) +=
-                    new DoubleListInput(listId, datastoreRef)
-                } else {
-                  partitions(workerId) =
-                    Buffer(new DoubleListInput(listId, datastoreRef))
-                }
-            }
-
-            new HashPartitionedDoubleListInput(partitions)
-          } else {
-            val partitions = Buffer[DoubleListInput[Any, Any]]()
-            makePartitions {
-              case (listId, datastoreRef, workerId) =>
-                partitions += new DoubleListInput(listId, datastoreRef)
-            }
-            new PartitionedDoubleListInput(partitions)
+      val input = conf match {
+        case ListConf(file, partitions, partitionIndex, 1, chunkSizer, sorted, true, true) =>
+          val partitions = Map[WorkerId, Buffer[DoubleListInput[Any, Any]]]()
+          makePartitions {
+            case (listId, datastoreRef, workerId) =>
+              if (partitions.contains(workerId)) {
+                partitions(workerId) +=
+                  new DoubleListInput(listId, datastoreRef)
+              } else {
+                partitions(workerId) =
+                  Buffer(new DoubleListInput(listId, datastoreRef))
+              }
           }
-        } else if (conf.chunkSize == 1) {
+
+          new HashPartitionedDoubleListInput(partitions)
+
+        case ListConf(file, partitions, partitionIndex, chunkSize, chunkSizer, sorted, true, true) =>
+          val partitions = Map[WorkerId, Buffer[DoubleChunkListInput[Any, Any]]]()
+          makePartitions {
+            case (listId, datastoreRef, workerId) =>
+              if (partitions.contains(workerId)) {
+                partitions(workerId) +=
+                  new DoubleChunkListInput(listId, datastoreRef)
+              } else {
+                partitions(workerId) =
+                  Buffer(new DoubleChunkListInput(listId, datastoreRef))
+              }
+          }
+
+          new HashPartitionedDoubleChunkListInput(partitions, conf)
+
+        case ListConf(file, partitions, partitionIndex, 1, chunkSizer, sorted, true, false) =>
+          val partitions = Buffer[DoubleListInput[Any, Any]]()
+          makePartitions {
+            case (listId, datastoreRef, workerId) =>
+              partitions += new DoubleListInput(listId, datastoreRef)
+          }
+          new PartitionedDoubleListInput(partitions)
+
+        case ListConf(file, partitions, partitionIndex, chunkSize, chunkSizer, sorted, true, false) =>
+          val partitions = Buffer[DoubleChunkListInput[Any, Any]]()
+          makePartitions {
+            case (listId, datastoreRef, workerId) =>
+              partitions += new DoubleChunkListInput(listId, datastoreRef)
+          }
+          new PartitionedDoubleChunkListInput(partitions, conf)
+
+        case ListConf(file, partitions, partitionIndex, chunkSize, chunkSizer, sorted, false, hash) =>
+        if (conf.chunkSize == 1) {
           if (conf.partitions == 1) {
             makeList(new ModListInput(_, _))
           } else {
@@ -248,6 +272,7 @@ class Master extends Actor with ActorLogging {
             new PartitionedChunkListInput2(partitions, conf)
           }
         }
+      }
 
       sender ! input
 

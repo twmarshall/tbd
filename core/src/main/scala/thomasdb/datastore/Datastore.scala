@@ -205,7 +205,10 @@ class Datastore
         nextListId += 1
         val list =
           if (conf.double) {
-            new DoubleListModifier[Any, Any](this)
+            if (conf.chunkSize == 1)
+              new DoubleListModifier[Any, Any](this)
+            else
+              new DoubleChunkListModifier[Any, Any](this, conf)
           } else if (conf.chunkSize == 1) {
             new ListModifier[Any, Any](this)
           } else {

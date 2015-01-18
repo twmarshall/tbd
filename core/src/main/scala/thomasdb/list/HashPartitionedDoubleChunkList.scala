@@ -23,8 +23,9 @@ import thomasdb.Constants.WorkerId
 import thomasdb.ThomasDB._
 
 class HashPartitionedDoubleChunkList[T, U]
-    (_partitions: Map[WorkerId, Buffer[DoubleChunkList[T, U]]])
-  extends PartitionedDoubleChunkList[T, U](_partitions.flatMap(_._2).toBuffer) with Serializable {
+    (_partitions: Map[WorkerId, Buffer[DoubleChunkList[T, U]]],
+     conf: ListConf)
+  extends PartitionedDoubleChunkList[T, U](_partitions.flatMap(_._2).toBuffer, conf) with Serializable {
 
   println("new HashPartitionedDoubleChunkList")
 

@@ -24,29 +24,28 @@ import thomasdb.ThomasDB._
 
 class DoubleChunkList[T, U]
     (val head: Mod[DoubleChunkListNode[T, U]],
+     conf: ListConf,
      val sorted: Boolean = false,
      val workerId: WorkerId = -1)
   extends AdjustableList[T, U] with Serializable {
-
-  override def chunkMap[V, W](f: Iterable[(T, U)] => (V, W))
-      (implicit c: Context): DoubleList[V, W] = {
-    val memo = new Memoizer[Mod[DoubleListNode[V, W]]]()
-
-    new DoubleList(
-      mod {
-        read(head) {
-          case null => write[DoubleListNode[V, W]](null)
-          case node => node.chunkMap(f, memo)
-        }
-      }, false, workerId
-    )
-  }
 
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): DoubleChunkList[T, U] = ???
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): DoubleChunkList[V, W] = ???
+
+  def hashChunkMap[V, W]
+      (f: Iterable[(T, U)] => Iterable[(V, W)],
+       input: ListInput[V, W])
+      (implicit c: Context): Unit = {
+    val memo = new Memoizer[Unit]()
+
+    readAny(head) {
+      case null =>
+      case node => node.hashChunkMap(f, input, memo)
+    }
+  }
 
   def hashPartitionedFlatMap[V, W]
       (f: ((T, U)) => Iterable[(V, W)],
@@ -73,7 +72,7 @@ class DoubleChunkList[T, U]
           case null => write[DoubleChunkListNode[V, W]](null)
           case node => node.map(f, memo, modizer)
         }
-      }, false, workerId
+      }, conf, false, workerId
     )
   }
 

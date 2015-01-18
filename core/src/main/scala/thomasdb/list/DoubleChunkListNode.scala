@@ -22,29 +22,30 @@ import thomasdb._
 import thomasdb.ThomasDB._
 
 class DoubleChunkListNode[T, U]
-    (var chunkMod: Mod[Iterable[(T, U)]],
-     val nextMod: Mod[DoubleChunkListNode[T, U]]) extends Serializable {
+    (var chunkMod: Mod[Vector[(T, U)]],
+     val nextMod: Mod[DoubleChunkListNode[T, U]],
+     val size: Int = 0) extends Serializable {
 
-  def chunkMap[V, W]
-      (f: Iterable[(T, U)] => (V, W),
-       memo: Memoizer[Mod[DoubleListNode[V, W]]])
-      (implicit c: Context): Changeable[DoubleListNode[V, W]] = {
-    val newChunkMod = mod {
-      read(chunkMod) {
-        case chunk => write(f(chunk))
-      }
-    }
-
-    val newNextMod = memo(nextMod) {
-      mod {
-        read(nextMod) {
-          case null => write[DoubleListNode[V, W]](null)
-          case node => node.chunkMap(f, memo)
+  def hashChunkMap[V, W]
+      (f: Iterable[(T, U)] => Iterable[(V, W)],
+       input: ListInput[V, W],
+       memo: Memoizer[Unit])
+      (implicit c: Context): Unit = {
+    readAny(chunkMod) {
+      case chunk =>
+        val out = f(chunk)
+        for (pair <- out) {
+          put(input, pair._1, pair._2)
         }
-      }
     }
 
-    write(new DoubleListNode[V, W](newChunkMod, newNextMod))
+    readAny(nextMod) {
+      case null => write[DoubleListNode[V, W]](null)
+      case node =>
+        memo(node) {
+          node.hashChunkMap(f, input, memo)
+        }
+    }
   }
 
   def hashPartitionedFlatMap[V, W]
