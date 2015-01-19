@@ -33,6 +33,7 @@ case class AlgorithmConf(
   def apply(param: String): String =
     param match {
       case "algorithms" => algorithm
+      case "chunkSizes" => listConf.chunkSize.toString
       case "counts" => count.toString
       case "files" => file
       case "partitions" => listConf.partitions.toString
