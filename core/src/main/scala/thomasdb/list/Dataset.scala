@@ -15,12 +15,27 @@
  */
 package thomasdb.list
 
-case class ListConf
-    (file: String = "",
-     partitions: Int = 8,
-     chunkSize: Int = 1,
-     chunkSizer: Any => Int = _ => 1,
-     sorted: Boolean = false,
-     double: Boolean = false,
-     hash: Boolean = false,
-     partitioned: Boolean = false)
+import scala.collection.mutable.Map
+
+import thomasdb.Constants.WorkerId
+
+trait Dataset[T, U] extends ListInput[T, U] {
+  def numPartitions: Int = getPartitions.size
+
+  def getPartitions: Iterable[Partition[T, U]]
+
+  def getPartitionsByWorker(): Map[WorkerId, Iterable[Partition[T, U]]] = {
+    val output = Map[WorkerId, Iterable[Partition[T, U]]]()
+
+    for (partition <- getPartitions) {
+      if (output.contains(partition.workerId)) {
+        output(partition.workerId) =
+          output(partition.workerId) ++ List(partition)
+      } else {
+        output(partition.workerId) = Iterable(partition)
+      }
+    }
+
+    output
+  }
+}

@@ -22,7 +22,7 @@ import scala.language.existentials
 import thomasdb.{Adjustable, Changeable, ThomasDB}
 import thomasdb.Constants._
 import thomasdb.ddg.Node
-import thomasdb.list.ListConf
+import thomasdb.list.{Dataset, ListConf, Partition}
 
 // Datastore
 case class CreateModMessage(value: Any)
@@ -33,8 +33,12 @@ case class NullMessage()
 case class RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef)
 case class SetIdMessage(workerId: WorkerId)
 case class ClearMessage()
-case class CreateListIdsMessage(
-  conf: ListConf, numPartitions: Int, numWorkers: Int, workerIndex: Int)
+case class CreateListIdsMessage(conf: ListConf, numPartitions: Int)
+case class LoadPartitionsMessage(
+  fileName: String,
+  partitions: Iterable[Partition[String, String]],
+  numWorkers: Int,
+  workerIndex: Int)
 
 // Master
 case class RegisterMutatorMessage()
@@ -45,6 +49,7 @@ case class ScheduleTaskMessage(parent: ActorRef, workerId: WorkerId)
 case class ShutdownMutatorMessage(mutatorId: Int)
 
 case class CreateListMessage(conf: ListConf)
+case class LoadFileMessage(fileName: String, dataset: Dataset[String, String])
 case class GetAdjustableListMessage(listId: String)
 case class PutMessage(listId: String, key: Any, value: Any)
 case class UpdateMessage(listId: String, key: Any, value: Any)

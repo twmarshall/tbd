@@ -25,7 +25,7 @@ import thomasdb.Constants._
 import thomasdb.ddg.DDG
 import thomasdb.master.MasterConnector
 import thomasdb.messages._
-import thomasdb.list.{ListConf, ListInput}
+import thomasdb.list.{Dataset, ListConf, ListInput}
 
 class Mutator(_connector: MasterConnector = null) {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -68,6 +68,11 @@ class Mutator(_connector: MasterConnector = null) {
   def createList[T, U](conf: ListConf = new ListConf()): ListInput[T, U] = {
     val future = masterRef ? CreateListMessage(conf)
     Await.result(future.mapTo[ListInput[T, U]], DURATION)
+  }
+
+  def loadFile(fileName: String, dataset: Dataset[String, String]) {
+    val future = masterRef ? LoadFileMessage(fileName, dataset)
+    Await.result(future, DURATION)
   }
 
   def run[T](adjust: Adjustable[T]): T = {

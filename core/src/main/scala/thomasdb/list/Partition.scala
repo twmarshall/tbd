@@ -13,28 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.examples.list
+package thomasdb.list
 
-import thomasdb.list.ListConf
+import thomasdb.Constants.WorkerId
 
-case class AlgorithmConf(
-  algorithm: String,
-  cacheSize: Int,
-  count: Int,
-  file: String,
-  master: String,
-  mutations: List[String],
-  runs: List[String],
-  repeat: Int,
-  store: String,
-  updateFile: String,
-  listConf: ListConf) {
+trait Partition[T, U] extends ListInput[T, U] {
+  def partitionId: String
 
-  def apply(param: String): String =
-    param match {
-      case "algorithms" => algorithm
-      case "counts" => count.toString
-      case "files" => file
-      case "partitions" => listConf.partitions.toString
-    }
+  def workerId: WorkerId
 }

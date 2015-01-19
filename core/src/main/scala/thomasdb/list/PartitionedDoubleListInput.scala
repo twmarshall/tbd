@@ -19,31 +19,36 @@ import scala.collection.mutable.{Buffer, Map}
 
 class PartitionedDoubleListInput[T, U]
     (partitions: Buffer[DoubleListInput[T, U]])
-  extends ListInput[T, U] with java.io.Serializable {
+  extends Dataset[T, U] with java.io.Serializable {
+
+  private def getPartition(key: T) =
+    partitions(key.hashCode().abs % partitions.size)
 
   def put(key: T, value: U) = {
-    partitions(key.hashCode() % partitions.size).put(key, value)
+    getPartition(key).put(key, value)
   }
 
   def asyncPut(key: T, value: U) = {
-    partitions(key.hashCode() % partitions.size).asyncPut(key, value)
+    getPartition(key).asyncPut(key, value)
   }
 
   def update(key: T, value: U) = {
-    partitions(key.hashCode() % partitions.size).update(key, value)
+    getPartition(key).update(key, value)
   }
 
   def remove(key: T, value: U) = {
-    partitions(key.hashCode() % partitions.size).remove(key, value)
+    getPartition(key).remove(key, value)
   }
 
   def load(data: Map[T, U]) = {
     for ((key, value) <- data) {
-      partitions(key.hashCode() % partitions.size).put(key, value)
+      getPartition(key).put(key, value)
     }
   }
 
   def putAfter(key: T, newPair: (T, U)) = ???
+
+  def getPartitions = partitions
 
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[DoubleList[T, U]]()

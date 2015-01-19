@@ -21,7 +21,7 @@ import thomasdb.Constants.WorkerId
 
 class HashPartitionedDoubleListInput[T, U]
     (workers: Map[WorkerId, Buffer[DoubleListInput[T, U]]])
-  extends ListInput[T, U] with java.io.Serializable {
+  extends Dataset[T, U] with java.io.Serializable {
 
   val workerIds = workers.keys.toBuffer
 
@@ -32,8 +32,6 @@ class HashPartitionedDoubleListInput[T, U]
   val nextPartition = workerIds.map(_ => 0)
 
   val numWorkers = workerIds.size
-
-  val numPartitions = partitions.size
 
   private def getPartition(key: T) = {
     partitions(key.hashCode() % numPartitions)
@@ -62,6 +60,8 @@ class HashPartitionedDoubleListInput[T, U]
   }
 
   def putAfter(key: T, newPair: (T, U)) = ???
+
+  def getPartitions = partitions
 
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Map[WorkerId, Buffer[DoubleList[T, U]]]()

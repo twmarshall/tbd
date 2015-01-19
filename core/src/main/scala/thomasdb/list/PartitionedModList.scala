@@ -84,7 +84,7 @@ class PartitionedModList[T, U]
 
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): PartitionedModList[V, W] = {
-    println("PartitionedModList.map")
+    c.log.debug("PartitionedModList.map")
     def innerMap(i: Int)(implicit c: Context): Buffer[ModList[V, W]] = {
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({

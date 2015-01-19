@@ -76,7 +76,7 @@ class ModList[T, U]
 
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): ModList[V, W] = {
-    val memo = new Memoizer[Changeable[ModListNode[V, W]]]()
+    val memo = new Memoizer[Mod[ModListNode[V, W]]]()
     val modizer = new Modizer1[ModListNode[V, W]]()
 
     new ModList(

@@ -44,48 +44,20 @@ class MapAdjust(list: AdjustableList[String, String])
 
 class MapAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[String, AdjustableList[String, Int]](_conf) {
-  var adjust: MapAdjust = null
+  val input = mutator.createList[String, String](conf.listConf.copy(partitioned = true, double = true))
 
-  val data = new DummyData()
+  val adjust = new MapAdjust(input.getAdjustableList())
+
+  val data = new FileData(
+    mutator, input.asInstanceOf[Dataset[String, String]], conf.file, conf.updateFile, conf.runs)
   //val data = new StringFileData(input, conf.file)
 
   var naiveTable: ParIterable[String] = _
-  def generateNaive() {
-    /*data.generate()
-    naiveTable = Vector(data.table.values.toSeq: _*).par
-    naiveTable.tasksupport =
-      new ForkJoinTaskSupport(new ForkJoinPool(conf.listConf.partitions * 2))*/
-  }
+  def generateNaive() {}
 
-  def runNaive() {
-    //naiveHelper(naiveTable)
-  }
-
-  private def naiveHelper(input: GenIterable[(String, String)]) = {
-    input.map(MapAlgorithm.mapper)
-  }
-
-  var input: ListInput[String, String] = null
-  override def loadInitial() {
-    input =
-      mutator.createList[String, String](
-        conf.listConf.copy(file = conf.file))
-    adjust = new MapAdjust(input.getAdjustableList())
-  }
+  def runNaive() {}
 
   def checkOutput(output: AdjustableList[String, Int]) = {
-    /*val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
-    val sortedAnswer =
-      naiveHelper(input.getAdjustableList.toBuffer(mutator))
-        .toBuffer.sortWith(_._1 < _._1)
-
-    if (Experiment.verbosity > 1) {
-      println(sortedOutput)
-      println(sortedAnswer)
-    }
-
-    sortedOutput == sortedAnswer*/
-
     val writer = new BufferedWriter(new OutputStreamWriter(
       new FileOutputStream("map-output.txt"), "utf-8"))
 

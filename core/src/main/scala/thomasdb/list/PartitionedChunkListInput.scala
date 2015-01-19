@@ -20,7 +20,7 @@ import scala.collection.mutable.{Buffer, Map}
 class PartitionedChunkListInput2[T, U]
     (partitions: Buffer[ChunkListInput2[T, U]],
      conf: ListConf)
-  extends ListInput[T, U] with java.io.Serializable {
+  extends Dataset[T, U] with java.io.Serializable {
 
   def put(key: T, value: U) {
     partitions(key.hashCode() % partitions.size).put(key, value)
@@ -45,6 +45,8 @@ class PartitionedChunkListInput2[T, U]
   }
 
   def putAfter(key: T, newPair: (T, U)) = ???
+
+  def getPartitions = partitions
 
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[ChunkList[T, U]]()

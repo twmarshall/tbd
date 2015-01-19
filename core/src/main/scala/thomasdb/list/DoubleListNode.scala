@@ -49,8 +49,7 @@ class DoubleListNode[T, U]
 
   def map[V, W]
       (f: ((T, U)) => (V, W),
-       memo: Memoizer[Mod[DoubleListNode[V, W]]],
-       modizer: Modizer1[DoubleListNode[V, W]])
+       memo: Memoizer[Mod[DoubleListNode[V, W]]])
       (implicit c: Context): Changeable[DoubleListNode[V, W]] = {
     val newValue = mod {
       read(value) {
@@ -64,7 +63,7 @@ class DoubleListNode[T, U]
           case null =>
             write[DoubleListNode[V, W]](null)
           case next =>
-            next.map(f, memo, modizer)
+            next.map(f, memo)
         }
       }
     }

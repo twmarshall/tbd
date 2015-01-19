@@ -22,7 +22,7 @@ import thomasdb.Constants.WorkerId
 class HashPartitionedDoubleChunkListInput[T, U]
     (workers: Map[WorkerId, Buffer[DoubleChunkListInput[T, U]]],
      conf: ListConf)
-  extends ListInput[T, U] with java.io.Serializable {
+  extends Dataset[T, U] with java.io.Serializable {
 
   val workerIds = workers.keys.toBuffer
 
@@ -33,8 +33,6 @@ class HashPartitionedDoubleChunkListInput[T, U]
   val nextPartition = workerIds.map(_ => 0)
 
   val numWorkers = workerIds.size
-
-  val numPartitions = partitions.size
 
   private def getPartition(key: T) = {
     partitions(key.hashCode() % numPartitions)
@@ -63,6 +61,8 @@ class HashPartitionedDoubleChunkListInput[T, U]
   }
 
   def putAfter(key: T, newPair: (T, U)) = ???
+
+  def getPartitions = partitions
 
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Map[WorkerId, Buffer[DoubleChunkList[T, U]]]()

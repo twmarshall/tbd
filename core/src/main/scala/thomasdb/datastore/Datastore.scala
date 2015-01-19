@@ -17,8 +17,7 @@ package thomasdb.datastore
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
-import java.io.{BufferedReader, File, FileReader}
-import java.util.regex.Pattern
+import java.io.File
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future}
 
@@ -27,6 +26,7 @@ import thomasdb.Constants._
 import thomasdb.list._
 import thomasdb.messages._
 import thomasdb.stats.Stats
+import thomasdb.util.FileUtil
 
 object Datastore {
   def props(storeType: String, cacheSize: Int): Props =
@@ -192,11 +192,7 @@ class Datastore
 
       sender ! "done"
 
-    case CreateListIdsMessage
-        (conf: ListConf,
-         numPartitions: Int,
-         numWorkers: Int,
-         workerIndex: Int) =>
+    case CreateListIdsMessage(conf: ListConf, numPartitions: Int) =>
       val listIds = Buffer[String]()
 
       val newLists = Buffer[ListInput[Any, Any]]()
@@ -220,72 +216,35 @@ class Datastore
         listIds += listId
       }
 
-      if (conf.file != "") {
-        val file = new File(conf.file)
-        val fileSize = file.length()
+      sender ! listIds
 
-        val in = new BufferedReader(new FileReader(conf.file))
-        val totalReadSize = fileSize / numWorkers
+    case LoadPartitionsMessage
+        (fileName: String,
+         partitions: Iterable[Partition[String, String]],
+         numWorkers: Int,
+         workerIndex: Int) =>
 
-        val numReads =
-          if (totalReadSize > Int.MaxValue) {
-            (totalReadSize / Int.MaxValue).toInt + 1
-          } else {
-            1
-          }
+      val theseLists = partitions.map {
+        case partition: Partition[String, String] =>
+          lists(partition.partitionId)
+      }.toBuffer
 
-        in.skip(totalReadSize * workerIndex)
+      val file = new File(fileName)
+      val fileSize = file.length()
+      val readSize = fileSize / numWorkers
 
-        val regex = Pattern.compile(
-          recordSeparator + "(.*?)" + unitSeparator + "(.*?)" + recordSeparator)
-
-        var end = 0
-        var str = ""
-        for (i <- 1 to numReads) {
-          val readSize =
-            if (i == numReads && totalReadSize % numReads != 0) {
-              totalReadSize % numReads
-            } else {
-              totalReadSize / numReads
-            }
-
-          var buf = new Array[Char](readSize.toInt)
-
-          in.read(buf)
-
-          log.debug("Reading " + conf.file + " from " +
-                    (totalReadSize * workerIndex) + " length " +
-                    totalReadSize)
-
-          str = new String(buf)
-          val matcher = regex.matcher(str)
-
-          var nextList = 0
-          while (matcher.find()) {
-            newLists(nextList).put(matcher.group(1), matcher.group(2))
-            end = matcher.end()
-            nextList = (nextList + 1) % newLists.size
-          }
-        }
-
-        if (workerIndex != numWorkers - 1) {
-          var remaining = str.substring(end)
-          var done = false
-          while (!done) {
-            val smallBuf = new Array[Char](4096)
-            in.read(smallBuf)
-
-            remaining += new String(smallBuf)
-            val matcher = regex.matcher(remaining)
-            if (matcher.find()) {
-              newLists.head.put(matcher.group(1), matcher.group(2))
-              done = true
-            }
-          }
-        }
+      var nextList = 0
+      val process = (key: String, value: String) => {
+        theseLists(nextList).put(key, value)
+        nextList = (nextList + 1) % theseLists.size
       }
 
-      sender ! listIds
+      val readFrom = readSize * workerIndex
+      log.debug("Reading " + fileName + " from " + readFrom + ", size " +
+                readSize)
+      FileUtil.readKeyValueFile(fileName, fileSize, readFrom, readSize, process)
+
+      sender ! "done"
 
     case GetAdjustableListMessage(listId: String) =>
       sender ! lists(listId).getAdjustableList()

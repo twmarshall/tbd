@@ -34,8 +34,6 @@ object Experiment {
 
   val allResults = Map[AlgorithmConf, Map[String, Double]]()
 
-  var runs = List[String]()
-
   val confs = Map[String, List[String]]()
 
   def round(value: Double): Double = {
@@ -196,6 +194,7 @@ object Experiment {
           runs = conf.runs(),
           repeat = i,
           store = conf.store(),
+          updateFile = conf.updateFile(),
           listConf = listConf)
 
         val alg = algorithm match {

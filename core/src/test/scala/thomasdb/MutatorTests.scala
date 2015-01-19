@@ -104,8 +104,9 @@ class MutatorTests extends FlatSpec with Matchers {
       val mutator = new Mutator()
 
       val conf = new ListConf(
-        partitions = partitions, chunkSize = chunkSize, file = "wiki2.xml")
+        partitions = partitions, chunkSize = chunkSize, partitioned = true)
       val input = mutator.createList[String, String](conf)
+      mutator.loadFile("wiki2.xml", input.asInstanceOf[Dataset[String, String]])
 
       val output = mutator.run(new FileLoadTest(input))
       val answer =

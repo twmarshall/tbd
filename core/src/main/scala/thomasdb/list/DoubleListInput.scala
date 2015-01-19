@@ -24,40 +24,41 @@ import thomasdb.Constants._
 import thomasdb.messages._
 
 class DoubleListInput[T, U]
-    (listId: String,
-     datastoreRef: ActorRef)
-  extends ListInput[T, U] with java.io.Serializable {
+    (val partitionId: String,
+     datastoreRef: ActorRef,
+     val workerId: WorkerId)
+  extends Partition[T, U] with java.io.Serializable {
 
   def put(key: T, value: U) = {
-    val future = datastoreRef ? PutMessage(listId, key, value)
+    val future = datastoreRef ? PutMessage(partitionId, key, value)
     Await.result(future, DURATION)
   }
 
   def asyncPut(key: T, value: U) = {
-    datastoreRef ? PutMessage(listId, key, value)
+    datastoreRef ? PutMessage(partitionId, key, value)
   }
 
   def update(key: T, value: U) = {
-    val future = datastoreRef ? UpdateMessage(listId, key, value)
+    val future = datastoreRef ? UpdateMessage(partitionId, key, value)
     Await.result(future, DURATION)
   }
 
   def remove(key: T, value: U) = {
-    val future = datastoreRef ? RemoveMessage(listId, key, value)
+    val future = datastoreRef ? RemoveMessage(partitionId, key, value)
     Await.result(future, DURATION)
   }
 
   def load(data: Map[T, U]) = {
-    val future = datastoreRef ? LoadMessage(listId, data.asInstanceOf[Map[Any, Any]])
+    val future = datastoreRef ? LoadMessage(partitionId, data.asInstanceOf[Map[Any, Any]])
   }
 
   def putAfter(key: T, newPair: (T, U)) = {
-    val future = datastoreRef ? PutAfterMessage(listId, key, newPair)
+    val future = datastoreRef ? PutAfterMessage(partitionId, key, newPair)
     Await.result(future, DURATION)
   }
 
   def getAdjustableList(): DoubleList[T, U] = {
-    val future = datastoreRef ? GetAdjustableListMessage(listId)
+    val future = datastoreRef ? GetAdjustableListMessage(partitionId)
     Await.result(future.mapTo[DoubleList[T, U]], DURATION)
   }
 }

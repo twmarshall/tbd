@@ -50,13 +50,14 @@ class DoubleList[T, U]
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): DoubleList[V, W] = {
     val memo = new Memoizer[Mod[DoubleListNode[V, W]]]()
-    val modizer = new Modizer1[DoubleListNode[V, W]]()
 
     new DoubleList(
-      modizer(head.id) {
-        read(head) {
-          case null => write[DoubleListNode[V, W]](null)
-          case node => node.map(f, memo, modizer)
+      memo(head) {
+        mod {
+          read(head) {
+            case null => write[DoubleListNode[V, W]](null)
+            case node => node.map(f, memo)
+          }
         }
       }, false, workerId
     )
