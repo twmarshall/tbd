@@ -24,11 +24,11 @@ import tdb.list.ListConf
 
 object Experiment {
 
+  var conf: ExperimentConf = null
+
   var verbosity = 1
 
   var check = false
-
-  var displayLoad = false
 
   var port = 2252
 
@@ -55,8 +55,10 @@ object Experiment {
       print(chart + "\t")
       for (line <- confs(lines)) {
         print(line + "\t")
-        print("no gc\t")
-        if (displayLoad) {
+        if (conf.displayGC()) {
+          print("no gc\t")
+        }
+        if (conf.displayLoad()) {
           print("load\t")
         }
       }
@@ -102,8 +104,10 @@ object Experiment {
           }
 
           print("\t" + round(total / repeat))
-          print("\t" + round(noGCTotal / repeat))
-          if (displayLoad) {
+          if (conf.displayGC()) {
+            print("\t" + round(noGCTotal / repeat))
+          }
+          if (conf.displayLoad()) {
             print("\t" + round(loadTotal / repeat))
           }
         }
@@ -113,11 +117,10 @@ object Experiment {
   }
 
   def main(args: Array[String]) {
-    val conf = new ExperimentConf(args)
+    conf = new ExperimentConf(args)
 
-    verbosity = conf.verbosity.get.get
-    check = conf.check.get.get
-    displayLoad = conf.load.get.get
+    verbosity = conf.verbosity()
+    check = conf.check()
 
     Constants.DURATION = 1000.seconds
     Constants.TIMEOUT = Timeout(1000.seconds)

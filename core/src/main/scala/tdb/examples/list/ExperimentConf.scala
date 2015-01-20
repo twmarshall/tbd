@@ -37,7 +37,9 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     descr = "Number of elements to load initially.")
   val files = opt[List[String]]("files", 'f', default = Some(List("")),
     descr = "The files to load the input from.")
-  val load = opt[Boolean]("load", 'l', default = Some(false),
+  val displayGC = opt[Boolean]("displayGC", default = Some(false),
+    descr = "Should gc times be included in the output.")
+  val displayLoad = opt[Boolean]("displayLoad", default = Some(false),
     descr = "If true, loading times will be included in output.")
   val master = opt[String]("master", default = Some(""),
     descr = "The master Akka url to connect to. If unspecified, we'll " +
