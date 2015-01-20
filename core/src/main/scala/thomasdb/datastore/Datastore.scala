@@ -231,7 +231,7 @@ class Datastore
 
       val file = new File(fileName)
       val fileSize = file.length()
-      val readSize = fileSize / numWorkers
+      val partitionSize = fileSize / numWorkers
 
       var nextList = 0
       val process = (key: String, value: String) => {
@@ -239,9 +239,19 @@ class Datastore
         nextList = (nextList + 1) % theseLists.size
       }
 
-      val readFrom = readSize * workerIndex
+      val readFrom = partitionSize * workerIndex
+      val readSize =
+        if (workerIndex == numWorkers - 1) {
+          // If the file doesn't divide by the number of partitions evenly,
+          // we process the extra along with the last partition.
+          fileSize - partitionSize * (numWorkers - 1)
+        } else {
+          partitionSize
+        }
+
       log.debug("Reading " + fileName + " from " + readFrom + ", size " +
                 readSize)
+
       FileUtil.readKeyValueFile(fileName, fileSize, readFrom, readSize, process)
 
       sender ! "done"
