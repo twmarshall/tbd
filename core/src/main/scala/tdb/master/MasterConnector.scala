@@ -16,11 +16,13 @@
 package tdb.master
 
 import akka.actor.{ActorRef, ActorSystem}
+import akka.event.Logging
 import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 
 import tdb.Constants._
+import tdb.Log
 import tdb.stats.Stats
 import tdb.worker.Worker
 
@@ -36,6 +38,8 @@ object MasterConnector {
     val system = ActorSystem(
       "mutatorSystem",
       ConfigFactory.load(mutatorAkkaConf))
+    Log.log = Logging(system, "main")
+
     val selection = system.actorSelection(masterURL)
     val future = selection.resolveOne()
 
@@ -62,6 +66,7 @@ object MasterConnector {
     val system = ActorSystem(
       "masterSystem" + id,
       ConfigFactory.load(masterAkkaConf))
+    Log.log = Logging(system, "main")
 
     id += 1
 

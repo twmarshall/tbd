@@ -149,7 +149,7 @@ class PartitionedModList[T, U]
 
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = {
-    println("PartitionedModList.reduce")
+    c.log.debug("PartitionedModList.reduce")
     def innerReduce
         (next: ModList[T, U],
          remaining: Buffer[ModList[T, U]])

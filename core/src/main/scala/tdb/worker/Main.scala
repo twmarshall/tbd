@@ -16,13 +16,14 @@
 package tdb.worker
 
 import akka.actor.{Actor, ActorRef, ActorSystem}
+import akka.event.Logging
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.rogach.scallop._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import tdb.Constants
+import tdb.{Constants, Log}
 import tdb.Constants._
 import tdb.messages._
 import tdb.stats.Stats
@@ -83,6 +84,8 @@ object Main {
         Conf.cacheSize.get.get,
         ip + ":" + webui_port),
       "worker")
+
+    Log.log = Logging(system, "worker")
 
     Stats.launch(system, "worker", ip, webui_port)
   }

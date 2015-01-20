@@ -30,7 +30,7 @@ class PartitionedDoubleChunkList[T, U]
      conf: ListConf)
   extends AdjustableList[T, U] with Serializable {
 
-  println("new PartitionedDoubleChunkList")
+  Log.debug("new PartitionedDoubleChunkList")
 
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): PartitionedDoubleChunkList[T, U] = ???
@@ -65,7 +65,7 @@ class PartitionedDoubleChunkList[T, U]
       (f: ((T, U)) => Iterable[(V, W)],
        numPartitions: Int)
       (implicit c: Context): AdjustableList[V, W] = {
-    println("PartitionedDoubleChunkList.hashPartitionedFlatMap")
+    c.log.debug("PartitionedDoubleChunkList.hashPartitionedFlatMap")
     val conf = ListConf(partitions = partitions.size, double = true, hash = true)
     val future = c.masterRef ? CreateListMessage(conf)
     val input =

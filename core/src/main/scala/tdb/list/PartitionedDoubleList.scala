@@ -29,7 +29,7 @@ class PartitionedDoubleList[T, U]
     (val partitions: Buffer[DoubleList[T, U]])
   extends AdjustableList[T, U] with Serializable {
 
-  println("new PartitionedDoubleList")
+  Log.debug("new PartitionedDoubleList")
 
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): PartitionedDoubleList[T, U] = ???
@@ -41,7 +41,7 @@ class PartitionedDoubleList[T, U]
       (f: ((T, U)) => Iterable[(V, W)],
        numPartitions: Int)
       (implicit c: Context): AdjustableList[V, W] = {
-    println("PartitionedDoubleList.hashPartitionedFlatMap")
+    c.log.debug("PartitionedDoubleList.hashPartitionedFlatMap")
     val conf = ListConf(partitions = partitions.size, double = true, hash = true)
     val future = c.masterRef ? CreateListMessage(conf)
     val input =
