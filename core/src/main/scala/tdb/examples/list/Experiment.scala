@@ -191,6 +191,7 @@ object Experiment {
           file = file,
           master = conf.master(),
           mutations = conf.mutations(),
+          naive = conf.naive(),
           runs = conf.runs(),
           repeat = i,
           store = conf.store(),

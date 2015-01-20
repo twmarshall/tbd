@@ -24,6 +24,7 @@ case class AlgorithmConf(
   file: String,
   master: String,
   mutations: List[String],
+  naive: Boolean,
   runs: List[String],
   repeat: Int,
   store: String,

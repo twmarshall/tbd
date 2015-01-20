@@ -16,7 +16,7 @@
 package tdb.examples.list
 
 import java.lang.management.ManagementFactory
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Buffer, Map}
 
 import tdb.{Adjustable, Mutator}
 import tdb.list.ListConf
@@ -63,27 +63,32 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
   def run(): Map[String, Double] = {
     val results = Map[String, Double]()
 
-    // Naive run.
     if (Experiment.verbosity > 1) {
-      println("Naive load.")
+      println("Generate")
     }
+
+    val actualRuns = Buffer[String]()
 
     val beforeLoad = System.currentTimeMillis()
     generateNaive()
     naiveLoadElapsed = System.currentTimeMillis() - beforeLoad
-    results("naive-load") = naiveLoadElapsed
+    if (conf.naive) {
+      actualRuns += "naive"
+      results("naive-load") = naiveLoadElapsed
 
-    if (Experiment.verbosity > 1) {
-      println("Naive run.")
+      if (Experiment.verbosity > 1) {
+        println("Naive run.")
+      }
+
+      val gcBefore = getGCTime()
+      val before = System.currentTimeMillis()
+      runNaive()
+      results("naive") = System.currentTimeMillis() - before
+      results("naive-nogc") = results("naive") - (getGCTime() - gcBefore)
     }
 
-    val gcBefore = getGCTime()
-    val before = System.currentTimeMillis()
-    runNaive()
-    results("naive") = System.currentTimeMillis() - before
-    results("naive-nogc") = results("naive") - (getGCTime() - gcBefore)
-
     // Initial run.
+    actualRuns += "initial"
     val (initialTime, initialLoad, initialNoGC) = initial()
     results("initial") = initialTime
     results("initial-load") = initialLoad
@@ -102,18 +107,16 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
     }
 
     var r = 1
-    runs = List("naive", "initial")
-
     while (data.hasUpdates()) {
       val (updateTime, updateLoad, updateNoGC) = update()
       results(r + "") = updateTime
       results(r + "-load") = updateLoad
       results(r + "-nogc") = updateNoGC
-      runs :+= r + ""
+      actualRuns += r + ""
       r += 1
     }
 
-    Experiment.confs("runs") = runs
+    Experiment.confs("runs") = actualRuns.toList
 
     if (Experiment.verbosity > 1) {
       if (mapCount != 0)

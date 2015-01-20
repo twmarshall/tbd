@@ -32,7 +32,7 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
   val chunkSizes = opt[List[String]]("chunkSizes", 's',
     default = Some(List("1")),
     descr = "Size of each chunk, by number of elements")
-  val counts = opt[List[String]]("counts", 'n',
+  val counts = opt[List[String]]("counts",
     default = Some(List("1000")),
     descr = "Number of elements to load initially.")
   val files = opt[List[String]]("files", 'f', default = Some(List("")),
@@ -46,6 +46,9 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     default = Some(List("insert", "update", "remove")),
     descr = "Mutations to perform on the input data. Must be one of " +
     "'update', 'insert', or 'remove'.")
+  val naive = opt[Boolean]("naive", 'n', default = Some(false),
+    descr = "If true, run a non-incremental version of the algorithm for" +
+    " comparison")
   val output = opt[List[String]]("output", 'o',
     default = Some(List("algorithms", "runs", "counts")),
     descr = "How to format the printed results - each of 'chart', " +
