@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization
+package tdb.visualization
 
 import graph._
 import analysis._
 import scala.swing._
-import thomasdb.ddg.{Tag, FunctionTag}
+import tdb.ddg.{Tag, FunctionTag}
 
 /*
  * Main Frame of the single visualizer application.
@@ -89,7 +89,7 @@ class DiffView[T]() extends MainFrame with ExperimentSink[T] {
       visualizer1.setComparisonResult(diff)
       visualizer2.setComparisonResult(diff)
 
-      val thomasdbDiff = new GreedyTraceComparison((node => node.internalId)).compare(visualizer1.ddg.ddg,
+      val tdbDiff = new GreedyTraceComparison((node => node.internalId)).compare(visualizer1.ddg.ddg,
                         visualizer2.ddg.ddg)
 
       label.text = "Tree size left: " + visualizer1.ddg.ddg.nodes.size +
@@ -97,8 +97,8 @@ class DiffView[T]() extends MainFrame with ExperimentSink[T] {
         "\nTrace Distance: " +
         (diff.added.length + diff.removed.length) +
         " (Added: " + diff.removed.length + ", removed: " + diff.added.length + ") \n" +
-        "ThomasDB Distance: " + (thomasdbDiff.added.length + thomasdbDiff.removed.length) +
-        " (Added: " + thomasdbDiff.removed.length + ", removed: " + thomasdbDiff.added.length + ")"
+        "TDB Distance: " + (tdbDiff.added.length + tdbDiff.removed.length) +
+        " (Added: " + tdbDiff.removed.length + ", removed: " + tdbDiff.added.length + ")"
     }
   }
 

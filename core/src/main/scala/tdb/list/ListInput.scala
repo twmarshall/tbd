@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.list
+package tdb.list
 
 import akka.actor.ActorRef
 import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.Await
 
-import thomasdb.{Input, Mutator}
-import thomasdb.Constants._
-import thomasdb.messages._
+import tdb.{Input, Mutator}
+import tdb.Constants._
+import tdb.messages._
 
 trait ListInput[T, U] extends Input[T, U] {
   // Inserts all of the elements from data into this ListInput. Assumes that

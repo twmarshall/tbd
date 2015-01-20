@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb
+package tdb
 
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.{Await, Future}
 
-import thomasdb.Constants._
-import thomasdb.ddg.{MemoNode, Timestamp}
-import thomasdb.master.Master
+import tdb.Constants._
+import tdb.ddg.{MemoNode, Timestamp}
+import tdb.master.Master
 
 class Memoizer[T](implicit c: Context) {
   val memoTable = Map[Seq[Any], ArrayBuffer[Timestamp]]()

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.datastore
+package tdb.datastore
 
 import scala.collection.mutable.Map
 import scala.concurrent.{Await, Future}
 
-import thomasdb.{Mod, Mutator}
-import thomasdb.Constants._
-import thomasdb.list._
+import tdb.{Mod, Mutator}
+import tdb.Constants._
+import tdb.list._
 
 class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     extends ListInput[T, U] {

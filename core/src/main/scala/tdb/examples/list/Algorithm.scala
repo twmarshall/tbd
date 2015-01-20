@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.examples.list
+package tdb.examples.list
 
 import java.lang.management.ManagementFactory
 import scala.collection.mutable.Map
 
-import thomasdb.{Adjustable, Mutator}
-import thomasdb.list.ListConf
-import thomasdb.master.MasterConnector
-import thomasdb.util.Data
+import tdb.{Adjustable, Mutator}
+import tdb.list.ListConf
+import tdb.master.MasterConnector
+import tdb.util.Data
 
 abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
 

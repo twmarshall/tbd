@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.master
+package tdb.master
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
@@ -22,13 +22,13 @@ import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-import thomasdb.{Adjustable, ThomasDB}
-import thomasdb.Constants._
-import thomasdb.datastore.Datastore
-import thomasdb.messages._
-import thomasdb.list._
-import thomasdb.stats.{Stats, WorkerInfo}
-import thomasdb.worker.{Task, Worker}
+import tdb.{Adjustable, TDB}
+import tdb.Constants._
+import tdb.datastore.Datastore
+import tdb.messages._
+import tdb.list._
+import tdb.stats.{Stats, WorkerInfo}
+import tdb.worker.{Task, Worker}
 
 object Master {
   def props(): Props = Props(classOf[Master])

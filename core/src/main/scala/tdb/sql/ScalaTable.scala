@@ -13,18 +13,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.sql
+package tdb.sql
 
 import scala.reflect.runtime.{ universe => ru}
-import thomasdb.{Adjustable, Context, Mod, Mutator}
-import thomasdb.list.{ListConf, ListInput}
-import thomasdb.ThomasDB._
+import tdb.{Adjustable, Context, Mod, Mutator}
+import tdb.list.{ListConf, ListInput}
+import tdb.TDB._
 
 case class ScalaColumn (val columnName: String, val index: Int,
   val colType: ru.Type)
 
 /*
- * Table representation in ThomasDB
+ * Table representation in TDB
  */
 class ScalaTable (
   val rows: Iterator[Seq[Datum]],

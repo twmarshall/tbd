@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.datastore
+package tdb.datastore
 
 import scala.collection.mutable.Map
 import scala.concurrent.{Await, Future}
 
-import thomasdb.{Mod, Mutator}
-import thomasdb.Constants._
-import thomasdb.list._
+import tdb.{Mod, Mutator}
+import tdb.Constants._
+import tdb.list._
 
 class ListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
   private var tailMod = datastore.createMod[ModListNode[T, U]](null)

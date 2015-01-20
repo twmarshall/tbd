@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.examples.list
+package tdb.examples.list
 
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.immutable.TreeSet
 import scala.collection.mutable.Map
 
-import thomasdb._
-import thomasdb.list._
-import thomasdb.util._
+import tdb._
+import tdb.list._
+import tdb.util._
 
 class QuickSortAdjust(list: AdjustableList[Int, Int])
   extends Adjustable[AdjustableList[Int, Int]] {

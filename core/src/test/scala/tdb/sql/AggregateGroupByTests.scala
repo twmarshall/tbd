@@ -13,23 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.sql.test
+package tdb.sql.test
 
 import scala.io.Source
 import scala.collection.mutable.{ ArrayBuffer, Buffer, Map }
 import org.scalatest._
 
-import thomasdb.{ Adjustable, Context, Mod, Mutator }
-import thomasdb.list._
-import thomasdb.ThomasDB._
-import thomasdb.sql._
+import tdb.{ Adjustable, Context, Mod, Mutator }
+import tdb.list._
+import tdb.TDB._
+import tdb.sql._
 
 class AggregateGroupByTests extends FlatSpec with Matchers {
 
   "Aggregate and GroupBy Test" should "check the Aggregate " +
     "and GroupBy operator" in {
     val mutator = new Mutator()
-    val sqlContext = new ThomasDBSqlContext(mutator)
+    val sqlContext = new TDBSqlContext(mutator)
     val f = (row: Array[String]) =>
       Rec(row(0), row(1).trim.toLong, row(2).trim.toDouble)
     val tableName = "records"

@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.list
+package tdb.list
 
 import akka.pattern.ask
 import java.io.Serializable
 import scala.collection.mutable.Buffer
 import scala.concurrent.Await
 
-import thomasdb._
-import thomasdb.Constants._
-import thomasdb.messages._
-import thomasdb.ThomasDB._
+import tdb._
+import tdb.Constants._
+import tdb.messages._
+import tdb.TDB._
 
 class PartitionedDoubleChunkList[T, U]
     (val partitions: Buffer[DoubleChunkList[T, U]],

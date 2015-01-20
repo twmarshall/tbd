@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.ddg
+package tdb.ddg
 
 class Sublist(var id: Int, var next: Sublist) {
   var previous: Sublist = null

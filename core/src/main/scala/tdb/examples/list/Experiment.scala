@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.examples.list
+package tdb.examples.list
 
 import akka.util.Timeout
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.duration._
 
-import thomasdb.{Constants, Mutator}
-import thomasdb.list.ListConf
+import tdb.{Constants, Mutator}
+import tdb.list.ListConf
 
 object Experiment {
 

@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization.graph
+package tdb.visualization.graph
 
-import thomasdb.Constants.ModId
+import tdb.Constants.ModId
 
 /*
  * Represents an edge in a DDG.

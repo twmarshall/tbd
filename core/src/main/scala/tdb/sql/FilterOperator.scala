@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.sql
+package tdb.sql
 
 import net.sf.jsqlparser.expression._
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 import scala.collection.JavaConversions._
 
-import thomasdb._
-import thomasdb.list._
+import tdb._
+import tdb.list._
 
 
 class FilterAdjust (
@@ -46,8 +46,8 @@ class FilterOperator (val inputOper: Operator, val condition: Expression)
   extends Operator{
   var childOperators = List[Operator]():+ inputOper;
   val table = inputOper.getTable
-  var inputAdjustable : AdjustableList[Int,Seq[thomasdb.sql.Datum]] = _
-  var outputAdjustable : AdjustableList[Int,Seq[thomasdb.sql.Datum]] = _
+  var inputAdjustable : AdjustableList[Int,Seq[tdb.sql.Datum]] = _
+  var outputAdjustable : AdjustableList[Int,Seq[tdb.sql.Datum]] = _
   var isTupleMapPresent = true
   var tupleTableMap = List[String]()
   override def getTupleTableMap = tupleTableMap
@@ -68,7 +68,7 @@ class FilterOperator (val inputOper: Operator, val condition: Expression)
   override def getTable: ScalaTable = table
 
   override def getAdjustable:
-    thomasdb.list.AdjustableList[Int,Seq[thomasdb.sql.Datum]] = outputAdjustable
+    tdb.list.AdjustableList[Int,Seq[tdb.sql.Datum]] = outputAdjustable
 
   override def toBuffer = outputAdjustable.toBuffer(table.mutator).
     map(_._2.map(BufferUtils.getValue))

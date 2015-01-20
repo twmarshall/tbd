@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.examples.test
+package tdb.examples.test
 
 import org.scalatest._
 import scala.collection.immutable.HashMap
 
-import thomasdb._
-import thomasdb.examples.list.WCAlgorithm
-import thomasdb.list._
-import thomasdb.ThomasDB._
+import tdb._
+import tdb.examples.list.WCAlgorithm
+import tdb.list._
+import tdb.TDB._
 
 class WCTest(input: ListInput[Int, String])
     extends Adjustable[Mod[(Int, HashMap[String, Int])]] {

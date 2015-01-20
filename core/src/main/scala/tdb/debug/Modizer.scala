@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.debug
+package tdb.debug
 
 import akka.pattern.ask
 import scala.collection.mutable.Map
 import scala.concurrent.Await
 
-import thomasdb._
-import thomasdb.Constants._
-import thomasdb.ddg.{FunctionTag, ModNode, Node, Tag}
-import thomasdb.macros.{ThomasDBMacros, functionToInvoke}
-import thomasdb.messages._
+import tdb._
+import tdb.Constants._
+import tdb.ddg.{FunctionTag, ModNode, Node, Tag}
+import tdb.macros.{TDBMacros, functionToInvoke}
+import tdb.messages._
 
-class Modizer1[T] extends thomasdb.Modizer1[T] {
+class Modizer1[T] extends tdb.Modizer1[T] {
   import scala.language.experimental.macros
 
   @functionToInvoke("applyInternal")
   override def apply(key: Any)
       (initializer: => Changeable[T])
-      (implicit c: Context): Mod[T] = macro ThomasDBMacros.modizerMacro[Mod[T]]
+      (implicit c: Context): Mod[T] = macro TDBMacros.modizerMacro[Mod[T]]
 
   def applyInternal
       (key: Any,
@@ -46,13 +46,13 @@ class Modizer1[T] extends thomasdb.Modizer1[T] {
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    ThomasDB.nodes(modNode) = (internalId, tag, stack)
+    TDB.nodes(modNode) = (internalId, tag, stack)
 
     mod
   }
 }
 
-class Modizer2[T, U] extends thomasdb.Modizer2[T, U] {
+class Modizer2[T, U] extends tdb.Modizer2[T, U] {
   import scala.language.experimental.macros
 
   @functionToInvoke("applyInternal")
@@ -60,7 +60,7 @@ class Modizer2[T, U] extends thomasdb.Modizer2[T, U] {
       (key: Any)
       (initializer: => (Changeable[T], Changeable[U]))
       (implicit c: Context): (Mod[T], Mod[U]) =
-    macro ThomasDBMacros.modizerMacro[(Mod[T], Mod[U])]
+    macro TDBMacros.modizerMacro[(Mod[T], Mod[U])]
 
   def applyInternal
       (key: Any,
@@ -83,7 +83,7 @@ class Modizer2[T, U] extends thomasdb.Modizer2[T, U] {
 
     val tag = Tag.Mod(List(mod1.id, mod2.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    ThomasDB.nodes(modNode) = (internalId, tag, stack)
+    TDB.nodes(modNode) = (internalId, tag, stack)
 
     (mod1, mod2)
   }
@@ -92,7 +92,7 @@ class Modizer2[T, U] extends thomasdb.Modizer2[T, U] {
   override def left(key: Any)
       (initializer: => (Changeable[T], Changeable[U]))
       (implicit c: Context): (Mod[T], Changeable[U]) =
-    macro ThomasDBMacros.modizerMacro[(Mod[T], Changeable[U])]
+    macro TDBMacros.modizerMacro[(Mod[T], Changeable[U])]
 
   def modLeftInternal
       (key: Any,
@@ -111,7 +111,7 @@ class Modizer2[T, U] extends thomasdb.Modizer2[T, U] {
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    ThomasDB.nodes(modNode) = (internalId, tag, stack)
+    TDB.nodes(modNode) = (internalId, tag, stack)
 
     (mod, changeable)
   }
@@ -120,7 +120,7 @@ class Modizer2[T, U] extends thomasdb.Modizer2[T, U] {
   override def right(key: Any)
       (initializer: => (Changeable[T], Changeable[U]))
       (implicit c: Context): (Changeable[T], Mod[U]) =
-    macro ThomasDBMacros.modizerMacro[(Changeable[T], Mod[U])]
+    macro TDBMacros.modizerMacro[(Changeable[T], Mod[U])]
 
   def modRightInternal
       (key: Any,
@@ -139,7 +139,7 @@ class Modizer2[T, U] extends thomasdb.Modizer2[T, U] {
 
     val tag = Tag.Mod(List(mod.id), FunctionTag(readerId, freeTerms))
     val modNode = c.currentTime.node
-    ThomasDB.nodes(modNode) = (internalId, tag, stack)
+    TDB.nodes(modNode) = (internalId, tag, stack)
 
     (changeable, mod)
   }

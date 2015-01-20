@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.list
+package tdb.list
 
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.Map
 import scala.concurrent.Await
 
-import thomasdb.{Mod, Mutator}
+import tdb.{Mod, Mutator}
 
 class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
   extends ListInput[T, U] {

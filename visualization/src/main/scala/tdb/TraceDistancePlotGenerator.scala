@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization
+package tdb.visualization
 
-import thomasdb.visualization.analysis._
+import tdb.visualization.analysis._
 import collection.mutable.{MutableList}
 
 /*

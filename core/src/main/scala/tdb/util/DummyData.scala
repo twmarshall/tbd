@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.util
+package tdb.util
 
 class DummyData extends Data[String] {
   val file = "data.txt"

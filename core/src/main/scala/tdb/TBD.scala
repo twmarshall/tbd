@@ -13,19 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb
+package tdb
 
 import akka.actor.ActorRef
 import akka.pattern.ask
 import scala.collection.mutable.ListBuffer
 import scala.concurrent.Await
 
-import thomasdb.Constants._
-import thomasdb.list.ListInput
-import thomasdb.messages._
-import thomasdb.ThomasDB._
+import tdb.Constants._
+import tdb.list.ListInput
+import tdb.messages._
+import tdb.TDB._
 
-object ThomasDB {
+object TDB {
   def put[T, U](input: ListInput[T, U], key: T, value: U)
       (implicit c: Context) {
     val timestamp =

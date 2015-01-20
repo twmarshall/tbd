@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.datastore
+package tdb.datastore
 
-import thomasdb.Constants.ModId
+import tdb.Constants.ModId
 
 trait KVStore {
   def put(key: ModId, value: Any)

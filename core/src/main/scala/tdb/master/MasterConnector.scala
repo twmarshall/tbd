@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.master
+package tdb.master
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 
-import thomasdb.Constants._
-import thomasdb.stats.Stats
-import thomasdb.worker.Worker
+import tdb.Constants._
+import tdb.stats.Stats
+import tdb.worker.Worker
 
 object MasterConnector {
   private var id = 0

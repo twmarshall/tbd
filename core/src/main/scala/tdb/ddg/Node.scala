@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.ddg
+package tdb.ddg
 
 import akka.actor.ActorRef
 import akka.pattern.ask
 import scala.concurrent.Await
 
-import thomasdb._
-import thomasdb.Constants.ModId
-import thomasdb.list.ListInput
+import tdb._
+import tdb.Constants.ModId
+import tdb.list.ListInput
 
 object Node {
   var id = 0

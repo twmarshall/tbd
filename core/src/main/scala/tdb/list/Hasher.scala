@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package thomasdb.list
+package tdb.list
 
 class Hasher(
   k: Int,

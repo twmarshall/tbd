@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.stats
+package tdb.stats
 
-import thomasdb.Constants.WorkerId
+import tdb.Constants.WorkerId
 
 case class WorkerInfo(workerId: WorkerId, webuiAddress: String)

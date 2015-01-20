@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization
+package tdb.visualization
 
-import thomasdb.visualization.graph._
-import thomasdb.visualization.analysis._
-import thomasdb.ddg.{Tag, FunctionTag}
+import tdb.visualization.graph._
+import tdb.visualization.analysis._
+import tdb.ddg.{Tag, FunctionTag}
 import scala.collection.mutable.{HashMap, ListBuffer}
 import swing._
 import swing.event._

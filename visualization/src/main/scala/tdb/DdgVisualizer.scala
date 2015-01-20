@@ -14,25 +14,25 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization
+package tdb.visualization
 
 import graph._
 import analysis._
 import scala.swing._
 import scala.swing.event._
-import thomasdb.ddg.{Tag, FunctionTag}
+import tdb.ddg.{Tag, FunctionTag}
 
 /*
  * Quick stand alone visualizer.
  *
- * Usage: thomasdb.visualization.QuickVisualizer.show(mutator.getDDG())
+ * Usage: tdb.visualization.QuickVisualizer.show(mutator.getDDG())
  */
 object QuickVisualizer {
   def create() = {
     val view = new SingleView()
     view.visualizer
   }
-  def show(ddg: thomasdb.ddg.DDG) {
+  def show(ddg: tdb.ddg.DDG) {
     val view = new SingleView()
     view.addResult(ExperimentResult(0, Map(),
         List(), List(), List(), graph.DDG.create(ddg)))
@@ -203,7 +203,7 @@ class DdgVisualizer extends GridBagPanel with Publisher {
     case NodeClickedEvent(node) => {
       selectedNode = node
       setLabelText(htmlEscape(extractMethodName(node)) +
-                   " (ThomasDB-Id: " + node.internalId + ")" +
+                   " (TDB-Id: " + node.internalId + ")" +
                    "<br />" + formatTag(node))
     }
     case x:PerspectiveChangedEvent => {

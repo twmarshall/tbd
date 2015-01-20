@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb
+package tdb
 
 import akka.actor.ActorRef
 import akka.event.Logging
@@ -21,10 +21,10 @@ import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Set}
 import scala.concurrent.{Await, Future}
 
-import thomasdb.Constants._
-import thomasdb.ddg.{DDG, Node, Timestamp}
-import thomasdb.messages._
-import thomasdb.worker.Task
+import tdb.Constants._
+import tdb.ddg.{DDG, Node, Timestamp}
+import tdb.messages._
+import tdb.worker.Task
 
 class Context
     (taskId: TaskId,

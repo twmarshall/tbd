@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.test
+package tdb.test
 
 import org.scalatest._
 
-import thomasdb._
-import thomasdb.table._
-import thomasdb.ThomasDB._
+import tdb._
+import tdb.table._
+import tdb.TDB._
 
 class MemoTest(input: TableInput[Int, Int])
     extends Adjustable[Mod[Int]] {

@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.table
+package tdb.table
 
-import thomasdb.{Input, Mutator}
+import tdb.{Input, Mutator}
 
 object TableInput {
   def apply[T, U](mutator: Mutator) = new TableInput[T, U](mutator)

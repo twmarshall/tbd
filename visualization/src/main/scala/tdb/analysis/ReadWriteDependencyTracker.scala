@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.visualization.analysis
+package tdb.visualization.analysis
 
 import scala.collection.mutable.{HashMap}
-import thomasdb.ddg.Tag
-import thomasdb.Constants.ModId
-import thomasdb.visualization.graph._
+import tdb.ddg.Tag
+import tdb.Constants.ModId
+import tdb.visualization.graph._
 
 /*
  * Finds all dependencies between write nodes and their corresponding read

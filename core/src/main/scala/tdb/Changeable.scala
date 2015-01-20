@@ -13,8 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb
+package tdb
 
-import thomasdb.Constants.ModId
+import tdb.Constants.ModId
 
 class Changeable[T](var modId: ModId)

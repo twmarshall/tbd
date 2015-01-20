@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.util
+package tdb.util
 
 import scala.collection.GenIterable
 import scala.collection.mutable.{ArrayBuffer, Map}
 
-import thomasdb.{Input, Mutator}
+import tdb.{Input, Mutator}
 
 class StringData
     (input: Input[Int, String],

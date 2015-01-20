@@ -14,11 +14,11 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization
+package tdb.visualization
 
 import scala.collection.mutable.{Map}
 import scala.math.{min, max}
-import thomasdb.visualization.analysis._
+import tdb.visualization.analysis._
 
 /**
  * Generates a plot whereas the x-axis is the starting position of a mutation,

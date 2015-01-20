@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.list
+package tdb.list
 
 import java.io.Serializable
 import scala.collection.mutable.Map
 
-import thomasdb._
-import thomasdb.ThomasDB._
+import tdb._
+import tdb.TDB._
 
 class DoubleChunkListNode[T, U]
     (var chunkMod: Mod[Vector[(T, U)]],

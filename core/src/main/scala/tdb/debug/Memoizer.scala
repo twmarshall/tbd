@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.debug
+package tdb.debug
 
 import scala.collection.mutable.{ArrayBuffer, Map}
 import scala.concurrent.{Await, Future}
 
-import thomasdb.Context
-import thomasdb.Constants._
-import thomasdb.ddg.{FunctionTag, MemoNode, Node, Tag, Timestamp}
-import thomasdb.macros.{ThomasDBMacros, functionToInvoke}
+import tdb.Context
+import tdb.Constants._
+import tdb.ddg.{FunctionTag, MemoNode, Node, Tag, Timestamp}
+import tdb.macros.{TDBMacros, functionToInvoke}
 
-class Memoizer[T](implicit c: Context) extends thomasdb.Memoizer[T]()(c) {
+class Memoizer[T](implicit c: Context) extends tdb.Memoizer[T]()(c) {
   import scala.language.experimental.macros
 
   @functionToInvoke("applyInternal")
-  override def apply(args: Any*)(func: => T): T = macro ThomasDBMacros.memoMacro[T]
+  override def apply(args: Any*)(func: => T): T = macro TDBMacros.memoMacro[T]
 
   def applyInternal(
       signature: Seq[_],
@@ -40,7 +40,7 @@ class Memoizer[T](implicit c: Context) extends thomasdb.Memoizer[T]()(c) {
 
     val memoNode = c.currentTime.node
     val tag = Tag.Memo(FunctionTag(funcId, freeTerms), signature)
-    ThomasDB.nodes(memoNode) = (internalId, tag, stack)
+    TDB.nodes(memoNode) = (internalId, tag, stack)
 
     ret
   }

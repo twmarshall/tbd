@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.examples.list
+package tdb.examples.list
 
 import java.io._
 import scala.collection.GenIterable
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.Map
 
-import thomasdb._
-import thomasdb.list._
-import thomasdb.ThomasDB._
-import thomasdb.util._
+import tdb._
+import tdb.list._
+import tdb.TDB._
+import tdb.util._
 
 class WCHashAdjust(list: AdjustableList[String, String], mappedPartitions: Int)
     extends Adjustable[Iterable[Mod[(Int, HashMap[String, Int])]]] {

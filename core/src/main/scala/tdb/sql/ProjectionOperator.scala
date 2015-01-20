@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.sql
+package tdb.sql
 
 import net.sf.jsqlparser.expression._
 import net.sf.jsqlparser.schema.Column;
@@ -23,8 +23,8 @@ import scala.collection.mutable.Map
 import scala.collection.JavaConversions._
 import scala.util.control.Breaks._
 
-import thomasdb._
-import thomasdb.list._
+import tdb._
+import tdb.list._
 
 /*
  * ProjectionAdjust maps a row to a new one with columns
@@ -88,8 +88,8 @@ class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
     extends Operator{
   var childOperators = List[Operator]():+ inputOper;
   val table = inputOper.getTable
-  var inputAdjustable : AdjustableList[Int,Seq[thomasdb.sql.Datum]] = _
-  var outputAdjustable : AdjustableList[Int,Seq[thomasdb.sql.Datum]] = _
+  var inputAdjustable : AdjustableList[Int,Seq[tdb.sql.Datum]] = _
+  var outputAdjustable : AdjustableList[Int,Seq[tdb.sql.Datum]] = _
 
   var tupleTableMap = List[String]()
   override def getTupleTableMap = tupleTableMap
@@ -123,12 +123,12 @@ class ProjectionOperator (val inputOper: Operator, val projectStmt: List[_])
     val childTupleTableMap = childOperator.getTupleTableMap
     setTupleTableMap (childTupleTableMap)
     val adjustable = new ProjectionAdjust(inputAdjustable, projectStmt, childTupleTableMap)
-    outputAdjustable = table.mutator.run[AdjustableList[Int,Seq[thomasdb.sql.Datum]]](adjustable)
+    outputAdjustable = table.mutator.run[AdjustableList[Int,Seq[tdb.sql.Datum]]](adjustable)
   }
 
   override def getTable: ScalaTable = table
 
-  override def getAdjustable: thomasdb.list.AdjustableList[Int,Seq[thomasdb.sql.Datum]] =
+  override def getAdjustable: tdb.list.AdjustableList[Int,Seq[tdb.sql.Datum]] =
     outputAdjustable
   override def toBuffer = outputAdjustable.toBuffer(table.mutator).
     map(_._2.map(BufferUtils.getValue))

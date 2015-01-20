@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.sql
+package tdb.sql
 
 import scala.io.Source
 import scala.reflect.ClassTag
@@ -31,8 +31,8 @@ import net.sf.jsqlparser.statement.select.PlainSelect;
 import net.sf.jsqlparser.statement.select.Select;
 import net.sf.jsqlparser.statement.select.SelectBody;
 import net.sf.jsqlparser.statement.select.SelectExpressionItem;
-import thomasdb.list.{ListInput, ListConf}
-import thomasdb.{Adjustable, Context, Mod, Mutator}
+import tdb.list.{ListInput, ListConf}
+import tdb.{Adjustable, Context, Mod, Mutator}
 
 class TableNameTakenException(
   tableName: String,
@@ -49,7 +49,7 @@ class TableNameTakenException(
 /*
  * Entry of the the SQL engine
  */
-class ThomasDBSqlContext(val mutator: Mutator)  {
+class TDBSqlContext(val mutator: Mutator)  {
 
   var tablesMap: Map[String, ScalaTable] = Map()
 

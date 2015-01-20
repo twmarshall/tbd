@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.worker
+package tdb.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
@@ -21,11 +21,11 @@ import scala.collection.mutable.{ArrayBuffer, Map, MutableList, Set}
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.{Failure, Success, Try}
 
-import thomasdb.Constants._
-import thomasdb.{Adjustable, Context}
-import thomasdb.ddg._
-import thomasdb.messages._
-import thomasdb.stats.Stats
+import tdb.Constants._
+import tdb.{Adjustable, Context}
+import tdb.ddg._
+import tdb.messages._
+import tdb.stats.Stats
 
 object Task {
   def props

@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.util
+package tdb.util
 
-import thomasdb.list.ListInput
+import tdb.list.ListInput
 
 class GraphFileData
     (input: ListInput[Int, Array[Int]],

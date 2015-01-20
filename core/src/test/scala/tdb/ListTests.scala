@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.test
+package tdb.test
 
 import scala.collection.mutable.{ArrayBuffer, Buffer, Map}
 import org.scalatest._
 
-import thomasdb.{Adjustable, Context, Mod, Mutator}
-import thomasdb.list._
-import thomasdb.ThomasDB._
+import tdb.{Adjustable, Context, Mod, Mutator}
+import tdb.list._
+import tdb.TDB._
 
 class ListMapTest(
     f: ((String, Int)) => (String, Int),

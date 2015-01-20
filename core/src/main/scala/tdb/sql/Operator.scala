@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.sql
+package tdb.sql
 
 /*
  * Operator is responsible to executing the SQL clause
@@ -36,7 +36,7 @@ trait Operator {
   /*
    * Return the processed adjustable list
    */
-  def getAdjustable: thomasdb.list.AdjustableList[Int,Seq[thomasdb.sql.Datum]]
+  def getAdjustable: tdb.list.AdjustableList[Int,Seq[tdb.sql.Datum]]
 
   /*
    * Convert the adjustable list to Buffer

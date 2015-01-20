@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.stats
+package tdb.stats
 
 import akka.actor.{Actor, ActorLogging}
 import org.mashupbots.socko.events.HttpRequestEvent

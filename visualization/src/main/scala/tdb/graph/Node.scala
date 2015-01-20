@@ -13,17 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.visualization.graph
+package tdb.visualization.graph
 
-import thomasdb.debug.ThomasDB
-import thomasdb.ddg
+import tdb.debug.TDB
+import tdb.ddg
 
 /*
  * Represents a visualizer DDG node.
- * Is created by copying all necessary properties of the ThomasDB ddg node.
+ * Is created by copying all necessary properties of the TDB ddg node.
  */
 class Node(ddgNode: ddg.Node) {
-  val (internalId, tag, stacktrace) = ThomasDB.nodes(ddgNode)
+  val (internalId, tag, stacktrace) = TDB.nodes(ddgNode)
 
   override def toString = {
     //tag.toString()

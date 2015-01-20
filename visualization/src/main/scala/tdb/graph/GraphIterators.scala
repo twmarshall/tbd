@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization.graph
+package tdb.visualization.graph
 
 import scala.collection.mutable.HashSet
 

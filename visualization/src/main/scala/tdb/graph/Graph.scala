@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization.graph
+package tdb.visualization.graph
 
 import akka.pattern.ask
 import scala.collection.mutable.{HashMap, HashSet, ArrayBuffer}
 import scala.concurrent.Await
 
-import thomasdb.Constants._
-import thomasdb.visualization.analysis.MethodInfo
+import tdb.Constants._
+import tdb.visualization.analysis.MethodInfo
 
 /*
  * Represents any graph.
@@ -59,12 +59,12 @@ class DDG(val root: Node) extends Graph {
   }
 }
 
-//Helper object to create visualizer.graph.DDGs from thomasdb.ddg.DDGs.
+//Helper object to create visualizer.graph.DDGs from tdb.ddg.DDGs.
 //This wey we can maintain an independent copy of all necassary information
 //for ourselfs, without creating memory leaks or accessing disposed mods.
 object DDG {
-  //Recursivley creates a visualizer DDG from a ThomasDB DDG.
-  def create(ddg: thomasdb.ddg.DDG): DDG = {
+  //Recursivley creates a visualizer DDG from a TDB DDG.
+  def create(ddg: tdb.ddg.DDG): DDG = {
 
     val newNode = new Node(ddg.root)
     val result = new DDG(newNode)
@@ -81,15 +81,15 @@ object DDG {
 
   //Fetches child nodes for a given node. Takes extra care of par nodes.
   private def getChildren
-      (ddg: thomasdb.ddg.DDG,
-       start: thomasdb.ddg.Timestamp,
-       end: thomasdb.ddg.Timestamp): Seq[thomasdb.ddg.Timestamp] = {
+      (ddg: tdb.ddg.DDG,
+       start: tdb.ddg.Timestamp,
+       end: tdb.ddg.Timestamp): Seq[tdb.ddg.Timestamp] = {
     start.node match {
-      case parNode: thomasdb.ddg.ParNode =>
-	val f1 = parNode.taskRef1 ? thomasdb.messages.GetTaskDDGMessage
-	val ddg1 = Await.result(f1.mapTo[thomasdb.ddg.DDG], DURATION)
-	val f2 = parNode.taskRef2 ? thomasdb.messages.GetTaskDDGMessage
-	val ddg2 = Await.result(f2.mapTo[thomasdb.ddg.DDG], DURATION)
+      case parNode: tdb.ddg.ParNode =>
+	val f1 = parNode.taskRef1 ? tdb.messages.GetTaskDDGMessage
+	val ddg1 = Await.result(f1.mapTo[tdb.ddg.DDG], DURATION)
+	val f2 = parNode.taskRef2 ? tdb.messages.GetTaskDDGMessage
+	val ddg2 = Await.result(f2.mapTo[tdb.ddg.DDG], DURATION)
 
         ddg1.ordering.getChildren(ddg1.startTime, ddg1.endTime) ++
         ddg2.ordering.getChildren(ddg2.startTime, ddg2.endTime)
@@ -97,11 +97,11 @@ object DDG {
     }
   }
 
-  //Recursivley creates a visualizer DDG from a ThomasDB DDG.
+  //Recursivley creates a visualizer DDG from a TDB DDG.
   private def append
-      (ddg: thomasdb.ddg.DDG,
+      (ddg: tdb.ddg.DDG,
        node: Node,
-       time: thomasdb.ddg.Timestamp,
+       time: tdb.ddg.Timestamp,
        result: DDG): Unit = {
     val ddgNode = time.node
     val newNode = new Node(ddgNode)

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.sql
+package tdb.sql
 
 object BufferUtils {
   /*
@@ -28,7 +28,7 @@ object BufferUtils {
     }}
   }
 
-  def getValue(d: thomasdb.sql.Datum) = {
+  def getValue(d: tdb.sql.Datum) = {
     if (d.isInstanceOf[Datum.dLong])
         d.asInstanceOf[Datum.dLong].getValue()
     else if (d.isInstanceOf[Datum.dDecimal])

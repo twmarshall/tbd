@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization
+package tdb.visualization
 
 import scala.collection.immutable.Map
 

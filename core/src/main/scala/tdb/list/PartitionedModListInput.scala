@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.list
+package tdb.list
 
 import scala.collection.mutable.{Buffer, Map}
 

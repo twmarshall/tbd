@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.examples.list
+package tdb.examples.list
 
 import scala.collection.{GenIterable, GenMap}
 import scala.collection.immutable.HashMap
@@ -21,10 +21,10 @@ import scala.collection.mutable.Map
 import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
 import scala.concurrent.forkjoin.ForkJoinPool
 
-import thomasdb._
-import thomasdb.list._
-import thomasdb.ThomasDB._
-import thomasdb.util._
+import tdb._
+import tdb.list._
+import tdb.TDB._
+import tdb.util._
 
 object WCAlgorithm {
   def wordcount(s: String): HashMap[String, Int] = {

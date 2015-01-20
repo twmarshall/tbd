@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb
+package tdb
 
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
@@ -21,11 +21,11 @@ import com.typesafe.config.ConfigFactory
 import scala.collection.mutable.Buffer
 import scala.concurrent.{Await, Future}
 
-import thomasdb.Constants._
-import thomasdb.ddg.DDG
-import thomasdb.master.MasterConnector
-import thomasdb.messages._
-import thomasdb.list.{Dataset, ListConf, ListInput}
+import tdb.Constants._
+import tdb.ddg.DDG
+import tdb.master.MasterConnector
+import tdb.messages._
+import tdb.list.{Dataset, ListConf, ListInput}
 
 class Mutator(_connector: MasterConnector = null) {
   import scala.concurrent.ExecutionContext.Implicits.global

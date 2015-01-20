@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.util
+package tdb.util
 
 import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
-import thomasdb.list.ListInput
+import tdb.list.ListInput
 
 class GraphData
     (input: ListInput[Int, Array[Int]],

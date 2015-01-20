@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.sql
+package tdb.sql
 
 import net.sf.jsqlparser.expression._
 import net.sf.jsqlparser.statement.select.OrderByElement
@@ -22,8 +22,8 @@ import scala.collection.mutable.Map
 import scala.collection.JavaConversions._
 import scala.util.control.Breaks._
 
-import thomasdb._
-import thomasdb.list._
+import tdb._
+import tdb.list._
 
 class MergeSortAdjust (
   list: AdjustableList[Int, Seq[Datum]],
@@ -67,8 +67,8 @@ class OrderByOperator (val inputOper: Operator, val elements: List[_])
   extends Operator {
   var childOperators = List[Operator]():+ inputOper;
   val table = inputOper.getTable
-  var inputAdjustable : AdjustableList[Int,Seq[thomasdb.sql.Datum]] = _
-  var outputAdjustable : AdjustableList[Int,Seq[thomasdb.sql.Datum]] = _
+  var inputAdjustable : AdjustableList[Int,Seq[tdb.sql.Datum]] = _
+  var outputAdjustable : AdjustableList[Int,Seq[tdb.sql.Datum]] = _
 
   var tupleTableMap = List[String]()
   override def getTupleTableMap = tupleTableMap
@@ -86,7 +86,7 @@ class OrderByOperator (val inputOper: Operator, val elements: List[_])
 
   override def getTable: ScalaTable = table
 
-  override def getAdjustable: thomasdb.list.AdjustableList[Int,Seq[thomasdb.sql.Datum]] =
+  override def getAdjustable: tdb.list.AdjustableList[Int,Seq[tdb.sql.Datum]] =
     outputAdjustable
 
   override def toBuffer = outputAdjustable.toBuffer(table.mutator).

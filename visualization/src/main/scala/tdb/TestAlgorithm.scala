@@ -14,23 +14,23 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization
+package tdb.visualization
 
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.mutable.Map
 
-import thomasdb.Mutator
-import thomasdb.debug._
-import thomasdb.list._
-import thomasdb.debug.ThomasDB._
+import tdb.Mutator
+import tdb.debug._
+import tdb.list._
+import tdb.debug.TDB._
 
 /*
  * Trait for test algorithms to run with the visualizer.
  */
-trait TestAlgorithm[ThomasDBOutputType, NativeOutputType]
-    extends Adjustable[ThomasDBOutputType] {
+trait TestAlgorithm[TDBOutputType, NativeOutputType]
+    extends Adjustable[TDBOutputType] {
   //Reads the output and returns the result
-  def getResult(output: ThomasDBOutputType, mutator: Mutator): NativeOutputType
+  def getResult(output: TDBOutputType, mutator: Mutator): NativeOutputType
   //Processes the input in a conventional way to generate verification output.
   def getExpectedResult(input: Map[Int, Int]): NativeOutputType
   //Returns the list conf for the algorithm, so we can enforce a
@@ -134,7 +134,7 @@ class ListMapTest()
 class ModDepTest()
     extends TestAlgorithm[Mod[Int], Int] {
   def run(implicit c: Context): Mod[Int] = {
-    val modList = input.getAdjustableList().asInstanceOf[thomasdb.list.ModList[Int, Int]]
+    val modList = input.getAdjustableList().asInstanceOf[tdb.list.ModList[Int, Int]]
 
     mod{
       val a = 10

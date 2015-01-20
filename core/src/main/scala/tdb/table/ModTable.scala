@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.table
+package tdb.table
 
 import scala.collection.mutable.Map
 
-import thomasdb.Mod
+import tdb.Mod
 
 class ModTable[T, U] {
   val table = Map[T, Mod[U]]()

@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.messages
+package tdb.messages
 
 import akka.actor.ActorRef
 import scala.collection.mutable.{Map, Set}
 import scala.language.existentials
 
-import thomasdb.{Adjustable, Changeable, ThomasDB}
-import thomasdb.Constants._
-import thomasdb.ddg.Node
-import thomasdb.list.{Dataset, ListConf, Partition}
+import tdb.{Adjustable, Changeable, TDB}
+import tdb.Constants._
+import tdb.ddg.Node
+import tdb.list.{Dataset, ListConf, Partition}
 
 // Datastore
 case class CreateModMessage(value: Any)

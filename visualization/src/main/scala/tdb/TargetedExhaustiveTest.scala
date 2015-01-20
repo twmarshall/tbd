@@ -14,14 +14,14 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization
+package tdb.visualization
 
 import scala.collection.mutable.ArrayBuffer
 import collection.mutable.HashMap
 import scala.util.Random
 import scala.io.StdIn
 
-import thomasdb._
+import tdb._
 
 /*
  * Test generator which performs continous updates of all possible lengths

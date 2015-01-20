@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.list
+package tdb.list
 
 import java.io.Serializable
 import scala.collection.mutable.{Buffer, Map}
 
-import thomasdb._
-import thomasdb.Constants._
-import thomasdb.ThomasDB._
+import tdb._
+import tdb.Constants._
+import tdb.TDB._
 
 class DoubleList[T, U]
     (val head: Mod[DoubleListNode[T, U]],

@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.list
+package tdb.list
 
 import akka.actor.ActorRef
 import akka.pattern.ask
 import scala.collection.mutable.Map
 import scala.concurrent.Await
 
-import thomasdb.Constants._
-import thomasdb.messages._
+import tdb.Constants._
+import tdb.messages._
 
 class ModListInput[T, U]
     (val partitionId: String,

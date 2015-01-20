@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.examples.list
+package tdb.examples.list
 
 import java.io._
 import scala.collection.{GenIterable, GenMap, Seq}
@@ -21,9 +21,9 @@ import scala.collection.mutable.Map
 import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
 import scala.concurrent.forkjoin.ForkJoinPool
 
-import thomasdb._
-import thomasdb.list._
-import thomasdb.util._
+import tdb._
+import tdb.list._
+import tdb.util._
 
 object MapAlgorithm {
   def mapper(pair: (String, String)): (String, Int) = {

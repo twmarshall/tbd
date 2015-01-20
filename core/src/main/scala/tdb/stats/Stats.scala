@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.stats
+package tdb.stats
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
 import org.mashupbots.socko.events.HttpRequestEvent
@@ -31,7 +31,7 @@ object Stats {
 
   var datastoreMisses = 0
 
-  val imgSrc = "http://thomasdb.cs.cmu.edu/wordpress/wp-content/uploads/2014/08/thomasdb-white.png"
+  val imgSrc = "http://tdb.cs.cmu.edu/wordpress/wp-content/uploads/2014/08/tdb-white.png"
 
   def launch(system: ActorSystem, mode: String, host: String, port: Int) {
     val statsActor =
@@ -68,7 +68,7 @@ object Stats {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>ThomasDB Master</title>
+          <title>TDB Master</title>
           <style>
             body {
               font-family: calibri;
@@ -122,7 +122,7 @@ var myNewChart = new Chart(ctx).PolarArea(data);
                 <img src=\"$imgSrc\" width=\"50px\">
               </td>
               <td style=\"font-size: 24pt;\">
-                ThomasDB Master
+                TDB Master
               </td>
             </tr>
             <tr>

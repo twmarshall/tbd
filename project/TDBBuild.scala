@@ -3,7 +3,7 @@ import Keys._
 import sbtassembly.Plugin._
 import AssemblyKeys._
 
-object ThomasDBBuild extends Build {
+object TDBBuild extends Build {
   val buildOrganization = "edu.cmu.cs"
   val buildVersion      = "0.1-SNAPSHOT"
   val buildScalaVersion = "2.11.0"
@@ -65,23 +65,23 @@ object ThomasDBBuild extends Build {
         java -Xmx2g -Xss4m -classpath "%s" %s $@
         """
 
-        val master = template.format(classpath, "thomasdb.master.Main")
+        val master = template.format(classpath, "tdb.master.Main")
         val masterOut = baseDirectory.value / "../bin/master.sh"
         IO.write(masterOut, master)
         masterOut.setExecutable(true)
 
-       val worker = template.format(classpath, "thomasdb.worker.Main")
+       val worker = template.format(classpath, "tdb.worker.Main")
        val workerOut = baseDirectory.value / "../bin/worker.sh"
        IO.write(workerOut, worker)
        workerOut.setExecutable(true)
 
         val experiment =
-          template.format(classpath, "thomasdb.examples.list.Experiment")
+          template.format(classpath, "tdb.examples.list.Experiment")
         val experimentOut = baseDirectory.value / "../bin/experiment.sh"
         IO.write(experimentOut, experiment)
         experimentOut.setExecutable(true)
 
-        val sql = template.format(classpath, "thomasdb.sql.SQLTest")
+        val sql = template.format(classpath, "tdb.sql.SQLTest")
         val sqlOut = baseDirectory.value / "../bin/sql.sh"
         IO.write(sqlOut, sql)
         sqlOut.setExecutable(true)
@@ -128,7 +128,7 @@ object ThomasDBBuild extends Build {
         """
 
         val visualization =
-          template.format(classpath, "thomasdb.visualization.Main")
+          template.format(classpath, "tdb.visualization.Main")
         val visualizationOut = baseDirectory.value / "../bin/visualization.sh"
         IO.write(visualizationOut, visualization)
         visualizationOut.setExecutable(true)

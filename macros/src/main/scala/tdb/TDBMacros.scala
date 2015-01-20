@@ -14,18 +14,18 @@
  * limitations under the License.
  */
 
-package thomasdb.macros
+package tdb.macros
 
 import reflect.macros.whitebox.Context
 import language.experimental.macros
 import scala.tools.reflect.ToolBox
 
-//Static annotation for ThomasDB functions, which can be read by our macro.
+//Static annotation for TDB functions, which can be read by our macro.
 //We use this to re-use code as we can use the same macro for different
 //functions. Only the parameter list has to be equal.
 class functionToInvoke(value: String) extends scala.annotation.StaticAnnotation
 
-object ThomasDBMacros {
+object TDBMacros {
 
   var funcId = 0
 

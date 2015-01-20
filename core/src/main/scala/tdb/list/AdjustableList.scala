@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.list
+package tdb.list
 
 import scala.collection.mutable.Buffer
 
-import thomasdb.{Context, Mod, Mutator}
+import tdb.{Context, Mod, Mutator}
 
 /**
  * A linked list made up of modifiables. The classes that implement this trait

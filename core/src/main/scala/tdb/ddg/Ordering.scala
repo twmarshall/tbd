@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.ddg
+package tdb.ddg
 
 import scala.collection.mutable.Buffer
 
-import thomasdb.Constants.ModId
+import tdb.Constants.ModId
 
 class Ordering {
   val maxSize = Int.MaxValue / 2
@@ -162,7 +162,7 @@ class Ordering {
     mods
   }
 
-  def splice(start: Timestamp, end: Timestamp, c: thomasdb.Context) {
+  def splice(start: Timestamp, end: Timestamp, c: tdb.Context) {
     var time = start
     while (time < end) {
       val node = time.node

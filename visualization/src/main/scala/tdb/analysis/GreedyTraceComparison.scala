@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization.analysis
+package tdb.visualization.analysis
 
-import thomasdb.visualization.graph._
+import tdb.visualization.graph._
 import scala.collection.mutable.{Buffer, HashSet}
 
 /*

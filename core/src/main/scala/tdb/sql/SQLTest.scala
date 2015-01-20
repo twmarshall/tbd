@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.sql
+package tdb.sql
 
 import com.typesafe.config.ConfigFactory
 import org.rogach.scallop._
 import scala.util.control.Breaks._
-import thomasdb.{Adjustable, Context, Mod, Mutator}
-import thomasdb.list.ListConf
-import thomasdb.master.{Master, MasterConnector}
+import tdb.{Adjustable, Context, Mod, Mutator}
+import tdb.list.ListConf
+import tdb.master.{Master, MasterConnector}
 
 case class Rec (val manipulate: String, val pairkey: Int, val pairvalue: Double)
 
@@ -28,7 +28,7 @@ object SQLTest {
 
   def main (args: Array[String]) {
     object Conf extends ScallopConf(args) {
-      version("ThomasDB 0.1 (c) 2014 Carnegie Mellon University")
+      version("TDB 0.1 (c) 2014 Carnegie Mellon University")
       banner("Usage: sql.sh [options]")
 
       val master = opt[String]("master", 'm', default = Some(""),
@@ -48,7 +48,7 @@ object SQLTest {
                     else MasterConnector(master)
     val listConf =  new ListConf(partitions = partitionSize, chunkSize = 1)
     val mutator = new Mutator(connector)
-    val sqlContext = new ThomasDBSqlContext(mutator)
+    val sqlContext = new TDBSqlContext(mutator)
     var f = (row: Array[String])  => Rec(row(0), row(1).trim.toInt, row(2).trim.toDouble)
     val tableName1 = "records"
 

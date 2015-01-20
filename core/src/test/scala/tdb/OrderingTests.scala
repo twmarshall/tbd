@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.test
+package tdb.test
 
 import org.scalatest._
 
-import thomasdb.ddg.{Ordering, Sublist, Timestamp}
+import tdb.ddg.{Ordering, Sublist, Timestamp}
 
 class OrderingTests extends FlatSpec with Matchers {
   def checkOrdering(timestamps: List[Timestamp]) {

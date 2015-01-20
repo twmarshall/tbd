@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.util
+package tdb.util
 
 import java.io._
 import scala.collection.GenIterable

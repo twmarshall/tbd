@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.datastore
+package tdb.datastore
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.ask
@@ -21,12 +21,12 @@ import java.io.File
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future}
 
-import thomasdb.Mod
-import thomasdb.Constants._
-import thomasdb.list._
-import thomasdb.messages._
-import thomasdb.stats.Stats
-import thomasdb.util.FileUtil
+import tdb.Mod
+import tdb.Constants._
+import tdb.list._
+import tdb.messages._
+import tdb.stats.Stats
+import tdb.util.FileUtil
 
 object Datastore {
   def props(storeType: String, cacheSize: Int): Props =

@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.examples.test
+package tdb.examples.test
 
 import org.scalatest._
 
-import thomasdb.examples.list._
+import tdb.examples.list._
 
 class AlgorithmTests extends FlatSpec with Matchers {
   Experiment.verbosity = 0

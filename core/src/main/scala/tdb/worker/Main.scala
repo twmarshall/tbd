@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.worker
+package tdb.worker
 
 import akka.actor.{Actor, ActorRef, ActorSystem}
 import akka.util.Timeout
@@ -22,15 +22,15 @@ import org.rogach.scallop._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import thomasdb.Constants
-import thomasdb.Constants._
-import thomasdb.messages._
-import thomasdb.stats.Stats
+import tdb.Constants
+import tdb.Constants._
+import tdb.messages._
+import tdb.stats.Stats
 
 object Main {
   def main(args: Array[String]) {
     object Conf extends ScallopConf(args) {
-      version("ThomasDB 0.1 (c) 2014 Carnegie Mellon University")
+      version("TDB 0.1 (c) 2014 Carnegie Mellon University")
       banner("Usage: worker.sh [options] master")
       val cacheSize = opt[Int]("cacheSize", 'c', default = Some(10000),
         descr = "The number of elements to keep in the cache, if the " +

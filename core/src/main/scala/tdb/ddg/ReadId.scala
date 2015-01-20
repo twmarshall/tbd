@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.ddg
+package tbd.ddg
 
 object ReadId {
   private var current = -1

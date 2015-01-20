@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.datastore
+package tdb.datastore
 
 import scala.collection.mutable.Map
 
-import thomasdb.Constants.ModId
+import tdb.Constants.ModId
 
 class MemoryStore extends KVStore {
   private val values = Map[ModId, Any]()

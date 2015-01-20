@@ -13,22 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.ddg
+package tdb.ddg
 
 import akka.actor.ActorRef
 import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Map, MutableList, Set, TreeSet}
 import scala.concurrent.Await
 
-import thomasdb._
-import thomasdb.Constants._
-import thomasdb.list.ListInput
-import thomasdb.master.Master
-import thomasdb.messages._
+import tdb._
+import tdb.Constants._
+import tdb.list.ListInput
+import tdb.master.Master
+import tdb.messages._
 
 class DDG {
   var root = new RootNode()
-  debug.ThomasDB.nodes(root) = (Node.getId(), Tag.Root(), null)
+  debug.TDB.nodes(root) = (Node.getId(), Tag.Root(), null)
 
   val reads = Map[ModId, Buffer[Timestamp]]()
   val pars = Map[ActorRef, Timestamp]()

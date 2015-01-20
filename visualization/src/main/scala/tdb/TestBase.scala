@@ -14,13 +14,13 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization
+package tdb.visualization
 
 import scala.collection.mutable.ArrayBuffer
 import collection.mutable.{HashMap, MutableList}
 import scala.util.Random
 
-import thomasdb._
+import tdb._
 
 /*
  * Base class for test generators.

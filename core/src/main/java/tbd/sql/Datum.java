@@ -1,4 +1,4 @@
-package thomasdb.sql;
+package tdb.sql;
 
 import java.io.Serializable;
 import java.text.ParseException;

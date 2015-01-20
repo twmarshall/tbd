@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb
+package tdb
 
 import akka.actor.ActorRef
 import akka.pattern.ask
@@ -21,8 +21,8 @@ import java.io.Serializable
 import scala.collection.mutable.{ArrayBuffer, Set}
 import scala.concurrent.{Await, Future, Lock, Promise}
 
-import thomasdb.Constants._
-import thomasdb.messages._
+import tdb.Constants._
+import tdb.messages._
 
 class Mod[T](val id: ModId) extends Serializable {
   override def equals(obj: Any): Boolean = {

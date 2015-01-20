@@ -14,12 +14,12 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization.analysis
+package tdb.visualization.analysis
 
 import scala.collection.mutable.{HashMap}
-import thomasdb.ddg.Tag
-import thomasdb.Constants.ModId
-import thomasdb.visualization.graph._
+import tdb.ddg.Tag
+import tdb.Constants.ModId
+import tdb.visualization.graph._
 
 /*
  * Trait for dependency trackers, which track dependencies and

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.list
+package tdb.list
 
 import java.io.Serializable
 import scala.collection.mutable.Buffer
 
-import thomasdb._
-import thomasdb.Constants.ModId
-import thomasdb.ThomasDB._
+import tdb._
+import tdb.Constants.ModId
+import tdb.TDB._
 
 // The default value of zero for size works because size is only ever
 // accessed by the Modifier, which will set it appropriately.

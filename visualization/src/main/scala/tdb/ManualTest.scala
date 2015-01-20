@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization
+package tdb.visualization
 
 import scala.collection.mutable.ArrayBuffer
 import collection.mutable.HashMap
@@ -22,7 +22,7 @@ import scala.util.Random
 import scala.util.matching.Regex
 import scala.io.StdIn
 
-import thomasdb._
+import tdb._
 
 /*
  * Test generator which uses user interaction to mutate the input.

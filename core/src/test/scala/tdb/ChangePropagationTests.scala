@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.test
+package tdb.test
 
 import org.scalatest._
 import scala.collection.mutable.ArrayBuffer
 
-import thomasdb._
-import thomasdb.list._
-import thomasdb.table._
-import thomasdb.ThomasDB._
+import tdb._
+import tdb.list._
+import tdb.table._
+import tdb.TDB._
 
 class PropagationOrderTest(input: TableInput[Int, Int])
     extends Adjustable[Mod[Int]] {

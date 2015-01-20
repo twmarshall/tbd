@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.list
+package tdb.list
 
 import java.io.Serializable
 import scala.collection.mutable.Buffer
 
-import thomasdb._
-import thomasdb.ThomasDB._
+import tdb._
+import tdb.TDB._
 
 class PartitionedModList[T, U]
     (val partitions: Buffer[ModList[T, U]])

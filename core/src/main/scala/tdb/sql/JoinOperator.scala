@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.sql
+package tdb.sql
 
 import net.sf.jsqlparser.expression._
 import scala.collection.{GenIterable, GenMap, Seq}
 import scala.collection.mutable.Map
 import scala.collection.JavaConversions._
 
-import thomasdb._
-import thomasdb.list._
+import tdb._
+import tdb.list._
 
 
 class JoinAdjust (
@@ -55,9 +55,9 @@ class JoinOperator (
   var childOperators = List[Operator](leftOper, rightOper)
   val leftTable = leftOper.getTable
   val rightTable = rightOper.getTable
-  var leftAdjustable : AdjustableList[Int,Seq[thomasdb.sql.Datum]] = _
-  var rightAdjustable : AdjustableList[Int,Seq[thomasdb.sql.Datum]] = _
-  var outputAdjustable : AdjustableList[Int,Seq[thomasdb.sql.Datum]] = _
+  var leftAdjustable : AdjustableList[Int,Seq[tdb.sql.Datum]] = _
+  var rightAdjustable : AdjustableList[Int,Seq[tdb.sql.Datum]] = _
+  var outputAdjustable : AdjustableList[Int,Seq[tdb.sql.Datum]] = _
   var isTupleMapPresent = true
 
   var tupleTableMap = List[String]()
@@ -77,7 +77,7 @@ class JoinOperator (
 
   override def getTable: ScalaTable = leftTable
 
-  override def getAdjustable: thomasdb.list.AdjustableList[Int,Seq[thomasdb.sql.Datum]] =
+  override def getAdjustable: tdb.list.AdjustableList[Int,Seq[tdb.sql.Datum]] =
     outputAdjustable
 
   override def toBuffer = outputAdjustable.toBuffer(leftOper.getTable.mutator).

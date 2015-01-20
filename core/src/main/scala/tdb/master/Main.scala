@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.master
+package tdb.master
 
 import akka.util.Timeout
 import java.net.InetAddress
 import org.rogach.scallop._
 import scala.concurrent.duration._
 
-import thomasdb.Constants
-import thomasdb.stats.Stats
+import tdb.Constants
+import tdb.stats.Stats
 
 object Main {
   def main(args: Array[String]) {
 
     object Conf extends ScallopConf(args) {
-      version("ThomasDB 0.1 (c) 2014 Carnegie Mellon University")
+      version("TDB 0.1 (c) 2014 Carnegie Mellon University")
       banner("Usage: master.sh [options]")
       val ip = opt[String]("ip", 'i', default = Some(Constants.localhost),
         descr = "The ip address to bind to.")

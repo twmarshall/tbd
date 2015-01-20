@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb
+package tdb
 
 import akka.pattern.ask
 import scala.collection.mutable.Map
 import scala.concurrent.Await
 
-import thomasdb.Constants._
-import thomasdb.ddg.{FunctionTag, ModNode, Tag}
-import thomasdb.messages._
+import tdb.Constants._
+import tdb.ddg.{FunctionTag, ModNode, Tag}
+import tdb.messages._
 
 trait Modizer[T] {
   def remove(key: Any, c: Context): Boolean
@@ -54,7 +54,7 @@ class Modizer1[T] extends Modizer[T] {
         mod1
       }
 
-    ThomasDB.modInternal(initializer, mod1, this, key, c)
+    TDB.modInternal(initializer, mod1, this, key, c)
   }
 }
 
@@ -109,7 +109,7 @@ class Modizer2[T, U] extends Modizer[(T, U)] {
         modRight
       }
 
-    ThomasDB.mod2Internal(initializer, modLeft, modRight, this, key, c)
+    TDB.mod2Internal(initializer, modLeft, modRight, this, key, c)
   }
 
   def left(key: Any)
@@ -126,7 +126,7 @@ class Modizer2[T, U] extends Modizer[(T, U)] {
         modLeft
       }
 
-    ThomasDB.modLeftInternal(initializer, modLeft, this, key, c)
+    TDB.modLeftInternal(initializer, modLeft, this, key, c)
   }
 
   def right(key: Any)
@@ -143,6 +143,6 @@ class Modizer2[T, U] extends Modizer[(T, U)] {
         modRight
       }
 
-    ThomasDB.modRightInternal(initializer, modRight, this, key, c)
+    TDB.modRightInternal(initializer, modRight, this, key, c)
   }
 }

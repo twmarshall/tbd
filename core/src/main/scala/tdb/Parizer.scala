@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb
+package tdb
 
 import akka.actor.ActorRef
 import akka.pattern.ask
 import java.io.Serializable
 import scala.concurrent.Await
 
-import thomasdb.Constants._
-import thomasdb.messages._
-import thomasdb.worker.Task
+import tdb.Constants._
+import tdb.messages._
+import tdb.worker.Task
 
 class Parizer[T](one: Context => T) extends Serializable {
   def and[U](two: Context => U)(implicit c: Context): (T, U) = {

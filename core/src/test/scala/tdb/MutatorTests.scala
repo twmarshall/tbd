@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.test
+package tdb.test
 
 import scala.collection.mutable.Buffer
 import org.scalatest._
 
-import thomasdb._
-import thomasdb.list._
-import thomasdb.util._
+import tdb._
+import tdb.list._
+import tdb.util._
 
 class ListTest(input: ListInput[Int, Int])
   extends Adjustable[AdjustableList[Int, Int]] {

@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.debug
+package tdb.debug
 
-import thomasdb.Context
-import thomasdb.ddg.{FunctionTag, Node, ParNode, Tag}
-import thomasdb.macros.{ThomasDBMacros, functionToInvoke}
+import tdb.Context
+import tdb.ddg.{FunctionTag, Node, ParNode, Tag}
+import tdb.macros.{TDBMacros, functionToInvoke}
 
 class Parizer[T]
     (one: Context => T,
      id1: Int,
-     closedTerms1: List[(String, Any)]) extends thomasdb.Parizer(one) {
+     closedTerms1: List[(String, Any)]) extends tdb.Parizer(one) {
   import scala.language.experimental.macros
 
   @functionToInvoke("parTwoInternal")
   override def and[U](two: Context => U)(implicit c: Context): (T, U) =
-    macro ThomasDBMacros.parTwoMacro[(T, U)]
+    macro TDBMacros.parTwoMacro[(T, U)]
 
   def parTwoInternal[U](
       two: Context => U,
@@ -40,7 +40,7 @@ class Parizer[T]
 
     val parNode = c.currentTime.node
     val tag = Tag.Par(FunctionTag(id1, closedTerms1), FunctionTag(id2, closedTerms2))
-    ThomasDB.nodes(parNode) = (internalId, tag, stack)
+    TDB.nodes(parNode) = (internalId, tag, stack)
 
     (oneRet, twoRet)
   }

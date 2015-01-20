@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.list
+package tdb.list
 
 import scala.collection.mutable.{Buffer, Map}
 
-import thomasdb.Constants.WorkerId
+import tdb.Constants.WorkerId
 
 class HashPartitionedDoubleChunkListInput[T, U]
     (workers: Map[WorkerId, Buffer[DoubleChunkListInput[T, U]]],

@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.ddg
+package tdb.ddg
 
-import thomasdb.Constants.ModId
+import tdb.Constants.ModId
 
 /*
  * Represents a node tag, which holds valuable information

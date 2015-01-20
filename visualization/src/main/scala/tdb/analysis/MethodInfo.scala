@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization.analysis
+package tdb.visualization.analysis
 
-import thomasdb.visualization.graph.Node
+import tdb.visualization.graph.Node
 
 /*
  * Represents information about a method for debugging purposes.

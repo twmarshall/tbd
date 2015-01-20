@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.sql
+package tdb.sql
 
 import net.sf.jsqlparser.schema.Table;
 
@@ -53,7 +53,7 @@ class TableScanOperator (
 
   override def getTable: ScalaTable =  table
 
-  override def getAdjustable: thomasdb.list.AdjustableList[Int,Seq[thomasdb.sql.Datum]] =
+  override def getAdjustable: tdb.list.AdjustableList[Int,Seq[tdb.sql.Datum]] =
     outputAdjustable
 
   override def toBuffer = outputAdjustable.toBuffer(table.mutator).

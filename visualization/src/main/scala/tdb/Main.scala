@@ -14,9 +14,9 @@
  * limitations under the License.
  */
 
-package thomasdb.visualization
+package tdb.visualization
 
-import thomasdb.visualization.analysis._
+import tdb.visualization.analysis._
 import org.rogach.scallop._
 import scala.language.existentials
 
@@ -26,7 +26,7 @@ object Main {
   def main(args: Array[String]) {
 
     object Conf extends ScallopConf(args) {
-      version("ThomasDB 0.1 (c) 2014 Carnegie Mellon University")
+      version("TDB 0.1 (c) 2014 Carnegie Mellon University")
       banner("Usage: visualizer.sh -a algorithm [options]\n")
       val algo = opt[String]("algorithm", 'a', required = true,
         descr = "The algorithm to run: quicksort, reduce, split, map")

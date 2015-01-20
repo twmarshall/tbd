@@ -13,12 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.examples.list
+package tdb.examples.list
 
 import org.rogach.scallop._
 
 class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
-  version("ThomasDB 0.1 (c) 2014 Carnegie Mellon University")
+  version("TDB 0.1 (c) 2014 Carnegie Mellon University")
   banner("Usage: experiment.sh [options]")
   val algorithms = opt[List[String]]("algorithms", 'a',
     default = Some(List("wc")), descr = "Algorithms to run, where s " +

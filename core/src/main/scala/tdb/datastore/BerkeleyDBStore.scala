@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.datastore
+package tdb.datastore
 
 import akka.actor.{ActorRef, ActorContext, Props}
 import akka.pattern.ask
@@ -25,8 +25,8 @@ import java.io._
 import scala.collection.mutable.Map
 import scala.concurrent.Await
 
-import thomasdb.Mod
-import thomasdb.Constants.ModId
+import tdb.Mod
+import tdb.Constants.ModId
 
 class LRUNode(
   val key: ModId,
@@ -49,7 +49,7 @@ class BerkeleyDBStore
   storeConfig.setAllowCreate(true)
 
   val random = new scala.util.Random()
-  private val envHome = new File("/tmp/thomasdb_berkeleydb" + random.nextInt())
+  private val envHome = new File("/tmp/tdb_berkeleydb" + random.nextInt())
   envHome.mkdir()
 
   try {
@@ -84,7 +84,7 @@ class BerkeleyDBStore
         1
       case s: String =>
         s.size * 2
-      case node: thomasdb.list.ModListNode[_, _] =>
+      case node: tdb.list.ModListNode[_, _] =>
         getSize(node.value) + getSize(node.nextMod) + 8
       case tuple: Tuple2[_, _] =>
         getSize(tuple._1) + getSize(tuple._2)

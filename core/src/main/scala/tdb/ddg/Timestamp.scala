@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.ddg
+package tdb.ddg
 
 object Timestamp {
   // A dummy timestamp which all real Timestamps are less than. Only use for
