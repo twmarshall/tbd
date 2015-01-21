@@ -40,7 +40,7 @@ object Main {
         descr = "The ip address to bind to.")
       val port = opt[Int]("port", 'p', default = Some(2553),
         descr = "The port to bind to.")
-      val logging = opt[String]("log", 'l', default = Some("INFO"),
+      val logging = opt[String]("log", 'l', default = Some("DEBUG"),
         descr = "The logging level. Options, by increasing verbosity, are " +
         "OFF, WARNING, INFO, or DEBUG")
       val storeType = opt[String]("store", 's', default = Some("memory"),
