@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.reef;
+package tdb.reef;
 
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.task.Task;
@@ -49,7 +49,7 @@ public final class MasterTask implements Task {
     LOG.log(Level.INFO, "master port: {0}", masterPort);
 
    String[] args = {"-i", masterIP, "-p", masterPort};
-   thomasdb.master.Main.main(args);
+   tdb.master.Main.main(args);
 
     LOG.log(Level.INFO, "master sleep");
     try {

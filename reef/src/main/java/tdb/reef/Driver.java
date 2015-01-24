@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.reef;
+package tdb.reef;
 
 import org.apache.reef.driver.task.CompletedTask;
 import org.apache.reef.driver.task.RunningTask;
@@ -46,7 +46,7 @@ import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
-import thomasdb.reef.param.*;
+import tdb.reef.param.*;
 
 @Unit
 public final class Driver {

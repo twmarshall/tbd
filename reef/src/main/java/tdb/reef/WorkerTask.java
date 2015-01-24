@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.reef;
+package tdb.reef;
 
 import org.apache.reef.tang.annotations.Parameter;
 import org.apache.reef.task.Task;
@@ -23,7 +23,7 @@ import java.util.logging.Logger;
 
 import javax.inject.Inject;
 
-import thomasdb.reef.param.*;
+import tdb.reef.param.*;
 
 /**
  * A worker node.
@@ -62,7 +62,7 @@ public final class WorkerTask implements Task {
     }
 
     String[] args = {"-i", hostIP, "-p", hostPort, masterAkka};
-    thomasdb.worker.Main.main(args);
+    //tdb.worker.Main.main(args);
 
     LOG.log(Level.INFO, "worker sleep");
     try {

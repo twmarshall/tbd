@@ -13,13 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.reef.param;
+package tdb.reef.param;
 
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
 /**
- * Internal parameter = port number to start ThomasDB component (master/worker).
+ * Internal parameter = port number to start TDB component (master/worker).
  */
 @NamedParameter(
     doc = "port number",

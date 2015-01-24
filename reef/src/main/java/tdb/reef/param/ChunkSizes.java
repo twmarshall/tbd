@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.reef.param;
+package tdb.reef.param;
 
 import org.apache.reef.tang.annotations.Name;
 import org.apache.reef.tang.annotations.NamedParameter;
 
 /**
- * Command line parameter = chunkSizes in ThomasDB datastore.
+ * Command line parameter = chunkSizes in TDB datastore.
  */
 @NamedParameter(
-    doc = "This should be set to the same to chunkSizes in ThomasDB",
+    doc = "This should be set to the same to chunkSizes in TDB",
     short_name = "chunkSizes",
     default_value = "1")
 public final class ChunkSizes implements Name<Integer> {

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package thomasdb.reef;
+package tdb.reef;
 
 import org.apache.reef.client.*;
 import org.apache.reef.tang.Configuration;
@@ -32,10 +32,10 @@ import java.io.InputStreamReader;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import thomasdb.reef.param.*;
+import tdb.reef.param.*;
 
 /**
- * ThomasDB REEF application client.
+ * TDB REEF application client.
  */
 @Unit
 public class Client {
@@ -108,7 +108,7 @@ public class Client {
   private final int timeout;
 
   /**
-   * ThomasDB REEF application client.
+   * TDB REEF application client.
    * Parameters are injected automatically by TANG.
    *
    * @param reef    Reference to the REEF framework.
@@ -135,7 +135,7 @@ public class Client {
             .set(DriverConfiguration.GLOBAL_LIBRARIES,
                 Client.class.getProtectionDomain()
                   .getCodeSource().getLocation().getFile())
-            .set(DriverConfiguration.DRIVER_IDENTIFIER, "ThomasDBReefYarn")
+            .set(DriverConfiguration.DRIVER_IDENTIFIER, "TDBReefYarn")
             .set(DriverConfiguration.ON_EVALUATOR_ALLOCATED,
                 Driver.EvaluatorAllocatedHandler.class)
             .set(DriverConfiguration.ON_EVALUATOR_FAILED,
