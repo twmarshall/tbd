@@ -91,6 +91,11 @@ class Mutator(_connector: MasterConnector = null) {
     Await.result(future, DURATION)
   }
 
+  def awaitReady() {
+    Await.result(Future.sequence(futures), DURATION)
+    futures.clear()
+  }
+
   def getDDG(): DDG  = {
     val ddgFuture = masterRef ? GetMutatorDDGMessage(id)
     Await.result(ddgFuture, DURATION).asInstanceOf[DDG]
