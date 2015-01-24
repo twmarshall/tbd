@@ -59,7 +59,7 @@ case class LoadMessage(listId: String, data: Map[Any, Any])
 
 // Worker
 case class RegisterWorkerMessage(
-  worker: ActorRef, datastoreRef: ActorRef, webuiAddress: String)
+  worker: String, datastore: String, webuiAddress: String)
 case class CreateTaskMessage(parent: ActorRef)
 case class GetDatastoreMessage()
 

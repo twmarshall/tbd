@@ -15,13 +15,15 @@
  */
 package tdb.reef;
 
-import org.apache.reef.tang.annotations.Parameter;
-import org.apache.reef.task.Task;
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.Enumeration;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.inject.Inject;
+import org.apache.reef.tang.annotations.Parameter;
+import org.apache.reef.task.Task;
 
 import tdb.reef.param.*;
 
@@ -61,8 +63,26 @@ public final class WorkerTask implements Task {
       LOG.log(Level.INFO, "worker sleep interrupted");
     }
 
-    String[] args = {"-i", hostIP, "-p", hostPort, masterAkka};
-    //tdb.worker.Main.main(args);
+    String ip = "";
+    try {
+      Enumeration en = NetworkInterface.getNetworkInterfaces();
+      while(en.hasMoreElements()) {
+        NetworkInterface n = (NetworkInterface) en.nextElement();
+        Enumeration ee = n.getInetAddresses();
+        while (ee.hasMoreElements()) {
+          InetAddress i = (InetAddress) ee.nextElement();
+          if (!i.isLoopbackAddress() && !i.isLinkLocalAddress()) {
+            ip = i.getHostAddress();
+          }
+        }
+      }
+    } catch(Exception e) {
+      LOG.log(Level.INFO, "Failed to get ip: " + e);
+    }
+
+
+    String[] args = {"-i", ip, "-p", hostPort, masterAkka};
+    tdb.worker.Main.main(args);
 
     LOG.log(Level.INFO, "worker sleep");
     try {

@@ -31,25 +31,32 @@ object Worker {
       (masterRef: ActorRef,
        storeType: String,
        cacheSize: Int,
+       systemURL: String,
        webuiAddress: String) =
-    Props(classOf[Worker], masterRef, storeType, cacheSize, webuiAddress)
+    Props(classOf[Worker], masterRef, storeType, cacheSize, systemURL,
+          webuiAddress)
 }
 
 class Worker
     (masterRef: ActorRef,
      storeType: String,
      cacheSize: Int,
+     systemURL: String,
      webuiAddress: String) extends Actor with ActorLogging {
   import context.dispatcher
+
+  log.info("Worker launched.")
 
   private val datastore = context.actorOf(
     Datastore.props(storeType, cacheSize), "datastore")
 
-  private val workerId =
-    Await.result(
-      (masterRef ? RegisterWorkerMessage(self, datastore, webuiAddress))
-        .mapTo[WorkerId],
-      DURATION)
+  private val workerId = {
+    val message = RegisterWorkerMessage(
+      systemURL + "/user/worker",
+      systemURL + "/user/worker/datastore",
+      webuiAddress)
+    Await.result((masterRef ? message).mapTo[WorkerId], DURATION)
+  }
 
   datastore ! SetIdMessage(workerId)
 

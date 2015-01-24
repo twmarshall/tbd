@@ -28,6 +28,7 @@ import tdb.datastore.Datastore
 import tdb.messages._
 import tdb.list._
 import tdb.stats.{Stats, WorkerInfo}
+import tdb.util._
 import tdb.worker.{Task, Worker}
 
 object Master {
@@ -63,14 +64,18 @@ class Master extends Actor with ActorLogging {
   def receive = {
     // Worker
     case RegisterWorkerMessage(
-        workerRef: ActorRef, datastoreRef: ActorRef, webuiAddress: String) =>
+        worker: String, datastore: String, webuiAddress: String) =>
+      val workerId = nextWorkerId
+      sender ! workerId
+
+      val workerRef = AkkaUtil.getActorFromURL(worker, context.system)
+      val datastoreRef = AkkaUtil.getActorFromURL(datastore, context.system)
+
       log.info("Registering worker at " + workerRef)
 
-      val workerId = nextWorkerId
       workers(workerId) = workerRef
       datastoreRefs(workerId) = datastoreRef
 
-      sender ! workerId
       nextWorkerId = incrementWorkerId(nextWorkerId)
 
       Stats.registeredWorkers += WorkerInfo(workerId, webuiAddress)

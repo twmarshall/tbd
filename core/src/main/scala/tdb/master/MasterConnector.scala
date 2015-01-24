@@ -73,8 +73,9 @@ object MasterConnector {
     val masterRef = system.actorOf(Master.props(), "master")
 
     if (singleNode) {
+      val systemURL = "akka.tcp://" + system.name + "@" + ip + ":" + port
       val workerRef = system.actorOf(
-        Worker.props(masterRef, storeType, cacheSize, ""), "worker")
+        Worker.props(masterRef, storeType, cacheSize, systemURL, ""), "worker")
 
       Await.result(workerRef ? "started", DURATION)
     }

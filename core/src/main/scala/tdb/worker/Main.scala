@@ -77,11 +77,13 @@ object Main {
     val future = selection.resolveOne()
     val masterRef = Await.result(future.mapTo[ActorRef], DURATION)
 
+    val systemURL = "akka.tcp://" + system.name + "@" + ip + ":" + port
     system.actorOf(
       Worker.props(
         masterRef,
         Conf.storeType.get.get,
         Conf.cacheSize.get.get,
+        systemURL,
         ip + ":" + webui_port),
       "worker")
 
