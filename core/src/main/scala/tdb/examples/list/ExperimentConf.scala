@@ -68,6 +68,7 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     "or update percentages (0 < f < 1).")
   val store = opt[String]("store", 'w', default = Some("memory"),
     descr = "The data store type to use - memory or berkeleydb.")
+  val timeout = opt[Int]("timeout", 't', default = Some(1000))
   val updateFile = opt[String]("updateFile", 'u', default = Some("updates.xml"),
     descr = "The file to read the updates from, if needed.")
   val verbosity = opt[Int]("verbosity", 'v', default = Some(1),

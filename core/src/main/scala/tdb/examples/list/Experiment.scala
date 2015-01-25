@@ -123,7 +123,7 @@ object Experiment {
     check = conf.check()
 
     Constants.DURATION = 1000.seconds
-    Constants.TIMEOUT = Timeout(1000.seconds)
+    Constants.TIMEOUT = Timeout(conf.timeout().seconds)
 
     run(conf)
   }

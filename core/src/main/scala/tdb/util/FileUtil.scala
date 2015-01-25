@@ -41,7 +41,7 @@ object FileUtil {
     val in = new BufferedReader(new FileReader(fileName))
     in.skip(readFrom)
 
-    var read = 0
+    var read = 0L
     if (readFrom != 0) {
       read += in.readLine().length()
     }
