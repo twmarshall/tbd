@@ -8,11 +8,11 @@ import java.util.regex.Pattern
 object Convert2 {
   def main(args: Array[String]) {
     val partitions = 4
-    for (num <- List("08")) {
-    val fileName = "wiki/enwiki-201410" + num + "-pages-meta-hist-incr.xml"
+    for (num <- List("1")) {
+    val fileName = "enwiki-20141008-pages-meta-current" + num + ".xml"
 
     val output = new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream("w/enwiki-updates-" + num + ".xml"), "utf-8"))
+      new FileOutputStream("enwiki" + num + ".xml"), "utf-8"))
 
     for (i <- 0 until partitions) {
       val file = new File(fileName)
@@ -36,8 +36,7 @@ object Convert2 {
       val recordSeparator = 30.toChar
       while (matcher.find()) {
         val text = matcher.group(2).replace('\n', ' ')
-        output.write(recordSeparator + matcher.group(1) +
-            unitSeparator + text + recordSeparator + "\n")
+        output.write(matcher.group(1) + unitSeparator + text"\n")
         end = matcher.end()
       }
 
@@ -54,8 +53,7 @@ object Convert2 {
 
           if (matcher2.find()) {
             val text = matcher2.group(2).replace('\n', ' ')
-            output.write(recordSeparator + matcher2.group(1) + unitSeparator +
-                text + recordSeparator + "\n")
+            output.write(matcher2.group(1) + unitSeparator + text + "\n")
             done = true
           }
         }

@@ -42,7 +42,7 @@ class FileData
       ()
     }
 
-    FileUtil.readKeyValueFile(updateFile, fileSize, 0, fileSize / 100, process)
+    FileUtil.readKeyValueFile(updateFile, fileSize, 0, fileSize, process)
   }
 
   def generate() {}

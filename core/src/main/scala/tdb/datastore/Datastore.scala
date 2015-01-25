@@ -254,6 +254,8 @@ class Datastore
 
       FileUtil.readKeyValueFile(fileName, fileSize, readFrom, readSize, process)
 
+      log.debug("Done reading")
+
       sender ! "done"
 
     case GetAdjustableListMessage(listId: String) =>

@@ -39,8 +39,24 @@ object FileUtil {
        readSize: Long,
        process: (String, String) => Unit) {
     val in = new BufferedReader(new FileReader(fileName))
+    in.skip(readFrom)
 
-    val numReads =
+    var read = 0
+    if (readFrom != 0) {
+      read += in.readLine().length()
+    }
+
+    var line = in.readLine()
+    while (read < readSize && line != null) {
+      read += line.length()
+
+      val split = line.split(unitSeparator)
+      process(split(0), split(1))
+
+      line = in.readLine()
+    }
+
+    /*val numReads =
       if (readSize > Int.MaxValue) {
         (readSize / Int.MaxValue).toInt + 1
       } else {
@@ -48,7 +64,8 @@ object FileUtil {
       }
 
     in.skip(readFrom)
-
+    print("1>")
+    scala.io.StdIn.readLine()
     val regex = Pattern.compile(
       recordSeparator + "(.*?)" + unitSeparator + "(.*?)" + recordSeparator)
 
@@ -61,13 +78,32 @@ object FileUtil {
         } else {
           readSize / numReads
         }
+      print("2> " + thisReadSize)
+      scala.io.StdIn.readLine()
 
+      // used: 377,000,000
       val buf = new Array[Char](thisReadSize.toInt)
+
+
+      print("2.5>")
+      scala.io.StdIn.readLine()
 
       in.read(buf)
 
+
+
+      print("3>")
+      scala.io.StdIn.readLine()
+
       str = new String(buf)
+
+      print("4>")
+      scala.io.StdIn.readLine()
+
       val matcher = regex.matcher(str)
+
+      print("5>")
+      scala.io.StdIn.readLine()
 
       var nextList = 0
       while (matcher.find()) {
@@ -90,6 +126,6 @@ object FileUtil {
           done = true
         }
       }
-    }
+    }*/
   }
 }
