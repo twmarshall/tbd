@@ -77,33 +77,10 @@ class BerkeleyDBStore
 
   var cacheSize = 0
 
-  // Calculates size of value, in bytes.
-  private def getSize(value: Any): Int = {
-    value match {
-      case null =>
-        1
-      case s: String =>
-        s.size * 2
-      case node: tdb.list.ModListNode[_, _] =>
-        getSize(node.value) + getSize(node.nextMod) + 8
-      case tuple: Tuple2[_, _] =>
-        getSize(tuple._1) + getSize(tuple._2)
-      case i: Integer =>
-        4
-      case m: Mod[_] =>
-        getSize(m.id)
-      case h: scala.collection.immutable.HashMap[_, _] =>
-        h.size * 1000
-      case x =>
-        println(x.getClass)
-        0
-    }
-  }
-
   def put(key: ModId, value: Any) {
-    /*cacheSize += getSize(value)
+    cacheSize += MemoryUsage.getSize(value)
     if (values.contains(key)) {
-      cacheSize -= getSize(values(key).value)
+      cacheSize -= MemoryUsage.getSize(values(key).value)
       values(key).value = value
     } else {
       val newNode = new LRUNode(key, value, null, head)
@@ -113,29 +90,25 @@ class BerkeleyDBStore
       head = newNode
 
       while (cacheSize > maxCacheSize * 1024 * 1024) {
-        println("evicting")
+        print("evicting")
         val toEvict = tail.previous
 
         val key = toEvict.key
         val value = toEvict.value
 
-        writeCount += 1
-        val entity = new ModEntity()
-        entity.key = key
+        putInDB(key, value)
 
-        val byteOutput = new ByteArrayOutputStream()
-        val objectOutput = new ObjectOutputStream(byteOutput)
-        objectOutput.writeObject(value)
-        entity.value = byteOutput.toByteArray
-
-        pIdx.put(entity)
         values -= toEvict.key
-        cacheSize -= getSize(value)
+        cacheSize -= MemoryUsage.getSize(value)
 
         tail.previous = toEvict.previous
         toEvict.previous.next = tail
       }
-    }*/
+    }
+  }
+
+  private def putInDB(key: ModId, value: Any) {
+    writeCount += 1
 
     val entity = new ModEntity()
     entity.key = key
@@ -149,24 +122,15 @@ class BerkeleyDBStore
   }
 
   def get(key: ModId): Any = {
-    /*if (values.contains(key)) {
+    if (values.contains(key)) {
       values(key).value
     } else {
-      readCount += 1
-      val byteArray = pIdx.get(key).value
+      getFromDB(key)
+    }
+  }
 
-      val byteInput = new ByteArrayInputStream(byteArray)
-      val objectInput = new ObjectInputStream(byteInput)
-      val obj = objectInput.readObject()
-
-      // No idea why this is necessary.
-      if (obj != null && obj.isInstanceOf[Tuple2[_, _]]) {
-        obj.toString
-      }
-
-      obj
-    }*/
-
+  private def getFromDB(key: ModId): Any = {
+    readCount += 1
     val byteArray = pIdx.get(key).value
 
     val byteInput = new ByteArrayInputStream(byteArray)
@@ -182,20 +146,22 @@ class BerkeleyDBStore
   }
 
   def remove(key: ModId) {
-    /*if (values.contains(key)) {
+    if (values.contains(key)) {
       values -= key
-    }*/
-
-    //deleteCount += 1
-    pIdx.delete(key)
+    } else {
+      deleteCount += 1
+      pIdx.delete(key)
+    }
   }
 
   def contains(key: ModId) = {
-    //values.contains(key) || pIdx.contains(key)
-    pIdx.contains(key)
+    values.contains(key) || pIdx.contains(key)
   }
 
-  def clear() = ???
+  def clear() = {
+    values.clear()
+    store.truncateClass(classOf[ModEntity])
+  }
 
   def shutdown() {
     println("Shutting down. writes = " + writeCount + ", reads = " +
