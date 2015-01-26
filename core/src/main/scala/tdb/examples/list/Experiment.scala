@@ -122,8 +122,8 @@ object Experiment {
     verbosity = conf.verbosity()
     check = conf.check()
 
-    Constants.DURATION = 1000.seconds
-    Constants.TIMEOUT = Timeout(conf.timeout().seconds)
+    Constants.DURATION = conf.timeout().seconds
+    Constants.TIMEOUT = Timeout(Constants.DURATION)
 
     run(conf)
   }
