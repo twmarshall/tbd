@@ -42,7 +42,7 @@ class BerkeleyDBStore
   private var store: EntityStore = null
 
   private val envConfig = new EnvironmentConfig()
-  envConfig.setCachePercent(10)
+  envConfig.setCacheSize(96 * 1024)
 
   envConfig.setAllowCreate(true)
   val storeConfig = new StoreConfig()
@@ -75,8 +75,9 @@ class BerkeleyDBStore
   var writeCount = 0
   var deleteCount = 0
 
-  var cacheSize = 0
+  var cacheSize = 0L
 
+  var n = 0
   def put(key: ModId, value: Any) {
     cacheSize += MemoryUsage.getSize(value)
     if (values.contains(key)) {
@@ -89,8 +90,7 @@ class BerkeleyDBStore
       head.previous = newNode
       head = newNode
 
-      while (cacheSize > maxCacheSize * 1024 * 1024) {
-        print("evicting")
+      while ((cacheSize / 1024 / 1024) > maxCacheSize) {
         val toEvict = tail.previous
 
         val key = toEvict.key
@@ -105,6 +105,11 @@ class BerkeleyDBStore
         toEvict.previous.next = tail
       }
     }
+
+    if (n % 100000 == 0) {
+      println("Current cache size: " + (cacheSize / 1024 / 1024))
+    }
+    n += 1
   }
 
   private def putInDB(key: ModId, value: Any) {
