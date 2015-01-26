@@ -60,8 +60,17 @@ object MemoryUsage {
       //  h.size * 1000 + objectOverhead
       case l: Long =>
         longOverhead + objectOverhead
+
+      case v: Vector[_] =>
+        v.map(getSize(_)).reduce(_ + _) + objectOverhead
+
+      // Nodes
       case node: tdb.list.DoubleListNode[_, _] =>
         getSize(node.value) + getSize(node.nextMod) + objectOverhead
+      case node: tdb.list.DoubleChunkListNode[_, _] =>
+        getSize(node.chunkMod) + getSize(node.nextMod) + getSize(node.size) +
+        objectOverhead
+
       case x =>
         println(value.getClass)
         objectOverhead
