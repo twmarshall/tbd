@@ -27,6 +27,7 @@ import tdb.{Constants, Log}
 import tdb.Constants._
 import tdb.messages._
 import tdb.stats.Stats
+import tdb.util.Util
 
 object Main {
   def main(args: Array[String]) {
@@ -36,7 +37,7 @@ object Main {
       val cacheSize = opt[Int]("cacheSize", 'c', default = Some(10000),
         descr = "The number of elements to keep in the cache, if the " +
                 "berkeleydb store is being used")
-      val ip = opt[String]("ip", 'i', default = Some(localhost),
+      val ip = opt[String]("ip", 'i', default = Some(Util.getIP()),
         descr = "The ip address to bind to.")
       val port = opt[Int]("port", 'p', default = Some(2553),
         descr = "The port to bind to.")

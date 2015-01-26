@@ -15,6 +15,8 @@
  */
 package tdb.util
 
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 import scala.io.StdIn
 
 object Util {
@@ -33,5 +35,32 @@ object Util {
     } else {
       false
     }
+  }
+
+  /**
+   * Returns a String representation of a relatively public (e.g. not loopback)
+   * IP address for the machine we're currently running on.
+   */
+  def getIP(): String = {
+    var ip = ""
+
+    val en = NetworkInterface.getNetworkInterfaces()
+    while(en.hasMoreElements()) {
+      val n = en.nextElement().asInstanceOf[NetworkInterface]
+      val ee = n.getInetAddresses()
+
+      while (ee.hasMoreElements()) {
+        val i = ee.nextElement().asInstanceOf[InetAddress]
+        if (!i.isLoopbackAddress() && !i.isLinkLocalAddress()) {
+          if (ip != "") {
+            println("WARNING: found two possible ip addresses " + ip + " and " +
+                    i.getHostAddress())
+          }
+          ip = i.getHostAddress();
+        }
+      }
+    }
+
+    ip
   }
 }

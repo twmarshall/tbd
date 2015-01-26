@@ -22,6 +22,7 @@ import scala.concurrent.duration._
 
 import tdb.Constants
 import tdb.stats.Stats
+import tdb.util.Util
 
 object Main {
   def main(args: Array[String]) {
@@ -29,7 +30,7 @@ object Main {
     object Conf extends ScallopConf(args) {
       version("TDB 0.1 (c) 2014 Carnegie Mellon University")
       banner("Usage: master.sh [options]")
-      val ip = opt[String]("ip", 'i', default = Some(Constants.localhost),
+      val ip = opt[String]("ip", 'i', default = Some(Util.getIP()),
         descr = "The ip address to bind to.")
       val port = opt[Int]("port", 'p', default = Some(2552),
         descr = "The port to bind to.")
