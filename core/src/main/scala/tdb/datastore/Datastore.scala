@@ -40,7 +40,7 @@ class Datastore
 
   var workerId: WorkerId = _
 
-  private val store = storeType match {
+  private var store = storeType match {
     case "memory" => new MemoryStore()
     case "berkeleydb" => new BerkeleyDBStore(cacheSize, context)
   }
@@ -293,7 +293,12 @@ class Datastore
       workerId = _workerId
 
     case ClearMessage() =>
-      store.clear()
+      //store.clear()
+      store.shutdown()
+      store = storeType match {
+        case "memory" => new MemoryStore()
+        case "berkeleydb" => new BerkeleyDBStore(cacheSize, context)
+      }
       lists.clear()
 
     case x =>

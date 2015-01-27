@@ -117,7 +117,6 @@ class BerkeleyDBStore
 
     val entity = new ModEntity()
     entity.key = key
-
     val byteOutput = new ByteArrayOutputStream()
     val objectOutput = new ObjectOutputStream(byteOutput)
     objectOutput.writeObject(value)
@@ -165,10 +164,22 @@ class BerkeleyDBStore
 
   def clear() = {
     values.clear()
-    store.truncateClass(classOf[ModEntity])
+
+    val cursor = pIdx.keys()
+    val iter = cursor.iterator()
+    while (iter.hasNext()) {
+      pIdx.delete(iter.next())
+    }
+    cursor.close()
+
+    cacheSize = 0
+    head = tail
+    tail.previous = null
+    tail.next = null
   }
 
   def shutdown() {
+    clear()
     println("Shutting down. writes = " + writeCount + ", reads = " +
             readCount + ", deletes = " + deleteCount)
     store.close()
