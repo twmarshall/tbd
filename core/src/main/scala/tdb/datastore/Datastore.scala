@@ -29,21 +29,32 @@ import tdb.stats.Stats
 import tdb.util.FileUtil
 
 object Datastore {
-  def props(storeType: String, cacheSize: Int): Props =
-    Props(classOf[Datastore], storeType, cacheSize)
+  def props(storeType: String, cacheSize: Int): Props = {
+    storeType match {
+      case "berkeleydb" =>
+        Props(classOf[BerkeleyDBStore], cacheSize)
+      case "memory" =>
+        Props(classOf[MemoryStore])
+    }
+  }
 }
 
-class Datastore
-    (storeType: String,
-     cacheSize: Int) extends Actor with ActorLogging {
+trait Datastore extends Actor with ActorLogging {
   import context.dispatcher
 
-  var workerId: WorkerId = _
+  def put(key: ModId, value: Any)
 
-  private var store = storeType match {
-    case "memory" => new MemoryStore()
-    case "berkeleydb" => new BerkeleyDBStore(cacheSize, context)
-  }
+  def get(key: ModId): Any
+
+  def remove(key: ModId)
+
+  def contains(key: ModId): Boolean
+
+  def clear()
+
+  def shutdown()
+
+  var workerId: WorkerId = _
 
   private var nextModId = 0
 
@@ -65,18 +76,18 @@ class Datastore
 
     nextModId += 1
 
-    store.put(newModId, value)
+    put(newModId, value)
 
     new Mod(newModId)
   }
 
   def read[T](mod: Mod[T]): T = {
-    store.get(mod.id).asInstanceOf[T]
+    get(mod.id).asInstanceOf[T]
   }
 
   def getMod(modId: ModId, taskRef: ActorRef): Any = {
-    if (store.contains(modId)) {
-      val value = store.get(modId)
+    if (contains(modId)) {
+      val value = get(modId)
       if (value == null)
         NullMessage
       else
@@ -100,8 +111,8 @@ class Datastore
   def update[T](mod: Mod[T], value: T) {
     val futures = Buffer[Future[String]]()
 
-    if (!store.contains(mod.id) || store.get(mod.id) != value) {
-      store.put(mod.id, value)
+    if (!contains(mod.id) || get(mod.id) != value) {
+      put(mod.id, value)
 
       if (dependencies.contains(mod.id)) {
         for (taskRef <- dependencies(mod.id)) {
@@ -116,8 +127,8 @@ class Datastore
   def asyncUpdate[T](mod: Mod[T], value: T): Future[_] = {
     val futures = Buffer[Future[String]]()
 
-    if (!store.contains(mod.id) || store.get(mod.id) != value) {
-      store.put(mod.id, value)
+    if (!contains(mod.id) || get(mod.id) != value) {
+      put(mod.id, value)
 
       if (dependencies.contains(mod.id)) {
         for (taskRef <- dependencies(mod.id)) {
@@ -136,8 +147,8 @@ class Datastore
        respondTo: ActorRef) {
     val futures = Buffer[Future[String]]()
 
-    if (!store.contains(modId) || store.get(modId) != value) {
-      store.put(modId, value)
+    if (!contains(modId) || get(modId) != value) {
+      put(modId, value)
 
       if (dependencies.contains(modId)) {
         for (taskRef <- dependencies(modId)) {
@@ -186,7 +197,7 @@ class Datastore
 
     case RemoveModsMessage(modIds: Iterable[ModId]) =>
       for (modId <- modIds) {
-        store.remove(modId)
+        remove(modId)
         dependencies -= modId
       }
 
@@ -293,12 +304,12 @@ class Datastore
       workerId = _workerId
 
     case ClearMessage() =>
-      //store.clear()
-      store.shutdown()
-      store = storeType match {
+      //clear()
+      shutdown()
+      /*store = storeType match {
         case "memory" => new MemoryStore()
         case "berkeleydb" => new BerkeleyDBStore(cacheSize, context)
-      }
+      }*/
       lists.clear()
 
     case x =>

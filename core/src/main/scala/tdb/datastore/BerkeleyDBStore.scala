@@ -35,9 +35,7 @@ class LRUNode(
   var next: LRUNode
 )
 
-class BerkeleyDBStore
-    (maxCacheSize: Int,
-     context: ActorContext) extends KVStore {
+class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   private var environment: Environment = null
   private var store: EntityStore = null
 

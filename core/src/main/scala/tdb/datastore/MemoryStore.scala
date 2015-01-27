@@ -19,7 +19,7 @@ import scala.collection.mutable.Map
 
 import tdb.Constants.ModId
 
-class MemoryStore extends KVStore {
+class MemoryStore extends Datastore {
   private val values = Map[ModId, Any]()
 
   def put(key: ModId, value: Any) {
