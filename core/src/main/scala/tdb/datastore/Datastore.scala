@@ -304,12 +304,7 @@ trait Datastore extends Actor with ActorLogging {
       workerId = _workerId
 
     case ClearMessage() =>
-      //clear()
-      shutdown()
-      /*store = storeType match {
-        case "memory" => new MemoryStore()
-        case "berkeleydb" => new BerkeleyDBStore(cacheSize, context)
-      }*/
+      clear()
       lists.clear()
 
     case x =>

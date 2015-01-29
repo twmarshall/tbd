@@ -18,7 +18,7 @@ package tdb.datastore
 import akka.actor.{ActorRef, ActorContext, Props}
 import akka.pattern.ask
 import com.sleepycat.je.{Environment, EnvironmentConfig}
-import com.sleepycat.persist.{EntityStore, StoreConfig}
+import com.sleepycat.persist.{EntityStore, PrimaryIndex, StoreConfig}
 import com.sleepycat.persist.model.{Entity, PrimaryKey, SecondaryKey}
 import com.sleepycat.persist.model.Relationship
 import java.io._
@@ -38,6 +38,7 @@ class LRUNode(
 class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   private var environment: Environment = null
   private var store: EntityStore = null
+  private var pIdx: PrimaryIndex[java.lang.Long, ModEntity] = null
 
   private val envConfig = new EnvironmentConfig()
   envConfig.setCacheSize(96 * 1024)
@@ -47,21 +48,7 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   storeConfig.setAllowCreate(true)
 
   val random = new scala.util.Random()
-  private val envHome = new File("/tmp/tdb_berkeleydb" + random.nextInt())
-  envHome.mkdir()
-
-  try {
-    // Open the environment and entity store
-    environment = new Environment(envHome, envConfig)
-    store = new EntityStore(environment, "EntityStore", storeConfig)
-  } catch {
-    case fnfe: FileNotFoundException => {
-      System.err.println("setup(): " + fnfe.toString())
-      System.exit(-1)
-    }
-  }
-
-  val pIdx = store.getPrimaryIndex(classOf[java.lang.Long], classOf[ModEntity])
+  private var envHome: File = null
 
   // LRU cache
   private val values = Map[ModId, LRUNode]()
@@ -76,6 +63,27 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   var cacheSize = 0L
 
   var n = 0
+
+  init()
+
+  private def init() {
+    envHome = new File("/tmp/tdb_berkeleydb" + random.nextInt())
+    envHome.mkdir()
+
+    try {
+      // Open the environment and entity store
+      environment = new Environment(envHome, envConfig)
+      store = new EntityStore(environment, "EntityStore", storeConfig)
+    } catch {
+      case fnfe: FileNotFoundException => {
+        System.err.println("setup(): " + fnfe.toString())
+        System.exit(-1)
+      }
+    }
+
+    pIdx = store.getPrimaryIndex(classOf[java.lang.Long], classOf[ModEntity])
+  }
+
   def put(key: ModId, value: Any) {
     cacheSize += MemoryUsage.getSize(value)
     if (values.contains(key)) {
@@ -163,21 +171,17 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   def clear() = {
     values.clear()
 
-    val cursor = pIdx.keys()
-    val iter = cursor.iterator()
-    while (iter.hasNext()) {
-      pIdx.delete(iter.next())
-    }
-    cursor.close()
-
     cacheSize = 0
     head = tail
     tail.previous = null
     tail.next = null
+
+    store.close()
+    environment.close()
+    init()
   }
 
   def shutdown() {
-    clear()
     println("Shutting down. writes = " + writeCount + ", reads = " +
             readCount + ", deletes = " + deleteCount)
     store.close()
