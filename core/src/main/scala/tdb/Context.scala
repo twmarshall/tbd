@@ -29,7 +29,7 @@ import tdb.worker.Task
 class Context
     (taskId: TaskId,
      val task: Task,
-     val datastore: ActorRef,
+     private val datastore: ActorRef,
      val masterRef: ActorRef) {
   import task.context.dispatcher
 
@@ -78,17 +78,11 @@ class Context
   }
 
   def read[T](mod: Mod[T], taskRef: ActorRef = null): T = {
-    val future = datastore ? GetModMessage(mod.id, taskRef)
-    val ret = Await.result(future, DURATION)
-
-    (ret match {
-      case NullMessage => null
-      case x => x
-    }).asInstanceOf[T]
+    readId(mod.id, taskRef).asInstanceOf[T]
   }
 
-  def readId(modId: ModId): Any = {
-    val future = datastore ? GetModMessage(modId, null)
+  def readId(modId: ModId, taskRef: ActorRef = null): Any = {
+    val future = datastore ? GetModMessage(modId, taskRef)
     val ret = Await.result(future, DURATION)
 
     ret match {

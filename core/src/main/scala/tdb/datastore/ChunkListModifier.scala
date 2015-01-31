@@ -15,7 +15,7 @@
  */
 package tdb.datastore
 
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future}
 
 import tdb.{Mod, Mutator}
@@ -24,6 +24,7 @@ import tdb.list._
 
 class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     extends ListInput[T, U] {
+  import datastore.context.dispatcher
   protected var tailMod = datastore.createMod[ChunkListNode[T, U]](null)
 
   // Contains the last ChunkListNode before the tail node. If the list is empty,
@@ -36,6 +37,8 @@ class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
   val list = new ChunkList[T, U](lastNodeMod, conf, datastore.workerId)
 
   def load(data: Map[T, U]) {
+    val futures = Buffer[Future[Any]]()
+
     var chunk = Vector[(T, U)]()
     var lastChunk: Vector[(T, U)] = null
     var newLastNodeMod: Mod[ChunkListNode[T, U]] = null
@@ -81,7 +84,8 @@ class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
         }
       }
 
-      datastore.update(lastNodeMod, new ChunkListNode(chunk, tail, size))
+      futures +=
+        datastore.asyncUpdate(lastNodeMod, new ChunkListNode(chunk, tail, size))
     } else {
       val head = datastore.read(tail)
       for ((k, v) <- head.chunk) {
@@ -89,10 +93,12 @@ class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
         previous(k) = null
       }
 
-      datastore.update(lastNodeMod, head)
+      futures +=
+        datastore.asyncUpdate(lastNodeMod, head)
     }
 
     lastNodeMod = newLastNodeMod
+    Await.result(Future.sequence(futures), DURATION)
   }
 
   def put(key: T, value: U) {
@@ -153,7 +159,7 @@ class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     val newSize = node.size + conf.chunkSizer(value) - conf.chunkSizer(oldValue)
     val newNode = new ChunkListNode(newChunk, node.nextMod, newSize)
 
-    datastore.update(nodes(key), newNode)
+    Await.result(datastore.asyncUpdate(nodes(key), newNode), DURATION)
   } //ensuring(isValid())
 
   def remove(key: T, value: U) {
@@ -207,7 +213,7 @@ class ChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
         new ChunkListNode(newChunk, node.nextMod, newSize)
       }
 
-    datastore.update(nodes(key), newNode)
+    Await.result(datastore.asyncUpdate(nodes(key), newNode), DURATION)
     nodes -= key
   } //ensuring(isValid())
 

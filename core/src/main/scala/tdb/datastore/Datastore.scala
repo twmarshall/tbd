@@ -16,7 +16,7 @@
 package tdb.datastore
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.pattern.ask
+import akka.pattern.{ask, pipe}
 import java.io.File
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future}
@@ -44,7 +44,11 @@ trait Datastore extends Actor with ActorLogging {
 
   def put(key: ModId, value: Any)
 
+  def asyncPut(key: ModId, value: Any): Future[Any]
+
   def get(key: ModId): Any
+
+  def asyncGet(key: ModId): Future[Any]
 
   def remove(key: ModId)
 
@@ -85,13 +89,9 @@ trait Datastore extends Actor with ActorLogging {
     get(mod.id).asInstanceOf[T]
   }
 
-  def getMod(modId: ModId, taskRef: ActorRef): Any = {
+  private def getMod(modId: ModId, taskRef: ActorRef, respondTo: ActorRef) {
     if (contains(modId)) {
-      val value = get(modId)
-      if (value == null)
-        NullMessage
-      else
-        value
+      asyncGet(modId) pipeTo respondTo
     } else {
       val workerId = getWorkerId(modId)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)
@@ -104,24 +104,8 @@ trait Datastore extends Actor with ActorLogging {
         result.toString
       }
 
-      result
+      respondTo ! result
     }
-  }
-
-  def update[T](mod: Mod[T], value: T) {
-    val futures = Buffer[Future[String]]()
-
-    if (!contains(mod.id) || get(mod.id) != value) {
-      put(mod.id, value)
-
-      if (dependencies.contains(mod.id)) {
-        for (taskRef <- dependencies(mod.id)) {
-          futures += (taskRef ? ModUpdatedMessage(mod.id)).mapTo[String]
-        }
-      }
-    }
-
-    Await.result(Future.sequence(futures), DURATION)
   }
 
   def asyncUpdate[T](mod: Mod[T], value: T): Future[_] = {
@@ -140,15 +124,15 @@ trait Datastore extends Actor with ActorLogging {
     Future.sequence(futures)
   }
 
-  def updateMod
+  private def updateMod
       (modId: ModId,
        value: Any,
        task: ActorRef,
        respondTo: ActorRef) {
-    val futures = Buffer[Future[String]]()
+    val futures = Buffer[Future[Any]]()
 
     if (!contains(modId) || get(modId) != value) {
-      put(modId, value)
+      futures += asyncPut(modId, value)
 
       if (dependencies.contains(modId)) {
         for (taskRef <- dependencies(modId)) {
@@ -172,7 +156,7 @@ trait Datastore extends Actor with ActorLogging {
       sender ! createMod(null)
 
     case GetModMessage(modId: ModId, taskRef: ActorRef) =>
-      sender ! getMod(modId, taskRef)
+      getMod(modId, taskRef, sender)
 
       if (dependencies.contains(modId)) {
         dependencies(modId) += taskRef
@@ -181,7 +165,7 @@ trait Datastore extends Actor with ActorLogging {
       }
 
     case GetModMessage(modId: ModId, null) =>
-      sender ! getMod(modId, null)
+      getMod(modId, null, sender)
 
     case UpdateModMessage(modId: ModId, value: Any, task: ActorRef) =>
       updateMod(modId, value, task, sender)

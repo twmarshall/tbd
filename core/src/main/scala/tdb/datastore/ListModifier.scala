@@ -39,7 +39,7 @@ class ListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
     }
 
     val head = datastore.read(tail)
-    datastore.update(tailMod, head)
+    Await.result(datastore.asyncUpdate(tailMod, head), DURATION)
     nodes(head.value._1) = tailMod
     tailMod = newTail
   }
@@ -64,7 +64,7 @@ class ListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
     val nextMod = datastore.read(nodes(key)).nextMod
     val newNode = new ModListNode((key, value), nextMod)
 
-    datastore.update(nodes(key), newNode)
+    Await.result(datastore.asyncUpdate(nodes(key), newNode), DURATION)
   }
 
   def remove(key: T, value: U) {
@@ -79,7 +79,7 @@ class ListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
       nodes(nextNode.value._1) = nodes(key)
     }
 
-    datastore.update(nodes(key), nextNode)
+    Await.result(datastore.asyncUpdate(nodes(key), nextNode), DURATION)
 
     nodes -= key
   }
