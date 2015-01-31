@@ -16,17 +16,14 @@ object Naive {
   }
 
   def main(args: Array[String]) {
-    val file = io.Source.fromFile("enwiki1.xml")
+    val file = io.Source.fromFile("enwiki9.xml")
 
-    val recordSeparator = 30.toChar
     val unitSeparator = 31.toChar
-    val regex = Pattern.compile(
-      recordSeparator + "(.*?)" + unitSeparator + "(.*?)" + recordSeparator)
-    val matcher = regex.matcher(file.getLines.mkString)
 
     val output = Buffer[(String, Int)]()
-    while (matcher.find()) {
-      output += mapper((matcher.group(1), matcher.group(2)))
+    for (line <- file.getLines) {
+      val split = line.split(unitSeparator)
+      output += mapper((split(0), split(1)))
     }
 
     val writer = new BufferedWriter(new OutputStreamWriter(
