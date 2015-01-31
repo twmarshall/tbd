@@ -144,61 +144,6 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
       (sum: Int, pair: (T, U)) => sum + conf.chunkSizer(pair), _ + _)
   }
 
-  def putAfter(key: T, newPair: (T, U)) {
-    val insertIntoMod = nodes(key)
-    val insertInto = datastore.read(nodes(key))
-    val newSize = insertInto.size + conf.chunkSizer(newPair._2)
-
-    var found = false
-    val chunk = datastore.read(insertInto.chunkMod)
-    val newChunk = chunk.flatMap((pair: (T, U)) => {
-      if (pair._1 == key) {
-        found = true
-        Vector(pair, newPair)
-      } else {
-        Vector(pair)
-      }
-    })
-
-    val newNode =
-      if (newSize > conf.chunkSize) {
-        val (newChunk1, newChunk2) = newChunk.splitAt(chunk.size / 2)
-
-        val size1 = calculateSize(newChunk1)
-        val size2 = calculateSize(newChunk2)
-
-        val chunkMod2 = datastore.createMod(newChunk2)
-        val newNode2 =
-          new DoubleChunkListNode(chunkMod2, insertInto.nextMod, size2)
-        val newNodeMod2 = datastore.createMod(newNode2)
-
-        newChunk2.foreach {
-          case (_key, _value) =>
-            nodes(_key) = newNodeMod2
-            previous(_key) = insertIntoMod
-        }
-
-        if (newChunk1.contains(newPair)) {
-          nodes(newPair._1) = insertIntoMod
-          previous(newPair._1) = previous(chunk.head._1)
-        }
-
-        val chunkMod1 = datastore.createMod(newChunk1)
-        new DoubleChunkListNode(chunkMod1, newNodeMod2, size1)
-      } else {
-        nodes(newPair._1) = insertIntoMod
-        previous(newPair._1) = previous(chunk.head._1)
-
-        val chunkMod = datastore.createMod(newChunk)
-        new DoubleChunkListNode(
-          chunkMod,
-          insertInto.nextMod,
-          insertInto.size + conf.chunkSizer(newPair))
-      }
-
-    datastore.update(insertIntoMod, newNode)
-  }
-
   def update(key: T, value: U) {
     val node = datastore.read(nodes(key))
 

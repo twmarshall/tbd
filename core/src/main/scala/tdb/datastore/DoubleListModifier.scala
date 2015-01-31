@@ -72,19 +72,6 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
     future
   }
 
-  def putAfter(key: T, pair: (T, U)) {
-    val before = datastore.read(nodes(key).head)
-
-    val valueMod = datastore.createMod(pair)
-    val newNode = new DoubleListNode(valueMod, before.nextMod)
-    val newNodeMod = datastore.createMod(newNode)
-
-    val newBefore = new DoubleListNode(before.value, newNodeMod)
-    datastore.update(nodes(key).head, newBefore)
-
-    nodes(pair._1) += newNodeMod
-  }
-
   def update(key: T, value: U) {
     if (nodes(key).size > 1) {
       println("?????" + key)

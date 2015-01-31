@@ -29,7 +29,5 @@ trait ListInput[T, U] extends Input[T, U] {
   // the list is currently empty.
   def load(data: Map[T, U])
 
-  def putAfter(key: T, newPair: (T, U))
-
   def getAdjustableList(): AdjustableList[T, U]
 }

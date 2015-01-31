@@ -262,7 +262,6 @@ class ReexecutionTests extends FlatSpec with Matchers {
 
     println("\npropagate")
     input.remove(4)
-    input.putAfter(6, (4, 4))
     //input.update(2, 3)
     mutator.propagate()
     println(output)

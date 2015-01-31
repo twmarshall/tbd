@@ -44,8 +44,6 @@ class PartitionedDoubleChunkListInput[T, U]
     }
   }
 
-  def putAfter(key: T, newPair: (T, U)) = ???
-
   def getPartitions = partitions
 
   def getAdjustableList(): AdjustableList[T, U] = {

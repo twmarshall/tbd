@@ -79,12 +79,6 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
     }
   }
 
-  // Note: doesn't really make sense to allow random insertions into a sorted
-  // list, so we just ignore the key.
-  def putAfter(key: T, newPair: (T, U)) {
-    put(newPair._1, newPair._2)
-  }
-
   def update(key: T, value: U) {
     val nextMod = mutator.read(nodes(key)).nextMod
     val newNode = new ModListNode((key, value), nextMod)

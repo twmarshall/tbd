@@ -52,11 +52,6 @@ class DoubleListInput[T, U]
     val future = datastoreRef ? LoadMessage(partitionId, data.asInstanceOf[Map[Any, Any]])
   }
 
-  def putAfter(key: T, newPair: (T, U)) = {
-    val future = datastoreRef ? PutAfterMessage(partitionId, key, newPair)
-    Await.result(future, DURATION)
-  }
-
   def getAdjustableList(): DoubleList[T, U] = {
     val future = datastoreRef ? GetAdjustableListMessage(partitionId)
     Await.result(future.mapTo[DoubleList[T, U]], DURATION)

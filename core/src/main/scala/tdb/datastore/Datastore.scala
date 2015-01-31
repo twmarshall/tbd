@@ -293,10 +293,6 @@ trait Datastore extends Actor with ActorLogging {
       lists(listId).remove(key, value)
       sender ! "okay"
 
-    case PutAfterMessage(listId: String, key: Any, newPair: (Any, Any)) =>
-      lists(listId).putAfter(key, newPair)
-      sender ! "okay"
-
     case RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef) =>
       datastores(workerId) = datastoreRef
 

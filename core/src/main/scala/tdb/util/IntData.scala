@@ -75,16 +75,7 @@ class IntData
       key = rand.nextInt(maxKey)
     }
 
-    /*if (table.size > 0) {
-      var insertAfter = rand.nextInt(maxKey)
-      while (!table.contains(insertAfter)) {
-        insertAfter = rand.nextInt(maxKey)
-      }
-
-      input.putAfter(insertAfter, (key, value))
-    } else {*/
-      input.put(key, value)
-    //}
+    input.put(key, value)
 
     log("adding " + (key, value))
 

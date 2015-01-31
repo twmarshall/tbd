@@ -52,11 +52,6 @@ class ChunkListInput2[T, U]
     val future = datastoreRef ? LoadMessage(partitionId, data.asInstanceOf[Map[Any, Any]])
   }
 
-  def putAfter(key: T, newPair: (T, U)) = {
-    val future = datastoreRef ? PutAfterMessage(partitionId, key, newPair)
-    Await.result(future, DURATION)
-  }
-
   def getAdjustableList(): ChunkList[T, U] = {
     val future = datastoreRef ? GetAdjustableListMessage(partitionId)
     Await.result(future.mapTo[ChunkList[T, U]], DURATION)

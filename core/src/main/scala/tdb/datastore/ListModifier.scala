@@ -60,18 +60,6 @@ class ListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
     future
   }
 
-  def putAfter(key: T, pair: (T, U)) {
-    val before = datastore.read(nodes(key))
-
-    val newNode = new ModListNode(pair, before.nextMod)
-    val newNodeMod = datastore.createMod(newNode)
-
-    val newBefore = new ModListNode(before.value, newNodeMod)
-    datastore.update(nodes(key), newBefore)
-
-    nodes(pair._1) = newNodeMod
-  }
-
   def update(key: T, value: U) {
     val nextMod = datastore.read(nodes(key)).nextMod
     val newNode = new ModListNode((key, value), nextMod)
