@@ -42,12 +42,12 @@ class MemoryStore extends Datastore {
   }
 
   def asyncGet(key: ModId): Future[Any] = {
+    val value = values(key)
     Future {
-      val value = values(key)
       if (value == null) {
         NullMessage
       } else {
-        values(key)
+        value
       }
     }
   }
