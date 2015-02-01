@@ -140,6 +140,8 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     datastore.asyncUpdate(lastNodeMod, newNode)
   } //ensuring(isValid())
 
+  def putMod(key: T, mod: Mod[(T, U)]) = ???
+
   private def calculateSize(chunk: Vector[(T, U)]) = {
     chunk.aggregate(0)(
       (sum: Int, pair: (T, U)) => sum + conf.chunkSizer(pair), _ + _)

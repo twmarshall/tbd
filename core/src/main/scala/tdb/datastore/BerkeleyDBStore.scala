@@ -41,15 +41,18 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   import context.dispatcher
 
   private var environment: Environment = null
-  private var store: EntityStore = null
+  private var modStore: EntityStore = null
   private var pIdx: PrimaryIndex[java.lang.Long, ModEntity] = null
+
+  private var inputStore: EntityStore = null
+  private var inputId: PrimaryIndex[String, InputEntity] = null
 
   private val envConfig = new EnvironmentConfig()
   envConfig.setCacheSize(96 * 1024)
-
   envConfig.setAllowCreate(true)
-  val storeConfig = new StoreConfig()
-  storeConfig.setAllowCreate(true)
+
+  val modStoreConfig = new StoreConfig()
+  modStoreConfig.setAllowCreate(true)
 
   val random = new scala.util.Random()
   private var envHome: File = null
@@ -71,13 +74,13 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   init()
 
   private def init() {
-    envHome = new File("/tmp/tdb_berkeleydb" + random.nextInt())
+    envHome = new File("/tmp/tdb_berkeleydb")
     envHome.mkdir()
 
     try {
       // Open the environment and entity store
       environment = new Environment(envHome, envConfig)
-      store = new EntityStore(environment, "EntityStore", storeConfig)
+      modStore = new EntityStore(environment, "ModStore", modStoreConfig)
     } catch {
       case fnfe: FileNotFoundException => {
         System.err.println("setup(): " + fnfe.toString())
@@ -85,7 +88,7 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
       }
     }
 
-    pIdx = store.getPrimaryIndex(classOf[java.lang.Long], classOf[ModEntity])
+    pIdx = modStore.getPrimaryIndex(classOf[java.lang.Long], classOf[ModEntity])
   }
 
   def put(key: ModId, value: Any) {
@@ -247,7 +250,10 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     tail.previous = null
     tail.next = null
 
-    store.close()
+    modStore.close()
+    if (inputStore != null) {
+      inputStore.close()
+    }
     environment.close()
     init()
   }
@@ -255,8 +261,41 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   def shutdown() {
     println("Shutting down. writes = " + writeCount + ", reads = " +
             readCount + ", deletes = " + deleteCount)
-    store.close()
+    modStore.close()
     environment.close()
+  }
+
+  def putInput(key: String, value: String) {
+    val entity = new InputEntity()
+    entity.key = key
+    entity.value = value
+    inputId.put(entity)
+  }
+
+  def retrieveInput(inputName: String): Boolean = {
+    inputStore = new EntityStore(environment, inputName, modStoreConfig)
+    inputId = inputStore.getPrimaryIndex(classOf[String], classOf[InputEntity])
+
+    println(inputId.count())
+    inputId.count() > 0
+  }
+
+
+  def iterateInput(process: String => Unit) {
+    val cursor = inputId.keys()
+
+    val it = cursor.iterator
+    while (it.hasNext) {
+      process(it.next())
+    }
+
+    cursor.close()
+  }
+
+  def getInput(key: String) = {
+    Future {
+      (key, inputId.get(key).value)
+    }
   }
 }
 
@@ -266,4 +305,12 @@ class ModEntity {
   var key: java.lang.Long = -1
 
   var value: Array[Byte] = null
+}
+
+@Entity
+class InputEntity {
+  @PrimaryKey
+  var key: String = ""
+
+  var value: String = ""
 }

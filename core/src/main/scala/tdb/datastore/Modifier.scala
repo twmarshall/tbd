@@ -19,6 +19,7 @@ import scala.collection.mutable.Map
 import scala.concurrent.Future
 
 import tdb.Constants._
+import tdb.Mod
 
 trait Modifier[T, U] {
   // Inserts all of the elements from data into this ListInput. Assumes that
@@ -26,6 +27,8 @@ trait Modifier[T, U] {
   def load(data: Map[T, U]): Future[_]
 
   def asyncPut(key: T, value: U): Future[_]
+
+  def putMod(key: T, mod: Mod[(T, U)]): Future[_]
 
   def update(key: T, value: U): Future[_]
 

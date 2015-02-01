@@ -71,6 +71,9 @@ object MemoryUsage {
         getSize(node.chunkMod) + getSize(node.nextMod) + getSize(node.size) +
         objectOverhead
 
+      case inputMod: InputMod =>
+        getSize(inputMod.key) + objectOverhead
+
       case x =>
         println(value.getClass)
         objectOverhead

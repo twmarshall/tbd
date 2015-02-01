@@ -42,7 +42,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
   "FlatMapTest" should "run flatMap successfully" in {
     val conf = new ExperimentConf(
       Array("--algorithms", "flatMap",
-            "--chunkSizes", "1", "4",
+            "--chunkSizes", "1",
             "--counts", intensity.toString,
             "--partitions", "1", "4") ++ defaults)
 
@@ -52,7 +52,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
   "JoinTest" should "run join successfully." in {
     val nestedLoopConf = new ExperimentConf(
       Array("--algorithms", "join",
-            "--chunkSizes", "1", "4",
+            "--chunkSizes", "1",
             "--counts", intensity.toString,
             "--partitions", "1") ++ defaults)
 
@@ -71,7 +71,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
   "MapTest" should "run map successfully." in {
     val conf = new ExperimentConf(
       Array("--algorithms", "map",
-            "--chunkSizes", "1", "4",
+            "--chunkSizes", "1",
             "--counts", intensity.toString,
             "--files", "wiki2.xml",
             "--partitions", "1", "4") ++ defaults)
@@ -92,7 +92,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
   "ReduceByKeyTest" should "run reduceByKey successfully" in {
     val conf = new ExperimentConf(
       Array("--algorithms", "rbk",
-            "--chunkSizes","1", "4",
+            "--chunkSizes","1",
             "--counts", intensity.toString,
             "--partitions", "1") ++ defaults)
 
@@ -110,7 +110,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
 
     val mergeConf = new ExperimentConf(
       Array("--algorithms", "msort",
-            "--chunkSizes", "1", "2",
+            "--chunkSizes", "1",
             "--counts", intensity.toString,
             "--partitions", "1", "4") ++ defaults)
 

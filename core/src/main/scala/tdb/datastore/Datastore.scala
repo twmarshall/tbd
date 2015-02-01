@@ -20,6 +20,7 @@ import akka.pattern.{ask, pipe}
 import java.io.File
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
 import tdb.Mod
 import tdb.Constants._
@@ -27,6 +28,8 @@ import tdb.list._
 import tdb.messages._
 import tdb.stats.Stats
 import tdb.util.FileUtil
+
+case class InputMod(val key: String)
 
 object Datastore {
   def props(storeType: String, cacheSize: Int): Props = {
@@ -57,6 +60,14 @@ trait Datastore extends Actor with ActorLogging {
   def clear()
 
   def shutdown()
+
+  def putInput(key: String, value: String)
+
+  def retrieveInput(inputName: String): Boolean
+
+  def iterateInput(process: String => Unit)
+
+  def getInput(key: String): Future[(String, String)]
 
   var workerId: WorkerId = _
 
@@ -91,7 +102,18 @@ trait Datastore extends Actor with ActorLogging {
 
   private def getMod(modId: ModId, taskRef: ActorRef, respondTo: ActorRef) {
     if (contains(modId)) {
-      asyncGet(modId) pipeTo respondTo
+      val future = asyncGet(modId)
+
+      future.onComplete {
+        case Success(v) =>
+          v match {
+            case InputMod(key) =>
+              getInput(key) pipeTo respondTo
+            case x => respondTo ! x
+          }
+        case Failure(e) =>
+          e.printStackTrace()
+      }
     } else {
       val workerId = getWorkerId(modId)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)
@@ -213,38 +235,52 @@ trait Datastore extends Actor with ActorLogging {
          numWorkers: Int,
          workerIndex: Int) =>
 
+      if (!retrieveInput(fileName)) {
+        val file = new File(fileName)
+        val fileSize = file.length()
+        val partitionSize = fileSize / numWorkers
+
+        val process = (key: String, value: String) => {
+          putInput(key, value)
+        }
+
+        val readFrom = partitionSize * workerIndex
+        val readSize =
+          if (workerIndex == numWorkers - 1) {
+            // If the file doesn't divide by the number of partitions evenly,
+            // we process the extra along with the last partition.
+            fileSize - partitionSize * (numWorkers - 1)
+          } else {
+            partitionSize
+          }
+
+        log.debug("Reading " + fileName + " from " + readFrom + ", size " +
+                  readSize)
+
+        FileUtil.readKeyValueFile(
+          fileName, fileSize, readFrom, readSize, process)
+
+        log.debug("Done reading")
+      } else {
+        log.debug(fileName + " was already loaded.")
+      }
+
       val theseLists = partitions.map {
         case partition: Partition[String, String] =>
           lists(partition.partitionId)
       }.toBuffer
 
-      val file = new File(fileName)
-      val fileSize = file.length()
-      val partitionSize = fileSize / numWorkers
-
+      var inserted = 0
       val futures = Buffer[Future[Any]]()
       var nextList = 0
-      val process = (key: String, value: String) => {
-        futures += theseLists(nextList).asyncPut(key, value)
+      val process2 = (key: String) => {
+        val mod = createMod(new InputMod(key))
+        futures += theseLists(nextList).putMod(key, mod.asInstanceOf[Mod[(Any, Any)]])
         nextList = (nextList + 1) % theseLists.size
+        inserted += 1
       }
 
-      val readFrom = partitionSize * workerIndex
-      val readSize =
-        if (workerIndex == numWorkers - 1) {
-          // If the file doesn't divide by the number of partitions evenly,
-          // we process the extra along with the last partition.
-          fileSize - partitionSize * (numWorkers - 1)
-        } else {
-          partitionSize
-        }
-
-      log.debug("Reading " + fileName + " from " + readFrom + ", size " +
-                readSize)
-
-      FileUtil.readKeyValueFile(fileName, fileSize, readFrom, readSize, process)
-
-      log.debug("Done reading")
+      iterateInput(process2)
 
       Future.sequence(futures) pipeTo sender
 
@@ -284,3 +320,4 @@ trait Datastore extends Actor with ActorLogging {
                   x + " from " + sender)
   }
 }
+

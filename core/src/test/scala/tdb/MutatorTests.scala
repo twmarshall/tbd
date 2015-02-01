@@ -100,11 +100,11 @@ class MutatorTests extends FlatSpec with Matchers {
 
   "FileLoadTest" should "load the file data correctly" in {
     for (partitions <- List(1, 2, 4);
-         chunkSize <- List(1, 2)) {
+         chunkSize <- List(1)) {
       val mutator = new Mutator()
 
       val conf = new ListConf(
-        partitions = partitions, chunkSize = chunkSize, partitioned = true)
+        partitions = partitions, chunkSize = chunkSize, partitioned = true, double = true)
       val input = mutator.createList[String, String](conf)
       mutator.loadFile("wiki2.xml", input.asInstanceOf[Dataset[String, String]])
 

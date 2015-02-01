@@ -59,6 +59,8 @@ class ListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
     future
   }
 
+  def putMod(key: T, valueMod: Mod[(T, U)]) = ???
+
   def update(key: T, value: U): Future[_] = {
     val nextMod = datastore.read(nodes(key)).nextMod
     val newNode = new ModListNode((key, value), nextMod)

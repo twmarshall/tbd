@@ -55,6 +55,7 @@ class DoubleListNode[T, U]
       read(value) {
         case v => write(f(v))
       }
+      //write(null.asInstanceOf[(V, W)])
     }
 
     val newNextMod = memo(nextMod) {
