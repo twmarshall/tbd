@@ -31,7 +31,7 @@ object Stats {
 
   var datastoreMisses = 0
 
-  val imgSrc = "http://tdb.cs.cmu.edu/wordpress/wp-content/uploads/2014/08/tdb-white.png"
+  val imgSrc = "http://thomasdb.cs.cmu.edu/wordpress/wp-content/uploads/2014/08/thomasdb-white.png"
 
   def launch(system: ActorSystem, mode: String, host: String, port: Int) {
     val statsActor =
@@ -63,12 +63,12 @@ object Stats {
         "tick")
   }
 
-  def createPage(body: String): String =
+  def createPage(title: String, body: String): String =
     s"""
       <!DOCTYPE html>
       <html>
         <head>
-          <title>TDB Master</title>
+          <title>$title</title>
           <style>
             body {
               font-family: calibri;
@@ -111,8 +111,8 @@ object Stats {
           <script src=\"Chart.js\"></script>
           <script type=\"text/javascript\">
             // Get the context of the canvas element we want to select
-var ctx = document.getElementById(\"myChart\").getContext(\"2d\");
-var myNewChart = new Chart(ctx).PolarArea(data);
+//var ctx = document.getElementById(\"myChart\").getContext(\"2d\");
+//var myNewChart = new Chart(ctx).PolarArea(data);
           </script>
         </head>
         <body>
@@ -121,9 +121,7 @@ var myNewChart = new Chart(ctx).PolarArea(data);
               <td style=\"background-color: #990000;\">
                 <img src=\"$imgSrc\" width=\"50px\">
               </td>
-              <td style=\"font-size: 24pt;\">
-                TDB Master
-              </td>
+              <td style=\"font-size: 24pt;\">$title</td>
             </tr>
             <tr>
               <td colspan=2>$body

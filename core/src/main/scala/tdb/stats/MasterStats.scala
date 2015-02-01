@@ -40,7 +40,9 @@ class MasterStats extends Actor with ActorLogging {
       }
       body += "</table>"
 
-      event.response.write(Stats.createPage(body), "text/html; charset=UTF-8")
+      val title = "TDB Master"
+
+      event.response.write(Stats.createPage(title, body), "text/html; charset=UTF-8")
     }
 
     case x =>

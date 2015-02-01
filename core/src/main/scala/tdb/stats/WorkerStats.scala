@@ -44,7 +44,9 @@ class WorkerStats extends Actor with ActorLogging {
       }
       s += "</table>"
 
-      event.response.write(Stats.createPage(s), "text/html; charset=UTF-8")
+      val title = "TDB Worker"
+
+      event.response.write(Stats.createPage(title, s), "text/html; charset=UTF-8")
     }
 
     case x =>
