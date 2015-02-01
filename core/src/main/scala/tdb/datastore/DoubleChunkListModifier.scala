@@ -16,14 +16,14 @@
 package tdb.datastore
 
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
 class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
-    extends ListInput[T, U] {
+    extends Modifier[T, U] {
   import datastore.context.dispatcher
   protected var tailMod = datastore.createMod[DoubleChunkListNode[T, U]](null)
 
@@ -36,7 +36,7 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
 
   val list = new DoubleChunkList[T, U](lastNodeMod, conf, false, datastore.workerId)
 
-  def load(data: Map[T, U]) {
+  def load(data: Map[T, U]): Future[_] = {
     val futures = Buffer[Future[Any]]()
     var chunk = Vector[(T, U)]()
     var lastChunk: Vector[(T, U)] = null
@@ -100,11 +100,7 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     }
 
     lastNodeMod = newLastNodeMod
-    Await.result(Future.sequence(futures), DURATION)
-  }
-
-  def put(key: T, value: U) {
-    Await.result(asyncPut(key, value), DURATION)
+    Future.sequence(futures)
   }
 
   def asyncPut(key: T, value: U): Future[_] = {
@@ -149,7 +145,7 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
       (sum: Int, pair: (T, U)) => sum + conf.chunkSizer(pair), _ + _)
   }
 
-  def update(key: T, value: U) {
+  def update(key: T, value: U): Future[_] = {
     val node = datastore.read(nodes(key))
 
     var oldValue: U = null.asInstanceOf[U]
@@ -167,10 +163,10 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     val chunkMod = datastore.createMod(newChunk)
     val newNode = new DoubleChunkListNode(chunkMod, node.nextMod, newSize)
 
-    Await.result(datastore.asyncUpdate(nodes(key), newNode), DURATION)
+    datastore.asyncUpdate(nodes(key), newNode)
   } //ensuring(isValid())
 
-  def remove(key: T, value: U) {
+  def remove(key: T, value: U): Future[_] = {
     val node = datastore.read(nodes(key))
 
     var oldValue: U = null.asInstanceOf[U]
@@ -225,8 +221,11 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
         new DoubleChunkListNode(chunkMod, node.nextMod, newSize)
       }
 
-    Await.result(datastore.asyncUpdate(nodes(key), newNode), DURATION)
+    val future = datastore.asyncUpdate(nodes(key), newNode)
+
     nodes -= key
+
+    future
   } //ensuring(isValid())
 
   def contains(key: T): Boolean = {

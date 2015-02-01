@@ -23,7 +23,7 @@ import com.sleepycat.persist.model.{Entity, PrimaryKey, SecondaryKey}
 import com.sleepycat.persist.model.Relationship
 import java.io._
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 import tdb.messages._

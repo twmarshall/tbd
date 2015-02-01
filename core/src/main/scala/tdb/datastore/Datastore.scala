@@ -19,7 +19,7 @@ import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
 import java.io.File
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 import tdb.Mod
 import tdb.Constants._
@@ -62,7 +62,7 @@ trait Datastore extends Actor with ActorLogging {
 
   private var nextModId = 0
 
-  private val lists = Map[String, ListInput[Any, Any]]()
+  private val lists = Map[String, Modifier[Any, Any]]()
 
   private var nextListId = 0
 
@@ -98,13 +98,7 @@ trait Datastore extends Actor with ActorLogging {
 
       Stats.datastoreMisses += 1
 
-      val result = Await.result(future, DURATION)
-
-      if (result.isInstanceOf[Tuple2[_, _]]) {
-        result.toString
-      }
-
-      respondTo ! result
+      future pipeTo respondTo
     }
   }
 
@@ -190,7 +184,7 @@ trait Datastore extends Actor with ActorLogging {
     case CreateListIdsMessage(conf: ListConf, numPartitions: Int) =>
       val listIds = Buffer[String]()
 
-      val newLists = Buffer[ListInput[Any, Any]]()
+      val newLists = Buffer[Modifier[Any, Any]]()
       for (i <- 1 to numPartitions) {
         val listId = nextListId + ""
         nextListId += 1
@@ -228,9 +222,10 @@ trait Datastore extends Actor with ActorLogging {
       val fileSize = file.length()
       val partitionSize = fileSize / numWorkers
 
+      val futures = Buffer[Future[Any]]()
       var nextList = 0
       val process = (key: String, value: String) => {
-        theseLists(nextList).put(key, value)
+        futures += theseLists(nextList).asyncPut(key, value)
         nextList = (nextList + 1) % theseLists.size
       }
 
@@ -251,7 +246,7 @@ trait Datastore extends Actor with ActorLogging {
 
       log.debug("Done reading")
 
-      sender ! "done"
+      Future.sequence(futures) pipeTo sender
 
     case GetAdjustableListMessage(listId: String) =>
       sender ! lists(listId).getAdjustableList()
@@ -266,16 +261,13 @@ trait Datastore extends Actor with ActorLogging {
       key.toString
       value.toString
 
-      lists(listId).put(key, value)
-      sender ! "okay"
+      lists(listId).asyncPut(key, value) pipeTo sender
 
     case UpdateMessage(listId: String, key: Any, value: Any) =>
-      lists(listId).update(key, value)
-      sender ! "okay"
+      lists(listId).update(key, value) pipeTo sender
 
     case RemoveMessage(listId: String, key: Any, value: Any) =>
-      lists(listId).remove(key, value)
-      sender ! "okay"
+      lists(listId).remove(key, value) pipeTo sender
 
     case RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef) =>
       datastores(workerId) = datastoreRef
