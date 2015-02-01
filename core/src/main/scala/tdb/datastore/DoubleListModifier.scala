@@ -16,20 +16,21 @@
 package tdb.datastore
 
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
+class DoubleListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
+  import datastore.context.dispatcher
   private var tailMod = datastore.createMod[DoubleListNode[T, U]](null)
 
   val nodes = Map[T, Buffer[Mod[DoubleListNode[T, U]]]]()
 
   val modList = new DoubleList[T, U](tailMod, false, datastore.workerId)
 
-  def load(data: Map[T, U]) {
+  def load(data: Map[T, U]): Future[_] = {
     var tail = datastore.createMod[DoubleListNode[T, U]](null)
     val newTail = tail
 
@@ -45,13 +46,11 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
       nodes(key) = Buffer(tail)
     }
 
-    datastore.update(tailMod, headNode)
+    val future = datastore.asyncUpdate(tailMod, headNode)
     nodes(headValue._1) = Buffer(tailMod)
     tailMod = newTail
-  }
 
-  def put(key: T, value: U) {
-    Await.result(asyncPut(key, value), DURATION)
+    future
   }
 
   def asyncPut(key: T, value: U): Future[_] = {
@@ -72,7 +71,7 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
     future
   }
 
-  def update(key: T, value: U) {
+  def update(key: T, value: U): Future[_] = {
     if (nodes(key).size > 1) {
       println("?????" + key)
     }
@@ -80,10 +79,10 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
     val valueMod = datastore.createMod((key, value))
     val newNode = new DoubleListNode(valueMod, nextMod)
 
-    datastore.update(nodes(key).head, newNode)
+    datastore.asyncUpdate(nodes(key).head, newNode)
   }
 
-  def remove(key: T, value: U) {
+  def remove(key: T, value: U): Future[_] = {
     val beforeSize = size()
     var node: DoubleListNode[T, U] = null
     var mod: Mod[DoubleListNode[T, U]] = null
@@ -111,10 +110,12 @@ class DoubleListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
       nodes(nextValue._1) -= node.nextMod
     }
 
-    datastore.update(mod, nextNode)
+    val future = datastore.asyncUpdate(mod, nextNode)
     nodes(key) -= mod
 
     assert(size() == (beforeSize - 1))
+
+    future
   }
 
   def contains(key: T): Boolean = {

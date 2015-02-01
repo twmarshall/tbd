@@ -16,20 +16,20 @@
 package tdb.datastore
 
 import scala.collection.mutable.Map
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Future
 
 import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class ListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
+class ListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
   private var tailMod = datastore.createMod[ModListNode[T, U]](null)
 
   val nodes = Map[T, Mod[ModListNode[T, U]]]()
 
   val modList = new ModList[T, U](tailMod, false, datastore.workerId)
 
-  def load(data: Map[T, U]) {
+  def load(data: Map[T, U]): Future[_] = {
     var tail = datastore.createMod[ModListNode[T, U]](null)
     val newTail = tail
 
@@ -39,13 +39,12 @@ class ListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
     }
 
     val head = datastore.read(tail)
-    datastore.update(tailMod, head)
+    val future = datastore.asyncUpdate(tailMod, head)
+
     nodes(head.value._1) = tailMod
     tailMod = newTail
-  }
 
-  def put(key: T, value: U) {
-    Await.result(asyncPut(key, value), DURATION)
+    future
   }
 
   def asyncPut(key: T, value: U): Future[_] = {
@@ -60,14 +59,14 @@ class ListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
     future
   }
 
-  def update(key: T, value: U) {
+  def update(key: T, value: U): Future[_] = {
     val nextMod = datastore.read(nodes(key)).nextMod
     val newNode = new ModListNode((key, value), nextMod)
 
-    datastore.update(nodes(key), newNode)
+    datastore.asyncUpdate(nodes(key), newNode)
   }
 
-  def remove(key: T, value: U) {
+  def remove(key: T, value: U): Future[_] = {
     val node = datastore.read(nodes(key))
     val nextNode = datastore.read(node.nextMod)
 
@@ -79,9 +78,11 @@ class ListModifier[T, U](datastore: Datastore) extends ListInput[T, U] {
       nodes(nextNode.value._1) = nodes(key)
     }
 
-    datastore.update(nodes(key), nextNode)
+    val future = datastore.asyncUpdate(nodes(key), nextNode)
 
     nodes -= key
+
+    future
   }
 
   def contains(key: T): Boolean = {

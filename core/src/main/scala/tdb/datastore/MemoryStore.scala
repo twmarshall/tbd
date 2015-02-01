@@ -15,19 +15,40 @@
  */
 package tdb.datastore
 
+import akka.actor.ActorRef
 import scala.collection.mutable.Map
+import scala.concurrent.Future
 
 import tdb.Constants.ModId
+import tdb.messages.NullMessage
 
 class MemoryStore extends Datastore {
+  import context.dispatcher
+
   private val values = Map[ModId, Any]()
 
   def put(key: ModId, value: Any) {
     values(key) = value
   }
 
+  def asyncPut(key: ModId, value: Any): Future[Any] = {
+    values(key) = value
+    Future { "done" }
+  }
+
   def get(key: ModId): Any = {
     values(key)
+  }
+
+  def asyncGet(key: ModId): Future[Any] = {
+    Future {
+      val value = values(key)
+      if (value == null) {
+        NullMessage
+      } else {
+        values(key)
+      }
+    }
   }
 
   def remove(key: ModId) {

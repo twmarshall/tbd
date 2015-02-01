@@ -16,15 +16,17 @@
 package tdb.datastore
 
 import akka.actor.{ActorRef, ActorContext, Props}
-import akka.pattern.ask
+import akka.pattern.{ask, pipe}
 import com.sleepycat.je.{Environment, EnvironmentConfig}
 import com.sleepycat.persist.{EntityStore, PrimaryIndex, StoreConfig}
 import com.sleepycat.persist.model.{Entity, PrimaryKey, SecondaryKey}
 import com.sleepycat.persist.model.Relationship
 import java.io._
-import scala.collection.mutable.Map
-import scala.concurrent.Await
+import scala.collection.mutable.{Buffer, Map}
+import scala.concurrent.Future
+import scala.util.{Failure, Success}
 
+import tdb.messages._
 import tdb.Mod
 import tdb.Constants.ModId
 
@@ -36,6 +38,8 @@ class LRUNode(
 )
 
 class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
+  import context.dispatcher
+
   private var environment: Environment = null
   private var store: EntityStore = null
   private var pIdx: PrimaryIndex[java.lang.Long, ModEntity] = null
@@ -118,6 +122,51 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     n += 1
   }
 
+  def asyncPut(key: ModId, value: Any): Future[Any] = {
+    cacheSize += MemoryUsage.getSize(value)
+
+    val future =
+    if (values.contains(key)) {
+      cacheSize -= MemoryUsage.getSize(values(key).value)
+      values(key).value = value
+      Future { "done" }
+    } else {
+      val newNode = new LRUNode(key, value, null, head)
+      values(key) = newNode
+
+      head.previous = newNode
+      head = newNode
+
+      val futures = Buffer[Future[String]]()
+      while ((cacheSize / 1024 / 1024) > maxCacheSize) {
+        val toEvict = tail.previous
+
+        val key = toEvict.key
+        val value = toEvict.value
+
+        futures += (Future {
+          putInDB(key, value)
+          "done"
+        })
+
+        values -= toEvict.key
+        cacheSize -= MemoryUsage.getSize(value)
+
+        tail.previous = toEvict.previous
+        toEvict.previous.next = tail
+      }
+
+      Future.sequence(futures)
+    }
+
+    if (n % 100000 == 0) {
+      println("Current cache size: " + (cacheSize / 1024 / 1024))
+    }
+    n += 1
+
+    future
+  }
+
   private def putInDB(key: ModId, value: Any) {
     writeCount += 1
 
@@ -136,6 +185,28 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
       values(key).value
     } else {
       getFromDB(key)
+    }
+  }
+
+  def asyncGet(key: ModId): Future[Any] = {
+    if (values.contains(key)) {
+      val value = values(key).value
+      Future {
+        if (value == null) {
+          NullMessage
+        } else {
+          value
+        }
+      }
+    } else {
+      Future {
+        val value = getFromDB(key)
+        if (value == null) {
+          NullMessage
+        } else {
+          value
+        }
+      }
     }
   }
 
