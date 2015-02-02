@@ -47,6 +47,8 @@ class ListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
     future
   }
 
+  def loadInput(keys: Iterable[String]) = ???
+
   def asyncPut(key: T, value: U): Future[_] = {
     val newTail = datastore.createMod[ModListNode[T, U]](null)
     val newNode = new ModListNode((key, value), newTail)

@@ -53,6 +53,30 @@ class DoubleListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
     future
   }
 
+  def loadInput(keys: Iterable[String]): Future[_] = {
+    var tail = datastore.createMod[DoubleListNode[T, U]](null)
+    val newTail = tail
+
+    var headNode: DoubleListNode[T, U] = null
+    var headKey: T = null.asInstanceOf[T]
+
+    for (key <- keys) {
+      headKey = key.asInstanceOf[T]
+      val valueMod = new Mod[(T, U)](datastore.getNewModId())
+      datastore.inputs(valueMod.id) = key
+      headNode = new DoubleListNode(valueMod, tail)
+      tail = datastore.createMod(headNode)
+
+      nodes(headKey) = Buffer(tail)
+    }
+
+    val future = datastore.asyncUpdate(tailMod, headNode)
+    nodes(headKey) = Buffer(tailMod)
+    tailMod = newTail
+
+    future
+  }
+
   def asyncPut(key: T, value: U): Future[_] = {
     val valueMod = datastore.createMod((key, value))
     putMod(key, valueMod)

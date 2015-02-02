@@ -103,6 +103,8 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     Future.sequence(futures)
   }
 
+  def loadInput(keys: Iterable[String]) = ???
+
   def asyncPut(key: T, value: U): Future[_] = {
     val lastNode = datastore.read(lastNodeMod)
 

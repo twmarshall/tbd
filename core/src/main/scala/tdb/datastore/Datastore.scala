@@ -65,7 +65,7 @@ trait Datastore extends Actor with ActorLogging {
 
   def retrieveInput(inputName: String): Boolean
 
-  def iterateInput(process: String => Unit)
+  def iterateInput(process: Iterable[String] => Unit, partitions: Int)
 
   def getInput(key: String): Future[(String, String)]
 
@@ -79,7 +79,7 @@ trait Datastore extends Actor with ActorLogging {
 
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  private val inputs = Map[ModId, String]()
+  val inputs = Map[ModId, String]()
 
   // Maps logical names of datastores to their references.
   private val datastores = Map[WorkerId, ActorRef]()
@@ -268,18 +268,14 @@ trait Datastore extends Actor with ActorLogging {
           lists(partition.partitionId)
       }.toBuffer
 
-      var inserted = 0
       val futures = Buffer[Future[Any]]()
       var nextList = 0
-      val process2 = (key: String) => {
-        val mod = new Mod[(Any, Any)](getNewModId())
-        inputs(mod.id) = key
-        futures += theseLists(nextList).putMod(key, mod)
-        nextList = (nextList + 1) % theseLists.size
-        inserted += 1
+      val process2 = (keys: Iterable[String]) => {
+        futures += theseLists(nextList).loadInput(keys)
+        nextList = nextList + 1
       }
 
-      iterateInput(process2)
+      iterateInput(process2, partitions.size)
 
       Future.sequence(futures) pipeTo sender
 

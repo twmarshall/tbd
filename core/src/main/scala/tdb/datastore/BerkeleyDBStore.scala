@@ -281,12 +281,23 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   }
 
 
-  def iterateInput(process: String => Unit) {
+  def iterateInput(process: Iterable[String] => Unit, partitions: Int) {
     val cursor = inputId.keys()
+    val partitionSize = inputId.count() / partitions + 1
 
+    val buf = Buffer[String]()
     val it = cursor.iterator
     while (it.hasNext) {
-      process(it.next())
+      if (buf.size < partitionSize) {
+        buf += it.next()
+      } else {
+        process(buf)
+        buf.clear()
+      }
+    }
+
+    if (buf.size > 0) {
+      process(buf)
     }
 
     cursor.close()

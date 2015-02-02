@@ -26,6 +26,8 @@ trait Modifier[T, U] {
   // the list is currently empty.
   def load(data: Map[T, U]): Future[_]
 
+  def loadInput(keys: Iterable[String]): Future[_]
+
   def asyncPut(key: T, value: U): Future[_]
 
   def putMod(key: T, mod: Mod[(T, U)]): Future[_]
