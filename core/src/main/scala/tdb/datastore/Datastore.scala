@@ -79,18 +79,25 @@ trait Datastore extends Actor with ActorLogging {
 
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
+  private val inputs = Map[ModId, String]()
+
   // Maps logical names of datastores to their references.
   private val datastores = Map[WorkerId, ActorRef]()
 
   private var misses = 0
 
-  def createMod[T](value: T): Mod[T] = {
+  def getNewModId(): ModId = {
     var newModId: Long = workerId
     newModId = newModId << 48
     newModId += nextModId
 
     nextModId += 1
 
+    newModId
+  }
+
+  def createMod[T](value: T): Mod[T] = {
+    val newModId = getNewModId()
     put(newModId, value)
 
     new Mod(newModId)
@@ -101,19 +108,10 @@ trait Datastore extends Actor with ActorLogging {
   }
 
   private def getMod(modId: ModId, taskRef: ActorRef, respondTo: ActorRef) {
-    if (contains(modId)) {
-      val future = asyncGet(modId)
-
-      future.onComplete {
-        case Success(v) =>
-          v match {
-            case InputMod(key) =>
-              getInput(key) pipeTo respondTo
-            case x => respondTo ! x
-          }
-        case Failure(e) =>
-          e.printStackTrace()
-      }
+    if (inputs.contains(modId)) {
+      getInput(inputs(modId)) pipeTo respondTo
+    } else if (contains(modId)) {
+      asyncGet(modId) pipeTo sender
     } else {
       val workerId = getWorkerId(modId)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)
@@ -274,8 +272,9 @@ trait Datastore extends Actor with ActorLogging {
       val futures = Buffer[Future[Any]]()
       var nextList = 0
       val process2 = (key: String) => {
-        val mod = createMod(new InputMod(key))
-        futures += theseLists(nextList).putMod(key, mod.asInstanceOf[Mod[(Any, Any)]])
+        val mod = new Mod[(Any, Any)](getNewModId())
+        inputs(mod.id) = key
+        futures += theseLists(nextList).putMod(key, mod)
         nextList = (nextList + 1) % theseLists.size
         inserted += 1
       }
