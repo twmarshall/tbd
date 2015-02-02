@@ -45,7 +45,7 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   private var pIdx: PrimaryIndex[java.lang.Long, ModEntity] = null
 
   private var inputStore: EntityStore = null
-  private var inputId: PrimaryIndex[String, InputEntity] = null
+  private var inputId: PrimaryIndex[java.lang.Integer, InputEntity] = null
 
   private val envConfig = new EnvironmentConfig()
   envConfig.setCacheSize(96 * 1024)
@@ -267,25 +267,26 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
 
   def putInput(key: String, value: String) {
     val entity = new InputEntity()
-    entity.key = key
+    entity.key = key.hashCode()
+    entity.title = key
     entity.value = value
+
     inputId.put(entity)
   }
 
   def retrieveInput(inputName: String): Boolean = {
     inputStore = new EntityStore(environment, inputName, modStoreConfig)
-    inputId = inputStore.getPrimaryIndex(classOf[String], classOf[InputEntity])
+    inputId = inputStore.getPrimaryIndex(classOf[java.lang.Integer], classOf[InputEntity])
 
     println(inputId.count())
     inputId.count() > 0
   }
 
-
-  def iterateInput(process: Iterable[String] => Unit, partitions: Int) {
+  def iterateInput(process: Iterable[Int] => Unit, partitions: Int) {
     val cursor = inputId.keys()
     val partitionSize = inputId.count() / partitions + 1
 
-    val buf = Buffer[String]()
+    val buf = Buffer[Int]()
     val it = cursor.iterator
     while (it.hasNext) {
       if (buf.size < partitionSize) {
@@ -303,9 +304,10 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     cursor.close()
   }
 
-  def getInput(key: String) = {
+  def getInput(key: Int) = {
     Future {
-      (key, inputId.get(key).value)
+      val entity = inputId.get(key)
+      (entity.title, entity.value)
     }
   }
 }
@@ -321,7 +323,9 @@ class ModEntity {
 @Entity
 class InputEntity {
   @PrimaryKey
-  var key: String = ""
+  var key: java.lang.Integer = -1
+
+  var title: String = ""
 
   var value: String = ""
 }

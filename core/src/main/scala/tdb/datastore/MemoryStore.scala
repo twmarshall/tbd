@@ -26,7 +26,7 @@ class MemoryStore extends Datastore {
   import context.dispatcher
 
   private val values = Map[ModId, Any]()
-  private val input = Map[String, String]()
+  private val input = Map[Int, Any]()
 
   def put(key: ModId, value: Any) {
     values(key) = value
@@ -68,21 +68,23 @@ class MemoryStore extends Datastore {
     values.clear()
   }
 
+  var nextInput = 0
   def putInput(key: String, value: String) {
-    input(key) = value
+    input(nextInput) = (key, value)
+    nextInput += 1
   }
 
   def retrieveInput(inputName: String): Boolean = false
 
-  def iterateInput(process: Iterable[String] => Unit, partitions: Int) {
+  def iterateInput(process: Iterable[Int] => Unit, partitions: Int) {
     for (keys <- input.keys.grouped(input.size / partitions)) {
       process(keys)
     }
   }
 
-  def getInput(key: String) = {
+  def getInput(key: Int) = {
     Future {
-      (key, input(key))
+      input(key)
     }
   }
 }

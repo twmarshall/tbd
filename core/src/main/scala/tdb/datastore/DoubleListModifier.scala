@@ -53,7 +53,7 @@ class DoubleListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
     future
   }
 
-  def loadInput(keys: Iterable[String]): Future[_] = {
+  def loadInput(keys: Iterable[Int]): Future[_] = {
     var tail = datastore.createMod[DoubleListNode[T, U]](null)
     val newTail = tail
 
