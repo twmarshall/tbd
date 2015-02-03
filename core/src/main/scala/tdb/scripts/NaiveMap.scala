@@ -1,12 +1,11 @@
-#!/bin/sh
-exec scala "$0" "$@"
-!#
+package tdb.scripts
 
 import java.io._
 import java.util.regex.Pattern
+import org.rogach.scallop._
 import scala.collection.mutable.Buffer
 
-object Naive {
+object NaiveMap {
   def mapper(pair: (String, String)): (String, Int) = {
     var count = 0
     for (word <- pair._2.split("\\W+")) {
@@ -16,7 +15,17 @@ object Naive {
   }
 
   def main(args: Array[String]) {
-    val file = io.Source.fromFile("enwiki9.xml")
+
+    object Conf extends ScallopConf(args) {
+      version("TDB 0.1 (c) 2014 Carnegie Mellon University")
+      banner("Usage: master.sh [options]")
+      val file = opt[String]("file", 'f', default = Some("enwiki.xml"),
+        descr = "The file to read.")
+      val output = opt[String]("output", 'o', default = Some("naive-map-output.xml"),
+        descr = "The file to write the output to.")
+    }
+
+    val file = scala.io.Source.fromFile(Conf.file())
 
     val unitSeparator = 31.toChar
 
@@ -27,7 +36,7 @@ object Naive {
     }
 
     val writer = new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream("naive-output.txt"), "utf-8"))
+      new FileOutputStream(Conf.output()), "utf-8"))
     for ((key, value) <- output.sortWith(_._1 < _._1)) {
       writer.write(key + " -> " + value + "\n")
     }

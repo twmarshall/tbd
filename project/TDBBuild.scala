@@ -81,10 +81,13 @@ object TDBBuild extends Build {
         IO.write(experimentOut, experiment)
         experimentOut.setExecutable(true)
 
-        val sql = template.format(classpath, "tdb.sql.SQLTest")
-        val sqlOut = baseDirectory.value / "../bin/sql.sh"
-        IO.write(sqlOut, sql)
-        sqlOut.setExecutable(true)
+        val runTemplate = """#!/bin/sh
+        java -Xmx2g -Xss4m -classpath "%s" $@
+        """
+        val run = runTemplate.format(classpath)
+        val runOut = baseDirectory.value / "../bin/run.sh"
+        IO.write(runOut, run)
+        runOut.setExecutable(true)
 
         masterOut
       }
