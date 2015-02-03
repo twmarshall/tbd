@@ -28,7 +28,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
 
   val intensity = 10
 
-  "FilterTest" should "run filter successfully." in {
+  /*"FilterTest" should "run filter successfully." in {
     val conf = new ExperimentConf(
       Array("--algorithms", "filter",
             "--chunkSizes", "1",
@@ -66,7 +66,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
             "--partitions", "1") ++ defaults)
 
     Experiment.run(sortConf)
-  }
+  }*/
 
   "MapTest" should "run map successfully." in {
     val conf = new ExperimentConf(
@@ -89,7 +89,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
     Experiment.run(Experiment.confs ++ conf)
   }*/
 
-  "ReduceByKeyTest" should "run reduceByKey successfully" in {
+  /*"ReduceByKeyTest" should "run reduceByKey successfully" in {
     val conf = new ExperimentConf(
       Array("--algorithms", "rbk",
             "--chunkSizes","1",
@@ -125,7 +125,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
             "--partitions", "1") ++ defaults)
 
     Experiment.run(conf)
-  }
+  }*/
 
   /*"WordcountTest" should "run wordcount successfully." in {
     val conf = Map(
@@ -137,3 +137,4 @@ class AlgorithmTests extends FlatSpec with Matchers {
     Experiment.run(Experiment.confs ++ conf)
   }*/
 }
+

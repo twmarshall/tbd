@@ -21,20 +21,20 @@ import scala.concurrent.Future
 import tdb.Constants._
 import tdb.Mod
 
-trait Modifier[T, U] {
+trait Modifier {
   // Inserts all of the elements from data into this ListInput. Assumes that
   // the list is currently empty.
-  def load(data: Map[T, U]): Future[_]
+  def load(data: Map[Any, Any]): Future[_]
 
   def loadInput(keys: Iterable[Int]): Future[_]
 
-  def asyncPut(key: T, value: U): Future[_]
+  def asyncPut(key: Any, value: Any): Future[_]
 
-  def putMod(key: T, mod: Mod[(T, U)]): Future[_]
+  def putMod(key: Any, mod: Mod[(Any, Any)]): Future[_]
 
-  def update(key: T, value: U): Future[_]
+  def update(key: Any, value: Any): Future[_]
 
-  def remove(key: T, value: U): Future[_]
+  def remove(key: Any, value: Any): Future[_]
 
-  def getAdjustableList(): AdjustableList[T, U]
+  def getAdjustableList(): AdjustableList[Any, Any]
 }

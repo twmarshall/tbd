@@ -24,7 +24,7 @@ import tdb.{ Adjustable, Context, Mod, Mutator }
 import tdb.list._
 import tdb.TDB._
 import tdb.sql._
-
+/*
 class JoinTests extends FlatSpec with Matchers {
 
   "Join Test" should "check the Join operator" in {
@@ -115,3 +115,4 @@ class JoinTests extends FlatSpec with Matchers {
   }
 
 }
+*/

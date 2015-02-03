@@ -189,8 +189,8 @@ class Master extends Actor with ActorLogging {
       }
 
       val input = conf match {
-        // file, partitions, chunkSize, chunkSizer, sorted, double, hash
-        case ListConf(_, _, 1, _, false, true, true, _) =>
+        // file, partitions, chunkSize, chunkSizer, sorted, hash
+        case ListConf(_, _, 1, _, false, true) =>
           val partitions = Map[WorkerId, Buffer[DoubleListInput[Any, Any]]]()
           makePartitions {
             case (listId, datastoreRef, workerId) =>
@@ -205,7 +205,7 @@ class Master extends Actor with ActorLogging {
 
           new HashPartitionedDoubleListInput(partitions)
 
-        case ListConf(_, _, _, _, false, true, true, _) =>
+        case ListConf(_, _, _, _, false, true) =>
           val partitions = Map[WorkerId, Buffer[DoubleChunkListInput[Any, Any]]]()
           makePartitions {
             case (listId, datastoreRef, workerId) =>
@@ -220,7 +220,7 @@ class Master extends Actor with ActorLogging {
 
           new HashPartitionedDoubleChunkListInput(partitions, conf)
 
-        case ListConf(_, _, 1, _, false, true, false, _) =>
+        case ListConf(_, _, 1, _, false, false) =>
           val partitions = Buffer[DoubleListInput[Any, Any]]()
           makePartitions {
             case (listId, datastoreRef, workerId) =>
@@ -228,38 +228,13 @@ class Master extends Actor with ActorLogging {
           }
           new PartitionedDoubleListInput(partitions)
 
-        case ListConf(_, _, _, _, false, true, false, _) =>
+        case ListConf(_, _, _, _, false, false) =>
           val partitions = Buffer[DoubleChunkListInput[Any, Any]]()
           makePartitions {
             case (listId, datastoreRef, workerId) =>
               partitions += new DoubleChunkListInput(listId, datastoreRef, workerId)
           }
           new PartitionedDoubleChunkListInput(partitions, conf)
-
-        case ListConf(_, 1, 1, _, sorted, false, false, false) =>
-          makeList(new ModListInput(_, _, -1))
-
-        case ListConf(_, _, 1, _, sorted, false, false, _) =>
-          val partitions = Buffer[ModListInput[Any, Any]]()
-
-          makePartitions {
-            case (listId, datastoreRef, workerId) =>
-              partitions += new ModListInput(listId, datastoreRef, workerId)
-          }
-
-          new PartitionedModListInput(partitions)
-
-        case ListConf(_, 1, _, _, sorted, false, false, false) =>
-          makeList(new ChunkListInput2(_, _, -1))
-
-        case ListConf(_, _, _, _, sorted, false, false, _) =>
-          val partitions = Buffer[ChunkListInput2[Any, Any]]()
-          makePartitions {
-            case (listId, datastoreRef, workerId) =>
-              partitions += new ChunkListInput2(listId, datastoreRef, workerId)
-          }
-
-          new PartitionedChunkListInput2(partitions, conf)
       }
 
       sender ! input

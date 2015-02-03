@@ -22,20 +22,20 @@ import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class DoubleListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
+class DoubleListModifier(datastore: Datastore) extends Modifier {
   import datastore.context.dispatcher
-  private var tailMod = datastore.createMod[DoubleListNode[T, U]](null)
+  private var tailMod = datastore.createMod[DoubleListNode[Any, Any]](null)
 
-  val nodes = Map[Any, Buffer[Mod[DoubleListNode[T, U]]]]()
+  val nodes = Map[Any, Buffer[Mod[DoubleListNode[Any, Any]]]]()
 
-  val modList = new DoubleList[T, U](tailMod, false, datastore.workerId)
+  val modList = new DoubleList[Any, Any](tailMod, false, datastore.workerId)
 
-  def load(data: Map[T, U]): Future[_] = {
-    var tail = datastore.createMod[DoubleListNode[T, U]](null)
+  def load(data: Map[Any, Any]): Future[_] = {
+    var tail = datastore.createMod[DoubleListNode[Any, Any]](null)
     val newTail = tail
 
-    var headNode: DoubleListNode[T, U] = null
-    var headValue: (T, U) = null
+    var headNode: DoubleListNode[Any, Any] = null
+    var headValue: (Any, Any) = null
 
     for ((key, value) <- data) {
       headValue = ((key, value))
@@ -54,15 +54,15 @@ class DoubleListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
   }
 
   def loadInput(keys: Iterable[Int]): Future[_] = {
-    var tail = datastore.createMod[DoubleListNode[T, U]](null)
+    var tail = datastore.createMod[DoubleListNode[Any, Any]](null)
     val newTail = tail
 
-    var headNode: DoubleListNode[T, U] = null
-    var headKey: T = null.asInstanceOf[T]
+    var headNode: DoubleListNode[Any, Any] = null
+    var headKey: Any = null.asInstanceOf[Any]
 
     for (key <- keys) {
-      headKey = key.asInstanceOf[T]
-      val valueMod = new Mod[(T, U)](datastore.getNewModId())
+      headKey = key.asInstanceOf[Any]
+      val valueMod = new Mod[(Any, Any)](datastore.getNewModId())
       datastore.inputs(valueMod.id) = key
       headNode = new DoubleListNode(valueMod, tail)
       tail = datastore.createMod(headNode)
@@ -77,13 +77,13 @@ class DoubleListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
     future
   }
 
-  def asyncPut(key: T, value: U): Future[_] = {
+  def asyncPut(key: Any, value: Any): Future[_] = {
     val valueMod = datastore.createMod((key, value))
     putMod(key, valueMod)
   }
 
-  def putMod(key: T, valueMod: Mod[(T, U)]) = {
-    val newTail = datastore.createMod[DoubleListNode[T, U]](null)
+  def putMod(key: Any, valueMod: Mod[(Any, Any)]) = {
+    val newTail = datastore.createMod[DoubleListNode[Any, Any]](null)
     val newNode = new DoubleListNode(valueMod, newTail)
 
     val future = datastore.asyncUpdate(tailMod, newNode)
@@ -99,7 +99,7 @@ class DoubleListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
     future
   }
 
-  def update(key: T, value: U): Future[_] = {
+  def update(key: Any, value: Any): Future[_] = {
     if (nodes(key).size > 1) {
       println("?????" + key)
     }
@@ -110,10 +110,10 @@ class DoubleListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
     datastore.asyncUpdate(nodes(key).head, newNode)
   }
 
-  def remove(key: T, value: U): Future[_] = {
+  def remove(key: Any, value: Any): Future[_] = {
     val beforeSize = size()
-    var node: DoubleListNode[T, U] = null
-    var mod: Mod[DoubleListNode[T, U]] = null
+    var node: DoubleListNode[Any, Any] = null
+    var mod: Mod[DoubleListNode[Any, Any]] = null
 
     var found = false
     for (_mod <- nodes(key); if !found) {
@@ -146,11 +146,11 @@ class DoubleListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
     future
   }
 
-  def contains(key: T): Boolean = {
+  def contains(key: Any): Boolean = {
     nodes.contains(key)
   }
 
-  def getAdjustableList(): DoubleList[T, U] = {
+  def getAdjustableList(): DoubleList[Any, Any] = {
     modList
   }
 

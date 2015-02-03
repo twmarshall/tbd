@@ -78,7 +78,7 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
   override def loadInitial() {
     input =
       mutator.createList[String, String](
-        conf.listConf.copy(file = conf.file, double = true))
+        conf.listConf.copy(file = conf.file))
     adjust = new WCHashAdjust(input.getAdjustableList(), 2)
   }
 
@@ -163,7 +163,7 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
   override def loadInitial() {
     input =
       mutator.createList[String, String](
-        conf.listConf.copy(file = conf.file, double = true))
+        conf.listConf.copy(file = conf.file))
     adjust = new WCChunkHashAdjust(input.getAdjustableList(), 2)
   }
 

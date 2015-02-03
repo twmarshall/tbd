@@ -23,7 +23,7 @@ import tdb.{ Adjustable, Context, Mod, Mutator }
 import tdb.list._
 import tdb.TDB._
 import tdb.sql._
-
+/*
 class SelectFromWhereTests extends FlatSpec with Matchers {
 
   "Select From Where Test" should "implement  TableScan, " +
@@ -74,3 +74,4 @@ class SelectFromWhereTests extends FlatSpec with Matchers {
   }
 
 }
+*/

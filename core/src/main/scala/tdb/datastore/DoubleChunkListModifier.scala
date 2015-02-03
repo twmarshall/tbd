@@ -22,25 +22,25 @@ import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
-    extends Modifier[T, U] {
+class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
+    extends Modifier {
   import datastore.context.dispatcher
-  protected var tailMod = datastore.createMod[DoubleChunkListNode[T, U]](null)
+  protected var tailMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
 
   // Contains the last DoubleChunkListNode before the tail node. If the list is empty,
   // the contents of this mod will be null.
-  protected var lastNodeMod = datastore.createMod[DoubleChunkListNode[T, U]](null)
+  protected var lastNodeMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
 
-  val nodes = Map[Any, Mod[DoubleChunkListNode[T, U]]]()
-  val previous = Map[Any, Mod[DoubleChunkListNode[T, U]]]()
+  val nodes = Map[Any, Mod[DoubleChunkListNode[Any, Any]]]()
+  val previous = Map[Any, Mod[DoubleChunkListNode[Any, Any]]]()
 
-  val list = new DoubleChunkList[T, U](lastNodeMod, conf, false, datastore.workerId)
+  val list = new DoubleChunkList[Any, Any](lastNodeMod, conf, false, datastore.workerId)
 
-  def load(data: Map[T, U]): Future[_] = {
+  def load(data: Map[Any, Any]): Future[_] = {
     val futures = Buffer[Future[Any]]()
-    var chunk = Vector[(T, U)]()
-    var lastChunk: Vector[(T, U)] = null
-    var newLastNodeMod: Mod[DoubleChunkListNode[T, U]] = null
+    var chunk = Vector[(Any, Any)]()
+    var lastChunk: Vector[(Any, Any)] = null
+    var newLastNodeMod: Mod[DoubleChunkListNode[Any, Any]] = null
 
     var size = 0
     var tail = tailMod
@@ -67,7 +67,7 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
         }
 
         lastChunk = chunk
-        chunk = Vector[(T, U)]()
+        chunk = Vector[(Any, Any)]()
         size  = 0
       }
     }
@@ -107,7 +107,7 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     val futures = Buffer[Future[Any]]()
     var chunk = Vector[Int]()
     var lastChunk: Vector[Int] = null
-    var newLastNodeMod: Mod[DoubleChunkListNode[T, U]] = null
+    var newLastNodeMod: Mod[DoubleChunkListNode[Any, Any]] = null
 
     var size = 0
     var tail = tailMod
@@ -117,7 +117,7 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
 
       if (size >= conf.chunkSize) {
         //val chunkMod = datastore.createMod(chunk)
-        val chunkMod = new Mod[Vector[(T, U)]](datastore.getNewModId())
+        val chunkMod = new Mod[Vector[(Any, Any)]](datastore.getNewModId())
         datastore.chunks(chunkMod.id) = chunk
         val newNode = new DoubleChunkListNode(chunkMod, tail, size)
         tail = datastore.createMod(newNode)
@@ -153,7 +153,7 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
         }
       }
 
-      val chunkMod = new Mod[Vector[(T, U)]](datastore.getNewModId())
+      val chunkMod = new Mod[Vector[(Any, Any)]](datastore.getNewModId())
       datastore.chunks(chunkMod.id) = chunk
       futures +=
         datastore.asyncUpdate(lastNodeMod, new DoubleChunkListNode(chunkMod, tail, size))
@@ -173,12 +173,12 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     Future.sequence(futures)
   }
 
-  def asyncPut(key: T, value: U): Future[_] = {
+  def asyncPut(key: Any, value: Any): Future[_] = {
     val lastNode = datastore.read(lastNodeMod)
 
     val newNode =
       if (lastNode == null) {
-        val chunk = Vector[(T, U)]((key -> value))
+        val chunk = Vector[(Any, Any)]((key -> value))
         val size = conf.chunkSizer(value)
 
         previous(key) = null
@@ -186,8 +186,8 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
         val chunkMod = datastore.createMod(chunk)
         new DoubleChunkListNode(chunkMod, tailMod, size)
       } else if (lastNode.size >= conf.chunkSize) {
-        val newTailMod = datastore.createMod[DoubleChunkListNode[T, U]](null)
-        val chunk = Vector[(T, U)]((key -> value))
+        val newTailMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
+        val chunk = Vector[(Any, Any)]((key -> value))
         previous(key) = lastNodeMod
 
         lastNodeMod = tailMod
@@ -210,17 +210,17 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     datastore.asyncUpdate(lastNodeMod, newNode)
   } //ensuring(isValid())
 
-  def putMod(key: T, mod: Mod[(T, U)]) = ???
+  def putMod(key: Any, mod: Mod[(Any, Any)]) = ???
 
-  private def calculateSize(chunk: Vector[(T, U)]) = {
+  private def calculateSize(chunk: Vector[(Any, Any)]) = {
     chunk.aggregate(0)(
-      (sum: Int, pair: (T, U)) => sum + conf.chunkSizer(pair), _ + _)
+      (sum: Int, pair: (Any, Any)) => sum + conf.chunkSizer(pair), _ + _)
   }
 
-  def update(key: T, value: U): Future[_] = {
+  def update(key: Any, value: Any): Future[_] = {
     val node = datastore.read(nodes(key))
 
-    var oldValue: U = null.asInstanceOf[U]
+    var oldValue: Any = null.asInstanceOf[Any]
     val chunk = datastore.read(node.chunkMod)
     val newChunk = chunk.map{ case (_key, _value) => {
       if (key == _key) {
@@ -238,10 +238,10 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     datastore.asyncUpdate(nodes(key), newNode)
   } //ensuring(isValid())
 
-  def remove(key: T, value: U): Future[_] = {
+  def remove(key: Any, value: Any): Future[_] = {
     val node = datastore.read(nodes(key))
 
-    var oldValue: U = null.asInstanceOf[U]
+    var oldValue: Any = null.asInstanceOf[Any]
     val chunk = datastore.read(node.chunkMod)
     val newChunk = chunk.filter{ case (_key, _value) => {
       if (key == _key) {
@@ -300,13 +300,13 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     future
   } //ensuring(isValid())
 
-  def contains(key: T): Boolean = {
+  def contains(key: Any): Boolean = {
     nodes.contains(key)
   }
 
   private def isValid(): Boolean = {
-    var previousMod: Mod[DoubleChunkListNode[T, U]] = null
-    var previousNode: DoubleChunkListNode[T, U] = null
+    var previousMod: Mod[DoubleChunkListNode[Any, Any]] = null
+    var previousNode: DoubleChunkListNode[Any, Any] = null
     var mod = list.head
     var node = datastore.read(mod)
 

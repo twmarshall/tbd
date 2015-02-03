@@ -97,7 +97,7 @@ class WCAdjust(list: AdjustableList[Int, String])
 
 class WCAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf) {
-  val input = mutator.createList[Int, String](conf.listConf.copy(double = true))
+  val input = mutator.createList[Int, String](conf.listConf)
 
   val data = new StringData(input, conf.count, conf.mutations, Experiment.check, conf.runs)
   //val data = new StringFileData(input, "data.txt")

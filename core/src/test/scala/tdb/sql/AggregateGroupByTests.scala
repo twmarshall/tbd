@@ -23,7 +23,7 @@ import tdb.{ Adjustable, Context, Mod, Mutator }
 import tdb.list._
 import tdb.TDB._
 import tdb.sql._
-
+/*
 class AggregateGroupByTests extends FlatSpec with Matchers {
 
   "Aggregate and GroupBy Test" should "check the Aggregate " +
@@ -60,3 +60,4 @@ class AggregateGroupByTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 }
+*/

@@ -73,7 +73,7 @@ trait Datastore extends Actor with ActorLogging {
 
   private var nextModId = 0
 
-  private val lists = Map[String, Modifier[Any, Any]]()
+  private val lists = Map[String, Modifier]()
 
   private var nextListId = 0
 
@@ -215,21 +215,15 @@ trait Datastore extends Actor with ActorLogging {
     case CreateListIdsMessage(conf: ListConf, numPartitions: Int) =>
       val listIds = Buffer[String]()
 
-      val newLists = Buffer[Modifier[Any, Any]]()
+      val newLists = Buffer[Modifier]()
       for (i <- 1 to numPartitions) {
         val listId = nextListId + ""
         nextListId += 1
         val list =
-          if (conf.double) {
-            if (conf.chunkSize == 1)
-              new DoubleListModifier[Any, Any](this)
-            else
-              new DoubleChunkListModifier[Any, Any](this, conf)
-          } else if (conf.chunkSize == 1) {
-            new ListModifier[Any, Any](this)
-          } else {
-            new ChunkListModifier[Any, Any](this, conf)
-          }
+          if (conf.chunkSize == 1)
+            new DoubleListModifier(this)
+          else
+            new DoubleChunkListModifier(this, conf)
 
         lists(listId) = list
         newLists += list

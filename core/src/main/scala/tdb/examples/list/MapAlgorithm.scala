@@ -44,7 +44,7 @@ class MapAdjust(list: AdjustableList[String, String])
 
 class MapAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[String, AdjustableList[String, Int]](_conf) {
-  val input = mutator.createList[String, String](conf.listConf.copy(partitioned = true, double = true))
+  val input = mutator.createList[String, String](conf.listConf)
 
   val adjust = new MapAdjust(input.getAdjustableList())
 

@@ -145,7 +145,7 @@ class ListTests extends FlatSpec with Matchers {
     mutator.shutdown()
   }
 
-  "ListSortTest" should "return the sorted list" in {
+  /*"ListSortTest" should "return the sorted list" in {
     val mutator = new Mutator()
     val input = mutator.createList[Int, Int](ListConf(partitions = 1))
     input.put(0, 0)
@@ -232,5 +232,5 @@ class ListTests extends FlatSpec with Matchers {
 
 
     mutator.shutdown()
-  }
+  }*/
 }

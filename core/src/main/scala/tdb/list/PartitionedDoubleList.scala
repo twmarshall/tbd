@@ -42,7 +42,7 @@ class PartitionedDoubleList[T, U]
        numPartitions: Int)
       (implicit c: Context): AdjustableList[V, W] = {
     c.log.debug("PartitionedDoubleList.hashPartitionedFlatMap")
-    val conf = ListConf(partitions = partitions.size, double = true, hash = true)
+    val conf = ListConf(partitions = partitions.size, hash = true)
     val future = c.masterRef ? CreateListMessage(conf)
     val input =
       Await.result(future.mapTo[HashPartitionedDoubleListInput[V, W]], DURATION)
