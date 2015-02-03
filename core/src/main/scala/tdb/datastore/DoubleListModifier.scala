@@ -26,7 +26,7 @@ class DoubleListModifier[T, U](datastore: Datastore) extends Modifier[T, U] {
   import datastore.context.dispatcher
   private var tailMod = datastore.createMod[DoubleListNode[T, U]](null)
 
-  val nodes = Map[T, Buffer[Mod[DoubleListNode[T, U]]]]()
+  val nodes = Map[Any, Buffer[Mod[DoubleListNode[T, U]]]]()
 
   val modList = new DoubleList[T, U](tailMod, false, datastore.workerId)
 

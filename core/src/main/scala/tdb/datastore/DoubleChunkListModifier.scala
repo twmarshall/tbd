@@ -31,8 +31,8 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
   // the contents of this mod will be null.
   protected var lastNodeMod = datastore.createMod[DoubleChunkListNode[T, U]](null)
 
-  val nodes = Map[T, Mod[DoubleChunkListNode[T, U]]]()
-  val previous = Map[T, Mod[DoubleChunkListNode[T, U]]]()
+  val nodes = Map[Any, Mod[DoubleChunkListNode[T, U]]]()
+  val previous = Map[Any, Mod[DoubleChunkListNode[T, U]]]()
 
   val list = new DoubleChunkList[T, U](lastNodeMod, conf, false, datastore.workerId)
 
@@ -103,7 +103,75 @@ class DoubleChunkListModifier[T, U](datastore: Datastore, conf: ListConf)
     Future.sequence(futures)
   }
 
-  def loadInput(keys: Iterable[Int]) = ???
+  def loadInput(keys: Iterable[Int]) = {
+    val futures = Buffer[Future[Any]]()
+    var chunk = Vector[Int]()
+    var lastChunk: Vector[Int] = null
+    var newLastNodeMod: Mod[DoubleChunkListNode[T, U]] = null
+
+    var size = 0
+    var tail = tailMod
+    for (key <- keys) {
+      chunk :+= key
+      size += 1
+
+      if (size >= conf.chunkSize) {
+        //val chunkMod = datastore.createMod(chunk)
+        val chunkMod = new Mod[Vector[(T, U)]](datastore.getNewModId())
+        datastore.chunks(chunkMod.id) = chunk
+        val newNode = new DoubleChunkListNode(chunkMod, tail, size)
+        tail = datastore.createMod(newNode)
+        for (k <- chunk) {
+          nodes(k) = tail
+        }
+
+        if (lastChunk != null) {
+          for (k <- lastChunk) {
+            previous(k) = tail
+          }
+        }
+
+        if (newLastNodeMod == null) {
+          newLastNodeMod = tail
+        }
+
+        lastChunk = chunk
+        chunk = Vector[Int]()
+        size  = 0
+      }
+    }
+
+    if (size > 0) {
+      for (k <- chunk) {
+        nodes(k) = lastNodeMod
+        previous(k) = null
+      }
+
+      if (lastChunk != null) {
+        for (k <- lastChunk) {
+          previous(k) = lastNodeMod
+        }
+      }
+
+      val chunkMod = new Mod[Vector[(T, U)]](datastore.getNewModId())
+      datastore.chunks(chunkMod.id) = chunk
+      futures +=
+        datastore.asyncUpdate(lastNodeMod, new DoubleChunkListNode(chunkMod, tail, size))
+    } else {
+      val head = datastore.read(tail)
+      val chunk = datastore.read(head.chunkMod)
+      for ((k, v) <- chunk) {
+        nodes(k) = lastNodeMod
+        previous(k) = null
+      }
+
+      futures +=
+        datastore.asyncUpdate(lastNodeMod, head)
+    }
+
+    lastNodeMod = newLastNodeMod
+    Future.sequence(futures)
+  }
 
   def asyncPut(key: T, value: U): Future[_] = {
     val lastNode = datastore.read(lastNodeMod)

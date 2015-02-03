@@ -23,7 +23,7 @@ class PartitionedDoubleChunkListInput[T, U]
   extends Dataset[T, U] with java.io.Serializable {
 
   def put(key: T, value: U) = {
-    partitions(key.hashCode() % partitions.size).put(key, value)
+    partitions(key.hashCode().abs % partitions.size).put(key, value)
   }
 
   def asyncPut(key: T, value: U) = {

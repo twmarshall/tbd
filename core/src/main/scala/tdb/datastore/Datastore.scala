@@ -81,6 +81,8 @@ trait Datastore extends Actor with ActorLogging {
 
   val inputs = Map[ModId, Int]()
 
+  val chunks = Map[ModId, Iterable[Int]]()
+
   // Maps logical names of datastores to their references.
   private val datastores = Map[WorkerId, ActorRef]()
 
@@ -112,6 +114,15 @@ trait Datastore extends Actor with ActorLogging {
       getInput(inputs(modId)) pipeTo respondTo
     } else if (contains(modId)) {
       asyncGet(modId) pipeTo sender
+    } else if (chunks.contains(modId)) {
+      val futures = Buffer[Future[Any]]()
+      for (id <- chunks(modId)) {
+        futures += getInput(id)
+      }
+      Future.sequence(futures).onComplete {
+        case Success(arr) => respondTo ! arr.toVector
+        case Failure(e) => e.printStackTrace()
+      }
     } else {
       val workerId = getWorkerId(modId)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)
