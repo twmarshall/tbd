@@ -265,9 +265,11 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     environment.close()
   }
 
+  var nextKey = 0
   def putInput(key: String, value: String) {
     val entity = new InputEntity()
-    entity.key = key.hashCode()
+    entity.key = nextKey
+    nextKey += 1
     entity.title = key
     entity.value = value
 
@@ -278,8 +280,9 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     inputStore = new EntityStore(environment, inputName, modStoreConfig)
     inputId = inputStore.getPrimaryIndex(classOf[java.lang.Integer], classOf[InputEntity])
 
-    println(inputId.count())
-    inputId.count() > 0
+    val count = inputId.count()
+    println("Retrieved " + count)
+    count > 0
   }
 
   def iterateInput(process: Iterable[Int] => Unit, partitions: Int) {
