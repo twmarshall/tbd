@@ -29,8 +29,6 @@ import tdb.messages._
 import tdb.stats.Stats
 import tdb.util.FileUtil
 
-case class InputMod(val key: String)
-
 object Datastore {
   def props(storeType: String, cacheSize: Int): Props = {
     storeType match {

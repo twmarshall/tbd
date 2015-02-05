@@ -30,8 +30,6 @@ trait Modifier {
 
   def asyncPut(key: Any, value: Any): Future[_]
 
-  def putMod(key: Any, mod: Mod[(Any, Any)]): Future[_]
-
   def update(key: Any, value: Any): Future[_]
 
   def remove(key: Any, value: Any): Future[_]
