@@ -108,7 +108,7 @@ class IntData
 
       log("updating " + (key, value))
 
-      input.update(key, value)
+      input.put(key, value)
 
       table(key) = value
     } else {

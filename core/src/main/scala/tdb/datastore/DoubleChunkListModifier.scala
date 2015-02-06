@@ -173,7 +173,7 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
     Future.sequence(futures)
   }
 
-  def asyncPut(key: Any, value: Any): Future[_] = {
+  private def append(key: Any, value: Any): Future[_] = {
     val lastNode = datastore.read(lastNodeMod)
 
     val newNode =
@@ -186,7 +186,8 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
         val chunkMod = datastore.createMod(chunk)
         new DoubleChunkListNode(chunkMod, tailMod, size)
       } else if (lastNode.size >= conf.chunkSize) {
-        val newTailMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
+        val newTailMod =
+          datastore.createMod[DoubleChunkListNode[Any, Any]](null)
         val chunk = Vector[(Any, Any)]((key -> value))
         previous(key) = lastNodeMod
 
@@ -215,25 +216,28 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
       (sum: Int, pair: (Any, Any)) => sum + conf.chunkSizer(pair), _ + _)
   }
 
-  def update(key: Any, value: Any): Future[_] = {
-    val node = datastore.read(nodes(key))
+  def put(key: Any, value: Any): Future[_] = {
+    if (!nodes.contains(key)) {
+      append(key, value)
+    } else {
+      val node = datastore.read(nodes(key))
 
-    var oldValue: Any = null.asInstanceOf[Any]
-    val chunk = datastore.read(node.chunkMod)
-    val newChunk = chunk.map{ case (_key, _value) => {
-      if (key == _key) {
-        oldValue = _value
-        (_key -> value)
-      } else {
-        (_key -> _value)
-      }
-    }}
+      var oldValue: Any = null.asInstanceOf[Any]
+      val chunk = datastore.read(node.chunkMod)
+      val newChunk = chunk.map{ case (_key, _value) => {
+        if (key == _key) {
+          oldValue = _value
+          (_key -> value)
+        } else {
+          (_key -> _value)
+        }
+      }}
 
-    val newSize = node.size + conf.chunkSizer(value) - conf.chunkSizer(oldValue)
-    val chunkMod = datastore.createMod(newChunk)
-    val newNode = new DoubleChunkListNode(chunkMod, node.nextMod, newSize)
-
-    datastore.asyncUpdate(nodes(key), newNode)
+      val newSize = node.size + conf.chunkSizer(value) - conf.chunkSizer(oldValue)
+      val chunkMod = datastore.createMod(newChunk)
+      val newNode = new DoubleChunkListNode(chunkMod, node.nextMod, newSize)
+      datastore.asyncUpdate(nodes(key), newNode)
+    }
   } //ensuring(isValid())
 
   def remove(key: Any, value: Any): Future[_] = {

@@ -116,7 +116,7 @@ class RandomStringData
     while (!table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-    input.update(key, value)
+    input.put(key, value)
     log("updating " + (key, value))
 
     if (check) {

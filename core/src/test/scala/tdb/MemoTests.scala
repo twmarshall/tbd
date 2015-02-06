@@ -410,15 +410,15 @@ class MemoTests extends FlatSpec with Matchers {
 
     // Change the mod not read by the memoized function,
     // check that it isn't called.
-    input.update(1, 3)
+    input.put(1, 3)
     mutator.propagate()
     mutator.read(output) should be (14)
     test.count should be (1)
 
     // Change the other mod, the memoized function should
     // be called.
-    input.update(1, 2)
-    input.update(2, 8)
+    input.put(1, 2)
+    input.put(2, 8)
     mutator.propagate()
     mutator.read(output) should be (11)
     test.count should be (2)
@@ -437,7 +437,7 @@ class MemoTests extends FlatSpec with Matchers {
     test.count1 should be (0)
     test.count2 should be (1)
 
-    input.update(1, 3)
+    input.put(1, 3)
     mutator.propagate()
     mutator.read(output) should be (11)
     test.count1 should be (0)
@@ -456,7 +456,7 @@ class MemoTests extends FlatSpec with Matchers {
 
     test.num should be (0)
 
-    input.update(1, 3)
+    input.put(1, 3)
     mutator.propagate()
 
     test.num should be (1)
@@ -475,7 +475,7 @@ class MemoTests extends FlatSpec with Matchers {
     test.count1 should be (1)
     test.count2 should be (1)
 
-    input.update(1, 2)
+    input.put(1, 2)
     mutator.propagate()
     test.count1 should be (1)
     test.count2 should be (1)
@@ -497,7 +497,7 @@ class MemoTests extends FlatSpec with Matchers {
     test.count3 should be (0)
     test.count4 should be (0)
 
-    input.update(1, 4)
+    input.put(1, 4)
     mutator.propagate()
 
     test.count1 should be (1)
@@ -518,8 +518,8 @@ class MemoTests extends FlatSpec with Matchers {
     mutator.run(test)
     test.count should be (1)
 
-    input.update(1, 4)
-    input.update(3, 5)
+    input.put(1, 4)
+    input.put(3, 5)
     mutator.propagate()
     test.count should be (2)
 
@@ -535,15 +535,15 @@ class MemoTests extends FlatSpec with Matchers {
     mutator.run(test)
     test.count should be (1)
 
-    input.update(1, 3)
+    input.put(1, 3)
     mutator.propagate()
     test.count should be (1)
 
-    input.update(1, 4)
+    input.put(1, 4)
     mutator.propagate()
     test.count should be (1)
 
-    input.update(1, 5)
+    input.put(1, 5)
     mutator.propagate()
     test.count should be (1)
 
@@ -562,7 +562,7 @@ class MemoTests extends FlatSpec with Matchers {
     test.count2 should be (1)
     test.count3 should be (1)
 
-    input.update(1, 4)
+    input.put(1, 4)
     mutator.propagate()
 
     test.count2 should be (2)
@@ -581,8 +581,8 @@ class MemoTests extends FlatSpec with Matchers {
     val output = mutator.run(test)
     mutator.read(output) should be (3)
 
-    input.update(1, 2)
-    input.update(4, 5)
+    input.put(1, 2)
+    input.put(4, 5)
     mutator.propagate()
     mutator.read(output) should be (5)
 
@@ -600,8 +600,8 @@ class MemoTests extends FlatSpec with Matchers {
     val output = mutator.run(test)
     mutator.read(output) should be (3)
 
-    input.update(1, 2)
-    input.update(5, 10)
+    input.put(1, 2)
+    input.put(5, 10)
     mutator.propagate()
     mutator.read(output) should be (10)
 

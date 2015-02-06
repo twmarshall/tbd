@@ -30,10 +30,6 @@ class PartitionedDoubleChunkListInput[T, U]
     partitions(key.hashCode() % partitions.size).asyncPut(key, value)
   }
 
-  def update(key: T, value: U) = {
-    partitions(key.hashCode() % partitions.size).update(key, value)
-  }
-
   def remove(key: T, value: U) = {
     partitions(key.hashCode() % partitions.size).remove(key, value)
   }

@@ -131,7 +131,7 @@ class StringData
     while (!table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-    input.update(key, chunks.head)
+    input.put(key, chunks.head)
 
     table(key) = chunks.head
 

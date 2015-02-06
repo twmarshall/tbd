@@ -295,10 +295,7 @@ trait Datastore extends Actor with ActorLogging {
       key.toString
       value.toString
 
-      lists(listId).asyncPut(key, value) pipeTo sender
-
-    case UpdateMessage(listId: String, key: Any, value: Any) =>
-      lists(listId).update(key, value) pipeTo sender
+      lists(listId).put(key, value) pipeTo sender
 
     case RemoveMessage(listId: String, key: Any, value: Any) =>
       lists(listId).remove(key, value) pipeTo sender

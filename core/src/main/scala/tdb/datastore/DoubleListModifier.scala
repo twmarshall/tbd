@@ -77,7 +77,7 @@ class DoubleListModifier(datastore: Datastore) extends Modifier {
     future
   }
 
-  def asyncPut(key: Any, value: Any): Future[_] = {
+  private def append(key: Any, value: Any): Future[_] = {
     val valueMod = datastore.createMod((key, value))
     val newTail = datastore.createMod[DoubleListNode[Any, Any]](null)
     val newNode = new DoubleListNode(valueMod, newTail)
@@ -91,12 +91,16 @@ class DoubleListModifier(datastore: Datastore) extends Modifier {
     future
   }
 
-  def update(key: Any, value: Any): Future[_] = {
-    val nextMod = datastore.read(nodes(key)).nextMod
-    val valueMod = datastore.createMod((key, value))
-    val newNode = new DoubleListNode(valueMod, nextMod)
+  def put(key: Any, value: Any): Future[_] = {
+    if (!nodes.contains(key)) {
+      append(key, value)
+    } else {
+      val nextMod = datastore.read(nodes(key)).nextMod
+      val valueMod = datastore.createMod((key, value))
+      val newNode = new DoubleListNode(valueMod, nextMod)
 
-    datastore.asyncUpdate(nodes(key), newNode)
+      datastore.asyncUpdate(nodes(key), newNode)
+    }
   }
 
   def remove(key: Any, value: Any): Future[_] = {

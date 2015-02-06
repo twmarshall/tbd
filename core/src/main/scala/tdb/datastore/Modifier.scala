@@ -28,9 +28,7 @@ trait Modifier {
 
   def loadInput(keys: Iterable[Int]): Future[_]
 
-  def asyncPut(key: Any, value: Any): Future[_]
-
-  def update(key: Any, value: Any): Future[_]
+  def put(key: Any, value: Any): Future[_]
 
   def remove(key: Any, value: Any): Future[_]
 

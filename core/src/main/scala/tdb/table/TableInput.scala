@@ -25,14 +25,14 @@ class TableInput[T, U](mutator: Mutator) extends Input[T, U] {
   val table = new ModTable[T, U]()
 
   def put(key: T, value: U) {
-    table.table(key) = mutator.createMod(value)
+    if (!table.table.contains(key)) {
+      table.table(key) = mutator.createMod(value)
+    } else {
+      mutator.updateMod(table.table(key), value)
+    }
   }
 
   def asyncPut(key: T, value: U) = ???
-
-  def update(key: T, value: U) {
-    mutator.updateMod(table.table(key), value)
-  }
 
   def remove(key: T, value: U) = ???
 

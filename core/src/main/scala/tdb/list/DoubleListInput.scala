@@ -38,11 +38,6 @@ class DoubleListInput[T, U]
     datastoreRef ? PutMessage(partitionId, key, value)
   }
 
-  def update(key: T, value: U) = {
-    val future = datastoreRef ? UpdateMessage(partitionId, key, value)
-    Await.result(future, DURATION)
-  }
-
   def remove(key: T, value: U) = {
     val future = datastoreRef ? RemoveMessage(partitionId, key, value)
     Await.result(future, DURATION)

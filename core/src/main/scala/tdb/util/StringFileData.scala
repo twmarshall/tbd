@@ -59,7 +59,7 @@ class StringFileData(
           input.remove(key, table(key))
           table -= key
         case "updating" =>
-          input.update(key, value)
+          input.put(key, value)
           table(key) = value
       }
 

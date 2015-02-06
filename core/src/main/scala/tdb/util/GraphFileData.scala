@@ -51,7 +51,7 @@ class GraphFileData
     val newValue = split(1).split(",").map(_.toInt)
     table += ((key, newValue))
     lines = lines.tail
-    input.update(key, newValue)
+    input.put(key, newValue)
     println("updating " + key + " " + newValue)
   }
 

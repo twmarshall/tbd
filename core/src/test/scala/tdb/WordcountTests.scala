@@ -57,7 +57,7 @@ class WordcountTests extends FlatSpec with Matchers {
                                       "dog" -> 1, "ear" -> 2)
     assert(mutator.read(output)._2 == answer)
 
-    input.update(1, "apple dog dog dog face")
+    input.put(1, "apple dog dog dog face")
     mutator.propagate()
     val answer2 = HashMap[String, Int]("apple" -> 2, "boy" -> 2, "cat" -> 3,
                                        "dog" -> 4, "ear" -> 2, "face" -> 1)
@@ -69,7 +69,7 @@ class WordcountTests extends FlatSpec with Matchers {
                                        "dog" -> 4, "ear" -> 2, "face" -> 1)
     assert(mutator.read(output)._2 == answer3)
 
-    input.update(4, "boy dog")
+    input.put(4, "boy dog")
     input.put(5, "girl girl girl apple")
     mutator.propagate()
     val answer4 = HashMap[String, Int]("apple" -> 3, "boy" -> 3, "cat" -> 3,

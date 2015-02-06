@@ -98,7 +98,7 @@ class GraphData
     }
     table(key) = generateEdges()
     log(key + " -> " + table(key).mkString(","))
-    input.update(key, table(key))
+    input.put(key, table(key))
   }
 
   def hasUpdates() = remainingRuns.size > 0

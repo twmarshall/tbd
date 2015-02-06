@@ -129,7 +129,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
       mutations += Update(key, value, table(key))
 
       table(key) = value
-      input.update(key, value)
+      input.put(key, value)
   }
 
   //Does a random mutation, update, add or remove.

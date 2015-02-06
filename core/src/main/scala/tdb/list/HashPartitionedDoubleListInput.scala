@@ -45,10 +45,6 @@ class HashPartitionedDoubleListInput[T, U]
     getPartition(key).asyncPut(key, value)
   }
 
-  def update(key: T, value: U) = {
-    getPartition(key).update(key, value)
-  }
-
   def remove(key: T, value: U) = {
     getPartition(key).remove(key, value)
   }
