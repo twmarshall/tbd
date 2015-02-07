@@ -29,6 +29,7 @@ import scala.util.{Failure, Success}
 import tdb.messages._
 import tdb.Mod
 import tdb.Constants.ModId
+import tdb.util.{BerkeleyDatabase, BerkeleyInputStore}
 
 class LRUNode(
   val key: ModId,
@@ -40,22 +41,10 @@ class LRUNode(
 class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   import context.dispatcher
 
-  private var environment: Environment = null
-  private var modStore: EntityStore = null
-  private var pIdx: PrimaryIndex[java.lang.Long, ModEntity] = null
+  private var database = new BerkeleyDatabase()
+  private var modStore = database.createModStore()
 
-  private var inputStore: EntityStore = null
-  private var inputId: PrimaryIndex[java.lang.Integer, InputEntity] = null
-
-  private val envConfig = new EnvironmentConfig()
-  envConfig.setCacheSize(96 * 1024)
-  envConfig.setAllowCreate(true)
-
-  val modStoreConfig = new StoreConfig()
-  modStoreConfig.setAllowCreate(true)
-
-  val random = new scala.util.Random()
-  private var envHome: File = null
+  private var inputStore: BerkeleyInputStore = null
 
   // LRU cache
   private val values = Map[ModId, LRUNode]()
@@ -70,26 +59,6 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   var cacheSize = 0L
 
   var n = 0
-
-  init()
-
-  private def init() {
-    envHome = new File("/tmp/tdb_berkeleydb")
-    envHome.mkdir()
-
-    try {
-      // Open the environment and entity store
-      environment = new Environment(envHome, envConfig)
-      modStore = new EntityStore(environment, "ModStore", modStoreConfig)
-    } catch {
-      case fnfe: FileNotFoundException => {
-        System.err.println("setup(): " + fnfe.toString())
-        System.exit(-1)
-      }
-    }
-
-    pIdx = modStore.getPrimaryIndex(classOf[java.lang.Long], classOf[ModEntity])
-  }
 
   def put(key: ModId, value: Any) {
     cacheSize += MemoryUsage.getSize(value)
@@ -109,7 +78,7 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
         val key = toEvict.key
         val value = toEvict.value
 
-        putInDB(key, value)
+        modStore.put(key, value)
 
         values -= toEvict.key
         cacheSize -= MemoryUsage.getSize(value)
@@ -148,7 +117,7 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
         val value = toEvict.value
 
         futures += (Future {
-          putInDB(key, value)
+          modStore.put(key, value)
           "done"
         })
 
@@ -170,24 +139,11 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     future
   }
 
-  private def putInDB(key: ModId, value: Any) {
-    writeCount += 1
-
-    val entity = new ModEntity()
-    entity.key = key
-    val byteOutput = new ByteArrayOutputStream()
-    val objectOutput = new ObjectOutputStream(byteOutput)
-    objectOutput.writeObject(value)
-    entity.value = byteOutput.toByteArray
-
-    pIdx.put(entity)
-  }
-
   def get(key: ModId): Any = {
     if (values.contains(key)) {
       values(key).value
     } else {
-      getFromDB(key)
+      modStore.get(key)
     }
   }
 
@@ -203,7 +159,7 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
       }
     } else {
       Future {
-        val value = getFromDB(key)
+        val value = modStore.get(key)
         if (value == null) {
           NullMessage
         } else {
@@ -213,33 +169,17 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     }
   }
 
-  private def getFromDB(key: ModId): Any = {
-    readCount += 1
-    val byteArray = pIdx.get(key).value
-
-    val byteInput = new ByteArrayInputStream(byteArray)
-    val objectInput = new ObjectInputStream(byteInput)
-    val obj = objectInput.readObject()
-
-    // No idea why this is necessary.
-    if (obj != null && obj.isInstanceOf[Tuple2[_, _]]) {
-      obj.toString
-    }
-
-    obj
-  }
-
   def remove(key: ModId) {
     if (values.contains(key)) {
       values -= key
     } else {
       deleteCount += 1
-      pIdx.delete(key)
+      modStore.delete(key)
     }
   }
 
   def contains(key: ModId) = {
-    values.contains(key) || pIdx.contains(key)
+    values.contains(key) || modStore.contains(key)
   }
 
   def clear() = {
@@ -254,40 +194,35 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     if (inputStore != null) {
       inputStore.close()
     }
-    environment.close()
-    init()
+    database.close()
+    database = new BerkeleyDatabase()
+    modStore = database.createModStore()
   }
 
   def shutdown() {
     println("Shutting down. writes = " + writeCount + ", reads = " +
             readCount + ", deletes = " + deleteCount)
     modStore.close()
-    environment.close()
+    database.close()
   }
 
   var nextKey = 0
   def putInput(key: String, value: String) {
-    val entity = new InputEntity()
-    entity.key = nextKey
+    inputStore.put(nextKey, (key, value))
     nextKey += 1
-    entity.title = key
-    entity.value = value
-
-    inputId.put(entity)
   }
 
   def retrieveInput(inputName: String): Boolean = {
-    inputStore = new EntityStore(environment, inputName, modStoreConfig)
-    inputId = inputStore.getPrimaryIndex(classOf[java.lang.Integer], classOf[InputEntity])
+    inputStore = database.createInputStore(inputName)
 
-    val count = inputId.count()
+    val count = inputStore.count()
     println("Retrieved " + count)
     count > 0
   }
 
   def iterateInput(process: Iterable[Int] => Unit, partitions: Int) {
-    val cursor = inputId.keys()
-    val partitionSize = inputId.count() / partitions + 1
+    val cursor = inputStore.keys()
+    val partitionSize = inputStore.count() / partitions + 1
 
     val buf = Buffer[Int]()
     val it = cursor.iterator
@@ -309,26 +244,7 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
 
   def getInput(key: Int) = {
     Future {
-      val entity = inputId.get(key)
-      (entity.title, entity.value)
+      inputStore.get(key)
     }
   }
-}
-
-@Entity
-class ModEntity {
-  @PrimaryKey
-  var key: java.lang.Long = -1
-
-  var value: Array[Byte] = null
-}
-
-@Entity
-class InputEntity {
-  @PrimaryKey
-  var key: java.lang.Integer = -1
-
-  var title: String = ""
-
-  var value: String = ""
 }
