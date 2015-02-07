@@ -23,11 +23,11 @@ import tdb.Constants.WorkerId
 import tdb.TDB._
 
 class HashPartitionedDoubleChunkList[T, U]
-    (_partitions: Map[WorkerId, Buffer[DoubleChunkList[T, U]]],
+    (_partitions: Map[Int, Buffer[DoubleChunkList[T, U]]],
      conf: ListConf)
   extends PartitionedDoubleChunkList[T, U](_partitions.flatMap(_._2).toBuffer, conf) with Serializable {
 
-  println("new HashPartitionedDoubleChunkList")
+  //println("new HashPartitionedDoubleChunkList")
 
   override def partitionedReduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Iterable[Mod[(T, U)]] = {

@@ -23,10 +23,10 @@ import tdb.Constants.WorkerId
 import tdb.TDB._
 
 class HashPartitionedDoubleList[T, U]
-    (_partitions: Map[WorkerId, Buffer[DoubleList[T, U]]])
+    (_partitions: Map[Int, Buffer[DoubleList[T, U]]])
   extends PartitionedDoubleList[T, U](_partitions.flatMap(_._2).toBuffer) with Serializable {
 
-  println("new HashPartitionedDoubleList")
+  //println("new HashPartitionedDoubleList")
 
   override def partitionedReduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Iterable[Mod[(T, U)]] = {

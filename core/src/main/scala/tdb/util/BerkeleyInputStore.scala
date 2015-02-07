@@ -16,52 +16,66 @@
 package tdb.util
 
 import com.sleepycat.je.Environment
-import com.sleepycat.persist.{EntityStore, StoreConfig}
+import com.sleepycat.persist.{EntityStore, PrimaryIndex, StoreConfig}
 import com.sleepycat.persist.model.{Entity, PrimaryKey}
 import java.io._
+import scala.collection.mutable.Buffer
 
 class BerkeleyInputStore(environment: Environment, name: String) {
   private val storeConfig = new StoreConfig()
   storeConfig.setAllowCreate(true)
 
-  private val store = new EntityStore(environment, name, storeConfig)
-  val primaryIndex = store.getPrimaryIndex(classOf[Integer], classOf[InputEntity])
+  //private val store = new EntityStore(environment, name, storeConfig)
+  //val primaryIndex = store.getPrimaryIndex(classOf[String], classOf[InputEntity])
 
-  def put(key: Int, value: (String, String)) {
+  private val stores = Buffer[EntityStore]()
+  private val indexes = Buffer[PrimaryIndex[String, InputEntity]]()
+
+  for (i <- 1 to 12) {
+    val store = new EntityStore(environment, name + i, storeConfig)
+
+    stores += store
+    indexes += store.getPrimaryIndex(classOf[String], classOf[InputEntity])
+  }
+
+  private def getPrimaryIndex(title: String) = {
+    indexes(title.hashCode().abs % indexes.size)
+  }
+
+  def put(key: String, value: String) {
     val entity = new InputEntity()
     entity.key = key
-    entity.title = value._1
-    entity.value = value._2
+    entity.value = value
 
-    primaryIndex.put(entity)
+    getPrimaryIndex(key).put(entity)
   }
 
-  def get(key: Integer): (String, String) = {
-    val entity = primaryIndex.get(key)
-    (entity.title, entity.value)
+  def get(key: String) = {
+    val entity = getPrimaryIndex(key).get(key)
+    (entity.key, entity.value)
   }
 
-  def delete(key: Integer) {
-    primaryIndex.delete(key)
+  def delete(key: String) {
+    getPrimaryIndex(key).delete(key)
   }
 
-  def keys() = primaryIndex.keys()
+  def keys() = indexes.map(_.keys())
 
-  def contains(key: Integer) = primaryIndex.contains(key)
+  def contains(key: String) = getPrimaryIndex(key).contains(key)
 
-  def count() = primaryIndex.count()
+  def count() = indexes.map(_.count()).reduce(_ + _)
 
   def close() {
-    store.close()
+    for (store <- stores) {
+      store.close()
+    }
   }
 }
 
 @Entity
 class InputEntity {
   @PrimaryKey
-  var key: java.lang.Integer = -1
-
-  var title: String = ""
+  var key: String = ""
 
   var value: String = ""
 }

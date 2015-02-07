@@ -13,24 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.list
+package tdb.util
 
-import scala.collection.mutable.Map
-import scala.concurrent.Future
+import sys.process._
 
-import tdb.Constants._
-import tdb.Mod
-
-trait Modifier {
-  // Inserts all of the elements from data into this ListInput. Assumes that
-  // the list is currently empty.
-  def load(data: Map[Any, Any]): Future[_]
-
-  def loadInput(keys: Iterable[String]): Future[_]
-
-  def put(key: Any, value: Any): Future[_]
-
-  def remove(key: Any, value: Any): Future[_]
-
-  def getAdjustableList(): AdjustableList[Any, Any]
+object OS {
+  def getNumCores(): Int = {
+    "nproc".!!.replaceAll("\n", "").toInt
+  }
 }

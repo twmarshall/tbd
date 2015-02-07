@@ -63,23 +63,24 @@ trait Datastore extends Actor with ActorLogging {
 
   def retrieveInput(inputName: String): Boolean
 
-  def iterateInput(process: Iterable[Int] => Unit, partitions: Int)
+  def iterateInput(process: Iterable[String] => Unit, partitions: Int)
 
-  def getInput(key: Int): Future[Any]
+  def getInput(key: String): Future[Any]
 
   var workerId: WorkerId = _
 
   private var nextModId = 0
 
   private val lists = Map[String, Modifier]()
+  private val hashedLists = Map[Int, Modifier]()
 
   private var nextListId = 0
 
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  val inputs = Map[ModId, Int]()
+  val inputs = Map[ModId, String]()
 
-  val chunks = Map[ModId, Iterable[Int]]()
+  val chunks = Map[ModId, Iterable[String]]()
 
   // Maps logical names of datastores to their references.
   private val datastores = Map[WorkerId, ActorRef]()
@@ -231,7 +232,8 @@ trait Datastore extends Actor with ActorLogging {
       if (conf.file != "") {
         val futures = Buffer[Future[Any]]()
         var nextList = 0
-        val process2 = (keys: Iterable[Int]) => {
+        val process2 = (keys: Iterable[String]) => {
+          hashedLists(nextList) = newLists(nextList)
           futures += newLists(nextList).loadInput(keys)
           nextList = (nextList + 1) % newLists.size
         }
@@ -240,7 +242,8 @@ trait Datastore extends Actor with ActorLogging {
 
         val respondTo = sender
         Future.sequence(futures).onComplete {
-          case Success(v) => respondTo ! listIds
+          case Success(v) =>
+            respondTo ! listIds
           case Failure(e) => e.printStackTrace()
         }
       } else {
@@ -258,24 +261,16 @@ trait Datastore extends Actor with ActorLogging {
         val partitionSize = fileSize / numWorkers
 
         val process = (key: String, value: String) => {
-          putInput(key, value)
+          if (key.hashCode().abs % numWorkers == workerIndex) {
+            putInput(key, value)
+          }
         }
 
-        val readFrom = partitionSize * workerIndex
-        val readSize =
-          if (workerIndex == numWorkers - 1) {
-            // If the file doesn't divide by the number of partitions evenly,
-            // we process the extra along with the last partition.
-            fileSize - partitionSize * (numWorkers - 1)
-          } else {
-            partitionSize
-          }
-
-        log.debug("Reading " + fileName + " from " + readFrom + ", size " +
-                  readSize)
+        log.debug("Reading " + fileName + " from " + 0 + ", size " +
+                  fileSize)
 
         FileUtil.readKeyValueFile(
-          fileName, fileSize, readFrom, readSize, process)
+          fileName, fileSize, 0, fileSize, process)
 
         log.debug("Done reading")
       } else {
@@ -297,7 +292,11 @@ trait Datastore extends Actor with ActorLogging {
       key.toString
       value.toString
 
-      lists(listId).put(key, value) pipeTo sender
+      if (hashedLists.size == 0) {
+        lists(listId).put(key, value) pipeTo sender
+      } else {
+        hashedLists(key.hashCode().abs % hashedLists.size).put(key, value) pipeTo sender
+      }
 
     case RemoveMessage(listId: String, key: Any, value: Any) =>
       lists(listId).remove(key, value) pipeTo sender

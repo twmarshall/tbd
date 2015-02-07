@@ -206,10 +206,8 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     database.close()
   }
 
-  var nextKey = 0
   def putInput(key: String, value: String) {
-    inputStore.put(nextKey, (key, value))
-    nextKey += 1
+    inputStore.put(key, value)
   }
 
   def retrieveInput(inputName: String): Boolean = {
@@ -220,29 +218,24 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     count > 0
   }
 
-  def iterateInput(process: Iterable[Int] => Unit, partitions: Int) {
-    val cursor = inputStore.keys()
-    val partitionSize = inputStore.count() / partitions + 1
+  def iterateInput(process: Iterable[String] => Unit, partitions: Int) {
+    val cursors = inputStore.keys()
 
-    val buf = Buffer[Int]()
-    val it = cursor.iterator
-    while (it.hasNext) {
-      if (buf.size < partitionSize) {
+    val buf = Buffer[String]()
+    for (cursor <- cursors) {
+      val it = cursor.iterator
+      while (it.hasNext) {
         buf += it.next()
-      } else {
-        process(buf)
-        buf.clear()
       }
-    }
 
-    if (buf.size > 0) {
       process(buf)
-    }
+      buf.clear()
 
-    cursor.close()
+      cursor.close()
+    }
   }
 
-  def getInput(key: Int) = {
+  def getInput(key: String) = {
     Future {
       inputStore.get(key)
     }

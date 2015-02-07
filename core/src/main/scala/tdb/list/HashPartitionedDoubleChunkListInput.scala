@@ -15,55 +15,56 @@
  */
 package tdb.list
 
+import akka.actor.ActorRef
+import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Map}
+import scala.concurrent.Await
 
-import tdb.Constants.WorkerId
+import tdb.Constants._
+import tdb.messages._
 
 class HashPartitionedDoubleChunkListInput[T, U]
-    (workers: Map[WorkerId, Buffer[DoubleChunkListInput[T, U]]],
+    (workers: Map[Int, ActorRef],
+     partitions: Map[Int, Buffer[String]],
      conf: ListConf)
   extends Dataset[T, U] with java.io.Serializable {
 
-  val workerIds = workers.keys.toBuffer
+  val numWorkers = workers.size
 
-  val partitions = workers.flatMap {
-    case (workerId, buf) => buf
-  }.toBuffer
-
-  val nextPartition = workerIds.map(_ => 0)
-
-  val numWorkers = workerIds.size
-
-  private def getPartition(key: T) = {
-    partitions(key.hashCode() % numPartitions)
+  def getWorkerRef(key: T) = {
+    workers(key.hashCode().abs % workers.size)
   }
 
   def put(key: T, value: U) = {
-    getPartition(key).put(key, value)
+    val future = getWorkerRef(key) ? PutMessage("0", key, value)
+    Await.result(future, DURATION)
   }
 
   def asyncPut(key: T, value: U) = {
-    getPartition(key).asyncPut(key, value)
+    getWorkerRef(key) ? PutMessage("0", key, value)
   }
 
   def remove(key: T, value: U) = {
-    getPartition(key).remove(key, value)
+    getWorkerRef(key) ? RemoveMessage("0", key, value)
   }
 
   def load(data: Map[T, U]) = {
     for ((key, value) <- data) {
-      getPartition(key).put(key, value)
+      put(key, value)
     }
   }
 
-  def getPartitions = partitions
+  def getPartitions = ???
 
   def getAdjustableList(): AdjustableList[T, U] = {
-    val adjustablePartitions = Map[WorkerId, Buffer[DoubleChunkList[T, U]]]()
-    for ((workerId, partitions) <- workers) {
-      adjustablePartitions(workerId) = Buffer[DoubleChunkList[T, U]]()
-      for (partition <- partitions) {
-        adjustablePartitions(workerId) += partition.getAdjustableList()
+    val adjustablePartitions = Map[Int, Buffer[DoubleChunkList[T, U]]]()
+
+    for ((index, listIds) <- partitions) {
+      adjustablePartitions(index) = Buffer[DoubleChunkList[T, U]]()
+      for (listId <- listIds) {
+        val future = workers(index) ? GetAdjustableListMessage(listId)
+        adjustablePartitions(index) +=
+          Await.result(future.mapTo[DoubleChunkList[T, U]], DURATION)
       }
     }
 

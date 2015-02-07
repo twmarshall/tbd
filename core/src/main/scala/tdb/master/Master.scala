@@ -150,82 +150,40 @@ class Master extends Actor with ActorLogging {
       (datastoreRefs(workerId) ? UpdateModMessage(modId, null, null)) pipeTo sender
 
     case CreateListMessage(conf: ListConf) =>
-      def makePartitions(f: (String, ActorRef, WorkerId) => Unit) {
-        val futures = Buffer[(Future[Buffer[String]], ActorRef, WorkerId)]()
+      val futures = Buffer[(Future[Buffer[ListInput[Any, Any]]], Int)]()
 
-        val partitionsPerWorker = conf.partitions / workers.size
+      val workerMap = Map[Int, ActorRef]()
+      val partitionMap = Map[Int, Buffer[String]]()
+      val partitionsPerWorker = conf.partitions / workers.size
 
-        var index = 0
-        for ((workerId, workerRef) <- workers) {
-          val datastoreRef = datastoreRefs(workerId)
-          val partitions =
-            if (index == workers.size - 1 &&
-                conf.partitions % workers.size != 0) {
-              workers.size % partitionsPerWorker
-            } else {
-              partitionsPerWorker
-            }
-          val future = datastoreRef ? CreateListIdsMessage(conf, partitions)
-          futures += ((future.mapTo[Buffer[String]], datastoreRef, workerId))
-
-          index += 1
-        }
-
-        for ((future, datastoreRef, workerId) <- futures) {
-          val listIds = Await.result(future, DURATION)
-          for (listId <- listIds) {
-            f(listId, datastoreRef, workerId)
+      var index = 0
+      for ((workerId, workerRef) <- workers) {
+        val datastoreRef = datastoreRefs(workerId)
+        val partitions =
+          if (index == workers.size - 1 &&
+              conf.partitions % workers.size != 0) {
+            workers.size % partitionsPerWorker
+          } else {
+            partitionsPerWorker
           }
-        }
+        val future = datastoreRef ? CreateListIdsMessage(conf, partitions)
+        futures += ((future.mapTo[Buffer[ListInput[Any, Any]]], index))
+        workerMap(index) = datastoreRef
+        index += 1
+      }
+
+      for ((future, workerIndex) <- futures) {
+        val listIds = Await.result(future.mapTo[Buffer[String]], DURATION)
+        partitionMap(workerIndex) = listIds
       }
 
       val input = conf match {
         // file, partitions, chunkSize, chunkSizer, sorted, hash
-        case ListConf(_, _, 1, _, false, true) =>
-          val partitions = Map[WorkerId, Buffer[DoubleListInput[Any, Any]]]()
-          makePartitions {
-            case (listId, datastoreRef, workerId) =>
-              if (partitions.contains(workerId)) {
-                partitions(workerId) +=
-                  new DoubleListInput(listId, datastoreRef, workerId)
-              } else {
-                partitions(workerId) =
-                  Buffer(new DoubleListInput(listId, datastoreRef, workerId))
-              }
-          }
+        case ListConf(_, _, 1, _, false, _) =>
+          new HashPartitionedDoubleListInput(workerMap, partitionMap)
 
-          new HashPartitionedDoubleListInput(partitions)
-
-        case ListConf(_, _, _, _, false, true) =>
-          val partitions = Map[WorkerId, Buffer[DoubleChunkListInput[Any, Any]]]()
-          makePartitions {
-            case (listId, datastoreRef, workerId) =>
-              if (partitions.contains(workerId)) {
-                partitions(workerId) +=
-                  new DoubleChunkListInput(listId, datastoreRef, workerId)
-              } else {
-                partitions(workerId) =
-                  Buffer(new DoubleChunkListInput(listId, datastoreRef, workerId))
-              }
-          }
-
-          new HashPartitionedDoubleChunkListInput(partitions, conf)
-
-        case ListConf(_, _, 1, _, false, false) =>
-          val partitions = Buffer[DoubleListInput[Any, Any]]()
-          makePartitions {
-            case (listId, datastoreRef, workerId) =>
-              partitions += new DoubleListInput(listId, datastoreRef, workerId)
-          }
-          new PartitionedDoubleListInput(partitions)
-
-        case ListConf(_, _, _, _, false, false) =>
-          val partitions = Buffer[DoubleChunkListInput[Any, Any]]()
-          makePartitions {
-            case (listId, datastoreRef, workerId) =>
-              partitions += new DoubleChunkListInput(listId, datastoreRef, workerId)
-          }
-          new PartitionedDoubleChunkListInput(partitions, conf)
+        case ListConf(_, _, _, _, false, _) =>
+          new HashPartitionedDoubleChunkListInput(workerMap, partitionMap, conf)
       }
 
       sender ! input
