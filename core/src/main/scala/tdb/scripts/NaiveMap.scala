@@ -16,9 +16,9 @@
 package tdb.scripts
 
 import java.io._
-import java.util.regex.Pattern
 import org.rogach.scallop._
-import scala.collection.mutable.Buffer
+import scala.collection.mutable.Map
+import scala.io.Source
 
 object NaiveMap {
   def mapper(pair: (String, String)): (String, Int) = {
@@ -29,31 +29,55 @@ object NaiveMap {
     (pair._1, count)
   }
 
+  def writeOutput(fileName: String, output: Map[String, Int]) {
+    val writer = new BufferedWriter(new OutputStreamWriter(
+      new FileOutputStream(fileName + ".txt"), "utf-8"))
+    for ((key, value) <- output.toBuffer.sortWith(_._1 < _._1)) {
+      writer.write(key + " -> " + value + "\n")
+    }
+    writer.close()
+  }
+
   def main(args: Array[String]) {
 
     object Conf extends ScallopConf(args) {
       version("TDB 0.1 (c) 2014 Carnegie Mellon University")
       val file = opt[String]("file", 'f', default = Some("enwiki.xml"),
         descr = "The file to read.")
-      val output = opt[String]("output", 'o', default = Some("naive-map-output.xml"),
-        descr = "The file to write the output to.")
+      val output = opt[String]("output", 'o',
+        default = Some("naive-map-output"),
+        descr = "The file to write the output to, .txt will be appended.")
+      val updateFile = opt[String]("updateFile", default = Some("updates.xml"),
+        descr = "The file to read updates from.")
+      val updates = opt[List[Int]]("updates", 'u', default = Some(List()),
+        descr = "The number of updates to perform for each round of change" +
+        "propagation")
     }
 
-    val file = scala.io.Source.fromFile(Conf.file())
+    val file = Source.fromFile(Conf.file())
 
     val unitSeparator = 31.toChar
 
-    val output = Buffer[(String, Int)]()
+    val output = Map[String, Int]()
     for (line <- file.getLines) {
       val split = line.split(unitSeparator)
       output += mapper((split(0), split(1)))
     }
 
-    val writer = new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream(Conf.output()), "utf-8"))
-    for ((key, value) <- output.sortWith(_._1 < _._1)) {
-      writer.write(key + " -> " + value + "\n")
+    writeOutput(Conf.output(), output)
+
+    if (Conf.updates().size > 0) {
+      val updateFile = Source.fromFile(Conf.updateFile())
+      var lines = updateFile.getLines
+
+      for (update <- Conf.updates()) {
+        for (i <- 1 to update) {
+          val split = lines.next.split(unitSeparator)
+          output += mapper(split(0), split(1))
+        }
+
+        writeOutput(Conf.output() + update, output)
+      }
     }
-    writer.close()
   }
 }
