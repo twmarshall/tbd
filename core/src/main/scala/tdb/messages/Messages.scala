@@ -36,7 +36,6 @@ case class ClearMessage()
 case class CreateListIdsMessage(conf: ListConf, numPartitions: Int)
 case class LoadPartitionsMessage(
   fileName: String,
-  partitions: Iterable[Partition[String, String]],
   numWorkers: Int,
   workerIndex: Int)
 
@@ -49,7 +48,7 @@ case class ScheduleTaskMessage(parent: ActorRef, workerId: WorkerId)
 case class ShutdownMutatorMessage(mutatorId: Int)
 
 case class CreateListMessage(conf: ListConf)
-case class LoadFileMessage(fileName: String, dataset: Dataset[String, String])
+case class LoadFileMessage(fileName: String)
 case class GetAdjustableListMessage(listId: String)
 case class PutMessage(listId: String, key: Any, value: Any)
 case class RemoveMessage(listId: String, key: Any, value: Any)

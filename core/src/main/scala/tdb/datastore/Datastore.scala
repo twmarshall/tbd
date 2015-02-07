@@ -228,11 +228,27 @@ trait Datastore extends Actor with ActorLogging {
         listIds += listId
       }
 
-      sender ! listIds
+      if (conf.file != "") {
+        val futures = Buffer[Future[Any]]()
+        var nextList = 0
+        val process2 = (keys: Iterable[Int]) => {
+          futures += newLists(nextList).loadInput(keys)
+          nextList = (nextList + 1) % newLists.size
+        }
+
+        iterateInput(process2, numPartitions)
+
+        val respondTo = sender
+        Future.sequence(futures).onComplete {
+          case Success(v) => respondTo ! listIds
+          case Failure(e) => e.printStackTrace()
+        }
+      } else {
+        sender ! listIds
+      }
 
     case LoadPartitionsMessage
         (fileName: String,
-         partitions: Iterable[Partition[String, String]],
          numWorkers: Int,
          workerIndex: Int) =>
 
@@ -266,21 +282,7 @@ trait Datastore extends Actor with ActorLogging {
         log.debug(fileName + " was already loaded.")
       }
 
-      val theseLists = partitions.map {
-        case partition: Partition[String, String] =>
-          lists(partition.partitionId)
-      }.toBuffer
-
-      val futures = Buffer[Future[Any]]()
-      var nextList = 0
-      val process2 = (keys: Iterable[Int]) => {
-        futures += theseLists(nextList).loadInput(keys)
-        nextList = (nextList + 1) % theseLists.size
-      }
-
-      iterateInput(process2, partitions.size)
-
-      Future.sequence(futures) pipeTo sender
+      sender ! "done"
 
     case GetAdjustableListMessage(listId: String) =>
       sender ! lists(listId).getAdjustableList()

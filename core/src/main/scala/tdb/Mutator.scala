@@ -70,8 +70,8 @@ class Mutator(_connector: MasterConnector = null) {
     Await.result(future.mapTo[ListInput[T, U]], DURATION)
   }
 
-  def loadFile(fileName: String, dataset: Dataset[String, String]) {
-    val future = masterRef ? LoadFileMessage(fileName, dataset)
+  def loadFile(fileName: String) {
+    val future = masterRef ? LoadFileMessage(fileName)
     Await.result(future, DURATION)
   }
 

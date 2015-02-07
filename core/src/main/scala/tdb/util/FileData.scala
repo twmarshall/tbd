@@ -48,7 +48,7 @@ class FileData
   def generate() {}
 
   def load() {
-    mutator.loadFile(inputFile, dataset)
+
   }
 
   def update() {

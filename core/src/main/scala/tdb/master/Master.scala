@@ -150,15 +150,6 @@ class Master extends Actor with ActorLogging {
       (datastoreRefs(workerId) ? UpdateModMessage(modId, null, null)) pipeTo sender
 
     case CreateListMessage(conf: ListConf) =>
-      def makeList(f: (String, ActorRef) => ListInput[Any, Any]) = {
-        val datastoreRef = datastoreRefs(nextWorker)
-        val future = datastoreRef ? CreateListIdsMessage(conf, 1)
-        val listIds = Await.result(future.mapTo[Buffer[String]], DURATION)
-        cycleWorkers()
-
-        f(listIds.head, datastoreRef)
-      }
-
       def makePartitions(f: (String, ActorRef, WorkerId) => Unit) {
         val futures = Buffer[(Future[Buffer[String]], ActorRef, WorkerId)]()
 
@@ -239,13 +230,13 @@ class Master extends Actor with ActorLogging {
 
       sender ! input
 
-    case LoadFileMessage(fileName: String, dataset: Dataset[String, String]) =>
+    case LoadFileMessage(fileName: String) =>
       val futures = Buffer[Future[Any]]()
 
       var index = 0
-      for ((workerId, partitions) <- dataset.getPartitionsByWorker) {
-        futures += datastoreRefs(workerId) ?
-          LoadPartitionsMessage(fileName, partitions, workers.size, index)
+      for ((workerId, datastoreRef) <- datastoreRefs) {
+        futures += datastoreRef ?
+          LoadPartitionsMessage(fileName, workers.size, index)
         index += 1
       }
 
