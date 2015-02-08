@@ -16,52 +16,86 @@
 package tdb.util
 
 import com.sleepycat.je.Environment
-import com.sleepycat.persist.{EntityStore, PrimaryIndex, StoreConfig}
-import com.sleepycat.persist.model.{Entity, PrimaryKey}
+import com.sleepycat.persist.{EntityStore, PrimaryIndex, SecondaryIndex, StoreConfig}
+import com.sleepycat.persist.model.{Entity, PrimaryKey, SecondaryKey}
 import java.io._
-import scala.collection.mutable.Buffer
+import scala.collection.mutable.{Buffer, Map}
 
 class BerkeleyInputStore(environment: Environment, name: String) {
   private val storeConfig = new StoreConfig()
   storeConfig.setAllowCreate(true)
 
-  //private val store = new EntityStore(environment, name, storeConfig)
-  //val primaryIndex = store.getPrimaryIndex(classOf[String], classOf[InputEntity])
-
   private val stores = Buffer[EntityStore]()
-  private val indexes = Buffer[PrimaryIndex[String, InputEntity]]()
+  private val indexes = Buffer[PrimaryIndex[Integer, InputEntity]]()
+  private val keyStores = Buffer[EntityStore]()
+  private val keyIndexes = Buffer[PrimaryIndex[Integer, KeyEntity]]()
+
+  private val keys = Map[String, Integer]()
 
   for (i <- 1 to 12) {
     val store = new EntityStore(environment, name + i, storeConfig)
-
     stores += store
-    indexes += store.getPrimaryIndex(classOf[String], classOf[InputEntity])
+
+    indexes += store.getPrimaryIndex(classOf[Integer], classOf[InputEntity])
+
+    val keyStore = new EntityStore(environment, name + "Key" + i, storeConfig)
+    stores += keyStore
+
+    keyIndexes += keyStore.getPrimaryIndex(classOf[Integer], classOf[KeyEntity])
   }
 
-  private def getPrimaryIndex(title: String) = {
-    indexes(title.hashCode().abs % indexes.size)
+  private def hashKey(key: String) = {
+    key.hashCode().abs % indexes.size
   }
 
+  var nextId = 0
   def put(key: String, value: String) {
     val entity = new InputEntity()
-    entity.key = key
+    entity.id = nextId
+    nextId += 1
     entity.value = value
 
-    getPrimaryIndex(key).put(entity)
+    val hash = hashKey(key)
+    indexes(hash).put(entity)
+
+    val keyEntity = new KeyEntity()
+    keyEntity.id = entity.id
+    keyEntity.key = key
+
+    keyIndexes(hash).put(keyEntity)
+
+    keys(key) = entity.id
   }
 
   def get(key: String) = {
-    val entity = getPrimaryIndex(key).get(key)
-    (entity.key, entity.value)
+    val entity = indexes(hashKey(key)).get(keys(key))
+    (key, entity.value)
   }
 
   def delete(key: String) {
-    getPrimaryIndex(key).delete(key)
+    indexes(hashKey(key)).delete(keys(key))
   }
 
-  def keys() = indexes.map(_.keys())
+  def iterateInput(process: Iterable[String] => Unit, partitions: Int) {
+    val cursors = keyIndexes.map(_.entities())
 
-  def contains(key: String) = getPrimaryIndex(key).contains(key)
+    val buf = Buffer[String]()
+    for (cursor <- cursors) {
+      val it = cursor.iterator
+      while (it.hasNext) {
+        val keyEntity = it.next()
+        buf += keyEntity.key
+        keys(keyEntity.key) = keyEntity.id
+      }
+
+      process(buf)
+      buf.clear()
+
+      cursor.close()
+    }
+  }
+
+  def contains(key: String) = indexes(hashKey(key)).contains(keys(key))
 
   def count() = indexes.map(_.count()).reduce(_ + _)
 
@@ -73,9 +107,17 @@ class BerkeleyInputStore(environment: Environment, name: String) {
 }
 
 @Entity
+class KeyEntity {
+  @PrimaryKey
+  var id: Integer = -1
+
+  var key: String = ""
+}
+
+@Entity
 class InputEntity {
   @PrimaryKey
-  var key: String = ""
+  var id: Integer = -1
 
   var value: String = ""
 }

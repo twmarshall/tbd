@@ -215,7 +215,7 @@ trait Datastore extends Actor with ActorLogging {
       val listIds = Buffer[String]()
 
       val newLists = Buffer[Modifier]()
-      for (i <- 1 to numPartitions) {
+      for (i <- 1 to 12) {
         val listId = nextListId + ""
         nextListId += 1
         val list =
@@ -295,7 +295,8 @@ trait Datastore extends Actor with ActorLogging {
       if (hashedLists.size == 0) {
         lists(listId).put(key, value) pipeTo sender
       } else {
-        hashedLists(key.hashCode().abs % hashedLists.size).put(key, value) pipeTo sender
+        val hash = key.hashCode().abs % hashedLists.size
+        hashedLists(hash).put(key, value) pipeTo sender
       }
 
     case RemoveMessage(listId: String, key: Any, value: Any) =>
