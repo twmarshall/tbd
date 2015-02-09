@@ -39,15 +39,19 @@ class BerkeleyDatabase(implicit ec: ExecutionContext) {
 
   def createModStore() = new BerkeleyModStore(environment)
 
-  def createInputStore(name: String, hash: Int) = {
+  def createInputStore(name: String, hash: HashRange) = {
     if (index.contains(name)) {
       val metaEntity = index.get(name)
+      val hashRange = new HashRange(
+        metaEntity.hashMin, metaEntity.hashMax, metaEntity.hashTotal)
 
-      new BerkeleyInputStore(environment, name, metaEntity.hash)
+      new BerkeleyInputStore(environment, name, hashRange)
     } else {
       val metaEntity = new MetaEntity()
       metaEntity.storeName = name
-      metaEntity.hash = hash
+      metaEntity.hashMin = hash.min
+      metaEntity.hashMax = hash.max
+      metaEntity.hashTotal = hash.total
 
       index.put(metaEntity)
 
@@ -66,5 +70,7 @@ class MetaEntity {
   @PrimaryKey
   var storeName = ""
 
-  var hash = -1
+  var hashMin = -1
+  var hashMax = -1
+  var hashTotal = -1
 }

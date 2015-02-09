@@ -22,16 +22,15 @@ import scala.concurrent.Await
 
 import tdb.Constants._
 import tdb.messages._
+import tdb.util.ObjHasher
 
 class HashPartitionedDoubleListInput[T, U]
-    (workers: Map[Int, ActorRef],
-     partitions: Map[Int, Buffer[String]])
+    (hasher: ObjHasher[ActorRef],
+     partitions: Map[ActorRef, Buffer[String]])
   extends Dataset[T, U] with java.io.Serializable {
 
-  val numWorkers = workers.size
-
   def getWorkerRef(key: T) = {
-    workers(key.hashCode().abs % numWorkers)
+    hasher.getObj(key)
   }
 
   def put(key: T, value: U) = {
@@ -56,13 +55,12 @@ class HashPartitionedDoubleListInput[T, U]
   def getPartitions = ???
 
   def getAdjustableList(): AdjustableList[T, U] = {
-    val adjustablePartitions = Map[Int, Buffer[DoubleList[T, U]]]()
+    val adjustablePartitions = Buffer[DoubleList[T, U]]()
 
-    for ((index, listIds) <- partitions) {
-      adjustablePartitions(index) = Buffer[DoubleList[T, U]]()
+    for ((datastoreRef, listIds) <- partitions) {
       for (listId <- listIds) {
-        val future = workers(index) ? GetAdjustableListMessage(listId)
-        adjustablePartitions(index) +=
+        val future = datastoreRef ? GetAdjustableListMessage(listId)
+        adjustablePartitions +=
           Await.result(future.mapTo[DoubleList[T, U]], DURATION)
       }
     }

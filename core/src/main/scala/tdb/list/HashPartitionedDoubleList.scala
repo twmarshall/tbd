@@ -23,8 +23,8 @@ import tdb.Constants.WorkerId
 import tdb.TDB._
 
 class HashPartitionedDoubleList[T, U]
-    (_partitions: Map[Int, Buffer[DoubleList[T, U]]])
-  extends PartitionedDoubleList[T, U](_partitions.flatMap(_._2).toBuffer) with Serializable {
+    (_partitions: Buffer[DoubleList[T, U]])
+  extends PartitionedDoubleList[T, U](_partitions) with Serializable {
 
   //println("new HashPartitionedDoubleList")
 

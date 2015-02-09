@@ -26,7 +26,7 @@ import tdb.{Adjustable, TDB}
 import tdb.Constants._
 import tdb.datastore.Datastore
 import tdb.messages._
-import tdb.list._
+import tdb.list.{HashPartitionedDoubleListInput, HashPartitionedDoubleChunkListInput, ListConf}
 import tdb.stats.{Stats, WorkerInfo}
 import tdb.util._
 import tdb.worker.{Task, Worker}
@@ -153,7 +153,7 @@ class Master extends Actor with ActorLogging {
       val futures = Buffer[(Future[_], Int, ActorRef)]()
 
       val workerMap = Map[Int, ActorRef]()
-      val partitionMap = Map[Int, Buffer[String]]()
+      val partitionMap = Map[ActorRef, Buffer[String]]()
       val partitionsPerWorker = conf.partitions / workers.size
 
       var index = 0
@@ -171,25 +171,35 @@ class Master extends Actor with ActorLogging {
         index += 1
       }
 
+      var hasher: ObjHasher[ActorRef] = null
       for ((future, workerIndex, datastoreRef) <- futures) {
-        val (index, listIds) =
-          Await.result(future.mapTo[(Int, Buffer[String])], DURATION)
-        partitionMap(workerIndex) = listIds
+        val (range, listIds) =
+          Await.result(future.mapTo[(HashRange, Buffer[String])], DURATION)
+        partitionMap(datastoreRef) = listIds
 
-        if (index == -1) {
-          workerMap(workerIndex) = datastoreRef
+        val thisRange =
+          if (range == null) {
+            new HashRange(workerIndex, workerIndex + 1, workers.size)
+          } else {
+            range
+          }
+
+        val thisHasher = ObjHasher.makeHasher(thisRange, datastoreRef)
+        if (hasher == null) {
+          hasher = thisHasher
         } else {
-          workerMap(index) = datastoreRef
+          hasher = ObjHasher.combineHashers(hasher, thisHasher)
         }
       }
+      assert(hasher.isComplete())
 
       val input = conf match {
         // file, partitions, chunkSize, chunkSizer, sorted, hash
         case ListConf(_, _, 1, _, false, _) =>
-          new HashPartitionedDoubleListInput(workerMap, partitionMap)
+          new HashPartitionedDoubleListInput(hasher, partitionMap)
 
         case ListConf(_, _, _, _, false, _) =>
-          new HashPartitionedDoubleChunkListInput(workerMap, partitionMap, conf)
+          new HashPartitionedDoubleChunkListInput(hasher, partitionMap, conf)
       }
 
       sender ! input
@@ -199,8 +209,8 @@ class Master extends Actor with ActorLogging {
 
       var index = 0
       for ((workerId, datastoreRef) <- datastoreRefs) {
-        futures += datastoreRef ?
-          LoadPartitionsMessage(fileName, workers.size, index)
+        val message = LoadPartitionsMessage(fileName, workers.size, index)
+        futures += (datastoreRef ? message)
         index += 1
       }
 

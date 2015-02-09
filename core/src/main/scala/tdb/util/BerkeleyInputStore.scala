@@ -23,8 +23,9 @@ import java.io._
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{ExecutionContext, Future}
 
-class BerkeleyInputStore(environment: Environment, name: String, val hash: Int)
-                        (implicit ec: ExecutionContext) {
+class BerkeleyInputStore
+    (environment: Environment, name: String, val hashRange: HashRange)
+    (implicit ec: ExecutionContext) {
   private val storeConfig = new StoreConfig()
   storeConfig.setAllowCreate(true)
 
@@ -39,31 +40,28 @@ class BerkeleyInputStore(environment: Environment, name: String, val hash: Int)
     indexes += index
   }
 
-  private def hashKey(key: String) = {
-    key.hashCode().abs % indexes.size
-  }
+  private val hasher = ObjHasher.makeHasher(hashRange, indexes)
 
   def put(key: String, value: String) {
     val entity = new InputEntity()
     entity.key = key
     entity.value = value
 
-    val hash = hashKey(key)
-    indexes(hash).put(entity)
+    hasher.getObj(key).put(entity)
   }
 
   def get(key: String) = {
     Future {
-      val entity = indexes(hashKey(key)).get(key)
+      val entity = hasher.getObj(key).get(key)
       (key, entity.value)
     }
   }
 
   def iterateInput(process: Iterable[String] => Unit, partitions: Int) {
-    val keyCursors = indexes.map(_.keys())
-
     val buf = Buffer[String]()
-    for (cursor <- keyCursors) {
+    for (index <- indexes) {
+      val cursor = index.keys()
+
       val it = cursor.iterator
       while (it.hasNext) {
         buf += it.next()

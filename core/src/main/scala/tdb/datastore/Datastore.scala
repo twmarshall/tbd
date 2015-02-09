@@ -239,11 +239,11 @@ trait Datastore extends Actor with ActorLogging {
         val respondTo = sender
         Future.sequence(futures).onComplete {
           case Success(v) =>
-            respondTo ! (inputStore.hash, listIds)
+            respondTo ! (inputStore.hashRange, listIds)
           case Failure(e) => e.printStackTrace()
         }
       } else {
-        sender ! (-1, listIds)
+        sender ! (null, listIds)
       }
 
     case LoadPartitionsMessage
@@ -251,16 +251,16 @@ trait Datastore extends Actor with ActorLogging {
          numWorkers: Int,
          workerIndex: Int) =>
 
-      inputStore = database.createInputStore(fileName, workerIndex)
+      val range = new HashRange(workerIndex * 12, (workerIndex + 1) * 12, numWorkers * 12)
+      inputStore = database.createInputStore(fileName, range)
 
-      var index =
       if (inputStore.count() == 0) {
         val file = new File(fileName)
         val fileSize = file.length()
         val partitionSize = fileSize / numWorkers
 
         val process = (key: String, value: String) => {
-          if (key.hashCode().abs % numWorkers == workerIndex) {
+          if (range.fallsInside(key)) {
             inputStore.put(key, value)
           }
         }
@@ -272,15 +272,11 @@ trait Datastore extends Actor with ActorLogging {
           fileName, fileSize, 0, fileSize, process)
 
         log.debug("Done reading")
-
-        workerIndex
       } else {
         log.debug(fileName + " was already loaded.")
-
-        inputStore.hash
       }
 
-      sender ! index
+      sender ! "done"
 
     case GetAdjustableListMessage(listId: String) =>
       sender ! lists(listId).getAdjustableList()
