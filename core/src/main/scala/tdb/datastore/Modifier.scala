@@ -22,10 +22,6 @@ import tdb.Constants._
 import tdb.Mod
 
 trait Modifier {
-  // Inserts all of the elements from data into this ListInput. Assumes that
-  // the list is currently empty.
-  def load(data: Map[Any, Any]): Future[_]
-
   def loadInput(keys: Iterable[String]): Future[_]
 
   def put(key: Any, value: Any): Future[_]

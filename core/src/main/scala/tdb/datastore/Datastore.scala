@@ -281,10 +281,6 @@ trait Datastore extends Actor with ActorLogging {
     case GetAdjustableListMessage(listId: String) =>
       sender ! lists(listId).getAdjustableList()
 
-    case LoadMessage(listId: String, data: Map[Any, Any]) =>
-      lists(listId).load(data)
-      sender ! "okay"
-
     case PutMessage(listId: String, key: Any, value: Any) =>
       // This solves a bug where sometimes deserialized Scala objects show up as
       // null in matches. We should figure out a better way of solving this.

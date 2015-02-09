@@ -52,7 +52,6 @@ case class LoadFileMessage(fileName: String)
 case class GetAdjustableListMessage(listId: String)
 case class PutMessage(listId: String, key: Any, value: Any)
 case class RemoveMessage(listId: String, key: Any, value: Any)
-case class LoadMessage(listId: String, data: Map[Any, Any])
 
 // Worker
 case class RegisterWorkerMessage(
