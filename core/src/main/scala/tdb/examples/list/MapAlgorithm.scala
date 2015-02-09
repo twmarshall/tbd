@@ -44,19 +44,27 @@ class MapAdjust(list: AdjustableList[String, String])
 
 class MapAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[String, AdjustableList[String, Int]](_conf) {
-  mutator.loadFile(conf.file)
-  val input = mutator.createList[String, String](conf.listConf)
+  var input: Dataset[String, String] = null
 
-  val adjust = new MapAdjust(input.getAdjustableList())
+  var adjust: MapAdjust = null
 
-  val data = new FileData(
-    mutator, input.asInstanceOf[Dataset[String, String]], conf.file, conf.updateFile, conf.runs)
-  //val data = new StringFileData(input, conf.file)
+  var data: FileData = null
 
   var naiveTable: ParIterable[String] = _
   def generateNaive() {}
 
   def runNaive() {}
+
+  override def loadInitial() {
+    mutator.loadFile(conf.file)
+    input = mutator.createList[String, String](conf.listConf)
+      .asInstanceOf[Dataset[String, String]]
+
+    adjust = new MapAdjust(input.getAdjustableList())
+
+    data = new FileData(
+      mutator, input, conf.file, conf.updateFile, conf.runs)
+  }
 
   def checkOutput(output: AdjustableList[String, Int]) = {
     val writer = new BufferedWriter(new OutputStreamWriter(
