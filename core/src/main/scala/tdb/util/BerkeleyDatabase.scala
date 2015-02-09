@@ -20,7 +20,7 @@ import java.io.{File, FileNotFoundException}
 
 class BerkeleyDatabase {
   private val envConfig = new EnvironmentConfig()
-  envConfig.setCacheSize(96 * 1024)
+  envConfig.setCacheSize(96 * 1024 * 1024)
   envConfig.setAllowCreate(true)
 
   private val envHome = new File("/tmp/tdb_berkeleydb")
