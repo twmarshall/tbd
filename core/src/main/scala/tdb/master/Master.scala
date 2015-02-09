@@ -150,7 +150,7 @@ class Master extends Actor with ActorLogging {
       (datastoreRefs(workerId) ? UpdateModMessage(modId, null, null)) pipeTo sender
 
     case CreateListMessage(conf: ListConf) =>
-      val futures = Buffer[(Future[Buffer[ListInput[Any, Any]]], Int)]()
+      val futures = Buffer[(Future[_], Int, ActorRef)]()
 
       val workerMap = Map[Int, ActorRef]()
       val partitionMap = Map[Int, Buffer[String]]()
@@ -167,14 +167,20 @@ class Master extends Actor with ActorLogging {
             partitionsPerWorker
           }
         val future = datastoreRef ? CreateListIdsMessage(conf, partitions)
-        futures += ((future.mapTo[Buffer[ListInput[Any, Any]]], index))
-        workerMap(index) = datastoreRef
+        futures += ((future, index, datastoreRef))
         index += 1
       }
 
-      for ((future, workerIndex) <- futures) {
-        val listIds = Await.result(future.mapTo[Buffer[String]], DURATION)
+      for ((future, workerIndex, datastoreRef) <- futures) {
+        val (index, listIds) =
+          Await.result(future.mapTo[(Int, Buffer[String])], DURATION)
         partitionMap(workerIndex) = listIds
+
+        if (index == -1) {
+          workerMap(workerIndex) = datastoreRef
+        } else {
+          workerMap(index) = datastoreRef
+        }
       }
 
       val input = conf match {

@@ -27,7 +27,7 @@ import tdb.Constants._
 import tdb.list._
 import tdb.messages._
 import tdb.stats.Stats
-import tdb.util.FileUtil
+import tdb.util._
 
 object Datastore {
   def props(storeType: String, cacheSize: Int): Props = {
@@ -59,14 +59,6 @@ trait Datastore extends Actor with ActorLogging {
 
   def shutdown()
 
-  def putInput(key: String, value: String)
-
-  def retrieveInput(inputName: String): Boolean
-
-  def iterateInput(process: Iterable[String] => Unit, partitions: Int)
-
-  def getInput(key: String): Future[Any]
-
   var workerId: WorkerId = _
 
   private var nextModId = 0
@@ -86,6 +78,10 @@ trait Datastore extends Actor with ActorLogging {
   private val datastores = Map[WorkerId, ActorRef]()
 
   private var misses = 0
+
+  var database = new BerkeleyDatabase()
+
+  private var inputStore: BerkeleyInputStore = null
 
   def getNewModId(): ModId = {
     var newModId: Long = workerId
@@ -110,13 +106,13 @@ trait Datastore extends Actor with ActorLogging {
 
   private def getMod(modId: ModId, taskRef: ActorRef, respondTo: ActorRef) {
     if (inputs.contains(modId)) {
-      getInput(inputs(modId)) pipeTo respondTo
+      inputStore.get(inputs(modId)) pipeTo respondTo
     } else if (contains(modId)) {
       asyncGet(modId) pipeTo sender
     } else if (chunks.contains(modId)) {
       val futures = Buffer[Future[Any]]()
       for (id <- chunks(modId)) {
-        futures += getInput(id)
+        futures += inputStore.get(id)
       }
       Future.sequence(futures).onComplete {
         case Success(arr) => respondTo ! arr.toVector
@@ -238,16 +234,16 @@ trait Datastore extends Actor with ActorLogging {
           nextList = (nextList + 1) % newLists.size
         }
 
-        iterateInput(process2, numPartitions)
+        inputStore.iterateInput(process2, numPartitions)
 
         val respondTo = sender
         Future.sequence(futures).onComplete {
           case Success(v) =>
-            respondTo ! listIds
+            respondTo ! (inputStore.hash, listIds)
           case Failure(e) => e.printStackTrace()
         }
       } else {
-        sender ! listIds
+        sender ! (-1, listIds)
       }
 
     case LoadPartitionsMessage
@@ -255,14 +251,17 @@ trait Datastore extends Actor with ActorLogging {
          numWorkers: Int,
          workerIndex: Int) =>
 
-      if (!retrieveInput(fileName)) {
+      inputStore = database.createInputStore(fileName, workerIndex)
+
+      var index =
+      if (inputStore.count() == 0) {
         val file = new File(fileName)
         val fileSize = file.length()
         val partitionSize = fileSize / numWorkers
 
         val process = (key: String, value: String) => {
           if (key.hashCode().abs % numWorkers == workerIndex) {
-            putInput(key, value)
+            inputStore.put(key, value)
           }
         }
 
@@ -273,11 +272,15 @@ trait Datastore extends Actor with ActorLogging {
           fileName, fileSize, 0, fileSize, process)
 
         log.debug("Done reading")
+
+        workerIndex
       } else {
         log.debug(fileName + " was already loaded.")
+
+        inputStore.hash
       }
 
-      sender ! "done"
+      sender ! index
 
     case GetAdjustableListMessage(listId: String) =>
       sender ! lists(listId).getAdjustableList()
@@ -309,6 +312,9 @@ trait Datastore extends Actor with ActorLogging {
       workerId = _workerId
 
     case ClearMessage() =>
+      if (inputStore != null) {
+        inputStore.close()
+      }
       clear()
       lists.clear()
 

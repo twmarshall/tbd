@@ -17,12 +17,14 @@ package tdb.util
 
 import com.sleepycat.je.Environment
 import com.sleepycat.persist._
-import com.sleepycat.persist.model.{Entity, PrimaryKey, SecondaryKey}
+import com.sleepycat.persist.model.{Entity, PrimaryKey}
 import com.sleepycat.persist.model.Relationship.ONE_TO_ONE
 import java.io._
 import scala.collection.mutable.{Buffer, Map}
+import scala.concurrent.{ExecutionContext, Future}
 
-class BerkeleyInputStore(environment: Environment, name: String) {
+class BerkeleyInputStore(environment: Environment, name: String, val hash: Int)
+                        (implicit ec: ExecutionContext) {
   private val storeConfig = new StoreConfig()
   storeConfig.setAllowCreate(true)
 
@@ -51,8 +53,10 @@ class BerkeleyInputStore(environment: Environment, name: String) {
   }
 
   def get(key: String) = {
-    val entity = indexes(hashKey(key)).get(key)
-    (key, entity.value)
+    Future {
+      val entity = indexes(hashKey(key)).get(key)
+      (key, entity.value)
+    }
   }
 
   def iterateInput(process: Iterable[String] => Unit, partitions: Int) {

@@ -41,10 +41,7 @@ class LRUNode(
 class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
   import context.dispatcher
 
-  private var database = new BerkeleyDatabase()
   private var modStore = database.createModStore()
-
-  private var inputStore: BerkeleyInputStore = null
 
   // LRU cache
   private val values = Map[ModId, LRUNode]()
@@ -191,9 +188,6 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     tail.next = null
 
     modStore.close()
-    if (inputStore != null) {
-      inputStore.close()
-    }
     database.close()
     database = new BerkeleyDatabase()
     modStore = database.createModStore()
@@ -204,27 +198,5 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
             readCount + ", deletes = " + deleteCount)
     modStore.close()
     database.close()
-  }
-
-  def putInput(key: String, value: String) {
-    inputStore.put(key, value)
-  }
-
-  def retrieveInput(inputName: String): Boolean = {
-    inputStore = database.createInputStore(inputName)
-
-    val count = inputStore.count()
-    println("Retrieved " + count)
-    count > 0
-  }
-
-  def iterateInput(process: Iterable[String] => Unit, partitions: Int) {
-    inputStore.iterateInput(process, partitions)
-  }
-
-  def getInput(key: String) = {
-    Future {
-      inputStore.get(key)
-    }
   }
 }

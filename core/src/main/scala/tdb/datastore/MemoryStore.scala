@@ -72,8 +72,6 @@ class MemoryStore extends Datastore {
     input(key) = value
   }
 
-  def retrieveInput(inputName: String): Boolean = false
-
   def iterateInput(process: Iterable[String] => Unit, partitions: Int) {
     for (keys <- input.keys.grouped(input.size / partitions)) {
       process(keys)

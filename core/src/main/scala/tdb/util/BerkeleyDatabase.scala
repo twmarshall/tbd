@@ -16,9 +16,12 @@
 package tdb.util
 
 import com.sleepycat.je.{Environment, EnvironmentConfig}
+import com.sleepycat.persist._
+import com.sleepycat.persist.model.{Entity, PrimaryKey}
 import java.io.{File, FileNotFoundException}
+import scala.concurrent.ExecutionContext
 
-class BerkeleyDatabase {
+class BerkeleyDatabase(implicit ec: ExecutionContext) {
   private val envConfig = new EnvironmentConfig()
   envConfig.setCacheSize(96 * 1024 * 1024)
   envConfig.setAllowCreate(true)
@@ -28,11 +31,40 @@ class BerkeleyDatabase {
 
   private val environment = new Environment(envHome, envConfig)
 
+  private val storeConfig = new StoreConfig()
+  storeConfig.setAllowCreate(true)
+  private val metaStore = new EntityStore(environment, "MetaStore", storeConfig)
+  private val index =
+    metaStore.getPrimaryIndex(classOf[String], classOf[MetaEntity])
+
   def createModStore() = new BerkeleyModStore(environment)
 
-  def createInputStore(name: String) = new BerkeleyInputStore(environment, name)
+  def createInputStore(name: String, hash: Int) = {
+    if (index.contains(name)) {
+      val metaEntity = index.get(name)
+
+      new BerkeleyInputStore(environment, name, metaEntity.hash)
+    } else {
+      val metaEntity = new MetaEntity()
+      metaEntity.storeName = name
+      metaEntity.hash = hash
+
+      index.put(metaEntity)
+
+      new BerkeleyInputStore(environment, name, hash)
+    }
+  }
 
   def close() {
+    metaStore.close()
     environment.close()
   }
+}
+
+@Entity
+class MetaEntity {
+  @PrimaryKey
+  var storeName = ""
+
+  var hash = -1
 }
