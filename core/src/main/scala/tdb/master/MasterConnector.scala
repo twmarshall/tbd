@@ -25,14 +25,17 @@ import tdb.Constants._
 import tdb.Log
 import tdb.stats.Stats
 import tdb.worker.Worker
+import tdb.util.Util
 
 object MasterConnector {
   private var id = 0
 
   def apply(masterURL: String) = {
-      val conf = akkaConf + """
-        akka.remote.netty.tcp.port = 2554
-      """
+    val ip = Util.getIP()
+    val conf = akkaConf + s"""
+      akka.remote.netty.tcp.hostname = $ip
+      akka.remote.netty.tcp.port = 2554
+    """
 
     val mutatorAkkaConf = ConfigFactory.parseString(conf)
     val system = ActorSystem(
