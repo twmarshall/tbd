@@ -309,6 +309,10 @@ trait Datastore extends Actor with ActorLogging {
       }
       clear()
       lists.clear()
+      hashedLists.clear()
+      dependencies.clear()
+      inputs.clear()
+      chunks.clear()
 
     case x =>
       log.warning("Datastore actor received unhandled message " +
