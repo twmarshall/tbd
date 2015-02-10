@@ -255,22 +255,8 @@ trait Datastore extends Actor with ActorLogging {
       inputStore = database.createInputStore(fileName, range)
 
       if (inputStore.count() == 0) {
-        val file = new File(fileName)
-        val fileSize = file.length()
-        val partitionSize = fileSize / numWorkers
-
-        val process = (key: String, value: String) => {
-          if (range.fallsInside(key)) {
-            inputStore.put(key, value)
-          }
-        }
-
-        log.debug("Reading " + fileName + " from " + 0 + ", size " +
-                  fileSize)
-
-        FileUtil.readKeyValueFile(
-          fileName, fileSize, 0, fileSize, process)
-
+        log.debug("Reading " + fileName)
+        inputStore.load(fileName)
         log.debug("Done reading")
       } else {
         log.debug(fileName + " was already loaded.")

@@ -42,6 +42,20 @@ class BerkeleyInputStore
 
   private val hasher = ObjHasher.makeHasher(hashRange, indexes)
 
+  def load(fileName: String) {
+    val file = new File(fileName)
+    val fileSize = file.length()
+
+    val process = (key: String, value: String) => {
+      if (hashRange.fallsInside(key)) {
+        put(key, value)
+      }
+    }
+
+    FileUtil.readKeyValueFile(
+      fileName, fileSize, 0, fileSize, process)
+  }
+
   def put(key: String, value: String) {
     val entity = new InputEntity()
     entity.key = key
