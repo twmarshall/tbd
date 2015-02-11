@@ -66,7 +66,9 @@ class WCHashAdjust(list: AdjustableList[String, String], mappedPartitions: Int)
 
 class WCHashAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[String, Iterable[Mod[(Int, HashMap[String, Int])]]](_conf) {
-  val data = new DummyData()
+  var data: FileData = null
+
+  var input: Dataset[String, String] = null
 
   var adjust: WCHashAdjust = null
 
@@ -74,12 +76,16 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
 
   def runNaive() {}
 
-  var input: ListInput[String, String] = null
   override def loadInitial() {
-    input =
-      mutator.createList[String, String](
+    mutator.loadFile(conf.file)
+    input = mutator.createList[String, String](
         conf.listConf.copy(file = conf.file))
-    adjust = new WCHashAdjust(input.getAdjustableList(), 2)
+          .asInstanceOf[Dataset[String, String]]
+
+    adjust = new WCHashAdjust(input.getAdjustableList(), 4)
+
+    data = new FileData(
+      mutator, input, conf.file, conf.updateFile, conf.runs)
   }
 
   def checkOutput(output: Iterable[Mod[(Int, HashMap[String, Int])]]) = {
@@ -151,7 +157,9 @@ class WCChunkHashAdjust
 
 class WCChunkHashAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[String, Iterable[Mod[(Int, HashMap[String, Int])]]](_conf) {
-  val data = new DummyData()
+  var data: FileData = null
+
+  var input: Dataset[String, String] = null
 
   var adjust: WCChunkHashAdjust = null
 
@@ -159,12 +167,16 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
 
   def runNaive() {}
 
-  var input: ListInput[String, String] = null
   override def loadInitial() {
-    input =
-      mutator.createList[String, String](
+    mutator.loadFile(conf.file)
+    input = mutator.createList[String, String](
         conf.listConf.copy(file = conf.file))
-    adjust = new WCChunkHashAdjust(input.getAdjustableList(), 2)
+          .asInstanceOf[Dataset[String, String]]
+
+    adjust = new WCChunkHashAdjust(input.getAdjustableList(), 4)
+
+    data = new FileData(
+      mutator, input, conf.file, conf.updateFile, conf.runs)
   }
 
   def checkOutput(output: Iterable[Mod[(Int, HashMap[String, Int])]]) = {
