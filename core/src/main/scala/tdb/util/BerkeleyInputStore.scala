@@ -32,7 +32,7 @@ class BerkeleyInputStore
   private val stores = Buffer[EntityStore]()
   private val indexes = Buffer[PrimaryIndex[String, InputEntity]]()
 
-  for (i <- 1 to 12) {
+  for (i <- hashRange.range()) {
     val store = new EntityStore(environment, name + i, storeConfig)
     stores += store
 
@@ -85,6 +85,12 @@ class BerkeleyInputStore
       buf.clear()
 
       cursor.close()
+    }
+  }
+
+  def foreachPartition(func: PrimaryIndex[String, InputEntity] => Unit) {
+    for (index <- indexes) {
+      func(index)
     }
   }
 
