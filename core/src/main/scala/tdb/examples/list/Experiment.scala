@@ -242,6 +242,8 @@ object Experiment {
               new WCChunkHashAlgorithm(algConf)
             else
               new WCHashAlgorithm(algConf)
+          case "cw" =>
+            new CWChunkHashAlgorithm(algConf)
         }
 
         val results = alg.run()
