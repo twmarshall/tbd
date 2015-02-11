@@ -15,6 +15,8 @@
  */
 package tdb.datastore
 
+import scala.collection.immutable.HashMap
+
 import tdb.Mod
 import tdb.util.Util
 
@@ -60,6 +62,9 @@ object MemoryUsage {
       //  h.size * 1000 + objectOverhead
       case l: Long =>
         longOverhead + objectOverhead
+
+      case h: HashMap[_, _] =>
+        h.size * objectOverhead * 10
 
       case v: Vector[_] =>
         v.map(getSize(_)).reduce(_ + _) + objectOverhead
