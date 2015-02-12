@@ -34,5 +34,18 @@ class HashRange(val min: Int, val max: Int, val total: Int)
 
   def range() = min until max
 
+  def isComplete() = min == 0 && max == total
+
+  override def equals(a: Any): Boolean = {
+    a match {
+      case h: HashRange =>
+        if (isComplete() && h.isComplete())
+          true
+        else
+          min == h.min && max == h.max && total == h.total
+      case _ => false
+    }
+  }
+
   override def toString() = "Range(" + min + ", " + max + ", " + total + ")"
 }

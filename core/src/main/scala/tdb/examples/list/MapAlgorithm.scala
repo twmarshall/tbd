@@ -56,7 +56,7 @@ class MapAlgorithm(_conf: AlgorithmConf)
   def runNaive() {}
 
   override def loadInitial() {
-    mutator.loadFile(conf.file)
+    mutator.loadFile(conf.file, conf.listConf.partitions)
     input = mutator.createList[String, String](conf.listConf)
       .asInstanceOf[Dataset[String, String]]
 

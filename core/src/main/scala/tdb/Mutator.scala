@@ -26,6 +26,7 @@ import tdb.ddg.DDG
 import tdb.master.MasterConnector
 import tdb.messages._
 import tdb.list.{Dataset, ListConf, ListInput}
+import tdb.util.OS
 
 class Mutator(_connector: MasterConnector = null) {
   import scala.concurrent.ExecutionContext.Implicits.global
@@ -70,8 +71,8 @@ class Mutator(_connector: MasterConnector = null) {
     Await.result(future.mapTo[ListInput[T, U]], DURATION)
   }
 
-  def loadFile(fileName: String) {
-    val future = masterRef ? LoadFileMessage(fileName)
+  def loadFile(fileName: String, partitions: Int = OS.getNumCores()) {
+    val future = masterRef ? LoadFileMessage(fileName, partitions)
     Await.result(future, DURATION)
   }
 

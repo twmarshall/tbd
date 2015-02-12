@@ -54,6 +54,7 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
         val chunkMod = new Mod[Vector[(Any, Any)]](datastore.getNewModId())
         datastore.chunks(chunkMod.id) = chunk
         val newNode = new DoubleChunkListNode(chunkMod, tail, size)
+
         tail = datastore.createMod(newNode)
         for (k <- chunk) {
           nodes(k) = tail

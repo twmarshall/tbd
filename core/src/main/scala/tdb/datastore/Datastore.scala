@@ -81,25 +81,19 @@ class Datastore(storeType: String, cacheSize: Int)
   def getMod(modId: ModId, taskRef: ActorRef): Future[_] = {
     if (inputs.contains(modId)) {
       store.get(1, inputs(modId))
-    } else if (store.contains(0, modId)) {
-      store.get(0, modId)/*.onComplete {
-        case Success(v) =>
-          v match {
-            case null => respondTo ! NullMessage
-            case v => respondTo ! v
-          }
-        case Failure(e) =>
-          e.printStackTrace()
-      }*/
     } else if (chunks.contains(modId)) {
       val futures = Buffer[Future[Any]]()
       for (id <- chunks(modId)) {
         futures += store.get(1, id)
       }
-      Future.sequence(futures)/*.onComplete {
-        case Success(arr) => respondTo ! arr.toVector
-        case Failure(e) => e.printStackTrace()
-      }*/
+
+      Future {
+        val pair =
+          scala.concurrent.Await.result(Future.sequence(futures), DURATION)
+        pair.toVector
+      }
+    } else if (store.contains(0, modId)) {
+      store.get(0, modId)
     } else {
       val workerId = getWorkerId(modId)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)

@@ -80,7 +80,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
 
     val berkeleyConf = new ExperimentConf(
       Array("--algorithms", "map",
-            "--chunkSizes", "1",
+            "--chunkSizes", "1", "2",
             "--counts", intensity.toString,
             "--store", "berkeleydb",
             "--files", "wiki2.xml",

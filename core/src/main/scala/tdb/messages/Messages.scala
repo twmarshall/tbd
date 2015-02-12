@@ -37,7 +37,8 @@ case class CreateListIdsMessage(conf: ListConf, numPartitions: Int)
 case class LoadPartitionsMessage(
   fileName: String,
   numWorkers: Int,
-  workerIndex: Int)
+  workerIndex: Int,
+  partitions: Int)
 
 // Master
 case class RegisterMutatorMessage()
@@ -48,7 +49,7 @@ case class ScheduleTaskMessage(parent: ActorRef, workerId: WorkerId)
 case class ShutdownMutatorMessage(mutatorId: Int)
 
 case class CreateListMessage(conf: ListConf)
-case class LoadFileMessage(fileName: String)
+case class LoadFileMessage(fileName: String, partitions: Int)
 case class GetAdjustableListMessage(listId: String)
 case class PutMessage(listId: String, key: Any, value: Any)
 case class RemoveMessage(listId: String, key: Any, value: Any)
