@@ -23,6 +23,7 @@ import scala.concurrent.duration._
 import scala.io.Source
 
 import tdb.Constants._
+import tdb.datastore.berkeleydb.BerkeleyDatabase
 import tdb.util._
 
 object NaiveBerkeleyMap {

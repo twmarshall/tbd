@@ -24,6 +24,7 @@ import scala.util.{Failure, Success}
 
 import tdb.Mod
 import tdb.Constants._
+import tdb.datastore.berkeleydb.BerkeleyStore
 import tdb.list._
 import tdb.messages._
 import tdb.stats.Stats
@@ -40,7 +41,7 @@ class Datastore(storeType: String, cacheSize: Int)
 
   val store =
     storeType  match {
-      case "berkeleydb" => new BerkeleyDBStore(cacheSize)
+      case "berkeleydb" => new BerkeleyStore(cacheSize)
       case "memory" => new MemoryStore()
     }
   store.createTable[ModId, Any]("Mods", null)

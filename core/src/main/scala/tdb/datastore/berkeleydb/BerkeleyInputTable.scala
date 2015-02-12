@@ -13,40 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.util
+package tdb.datastore.berkeleydb
 
 import com.sleepycat.je.Environment
 import com.sleepycat.persist._
 import com.sleepycat.persist.model.{Entity, PrimaryKey}
-import com.sleepycat.persist.model.Relationship.ONE_TO_ONE
-import java.io._
+import java.io.File
 import scala.collection.JavaConversions._
-import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.ExecutionContext
+import scala.collection.mutable.Buffer
 
-trait BerkeleyStore {
-  def load(fileName: String)
+import tdb.util._
 
-  def put(key: Any, value: Any)
-
-  def get(key: Any): Any
-
-  def delete(key: Any)
-
-  def contains(key: Any): Boolean
-
-  def count(): Int
-
-  def hashedForeach(process: Iterator[String] => Unit)
-
-  def hashRange: HashRange
-
-  def close()
-}
-
-class BerkeleyInputStore
+class BerkeleyInputTable
     (environment: Environment, name: String, val hashRange: HashRange)
-    (implicit ec: ExecutionContext) extends BerkeleyStore {
+  extends BerkeleyTable {
+
   private val storeConfig = new StoreConfig()
   storeConfig.setAllowCreate(true)
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.datastore
+package tdb.datastore.berkeleydb
 
 import akka.actor.{ActorRef, ActorContext, Props}
 import akka.pattern.{ask, pipe}
@@ -27,6 +27,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
 import scala.util.{Failure, Success}
 
+import tdb.datastore.KVStore
 import tdb.messages._
 import tdb.Mod
 import tdb.Constants.ModId
@@ -39,11 +40,11 @@ class LRUNode(
   var next: LRUNode
 )
 
-class BerkeleyDBStore(maxCacheSize: Int)(implicit ec: ExecutionContext) extends KVStore {
+class BerkeleyStore(maxCacheSize: Int)(implicit ec: ExecutionContext) extends KVStore {
   var database = new BerkeleyDatabase()
   private var modStore = database.createModStore()
 
-  private val stores = Map[Int, BerkeleyStore]()
+  private val stores = Map[Int, BerkeleyTable]()
 
   // LRU cache
   private val values = Map[ModId, LRUNode]()

@@ -13,13 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.util
+package tdb.datastore.berkeleydb
 
 import com.sleepycat.je.{Environment, EnvironmentConfig}
 import com.sleepycat.persist._
 import com.sleepycat.persist.model.{Entity, PrimaryKey}
 import java.io.{File, FileNotFoundException}
 import scala.concurrent.ExecutionContext
+
+import tdb.util.HashRange
 
 class BerkeleyDatabase(implicit ec: ExecutionContext) {
   private val envConfig = new EnvironmentConfig()
@@ -37,7 +39,7 @@ class BerkeleyDatabase(implicit ec: ExecutionContext) {
   private val index =
     metaStore.getPrimaryIndex(classOf[String], classOf[MetaEntity])
 
-  def createModStore() = new BerkeleyModStore(environment)
+  def createModStore() = new BerkeleyModTable(environment)
 
   def createInputStore(name: String, hash: HashRange) = {
     if (index.contains(name)) {
@@ -45,7 +47,7 @@ class BerkeleyDatabase(implicit ec: ExecutionContext) {
       val hashRange = new HashRange(
         metaEntity.hashMin, metaEntity.hashMax, metaEntity.hashTotal)
 
-      new BerkeleyInputStore(environment, name, hashRange)
+      new BerkeleyInputTable(environment, name, hashRange)
     } else {
       val metaEntity = new MetaEntity()
       metaEntity.storeName = name
@@ -55,7 +57,7 @@ class BerkeleyDatabase(implicit ec: ExecutionContext) {
 
       index.put(metaEntity)
 
-      new BerkeleyInputStore(environment, name, hash)
+      new BerkeleyInputTable(environment, name, hash)
     }
   }
 

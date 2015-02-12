@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.util
+package tdb.datastore.berkeleydb
 
 import com.sleepycat.je.Environment
 import com.sleepycat.persist.{EntityStore, StoreConfig}
@@ -22,7 +22,7 @@ import java.io._
 
 import tdb.Constants.ModId
 
-class BerkeleyModStore(environment: Environment) extends BerkeleyStore {
+class BerkeleyModTable(environment: Environment) extends BerkeleyTable {
   private val storeConfig = new StoreConfig()
   storeConfig.setAllowCreate(true)
 
