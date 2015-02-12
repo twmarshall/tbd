@@ -51,7 +51,7 @@ class DatastoreActor(storeType: String, cacheSize: Int)
       sender ! datastore.createMod(value)
 
     case CreateModMessage(null) =>
-      sender ! datastore.createMod(NullMessage)
+      sender ! datastore.createMod(null)
 
     case GetModMessage(modId: ModId, taskRef: ActorRef) =>
       val respondTo = sender
@@ -91,10 +91,10 @@ class DatastoreActor(storeType: String, cacheSize: Int)
       datastore.updateMod(modId, value, null, sender)
 
     case UpdateModMessage(modId: ModId, null, task: ActorRef) =>
-      datastore.updateMod(modId, NullMessage, task, sender)
+      datastore.updateMod(modId, null, task, sender)
 
     case UpdateModMessage(modId: ModId, null, null) =>
-      datastore.updateMod(modId, NullMessage, null, sender)
+      datastore.updateMod(modId, null, null, sender)
 
     case RemoveModsMessage(modIds: Iterable[ModId]) =>
       for (modId <- modIds) {
