@@ -30,7 +30,7 @@ class DoubleListModifier(datastore: Datastore) extends Modifier {
 
   val modList = new DoubleList[Any, Any](tailMod, false, datastore.workerId)
 
-  def loadInput(keys: Iterable[String]): Future[_] = {
+  def loadInput(keys: Iterator[Any]): Future[_] = {
     var tail = datastore.createMod[DoubleListNode[Any, Any]](null)
     val newTail = tail
 

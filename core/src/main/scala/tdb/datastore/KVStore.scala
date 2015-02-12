@@ -13,20 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.list
+package tdb.datastore
 
-import scala.collection.mutable.Map
 import scala.concurrent.Future
+import scala.reflect.runtime.universe._
 
-import tdb.Constants._
-import tdb.Mod
+import tdb.Constants.ModId
+import tdb.util.HashRange
 
-trait Modifier {
-  def loadInput(keys: Iterator[Any]): Future[_]
+trait KVStore {
+  def createTable[T: TypeTag, U: TypeTag](name: String, range: HashRange): Int
 
-  def put(key: Any, value: Any): Future[_]
+  def load(id: Int, fileName: String)
 
-  def remove(key: Any, value: Any): Future[_]
+  def put(id: Int, key: Any, value: Any): Future[Any]
 
-  def getAdjustableList(): AdjustableList[Any, Any]
+  def get(id: Int, key: Any): Future[Any]
+
+  def delete(id: Int, key: Any)
+
+  def contains(id: Int, key: Any): Boolean
+
+  def count(tableId: Int): Int
+
+  def clear()
+
+  def hashedForeach(id: Int)(process: Iterator[Any] => Unit)
+
+  def hashRange(id: Int): HashRange
 }

@@ -16,71 +16,81 @@
 package tdb.datastore
 
 import akka.actor.ActorRef
+import java.io._
 import scala.collection.mutable.Map
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.runtime.universe._
 
 import tdb.Constants.ModId
 import tdb.messages.NullMessage
+import tdb.util._
 
-class MemoryStore extends Datastore {
-  import context.dispatcher
+class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
+  private val tables = Map[Int, Map[Any, Any]]()
 
-  private val values = Map[ModId, Any]()
-  private val input = Map[String, String]()
+  private var nextTableId = 0
 
-  def put(key: ModId, value: Any) {
-    values(key) = value
+  def createTable[T: TypeTag, U: TypeTag]
+      (name: String, range: HashRange): Int = {
+    val id = nextTableId
+    nextTableId += 1
+
+    tables(id) = Map[Any, Any]()
+
+    id
   }
 
-  def asyncPut(key: ModId, value: Any): Future[Any] = {
-    values(key) = value
+  def load(id: Int, fileName: String) {
+    val file = new File(fileName)
+    val fileSize = file.length()
+
+    val process = (key: String, value: String) => {
+      //put(key, value)
+      tables(id) += ((key, value))
+      ()
+    }
+
+    FileUtil.readKeyValueFile(
+      fileName, fileSize, 0, fileSize, process)
+  }
+
+  def put(id: Int, key: Any, value: Any) = {
+    tables(id)(key) = value
+
     Future { "done" }
   }
 
-  def get(key: ModId): Any = {
-    values(key)
-  }
-
-  def asyncGet(key: ModId): Future[Any] = {
-    val value = values(key)
+  def get(id: Int, key: Any) = {
     Future {
-      if (value == null) {
-        NullMessage
-      } else {
-        value
-      }
+      if (key.isInstanceOf[ModId])
+        tables(id)(key)
+      else
+        (key, tables(id)(key))
     }
   }
 
-  def remove(key: ModId) {
-    values -= key
+  def delete(id: Int, key: Any) {
+    tables(id) -= key
   }
 
-  def contains(key: ModId) = {
-    values.contains(key)
+  def contains(id: Int, key: Any): Boolean = {
+    tables(id).contains(key)
+  }
+
+  def count(id: Int) = {
+    tables(id).size
   }
 
   def clear() {
-    values.clear()
+    tables.clear()
+    nextTableId = 0
   }
 
-  def shutdown() {
-    values.clear()
-  }
-
-  def putInput(key: String, value: String) {
-    input(key) = value
-  }
-
-  def iterateInput(process: Iterable[String] => Unit, partitions: Int) {
-    for (keys <- input.keys.grouped(input.size / partitions)) {
-      process(keys)
+  def hashedForeach(id: Int)(process: Iterator[Any] => Unit) {
+    for (map <- tables(id).grouped(tables(id).size / 2)) {
+      process(map.keys.iterator)
     }
   }
 
-  def getInput(key: String) = {
-    Future {
-      (key, input(key))
-    }
-  }
+  def hashRange(id: Int) = new HashRange(0, 1, 1)
 }

@@ -36,10 +36,10 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
 
   val list = new DoubleChunkList[Any, Any](lastNodeMod, conf, false, datastore.workerId)
 
-  def loadInput(keys: Iterable[String]) = {
+  def loadInput(keys: Iterator[Any]) = {
     val futures = Buffer[Future[Any]]()
-    var chunk = Vector[String]()
-    var lastChunk: Vector[String] = null
+    var chunk = Vector[Any]()
+    var lastChunk: Vector[Any] = null
     var newLastNodeMod: Mod[DoubleChunkListNode[Any, Any]] = null
 
     var size = 0
@@ -69,7 +69,7 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
         }
 
         lastChunk = chunk
-        chunk = Vector[String]()
+        chunk = Vector[Any]()
         size  = 0
       }
     }

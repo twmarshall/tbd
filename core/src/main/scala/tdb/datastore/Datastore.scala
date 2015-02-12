@@ -30,34 +30,20 @@ import tdb.stats.Stats
 import tdb.util._
 
 object Datastore {
-  def props(storeType: String, cacheSize: Int): Props = {
-    storeType match {
-      case "berkeleydb" =>
-        Props(classOf[BerkeleyDBStore], cacheSize)
-      case "memory" =>
-        Props(classOf[MemoryStore])
-    }
-  }
+  def props(storeType: String, cacheSize: Int): Props =
+    Props(classOf[Datastore], storeType, cacheSize)
 }
 
-trait Datastore extends Actor with ActorLogging {
+class Datastore(storeType: String, cacheSize: Int)
+  extends Actor with ActorLogging {
   import context.dispatcher
 
-  def put(key: ModId, value: Any)
-
-  def asyncPut(key: ModId, value: Any): Future[Any]
-
-  def get(key: ModId): Any
-
-  def asyncGet(key: ModId): Future[Any]
-
-  def remove(key: ModId)
-
-  def contains(key: ModId): Boolean
-
-  def clear()
-
-  def shutdown()
+  val store =
+    storeType  match {
+      case "berkeleydb" => new BerkeleyDBStore(cacheSize)
+      case "memory" => new MemoryStore()
+    }
+  store.createTable[ModId, Any]("Mods", null)
 
   var workerId: WorkerId = _
 
@@ -70,18 +56,14 @@ trait Datastore extends Actor with ActorLogging {
 
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  val inputs = Map[ModId, String]()
+  val inputs = Map[ModId, Any]()
 
-  val chunks = Map[ModId, Iterable[String]]()
+  val chunks = Map[ModId, Iterable[Any]]()
 
   // Maps logical names of datastores to their references.
   private val datastores = Map[WorkerId, ActorRef]()
 
   private var misses = 0
-
-  var database = new BerkeleyDatabase()
-
-  private var inputStore: BerkeleyInputStore = null
 
   def getNewModId(): ModId = {
     var newModId: Long = workerId
@@ -95,24 +77,37 @@ trait Datastore extends Actor with ActorLogging {
 
   def createMod[T](value: T): Mod[T] = {
     val newModId = getNewModId()
-    put(newModId, value)
+    val future = store.put(0, newModId, value)
+    scala.concurrent.Await.result(future, DURATION)
 
     new Mod(newModId)
   }
 
   def read[T](mod: Mod[T]): T = {
-    get(mod.id).asInstanceOf[T]
+    val f = store.get(0, mod.id)
+    scala.concurrent.Await.result(f, DURATION)
+      .asInstanceOf[T]
   }
 
   private def getMod(modId: ModId, taskRef: ActorRef, respondTo: ActorRef) {
     if (inputs.contains(modId)) {
-      inputStore.get(inputs(modId)) pipeTo respondTo
-    } else if (contains(modId)) {
-      asyncGet(modId) pipeTo sender
+      store.get(1, inputs(modId)) pipeTo respondTo
+    } else if (store.contains(0, modId)) {
+      val respondTo = sender
+
+      store.get(0, modId).onComplete {
+        case Success(v) =>
+          v match {
+            case null => respondTo ! NullMessage
+            case v => respondTo ! v
+          }
+        case Failure(e) =>
+          e.printStackTrace()
+      }
     } else if (chunks.contains(modId)) {
       val futures = Buffer[Future[Any]]()
       for (id <- chunks(modId)) {
-        futures += inputStore.get(id)
+        futures += store.get(1, id)
       }
       Future.sequence(futures).onComplete {
         case Success(arr) => respondTo ! arr.toVector
@@ -129,10 +124,10 @@ trait Datastore extends Actor with ActorLogging {
   }
 
   def asyncUpdate[T](mod: Mod[T], value: T): Future[_] = {
-    val futures = Buffer[Future[String]]()
+    val futures = Buffer[Future[Any]]()
 
-    if (!contains(mod.id) || get(mod.id) != value) {
-      put(mod.id, value)
+    if (!store.contains(0, mod.id) || store.get(0, mod.id) != value) {
+      futures += store.put(0, mod.id, value)
 
       if (dependencies.contains(mod.id)) {
         for (taskRef <- dependencies(mod.id)) {
@@ -151,8 +146,8 @@ trait Datastore extends Actor with ActorLogging {
        respondTo: ActorRef) {
     val futures = Buffer[Future[Any]]()
 
-    if (!contains(modId) || get(modId) != value) {
-      futures += asyncPut(modId, value)
+    if (!store.contains(0, modId) || store.get(0, modId) != value) {
+      futures += store.put(0, modId, value)
 
       if (dependencies.contains(modId)) {
         for (taskRef <- dependencies(modId)) {
@@ -201,7 +196,7 @@ trait Datastore extends Actor with ActorLogging {
 
     case RemoveModsMessage(modIds: Iterable[ModId]) =>
       for (modId <- modIds) {
-        remove(modId)
+        store.delete(0, modId)
         dependencies -= modId
       }
 
@@ -228,18 +223,17 @@ trait Datastore extends Actor with ActorLogging {
       if (conf.file != "") {
         val futures = Buffer[Future[Any]]()
         var nextList = 0
-        val process2 = (keys: Iterable[String]) => {
-          hashedLists(nextList) = newLists(nextList)
-          futures += newLists(nextList).loadInput(keys)
-          nextList = (nextList + 1) % newLists.size
+        store.hashedForeach(1) {
+          case keys =>
+            hashedLists(nextList) = newLists(nextList)
+            futures += newLists(nextList).loadInput(keys)
+            nextList = (nextList + 1) % newLists.size
         }
-
-        inputStore.iterateInput(process2, numPartitions)
 
         val respondTo = sender
         Future.sequence(futures).onComplete {
           case Success(v) =>
-            respondTo ! (inputStore.hashRange, listIds)
+            respondTo ! (store.hashRange(1), listIds)
           case Failure(e) => e.printStackTrace()
         }
       } else {
@@ -252,11 +246,12 @@ trait Datastore extends Actor with ActorLogging {
          workerIndex: Int) =>
 
       val range = new HashRange(workerIndex * 12, (workerIndex + 1) * 12, numWorkers * 12)
-      inputStore = database.createInputStore(fileName, range)
 
-      if (inputStore.count() == 0) {
+      val tableId = store.createTable[String, String](fileName, range)
+
+      if (store.count(tableId) == 0) {
         log.debug("Reading " + fileName)
-        inputStore.load(fileName)
+        store.load(1, fileName)
         log.debug("Done reading")
       } else {
         log.debug(fileName + " was already loaded.")
@@ -290,10 +285,9 @@ trait Datastore extends Actor with ActorLogging {
       workerId = _workerId
 
     case ClearMessage() =>
-      if (inputStore != null) {
-        inputStore.close()
-      }
-      clear()
+      store.clear()
+      store.createTable[ModId, Any]("Mods", null)
+
       lists.clear()
       hashedLists.clear()
       dependencies.clear()

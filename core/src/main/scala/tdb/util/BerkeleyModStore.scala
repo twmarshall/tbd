@@ -22,16 +22,18 @@ import java.io._
 
 import tdb.Constants.ModId
 
-class BerkeleyModStore(environment: Environment) {
+class BerkeleyModStore(environment: Environment) extends BerkeleyStore {
   private val storeConfig = new StoreConfig()
   storeConfig.setAllowCreate(true)
 
   private val store = new EntityStore(environment, "ModStore", storeConfig)
   val primaryIndex = store.getPrimaryIndex(classOf[java.lang.Long], classOf[ModEntity])
 
-  def put(key: ModId, value: Any) {
+  def load(fileName: String) = ???
+
+  def put(key: Any, value: Any) {
     val entity = new ModEntity()
-    entity.key = key
+    entity.key = key.asInstanceOf[ModId]
 
     val byteOutput = new ByteArrayOutputStream()
     val objectOutput = new ObjectOutputStream(byteOutput)
@@ -41,7 +43,8 @@ class BerkeleyModStore(environment: Environment) {
     primaryIndex.put(entity)
   }
 
-  def get(key: ModId): Any = {
+  def get(_key: Any): Any = {
+    val key = _key.asInstanceOf[ModId]
     val byteArray = primaryIndex.get(key).value
 
     val byteInput = new ByteArrayInputStream(byteArray)
@@ -56,15 +59,19 @@ class BerkeleyModStore(environment: Environment) {
     obj
   }
 
-  def delete(key: ModId) {
-    primaryIndex.delete(key)
+  def delete(key: Any) {
+    primaryIndex.delete(key.asInstanceOf[ModId])
   }
 
   def keys() = primaryIndex.keys()
 
-  def contains(key: ModId) = primaryIndex.contains(key)
+  def contains(key: Any) = primaryIndex.contains(key.asInstanceOf[ModId])
 
-  def count() = primaryIndex.count()
+  def count() = primaryIndex.count().toInt
+
+  def hashedForeach(process: Iterator[String] => Unit) = ???
+
+  def hashRange = ???
 
   def close() {
     store.close()

@@ -20,12 +20,33 @@ import com.sleepycat.persist._
 import com.sleepycat.persist.model.{Entity, PrimaryKey}
 import com.sleepycat.persist.model.Relationship.ONE_TO_ONE
 import java.io._
+import scala.collection.JavaConversions._
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
+
+trait BerkeleyStore {
+  def load(fileName: String)
+
+  def put(key: Any, value: Any)
+
+  def get(key: Any): Any
+
+  def delete(key: Any)
+
+  def contains(key: Any): Boolean
+
+  def count(): Int
+
+  def hashedForeach(process: Iterator[String] => Unit)
+
+  def hashRange: HashRange
+
+  def close()
+}
 
 class BerkeleyInputStore
     (environment: Environment, name: String, val hashRange: HashRange)
-    (implicit ec: ExecutionContext) {
+    (implicit ec: ExecutionContext) extends BerkeleyStore {
   private val storeConfig = new StoreConfig()
   storeConfig.setAllowCreate(true)
 
@@ -56,34 +77,31 @@ class BerkeleyInputStore
       fileName, fileSize, 0, fileSize, process)
   }
 
-  def put(key: String, value: String) {
+  def put(key: Any, value: Any) {
     val entity = new InputEntity()
-    entity.key = key
-    entity.value = value
+    entity.key = key.asInstanceOf[String]
+    entity.value = value.asInstanceOf[String]
 
     hasher.getObj(key).put(entity)
   }
 
-  def get(key: String) = {
-    Future {
-      val entity = hasher.getObj(key).get(key)
-      (key, entity.value)
-    }
+  def get(_key: Any) = {
+    val key = _key.asInstanceOf[String]
+    val entity = hasher.getObj(key).get(key)
+    (key, entity.value)
   }
 
-  def iterateInput(process: Iterable[String] => Unit, partitions: Int) {
-    val buf = Buffer[String]()
+  def delete(key: Any) = ???
+
+  def contains(key: Any) =
+    indexes.map(_.contains(key.asInstanceOf[String])).reduce(_ || _)
+
+  def count(): Int = indexes.map(_.count().toInt).reduce(_ + _)
+
+  def hashedForeach(process: Iterator[String] => Unit) = {
     for (index <- indexes) {
       val cursor = index.keys()
-
-      val it = cursor.iterator
-      while (it.hasNext) {
-        buf += it.next()
-      }
-
-      process(buf)
-      buf.clear()
-
+      process(cursor.iterator)
       cursor.close()
     }
   }
@@ -93,8 +111,6 @@ class BerkeleyInputStore
       func(index)
     }
   }
-
-  def count() = indexes.map(_.count()).reduce(_ + _)
 
   def close() {
     for (store <- stores) {

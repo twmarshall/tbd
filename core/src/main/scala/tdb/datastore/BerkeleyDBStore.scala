@@ -23,13 +23,14 @@ import com.sleepycat.persist.model.{Entity, PrimaryKey, SecondaryKey}
 import com.sleepycat.persist.model.Relationship
 import java.io._
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
+import scala.reflect.runtime.universe._
 import scala.util.{Failure, Success}
 
 import tdb.messages._
 import tdb.Mod
 import tdb.Constants.ModId
-import tdb.util.{BerkeleyDatabase, BerkeleyInputStore}
+import tdb.util._
 
 class LRUNode(
   val key: ModId,
@@ -38,10 +39,11 @@ class LRUNode(
   var next: LRUNode
 )
 
-class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
-  import context.dispatcher
-
+class BerkeleyDBStore(maxCacheSize: Int)(implicit ec: ExecutionContext) extends KVStore {
+  var database = new BerkeleyDatabase()
   private var modStore = database.createModStore()
+
+  private val stores = Map[Int, BerkeleyStore]()
 
   // LRU cache
   private val values = Map[ModId, LRUNode]()
@@ -57,7 +59,35 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
 
   var n = 0
 
-  def put(key: ModId, value: Any) {
+  private var nextStoreId = 0
+
+  def createTable[T: TypeTag, U: TypeTag]
+      (name: String, range: HashRange): Int = {
+    val id = nextStoreId
+    nextStoreId += 1
+
+    typeOf[T] match {
+      case s if typeOf[T] =:= typeOf[String] && typeOf[U] =:= typeOf[String] =>
+        stores(id) = database.createInputStore(name, range)
+      case m if typeOf[T] =:= typeOf[ModId] =>
+        stores(id) = database.createModStore()
+      case _ => ???
+    }
+
+    id
+  }
+
+  def load(id: Int, fileName: String) {
+    stores(id).load(fileName)
+  }
+
+  def put(id: Int, key: Any, value: Any) = {
+    Future {
+      stores(id).put(key, value)
+    }
+  }
+
+  /*def put(key: ModId, value: Any) {
     cacheSize += MemoryUsage.getSize(value)
     if (values.contains(key)) {
       cacheSize -= MemoryUsage.getSize(values(key).value)
@@ -134,17 +164,23 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     n += 1
 
     future
+  }*/
+
+  def get(id: Int, key: Any) = {
+    Future {
+      stores(id).get(key)
+    }
   }
 
-  def get(key: ModId): Any = {
+  /*def get(key: ModId): Any = {
     if (values.contains(key)) {
       values(key).value
     } else {
       modStore.get(key)
     }
-  }
+  }*/
 
-  def asyncGet(key: ModId): Future[Any] = {
+  /*def asyncGet(key: ModId): Future[Any] = {
     if (values.contains(key)) {
       val value = values(key).value
       Future {
@@ -164,22 +200,34 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
         }
       }
     }
+  }*/
+
+  def delete(id: Int, key: Any) {
+    stores(id).delete(key)
   }
 
-  def remove(key: ModId) {
+  /*def remove(key: ModId) {
     if (values.contains(key)) {
       values -= key
     } else {
       deleteCount += 1
       modStore.delete(key)
     }
+  }*/
+
+  def contains(id: Int, key: Any): Boolean = {
+    stores(id).contains(key)
   }
 
-  def contains(key: ModId) = {
-    values.contains(key) || modStore.contains(key)
+  def count(id: Int): Int = {
+    stores(id).count()
   }
 
   def clear() = {
+    for ((id, store) <- stores) {
+      store.close()
+    }
+
     values.clear()
 
     cacheSize = 0
@@ -193,10 +241,18 @@ class BerkeleyDBStore(maxCacheSize: Int) extends Datastore {
     modStore = database.createModStore()
   }
 
-  def shutdown() {
+  def hashedForeach(id: Int)(process: Iterator[Any] => Unit) {
+    stores(id).hashedForeach(process)
+  }
+
+  def hashRange(id: Int) = {
+    stores(id).hashRange
+  }
+
+  /*def shutdown() {
     println("Shutting down. writes = " + writeCount + ", reads = " +
             readCount + ", deletes = " + deleteCount)
     modStore.close()
     database.close()
-  }
+  }*/
 }

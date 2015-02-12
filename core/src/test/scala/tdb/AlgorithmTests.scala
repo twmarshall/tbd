@@ -77,6 +77,16 @@ class AlgorithmTests extends FlatSpec with Matchers {
             "--partitions", "1", "4") ++ defaults)
 
     Experiment.run(conf)
+
+    val berkeleyConf = new ExperimentConf(
+      Array("--algorithms", "map",
+            "--chunkSizes", "1",
+            "--counts", intensity.toString,
+            "--store", "berkeleydb",
+            "--files", "wiki2.xml",
+            "--partitions", "1", "4") ++ defaults)
+
+    Experiment.run(berkeleyConf)
   }
 
   /*"PageRankTest" should "run page rank successfully." in {
