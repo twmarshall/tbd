@@ -16,15 +16,16 @@
 package tdb.datastore
 
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
 class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
-    extends Modifier {
-  import datastore.context.dispatcher
+    (implicit ec: ExecutionContext)
+  extends Modifier {
+
   protected var tailMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
 
   // Contains the last DoubleChunkListNode before the tail node. If the list is empty,

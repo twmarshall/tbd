@@ -23,7 +23,7 @@ import scala.util.{Failure, Success}
 
 import tdb.Adjustable
 import tdb.Constants._
-import tdb.datastore.Datastore
+import tdb.datastore.DatastoreActor
 import tdb.messages._
 
 object Worker {
@@ -48,7 +48,7 @@ class Worker
   log.info("Worker launched.")
 
   private val datastore = context.actorOf(
-    Datastore.props(storeType, cacheSize), "datastore")
+    DatastoreActor.props(storeType, cacheSize), "datastore")
 
   private val workerId = {
     val message = RegisterWorkerMessage(

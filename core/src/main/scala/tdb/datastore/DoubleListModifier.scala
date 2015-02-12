@@ -16,14 +16,16 @@
 package tdb.datastore
 
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class DoubleListModifier(datastore: Datastore) extends Modifier {
-  import datastore.context.dispatcher
+class DoubleListModifier(datastore: Datastore)
+    (implicit ec: ExecutionContext)
+  extends Modifier {
+
   private var tailMod = datastore.createMod[DoubleListNode[Any, Any]](null)
 
   val nodes = Map[Any, Mod[DoubleListNode[Any, Any]]]()

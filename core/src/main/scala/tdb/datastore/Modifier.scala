@@ -13,12 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.list
+package tdb.datastore
 
 import scala.collection.mutable.Map
 import scala.concurrent.Future
 
 import tdb.Constants._
+import tdb.list.AdjustableList
 import tdb.Mod
 
 trait Modifier {
