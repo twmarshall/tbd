@@ -105,6 +105,7 @@ class DatastoreActor(storeType: String, cacheSize: Int)
       sender ! "done"
 
     case CreateListIdsMessage(conf: ListConf, numPartitions: Int) =>
+      log.debug("CreateListIdsMessage")
       val listIds = Buffer[String]()
 
       val newLists = Buffer[Modifier]()
@@ -147,14 +148,15 @@ class DatastoreActor(storeType: String, cacheSize: Int)
          numWorkers: Int,
          workerIndex: Int,
          partitions: Int) =>
+      log.debug("LoadPartitionsMessage")
       val range =
         new HashRange(workerIndex * partitions, (workerIndex + 1) * partitions, numWorkers * partitions)
 
       val tableId = datastore.store.createTable[String, String](fileName, range)
 
       if (datastore.store.hashRange(1) != range) {
-        println("Warning: loaded dataset has different hash range " +
-                datastore.store.hashRange(1) + " than provided " + range)
+        log.warning("Loaded dataset has different hash range " +
+          datastore.store.hashRange(1) + " than provided " + range)
       }
 
       if (datastore.store.count(tableId) == 0) {
