@@ -121,12 +121,15 @@ class Master extends Actor with ActorLogging {
 
     case ShutdownMutatorMessage(mutatorId: Int) =>
       log.info("Shutting down mutator " + mutatorId)
-      (tasks(mutatorId) ? ShutdownTaskMessage) pipeTo sender
+      val f = tasks(mutatorId) ? ShutdownTaskMessage
       tasks -= mutatorId
 
+      Await.result(f, DURATION)
       for ((workerId, datastoreRef) <- datastoreRefs) {
         datastoreRef ! ClearMessage()
       }
+
+      sender ! "done"
 
     // Datastore
     case CreateModMessage(value: Any) =>
