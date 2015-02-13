@@ -104,27 +104,8 @@ class Datastore(storeType: String, cacheSize: Int)
     }
   }
 
-  def asyncUpdate[T](mod: Mod[T], value: T): Future[_] = {
-    val futures = Buffer[Future[Any]]()
-
-    if (!store.contains(0, mod.id) || store.get(0, mod.id) != value) {
-      futures += store.put(0, mod.id, value)
-
-      if (dependencies.contains(mod.id)) {
-        for (taskRef <- dependencies(mod.id)) {
-          futures += (taskRef ? ModUpdatedMessage(mod.id)).mapTo[String]
-        }
-      }
-    }
-
-    Future.sequence(futures)
-  }
-
-  def updateMod
-      (modId: ModId,
-       value: Any,
-       task: ActorRef,
-       respondTo: ActorRef) {
+  def asyncUpdate[T]
+      (modId: ModId, value: T, task: ActorRef = null): Future[_] = {
     val futures = Buffer[Future[Any]]()
 
     if (!store.contains(0, modId) || store.get(0, modId) != value) {
@@ -132,16 +113,14 @@ class Datastore(storeType: String, cacheSize: Int)
 
       if (dependencies.contains(modId)) {
         for (taskRef <- dependencies(modId)) {
-          if (taskRef != task) {
+          if (task != taskRef) {
             futures += (taskRef ? ModUpdatedMessage(modId)).mapTo[String]
           }
         }
       }
     }
 
-    Future.sequence(futures).onComplete {
-      case value => respondTo ! "done"
-    }
+    Future.sequence(futures)
   }
 
   def clear() {

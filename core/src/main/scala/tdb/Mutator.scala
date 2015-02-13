@@ -31,7 +31,7 @@ import tdb.util.OS
 class Mutator(_connector: MasterConnector = null) {
   import scala.concurrent.ExecutionContext.Implicits.global
 
-  val futures = Buffer[Future[String]]()
+  val futures = Buffer[Future[Any]]()
 
   val connector =
     if (_connector == null) {
@@ -53,7 +53,7 @@ class Mutator(_connector: MasterConnector = null) {
 
   def updateMod[T](mod: Mod[T], value: T) {
     val message = UpdateModMessage(mod.id, value, null)
-    futures += (masterRef ? message).mapTo[String]
+    futures += (masterRef ? message)
   }
 
   def read[T](mod: Mod[T]): T = {

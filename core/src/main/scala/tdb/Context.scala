@@ -93,7 +93,7 @@ class Context
 
   def update[T](modId: ModId, value: T) {
     val message = UpdateModMessage(modId, value, task.self)
-    val future = (datastore ? message).mapTo[String]
+    val future = (datastore ? message)
 
     if (!initialRun) {
       pending += future

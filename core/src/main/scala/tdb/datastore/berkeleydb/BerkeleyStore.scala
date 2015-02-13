@@ -91,7 +91,6 @@ class BerkeleyStore(maxCacheSize: Int)(implicit ec: ExecutionContext) extends KV
     if (values.contains(key)) {
       cacheSize -= MemoryUsage.getSize(values(key).value)
       values(key).value = value
-      Future { "done" }
     } else {
       val newNode = new LRUNode(key, value, id, null, head)
       values(key) = newNode
@@ -100,6 +99,7 @@ class BerkeleyStore(maxCacheSize: Int)(implicit ec: ExecutionContext) extends KV
       head = newNode
     }
 
+    val futures = Buffer[Future[Any]]()
     while ((cacheSize / 1024 / 1024) > maxCacheSize) {
       val toEvict = tail.previous
 

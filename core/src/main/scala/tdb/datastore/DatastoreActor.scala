@@ -85,16 +85,16 @@ class DatastoreActor(storeType: String, cacheSize: Int)
       //datastore.getMod(modId, null) pipeTo sender
 
     case UpdateModMessage(modId: ModId, value: Any, task: ActorRef) =>
-      datastore.updateMod(modId, value, task, sender)
+      datastore.asyncUpdate(modId, value, task) pipeTo sender
 
     case UpdateModMessage(modId: ModId, value: Any, null) =>
-      datastore.updateMod(modId, value, null, sender)
+      datastore.asyncUpdate(modId, value, null) pipeTo sender
 
     case UpdateModMessage(modId: ModId, null, task: ActorRef) =>
-      datastore.updateMod(modId, null, task, sender)
+      datastore.asyncUpdate(modId, null, task) pipeTo sender
 
     case UpdateModMessage(modId: ModId, null, null) =>
-      datastore.updateMod(modId, null, null, sender)
+      datastore.asyncUpdate(modId, null, null) pipeTo sender
 
     case RemoveModsMessage(modIds: Iterable[ModId]) =>
       for (modId <- modIds) {

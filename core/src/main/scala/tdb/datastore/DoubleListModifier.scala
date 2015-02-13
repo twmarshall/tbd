@@ -49,7 +49,7 @@ class DoubleListModifier(datastore: Datastore)
       nodes(headKey) = tail
     }
 
-    val future = datastore.asyncUpdate(tailMod, headNode)
+    val future = datastore.asyncUpdate(tailMod.id, headNode)
     nodes(headKey) = tailMod
     tailMod = newTail
 
@@ -61,7 +61,7 @@ class DoubleListModifier(datastore: Datastore)
     val newTail = datastore.createMod[DoubleListNode[Any, Any]](null)
     val newNode = new DoubleListNode(valueMod, newTail)
 
-    val future = datastore.asyncUpdate(tailMod, newNode)
+    val future = datastore.asyncUpdate(tailMod.id, newNode)
 
     nodes(key) = tailMod
 
@@ -78,7 +78,7 @@ class DoubleListModifier(datastore: Datastore)
       val valueMod = datastore.createMod((key, value))
       val newNode = new DoubleListNode(valueMod, nextMod)
 
-      datastore.asyncUpdate(nodes(key), newNode)
+      datastore.asyncUpdate(nodes(key).id, newNode)
     }
   }
 
@@ -98,7 +98,7 @@ class DoubleListModifier(datastore: Datastore)
       nodes(nextValue._1) = mod
     }
 
-    val future = datastore.asyncUpdate(mod, nextNode)
+    val future = datastore.asyncUpdate(mod.id, nextNode)
     nodes -= key
 
     future
