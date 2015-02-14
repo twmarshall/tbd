@@ -25,25 +25,24 @@ import tdb.messages._
 import tdb.util.ObjHasher
 
 class HashPartitionedDoubleListInput[T, U]
-    (hasher: ObjHasher[ActorRef],
+    (hasher: ObjHasher[(String, ActorRef)],
      partitions: Map[ActorRef, Buffer[String]])
   extends Dataset[T, U] with java.io.Serializable {
 
-  def getWorkerRef(key: T) = {
-    hasher.getObj(key)
-  }
-
   def put(key: T, value: U) = {
-    val future = getWorkerRef(key) ? PutMessage("0", key, value)
+    val (listId, datastoreRef) = hasher.getObj(key)
+    val future = datastoreRef ? PutMessage(listId, key, value)
     Await.result(future, DURATION)
   }
 
   def asyncPut(key: T, value: U) = {
-    getWorkerRef(key) ? PutMessage("0", key, value)
+    val (listId, datastoreRef) = hasher.getObj(key)
+    datastoreRef ? PutMessage(listId, key, value)
   }
 
   def remove(key: T, value: U) = {
-    getWorkerRef(key) ? RemoveMessage("0", key, value)
+    val (listId, datastoreRef) = hasher.getObj(key)
+    datastoreRef ? RemoveMessage(listId, key, value)
   }
 
   def load(data: Map[T, U]) = {

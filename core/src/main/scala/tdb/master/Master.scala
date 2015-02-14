@@ -174,7 +174,7 @@ class Master extends Actor with ActorLogging {
         index += 1
       }
 
-      var hasher: ObjHasher[ActorRef] = null
+      var hasher: ObjHasher[(String, ActorRef)] = null
       for ((future, workerIndex, datastoreRef) <- futures) {
         val (range, listIds) =
           Await.result(future.mapTo[(HashRange, Buffer[String])], DURATION)
@@ -187,7 +187,8 @@ class Master extends Actor with ActorLogging {
             range
           }
 
-        val thisHasher = ObjHasher.makeHasher(thisRange, datastoreRef)
+        val thisHasher = ObjHasher.makeHasher(
+          thisRange, listIds.map((_, datastoreRef)))
         if (hasher == null) {
           hasher = thisHasher
         } else {

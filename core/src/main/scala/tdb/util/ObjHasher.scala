@@ -19,8 +19,16 @@ import java.io.Serializable
 import scala.collection.mutable.{Buffer, Map}
 
 object ObjHasher {
-  def makeHasher[T](range: HashRange, objs: Buffer[T]) = {
+  def makeHasher[T](_range: HashRange, objs: Buffer[T]) = {
+    val range =
+      if (_range.rangeSize() != objs.size && _range.isComplete()) {
+        new HashRange(0, objs.size, objs.size)
+      } else {
+        _range
+      }
+
     assert(range.rangeSize() == objs.size)
+
     val map = Map[Int, T]()
     for (i <- range.range()) {
       map(i) = objs(i - range.min)

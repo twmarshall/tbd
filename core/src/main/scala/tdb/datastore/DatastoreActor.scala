@@ -42,7 +42,6 @@ class DatastoreActor(storeType: String, cacheSize: Int)
   val datastore = new Datastore(storeType, cacheSize)
 
   private val lists = Map[String, Modifier]()
-  private val hashedLists = Map[Int, Modifier]()
 
   private var nextListId = 0
 
@@ -128,7 +127,6 @@ class DatastoreActor(storeType: String, cacheSize: Int)
         var nextList = 0
         datastore.store.hashedForeach(1) {
           case keys =>
-            hashedLists(nextList) = newLists(nextList)
             futures += newLists(nextList).loadInput(keys)
             nextList = (nextList + 1) % newLists.size
         }
@@ -178,12 +176,7 @@ class DatastoreActor(storeType: String, cacheSize: Int)
       key.toString
       value.toString
 
-      if (hashedLists.size == 0) {
-        lists(listId).put(key, value) pipeTo sender
-      } else {
-        val hash = key.hashCode().abs % hashedLists.size
-        hashedLists(hash).put(key, value) pipeTo sender
-      }
+      lists(listId).put(key, value) pipeTo sender
 
     case RemoveMessage(listId: String, key: Any, value: Any) =>
       lists(listId).remove(key, value) pipeTo sender
@@ -196,7 +189,6 @@ class DatastoreActor(storeType: String, cacheSize: Int)
 
     case ClearMessage() =>
       lists.clear()
-      hashedLists.clear()
       datastore.clear()
 
     case x =>
