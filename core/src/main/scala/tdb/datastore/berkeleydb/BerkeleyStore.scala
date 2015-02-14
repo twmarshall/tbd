@@ -150,9 +150,11 @@ class BerkeleyStore(maxCacheSize: Int)(implicit ec: ExecutionContext) extends KV
   }
 
   def clear() = {
-    for ((id, store) <- tables) {
-      store.close()
+    for ((id, table) <- tables) {
+      table.close()
     }
+    tables.clear()
+    nextStoreId = 0
 
     values.clear()
 
