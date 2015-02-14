@@ -31,9 +31,7 @@ class HashPartitionedDoubleChunkListInput[T, U]
   extends Dataset[T, U] with java.io.Serializable {
 
   def put(key: T, value: U) = {
-    val (listId, datastoreRef) = hasher.getObj(key)
-    val future = datastoreRef ? PutMessage(listId, key, value)
-    Await.result(future, DURATION)
+    Await.result(asyncPut(key, value), DURATION)
   }
 
   def asyncPut(key: T, value: U) = {

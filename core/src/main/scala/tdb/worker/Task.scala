@@ -75,6 +75,8 @@ class Task
               val oldCurrentTime = c.currentTime
               c.currentTime = timestamp
 
+              c.putKeys.clear()
+
               readNode.updated = false
               readNode.reader(newValue)
 

@@ -43,7 +43,10 @@ class DoubleChunkList[T, U]
 
     readAny(head) {
       case null =>
-      case node => node.hashChunkMap(f, input, memo)
+      case node =>
+        memo(node) {
+          node.hashChunkMap(f, input, memo)
+        }
     }
   }
 

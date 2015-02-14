@@ -53,6 +53,8 @@ class GraphFileData
     lines = lines.tail
     input.put(key, newValue)
     println("updating " + key + " " + newValue)
+
+    1
   }
 
   def hasUpdates(): Boolean = {

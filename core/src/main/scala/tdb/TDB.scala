@@ -28,6 +28,7 @@ import tdb.TDB._
 object TDB {
   def put[T, U](input: ListInput[T, U], key: T, value: U)
       (implicit c: Context) {
+    c.putKeys += key
     val timestamp =
       c.ddg.addPut(input.asInstanceOf[ListInput[Any, Any]], key, value, c)
 

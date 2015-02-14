@@ -82,7 +82,7 @@ class GraphData
     }
   }
 
-  def update() {
+  def update() = {
     val run = remainingRuns.head
     val updateCount =
       if (run.toDouble < 1)
@@ -99,6 +99,8 @@ class GraphData
     table(key) = generateEdges()
     log(key + " -> " + table(key).mkString(","))
     input.put(key, table(key))
+
+    1
   }
 
   def hasUpdates() = remainingRuns.size > 0

@@ -34,7 +34,7 @@ trait Data[Input] {
   def load()
 
   // Updates some values.
-  def update()
+  def update(): Int
 
   // Returns true if this Data can generate more updates.
   def hasUpdates(): Boolean

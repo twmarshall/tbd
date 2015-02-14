@@ -100,7 +100,7 @@ class MutatorTests extends FlatSpec with Matchers {
 
   "FileLoadTest" should "load the file data correctly" in {
     for (partitions <- List(1, 2, 4);
-         chunkSize <- List(1)) {
+         chunkSize <- List(1, 2)) {
       val mutator = new Mutator()
 
       val conf = new ListConf(

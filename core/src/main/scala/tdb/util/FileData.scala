@@ -51,7 +51,7 @@ class FileData
 
   }
 
-  def update() {
+  def update(): Int = {
     val updateCount = remainingRuns.head.toInt
 
     remainingRuns = remainingRuns.tail
@@ -64,6 +64,8 @@ class FileData
       dataset.put(updates.head._1, updates.head._2)
       updates -= updates.head
     }
+
+    updateCount
   }
 
   def hasUpdates(): Boolean = remainingRuns.size > 0

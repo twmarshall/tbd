@@ -41,17 +41,19 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
 
   def loadInput(keys: Iterator[Any]) = {
     val futures = Buffer[Future[Any]]()
+
     var chunk = Vector[Any]()
     var lastChunk: Vector[Any] = null
 
     var size = 0
-    var tail = tailMod
+
+    val oldHead = datastore.read(list.head)
+    var tail = datastore.createMod(oldHead)
     for (key <- keys) {
       chunk :+= key
       size += 1
 
       if (size >= conf.chunkSize) {
-        //val chunkMod = datastore.createMod(chunk)
         val chunkMod = new Mod[Vector[(Any, Any)]](datastore.getNewModId())
         datastore.chunks(chunkMod.id) = chunk
         val newNode = new DoubleChunkListNode(chunkMod, tail, size)
@@ -95,14 +97,17 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
         list.head.id, new DoubleChunkListNode(chunkMod, tail, size))
     } else {
       val head = datastore.read(tail)
-      val chunk = datastore.read(head.chunkMod)
-      for ((k, v) <- chunk) {
-        nodes(k) = list.head
-        previous(k) = null
-      }
 
-      futures +=
-        datastore.asyncUpdate(list.head.id, head)
+      if (head != null) {
+        val chunk = datastore.read(head.chunkMod)
+        for ((k, v) <- chunk) {
+          nodes(k) = list.head
+          previous(k) = null
+        }
+
+        futures +=
+          datastore.asyncUpdate(list.head.id, head)
+      }
     }
 
     // This means there is only one chunk in the list.

@@ -40,7 +40,7 @@ class DoubleChunkListNode[T, U]
     }
 
     readAny(nextMod) {
-      case null => write[DoubleListNode[V, W]](null)
+      case null =>
       case node =>
         memo(node) {
           node.hashChunkMap(f, input, memo)

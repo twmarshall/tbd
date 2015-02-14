@@ -37,7 +37,7 @@ class Memoizer[T](implicit c: Context) {
         val memoNode = timestamp.node.asInstanceOf[MemoNode]
 
         if (!found && timestamp >= c.reexecutionStart &&
-      timestamp < c.reexecutionEnd) {
+            timestamp < c.reexecutionEnd) {
           updateChangeables(timestamp)
 
           found = true

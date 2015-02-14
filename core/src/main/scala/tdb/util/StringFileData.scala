@@ -42,8 +42,10 @@ class StringFileData(
     }
   }
 
-  def update() {
+  def update() = {
+    var count = 0
     while (lines.head != "---") {
+      count += 1
       val space = lines.head.indexOf(" ")
       val (command, pair) = lines.head.splitAt(space)
 
@@ -67,6 +69,8 @@ class StringFileData(
     }
 
     lines = lines.tail
+
+    count
   }
 
   def hasUpdates() = lines.size > 0

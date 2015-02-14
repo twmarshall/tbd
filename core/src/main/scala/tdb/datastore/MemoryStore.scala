@@ -17,7 +17,7 @@ package tdb.datastore
 
 import akka.actor.ActorRef
 import java.io._
-import scala.collection.mutable.Map
+import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
 
@@ -27,6 +27,7 @@ import tdb.util._
 
 class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
   private val tables = Map[Int, Map[Any, Any]]()
+  private val ranges = Map[Int, HashRange]()
 
   private var nextTableId = 0
 
@@ -36,6 +37,7 @@ class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
     nextTableId += 1
 
     tables(id) = Map[Any, Any]()
+    ranges(id) = range
 
     id
   }
@@ -87,8 +89,18 @@ class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
   }
 
   def hashedForeach(id: Int)(process: Iterator[Any] => Unit) {
-    for (map <- tables(id).grouped(tables(id).size / 2)) {
-      process(map.keys.iterator)
+    val map = Map[Int, Buffer[Any]]()
+
+    for (i <- ranges(id).range) {
+      map(i) = Buffer[Any]()
+    }
+
+    for (key <- tables(id).keys) {
+      map(ranges(id).hash(key)) += key
+    }
+
+    for (pair <- map.toBuffer.sortWith(_._1 < _._1)) {
+      process(pair._2.iterator)
     }
   }
 

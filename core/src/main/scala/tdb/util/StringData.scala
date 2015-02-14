@@ -71,7 +71,7 @@ class StringData
     }
   }
 
-  def update() {
+  def update() = {
     val run = remainingRuns.head
     val updateCount =
       if (run.toDouble < 1)
@@ -88,6 +88,8 @@ class StringData
         case "update" => updateValue()
       }
     }
+
+    updateCount
   }
 
   def addValue() {

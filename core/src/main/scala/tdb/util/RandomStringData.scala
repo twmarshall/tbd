@@ -60,7 +60,7 @@ class RandomStringData
     }
   }
 
-  def update() {
+  def update() = {
     val run = remainingRuns.head
     val updateCount =
       if (run.toDouble < 1)
@@ -78,6 +78,8 @@ class RandomStringData
       }
     }
     log("---")
+
+    updateCount
   }
 
   def addValue() {

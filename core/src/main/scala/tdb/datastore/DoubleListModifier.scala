@@ -33,14 +33,18 @@ class DoubleListModifier(datastore: Datastore)
   val modList = new DoubleList[Any, Any](tailMod, false, datastore.workerId)
 
   def loadInput(keys: Iterator[Any]): Future[_] = {
-    var tail = datastore.createMod[DoubleListNode[Any, Any]](null)
-    val newTail = tail
+    var headNode = datastore.read(modList.head)
+    var headKey =
+      if (headNode == null)
+        null
+      else
+        datastore.read(headNode.value)._1
 
-    var headNode: DoubleListNode[Any, Any] = null
-    var headKey: Any = null.asInstanceOf[Any]
+    var tail = datastore.createMod(headNode)
 
     for (key <- keys) {
       headKey = key.asInstanceOf[Any]
+
       val valueMod = new Mod[(Any, Any)](datastore.getNewModId())
       datastore.inputs(valueMod.id) = key
       headNode = new DoubleListNode(valueMod, tail)
@@ -49,9 +53,8 @@ class DoubleListModifier(datastore: Datastore)
       nodes(headKey) = tail
     }
 
-    val future = datastore.asyncUpdate(tailMod.id, headNode)
-    nodes(headKey) = tailMod
-    tailMod = newTail
+    val future = datastore.asyncUpdate(modList.head.id, headNode)
+    nodes(headKey) = modList.head
 
     future
   }

@@ -48,7 +48,7 @@ class IntData
     input.load(table)
   }
 
-  def update() {
+  def update() = {
     val run = remainingRuns.head
     val updateCount =
       if (run.toDouble < 1)
@@ -66,6 +66,8 @@ class IntData
       }
     }
     log("---")
+
+    updateCount
   }
 
   def addValue() {
