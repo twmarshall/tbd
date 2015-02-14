@@ -1,0 +1,14 @@
+diff --git a/lang/java/reef-common/src/main/java/org/apache/reef/runtime/common/launch/JavaLaunchCommandBuilder.java b/lang/java/reef-common/src/main/java/org/apache/reef/runtime/common/launch/JavaLaunchCommandBuilder.java
+index 8084068..534fa68 100644
+--- a/lang/java/reef-common/src/main/java/org/apache/reef/runtime/common/launch/JavaLaunchCommandBuilder.java
++++ b/lang/java/reef-common/src/main/java/org/apache/reef/runtime/common/launch/JavaLaunchCommandBuilder.java
+@@ -55,7 +55,8 @@ public final class JavaLaunchCommandBuilder implements LaunchCommandBuilder {
+       add("-XX:PermSize=128m");
+       add("-XX:MaxPermSize=128m");
+       // Set Xmx based on am memory size
+-      add("-Xmx" + megaBytes + "m");
++      add("-Xmx" + (megaBytes - 4) + "m");
++      add("-Xss4m");
+ 
+       if ((assertionsEnabled != null && assertionsEnabled)
+           || EnvironmentUtils.areAssertionsEnabled()) {
