@@ -46,6 +46,8 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
   var mapCount = 0
   var reduceCount = 0
 
+  var lastUpdateSize = 0
+
   def data: Data[Input]
 
   var naiveLoadElapsed: Long = 0
@@ -163,7 +165,7 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
     }
 
     val beforeLoad = System.currentTimeMillis()
-    data.update()
+    lastUpdateSize = data.update()
     val loadElapsed = System.currentTimeMillis() - beforeLoad
 
     if (Experiment.verbosity > 1) {

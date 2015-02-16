@@ -27,40 +27,41 @@ import tdb.util._
 
 class CWChunkHashAdjust
     (list: AdjustableList[String, String], mappedPartitions: Int)
-      extends Adjustable[Iterable[Mod[(Int, Int)]]] {
+      extends Adjustable[Mod[(String, Int)]] {
+//extends Adjustable[AdjustableList[String, Int]] {
 
   def wordcount(chunk: Iterable[(String, String)]) = {
-    val counts = Map[Int, Int]()
-
-    for (i <- 0 until mappedPartitions) {
-      counts(i) = 0
-    }
+    val counts = Map[String, Int]()
 
     for (pair <- chunk) {
-      for (word <- pair._2.split("\\W+")) {
-        val hash = word.hashCode().abs % mappedPartitions
-        counts(hash) += 1
-      }
+      counts(pair._1) = pair._2.split("\\W+").size
     }
 
     counts
   }
 
   def reducer
-      (pair1: (Int, Int),
-       pair2: (Int, Int)) = {
+      (pair1: (String, Int),
+       pair2: (String, Int)) = {
     (pair1._1, pair1._2 + pair2._2)
   }
 
-  var mapped: AdjustableList[Int, Int] = _
   def run(implicit c: Context) = {
-    mapped = list.hashChunkMap(wordcount)
-    mapped.partitionedReduce(reducer)
+    val mapped = list.hashChunkMap(wordcount)
+    mapped.reduce(reducer)
+    //mapped
   }
 }
 
 class CWChunkHashAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, Iterable[Mod[(Int, Int)]]](_conf) {
+    extends Algorithm[String, Mod[(String, Int)]](_conf) {
+    //extends Algorithm[String, AdjustableList[String, Int]](_conf) {
+
+  val outputFile = "output"
+  tdb.scripts.NaiveCW.main(Array("-f", conf.file,
+      "--updateFile", conf.updateFile, "-o", outputFile, "-u")
+      ++ conf.runs)
+
   var data: FileData = null
 
   var input: Dataset[String, String] = null
@@ -83,17 +84,36 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
       mutator, input, conf.file, conf.updateFile, conf.runs)
   }
 
-  def checkOutput(output: Iterable[Mod[(Int, Int)]]) = {
+  def checkOutput(output: Mod[(String, Int)]) = {
+  //def checkOutput(output: AdjustableList[String, Int]) = {
+    val thisFile = "wc-output" + lastUpdateSize + ".txt"
     val writer = new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream("wc-output.txt"), "utf-8"))
+      new FileOutputStream(thisFile), "utf-8"))
 
-    var total = 0
-    for (mod <- output) {
-      val pair = mutator.read(mod)
-      total += pair._2
-    }
-    writer.write(total + "\n")
+    val pair = mutator.read(output)
+    writer.write(pair._2 + "\n")
+
+    /*val buf = output.toBuffer(mutator)
+    for ((key, value) <- buf.sortWith(_._1 < _._1)) {
+      writer.write(key + " -> " + value + "\n")
+    }*/
+
     writer.close()
+
+    val thisOutputFile =
+      if (lastUpdateSize != 0)
+        outputFile + lastUpdateSize
+      else
+        outputFile
+
+    println(thisOutputFile)
+    val f1 = scala.io.Source.fromFile(thisOutputFile + ".txt")
+    val f2 = scala.io.Source.fromFile(thisFile)
+
+    val one = f1.getLines.mkString("\n")
+    val two = f2.getLines.mkString("\n")
+
+    assert(one == two)
 
     true
   }

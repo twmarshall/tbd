@@ -66,8 +66,8 @@ object NaiveCW {
       map += ((split(0), count))
     }
 
-    //writeOutput(Conf.output(), map.values.reduce(_ + _))
-    writeMap(Conf.output(), map)
+    writeOutput(Conf.output(), map.values.reduce(_ + _))
+    //writeMap(Conf.output(), map)
 
     if (Conf.updates().size > 0) {
       val updateFile = Source.fromFile(Conf.updateFile())
@@ -77,15 +77,11 @@ object NaiveCW {
         for (i <- 1 to update) {
           val split = lines.next.split(unitSeparator)
           val count = split(1).split("\\W+").size
-          /*if (map.contains(split(0)) && map(split(0)) != count) {
-            println("changing")
-          } else {
-            println("not changing")
-          }*/
           map += ((split(0), count))
         }
-        writeMap(Conf.output() + update, map)
-        //writeOutput(Conf.output() + update, map.values.reduce(_ + _))
+
+        //writeMap(Conf.output() + update, map)
+        writeOutput(Conf.output() + update, map.values.reduce(_ + _))
       }
     }
   }
