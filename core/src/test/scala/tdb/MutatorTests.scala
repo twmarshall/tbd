@@ -37,7 +37,7 @@ class FileLoadTest(input: ListInput[String, String])
 }
 
 class MutatorTests extends FlatSpec with Matchers {
-  val intensity = 10
+  val intensity = 100
   def runTest(mutator: Mutator,
     adjustable: Adjustable[AdjustableList[Int, Int]],
     input: ListInput[Int, Int],
@@ -55,8 +55,14 @@ class MutatorTests extends FlatSpec with Matchers {
       sortedOutput == sortedAnswer
     }
 
+    var runs = List[String]()
+    for (i <- 0 to intensity) {
+      runs :+= "1"
+    }
+
     val data = new IntData(
-      input, List[String](), intensity, List("insert", "remove", "update"))
+      input, runs, intensity, List("insert", "remove", "update"))
+
     data.generate()
     data.load()
 
@@ -78,10 +84,10 @@ class MutatorTests extends FlatSpec with Matchers {
       assert(check(output, data))
     }
 
-    /*for (j <- 0 to intensity) {
+    for (j <- 0 to intensity) {
       data.update()
       assert(check(output, data))
-    }*/
+    }
   }
 
   "AdjustableListTests" should "update the AdjustableList correctly" in {

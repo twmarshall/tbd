@@ -26,12 +26,9 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
     (implicit ec: ExecutionContext)
   extends Modifier {
 
-  private var tailMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
-
   // Contains the last DoubleChunkListNode before the tail node. If the list is
   // empty, the contents of this mod will be null.
-  private var lastNodeMod =
-    datastore.createMod[DoubleChunkListNode[Any, Any]](null)
+  private var lastNodeMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
 
   val nodes = Map[Any, Mod[DoubleChunkListNode[Any, Any]]]()
   val previous = Map[Any, Mod[DoubleChunkListNode[Any, Any]]]()
@@ -44,8 +41,11 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
 
     var chunk = Vector[Any]()
     var lastChunk: Vector[Any] = null
+    var secondToLastChunk: Vector[Any] = null
 
     var size = 0
+
+    var lastNode = datastore.read(lastNodeMod)
 
     val oldHead = datastore.read(list.head)
     var tail = datastore.createMod(oldHead)
@@ -69,10 +69,12 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
           }
         }
 
-        if (lastNodeMod == null) {
+        if (lastNode == null) {
           lastNodeMod = tail
+          lastNode = newNode
         }
 
+        secondToLastChunk = lastChunk
         lastChunk = chunk
         chunk = Vector[Any]()
         size  = 0
@@ -105,55 +107,71 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
           previous(k) = null
         }
 
+        if (secondToLastChunk != null) {
+          for (k <- secondToLastChunk) {
+            previous(k) = list.head
+          }
+        }
+
         futures +=
           datastore.asyncUpdate(list.head.id, head)
       }
     }
 
     // This means there is only one chunk in the list.
-    if (lastNodeMod == null) {
+    if (lastNode == null) {
       lastNodeMod = list.head
     }
 
     Future.sequence(futures)
-  }
+  }// ensuring(isValid())
 
   private def append(key: Any, value: Any): Future[_] = {
     val lastNode = datastore.read(lastNodeMod)
 
-    val newNode =
-      if (lastNode == null) {
-        val chunk = Vector[(Any, Any)]((key -> value))
-        val size = conf.chunkSizer(value)
+    if (lastNode == null) {
+      // The list must be empty.
+      val chunk = Vector[(Any, Any)]((key -> value))
+      val size = conf.chunkSizer(value)
 
-        previous(key) = null
+      previous(key) = null
 
-        val chunkMod = datastore.createMod(chunk)
-        new DoubleChunkListNode(chunkMod, tailMod, size)
-      } else if (lastNode.size >= conf.chunkSize) {
-        val newTailMod =
-          datastore.createMod[DoubleChunkListNode[Any, Any]](null)
-        val chunk = Vector[(Any, Any)]((key -> value))
-        previous(key) = lastNodeMod
+      val chunkMod = datastore.createMod(chunk)
+      val tailMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
+      val newNode = new DoubleChunkListNode(chunkMod, tailMod, size)
 
-        lastNodeMod = tailMod
-        tailMod = newTailMod
+      nodes(key) = lastNodeMod
 
-        val chunkMod = datastore.createMod(chunk)
-        new DoubleChunkListNode(chunkMod, newTailMod, conf.chunkSizer(value))
-      } else {
-        val oldChunk = datastore.read(lastNode.chunkMod)
-        val chunk = oldChunk :+ (key -> value)
-        val size = lastNode.size + conf.chunkSizer(value)
+      datastore.asyncUpdate(lastNodeMod.id, newNode)
+    } else if (lastNode.size >= conf.chunkSize) {
+      val chunk = Vector[(Any, Any)]((key -> value))
+      previous(key) = lastNodeMod
 
-        previous(key) = previous(chunk.head._1)
-        val chunkMod = datastore.createMod(chunk)
-        new DoubleChunkListNode(chunkMod, tailMod, size)
-      }
+      lastNodeMod = lastNode.nextMod
 
-    nodes(key) = lastNodeMod
+      val chunkMod = datastore.createMod(chunk)
+      val tailMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
+      val newNode = new DoubleChunkListNode(chunkMod, tailMod, conf.chunkSizer(value))
 
-    datastore.asyncUpdate(lastNodeMod.id, newNode)
+      nodes(key) = lastNode.nextMod
+
+      datastore.asyncUpdate(lastNode.nextMod.id, newNode)
+    } else {
+      val oldChunk = datastore.read(lastNode.chunkMod)
+      val chunk = oldChunk :+ (key -> value)
+
+      val size = lastNode.size + conf.chunkSizer(value)
+
+      previous(key) = previous(chunk.head._1)
+      val chunkMod = datastore.createMod(chunk)
+      val tailMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
+      val newNode = new DoubleChunkListNode(chunkMod, tailMod, size)
+
+      nodes(key) = lastNodeMod
+
+      datastore.asyncUpdate(lastNodeMod.id, newNode)
+    }
+
   } //ensuring(isValid())
 
   private def calculateSize(chunk: Vector[(Any, Any)]) = {
@@ -210,7 +228,6 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
           } else {
             // We are removing the node at the end list.
             lastNodeMod = previous(key)
-            tailMod = nodes(key)
           }
         } else if (lastNodeMod.id == node.nextMod.id) {
           // We are removing the second to last node.
@@ -251,7 +268,21 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
     nodes.contains(key)
   }
 
+  def listSize(): Int = {
+    var node = datastore.read(list.head)
+
+    var size = 0
+    while (node != null) {
+      val chunk = datastore.read(node.chunkMod)
+      size += chunk.size
+      node = datastore.read(node.nextMod)
+    }
+
+    size
+  }
+
   private def isValid(): Boolean = {
+    //println("isValid")
     var previousMod: Mod[DoubleChunkListNode[Any, Any]] = null
     var previousNode: DoubleChunkListNode[Any, Any] = null
     var mod = list.head
@@ -275,6 +306,10 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
       node = datastore.read(mod)
     }
 
+    if (previousMod != null) {
+      valid &= previousMod == lastNodeMod
+    }
+    //println("done")
     valid
   }
 

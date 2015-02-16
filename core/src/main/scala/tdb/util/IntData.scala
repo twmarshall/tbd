@@ -23,7 +23,7 @@ class IntData
      count: Int,
      mutations: List[String] = List("insert", "update", "remove"),
      _file: String = "data.txt") extends Data[Int] {
-  val maxKey = count * 10
+  val maxKey = count * 1000
 
   val rand = new scala.util.Random()
 
