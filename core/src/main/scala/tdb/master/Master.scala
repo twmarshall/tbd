@@ -182,7 +182,10 @@ class Master extends Actor with ActorLogging {
 
         val thisRange =
           if (range == null) {
-            new HashRange(workerIndex, workerIndex + 1, workers.size)
+            new HashRange(
+              workerIndex * partitionsPerWorker,
+              (workerIndex + 1) * partitionsPerWorker,
+              conf.partitions)
           } else {
             range
           }

@@ -58,9 +58,12 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
     //extends Algorithm[String, AdjustableList[String, Int]](_conf) {
 
   val outputFile = "output"
-  tdb.scripts.NaiveCW.main(Array("-f", conf.file,
-      "--updateFile", conf.updateFile, "-o", outputFile, "-u")
-      ++ conf.runs)
+  if (Experiment.check) {
+    val args = Array("-f", conf.file, "--updateFile", conf.updateFile,
+                     "-o", outputFile, "-u") ++ conf.runs
+    tdb.scripts.NaiveCW.main(args)
+
+  }
 
   var data: FileData = null
 
