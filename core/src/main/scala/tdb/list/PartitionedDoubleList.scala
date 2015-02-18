@@ -44,8 +44,7 @@ class PartitionedDoubleList[T, U]
     c.log.debug("PartitionedDoubleList.hashPartitionedFlatMap")
     val conf = ListConf(partitions = partitions.size, hash = true)
     val future = c.masterRef ? CreateListMessage(conf)
-    val input =
-      Await.result(future.mapTo[HashPartitionedDoubleListInput[V, W]], DURATION)
+    val input = Await.result(future.mapTo[ListInput[V, W]], DURATION)
 
     def innerMap(i: Int)(implicit c: Context) {
       if (i < partitions.size) {

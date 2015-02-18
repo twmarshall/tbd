@@ -42,8 +42,7 @@ class PartitionedDoubleChunkList[T, U]
       (f: Iterable[(T, U)] => Iterable[(V, W)], _conf: ListConf)
       (implicit c: Context): AdjustableList[V, W] = {
     val future = c.masterRef ? CreateListMessage(_conf)
-    val input = Await.result(
-      future.mapTo[HashPartitionedDoubleListInput[V, W]], DURATION)
+    val input = Await.result(future.mapTo[ListInput[V, W]], DURATION)
 
     def innerChunkMap(i: Int)(implicit c: Context) {
       if (i < partitions.size) {
@@ -67,8 +66,7 @@ class PartitionedDoubleChunkList[T, U]
     c.log.debug("PartitionedDoubleChunkList.hashPartitionedFlatMap")
     val conf = ListConf(partitions = partitions.size, hash = true)
     val future = c.masterRef ? CreateListMessage(conf)
-    val input =
-      Await.result(future.mapTo[HashPartitionedDoubleChunkListInput[V, W]], DURATION)
+    val input = Await.result(future.mapTo[ListInput[V, W]], DURATION)
 
     def innerMap(i: Int)(implicit c: Context) {
       if (i < partitions.size) {
