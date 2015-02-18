@@ -26,7 +26,7 @@ import tdb.TDB._
 import tdb.util._
 
 class CWChunkHashAdjust
-    (list: AdjustableList[String, String], mappedPartitions: Int)
+    (list: AdjustableList[String, String], conf: ListConf)
       extends Adjustable[Mod[(String, Int)]] {
 //extends Adjustable[AdjustableList[String, Int]] {
 
@@ -47,7 +47,7 @@ class CWChunkHashAdjust
   }
 
   def run(implicit c: Context) = {
-    val mapped = list.hashChunkMap(wordcount)
+    val mapped = list.hashChunkMap(wordcount, conf)
     mapped.reduce(reducer)
     //mapped
   }
@@ -81,7 +81,9 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
         conf.listConf.copy(file = conf.file))
           .asInstanceOf[Dataset[String, String]]
 
-    adjust = new CWChunkHashAdjust(input.getAdjustableList(), 4)
+    val mappedConf = ListConf(chunkSize = conf.listConf.chunkSize,
+      partitions = conf.listConf.partitions)
+    adjust = new CWChunkHashAdjust(input.getAdjustableList(), mappedConf)
 
     data = new FileData(
       mutator, input, conf.file, conf.updateFile, conf.runs)

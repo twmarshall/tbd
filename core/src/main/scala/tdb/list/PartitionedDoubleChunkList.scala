@@ -38,10 +38,9 @@ class PartitionedDoubleChunkList[T, U]
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): PartitionedDoubleChunkList[V, W] = ???
 
-  override def hashChunkMap[V, W](f: Iterable[(T, U)] => Iterable[(V, W)])
+  override def hashChunkMap[V, W]
+      (f: Iterable[(T, U)] => Iterable[(V, W)], _conf: ListConf)
       (implicit c: Context): AdjustableList[V, W] = {
-    val _conf = ListConf(
-      partitions = partitions.size, hash = true)
     val future = c.masterRef ? CreateListMessage(_conf)
     val input = Await.result(
       future.mapTo[HashPartitionedDoubleListInput[V, W]], DURATION)
