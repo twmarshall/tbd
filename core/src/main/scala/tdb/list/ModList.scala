@@ -43,19 +43,7 @@ class ModList[T, U]
   }
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
-      (implicit c: Context): ModList[V, W] = {
-    val memo = new Memoizer[Changeable[ModListNode[V, W]]]()
-    val modizer = new Modizer1[ModListNode[V, W]]()
-
-    new ModList(
-      modizer(head.id) {
-        read(head) {
-          case null => write[ModListNode[V, W]](null)
-          case node => node.flatMap(f, memo, modizer)
-        }
-      }
-    )
-  }
+      (implicit c: Context): ModList[V, W] = ???
 
   def join[V](_that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): ModList[T, (U, V)] = {
@@ -75,19 +63,7 @@ class ModList[T, U]
   }
 
   def map[V, W](f: ((T, U)) => (V, W))
-      (implicit c: Context): ModList[V, W] = {
-    val memo = new Memoizer[Mod[ModListNode[V, W]]]()
-    val modizer = new Modizer1[ModListNode[V, W]]()
-
-    new ModList(
-      modizer(head.id) {
-        read(head) {
-          case null => write[ModListNode[V, W]](null)
-          case node => node.map(f, memo, modizer)
-        }
-      }, false, workerId
-    )
-  }
+      (implicit c: Context): ModList[V, W] = ???
 
   override def mapValues[V](f: U => V)
       (implicit c: Context): ModList[T, V] = {

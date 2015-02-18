@@ -28,36 +28,11 @@ class ChunkList[T, U]
      val workerId: WorkerId = -1)
   extends AdjustableList[T, U] with Serializable {
 
-  override def chunkMap[V, W](f: Iterable[(T, U)] => (V, W))
-      (implicit c: Context): ModList[V, W] = {
-    val memo = new Memoizer[Mod[ModListNode[V, W]]]()
-
-    new ModList(
-      mod {
-        read(head) {
-          case null => write[ModListNode[V, W]](null)
-          case node => node.chunkMap(f, memo)
-        }
-      }, false, workerId
-    )
-  }
-
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): ChunkList[T, U] = ???
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
-      (implicit c: Context): ChunkList[V, W] = {
-    val memo = new Memoizer[Changeable[ChunkListNode[V, W]]]()
-
-    new ChunkList(
-      mod {
-        read(head) {
-          case null => write[ChunkListNode[V, W]](null)
-          case node => node.flatMap(f, conf.chunkSize, memo)
-        }
-      }, conf, workerId
-    )
-  }
+      (implicit c: Context): ChunkList[V, W] = ???
 
   def join[V](_that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): ChunkList[T, (U, V)] = {
@@ -91,18 +66,7 @@ class ChunkList[T, U]
   }
 
   def map[V, W](f: ((T, U)) => (V, W))
-      (implicit c: Context): ChunkList[V, W] = {
-    val memo = new Memoizer[Changeable[ChunkListNode[V, W]]]()
-
-    new ChunkList(
-      mod {
-        read(head) {
-          case null => write[ChunkListNode[V, W]](null)
-          case node => node.map(f, memo)
-        }
-      }, conf, workerId
-    )
-  }
+      (implicit c: Context): ChunkList[V, W] = ???
 
   def merge(that: ChunkList[T, U], comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): ChunkList[T, U] = {

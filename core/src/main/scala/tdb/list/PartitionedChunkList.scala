@@ -25,68 +25,17 @@ class PartitionedChunkList[T, U]
     (val partitions: Buffer[ChunkList[T, U]],
      conf: ListConf) extends AdjustableList[T, U] with Serializable {
 
-  override def chunkMap[V, W](f: Iterable[(T, U)] => (V, W))
-      (implicit c: Context): PartitionedModList[V, W] = {
-    def innerChunkMap(i: Int)(implicit c: Context): Buffer[ModList[V, W]] = {
-      if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = parWithHint({
-          c => partitions(i).chunkMap(f)(c)
-        }, partitions(i).workerId)({
-          c => innerChunkMap(i + 1)(c)
-        })
-
-        mappedRest += mappedPartition
-      } else {
-        Buffer[ModList[V, W]]()
-      }
-    }
-
-    new PartitionedModList(innerChunkMap(0))
-  }
-
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): PartitionedChunkList[T, U] = ???
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
-      (implicit c: Context): PartitionedChunkList[V, W] = {
-    def innerMap(i: Int)(implicit c: Context): Buffer[ChunkList[V, W]] = {
-      if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = parWithHint({
-          c => partitions(i).flatMap(f)(c)
-        }, partitions(i).workerId)({
-          c => innerMap(i + 1)(c)
-        })
-
-        mappedRest += mappedPartition
-      } else {
-        Buffer[ChunkList[V, W]]()
-      }
-    }
-
-    new PartitionedChunkList(innerMap(0), conf)
-  }
+      (implicit c: Context): PartitionedChunkList[V, W] = ???
 
   def join[V](that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): PartitionedChunkList[T, (U, V)] = ???
 
   def map[V, W](f: ((T, U)) => (V, W))
-      (implicit c: Context): PartitionedChunkList[V, W] = {
-    def innerMap(i: Int)(implicit c: Context): Buffer[ChunkList[V, W]] = {
-      if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = parWithHint({
-          c => partitions(i).map(f)(c)
-        }, partitions(i).workerId)({
-          c => innerMap(i + 1)(c)
-        })
-
-        mappedRest += mappedPartition
-      } else {
-        Buffer[ChunkList[V, W]]()
-      }
-    }
-
-    new PartitionedChunkList(innerMap(0), conf)
-  }
+      (implicit c: Context): PartitionedChunkList[V, W] = ???
 
   override def mergesort(comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): PartitionedChunkList[T, U] = {

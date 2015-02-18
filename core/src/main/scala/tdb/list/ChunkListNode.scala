@@ -29,52 +29,6 @@ class ChunkListNode[T, U]
      val nextMod: Mod[ChunkListNode[T, U]],
      val size: Int = 0) extends Serializable {
 
-  def chunkMap[V, W]
-      (f: Iterable[(T, U)] => (V, W),
-       memo: Memoizer[Mod[ModListNode[V, W]]])
-      (implicit c: Context): Changeable[ModListNode[V, W]] = {
-    val newNextMod = memo(nextMod) {
-      mod {
-        read(nextMod)(next => {
-          if (next != null && next.chunk.size > 0)
-            next.chunkMap(f, memo)
-          else
-            write[ModListNode[V, W]](null)
-        })
-      }
-    }
-
-    write(new ModListNode[V, W](f(chunk), newNextMod))
-  }
-
-  def flatMap[V, W]
-      (f: ((T, U)) => Iterable[(V, W)],
-       chunkSize: Int,
-       memo: Memoizer[Changeable[ChunkListNode[V, W]]])
-      (implicit c: Context): Changeable[ChunkListNode[V, W]] = {
-    var tail = mod {
-      read(nextMod) {
-        case null => write[ChunkListNode[V, W]](null)
-        case next =>
-          memo(nextMod) {
-            next.flatMap(f, chunkSize, memo)
-          }
-      }
-    }
-
-    var mapped = chunk.flatMap(f)
-
-    while (mapped.size > chunkSize) {
-      val (start, end) = mapped.splitAt(chunkSize)
-      tail = mod {
-        write(new ChunkListNode[V, W](start, tail))
-      }
-      mapped = end
-    }
-
-    write(new ChunkListNode[V, W](mapped, tail))
-  }
-
   def loopJoin[V]
       (that: ChunkList[T, V],
        memo: Memoizer[Changeable[ChunkListNode[T, (U, V)]]],
@@ -166,24 +120,6 @@ class ChunkListNode[T, U]
     }
 
     write(new ModListNode[V, W](f(chunk, thisId), newNextMod))
-  }
-
-  def map[V, W]
-      (f: ((T, U)) => (V, W),
-       memo: Memoizer[Changeable[ChunkListNode[V, W]]])
-      (implicit c: Context): Changeable[ChunkListNode[V, W]] = {
-    val newChunk = chunk.map(f)
-    val newNext = mod {
-      read(nextMod) {
-        case null => write[ChunkListNode[V, W]](null)
-        case next =>
-          memo(nextMod) {
-            next.map(f, memo)
-          }
-      }
-    }
-
-    write(new ChunkListNode[V, W](newChunk, newNext))
   }
 
   def reduceByKey

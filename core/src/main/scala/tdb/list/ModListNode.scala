@@ -48,43 +48,6 @@ class ModListNode[T, U](var value: (T, U),
     }
   }
 
-  def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)],
-    memo: Memoizer[Changeable[ModListNode[V, W]]],
-    modizer: Modizer1[ModListNode[V, W]])(implicit c: Context): Changeable[ModListNode[V, W]] = {
-    var mapped = f(value)
-
-    if (mapped.size > 0) {
-      var tail = modizer(nextMod.id) {
-        read(nextMod) {
-          case null =>
-            write[ModListNode[V, W]](null)
-          case next =>
-            memo(next) {
-              next.flatMap(f, memo, modizer)
-            }
-        }
-      }
-
-      while (mapped.size > 1) {
-        tail = mod {
-          write(new ModListNode[V, W](mapped.head, tail))
-        }
-        mapped = mapped.tail
-      }
-
-      write(new ModListNode[V, W](mapped.head, tail))
-    } else {
-      read(nextMod) {
-        case null =>
-          write[ModListNode[V, W]](null)
-        case next =>
-          memo(next) {
-            next.flatMap(f, memo, modizer)
-          }
-      }
-    }
-  }
-
   def loopJoin[V](that: ModList[T, V],
     memo: Memoizer[Changeable[ModListNode[T, (U, V)]]],
     condition: ((T, V), (T, U)) => Boolean)(implicit c: Context): Changeable[ModListNode[T, (U, V)]] = {
@@ -143,25 +106,6 @@ class ModListNode[T, U](var value: (T, U),
           }
       }
     }
-  }
-
-  def map[V, W]
-      (f: ((T, U)) => (V, W),
-       memo: Memoizer[Mod[ModListNode[V, W]]],
-       modizer: Modizer1[ModListNode[V, W]])
-      (implicit c: Context): Changeable[ModListNode[V, W]] = {
-    val newNextMod = memo(nextMod) {
-      mod {
-        read(nextMod) {
-          case null =>
-            write[ModListNode[V, W]](null)
-          case next =>
-            next.map(f, memo, modizer)
-        }
-      }
-    }
-
-    write(new ModListNode[V, W](f(value), newNextMod))
   }
 
   def mapValues[V](f: U => V,
