@@ -104,12 +104,22 @@ class DatastoreActor(conf: WorkerConf)
 
       sender ! "done"
 
-    case CreateListIdsMessage(conf: ListConf, numPartitions: Int) =>
+    case CreateListIdsMessage
+        (conf: ListConf, workerIndex: Int, numWorkers: Int) =>
       log.debug("CreateListIdsMessage")
       val listIds = Buffer[String]()
 
+      val partitionsPerWorker = conf.partitions / numWorkers
+      val partitions =
+        if (workerIndex == numWorkers - 1 &&
+            conf.partitions % numWorkers != 0) {
+          numWorkers % partitionsPerWorker
+        } else {
+          partitionsPerWorker
+        }
+
       val newLists = Buffer[Modifier]()
-      for (i <- 1 to numPartitions) {
+      for (i <- 1 to partitions) {
         val listId = nextListId + ""
         nextListId += 1
         val list =
@@ -126,8 +136,10 @@ class DatastoreActor(conf: WorkerConf)
       if (conf.file != "") {
         val futures = Buffer[Future[Any]]()
         var nextList = 0
+        val idMap = Map[Int, (String, ActorRef)]()
         datastore.store.hashedForeach(1) {
-          case keys =>
+          case (id, keys) =>
+            idMap(id) = (listIds(nextList), self)
             futures += newLists(nextList).loadInput(keys)
             nextList = (nextList + 1) % newLists.size
         }
@@ -135,11 +147,15 @@ class DatastoreActor(conf: WorkerConf)
         val respondTo = sender
         Future.sequence(futures).onComplete {
           case Success(v) =>
-            respondTo ! (datastore.store.hashRange(1), listIds)
+            respondTo ! new ObjHasher(idMap, datastore.store.hashRange(1).total)
           case Failure(e) => e.printStackTrace()
         }
       } else {
-        sender ! (null, listIds)
+        val hasher = ObjHasher.makeHasher(new HashRange(
+          workerIndex * partitionsPerWorker,
+          (workerIndex + 1) * partitionsPerWorker,
+          conf.partitions), listIds.map((_, self)))
+        sender ! hasher
       }
 
     case LoadPartitionsMessage

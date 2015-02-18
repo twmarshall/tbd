@@ -20,7 +20,7 @@ import com.sleepycat.persist._
 import com.sleepycat.persist.model.{Entity, PrimaryKey}
 import java.io.File
 import scala.collection.JavaConversions._
-import scala.collection.mutable.Buffer
+import scala.collection.mutable.{Buffer, Map}
 
 import tdb.util._
 
@@ -32,17 +32,17 @@ class BerkeleyInputTable
   storeConfig.setAllowCreate(true)
 
   private val stores = Buffer[EntityStore]()
-  private val indexes = Buffer[PrimaryIndex[String, InputEntity]]()
+  private val indexes = Map[Int, PrimaryIndex[String, InputEntity]]()
 
   for (i <- hashRange.range()) {
     val store = new EntityStore(environment, name + i, storeConfig)
     stores += store
 
     val index = store.getPrimaryIndex(classOf[String], classOf[InputEntity])
-    indexes += index
+    indexes(i) = index
   }
 
-  private val hasher = ObjHasher.makeHasher(hashRange, indexes)
+  private val hasher = new ObjHasher(indexes, hashRange.total)
 
   def load(fileName: String) {
     val file = new File(fileName)
@@ -75,20 +75,20 @@ class BerkeleyInputTable
   def delete(key: Any) = ???
 
   def contains(key: Any) =
-    indexes.map(_.contains(key.asInstanceOf[String])).reduce(_ || _)
+    indexes.values.map(_.contains(key.asInstanceOf[String])).reduce(_ || _)
 
-  def count(): Int = indexes.map(_.count().toInt).reduce(_ + _)
+  def count(): Int = indexes.values.map(_.count().toInt).reduce(_ + _)
 
-  def hashedForeach(process: Iterator[String] => Unit) = {
-    for (index <- indexes) {
+  def hashedForeach(process: (Int, Iterator[String]) => Unit) = {
+    for ((id, index) <- indexes) {
       val cursor = index.keys()
-      process(cursor.iterator)
+      process(id, cursor.iterator)
       cursor.close()
     }
   }
 
   def foreachPartition(func: PrimaryIndex[String, InputEntity] => Unit) {
-    for (index <- indexes) {
+    for (index <- indexes.values) {
       func(index)
     }
   }

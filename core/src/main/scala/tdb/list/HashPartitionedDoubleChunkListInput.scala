@@ -26,7 +26,6 @@ import tdb.util.ObjHasher
 
 class HashPartitionedDoubleChunkListInput[T, U]
     (hasher: ObjHasher[(String, ActorRef)],
-     partitions: Map[ActorRef, Buffer[String]],
      conf: ListConf)
   extends Dataset[T, U] with java.io.Serializable {
 
@@ -55,12 +54,10 @@ class HashPartitionedDoubleChunkListInput[T, U]
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[DoubleChunkList[T, U]]()
 
-    for ((datastoreRef, listIds) <- partitions) {
-      for (listId <- listIds) {
-        val future = datastoreRef ? GetAdjustableListMessage(listId)
-        adjustablePartitions +=
-          Await.result(future.mapTo[DoubleChunkList[T, U]], DURATION)
-      }
+    for ((listId, datastoreRef) <- hasher.objs.values.toSet) {
+      val future = datastoreRef ? GetAdjustableListMessage(listId)
+      adjustablePartitions +=
+        Await.result(future.mapTo[DoubleChunkList[T, U]], DURATION)
     }
 
     new HashPartitionedDoubleChunkList(adjustablePartitions, conf)

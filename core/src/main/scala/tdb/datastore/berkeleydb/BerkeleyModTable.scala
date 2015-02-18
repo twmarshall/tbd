@@ -69,7 +69,7 @@ class BerkeleyModTable(environment: Environment) extends BerkeleyTable {
 
   def count() = primaryIndex.count().toInt
 
-  def hashedForeach(process: Iterator[String] => Unit) = ???
+  def hashedForeach(process: (Int, Iterator[String]) => Unit) = ???
 
   def hashRange = ???
 

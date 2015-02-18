@@ -88,7 +88,7 @@ class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
     nextTableId = 0
   }
 
-  def hashedForeach(id: Int)(process: Iterator[Any] => Unit) {
+  def hashedForeach(id: Int)(process: (Int, Iterator[Any]) => Unit) {
     val map = Map[Int, Buffer[Any]]()
 
     for (i <- ranges(id).range) {
@@ -100,7 +100,7 @@ class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
     }
 
     for (pair <- map.toBuffer.sortWith(_._1 < _._1)) {
-      process(pair._2.iterator)
+      process(pair._1, pair._2.iterator)
     }
   }
 

@@ -153,60 +153,37 @@ class Master extends Actor with ActorLogging {
       (datastoreRefs(workerId) ? UpdateModMessage(modId, null, null)) pipeTo sender
 
     case CreateListMessage(conf: ListConf) =>
-      val futures = Buffer[(Future[_], Int, ActorRef)]()
-
-      val workerMap = Map[Int, ActorRef]()
-      val partitionMap = Map[ActorRef, Buffer[String]]()
-      val partitionsPerWorker = conf.partitions / workers.size
+      val futures = Buffer[Future[ObjHasher[(String, ActorRef)]]]()
 
       var index = 0
       for ((workerId, workerRef) <- workers) {
-        val datastoreRef = datastoreRefs(workerId)
-        val partitions =
-          if (index == workers.size - 1 &&
-              conf.partitions % workers.size != 0) {
-            workers.size % partitionsPerWorker
-          } else {
-            partitionsPerWorker
-          }
-        val future = datastoreRef ? CreateListIdsMessage(conf, partitions)
-        futures += ((future, index, datastoreRef))
+        val future = {
+          val message = CreateListIdsMessage(conf, index, workers.size)
+          datastoreRefs(workerId) ? message
+        }
+
+        futures += future.mapTo[ObjHasher[(String, ActorRef)]]
         index += 1
       }
 
       var hasher: ObjHasher[(String, ActorRef)] = null
-      for ((future, workerIndex, datastoreRef) <- futures) {
-        val (range, listIds) =
-          Await.result(future.mapTo[(HashRange, Buffer[String])], DURATION)
-        partitionMap(datastoreRef) = listIds
-
-        val thisRange =
-          if (range == null) {
-            new HashRange(
-              workerIndex * partitionsPerWorker,
-              (workerIndex + 1) * partitionsPerWorker,
-              conf.partitions)
+      Await.result(Future.sequence(futures), DURATION).foreach {
+        case thisHasher =>
+          if (hasher == null) {
+            hasher = thisHasher
           } else {
-            range
+            hasher = ObjHasher.combineHashers(hasher, thisHasher)
           }
-
-        val thisHasher = ObjHasher.makeHasher(
-          thisRange, listIds.map((_, datastoreRef)))
-        if (hasher == null) {
-          hasher = thisHasher
-        } else {
-          hasher = ObjHasher.combineHashers(hasher, thisHasher)
-        }
       }
       assert(hasher.isComplete())
 
       val input = conf match {
         // file, partitions, chunkSize, chunkSizer, sorted, hash
         case ListConf(_, _, 1, _, false, _) =>
-          new HashPartitionedDoubleListInput(hasher, partitionMap)
+          new HashPartitionedDoubleListInput(hasher)
 
         case ListConf(_, _, _, _, false, _) =>
-          new HashPartitionedDoubleChunkListInput(hasher, partitionMap, conf)
+          new HashPartitionedDoubleChunkListInput(hasher, conf)
       }
 
       sender ! input

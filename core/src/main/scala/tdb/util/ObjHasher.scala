@@ -27,7 +27,10 @@ object ObjHasher {
         _range
       }
 
-    assert(range.rangeSize() == objs.size)
+    assert(
+      range.rangeSize() == objs.size,
+      "ObjHasher.makeHasher rangeSize " + range.rangeSize() + " != " +
+      objs.size)
 
     val map = Map[Int, T]()
     for (i <- range.range()) {
@@ -45,9 +48,18 @@ object ObjHasher {
   }
 
   def combineHashers[T](hash1: ObjHasher[T], hash2: ObjHasher[T]) = {
-    assert(hash1.total == hash2.total)
+    assert(
+      hash1.total == hash2.total,
+      "ObjHasher.combineHashers - hash range totals " +
+      hash1.total + " != " + hash2.total)
+
     val objs = hash1.objs ++ hash2.objs
-    assert(objs.size == hash1.objs.size + hash2.objs.size)
+
+    assert(
+      objs.size == hash1.objs.size + hash2.objs.size,
+      "ObjHasher.combineHashers combined size " + objs.size + " != " +
+      hash1.objs.size + " + " + hash2.objs.size)
+
     new ObjHasher(objs, hash1.total)
   }
 }

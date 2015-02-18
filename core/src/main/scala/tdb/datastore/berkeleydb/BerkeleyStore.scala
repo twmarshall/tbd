@@ -169,7 +169,7 @@ class BerkeleyStore(conf: WorkerConf)
     database = new BerkeleyDatabase(conf.envHomePath())
   }
 
-  def hashedForeach(id: Int)(process: Iterator[Any] => Unit) {
+  def hashedForeach(id: Int)(process: (Int, Iterator[Any]) => Unit) {
     tables(id).hashedForeach(process)
   }
 

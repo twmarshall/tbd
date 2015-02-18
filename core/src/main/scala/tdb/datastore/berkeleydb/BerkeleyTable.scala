@@ -30,7 +30,7 @@ trait BerkeleyTable {
 
   def count(): Int
 
-  def hashedForeach(process: Iterator[String] => Unit)
+  def hashedForeach(process: (Int, Iterator[String]) => Unit)
 
   def hashRange: HashRange
 

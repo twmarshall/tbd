@@ -33,7 +33,7 @@ case class NullMessage()
 case class RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef)
 case class SetIdMessage(workerId: WorkerId)
 case class ClearMessage()
-case class CreateListIdsMessage(conf: ListConf, numPartitions: Int)
+case class CreateListIdsMessage(conf: ListConf, workerIndex: Int, numWorkers: Int)
 case class LoadPartitionsMessage(
   fileName: String,
   numWorkers: Int,

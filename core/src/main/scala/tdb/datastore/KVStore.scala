@@ -38,7 +38,7 @@ trait KVStore {
 
   def clear()
 
-  def hashedForeach(id: Int)(process: Iterator[Any] => Unit)
+  def hashedForeach(id: Int)(process: (Int, Iterator[Any]) => Unit)
 
   def hashRange(id: Int): HashRange
 }
