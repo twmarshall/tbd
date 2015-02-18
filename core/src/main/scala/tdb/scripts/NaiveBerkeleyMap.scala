@@ -63,7 +63,7 @@ object NaiveBerkeleyMap {
     }
 
     import scala.concurrent.ExecutionContext.Implicits.global
-    val database = new BerkeleyDatabase()
+    val database = new BerkeleyDatabase("/tmp/tdb_berkeleydb")
     val inputStore = {
       val hashRange = new HashRange(0, Conf.partitions(), Conf.partitions())
       database.createInputStore(Conf.file(), hashRange)

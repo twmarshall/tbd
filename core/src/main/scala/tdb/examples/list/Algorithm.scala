@@ -22,6 +22,7 @@ import tdb.{Adjustable, Mutator}
 import tdb.list.ListConf
 import tdb.master.MasterConnector
 import tdb.util.Data
+import tdb.worker.WorkerConf
 
 abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
 
@@ -31,10 +32,12 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
     if (conf.master != "") {
       MasterConnector(conf.master)
     } else {
+      val args = Array("--cacheSize", conf.cacheSize.toString, "--store",
+        conf.storeType, "--envHomePath", conf.envHomePath)
+
       MasterConnector(
         port = Experiment.port,
-        cacheSize = conf.cacheSize,
-        storeType = conf.store)
+        workerArgs = args)
     }
 
   val mutator = new Mutator(connector)

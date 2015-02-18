@@ -35,6 +35,9 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
   val counts = opt[List[String]]("counts",
     default = Some(List("1000")),
     descr = "Number of elements to load initially.")
+  val envHomePath = opt[String]("envHomePath",
+    default = Some("/tmp/tdb_berkeleydb"), descr = "If using berkeleydb," +
+    "the path to where the database should be stored.")
   val files = opt[List[String]]("files", 'f', default = Some(List("")),
     descr = "The files to load the input from.")
   val displayGC = opt[Boolean]("displayGC", default = Some(false),

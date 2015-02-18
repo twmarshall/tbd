@@ -23,12 +23,12 @@ import scala.concurrent.ExecutionContext
 
 import tdb.util.HashRange
 
-class BerkeleyDatabase(implicit ec: ExecutionContext) {
+class BerkeleyDatabase(envHomePath: String)(implicit ec: ExecutionContext) {
   private val envConfig = new EnvironmentConfig()
   envConfig.setCacheSize(96 * 1024 * 1024)
   envConfig.setAllowCreate(true)
 
-  private val envHome = new File("/tmp/tdb_berkeleydb")
+  private val envHome = new File(envHomePath)
   envHome.mkdir()
 
   private val environment = new Environment(envHome, envConfig)

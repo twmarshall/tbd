@@ -26,13 +26,14 @@ import tdb.datastore.berkeleydb.BerkeleyStore
 import tdb.messages._
 import tdb.Mod
 import tdb.stats.Stats
+import tdb.worker.WorkerConf
 
-class Datastore(storeType: String, cacheSize: Int)
+class Datastore(conf: WorkerConf)
     (implicit ec: ExecutionContext) {
 
   val store =
-    storeType  match {
-      case "berkeleydb" => new BerkeleyStore(cacheSize)
+    conf.storeType()  match {
+      case "berkeleydb" => new BerkeleyStore(conf)
       case "memory" => new MemoryStore()
     }
   store.createTable[ModId, Any]("Mods", null)

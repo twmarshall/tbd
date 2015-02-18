@@ -29,18 +29,16 @@ import tdb.messages._
 object Worker {
   def props
       (masterRef: ActorRef,
-       storeType: String,
-       cacheSize: Int,
+       conf: WorkerConf,
        systemURL: String,
        webuiAddress: String) =
-    Props(classOf[Worker], masterRef, storeType, cacheSize, systemURL,
-          webuiAddress)
+    Props(classOf[Worker], masterRef, conf,
+          systemURL, webuiAddress)
 }
 
 class Worker
     (masterRef: ActorRef,
-     storeType: String,
-     cacheSize: Int,
+     conf: WorkerConf,
      systemURL: String,
      webuiAddress: String) extends Actor with ActorLogging {
   import context.dispatcher
@@ -48,7 +46,7 @@ class Worker
   log.info("Worker launched.")
 
   private val datastore = context.actorOf(
-    DatastoreActor.props(storeType, cacheSize), "datastore")
+    DatastoreActor.props(conf), "datastore")
 
   private val workerId = {
     val message = RegisterWorkerMessage(

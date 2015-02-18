@@ -29,17 +29,18 @@ import tdb.list._
 import tdb.messages._
 import tdb.stats.Stats
 import tdb.util._
+import tdb.worker.WorkerConf
 
 object DatastoreActor {
-  def props(storeType: String, cacheSize: Int): Props =
-    Props(classOf[DatastoreActor], storeType, cacheSize)
+  def props(conf: WorkerConf): Props =
+    Props(classOf[DatastoreActor], conf)
 }
 
-class DatastoreActor(storeType: String, cacheSize: Int)
+class DatastoreActor(conf: WorkerConf)
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  val datastore = new Datastore(storeType, cacheSize)
+  val datastore = new Datastore(conf)
 
   private val lists = Map[String, Modifier]()
 

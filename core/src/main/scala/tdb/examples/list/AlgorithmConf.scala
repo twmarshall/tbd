@@ -21,13 +21,14 @@ case class AlgorithmConf(
   algorithm: String,
   cacheSize: Int,
   count: Int,
+  envHomePath: String,
   file: String,
   master: String,
   mutations: List[String],
   naive: Boolean,
   runs: List[String],
   repeat: Int,
-  store: String,
+  storeType: String,
   updateFile: String,
   listConf: ListConf) {
 

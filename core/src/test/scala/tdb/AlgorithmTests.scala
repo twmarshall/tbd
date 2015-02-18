@@ -24,7 +24,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
   Experiment.check = true
   Experiment.port = 2553
 
-  val defaults = Array("--verbosity", "0")
+  val defaults = Array("--verbosity", "0", "--envHomePath", "asdf")
 
   val intensity = 10
 

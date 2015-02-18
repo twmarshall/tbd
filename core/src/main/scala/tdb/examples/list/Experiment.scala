@@ -192,13 +192,14 @@ object Experiment {
           algorithm = algorithm,
           cacheSize = cacheSize.toInt,
           count = count.toInt,
+          envHomePath = conf.envHomePath(),
           file = file,
           master = conf.master(),
           mutations = conf.mutations(),
           naive = conf.naive(),
           runs = conf.runs(),
           repeat = i,
-          store = conf.store(),
+          storeType = conf.store(),
           updateFile = conf.updateFile(),
           listConf = listConf)
 

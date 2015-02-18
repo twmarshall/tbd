@@ -19,7 +19,6 @@ import akka.actor.{Actor, ActorRef, ActorSystem}
 import akka.event.Logging
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.rogach.scallop._
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -27,52 +26,33 @@ import tdb.{Constants, Log}
 import tdb.Constants._
 import tdb.messages._
 import tdb.stats.Stats
-import tdb.util.Util
 
 object Main {
   def main(args: Array[String]) {
-    object Conf extends ScallopConf(args) {
-      version("TDB 0.1 (c) 2014 Carnegie Mellon University")
-      banner("Usage: worker.sh [options] master")
-      val cacheSize = opt[Int]("cacheSize", 'c', default = Some(10000),
-        descr = "The number of elements to keep in the cache, if the " +
-                "berkeleydb store is being used")
-      val ip = opt[String]("ip", 'i', default = Some(Util.getIP()),
-        descr = "The ip address to bind to.")
-      val port = opt[Int]("port", 'p', default = Some(2553),
-        descr = "The port to bind to.")
-      val logging = opt[String]("log", 'l', default = Some("DEBUG"),
-        descr = "The logging level. Options, by increasing verbosity, are " +
-        "OFF, WARNING, INFO, or DEBUG")
-      val storeType = opt[String]("store", 's', default = Some("memory"),
-        descr = "The type of datastore to use, either memory or berkeleydb")
-      val timeout = opt[Int]("timeout", 't', default = Some(100),
-        descr = "How long Akka waits on message responses before timing out")
-      val webui_port = opt[Int]("webui_port", 'w', default = Some(8889))
-      val master = trailArg[String](required = true)
-    }
+    val conf = new WorkerConf(args)
 
-    Constants.DURATION = Conf.timeout.get.get.seconds
+    Constants.DURATION = conf.timeout().seconds
     Constants.TIMEOUT = Timeout(Constants.DURATION)
 
-    val ip = Conf.ip.get.get
-    val port = Conf.port.get.get
-    val master = Conf.master.get.get
-    val logging = Conf.logging.get.get
-    val webui_port = Conf.webui_port.get.get
+    val ip = conf.ip()
+    val port = conf.port()
+    val master = conf.master()
+    val logging = conf.logging()
+    val webui_port = conf.webui_port()
 
-    val conf = akkaConf + s"""
-      akka.loglevel = $logging
+    val workerAkkaconf = {
+      val conf = akkaConf + s"""
+        akka.loglevel = $logging
 
-      akka.remote.netty.tcp.hostname = $ip
-      akka.remote.netty.tcp.port = $port
-    """
-
-    val workerAkkaConf = ConfigFactory.parseString(conf)
+        akka.remote.netty.tcp.hostname = $ip
+        akka.remote.netty.tcp.port = $port
+      """
+      ConfigFactory.parseString(conf)
+    }
 
     val system = ActorSystem(
       "workerSystem",
-      ConfigFactory.load(workerAkkaConf))
+      ConfigFactory.load(workerAkkaconf))
 
     val selection = system.actorSelection(master)
     val future = selection.resolveOne()
@@ -82,8 +62,7 @@ object Main {
     system.actorOf(
       Worker.props(
         masterRef,
-        Conf.storeType.get.get,
-        Conf.cacheSize.get.get,
+        conf,
         systemURL,
         ip + ":" + webui_port),
       "worker")

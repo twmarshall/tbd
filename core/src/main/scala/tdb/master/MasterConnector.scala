@@ -26,6 +26,7 @@ import tdb.Log
 import tdb.stats.Stats
 import tdb.worker.Worker
 import tdb.util.Util
+import tdb.worker.WorkerConf
 
 object MasterConnector {
   private var id = 0
@@ -53,8 +54,7 @@ object MasterConnector {
 
   def apply
       (singleNode: Boolean = true,
-       storeType: String = "memory",
-       cacheSize: Int = 10000,
+       workerArgs: Array[String] = Array[String](),
        ip: String = "127.0.0.1",
        port: Int = 2552,
        logging: String = "WARNING") = {
@@ -72,13 +72,15 @@ object MasterConnector {
     Log.log = Logging(system, "main")
 
     id += 1
-
     val masterRef = system.actorOf(Master.props(), "master")
 
     if (singleNode) {
       val systemURL = "akka.tcp://" + system.name + "@" + ip + ":" + port
+      val args = workerArgs ++ Array(systemURL + "/master")
+      val workerConf = new WorkerConf(args)
+
       val workerRef = system.actorOf(
-        Worker.props(masterRef, storeType, cacheSize, systemURL, ""), "worker")
+        Worker.props(masterRef, workerConf, systemURL, ""), "worker")
 
       Await.result(workerRef ? "started", DURATION)
     }

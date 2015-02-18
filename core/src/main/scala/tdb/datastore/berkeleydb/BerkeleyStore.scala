@@ -32,6 +32,7 @@ import tdb.messages._
 import tdb.Mod
 import tdb.Constants.ModId
 import tdb.util._
+import tdb.worker.WorkerConf
 
 class LRUNode(
   val key: Any,
@@ -41,8 +42,9 @@ class LRUNode(
   var next: LRUNode
 )
 
-class BerkeleyStore(maxCacheSize: Int)(implicit ec: ExecutionContext) extends KVStore {
-  private var database = new BerkeleyDatabase()
+class BerkeleyStore(conf: WorkerConf)
+    (implicit ec: ExecutionContext) extends KVStore {
+  private var database = new BerkeleyDatabase(conf.envHomePath())
 
   private val tables = Map[Int, BerkeleyTable]()
 
@@ -100,7 +102,7 @@ class BerkeleyStore(maxCacheSize: Int)(implicit ec: ExecutionContext) extends KV
     }
 
     val futures = Buffer[Future[Any]]()
-    while ((cacheSize / 1024 / 1024) > maxCacheSize) {
+    while ((cacheSize / 1024 / 1024) > conf.cacheSize()) {
       val toEvict = tail.previous
 
       val key = toEvict.key
@@ -164,7 +166,7 @@ class BerkeleyStore(maxCacheSize: Int)(implicit ec: ExecutionContext) extends KV
     tail.next = null
 
     database.close()
-    database = new BerkeleyDatabase()
+    database = new BerkeleyDatabase(conf.envHomePath())
   }
 
   def hashedForeach(id: Int)(process: Iterator[Any] => Unit) {
