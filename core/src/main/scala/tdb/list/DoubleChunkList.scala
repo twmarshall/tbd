@@ -29,6 +29,20 @@ class DoubleChunkList[T, U]
      val workerId: WorkerId = -1)
   extends AdjustableList[T, U] with Serializable {
 
+  override def chunkMap[V, W](f: Iterable[(T, U)] => (V, W))
+      (implicit c: Context): DoubleList[V, W] = {
+    val memo = new Memoizer[Mod[DoubleListNode[V, W]]]()
+
+    new DoubleList(
+      mod {
+        read(head) {
+          case null => write[DoubleListNode[V, W]](null)
+          case node => node.chunkMap(f, memo)
+        }
+      }, false, workerId
+    )
+  }
+
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): DoubleChunkList[T, U] = ???
 
@@ -91,104 +105,9 @@ class DoubleChunkList[T, U]
        ordering: Ordering[T]): DoubleChunkList[T, U] = ???
 
   def reduce(f: ((T, U), (T, U)) => (T, U))
-      (implicit c: Context): Mod[(T, U)] = ??? /*{
-    // Each round we need a hasher and a memo, and we need to guarantee that the
-    // same hasher and memo are used for a given round during change
-    // propagation, even if the first mod of the list is deleted.
-    class RoundMemoizer {
-      val memo = new Memoizer[(Hasher,
-                               Memoizer[Mod[DoubleChunkListNode[T, U]]],
-                               RoundMemoizer)]()
-
-      def getTuple() =
-        memo() {
-          (new Hasher(2, 4),
-           new Memoizer[Mod[DoubleChunkListNode[T, U]]](),
-           new RoundMemoizer())
-        }
-    }
-
-    def randomReduceList
-        (head: DoubleChunkListNode[T, U],
-         nextMod: DoubleChunkListNode[T, U],
-         round: Int,
-         roundMemoizer: RoundMemoizer)
-        (implicit c: Context): Changeable[(T, U)] = {
-      val tuple = roundMemoizer.getTuple()
-
-      val halfListMod = mod {
-        halfList(head.value, nextMod, round, tuple._1, tuple._2)
-      }
-
-      read(halfListMod) {
-        case halfList =>
-          read(halfList.nextMod) {
-            case null => read(halfList.value) { case value => write(value) }
-            case next => randomReduceList(halfList, next, round + 1, tuple._3)
-          }
-      }
-    }
-
-    def binaryHash(id: ModId, round: Int, hasher: Hasher) = {
-      hasher.hash(id.hashCode() ^ round) == 0
-
-      // makes reduce deterministic, for testing purposes
-      // id.hashCode() % 3 == 0
-    }
-
-    def halfList
-        (acc: Mod[(T, U)],
-         node: DoubleChunkListNode[T, U],
-         round: Int,
-         hasher: Hasher,
-         memo: Memoizer[Mod[DoubleChunkListNode[T, U]]])
-        (implicit c: Context): Changeable[DoubleChunkListNode[T, U]] = {
-      val newAcc = mod {
-        read_2(acc, node.value) {
-          case (acc, value) => write(f(acc, value))
-        }
-      }
-
-      if(binaryHash(node.nextMod.id, round, hasher)) {
-        val newNextMod = memo(node.nextMod) {
-          mod {
-            read(node.nextMod) {
-              case null => write[DoubleChunkListNode[T, U]](null)
-              case next =>
-                read(next.nextMod) {
-                  case null =>
-                    val tail = mod { write[DoubleChunkListNode[T, U]](null) }
-                    write(new DoubleChunkListNode(next.value, tail))
-                  case nextNext =>
-                    halfList(next.value, nextNext, round, hasher, memo)
-                }
-            }
-          }
-        }
-        write(new DoubleChunkListNode(newAcc, newNextMod))
-      } else {
-        read(node.nextMod) {
-          case null =>
-            val tail = mod[DoubleChunkListNode[T, U]] { write(null) }
-            write(new DoubleChunkListNode(newAcc, tail))
-          case next =>
-            halfList(newAcc, next, round, hasher, memo)
-        }
-      }
-    }
-
-    val roundMemoizer = new RoundMemoizer()
-    mod {
-      read(head) {
-        case null => write(null)
-        case head =>
-          read(head.nextMod) {
-            case null => read(head.value) { value => write(value) }
-            case next => randomReduceList(head, next, 0, roundMemoizer)
-          }
-      }
-    }
-  }*/
+      (implicit c: Context): Mod[(T, U)] = {
+    chunkMap(_.reduce(f)).reduce(f)
+  }
 
   def sortJoin[V](_that: AdjustableList[T, V])
       (implicit c: Context,

@@ -26,6 +26,30 @@ class DoubleChunkListNode[T, U]
      val nextMod: Mod[DoubleChunkListNode[T, U]],
      val size: Int = 0) extends Serializable {
 
+  def chunkMap[V, W]
+      (f: Iterable[(T, U)] => (V, W),
+       memo: Memoizer[Mod[DoubleListNode[V, W]]])
+      (implicit c: Context): Changeable[DoubleListNode[V, W]] = {
+    val newChunkMod = mod {
+      read(chunkMod) {
+        case chunk => write(f(chunk))
+      }
+    }
+
+    val newNextMod = memo(nextMod) {
+      mod {
+        read(nextMod) {
+          case null =>
+            write[DoubleListNode[V, W]](null)
+          case next =>
+            next.chunkMap(f, memo)
+        }
+      }
+    }
+
+    write(new DoubleListNode[V, W](newChunkMod, newNextMod))
+  }
+
   def hashChunkMap[V, W]
       (f: Iterable[(T, U)] => Iterable[(V, W)],
        input: ListInput[V, W],
