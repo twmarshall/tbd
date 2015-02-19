@@ -19,6 +19,15 @@ import sys.process._
 
 object OS {
   def getNumCores(): Int = {
-    "nproc".!!.replaceAll("\n", "").toInt
+    val osName = System.getProperty("os.name")
+
+    val numCores =
+      if (osName.startsWith("Mac")) {
+        "sysctl -n hw.ncpu".!!.replaceAll("\n", "").toInt
+      } else {
+        "nproc".!!.replaceAll("\n", "").toInt
+      }
+
+    numCores
   }
 }
