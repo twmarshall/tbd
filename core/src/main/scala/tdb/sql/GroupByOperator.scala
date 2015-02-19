@@ -209,7 +209,7 @@ class GroupByAdjust(
   }
 
   def run(implicit c: Context) = {
-    list.map(mapper).reduceByKey(reduceFunc, groupByComparator).map(mapper2)
+    list.map(mapper).reduceBy(reduceFunc, groupByComparator).map(mapper2)
   }
 }
 

@@ -261,7 +261,7 @@ class ModList[T, U]
     }
   }
 
-  override def reduceByKey(f: (U, U) => U, comparator: ((T, U), (T, U) ) => Int)
+  override def reduceBy(f: (U, U) => U, comparator: ((T, U), (T, U) ) => Int)
       (implicit c: Context): ModList[T, U] = {
     val sorted = this.quicksort(comparator)
     val memo = new Memoizer[Changeable[ModListNode[T, U]]]()
@@ -272,7 +272,7 @@ class ModList[T, U]
             write(null)
           case node =>
             memo(node, node.value._1, null) {
-              node.reduceByKey(f, comparator, node.value._1, null.asInstanceOf[U], memo)
+              node.reduceBy(f, comparator, node.value._1, null.asInstanceOf[U], memo)
             }
         }
       }, true

@@ -181,7 +181,7 @@ class ModListNode[T, U](var value: (T, U),
     write(new ModListNode[T, U](value, newNextMod))
   }
 
-  def reduceByKey(f: (U, U) => U,
+  def reduceBy(f: (U, U) => U,
     comparator: ((T, U), (T, U) ) => Int,
     previousKey: T,
     runningValue: U,
@@ -199,7 +199,7 @@ class ModListNode[T, U](var value: (T, U),
           write(new ModListNode((value._1, newRunningValue), tail))
         case node =>
           memo(node, value._1, newRunningValue) {
-            node.reduceByKey(f, comparator, value._1, newRunningValue, memo)
+            node.reduceBy(f, comparator, value._1, newRunningValue, memo)
           }
       }
     } else {
@@ -210,7 +210,7 @@ class ModListNode[T, U](var value: (T, U),
             write(new ModListNode(value, tail))
           case node =>
             memo(node, value._1, value._2) {
-              node.reduceByKey(f, comparator, value._1, value._2, memo)
+              node.reduceBy(f, comparator, value._1, value._2, memo)
             }
         }
       }

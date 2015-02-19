@@ -122,7 +122,7 @@ class ChunkListNode[T, U]
     write(new ModListNode[V, W](f(chunk, thisId), newNextMod))
   }
 
-  def reduceByKey
+  def reduceBy
       (f: (U, U) => U,
        previousKey: T,
        runningValue: U)
@@ -158,7 +158,7 @@ class ChunkListNode[T, U]
             val tail = mod { write[ChunkListNode[T, U]](null) }
             write(new ChunkListNode(Vector((newPreviousKey, newRunningValue)), tail))
           case node =>
-            node.reduceByKey(f, newPreviousKey, newRunningValue)
+            node.reduceBy(f, newPreviousKey, newRunningValue)
         }
       }
 
@@ -176,7 +176,7 @@ class ChunkListNode[T, U]
           val tail = mod { write[ChunkListNode[T, U]](null) }
           write(new ChunkListNode(Vector((newPreviousKey, newRunningValue)), tail))
         case node =>
-          node.reduceByKey(f, newPreviousKey, newRunningValue)
+          node.reduceBy(f, newPreviousKey, newRunningValue)
       }
     }
 
@@ -192,7 +192,7 @@ class ChunkListNode[T, U]
           val tail = mod { write[ChunkListNode[T, U]](null) }
           write(new ChunkListNode((value._1, newRunningValue), tail))
         case node =>
-          node.reduceByKey(f, value._1, newRunningValue)
+          node.reduceBy(f, value._1, newRunningValue)
       }
     } else {
       val newNextMod = mod {
@@ -201,7 +201,7 @@ class ChunkListNode[T, U]
             val tail = mod { write[ChunkListNode[T, U]](null) }
             write(new ChunkListNode(value, tail))
           case node =>
-            node.reduceByKey(f, value._1, value._2)
+            node.reduceBy(f, value._1, value._2)
         }
       }
 

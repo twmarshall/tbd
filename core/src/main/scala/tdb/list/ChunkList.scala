@@ -230,7 +230,7 @@ class ChunkList[T, U]
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = ???
 
-  override def reduceByKey(f: (U, U) => U, comparator: ((T, U), (T, U)) => Int)
+  override def reduceBy(f: (U, U) => U, comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): ChunkList[T, U] = {
     val sorted = this.mergesort( comparator)
 
@@ -240,7 +240,7 @@ class ChunkList[T, U]
           case null =>
             write(null)
           case node =>
-            node.reduceByKey(f, node.chunk.head._1, null.asInstanceOf[U])
+            node.reduceBy(f, node.chunk.head._1, null.asInstanceOf[U])
         }
       }, conf
     )

@@ -125,7 +125,7 @@ class ReduceByKeyTest(input: ListInput[Int, Int])
     val list = input.getAdjustableList()
     val mapped = list.flatMap(mapper)
     println("mapped")
-    mapped.reduceByKey(_ + _ ,  ((pair1: (Int, Int), pair2:(Int, Int)) => pair1._1 - pair2._1))
+    mapped.reduceBy(_ + _ ,  ((pair1: (Int, Int), pair2:(Int, Int)) => pair1._1 - pair2._1))
   }
 }
 

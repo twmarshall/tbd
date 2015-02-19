@@ -108,7 +108,7 @@ trait AdjustableList[T, U] {
   /**
    * Reduces all elements with the same key using f.
    */
-  def reduceByKey(f: (U, U) => U, comparator: ((T, U), (T, U)) => Int)
+  def reduceBy(f: (U, U) => U, comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): AdjustableList[T, U] = ???
 
   /**
