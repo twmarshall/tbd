@@ -38,7 +38,7 @@ class DoubleListModifier(datastore: Datastore)
       if (headNode == null)
         null
       else
-        datastore.read(headNode.value)._1
+        datastore.read(headNode.valueMod)._1
 
     var tail = datastore.createMod(headNode)
 
@@ -97,7 +97,7 @@ class DoubleListModifier(datastore: Datastore)
       assert(tailMod == node.nextMod)
       tailMod = mod
     } else {
-      val nextValue = datastore.read(nextNode.value)
+      val nextValue = datastore.read(nextNode.valueMod)
       nodes(nextValue._1) = mod
     }
 
@@ -120,7 +120,7 @@ class DoubleListModifier(datastore: Datastore)
 
     var node = datastore.read(modList.head)
     while (node != null) {
-      val value = datastore.read(node.value)
+      val value = datastore.read(node.valueMod)
       buf.append(value + ", " + node.nextMod + " = ")
       node = datastore.read(node.nextMod)
     }

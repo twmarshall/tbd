@@ -71,7 +71,7 @@ object MemoryUsage {
 
       // Nodes
       case node: tdb.list.DoubleListNode[_, _] =>
-        getSize(node.value) + getSize(node.nextMod) + objectOverhead
+        getSize(node.valueMod) + getSize(node.nextMod) + objectOverhead
       case node: tdb.list.DoubleChunkListNode[_, _] =>
         getSize(node.chunkMod) + getSize(node.nextMod) + getSize(node.size) +
         objectOverhead

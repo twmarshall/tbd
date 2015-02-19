@@ -32,7 +32,23 @@ class PartitionedDoubleList[T, U]
   Log.debug("new PartitionedDoubleList")
 
   def filter(pred: ((T, U)) => Boolean)
-      (implicit c: Context): PartitionedDoubleList[T, U] = ???
+      (implicit c: Context): PartitionedDoubleList[T, U] = {
+    def parFilter(i: Int)(implicit c: Context): Buffer[DoubleList[T, U]] = {
+      if (i < partitions.size) {
+        val (filteredPartition, filteredRest) = parWithHint({
+          c => partitions(i).filter(pred)(c)
+        }, partitions(i).workerId)({
+          c => parFilter(i + 1)(c)
+        })
+
+        filteredRest += filteredPartition
+      } else {
+        Buffer[DoubleList[T, U]]()
+      }
+    }
+
+    new PartitionedDoubleList(parFilter(0))
+  }
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): PartitionedDoubleList[V, W] = ???

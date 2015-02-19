@@ -21,8 +21,13 @@ import scala.collection.mutable.Map
 import tdb._
 import tdb.TDB._
 
+object DoubleListNode {
+  type ChangeableTuple[T, U] =
+    (Changeable[DoubleListNode[T, U]], Changeable[DoubleListNode[T, U]])
+}
+
 class DoubleListNode[T, U]
-    (var value: Mod[(T, U)],
+    (var valueMod: Mod[(T, U)],
      val nextMod: Mod[DoubleListNode[T, U]]) extends Serializable {
 
   def hashPartitionedFlatMap[V, W]
@@ -30,7 +35,7 @@ class DoubleListNode[T, U]
        input: ListInput[V, W],
        memo: Memoizer[Unit])
       (implicit c: Context): Unit = {
-    readAny(value) {
+    readAny(valueMod) {
       case v =>
         val out = f(v)
         for (pair <- out) {
@@ -52,7 +57,7 @@ class DoubleListNode[T, U]
        memo: Memoizer[Mod[DoubleListNode[V, W]]])
       (implicit c: Context): Changeable[DoubleListNode[V, W]] = {
     val newValue = mod {
-      read(value) {
+      read(valueMod) {
         case v => write(f(v))
       }
       //write(null.asInstanceOf[(V, W)])
@@ -72,16 +77,95 @@ class DoubleListNode[T, U]
     write(new DoubleListNode[V, W](newValue, newNextMod))
   }
 
+  def quicksort
+      (toAppend: Mod[DoubleListNode[T, U]],
+       comparator: ((T, U), (T, U)) => Int)
+      (implicit c: Context): Changeable[DoubleListNode[T, U]] = {
+    val (smaller, greater) = mod2 {
+      val splitMemo = new Memoizer[DoubleListNode.ChangeableTuple[T, U]]()
+      val splitModizer = new Modizer2[DoubleListNode[T, U], DoubleListNode[T, U]]()
+
+      read2(nextMod) {
+        case null =>
+          write2[DoubleListNode[T, U], DoubleListNode[T, U]](null, null)
+        case nextNode =>
+          splitMemo(nextNode) {
+            nextNode.split((cv: (T, U)) => {
+              readAny(valueMod) {
+                case value =>
+                  comparator(cv, value) < 0
+              }},
+              splitMemo,
+              splitModizer)
+          }
+      }
+    }
+
+    val greaterSorted = mod {
+      read(greater) {
+        case null =>
+          read(toAppend) { write(_) }
+        case greater =>
+          greater.quicksort(toAppend, comparator)
+      }
+    }
+
+    val mid = new DoubleListNode(valueMod, greaterSorted)
+
+    read(smaller) {
+      case null =>
+        write(mid)
+      case smallerNode =>
+        smallerNode.quicksort(mod { write(mid) }, comparator)
+    }
+  }
+
+  def split
+      (pred: ((T, U)) => Boolean,
+       memo: Memoizer[DoubleListNode.ChangeableTuple[T, U]],
+       modizer: Modizer2[DoubleListNode[T, U], DoubleListNode[T, U]])
+      (implicit c: Context): DoubleListNode.ChangeableTuple[T, U] = {
+    def readNext(nextMod: Mod[DoubleListNode[T, U]]) = {
+      read2(nextMod) {
+        case null =>
+          write2[DoubleListNode[T, U], DoubleListNode[T, U]](null, null)
+        case next =>
+          memo(next) {
+            next.split(pred, memo, modizer)
+          }
+      }
+    }
+
+    read2(valueMod) {
+      case value =>
+        if (pred(value)) {
+          val (matchMod, diffChangeable) =
+            modizer.left(nextMod.id) {
+              readNext(nextMod)
+            }
+
+          writeLeft(new DoubleListNode(valueMod, matchMod), diffChangeable)
+        } else {
+          val (matchChangeable, diffMod) =
+            modizer.right(nextMod.id) {
+              readNext(nextMod)
+            }
+
+          writeRight(matchChangeable, new DoubleListNode(valueMod, diffMod))
+        }
+    }
+  }
+
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[DoubleListNode[T, U]]) {
       false
     } else {
       val that = obj.asInstanceOf[DoubleListNode[T, U]]
-      that.value == value && that.nextMod == nextMod
+      that.valueMod == valueMod && that.nextMod == nextMod
     }
   }
 
-  override def hashCode() = value.hashCode() * nextMod.hashCode()
+  override def hashCode() = valueMod.hashCode() * nextMod.hashCode()
 
-  override def toString = "Node(" + value + ", " + nextMod + ")"
+  override def toString = "Node(" + valueMod + ", " + nextMod + ")"
 }

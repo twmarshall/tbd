@@ -26,27 +26,21 @@ import tdb.TDB._
 import tdb.util._
 
 class WCHashAdjust(list: AdjustableList[String, String], mappedPartitions: Int)
-    extends Adjustable[Iterable[Mod[(Int, HashMap[String, Int])]]] {
+    extends Adjustable[AdjustableList[String, Int]] {
 
   def wordcount(pair: (String, String)) = {
-    val counts = Map[Int, Map[String, Int]]()
+    val counts = Map[String, Int]()
 
-    for (i <- 0 until mappedPartitions) {
-      counts(i) = Map[String, Int]()
-    }
 
     for (word <- pair._2.split("\\W+")) {
-      val hash = word.hashCode().abs % mappedPartitions
-      if (counts(hash).contains(word)) {
-        counts(hash)(word) += 1
+      if (counts.contains(word)) {
+        counts(word) += 1
       } else {
-        counts(hash)(word) = 1
+        counts(word) = 1
       }
     }
 
-    counts.map((pair: (Int, Map[String, Int])) => {
-      (pair._1, HashMap(pair._2.toSeq: _*))
-    })
+    HashMap(counts.toSeq: _*)
   }
 
   def reducer
@@ -57,15 +51,14 @@ class WCHashAdjust(list: AdjustableList[String, String], mappedPartitions: Int)
     (pair1._1, reduced)
   }
 
-  var mapped: AdjustableList[Int, HashMap[String, Int]] = _
   def run(implicit c: Context) = {
-    mapped = list.hashPartitionedFlatMap(wordcount, mappedPartitions)
-    mapped.partitionedReduce(reducer)
+    val mapped = list.hashPartitionedFlatMap(wordcount, mappedPartitions)
+    mapped.reduceByKey(_ + _)
   }
 }
 
 class WCHashAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, Iterable[Mod[(Int, HashMap[String, Int])]]](_conf) {
+    extends Algorithm[String, AdjustableList[String, Int]](_conf) {
   var data: FileData = null
 
   var input: Dataset[String, String] = null
@@ -88,20 +81,11 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
       mutator, input, conf.file, conf.updateFile, conf.runs)
   }
 
-  def checkOutput(output: Iterable[Mod[(Int, HashMap[String, Int])]]) = {
+  def checkOutput(output: AdjustableList[String, Int]) = {
     val writer = new BufferedWriter(new OutputStreamWriter(
       new FileOutputStream("wc-output.txt"), "utf-8"))
 
-    val sortedOutput = output.toBuffer.flatMap(
-      (x: Mod[(Int, HashMap[String, Int])]) => {
-        val v = mutator.read(x)
-
-        if (v == null) {
-          List()
-        } else {
-          v._2
-        }
-      }).sortWith(_._1 < _._1)
+    val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
 
     for ((word, count) <- sortedOutput) {
       writer.write(word + " -> " + count + "\n")

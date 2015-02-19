@@ -106,10 +106,16 @@ trait AdjustableList[T, U] {
       (implicit c: Context): Mod[(T, U)]
 
   /**
-   * Reduces all elements with the same key using f.
+   * Reduces all elements that are equal according to comparator using f.
    */
   def reduceBy(f: (U, U) => U, comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): AdjustableList[T, U] = ???
+
+  /**
+   * Reduces all elements with the same primary key using f.
+   */
+  def reduceByKey(f: (U, U) => U)
+      (implicit c: Context, o: Ordering[T]): AdjustableList[T, U] = ???
 
   /**
    * Performs a join by sorting the input lists and then merging them.

@@ -151,19 +151,6 @@ class ModList[T, U]
     )
   }
 
-  override def quicksort(comparator: ((T, U), (T, U) ) => Int)
-      (implicit c: Context): ModList[T, U] = {
-    val sorted = mod {
-      read(head) {
-        case null => write[ModListNode[T, U]](null)
-        case node =>
-          node.quicksort(mod { write(null) }, comparator)
-      }
-    }
-
-    new ModList(sorted, true)
-  }
-
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = {
 
@@ -263,7 +250,7 @@ class ModList[T, U]
 
   override def reduceBy(f: (U, U) => U, comparator: ((T, U), (T, U) ) => Int)
       (implicit c: Context): ModList[T, U] = {
-    val sorted = this.quicksort(comparator)
+    val sorted = this.quicksort(comparator).asInstanceOf[ModList[T, U]]
     val memo = new Memoizer[Changeable[ModListNode[T, U]]]()
     new ModList(
       mod {
@@ -321,23 +308,7 @@ class ModList[T, U]
   }
 
   def split(pred: ((T, U)) => Boolean)
-      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = {
-    val memo = new Memoizer[ModListNode.ChangeableTuple[T, U]]()
-    val modizer = new Modizer2[ModListNode[T, U], ModListNode[T, U]]()
-
-    val result = modizer(head.id) {
-      read2(head) {
-        case null =>
-          write2[ModListNode[T, U], ModListNode[T, U]](null, null)
-        case node =>
-          memo(node) {
-            node.split(pred, memo, modizer)
-          }
-      }
-    }
-
-    (new ModList(result._1), new ModList(result._2))
-  }
+      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
     val buf = Buffer[(T, U)]()

@@ -27,6 +27,7 @@ class DoubleList[T, U]
      val sorted: Boolean = false,
      val workerId: WorkerId = -1)
   extends AdjustableList[T, U] with Serializable {
+
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): DoubleList[T, U] = ???
 
@@ -74,6 +75,19 @@ class DoubleList[T, U]
       (implicit c: Context,
        ordering: Ordering[T]): DoubleList[T, U] = ???
 
+  override def quicksort(comparator: ((T, U), (T, U)) => Int)
+      (implicit c: Context): DoubleList[T, U] = {
+    val sorted = mod {
+      read(head) {
+        case null => write[DoubleListNode[T, U]](null)
+        case node =>
+          node.quicksort(mod { write(null) }, comparator)
+      }
+    }
+
+    new DoubleList(sorted, true)
+  }
+
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = {
     // Each round we need a hasher and a memo, and we need to guarantee that the
@@ -101,13 +115,13 @@ class DoubleList[T, U]
       val tuple = roundMemoizer.getTuple()
 
       val halfListMod = mod {
-        halfList(head.value, nextMod, round, tuple._1, tuple._2)
+        halfList(head.valueMod, nextMod, round, tuple._1, tuple._2)
       }
 
       read(halfListMod) {
         case halfList =>
           read(halfList.nextMod) {
-            case null => read(halfList.value) { case value => write(value) }
+            case null => read(halfList.valueMod) { case value => write(value) }
             case next => randomReduceList(halfList, next, round + 1, tuple._3)
           }
       }
@@ -128,7 +142,7 @@ class DoubleList[T, U]
          memo: Memoizer[Mod[DoubleListNode[T, U]]])
         (implicit c: Context): Changeable[DoubleListNode[T, U]] = {
       val newAcc = mod {
-        read_2(acc, node.value) {
+        read_2(acc, node.valueMod) {
           case (acc, value) => write(f(acc, value))
         }
       }
@@ -142,9 +156,9 @@ class DoubleList[T, U]
                 read(next.nextMod) {
                   case null =>
                     val tail = mod { write[DoubleListNode[T, U]](null) }
-                    write(new DoubleListNode(next.value, tail))
+                    write(new DoubleListNode(next.valueMod, tail))
                   case nextNext =>
-                    halfList(next.value, nextNext, round, hasher, memo)
+                    halfList(next.valueMod, nextNext, round, hasher, memo)
                 }
             }
           }
@@ -167,11 +181,16 @@ class DoubleList[T, U]
         case null => write(null)
         case head =>
           read(head.nextMod) {
-            case null => read(head.value) { value => write(value) }
+            case null => read(head.valueMod) { value => write(value) }
             case next => randomReduceList(head, next, 0, roundMemoizer)
           }
       }
     }
+  }
+
+  override def reduceByKey(f: (U, U) => U)
+      (implicit c: Context, o: Ordering[T]): DoubleList[T, U] = {
+    ???
   }
 
   def sortJoin[V](_that: AdjustableList[T, V])
@@ -179,13 +198,29 @@ class DoubleList[T, U]
        ordering: Ordering[T]): AdjustableList[T, (U, V)] = ???
 
   def split(pred: ((T, U)) => Boolean)
-      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
+      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = {
+    val memo = new Memoizer[DoubleListNode.ChangeableTuple[T, U]]()
+    val modizer = new Modizer2[DoubleListNode[T, U], DoubleListNode[T, U]]()
+
+    val result = modizer(head.id) {
+      read2(head) {
+        case null =>
+          write2[DoubleListNode[T, U], DoubleListNode[T, U]](null, null)
+        case node =>
+          memo(node) {
+            node.split(pred, memo, modizer)
+          }
+      }
+    }
+
+    (new DoubleList(result._1), new DoubleList(result._2))
+  }
 
   def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
     val buf = Buffer[(T, U)]()
     var node = mutator.read(head)
     while (node != null) {
-      buf += mutator.read(node.value)
+      buf += mutator.read(node.valueMod)
       node = mutator.read(node.nextMod)
     }
 

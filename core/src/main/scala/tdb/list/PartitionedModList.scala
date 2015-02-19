@@ -26,23 +26,7 @@ class PartitionedModList[T, U]
   extends AdjustableList[T, U] with Serializable {
 
   def filter(pred: ((T, U)) => Boolean)
-      (implicit c: Context): PartitionedModList[T, U] = {
-    def parFilter(i: Int)(implicit c: Context): Buffer[ModList[T, U]] = {
-      if (i < partitions.size) {
-        val (filteredPartition, filteredRest) = parWithHint({
-          c => partitions(i).filter(pred)(c)
-        }, partitions(i).workerId)({
-          c => parFilter(i + 1)(c)
-        })
-
-        filteredRest += filteredPartition
-      } else {
-        Buffer[ModList[T, U]]()
-      }
-    }
-
-    new PartitionedModList(parFilter(0))
-  }
+      (implicit c: Context): PartitionedModList[T, U] = ???
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): PartitionedModList[V, W] = ???
@@ -89,86 +73,8 @@ class PartitionedModList[T, U]
     new PartitionedModList(Buffer(innerSort(0)))
   }
 
-  override def quicksort(comparator: ((T, U), (T, U) ) => Int)
-      (implicit c: Context): PartitionedModList[T, U] = {
-    def innerSort(i: Int)(implicit c: Context): ModList[T, U] = {
-      if (i < partitions.size) {
-        val (sortedPartition, sortedRest) = par {
-          c => partitions(i).quicksort(comparator)(c)
-        } and {
-          c => innerSort(i + 1)(c)
-        }
-        /*
-        val comp = (pair1: (T, _), pair2: (T, _)) => {
-          comparator(pair1, pair2)
-              //ordering.compare(pair1._1, pair2._1)
-            }
-                */
-        sortedPartition.merge(sortedRest, comparator)
-      } else {
-        new ModList[T, U](mod { write[ModListNode[T, U]](null) })
-      }
-    }
-
-    // TODO: make the output have as many partitions as this list.
-    new PartitionedModList(Buffer(innerSort(0)))
-  }
-
   def reduce(f: ((T, U), (T, U)) => (T, U))
-      (implicit c: Context): Mod[(T, U)] = {
-    c.log.debug("PartitionedModList.reduce")
-    def innerReduce
-        (next: ModList[T, U],
-         remaining: Buffer[ModList[T, U]])
-        (implicit c: Context): Mod[(T, U)] = {
-      val newNextOption = remaining.find(_.workerId == next.workerId)
-
-      val (reducedPartition, reducedRest) =
-        newNextOption match {
-          case Some(newNext) =>
-            parWithHint({
-              c => next.reduce(f)(c)
-            }, next.workerId)({
-              c => innerReduce(newNext, remaining - newNext)(c)
-            }, newNext.workerId)
-        case None =>
-          if (remaining.size > 0) {
-            parWithHint({
-              c => next.reduce(f)(c)
-            }, next.workerId)({
-              c => innerReduce(remaining(0), remaining.tail)(c)
-            }, remaining(0).workerId)
-          } else {
-            parWithHint({
-              c => next.reduce(f)(c)
-            }, next.workerId)({
-              c => mod { write[(T, U)](null)(c) }(c)
-            }, next.workerId)
-          }
-        }
-
-      mod {
-        read(reducedPartition) {
-          case null =>
-            read(reducedRest) {
-              case null => write(null)
-              case rest => write(rest)
-            }
-          case partition =>
-            read(reducedRest) {
-              case null => write(partition)
-              case rest => write(f(partition, rest))
-            }
-        }
-      }
-    }
-
-    parWithHint({
-      c => innerReduce(partitions(0), partitions.tail)(c)
-    }, partitions(0).workerId)({
-      c =>
-    })._1
-  }
+      (implicit c: Context): Mod[(T, U)] = ???
 
   def sortJoin[V](that: AdjustableList[T, V])
       (implicit c: Context,
@@ -178,14 +84,5 @@ class PartitionedModList[T, U]
       (implicit c: Context):
     (PartitionedModList[T, U], PartitionedModList[T, U]) = ???
 
-  /* Meta Operations */
-  def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
-    val buf = Buffer[(T, U)]()
-
-    for (partition <- partitions) {
-      buf ++= partition.toBuffer(mutator)
-    }
-
-    buf
-  }
+  def toBuffer(mutator: Mutator): Buffer[(T, U)] = ???
 }

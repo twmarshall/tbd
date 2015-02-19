@@ -60,9 +60,9 @@ object TDB {
     changeable
   }
 
-  def readAny[T](mod: Mod[T])
-      (reader: T => Any)
-      (implicit c: Context): Any = {
+  def readAny[T, U](mod: Mod[T])
+      (reader: T => U)
+      (implicit c: Context): U = {
     val value = c.read(mod, c.task.self)
 
     val timestamp = c.ddg.addRead(
