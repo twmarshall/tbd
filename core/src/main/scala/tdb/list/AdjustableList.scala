@@ -28,6 +28,11 @@ import tdb.{Context, Mod, Mutator}
  * self-adjustabling way, so they can be called by an Adjustable.
  */
 trait AdjustableList[T, U] {
+  def aggregate[V, W](initial: => (V, W))
+      (seqop: ((V, W), ((T, U), (V, W))) => (V, W),
+       combop: ((V, W), (V, W)) => (V, W))
+      (implicit c: Context): Mod[(V, W)] = ???
+
   /**
    * Returns an AdjustableList containing the results of applying the given
    * function to each chunk of this AdjustableList. Only defined for chunked
