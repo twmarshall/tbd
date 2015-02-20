@@ -22,14 +22,40 @@ import java.io._
 import scala.collection.mutable.{Buffer, Map}
 import sys.process._
 
-class WorkerTick
-    (val numTasks: Int,
-     val datastoreMisses: Int)
+object WorkerStats {
+
+  var datastoreMisses = 0
+
+  var datastoreReads = 0
+
+  var datastoreWrites = 0
+
+  var modsCreated = 0
+
+  var numTasks = 0
+
+  def newTick() =
+    new WorkerTick(
+      datastoreMisses,
+      datastoreReads,
+      datastoreWrites,
+      modsCreated,
+      numTasks)
+}
+
+case class WorkerTick
+    (datastoreMisses: Int,
+     datastoreReads: Int,
+     datastoreWrites: Int,
+     modsCreated: Int,
+     numTasks: Int)
 
 class WorkerStats extends Actor with ActorLogging {
   val stats = Buffer[WorkerTick]()
 
   var nextTick = 0
+
+  private val webuiRoot = "webui/"
 
   private def getBytes(path: String): Array[Byte] = {
     val f = new File("webui/" + path)
@@ -42,7 +68,7 @@ class WorkerStats extends Actor with ActorLogging {
 
   def receive = {
     case "tick" =>
-      stats += new WorkerTick(Stats.numTasks, Stats.datastoreMisses)
+      stats += WorkerStats.newTick()
       nextTick += 1
 
     case request: HttpRequestEvent =>
@@ -53,6 +79,17 @@ class WorkerStats extends Actor with ActorLogging {
           val output = command.!!
 
           request.response.write(getBytes("tasks.png"), "image/png")
+
+        case GET(Path("/datastore.png")) =>
+          val output = new BufferedWriter(new FileWriter(webuiRoot + "datastore.txt"))
+          for (tick <- stats) {
+            output.write(tick.datastoreReads + " " + tick.datastoreWrites + "\n")
+          }
+          output.close()
+
+          "python webui/datastore.py".!
+
+          request.response.write(getBytes("datastore.png"), "image/png")
 
         case GET(Path("/")) =>
           var s = "Worker<br>"

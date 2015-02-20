@@ -25,7 +25,7 @@ import tdb.Constants._
 import tdb.{Adjustable, Context}
 import tdb.ddg._
 import tdb.messages._
-import tdb.stats.Stats
+import tdb.stats.WorkerStats
 
 object Task {
   def props
@@ -44,7 +44,7 @@ class Task
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  Stats.numTasks += 1
+  WorkerStats.numTasks += 1
 
   private val c = new Context(taskId, this, datastore, masterRef)
 
@@ -191,7 +191,7 @@ class Task
     case ShutdownTaskMessage =>
       self ! akka.actor.PoisonPill
 
-      Stats.numTasks -= 1
+      WorkerStats.numTasks -= 1
 
       val futures = Set[Future[Any]]()
       for ((actorRef, parNode) <- c.ddg.pars) {

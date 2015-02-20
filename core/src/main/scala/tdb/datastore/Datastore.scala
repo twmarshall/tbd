@@ -25,7 +25,7 @@ import tdb.Constants._
 import tdb.datastore.berkeleydb.BerkeleyStore
 import tdb.messages._
 import tdb.Mod
-import tdb.stats.Stats
+import tdb.stats.WorkerStats
 import tdb.worker.WorkerConf
 
 class Datastore(conf: WorkerConf)
@@ -63,6 +63,7 @@ class Datastore(conf: WorkerConf)
   }
 
   def createMod[T](value: T): Mod[T] = {
+    WorkerStats.modsCreated += 1
     val newModId = getNewModId()
     val future = store.put(0, newModId, value)
     scala.concurrent.Await.result(future, DURATION)
@@ -76,6 +77,7 @@ class Datastore(conf: WorkerConf)
   }
 
   def getMod(modId: ModId, taskRef: ActorRef): Future[_] = {
+    WorkerStats.datastoreReads += 1
     if (inputs.contains(modId)) {
       store.get(1, inputs(modId))
     } else if (chunks.contains(modId)) {
@@ -95,7 +97,7 @@ class Datastore(conf: WorkerConf)
       val workerId = getWorkerId(modId)
       val future = datastores(workerId) ? GetModMessage(modId, taskRef)
 
-      Stats.datastoreMisses += 1
+      WorkerStats.datastoreMisses += 1
 
       future
     }
@@ -103,6 +105,7 @@ class Datastore(conf: WorkerConf)
 
   def updateMod[T]
       (modId: ModId, value: T, task: ActorRef = null): Future[_] = {
+    WorkerStats.datastoreWrites += 1
     val futures = Buffer[Future[Any]]()
 
     if (!store.contains(0, modId) || store.get(0, modId) != value) {
