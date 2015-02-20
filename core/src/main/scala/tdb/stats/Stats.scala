@@ -16,6 +16,7 @@
 package tdb.stats
 
 import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import java.io._
 import org.mashupbots.socko.events.HttpRequestEvent
 import org.mashupbots.socko.routes._
 import org.mashupbots.socko.infrastructure.Logger
@@ -41,8 +42,9 @@ object Stats {
         system.actorOf(Props(classOf[WorkerStats]))
 
     val routes = Routes({
-      case GET(request) => {
-        statsActor ! request
+      case HttpRequest(request) => request match {
+        case GET(request) =>
+          statsActor ! request
       }
     })
 
@@ -58,7 +60,7 @@ object Stats {
 
     val cancellable =
       system.scheduler.schedule(0.milliseconds,
-        1000.milliseconds,
+        100.milliseconds,
         statsActor,
         "tick")
   }

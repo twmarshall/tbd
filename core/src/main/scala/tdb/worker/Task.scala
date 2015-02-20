@@ -191,6 +191,8 @@ class Task
     case ShutdownTaskMessage =>
       self ! akka.actor.PoisonPill
 
+      Stats.numTasks -= 1
+
       val futures = Set[Future[Any]]()
       for ((actorRef, parNode) <- c.ddg.pars) {
         futures += actorRef ? ShutdownTaskMessage

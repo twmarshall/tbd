@@ -17,37 +17,59 @@ package tdb.stats
 
 import akka.actor.{Actor, ActorLogging}
 import org.mashupbots.socko.events.HttpRequestEvent
-import scala.collection.mutable.Map
+import org.mashupbots.socko.routes._
+import java.io._
+import scala.collection.mutable.{Buffer, Map}
+import sys.process._
 
 class WorkerTick
     (val numTasks: Int,
      val datastoreMisses: Int)
 
 class WorkerStats extends Actor with ActorLogging {
-  val stats = Map[Int, WorkerTick]()
+  val stats = Buffer[WorkerTick]()
 
   var nextTick = 0
 
+  private def getBytes(path: String): Array[Byte] = {
+    val f = new File("webui/" + path)
+    val buf = new BufferedInputStream(new FileInputStream("webui/" + path))
+    val arr = new Array[Byte](f.length().toInt)
+    buf.read(arr)
+
+    arr
+  }
+
   def receive = {
     case "tick" =>
-      stats(nextTick) = new WorkerTick(Stats.numTasks, Stats.datastoreMisses)
+      stats += new WorkerTick(Stats.numTasks, Stats.datastoreMisses)
       nextTick += 1
 
-    case event: HttpRequestEvent => {
-      var s = "Worker<br>"
+    case request: HttpRequestEvent =>
+      request match {
+        case GET(Path("/tasks.png")) =>
+          val command = "python webui/chart.py " + stats.map(_.numTasks).mkString(" ")
+          println(command)
+          val output = command.!!
 
-      s += "<table><tr><td>Time</td><td>Tasks</td><td>Misses</td></tr>"
-      for (num <- (0 until nextTick).reverse) {
-        val info = stats(num)
-        s += "<tr><td>" + num + "</td><td>" + info.numTasks +
-             "</td><td>" + info.datastoreMisses + "</tr>"
+          request.response.write(getBytes("tasks.png"), "image/png")
+
+        case GET(Path("/")) =>
+          var s = "Worker<br>"
+
+          s += """
+            <table>
+              <tr>
+                <td><a href='tasks.png'>tasks</></td>
+              </tr>
+            </table"""
+
+          val title = "TDB Worker"
+
+          request.response.write(Stats.createPage(title, s), "text/html; charset=UTF-8")
+        case _ =>
+          request.response.write("This page does not exist.")
       }
-      s += "</table>"
-
-      val title = "TDB Worker"
-
-      event.response.write(Stats.createPage(title, s), "text/html; charset=UTF-8")
-    }
 
     case x =>
       log.warning("Received unhandled message " +
