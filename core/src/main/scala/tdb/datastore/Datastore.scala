@@ -40,9 +40,10 @@ class Datastore(conf: WorkerConf)
 
   var workerId: WorkerId = _
 
-  var nextModId = 0
+  private var nextModId = 0
 
-  val dependencies = Map[ModId, Set[ActorRef]]()
+  // Maps ModIds to sets of ActorRefs representing tasks that read them.
+  private val dependencies = Map[ModId, Set[ActorRef]]()
 
   val inputs = Map[ModId, Any]()
 
@@ -50,8 +51,6 @@ class Datastore(conf: WorkerConf)
 
   // Maps logical names of datastores to their references.
   val datastores = Map[WorkerId, ActorRef]()
-
-  var misses = 0
 
   def getNewModId(): ModId = {
     var newModId: Long = workerId
@@ -72,9 +71,6 @@ class Datastore(conf: WorkerConf)
   }
 
   def read[T](mod: Mod[T]): T = {
-    /*val f = store.get(0, mod.id)
-    scala.concurrent.Await.result(f, DURATION)
-    .asInstanceOf[T]*/
     scala.concurrent.Await.result(getMod(mod.id, null), DURATION)
       .asInstanceOf[T]
   }
@@ -105,7 +101,7 @@ class Datastore(conf: WorkerConf)
     }
   }
 
-  def asyncUpdate[T]
+  def updateMod[T]
       (modId: ModId, value: T, task: ActorRef = null): Future[_] = {
     val futures = Buffer[Future[Any]]()
 
@@ -122,6 +118,18 @@ class Datastore(conf: WorkerConf)
     }
 
     Future.sequence(futures)
+  }
+
+  def addDependency(modId: ModId, taskRef: ActorRef) {
+    if (dependencies.contains(modId)) {
+      dependencies(modId) += taskRef
+    } else {
+      dependencies(modId) = Set(taskRef)
+    }
+  }
+
+  def removeDependencies(modId: ModId) {
+    dependencies -= modId
   }
 
   def clear() {
