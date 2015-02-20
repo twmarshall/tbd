@@ -40,7 +40,7 @@ class DatastoreActor(conf: WorkerConf)
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  val datastore = new Datastore(conf)
+  private val datastore = new Datastore(conf)
 
   private val lists = Map[String, Modifier]()
 
@@ -65,11 +65,7 @@ class DatastoreActor(conf: WorkerConf)
         case Failure(e) => e.printStackTrace()
       }
 
-      if (datastore.dependencies.contains(modId)) {
-        datastore.dependencies(modId) += taskRef
-      } else {
-        datastore.dependencies(modId) = Set(taskRef)
-      }
+      datastore.addDependency(modId, taskRef)
 
     case GetModMessage(modId: ModId, null) =>
       val respondTo = sender
@@ -82,24 +78,23 @@ class DatastoreActor(conf: WorkerConf)
           }
         case Failure(e) => e.printStackTrace()
       }
-      //datastore.getMod(modId, null) pipeTo sender
 
     case UpdateModMessage(modId: ModId, value: Any, task: ActorRef) =>
-      datastore.asyncUpdate(modId, value, task) pipeTo sender
+      datastore.updateMod(modId, value, task) pipeTo sender
 
     case UpdateModMessage(modId: ModId, value: Any, null) =>
-      datastore.asyncUpdate(modId, value, null) pipeTo sender
+      datastore.updateMod(modId, value, null) pipeTo sender
 
     case UpdateModMessage(modId: ModId, null, task: ActorRef) =>
-      datastore.asyncUpdate(modId, null, task) pipeTo sender
+      datastore.updateMod(modId, null, task) pipeTo sender
 
     case UpdateModMessage(modId: ModId, null, null) =>
-      datastore.asyncUpdate(modId, null, null) pipeTo sender
+      datastore.updateMod(modId, null, null) pipeTo sender
 
     case RemoveModsMessage(modIds: Iterable[ModId]) =>
       for (modId <- modIds) {
         datastore.store.delete(0, modId)
-        datastore.dependencies -= modId
+        datastore.removeDependencies(modId)
       }
 
       sender ! "done"
