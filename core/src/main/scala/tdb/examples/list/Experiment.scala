@@ -242,6 +242,8 @@ object Experiment {
             new WCChunkHashAlgorithm(algConf)
           case "cw" =>
             new CWChunkHashAlgorithm(algConf)
+          case "rcw" =>
+            new RandomCWAlgorithm(algConf)
           case "rwc" =>
             new RandomWCAlgorithm(algConf)
         }

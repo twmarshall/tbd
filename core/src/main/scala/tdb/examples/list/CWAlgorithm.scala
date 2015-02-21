@@ -114,3 +114,45 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
     true
   }
 }
+
+class RandomCWAlgorithm(_conf: AlgorithmConf)
+    extends Algorithm[String, Mod[(String, Int)]](_conf) {
+
+  var data: Data[String] = null
+
+  var input: Dataset[String, String] = null
+
+  var adjust: CWChunkHashAdjust = null
+
+  def generateNaive() {}
+
+  def runNaive() {}
+
+  override def loadInitial() {
+    input = mutator.createList[String, String](conf.listConf)
+      .asInstanceOf[Dataset[String, String]]
+
+    val mappedConf = ListConf(chunkSize = conf.listConf.chunkSize,
+      partitions = conf.listConf.partitions)
+    adjust = new CWChunkHashAdjust(input.getAdjustableList(), mappedConf)
+
+    data = new RandomStringData(
+      input, conf.count, conf.mutations, Experiment.check, conf.runs)
+    data.generate()
+    data.load()
+  }
+
+  def checkOutput(output: Mod[(String, Int)]) = {
+    var answer = 0
+    for ((key, value) <- data.table) {
+      answer += value.split("\\W+").size
+    }
+
+    val out = mutator.read(output)._2
+
+    println("answer = " + answer)
+    println("output = " + out)
+
+    answer == out
+  }
+}

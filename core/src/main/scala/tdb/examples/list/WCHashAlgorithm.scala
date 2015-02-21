@@ -143,7 +143,8 @@ class RandomWCAlgorithm(_conf: AlgorithmConf)
 
     adjust = new WCChunkHashAdjust(
       input.getAdjustableList(), conf.listConf.chunkSize)
-    data = new RandomStringData(input, conf.count, conf.mutations, Experiment.check, conf.runs)
+    data = new RandomStringData(
+      input, conf.count, conf.mutations, Experiment.check, conf.runs)
     data.generate()
     data.load()
   }
