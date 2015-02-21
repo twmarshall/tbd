@@ -202,9 +202,7 @@ class Ordering {
           case parNode: ParNode =>
             parNode.updated = false
           case putNode: PutNode =>
-            if (!c.putKeys.contains(putNode.key)) {
-              putNode.input.remove(putNode.key, putNode.value)
-            }
+            putNode.input.remove(putNode.key, putNode.value)
           case x => println("Tried to splice unknown node type " + x)
         }
 

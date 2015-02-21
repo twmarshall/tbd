@@ -31,7 +31,6 @@ class PartitionedDoubleChunkList[T, U]
   extends AdjustableList[T, U] with Serializable {
 
   Log.debug("new PartitionedDoubleChunkList")
-
   override def aggregate[V, W](initial: => (V, W))
       (seqop: ((V, W), ((T, U), (V, W))) => (V, W),
        combop: ((V, W), (V, W)) => (V, W))
@@ -70,6 +69,7 @@ class PartitionedDoubleChunkList[T, U]
   override def hashChunkMap[V, W]
       (f: Iterable[(T, U)] => Iterable[(V, W)], _conf: ListConf)
       (implicit c: Context): AdjustableList[V, W] = {
+    c.log.debug("PartitionedDoubleChunkList.hashChunkMap")
     val future = c.masterRef ? CreateListMessage(_conf)
     val input = Await.result(future.mapTo[ListInput[V, W]], DURATION)
 

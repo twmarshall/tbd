@@ -179,10 +179,10 @@ class Master extends Actor with ActorLogging {
 
       val input = conf match {
         // file, partitions, chunkSize, chunkSizer, sorted, hash
-        case ListConf(_, _, 1, _, false, _) =>
+        case ListConf(_, _, 1, _, false, _, _) =>
           new HashPartitionedDoubleListInput(hasher)
 
-        case ListConf(_, _, _, _, false, _) =>
+        case ListConf(_, _, _, _, false, _, _) =>
           new HashPartitionedDoubleChunkListInput(hasher, conf)
       }
 

@@ -103,6 +103,8 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
     nodes -= key
   }
 
+  def asyncRemove(key: T, value: U) = ???
+
   def contains(key: T): Boolean = {
     nodes.contains(key)
   }

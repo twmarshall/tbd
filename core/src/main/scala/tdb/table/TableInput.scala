@@ -36,7 +36,7 @@ class TableInput[T, U](mutator: Mutator) extends Input[T, U] {
 
   def remove(key: T, value: U) = ???
 
-  def getTable(): ModTable[T, U] = table
+  def asyncRemove(key: T, value: U) = ???
 
-  //def getMutator(): Mutator = mutator
+  def getTable(): ModTable[T, U] = table
 }
