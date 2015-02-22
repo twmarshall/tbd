@@ -40,7 +40,7 @@ class DatastoreActor(conf: WorkerConf)
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val datastore = new Datastore(conf)
+  private val datastore = new Datastore(conf, log)
 
   private val lists = Map[String, Modifier]()
 
@@ -92,11 +92,7 @@ class DatastoreActor(conf: WorkerConf)
       datastore.updateMod(modId, null, null) pipeTo sender
 
     case RemoveModsMessage(modIds: Iterable[ModId]) =>
-      for (modId <- modIds) {
-        datastore.store.delete(0, modId)
-        datastore.removeDependencies(modId)
-      }
-
+      datastore.removeMods(modIds)
       sender ! "done"
 
     case CreateListIdsMessage
@@ -131,22 +127,7 @@ class DatastoreActor(conf: WorkerConf)
       }
 
       if (conf.file != "") {
-        val futures = Buffer[Future[Any]]()
-        var nextList = 0
-        val idMap = Map[Int, (String, ActorRef)]()
-        datastore.store.hashedForeach(1) {
-          case (id, keys) =>
-            idMap(id) = (listIds(nextList), self)
-            futures += newLists(nextList).loadInput(keys)
-            nextList = (nextList + 1) % newLists.size
-        }
-
-        val respondTo = sender
-        Future.sequence(futures).onComplete {
-          case Success(v) =>
-            respondTo ! new ObjHasher(idMap, datastore.store.hashRange(1).total)
-          case Failure(e) => e.printStackTrace()
-        }
+        datastore.loadFileInfoLists(listIds, newLists, sender, self)
       } else {
         val hasher = ObjHasher.makeHasher(new HashRange(
           workerIndex * partitionsPerWorker,
@@ -161,23 +142,12 @@ class DatastoreActor(conf: WorkerConf)
          workerIndex: Int,
          partitions: Int) =>
       log.debug("LoadPartitionsMessage")
-      val range =
-        new HashRange(workerIndex * partitions, (workerIndex + 1) * partitions, numWorkers * partitions)
+      val range = new HashRange(
+        workerIndex * partitions,
+        (workerIndex + 1) * partitions,
+        numWorkers * partitions)
 
-      val tableId = datastore.store.createTable[String, String](fileName, range)
-
-      if (datastore.store.hashRange(1) != range) {
-        log.warning("Loaded dataset has different hash range " +
-          datastore.store.hashRange(1) + " than provided " + range)
-      }
-
-      if (datastore.store.count(tableId) == 0) {
-        log.debug("Reading " + fileName)
-        datastore.store.load(1, fileName)
-        log.debug("Done reading")
-      } else {
-        log.debug(fileName + " was already loaded.")
-      }
+      datastore.loadPartitions(fileName, range)
 
       sender ! "done"
 

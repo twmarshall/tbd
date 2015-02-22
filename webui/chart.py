@@ -1,3 +1,7 @@
+import matplotlib
+# prevents pyplot from trying to connect to x windowing
+matplotlib.use('Agg')
+
 import matplotlib.pyplot as plt
 import sys
 

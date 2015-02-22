@@ -23,6 +23,7 @@ import scala.collection.JavaConversions._
 import scala.collection.mutable.{Buffer, Map}
 
 import tdb.util._
+import tdb.stats.WorkerStats
 
 class BerkeleyInputTable
     (environment: Environment, name: String, val hashRange: HashRange)
@@ -63,11 +64,14 @@ class BerkeleyInputTable
     entity.key = key.asInstanceOf[String]
     entity.value = value.asInstanceOf[String]
 
+    WorkerStats.berkeleyWrites += 1
     hasher.getObj(key).put(entity)
   }
 
   def get(_key: Any) = {
     val key = _key.asInstanceOf[String]
+
+    WorkerStats.berkeleyReads += 1
     val entity = hasher.getObj(key).get(key)
     (key, entity.value)
   }

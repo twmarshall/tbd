@@ -21,13 +21,14 @@ import com.sleepycat.persist.model.{Entity, PrimaryKey}
 import java.io._
 
 import tdb.Constants.ModId
+import tdb.stats.WorkerStats
 
 class BerkeleyModTable(environment: Environment) extends BerkeleyTable {
   private val storeConfig = new StoreConfig()
   storeConfig.setAllowCreate(true)
 
   private val store = new EntityStore(environment, "ModStore", storeConfig)
-  val primaryIndex = store.getPrimaryIndex(classOf[java.lang.Long], classOf[ModEntity])
+  private val primaryIndex = store.getPrimaryIndex(classOf[java.lang.Long], classOf[ModEntity])
 
   def load(fileName: String) = ???
 
@@ -40,11 +41,13 @@ class BerkeleyModTable(environment: Environment) extends BerkeleyTable {
     objectOutput.writeObject(value)
     entity.value = byteOutput.toByteArray
 
+    WorkerStats.berkeleyWrites += 1
     primaryIndex.put(entity)
   }
 
   def get(_key: Any): Any = {
     val key = _key.asInstanceOf[ModId]
+    WorkerStats.berkeleyReads += 1
     val byteArray = primaryIndex.get(key).value
 
     val byteInput = new ByteArrayInputStream(byteArray)

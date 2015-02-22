@@ -27,12 +27,9 @@ import scala.concurrent.duration._
 object Stats {
   var registeredWorkers = Buffer[WorkerInfo]()
 
-  // Worker
-  var numTasks = 0
-
-  var datastoreMisses = 0
-
   val imgSrc = "http://thomasdb.cs.cmu.edu/wordpress/wp-content/uploads/2014/08/thomasdb-white.png"
+
+  val tickFrequency = 100.milliseconds
 
   def launch(system: ActorSystem, mode: String, host: String, port: Int) {
     val statsActor =
@@ -59,8 +56,9 @@ object Stats {
     import system.dispatcher
 
     val cancellable =
-      system.scheduler.schedule(0.milliseconds,
-        100.milliseconds,
+      system.scheduler.schedule(
+        0.milliseconds,
+        tickFrequency,
         statsActor,
         "tick")
   }
