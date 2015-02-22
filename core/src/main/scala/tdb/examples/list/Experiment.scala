@@ -227,6 +227,8 @@ object Experiment {
 
           case "rbk" => new ReduceByKeyAlgorithm(algConf)
 
+          case "reduce" => new ReduceAlgorithm(algConf)
+
           case "sjoin" =>
             new SortJoinAlgorithm(algConf)
 
