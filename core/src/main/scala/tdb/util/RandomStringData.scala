@@ -21,13 +21,13 @@ import scala.collection.mutable.{ArrayBuffer, Map}
 import tdb.{Input, Mutator}
 
 class RandomStringData
-    (input: Input[Int, String],
+    (input: Input[String, String],
      count: Int,
-     mutations: Array[String],
+     mutations: List[String],
      check: Boolean,
      runs: List[String]) extends Data[String] {
 
-  val maxKey = count * 10
+  val maxKey = count * 100
 
   val rand = new scala.util.Random()
 
@@ -56,7 +56,7 @@ class RandomStringData
 
   def load() {
     for (pair <- table) {
-      input.put(pair._1, pair._2)
+      input.put(pair._1.toString, pair._2)
     }
   }
 
@@ -82,13 +82,16 @@ class RandomStringData
     updateCount
   }
 
+  private def getRandomKey() =
+    table.keys.drop(rand.nextInt(table.size - 1)).head
+
   def addValue() {
     var key = rand.nextInt(maxKey)
     val value = makeString()
     while (table.contains(key)) {
       key = rand.nextInt(maxKey)
     }
-    input.put(key, value)
+    input.put(key.toString, value)
     log("adding " + (key, value))
 
     if (check) {
@@ -100,11 +103,8 @@ class RandomStringData
 
   def removeValue() {
     if (table.size > 1) {
-      var key = rand.nextInt(maxKey)
-      while (!table.contains(key)) {
-        key = rand.nextInt(maxKey)
-      }
-      input.remove(key, table(key))
+      var key = getRandomKey()
+      input.remove(key.toString, table(key))
       log("removing " + (key, table(key)))
       table -= key
     } else {
@@ -113,16 +113,16 @@ class RandomStringData
   }
 
   def updateValue() {
-    var key = rand.nextInt(maxKey)
-    val value = makeString()
-    while (!table.contains(key)) {
-      key = rand.nextInt(maxKey)
-    }
-    input.put(key, value)
-    log("updating " + (key, value))
-
-    if (check) {
-      table(key) = value
+    if (table.size > 1) {
+      val key = getRandomKey()
+      val value = makeString()
+      input.put(key.toString, value)
+      log("updating " + (key, value))
+      if (check) {
+        table(key) = value
+      }
+    } else {
+      addValue()
     }
   }
 

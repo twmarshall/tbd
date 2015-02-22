@@ -97,7 +97,7 @@ class DatastoreActor(conf: WorkerConf)
 
     case CreateListIdsMessage
         (conf: ListConf, workerIndex: Int, numWorkers: Int) =>
-      log.debug("CreateListIdsMessage")
+      log.debug("CreateListIdsMessage " + conf)
       val listIds = Buffer[String]()
 
       val partitionsPerWorker = conf.partitions / numWorkers
@@ -114,7 +114,9 @@ class DatastoreActor(conf: WorkerConf)
         val listId = nextListId + ""
         nextListId += 1
         val list =
-          if (conf.chunkSize == 1)
+          if (conf.aggregate)
+            new AggregatorListModifier(datastore, conf)
+          else if (conf.chunkSize == 1)
             new DoubleListModifier(datastore)
           else
             new DoubleChunkListModifier(datastore, conf)

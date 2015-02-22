@@ -18,7 +18,7 @@ package tdb.list
 import akka.actor.ActorRef
 import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.Await
+import scala.concurrent.{Await, Future}
 
 import tdb.Constants._
 import tdb.messages._
@@ -38,6 +38,10 @@ class HashPartitionedDoubleListInput[T, U]
   }
 
   def remove(key: T, value: U) = {
+    Await.result(asyncRemove(key, value), DURATION)
+  }
+
+  def asyncRemove(key: T, value: U): Future[_] = {
     val (listId, datastoreRef) = hasher.getObj(key)
     datastoreRef ? RemoveMessage(listId, key, value)
   }

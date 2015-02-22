@@ -23,4 +23,6 @@ trait Input[T, U] {
   def asyncPut(key: T, value: U): Future[_]
 
   def remove(key: T, value: U)
+
+  def asyncRemove(key: T, value: U): Future[_]
 }

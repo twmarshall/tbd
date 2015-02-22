@@ -25,18 +25,20 @@ import tdb.list._
 import tdb.TDB._
 import tdb.util._
 
-class WCHashAdjust(list: AdjustableList[String, String], mappedPartitions: Int)
-    extends Adjustable[AdjustableList[String, Int]] {
+class WCChunkHashAdjust
+    (list: AdjustableList[String, String], chunkSize: Int)
+      extends Adjustable[AdjustableList[String, Int]] {
 
-  def wordcount(pair: (String, String)) = {
+  def wordcount(chunk: Iterable[(String, String)]) = {
     val counts = Map[String, Int]()
 
-
-    for (word <- pair._2.split("\\W+")) {
-      if (counts.contains(word)) {
-        counts(word) += 1
-      } else {
-        counts(word) = 1
+    for (pair <- chunk) {
+      for (word <- pair._2.split("\\W+")) {
+        if (counts.contains(word)) {
+          counts(word) += 1
+        } else {
+          counts(word) = 1
+        }
       }
     }
 
@@ -52,96 +54,23 @@ class WCHashAdjust(list: AdjustableList[String, String], mappedPartitions: Int)
   }
 
   def run(implicit c: Context) = {
-    val mapped = list.hashPartitionedFlatMap(wordcount, mappedPartitions)
-    mapped.reduceByKey(_ + _)
-  }
-}
-
-class WCHashAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, AdjustableList[String, Int]](_conf) {
-  var data: FileData = null
-
-  var input: Dataset[String, String] = null
-
-  var adjust: WCHashAdjust = null
-
-  def generateNaive() {}
-
-  def runNaive() {}
-
-  override def loadInitial() {
-    mutator.loadFile(conf.file)
-    input = mutator.createList[String, String](
-        conf.listConf.copy(file = conf.file))
-          .asInstanceOf[Dataset[String, String]]
-
-    adjust = new WCHashAdjust(input.getAdjustableList(), 4)
-
-    data = new FileData(
-      mutator, input, conf.file, conf.updateFile, conf.runs)
-  }
-
-  def checkOutput(output: AdjustableList[String, Int]) = {
-    val writer = new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream("wc-output.txt"), "utf-8"))
-
-    val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
-
-    for ((word, count) <- sortedOutput) {
-      writer.write(word + " -> " + count + "\n")
-    }
-    writer.close()
-
-    true
-  }
-}
-
-
-class WCChunkHashAdjust
-    (list: AdjustableList[String, String], mappedPartitions: Int)
-      extends Adjustable[Iterable[Mod[(Int, HashMap[String, Int])]]] {
-
-  def wordcount(chunk: Iterable[(String, String)]) = {
-    val counts = Map[Int, Map[String, Int]]()
-
-    for (i <- 0 until mappedPartitions) {
-      counts(i) = Map[String, Int]()
-    }
-
-    for (pair <- chunk) {
-      for (word <- pair._2.split("\\W+")) {
-        val hash = word.hashCode().abs % mappedPartitions
-        if (counts(hash).contains(word)) {
-          counts(hash)(word) += 1
-        } else {
-          counts(hash)(word) = 1
-        }
-      }
-    }
-
-    counts.map((pair: (Int, Map[String, Int])) => {
-      (pair._1, HashMap(pair._2.toSeq: _*))
-    })
-  }
-
-  def reducer
-      (pair1: (Int, HashMap[String, Int]),
-       pair2: (Int, HashMap[String, Int])) = {
-    val reduced =
-      pair1._2.merged(pair2._2)({ case ((k, v1),(_, v2)) => (k, v1 + v2)})
-    (pair1._1, reduced)
-  }
-
-  var mapped: AdjustableList[Int, HashMap[String, Int]] = _
-  def run(implicit c: Context) = {
-    mapped = list.hashChunkMap(wordcount)
-    mapped.partitionedReduce(reducer)
+    val conf = ListConf(chunkSize = chunkSize, aggregate = true)
+    list.hashChunkMap(wordcount, conf)
   }
 }
 
 class WCChunkHashAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, Iterable[Mod[(Int, HashMap[String, Int])]]](_conf) {
-  var data: FileData = null
+    extends Algorithm[String, AdjustableList[String, Int]](_conf) {
+
+  val outputFile = "output"
+  if (Experiment.check) {
+    val args = Array("-f", conf.file, "--updateFile", conf.updateFile,
+                     "-o", outputFile, "-u") ++ conf.runs
+    tdb.scripts.NaiveWC.main(args)
+
+  }
+
+  var data: Data[String] = null
 
   var input: Dataset[String, String] = null
 
@@ -154,35 +83,89 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
   override def loadInitial() {
     mutator.loadFile(conf.file)
     input = mutator.createList[String, String](
-        conf.listConf.copy(file = conf.file))
-          .asInstanceOf[Dataset[String, String]]
+      conf.listConf.copy(file = conf.file))
+        .asInstanceOf[Dataset[String, String]]
 
-    adjust = new WCChunkHashAdjust(input.getAdjustableList(), 4)
+    adjust = new WCChunkHashAdjust(
+      input.getAdjustableList(), conf.listConf.chunkSize)
 
     data = new FileData(
       mutator, input, conf.file, conf.updateFile, conf.runs)
   }
 
-  def checkOutput(output: Iterable[Mod[(Int, HashMap[String, Int])]]) = {
+  def checkOutput(output: AdjustableList[String, Int]) = {
+    val thisFile = "wc-output" + lastUpdateSize + ".txt"
     val writer = new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream("wc-output.txt"), "utf-8"))
+      new FileOutputStream(thisFile), "utf-8"))
 
-    val sortedOutput = output.toBuffer.flatMap(
-      (x: Mod[(Int, HashMap[String, Int])]) => {
-        val v = mutator.read(x)
-
-        if (v == null) {
-          List()
-        } else {
-          v._2
-        }
-      }).sortWith(_._1 < _._1)
+    val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
 
     for ((word, count) <- sortedOutput) {
       writer.write(word + " -> " + count + "\n")
     }
     writer.close()
 
+    val thisOutputFile =
+      if (lastUpdateSize != 0)
+        outputFile + lastUpdateSize + ".txt"
+      else
+        outputFile + ".txt"
+
+    val f1 = scala.io.Source.fromFile(thisOutputFile)
+    val f2 = scala.io.Source.fromFile(thisFile)
+
+    val one = f1.getLines.mkString("\n")
+    val two = f2.getLines.mkString("\n")
+
+    assert(one == two)
+
     true
+  }
+}
+
+
+class RandomWCAlgorithm(_conf: AlgorithmConf)
+    extends Algorithm[String, AdjustableList[String, Int]](_conf) {
+
+  var data: Data[String] = null
+
+  var input: Dataset[String, String] = null
+
+  var adjust: WCChunkHashAdjust = null
+
+  def generateNaive() {}
+
+  def runNaive() {}
+
+  override def loadInitial() {
+    input = mutator.createList[String, String](conf.listConf)
+      .asInstanceOf[Dataset[String, String]]
+
+    adjust = new WCChunkHashAdjust(
+      input.getAdjustableList(), conf.listConf.chunkSize)
+    data = new RandomStringData(input, conf.count, conf.mutations, Experiment.check, conf.runs)
+    data.generate()
+    data.load()
+  }
+
+  def checkOutput(output: AdjustableList[String, Int]) = {
+    val answer = Map[String, Int]()
+    for ((key, value) <- data.table) {
+      for (word <- value.split("\\W+")) {
+        if (answer.contains(word)) {
+          answer(word) += 1
+        } else {
+          answer(word) = 1
+        }
+      }
+    }
+
+    val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
+    val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
+
+    println(sortedOutput)
+    println(sortedAnswer)
+
+    sortedOutput == sortedAnswer
   }
 }

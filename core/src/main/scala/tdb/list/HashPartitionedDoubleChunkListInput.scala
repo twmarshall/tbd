@@ -39,6 +39,10 @@ class HashPartitionedDoubleChunkListInput[T, U]
   }
 
   def remove(key: T, value: U) = {
+    Await.result(asyncRemove(key, value), DURATION)
+  }
+
+  def asyncRemove(key: T, value: U) = {
     val (listId, datastoreRef) = hasher.getObj(key)
     datastoreRef ? RemoveMessage(listId, key, value)
   }

@@ -28,7 +28,6 @@ import tdb.util._
 class CWChunkHashAdjust
     (list: AdjustableList[String, String], conf: ListConf)
       extends Adjustable[Mod[(String, Int)]] {
-//extends Adjustable[AdjustableList[String, Int]] {
 
   def wordcount(chunk: Iterable[(String, String)]) = {
     val counts = Map[String, Int]()
@@ -49,7 +48,6 @@ class CWChunkHashAdjust
   def run(implicit c: Context) = {
     val mapped = list.hashChunkMap(wordcount, conf)
     mapped.reduce(reducer)
-    //mapped
   }
 }
 
@@ -90,7 +88,6 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
   }
 
   def checkOutput(output: Mod[(String, Int)]) = {
-  //def checkOutput(output: AdjustableList[String, Int]) = {
     val thisFile = "wc-output" + lastUpdateSize + ".txt"
     val writer = new BufferedWriter(new OutputStreamWriter(
       new FileOutputStream(thisFile), "utf-8"))
@@ -98,21 +95,15 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
     val pair = mutator.read(output)
     writer.write(pair._2 + "\n")
 
-    /*val buf = output.toBuffer(mutator)
-    for ((key, value) <- buf.sortWith(_._1 < _._1)) {
-      writer.write(key + " -> " + value + "\n")
-    }*/
-
     writer.close()
 
     val thisOutputFile =
       if (lastUpdateSize != 0)
-        outputFile + lastUpdateSize
+        outputFile + lastUpdateSize + ".txt"
       else
-        outputFile
+        outputFile + ".txt"
 
-    println(thisOutputFile)
-    val f1 = scala.io.Source.fromFile(thisOutputFile + ".txt")
+    val f1 = scala.io.Source.fromFile(thisOutputFile)
     val f2 = scala.io.Source.fromFile(thisFile)
 
     val one = f1.getLines.mkString("\n")
