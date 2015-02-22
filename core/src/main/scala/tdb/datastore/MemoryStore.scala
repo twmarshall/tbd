@@ -63,11 +63,14 @@ class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
   }
 
   def get(id: Int, key: Any) = {
-    Future {
+    val value =
       if (key.isInstanceOf[ModId])
         tables(id)(key)
       else
         (key, tables(id)(key))
+
+    Future {
+      value
     }
   }
 
