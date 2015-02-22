@@ -8,19 +8,16 @@ import sys
 
 webui_root = "webui/"
 
-file = open(webui_root + 'datastore.txt', 'r')
+file = open(webui_root + 'berkeleydb.txt', 'r')
 reads = []
 writes = []
-creates = []
 for line in file:
     split = string.split(line)
     reads.append(split[0])
     writes.append(split[1])
-    creates.append(split[2])
 
-readHandle = plt.plot(reads, label="reads")
-writeHandle = plt.plot(writes, label="writes")
-plt.plot(creates, label="creates")
+plt.plot(reads, label="reads")
+plt.plot(writes, label="writes")
 plt.ylabel('operations per second')
 plt.legend()
-plt.savefig(webui_root + "datastore.png")
+plt.savefig(webui_root + "berkeleydb.png")
