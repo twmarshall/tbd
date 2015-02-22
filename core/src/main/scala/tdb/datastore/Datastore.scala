@@ -16,6 +16,7 @@
 package tdb.datastore
 
 import akka.actor.ActorRef
+import akka.event.LoggingAdapter
 import akka.pattern.{ask, pipe}
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{ExecutionContext, Future}
@@ -27,11 +28,12 @@ import tdb.messages._
 import tdb.Mod
 import tdb.stats.WorkerStats
 import tdb.worker.WorkerConf
+import tdb.util._
 
-class Datastore(conf: WorkerConf)
+class Datastore(conf: WorkerConf, log: LoggingAdapter)
     (implicit ec: ExecutionContext) {
 
-  val store =
+  private val store =
     conf.storeType()  match {
       case "berkeleydb" => new BerkeleyStore(conf)
       case "memory" => new MemoryStore()
@@ -123,6 +125,13 @@ class Datastore(conf: WorkerConf)
     Future.sequence(futures)
   }
 
+  def removeMods(modIds: Iterable[ModId]) {
+    for (modId <- modIds) {
+      store.delete(0, modId)
+      dependencies -= modId
+    }
+  }
+
   def addDependency(modId: ModId, taskRef: ActorRef) {
     if (dependencies.contains(modId)) {
       dependencies(modId) += taskRef
@@ -131,8 +140,39 @@ class Datastore(conf: WorkerConf)
     }
   }
 
-  def removeDependencies(modId: ModId) {
-    dependencies -= modId
+  def loadPartitions(fileName: String, range: HashRange) {
+    val tableId = store.createTable[String, String](fileName, range)
+
+    if (store.hashRange(1) != range) {
+      log.warning("Loaded dataset has different hash range " +
+                  store.hashRange(1) + " than provided " + range)
+    }
+
+    if (store.count(tableId) == 0) {
+      log.debug("Reading " + fileName)
+      store.load(1, fileName)
+      log.debug("Done reading")
+    } else {
+      log.debug(fileName + " was already loaded.")
+    }
+  }
+
+  def loadFileInfoLists(listIds: Buffer[String], newLists: Buffer[Modifier], respondTo: ActorRef, datastoreActor: ActorRef) {
+    val futures = Buffer[Future[Any]]()
+    var nextList = 0
+    val idMap = Map[Int, (String, ActorRef)]()
+    store.hashedForeach(1) {
+      case (id, keys) =>
+        idMap(id) = (listIds(nextList), datastoreActor)
+        futures += newLists(nextList).loadInput(keys)
+        nextList = (nextList + 1) % newLists.size
+    }
+
+    Future.sequence(futures).onComplete {
+      case Success(v) =>
+        respondTo ! new ObjHasher(idMap, store.hashRange(1).total)
+      case Failure(e) => e.printStackTrace()
+    }
   }
 
   def clear() {
