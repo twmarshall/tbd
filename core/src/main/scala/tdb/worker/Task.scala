@@ -75,8 +75,6 @@ class Task
               val oldCurrentTime = c.currentTime
               c.currentTime = timestamp
 
-              c.putKeys.clear()
-
               readNode.updated = false
               readNode.reader(newValue)
 
@@ -153,7 +151,12 @@ class Task
 
     case RunTaskMessage(adjust: Adjustable[_]) =>
       log.debug("Starting task.")
-      sender ! adjust.run(c)
+      val ret = adjust.run(c)
+      for ((input, buf) <- c.buffers) {
+        buf.flush()
+      }
+
+      sender ! ret
       Await.result(Future.sequence(c.pending), DURATION)
       c.pending.clear()
 
@@ -179,6 +182,10 @@ class Task
 
           Await.result(Future.sequence(c.pending), DURATION)
           c.pending.clear()
+
+          for ((input, buf) <- c.buffers) {
+            buf.flush()
+          }
 
           respondTo ! "done"
         case Failure(e) =>

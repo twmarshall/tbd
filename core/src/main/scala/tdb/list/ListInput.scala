@@ -30,4 +30,6 @@ trait ListInput[T, U] extends Input[T, U] {
   def load(data: Map[T, U])
 
   def getAdjustableList(): AdjustableList[T, U]
+
+  def getBuffer(): InputBuffer[T, U]
 }

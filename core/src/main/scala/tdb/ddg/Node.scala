@@ -65,6 +65,10 @@ class PutNode
      val key: Any,
      val value: Any) extends Node
 
+class PutAllNode
+    (val input: ListInput[Any, Any],
+     val values: Iterable[(Any, Any)]) extends Node
+
 class ReadNode
     (val modId: ModId,
      val reader: Any => Changeable[Any])

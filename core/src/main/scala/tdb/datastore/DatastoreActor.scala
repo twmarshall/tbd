@@ -192,8 +192,22 @@ class DatastoreActor(conf: WorkerConf)
 
       lists(listId).put(key, value) pipeTo sender
 
+    case PutAllMessage(listId: String, values: Iterable[(Any, Any)]) =>
+      val futures = Buffer[Future[Any]]()
+      for ((key, value) <- values) {
+        futures += lists(listId).put(key, value)
+      }
+      Future.sequence(futures) pipeTo sender
+
     case RemoveMessage(listId: String, key: Any, value: Any) =>
       lists(listId).remove(key, value) pipeTo sender
+
+    case RemoveAllMessage(listId: String, values: Iterable[(Any, Any)]) =>
+      val futures = Buffer[Future[Any]]()
+      for ((key, value) <- values) {
+        futures += lists(listId).remove(key, value)
+      }
+      Future.sequence(futures) pipeTo sender
 
     case RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef) =>
       datastore.datastores(workerId) = datastoreRef

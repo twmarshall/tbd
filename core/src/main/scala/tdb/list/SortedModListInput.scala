@@ -21,7 +21,7 @@ import scala.concurrent.Await
 
 import tdb.{Mod, Mutator}
 
-class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
+abstract class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
   extends ListInput[T, U] {
 
   private var tailMod = mutator.createMod[ModListNode[T, U]](null)
@@ -51,6 +51,8 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
 
 
   def asyncPut(key: T, value: U) = ???
+
+  def asyncPutAll(values: Iterable[(T, U)]) = ???
 
   def put(key: T, value: U) {
     val nextOption =
@@ -102,6 +104,8 @@ class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ordering[T])
 
     nodes -= key
   }
+
+  def removeAll(values: Iterable[(T, U)]) = ???
 
   def asyncRemove(key: T, value: U) = ???
 

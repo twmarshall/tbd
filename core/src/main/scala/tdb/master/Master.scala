@@ -26,7 +26,7 @@ import tdb.{Adjustable, TDB}
 import tdb.Constants._
 import tdb.datastore.Datastore
 import tdb.messages._
-import tdb.list.{HashPartitionedDoubleListInput, HashPartitionedDoubleChunkListInput, ListConf}
+import tdb.list._
 import tdb.stats.{Stats, WorkerInfo}
 import tdb.util._
 import tdb.worker.{Task, Worker}
@@ -178,7 +178,10 @@ class Master extends Actor with ActorLogging {
       assert(hasher.isComplete())
 
       val input = conf match {
-        // file, partitions, chunkSize, chunkSizer, sorted, hash
+        // file, partitions, chunkSize, chunkSizer, sorted, hash, aggregate
+        case ListConf(_, _, _, _, _, _, true) =>
+          new AggregatorInput(hasher, conf)
+
         case ListConf(_, _, 1, _, false, _, _) =>
           new HashPartitionedDoubleListInput(hasher)
 

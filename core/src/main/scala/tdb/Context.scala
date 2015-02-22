@@ -18,11 +18,12 @@ package tdb
 import akka.actor.ActorRef
 import akka.event.Logging
 import akka.pattern.ask
-import scala.collection.mutable.{Buffer, Set}
+import scala.collection.mutable.{Buffer, Map, Set}
 import scala.concurrent.{Await, Future}
 
 import tdb.Constants._
 import tdb.ddg.{DDG, Node, Timestamp}
+import tdb.list._
 import tdb.messages._
 import tdb.worker.Task
 
@@ -67,7 +68,7 @@ class Context
 
   var epoch = 0
 
-  val putKeys = Buffer[Any]()
+  val buffers = Map[HashPartitionedListInput[Any, Any], InputBuffer[Any, Any]]()
 
   def newModId(): ModId = {
     var newModId: Long = taskId

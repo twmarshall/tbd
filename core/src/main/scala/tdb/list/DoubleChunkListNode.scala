@@ -58,9 +58,7 @@ class DoubleChunkListNode[T, U]
     readAny(chunkMod) {
       case chunk =>
         val out = f(chunk)
-        for (pair <- out) {
-          put(input, pair._1, pair._2)
-        }
+        putAll(input, out)
     }
 
     readAny(nextMod) {

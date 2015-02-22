@@ -48,6 +48,16 @@ class DDG {
     timestamp
   }
 
+  def addPutAll
+      (input: ListInput[Any, Any],
+       values: Iterable[(Any, Any)],
+       c: Context): Timestamp = {
+    val putNode = new PutAllNode(input, values)
+    val timestamp = nextTimestamp(putNode, c)
+
+    timestamp
+  }
+
   def addRead
       (mod: Mod[Any],
        value: Any,

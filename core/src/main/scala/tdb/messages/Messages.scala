@@ -52,7 +52,9 @@ case class CreateListMessage(conf: ListConf)
 case class LoadFileMessage(fileName: String, partitions: Int)
 case class GetAdjustableListMessage(listId: String)
 case class PutMessage(listId: String, key: Any, value: Any)
+case class PutAllMessage(listId: String, values: Iterable[(Any, Any)])
 case class RemoveMessage(listId: String, key: Any, value: Any)
+case class RemoveAllMessage(listId: String, values: Iterable[(Any, Any)])
 
 // Worker
 case class RegisterWorkerMessage(

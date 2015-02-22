@@ -40,6 +40,7 @@ trait Data[Input] {
   def hasUpdates(): Boolean
 
   protected def log(s: String) {
+    //println(s)
     output.print(s + "\n")
     output.flush()
   }

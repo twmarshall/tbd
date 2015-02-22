@@ -13,22 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb
+package tdb.list
 
-import scala.concurrent.Future
-
-trait Input[T, U] {
-  def put(key: T, value: U)
-
-  def asyncPut(key: T, value: U): Future[_]
-
-  def asyncPutAll(values: Iterable[(T, U)]): Future[_]
-
-  def remove(key: T, value: U)
+trait InputBuffer[T, U] {
+  def putAll(values: Iterable[(T, U)])
 
   def removeAll(values: Iterable[(T, U)])
 
-  def asyncRemove(key: T, value: U): Future[_]
-
-  def flush(): Unit = ???
+  def flush()
 }

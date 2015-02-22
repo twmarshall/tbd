@@ -17,18 +17,17 @@ package tdb
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.Map
 import scala.concurrent.Await
 
 import tdb.Constants._
-import tdb.list.ListInput
+import tdb.list._
 import tdb.messages._
 import tdb.TDB._
 
 object TDB {
   def put[T, U](input: ListInput[T, U], key: T, value: U)
       (implicit c: Context) {
-    c.putKeys += key
     val timestamp =
       c.ddg.addPut(input.asInstanceOf[ListInput[Any, Any]], key, value, c)
 
@@ -36,6 +35,20 @@ object TDB {
     if (!c.initialRun) {
       c.pending += future
     }
+
+    timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
+  }
+
+  def putAll[T, U](input: ListInput[T, U], values: Iterable[(T, U)])
+      (implicit c: Context) {
+    val timestamp =
+      c.ddg.addPutAll(input.asInstanceOf[ListInput[Any, Any]], values, c)
+
+    val anyInput = input.asInstanceOf[HashPartitionedListInput[Any, Any]]
+    if (!c.buffers.contains(anyInput)) {
+      c.buffers(anyInput) = anyInput.getBuffer()
+    }
+    c.buffers(anyInput).putAll(values)
 
     timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
   }

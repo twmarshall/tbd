@@ -150,8 +150,8 @@ class RandomCWAlgorithm(_conf: AlgorithmConf)
 
     val out = mutator.read(output)._2
 
-    println("answer = " + answer)
-    println("output = " + out)
+    //println("answer = " + answer)
+    //println("output = " + out)
 
     answer == out
   }

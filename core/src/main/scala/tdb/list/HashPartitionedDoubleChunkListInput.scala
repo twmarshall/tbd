@@ -17,7 +17,7 @@ package tdb.list
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import scala.collection.mutable.{Buffer, Map}
+import scala.collection.mutable.Buffer
 import scala.concurrent.Await
 
 import tdb.Constants._
@@ -25,35 +25,9 @@ import tdb.messages._
 import tdb.util.ObjHasher
 
 class HashPartitionedDoubleChunkListInput[T, U]
-    (hasher: ObjHasher[(String, ActorRef)],
+    (val hasher: ObjHasher[(String, ActorRef)],
      conf: ListConf)
-  extends Dataset[T, U] with java.io.Serializable {
-
-  def put(key: T, value: U) = {
-    Await.result(asyncPut(key, value), DURATION)
-  }
-
-  def asyncPut(key: T, value: U) = {
-    val (listId, datastoreRef) = hasher.getObj(key)
-    datastoreRef ? PutMessage(listId, key, value)
-  }
-
-  def remove(key: T, value: U) = {
-    Await.result(asyncRemove(key, value), DURATION)
-  }
-
-  def asyncRemove(key: T, value: U) = {
-    val (listId, datastoreRef) = hasher.getObj(key)
-    datastoreRef ? RemoveMessage(listId, key, value)
-  }
-
-  def load(data: Map[T, U]) = {
-    for ((key, value) <- data) {
-      put(key, value)
-    }
-  }
-
-  def getPartitions = ???
+  extends HashPartitionedListInput[T, U] with java.io.Serializable {
 
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[DoubleChunkList[T, U]]()

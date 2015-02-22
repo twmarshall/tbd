@@ -84,4 +84,17 @@ class ObjHasher[T](val objs: Map[Int, T], val total: Int)
 
     complete
   }
+
+  def hashAll[T, U](values: Iterable[(T, U)]) = {
+    val hashed = Map[Int, Buffer[(T, U)]]()
+    for (i <- 0 until total) {
+      hashed(i) = Buffer[(T, U)]()
+    }
+
+    for (pair <- values) {
+      hashed(hash(pair._1)) += pair
+    }
+
+    hashed
+  }
 }
