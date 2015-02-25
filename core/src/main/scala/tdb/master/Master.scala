@@ -121,6 +121,9 @@ class Master extends Actor with ActorLogging {
 
     case ShutdownMutatorMessage(mutatorId: Int) =>
       log.info("Shutting down mutator " + mutatorId)
+
+      Await.result(tasks(mutatorId) ? ClearModsMessage, DURATION)
+
       val f = tasks(mutatorId) ? ShutdownTaskMessage
       tasks -= mutatorId
 

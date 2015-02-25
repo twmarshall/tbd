@@ -125,7 +125,7 @@ class Datastore(conf: WorkerConf, log: LoggingAdapter)
     Future.sequence(futures)
   }
 
-  def removeMods(modIds: Iterable[ModId], task: ActorRef) {
+  def removeMods(modIds: Iterable[ModId], task: ActorRef): Future[Any] = {
     val futures = Buffer[Future[Any]]()
 
     for (modId <- modIds) {
@@ -142,7 +142,7 @@ class Datastore(conf: WorkerConf, log: LoggingAdapter)
       }
     }
 
-    scala.concurrent.Await.result(Future.sequence(futures), DURATION)
+    Future.sequence(futures)
   }
 
   def addDependency(modId: ModId, taskRef: ActorRef) {

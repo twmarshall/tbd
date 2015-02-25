@@ -92,8 +92,7 @@ class DatastoreActor(conf: WorkerConf)
       datastore.updateMod(modId, null, null) pipeTo sender
 
     case RemoveModsMessage(modIds: Iterable[ModId], taskRef: ActorRef) =>
-      datastore.removeMods(modIds, taskRef)
-      sender ! "done"
+      datastore.removeMods(modIds, taskRef) pipeTo sender
 
     case CreateListIdsMessage
         (conf: ListConf, workerIndex: Int, numWorkers: Int) =>
