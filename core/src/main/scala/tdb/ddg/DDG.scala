@@ -169,6 +169,14 @@ class DDG {
     }
   }
 
+  def modRemoved(modId: ModId) {
+    if (reads.contains(modId)) {
+      for (timestamp <- reads(modId)) {
+        timestamp.node.updated = false
+      }
+    }
+  }
+
   // Pebbles a par node. Returns true iff the pebble did not already exist.
   def parUpdated(taskRef: ActorRef): Boolean = {
     val timestamp = pars(taskRef)

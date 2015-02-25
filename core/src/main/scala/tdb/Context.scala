@@ -109,7 +109,8 @@ class Context
   }
 
   def remove[T](modId: ModId) {
-    val future = (datastore ? RemoveModsMessage(Buffer(modId)))
+    ddg.modRemoved(modId)
+    val future = (datastore ? RemoveModsMessage(Buffer(modId), task.self))
     Await.result(future, DURATION)
   }
 }

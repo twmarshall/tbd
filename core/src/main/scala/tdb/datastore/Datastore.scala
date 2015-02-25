@@ -125,11 +125,24 @@ class Datastore(conf: WorkerConf, log: LoggingAdapter)
     Future.sequence(futures)
   }
 
-  def removeMods(modIds: Iterable[ModId]) {
+  def removeMods(modIds: Iterable[ModId], task: ActorRef) {
+    val futures = Buffer[Future[Any]]()
+
     for (modId <- modIds) {
       store.delete(0, modId)
-      dependencies -= modId
+
+      if (dependencies.contains(modId)) {
+        for (taskRef <- dependencies(modId)) {
+          if (task != taskRef) {
+            futures += (taskRef ? ModRemovedMessage(modId))
+          }
+        }
+
+        dependencies -= modId
+      }
     }
+
+    scala.concurrent.Await.result(Future.sequence(futures), DURATION)
   }
 
   def addDependency(modId: ModId, taskRef: ActorRef) {
@@ -157,7 +170,11 @@ class Datastore(conf: WorkerConf, log: LoggingAdapter)
     }
   }
 
-  def loadFileInfoLists(listIds: Buffer[String], newLists: Buffer[Modifier], respondTo: ActorRef, datastoreActor: ActorRef) {
+  def loadFileInfoLists
+      (listIds: Buffer[String],
+       newLists: Buffer[Modifier],
+       respondTo: ActorRef,
+       datastoreActor: ActorRef) {
     val futures = Buffer[Future[Any]]()
     var nextList = 0
     val idMap = Map[Int, (String, ActorRef)]()

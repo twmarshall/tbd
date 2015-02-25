@@ -149,6 +149,10 @@ class Task
 
       (parent ? PebbleMessage(self, modId)) pipeTo sender
 
+    case ModRemovedMessage(modId: ModId) =>
+      c.ddg.modRemoved(modId)
+      sender ! "done"
+
     case RunTaskMessage(adjust: Adjustable[_]) =>
       log.debug("Starting task.")
       val ret = adjust.run(c)
@@ -205,7 +209,7 @@ class Task
         futures += actorRef ? ShutdownTaskMessage
       }
 
-      datastore ? RemoveModsMessage(c.ddg.getMods())
+      datastore ? RemoveModsMessage(c.ddg.getMods(), self)
 
       Future.sequence(futures) pipeTo sender
 

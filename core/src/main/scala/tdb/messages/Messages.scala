@@ -28,7 +28,7 @@ import tdb.list.{Dataset, ListConf, Partition}
 case class CreateModMessage(value: Any)
 case class GetModMessage(modId: ModId, task: ActorRef)
 case class UpdateModMessage(modId: ModId, value: Any, task: ActorRef)
-case class RemoveModsMessage(mods: Iterable[ModId])
+case class RemoveModsMessage(mods: Iterable[ModId], taskRef: ActorRef)
 case class NullMessage()
 case class RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef)
 case class SetIdMessage(workerId: WorkerId)
@@ -64,6 +64,7 @@ case class GetDatastoreMessage()
 
 // Task
 case class ModUpdatedMessage(modId: ModId)
+case class ModRemovedMessage(modId: ModId)
 case class PebbleMessage(taskRef: ActorRef, modId: ModId)
 case class PropagateTaskMessage()
 case class RunTaskMessage(adjust: Adjustable[_])
