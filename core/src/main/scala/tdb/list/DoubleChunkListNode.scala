@@ -50,6 +50,31 @@ class DoubleChunkListNode[T, U]
     write(new DoubleListNode[V, W](newChunkMod, newNextMod))
   }
 
+  def flatMap[V, W]
+      (f: ((T, U)) => Iterable[(V, W)],
+       memo: Memoizer[Mod[DoubleChunkListNode[V, W]]])
+      (implicit c: Context): Changeable[DoubleChunkListNode[V, W]] = {
+    val newChunkMod = mod {
+      read(chunkMod) {
+        // TODO: we should try to maintain chunk sizes here.
+        case chunk => write(chunk.flatMap(f))
+      }
+    }
+
+    val newNextMod = memo(nextMod) {
+      mod {
+        read(nextMod) {
+          case null =>
+            write[DoubleChunkListNode[V, W]](null)
+          case next =>
+            next.flatMap(f, memo)
+        }
+      }
+    }
+
+    write(new DoubleChunkListNode[V, W](newChunkMod, newNextMod))
+  }
+
   def hashChunkMap[V, W]
       (f: Iterable[(T, U)] => Iterable[(V, W)],
        input: ListInput[V, W],
@@ -96,8 +121,7 @@ class DoubleChunkListNode[T, U]
 
   def map[V, W]
       (f: ((T, U)) => (V, W),
-       memo: Memoizer[Mod[DoubleChunkListNode[V, W]]],
-       modizer: Modizer1[DoubleChunkListNode[V, W]])
+       memo: Memoizer[Mod[DoubleChunkListNode[V, W]]])
       (implicit c: Context): Changeable[DoubleChunkListNode[V, W]] = {
     val newChunkMod = mod {
       read(chunkMod) {
@@ -111,7 +135,7 @@ class DoubleChunkListNode[T, U]
           case null =>
             write[DoubleChunkListNode[V, W]](null)
           case next =>
-            next.map(f, memo, modizer)
+            next.map(f, memo)
         }
       }
     }

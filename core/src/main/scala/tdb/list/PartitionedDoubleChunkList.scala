@@ -60,11 +60,46 @@ class PartitionedDoubleChunkList[T, U]
     })
   }
 
+  override def chunkMap[V, W](f: Iterable[(T, U)] => (V, W))
+      (implicit c: Context): AdjustableList[V, W] = {
+    def innerMap(i: Int)(implicit c: Context): Buffer[DoubleList[V, W]] = {
+      if (i < partitions.size) {
+        val (mappedPartition, mappedRest) = parWithHint({
+          c => partitions(i).chunkMap(f)(c)
+        }, partitions(i).workerId)({
+          c => innerMap(i + 1)(c)
+        })
+
+        mappedRest += mappedPartition
+      } else {
+        Buffer[DoubleList[V, W]]()
+      }
+    }
+
+    new PartitionedDoubleList(innerMap(0))
+  }
+
   def filter(pred: ((T, U)) => Boolean)
       (implicit c: Context): PartitionedDoubleChunkList[T, U] = ???
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
-      (implicit c: Context): PartitionedDoubleChunkList[V, W] = ???
+      (implicit c: Context): PartitionedDoubleChunkList[V, W] = {
+    def innerMap(i: Int)(implicit c: Context): Buffer[DoubleChunkList[V, W]] = {
+      if (i < partitions.size) {
+        val (mappedPartition, mappedRest) = parWithHint({
+          c => partitions(i).flatMap(f)(c)
+        }, partitions(i).workerId)({
+          c => innerMap(i + 1)(c)
+        })
+
+        mappedRest += mappedPartition
+      } else {
+        Buffer[DoubleChunkList[V, W]]()
+      }
+    }
+
+    new PartitionedDoubleChunkList(innerMap(0), conf)
+  }
 
   override def hashChunkMap[V, W]
       (f: Iterable[(T, U)] => Iterable[(V, W)], _conf: ListConf)

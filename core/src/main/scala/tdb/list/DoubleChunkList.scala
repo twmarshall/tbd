@@ -47,7 +47,18 @@ class DoubleChunkList[T, U]
       (implicit c: Context): DoubleChunkList[T, U] = ???
 
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
-      (implicit c: Context): DoubleChunkList[V, W] = ???
+      (implicit c: Context): DoubleChunkList[V, W] = {
+    val memo = new Memoizer[Mod[DoubleChunkListNode[V, W]]]()
+
+    new DoubleChunkList(
+      mod {
+        read(head) {
+          case null => write[DoubleChunkListNode[V, W]](null)
+          case node => node.flatMap(f, memo)
+        }
+      }, conf, false, workerId
+    )
+  }
 
   def hashChunkMap[V, W]
       (f: Iterable[(T, U)] => Iterable[(V, W)],
@@ -81,13 +92,12 @@ class DoubleChunkList[T, U]
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): DoubleChunkList[V, W] = {
     val memo = new Memoizer[Mod[DoubleChunkListNode[V, W]]]()
-    val modizer = new Modizer1[DoubleChunkListNode[V, W]]()
 
     new DoubleChunkList(
-      modizer(head.id) {
+      mod {
         read(head) {
           case null => write[DoubleChunkListNode[V, W]](null)
-          case node => node.map(f, memo, modizer)
+          case node => node.map(f, memo)
         }
       }, conf, false, workerId
     )
