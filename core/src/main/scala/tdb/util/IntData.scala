@@ -70,6 +70,12 @@ class IntData
     updateCount
   }
 
+  private def getRandomKey() =
+    if (table.size == 1)
+      table.head._1
+    else
+      table.keys.drop(rand.nextInt(table.size - 1)).head
+
   def addValue() {
     var key = rand.nextInt(maxKey)
     val value = rand.nextInt(maxKey)
@@ -86,10 +92,7 @@ class IntData
 
   def removeValue() {
     if (table.size > 0) {
-      var key = rand.nextInt(maxKey)
-      while (!table.contains(key)) {
-        key = rand.nextInt(maxKey)
-      }
+      val key = getRandomKey()
       input.remove(key, table(key))
 
       log("removing " + (key, table(key)))
@@ -102,11 +105,8 @@ class IntData
 
   def updateValue() {
     if (table.size > 0) {
-      var key = rand.nextInt(maxKey)
+      val key = getRandomKey()
       val value = rand.nextInt(maxKey)
-      while (!table.contains(key)) {
-        key = rand.nextInt(maxKey)
-      }
 
       log("updating " + (key, value))
 
