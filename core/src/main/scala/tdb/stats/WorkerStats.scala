@@ -133,6 +133,17 @@ class WorkerStats extends Actor with ActorLogging {
     output.close()
   }
 
+  def makeChartPage(page: String) = s"""
+    <table>
+      <tr><td colspan=2><img src='/$page.png'></td></tr>
+      <tr>
+        <td><a href='refresh_$page'>Refresh Chart</a></td>
+        <td><a href='write_$page'>Write Data</a></td>
+        <td><a href='/'>Back to Worker</a></td>
+      </tr>
+    </table>"""
+
+
   def receive = {
     case "tick" =>
       stats += WorkerStats.newTick()
@@ -150,15 +161,7 @@ class WorkerStats extends Actor with ActorLogging {
 
         case GET(Path("/tasks")) =>
           val title = "Tasks"
-
-          val s = """
-            <table>
-              <tr><td colspan=2><img src='/tasks.png'></td></tr>
-              <tr>
-                <td><a href='refresh_tasks'>Refresh</a></td>
-                <td><a href='/'>Back to Worker</a></td>
-              </tr>
-            </table>"""
+          val s = makeChartPage("tasks")
 
           request.response.write(
             Stats.createPage(title, s), "text/html; charset=UTF-8")
@@ -174,46 +177,35 @@ class WorkerStats extends Actor with ActorLogging {
 
         case GET(Path("/datastore")) =>
           val title = "Datastore"
-
-          val s = """
-            <table>
-              <tr><td colspan=2><img src='/datastore.png'></td></tr>
-              <tr>
-                <td><a href='refresh_datastore'>Refresh</a></td>
-                <td><a href='/'>Back to Worker</a></td>
-              </tr>
-            </table>"""
+          val s = makeChartPage("datastore")
 
           request.response.write(
             Stats.createPage(title, s), "text/html; charset=UTF-8")
 
         case GET(Path("/refresh_datastore")) =>
-          writeDatastoreStats()
           "python webui/datastore.py".!
           request.response.redirect("/datastore")
 
+        case GET(Path("/write_datastore")) =>
+          writeDatastoreStats()
+          request.response.redirect("/datastore")
 
         case GET(Path("/berkeleydb.png")) =>
           request.response.write(getBytes("berkeleydb.png"), "image/png")
 
         case GET(Path("/berkeleydb")) =>
           val title = "BerkeleyDB"
-
-          val s = """
-            <table>
-              <tr><td colspan=2><img src='/berkeleydb.png'></td></tr>
-              <tr>
-                <td><a href='refresh_berkeleydb'>Refresh</a></td>
-                <td><a href='/'>Back to Worker</a></td>
-              </tr>
-            </table>"""
+          val s = makeChartPage("berkeleydb")
 
           request.response.write(
             Stats.createPage(title, s), "text/html; charset=UTF-8")
 
         case GET(Path("/refresh_berkeleydb")) =>
-          writeBerkeleyDBStats()
           "python webui/berkeleydb.py".!
+          request.response.redirect("/berkeleydb")
+
+        case GET(Path("/write_berkeleydb")) =>
+          writeBerkeleyDBStats()
           request.response.redirect("/berkeleydb")
 
         case GET(Path("/")) =>
