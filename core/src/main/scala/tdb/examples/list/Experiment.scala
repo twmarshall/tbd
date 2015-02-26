@@ -169,7 +169,7 @@ object Experiment {
     }
 
     for (i <- 0 to conf.repeat()) {
-      if (verbosity > 0) {
+      if (verbosity > 0 && conf.repeat() > 0) {
         if (i == 0) {
           println("warmup")
         } else if (i == 1) {
@@ -256,7 +256,7 @@ object Experiment {
           println(results)
         }
 
-        if (i != 0) {
+        if (i != 0 || conf.repeat() == 0) {
           Experiment.allResults += (algConf -> results)
         }
       }
