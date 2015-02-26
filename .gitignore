@@ -2,6 +2,7 @@
 *.log
 *~
 \#*
+*txt
 
 # sbt specific
 dist/*
