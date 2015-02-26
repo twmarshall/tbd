@@ -15,14 +15,19 @@
  */
 package tdb.stats
 
-import akka.actor.{Actor, ActorLogging, ActorSystem, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, ActorSystem, Props}
+import akka.pattern.ask
 import java.io._
 import org.mashupbots.socko.events.HttpRequestEvent
 import org.mashupbots.socko.routes._
 import org.mashupbots.socko.infrastructure.Logger
 import org.mashupbots.socko.webserver.{WebServer, WebServerConfig}
 import scala.collection.mutable.Buffer
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import tdb.Constants._
+import tdb.messages._
 
 object Stats {
   var registeredWorkers = Buffer[WorkerInfo]()
@@ -31,8 +36,13 @@ object Stats {
 
   val tickFrequency = 100.milliseconds
 
+  var statsActor: ActorRef = null
+
   def launch(system: ActorSystem, mode: String, host: String, port: Int) {
-    val statsActor =
+    // We should only launch one stats actor per JVM.
+    assert(statsActor == null)
+
+    statsActor =
       if (mode == "master")
         system.actorOf(Props(classOf[MasterStats]))
       else
@@ -131,4 +141,11 @@ object Stats {
           </table>
         </body>
       </html>"""
+
+
+  def clear() {
+    if (statsActor != null) {
+      Await.result(statsActor ? ClearMessage, DURATION)
+    }
+  }
 }

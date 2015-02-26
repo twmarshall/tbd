@@ -18,6 +18,8 @@ package tdb.stats
 import akka.actor.{Actor, ActorLogging}
 import org.mashupbots.socko.events.HttpRequestEvent
 
+import tdb.messages._
+
 class MasterStats extends Actor with ActorLogging {
 
   def receive = {
@@ -44,6 +46,9 @@ class MasterStats extends Actor with ActorLogging {
 
       event.response.write(Stats.createPage(title, body), "text/html; charset=UTF-8")
     }
+
+    case ClearMessage =>
+      sender ! "done"
 
     case x =>
       log.warning("Received unhandled message " +

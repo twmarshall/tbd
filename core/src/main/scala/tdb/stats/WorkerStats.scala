@@ -22,6 +22,8 @@ import java.io._
 import scala.collection.mutable.{Buffer, Map}
 import sys.process._
 
+import tdb.messages._
+
 object WorkerStats {
 
   var datastoreMisses = 0
@@ -86,6 +88,51 @@ class WorkerStats extends Actor with ActorLogging {
     arr
   }
 
+  def writeDatastoreStats() {
+    val output = new BufferedWriter(new FileWriter(webuiRoot + "datastore.txt"))
+
+    val lastReads = Buffer[Int]()
+    val lastWrites = Buffer[Int]()
+    val lastCreates = Buffer[Int]()
+    for (tick <- stats) {
+      lastReads += tick.datastoreReads
+      lastWrites += tick.datastoreWrites
+      lastCreates += tick.modsCreated
+
+      if (lastReads.size > 10) {
+        lastReads -= lastReads.head
+        lastWrites -= lastWrites.head
+        lastCreates -= lastCreates.head
+      }
+
+      output.write(lastReads.reduce(_ + _) + " " + lastWrites.reduce(_ + _) +
+        " " + lastCreates.reduce(_ + _) + "\n")
+    }
+
+    output.close()
+  }
+
+  def writeBerkeleyDBStats() {
+    val output = new BufferedWriter(
+      new FileWriter(webuiRoot + "berkeleydb.txt"))
+
+    val lastReads = Buffer[Int]()
+    val lastWrites = Buffer[Int]()
+    for (tick <- stats) {
+      lastReads += tick.berkeleyReads
+      lastWrites += tick.berkeleyWrites
+
+      if (lastReads.size > 10) {
+        lastReads -= lastReads.head
+        lastWrites -= lastWrites.head
+      }
+
+      output.write(lastReads.reduce(_ + _) + " " + lastWrites.reduce(_ + _) +
+        "\n")
+    }
+    output.close()
+  }
+
   def receive = {
     case "tick" =>
       stats += WorkerStats.newTick()
@@ -101,48 +148,14 @@ class WorkerStats extends Actor with ActorLogging {
           request.response.write(getBytes("tasks.png"), "image/png")
 
         case GET(Path("/datastore.png")) =>
-          val output = new BufferedWriter(new FileWriter(webuiRoot + "datastore.txt"))
-
-          val lastReads = Buffer[Int]()
-          val lastWrites = Buffer[Int]()
-          val lastCreates = Buffer[Int]()
-          for (tick <- stats) {
-            lastReads += tick.datastoreReads
-            lastWrites += tick.datastoreWrites
-            lastCreates += tick.modsCreated
-
-            if (lastReads.size > 10) {
-              lastReads -= lastReads.head
-              lastWrites -= lastWrites.head
-              lastCreates -= lastCreates.head
-            }
-
-            output.write(lastReads.reduce(_ + _) + " " + lastWrites.reduce(_ + _) + " " +
-                         lastCreates.reduce(_ + _) + "\n")
-          }
-          output.close()
+          writeDatastoreStats()
 
           "python webui/datastore.py".!
 
           request.response.write(getBytes("datastore.png"), "image/png")
 
         case GET(Path("/berkeleydb.png")) =>
-          val output = new BufferedWriter(new FileWriter(webuiRoot + "berkeleydb.txt"))
-
-          val lastReads = Buffer[Int]()
-          val lastWrites = Buffer[Int]()
-          for (tick <- stats) {
-            lastReads += tick.berkeleyReads
-            lastWrites += tick.berkeleyWrites
-
-            if (lastReads.size > 10) {
-              lastReads -= lastReads.head
-              lastWrites -= lastWrites.head
-            }
-
-            output.write(lastReads.reduce(_ + _) + " " + lastWrites.reduce(_ + _) + "\n")
-          }
-          output.close()
+          writeBerkeleyDBStats()
 
           "python webui/berkeleydb.py".!
 
@@ -164,6 +177,11 @@ class WorkerStats extends Actor with ActorLogging {
         case _ =>
           request.response.write("This page does not exist.")
       }
+
+    case ClearMessage =>
+      writeDatastoreStats()
+      writeBerkeleyDBStats()
+      sender ! "done"
 
     case x =>
       log.warning("Received unhandled message " +

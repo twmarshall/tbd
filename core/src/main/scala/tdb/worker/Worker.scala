@@ -25,6 +25,7 @@ import tdb.Adjustable
 import tdb.Constants._
 import tdb.datastore.DatastoreActor
 import tdb.messages._
+import tdb.stats.Stats
 
 object Worker {
   def props
@@ -82,6 +83,9 @@ class Worker
 
     case CreateModMessage(null) =>
       (datastore ? CreateModMessage(null)) pipeTo sender
+
+    case ClearMessage =>
+      Stats.clear()
 
     case "started" => sender ! "done"
 
