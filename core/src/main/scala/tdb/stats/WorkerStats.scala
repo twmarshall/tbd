@@ -141,25 +141,80 @@ class WorkerStats extends Actor with ActorLogging {
     case request: HttpRequestEvent =>
       request match {
         case GET(Path("/tasks.png")) =>
-          val command = "python webui/chart.py " + stats.map(_.numTasks).mkString(" ")
-
-          val output = command.!!
+          if (!(new File(webuiRoot + "tasks.png")).exists()) {
+            val command = "python webui/chart.py " + stats.map(_.numTasks).mkString(" ")
+            val output = command.!!
+          }
 
           request.response.write(getBytes("tasks.png"), "image/png")
 
+        case GET(Path("/tasks")) =>
+          val title = "Tasks"
+
+          val s = """
+            <table>
+              <tr><td colspan=2><img src='/tasks.png'></td></tr>
+              <tr>
+                <td><a href='refresh_tasks'>Refresh</a></td>
+                <td><a href='/'>Back to Worker</a></td>
+              </tr>
+            </table>"""
+
+          request.response.write(
+            Stats.createPage(title, s), "text/html; charset=UTF-8")
+
+        case GET(Path("/refresh_tasks")) =>
+          val command = "python webui/chart.py " + stats.map(_.numTasks).mkString(" ")
+          val output = command.!!
+
+          request.response.redirect("/tasks")
+
         case GET(Path("/datastore.png")) =>
-          writeDatastoreStats()
-
-          "python webui/datastore.py".!
-
           request.response.write(getBytes("datastore.png"), "image/png")
 
+        case GET(Path("/datastore")) =>
+          val title = "Datastore"
+
+          val s = """
+            <table>
+              <tr><td colspan=2><img src='/datastore.png'></td></tr>
+              <tr>
+                <td><a href='refresh_datastore'>Refresh</a></td>
+                <td><a href='/'>Back to Worker</a></td>
+              </tr>
+            </table>"""
+
+          request.response.write(
+            Stats.createPage(title, s), "text/html; charset=UTF-8")
+
+        case GET(Path("/refresh_datastore")) =>
+          writeDatastoreStats()
+          "python webui/datastore.py".!
+          request.response.redirect("/datastore")
+
+
         case GET(Path("/berkeleydb.png")) =>
-          writeBerkeleyDBStats()
-
-          "python webui/berkeleydb.py".!
-
           request.response.write(getBytes("berkeleydb.png"), "image/png")
+
+        case GET(Path("/berkeleydb")) =>
+          val title = "BerkeleyDB"
+
+          val s = """
+            <table>
+              <tr><td colspan=2><img src='/berkeleydb.png'></td></tr>
+              <tr>
+                <td><a href='refresh_berkeleydb'>Refresh</a></td>
+                <td><a href='/'>Back to Worker</a></td>
+              </tr>
+            </table>"""
+
+          request.response.write(
+            Stats.createPage(title, s), "text/html; charset=UTF-8")
+
+        case GET(Path("/refresh_berkeleydb")) =>
+          writeBerkeleyDBStats()
+          "python webui/berkeleydb.py".!
+          request.response.redirect("/berkeleydb")
 
         case GET(Path("/")) =>
           var s = "Worker<br>"
@@ -167,7 +222,13 @@ class WorkerStats extends Actor with ActorLogging {
           s += """
             <table>
               <tr>
-                <td><a href='tasks.png'>tasks</></td>
+                <td><a href='/tasks'>Tasks</></td>
+              </tr>
+              <tr>
+                <td><a href='/datastore'>Datastore</td>
+              </tr>
+              <tr>
+                <td><a href='/berkeleydb'>BerkeleyDB</td>
               </tr>
             </table"""
 

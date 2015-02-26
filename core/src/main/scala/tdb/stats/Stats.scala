@@ -93,6 +93,13 @@ object Stats {
               text-decoration: underline;
             }
 
+            #header {
+              background-color: #990000;
+              color: #000000;
+              font-size: 24pt;
+              padding: 0px;
+            }
+
             #mainTable tr td {
               padding: 10px;
             }
@@ -127,11 +134,11 @@ object Stats {
         </head>
         <body>
           <table id=\"mainTable\">
-            <tr>
-              <td style=\"background-color: #990000;\">
+            <tr id=\"header\">
+              <td>
                 <img src=\"$imgSrc\" width=\"50px\">
               </td>
-              <td style=\"font-size: 24pt;\">$title</td>
+              <td>$title</td>
             </tr>
             <tr>
               <td colspan=2>$body
