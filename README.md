@@ -44,6 +44,21 @@ import tbd.debug.TBD._
 This is required to make the visualizer work, for example modifying ModList.scala and
 ModListNode.scala.
 
+## Scripts
+
+ThomasDB provides a few scripts to make your life easier:
+
+- Convert: converts Wikipedia dump files, stripping the xml and mate-data.
+
+To run these:
+
+```
+> sbt/sbt
+> mkrun
+> exit
+> bin/run.sh tdb.scripts.SCRIPT_NAME
+```
+
 ## Visualizing
 
 The visualizer can be used to visualize traces and dependencies. Furthermore, the visualizer can be used to calculate intrinsic trace distance. Make sure to turn on debugging, as described above, to use the visualizer.
