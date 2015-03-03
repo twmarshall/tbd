@@ -77,7 +77,7 @@ class DoubleListNode[T, U]
     write(new DoubleListNode[V, W](newValue, newNextMod))
   }
 
-  def quicksort
+  /*def quicksort
       (toAppend: Mod[DoubleListNode[T, U]],
        comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): Changeable[DoubleListNode[T, U]] = {
@@ -118,7 +118,7 @@ class DoubleListNode[T, U]
       case smallerNode =>
         smallerNode.quicksort(mod { write(mid) }, comparator)
     }
-  }
+  }*/
 
   def split
       (pred: ((T, U)) => Boolean,

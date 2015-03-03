@@ -81,7 +81,8 @@ class DoubleList[T, U]
       read(head) {
         case null => write[DoubleListNode[T, U]](null)
         case node =>
-          node.quicksort(mod { write(null) }, comparator)
+          ???
+          //node.quicksort(mod { write(null) }, comparator)
       }
     }
 

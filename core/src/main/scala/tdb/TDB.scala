@@ -73,9 +73,9 @@ object TDB {
     changeable
   }
 
-  def readAny[T, U](mod: Mod[T])
-      (reader: T => U)
-      (implicit c: Context): U = {
+  def readAny[T](mod: Mod[T])
+      (reader: T => Unit)
+      (implicit c: Context) {
     val value = c.read(mod, c.task.self)
 
     val timestamp = c.ddg.addRead(
@@ -89,8 +89,6 @@ object TDB {
 
     readNode.currentModId = c.currentModId
     timestamp.end = c.ddg.nextTimestamp(readNode, c)
-
-    ret
   }
 
   def read2[T, U, V](mod: Mod[T])
