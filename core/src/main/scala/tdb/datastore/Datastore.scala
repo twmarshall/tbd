@@ -78,6 +78,11 @@ class Datastore(conf: WorkerConf, log: LoggingAdapter)
       .asInstanceOf[T]
   }
 
+  def readId[T](modId: ModId): T = {
+    scala.concurrent.Await.result(getMod(modId, null), DURATION)
+      .asInstanceOf[T]
+  }
+
   def getMod(modId: ModId, taskRef: ActorRef): Future[_] = {
     WorkerStats.datastoreReads += 1
     if (inputs.contains(modId)) {

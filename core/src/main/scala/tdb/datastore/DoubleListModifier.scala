@@ -115,6 +115,8 @@ class DoubleListModifier(datastore: Datastore)
     modList
   }
 
+  def toBuffer(): Buffer[(Any, Any)] = ???
+
   override def toString(): String = {
     val buf = new StringBuffer()
 

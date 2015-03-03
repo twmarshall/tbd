@@ -15,85 +15,33 @@
  */
 package tdb.datastore
 
-import scala.collection.mutable.{Buffer, Map}
+import akka.actor.ActorRef
+import scala.collection.mutable.{Buffer, Map, Set}
 import scala.concurrent.{ExecutionContext, Future}
 
 import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class AggregatorListModifier(datastore: Datastore, conf: ListConf)
+class AggregatorListModifier
+    (listId: String,
+     datastore: Datastore,
+     datastoreRef: ActorRef,
+     conf: ListConf)
     (implicit ec: ExecutionContext)
   extends Modifier {
 
-  // Contains the last DoubleChunkListNode before the tail node. If the list is
-  // empty, the contents of this mod will be null.
-  private var lastNodeMod = datastore
-    .createMod[DoubleChunkListNode[Any, Int]](null)
+  private val values = Map[Any, Mod[Vector[(Any, Int)]]]()
 
-  val nodes = Map[Any, Mod[DoubleChunkListNode[Any, Int]]]()
-  val previous = Map[Any, Mod[DoubleChunkListNode[Any, Int]]]()
-
-  val list = new DoubleChunkList[Any, Int](
-    lastNodeMod, conf, false, datastore.workerId)
+  private val fullChunks = Set[ModId]()
+  private val freeChunks = Set[ModId]()
 
   def loadInput(keys: Iterator[Any]) = ???
 
-  private def append(key: Any, value: Any): Future[_] = {
-    val lastNode = datastore.read(lastNodeMod)
-
-    if (lastNode == null) {
-      // The list must be empty.
-      val chunk = Vector[(Any, Int)]((key -> value.asInstanceOf[Int]))
-      val size = 1
-
-      previous(key) = null
-
-      val chunkMod = datastore.createMod(chunk)
-      val tailMod = datastore.createMod[DoubleChunkListNode[Any, Int]](null)
-      val newNode = new DoubleChunkListNode(chunkMod, tailMod, size)
-
-      nodes(key) = lastNodeMod
-
-      datastore.updateMod(lastNodeMod.id, newNode)
-    } else if (lastNode.size >= conf.chunkSize) {
-      val chunk = Vector[(Any, Int)]((key -> value.asInstanceOf[Int]))
-      previous(key) = lastNodeMod
-
-      lastNodeMod = lastNode.nextMod
-
-      val chunkMod = datastore.createMod(chunk)
-      val tailMod = datastore.createMod[DoubleChunkListNode[Any, Int]](null)
-      val newNode = new DoubleChunkListNode(chunkMod, tailMod, 1)
-
-      nodes(key) = lastNode.nextMod
-
-      datastore.updateMod(lastNode.nextMod.id, newNode)
-    } else {
-      val oldChunk = datastore.read(lastNode.chunkMod)
-      val chunk = oldChunk :+ (key -> value.asInstanceOf[Int])
-
-      val size = lastNode.size + 1
-
-      previous(key) = previous(chunk.head._1)
-      val chunkMod = datastore.createMod(chunk)
-      val tailMod = datastore.createMod[DoubleChunkListNode[Any, Int]](null)
-      val newNode = new DoubleChunkListNode(chunkMod, tailMod, size)
-
-      nodes(key) = lastNodeMod
-
-      datastore.updateMod(lastNodeMod.id, newNode)
-    }
-
-  }
-
   def put(key: Any, value: Any): Future[_] = {
-    if (!nodes.contains(key)) {
-      append(key, value)
-    } else {
-      val node = datastore.read(nodes(key))
+    if (values.contains(key)) {
+      val chunk = datastore.read(values(key))
 
-      val chunk = datastore.read(node.chunkMod)
       val newChunk = chunk.map {
         case (_key: Any, _value: Int) => {
           if (key == _key) {
@@ -104,84 +52,87 @@ class AggregatorListModifier(datastore: Datastore, conf: ListConf)
         }
       }
 
-      val chunkMod = datastore.createMod(newChunk)
-      val newNode = new DoubleChunkListNode(chunkMod, node.nextMod, node.size)
-      datastore.updateMod(nodes(key).id, newNode)
+      datastore.updateMod(values(key).id, newChunk)
+    } else {
+      if (freeChunks.size > 0) {
+        val modId = freeChunks.head
+        val chunk = datastore.readId[Vector[(Any, Int)]](modId)
+
+        if (chunk.size + 1 > conf.chunkSize) {
+          fullChunks += modId
+          freeChunks -= modId
+        }
+
+        values(key) = values(chunk.head._1)
+
+        val newChunk = chunk :+ (key, value.asInstanceOf[Int])
+
+        datastore.updateMod(modId, newChunk)
+      } else {
+        val chunk = Vector((key, value.asInstanceOf[Int]))
+
+        val mod = datastore.createMod(chunk)
+        values(key) = mod
+        freeChunks += mod.id
+
+        Future { "done" }
+      }
     }
   }
 
   def remove(key: Any, value: Any): Future[_] = {
-    val node = datastore.read(nodes(key))
+    val mod = values(key)
+    val chunk = datastore.read(mod)
 
-    val chunk = datastore.read(node.chunkMod)
-    var removed = false
-    val newChunk = chunk.flatMap{ case (_key, _value) => {
+    var newValue = -1
+    var newChunk = chunk.map{ case (_key, _value) => {
       if (key == _key) {
-        val newValue = _value - value.asInstanceOf[Int]
-
-        if (newValue == 0) {
-          removed = true
-          Iterable()
-        } else {
-          Iterable((_key, newValue))
-        }
+        assert(newValue == -1)
+        newValue = _value - value.asInstanceOf[Int]
+        (_key, newValue)
       } else {
-        Iterable((_key, _value))
+        (_key, _value)
       }
-    }}
+    }}.filter(_._2 != 0)
+    assert(newValue >= 0)
 
-    val newNode =
-      if (newChunk.size == 0) {
-        val nextNode = datastore.read(node.nextMod)
+    if (newValue == 0) {
+      values -= key
 
-        if (nextNode == null) {
-          if (previous(key) == null) {
-            // We're removing the last element in the list.
-            lastNodeMod = list.head
-          } else {
-            // We are removing the node at the end list.
-            lastNodeMod = previous(key)
-          }
-        } else if (lastNodeMod.id == node.nextMod.id) {
-          // We are removing the second to last node.
-          lastNodeMod = nodes(key)
-        }
-
-        if (nextNode != null) {
-          val nextChunk = datastore.read(nextNode.chunkMod)
-          for ((k, v) <- nextChunk) {
-            nodes(k) = nodes(key)
-            previous(k) = previous(key)
-          }
-
-          val nextNextNode = datastore.read(nextNode.nextMod)
-          if (nextNextNode != null) {
-            val nextNextChunk = datastore.read(nextNextNode.chunkMod)
-            for ((k, v) <- nextNextChunk) {
-              previous(k) = nodes(key)
-            }
-          }
-        }
-
-        nextNode
-      } else {
-        val newSize = node.size - 1
-        val chunkMod = datastore.createMod(newChunk)
-        new DoubleChunkListNode(chunkMod, node.nextMod, newSize)
+      if (fullChunks.contains(mod.id)) {
+        fullChunks -= mod.id
       }
 
-    val future = datastore.updateMod(nodes(key).id, newNode)
-
-    if (removed) {
-      nodes -= key
+      if (newChunk.size > 0) {
+        freeChunks += mod.id
+      }
     }
 
-    future
+    if (newChunk.size > 0) {
+      datastore.updateMod(mod.id, newChunk)
+    } else {
+      freeChunks -= mod.id
+      datastore.removeMods(Iterable(mod.id), null)
+      Future { "done" }
+    }
   }
 
   def contains(key: Any): Boolean = {
-    nodes.contains(key)
+    values.contains(key)
   }
 
-  def getAdjustableList() = list.asInstanceOf[AdjustableList[Any, Any]]
+  def getAdjustableList() = new AggregatorList(listId, datastoreRef)
+
+  def toBuffer(): Buffer[(Any, Any)] = {
+    val buf = Buffer[(Any, Any)]()
+    for (modId <- fullChunks) {
+      buf ++= datastore.readId[Vector[(Any, Int)]](modId)
+    }
+
+    for (modId <- freeChunks) {
+      buf ++= datastore.readId[Vector[(Any, Int)]](modId)
+    }
+
+    buf
+  }
 }

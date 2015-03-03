@@ -114,7 +114,7 @@ class DatastoreActor(conf: WorkerConf)
         nextListId += 1
         val list =
           if (conf.aggregate)
-            new AggregatorListModifier(datastore, conf)
+            new AggregatorListModifier(listId, datastore, self, conf)
           else if (conf.chunkSize == 1)
             new DoubleListModifier(datastore)
           else
@@ -152,6 +152,9 @@ class DatastoreActor(conf: WorkerConf)
 
     case GetAdjustableListMessage(listId: String) =>
       sender ! lists(listId).getAdjustableList()
+
+    case ToBufferMessage(listId: String) =>
+      sender ! lists(listId).toBuffer()
 
     case PutMessage(listId: String, key: Any, value: Any) =>
       // This solves a bug where sometimes deserialized Scala objects show up as

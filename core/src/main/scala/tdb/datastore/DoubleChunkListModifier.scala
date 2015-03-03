@@ -318,4 +318,6 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
   }
 
   def getAdjustableList() = list
+
+  def toBuffer(): Buffer[(Any, Any)] = ???
 }

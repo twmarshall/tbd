@@ -29,15 +29,15 @@ class AggregatorInput[T]
   extends HashPartitionedListInput[T, Int] with java.io.Serializable {
 
   def getAdjustableList(): AdjustableList[T, Int] = {
-    val adjustablePartitions = Buffer[DoubleChunkList[T, Int]]()
+    val adjustablePartitions = Buffer[AggregatorList[T, Int]]()
 
     for ((listId, datastoreRef) <- hasher.objs.values.toSet) {
       val future = datastoreRef ? GetAdjustableListMessage(listId)
       adjustablePartitions +=
-        Await.result(future.mapTo[DoubleChunkList[T, Int]], DURATION)
+        Await.result(future.mapTo[AggregatorList[T, Int]], DURATION)
     }
 
-    new HashPartitionedDoubleChunkList(adjustablePartitions, conf)
+    new PartitionedAggregatorList(adjustablePartitions, conf)
   }
 
   override def getBuffer() = new AggregatorBuffer(this)
