@@ -46,7 +46,7 @@ class CWChunkHashAdjust
   }
 
   def run(implicit c: Context) = {
-    val mapped = list.hashChunkMap(wordcount, conf)
+    val mapped = list.hashChunkMap(wordcount, conf).getAdjustableList()
     mapped.reduce(reducer)
   }
 }

@@ -92,15 +92,17 @@ class GraphData
 
     remainingRuns = remainingRuns.tail
 
-    var key = rand.nextInt(maxKey)
-    while (!table.contains(key)) {
-      key = rand.nextInt(maxKey)
+    for (i <- 0 until updateCount) {
+      var key = rand.nextInt(maxKey)
+      while (!table.contains(key)) {
+        key = rand.nextInt(maxKey)
+      }
+      table(key) = generateEdges()
+      log(key + " -> " + table(key).mkString(","))
+      input.put(key, table(key))
     }
-    table(key) = generateEdges()
-    log(key + " -> " + table(key).mkString(","))
-    input.put(key, table(key))
 
-    1
+    updateCount
   }
 
   def hasUpdates() = remainingRuns.size > 0

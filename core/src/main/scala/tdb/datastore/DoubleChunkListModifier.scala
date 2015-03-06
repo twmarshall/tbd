@@ -207,6 +207,8 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
     }
   } //ensuring(isValid())
 
+  def get(key: Any): Any = ???
+
   def remove(key: Any, value: Any): Future[_] = {
     val node = datastore.read(nodes(key))
 

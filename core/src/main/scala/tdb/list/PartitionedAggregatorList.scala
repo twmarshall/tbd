@@ -21,37 +21,37 @@ import scala.collection.mutable.Buffer
 
 import tdb.{Context, Mod, Mutator}
 
-class PartitionedAggregatorList[T]
-    (partitions: Buffer[AggregatorList[T, Int]], conf: ListConf)
-  extends AdjustableList[T, Int] with Serializable {
+class PartitionedAggregatorList[T, U]
+    (partitions: Buffer[AggregatorList[T, U]], conf: ListConf)
+  extends AdjustableList[T, U] with Serializable {
 
-  def filter(pred: ((T, Int)) => Boolean)
-      (implicit c: Context): AdjustableList[T, Int] = ???
+  def filter(pred: ((T, U)) => Boolean)
+      (implicit c: Context): AdjustableList[T, U] = ???
 
-  def flatMap[V, W](f: ((T, Int)) => Iterable[(V, W)])
+  def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): AdjustableList[V, W] = ???
 
   def join[V]
-      (that: AdjustableList[T, V], condition: ((T, V), (T, Int)) => Boolean)
-      (implicit c: Context): AdjustableList[T, (Int, V)] = ???
+      (that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
+      (implicit c: Context): AdjustableList[T, (U, V)] = ???
 
-  def map[V, W](f: ((T, Int)) => (V, W))
+  def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): AdjustableList[V, W] = ???
 
-  def reduce(f: ((T, Int), (T, Int)) => (T, Int))
-      (implicit c: Context): Mod[(T, Int)] = ???
+  def reduce(f: ((T, U), (T, U)) => (T, U))
+      (implicit c: Context): Mod[(T, U)] = ???
 
   def sortJoin[V](that: AdjustableList[T, V])
       (implicit c: Context,
-       ordering: Ordering[T]): AdjustableList[T, (Int, V)] = ???
+       ordering: Ordering[T]): AdjustableList[T, (U, V)] = ???
 
-  def split(pred: ((T, Int)) => Boolean)
+  def split(pred: ((T, U)) => Boolean)
       (implicit c: Context):
-  (AdjustableList[T, Int], AdjustableList[T, Int]) = ???
+  (AdjustableList[T, U], AdjustableList[T, U]) = ???
 
   /* Meta functions */
-  def toBuffer(mutator: Mutator): Buffer[(T, Int)] = {
-    val buf = Buffer[(T, Int)]()
+  def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
+    val buf = Buffer[(T, U)]()
 
     for (partition <- partitions) {
       buf ++= partition.toBuffer(mutator)

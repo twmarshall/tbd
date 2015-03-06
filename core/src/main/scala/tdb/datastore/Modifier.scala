@@ -27,6 +27,8 @@ trait Modifier {
 
   def put(key: Any, value: Any): Future[_]
 
+  def get(key: Any): Any
+
   def remove(key: Any, value: Any): Future[_]
 
   def getAdjustableList(): AdjustableList[Any, Any]

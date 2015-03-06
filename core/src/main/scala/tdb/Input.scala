@@ -24,6 +24,8 @@ trait Input[T, U] {
 
   def asyncPutAll(values: Iterable[(T, U)]): Future[_]
 
+  def get(key: T): U
+
   def remove(key: T, value: U)
 
   def removeAll(values: Iterable[(T, U)])

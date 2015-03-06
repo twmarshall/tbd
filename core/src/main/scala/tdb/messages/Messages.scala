@@ -33,7 +33,8 @@ case class NullMessage()
 case class RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef)
 case class SetIdMessage(workerId: WorkerId)
 case class ClearMessage()
-case class CreateListIdsMessage(conf: ListConf, workerIndex: Int, numWorkers: Int)
+case class CreateListIdsMessage(
+  conf: ListConf, workerIndex: Int, numWorkers: Int)
 case class LoadPartitionsMessage(
   fileName: String,
   numWorkers: Int,
@@ -54,6 +55,7 @@ case class GetAdjustableListMessage(listId: String)
 case class ToBufferMessage(listId: String)
 case class PutMessage(listId: String, key: Any, value: Any)
 case class PutAllMessage(listId: String, values: Iterable[(Any, Any)])
+case class GetMessage(listId: String, key: Any)
 case class RemoveMessage(listId: String, key: Any, value: Any)
 case class RemoveAllMessage(listId: String, values: Iterable[(Any, Any)])
 

@@ -58,9 +58,16 @@ trait AdjustableList[T, U] {
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): AdjustableList[V, W]
 
+  def foreach(f: (T, U) => Unit)
+      (implicit c: Context): Unit = ???
+
+  def foreachChunk(f: (Iterable[(T, U)], Context) => Unit)
+      (implicit c: Context): Unit = ???
+
   def hashChunkMap[V, W]
-      (f: Iterable[(T, U)] => Iterable[(V, W)], conf: ListConf = ListConf())
-      (implicit c: Context): AdjustableList[V, W] = ???
+      (f: Iterable[(T, U)] => Iterable[(V, W)],
+       conf: ListConf = ListConf())
+      (implicit c: Context): ListInput[V, W] = ???
 
   def hashPartitionedFlatMap[V, W]
       (f: ((T, U)) => Iterable[(V, W)],

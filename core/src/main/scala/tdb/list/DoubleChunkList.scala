@@ -60,6 +60,19 @@ class DoubleChunkList[T, U]
     )
   }
 
+  override def foreachChunk(f: (Iterable[(T, U)], Context) => Unit)
+      (implicit c: Context): Unit = {
+    val memo = new Memoizer[Unit]()
+
+    readAny(head) {
+      case null =>
+      case node =>
+        memo(node) {
+          node.foreachChunk(f, memo)
+        }
+    }
+  }
+
   def hashChunkMap[V, W]
       (f: Iterable[(T, U)] => Iterable[(V, W)],
        input: ListInput[V, W])

@@ -53,6 +53,12 @@ trait HashPartitionedListInput[T, U]
     Future.sequence(futures)
   }
 
+  def get(key: T): U = {
+    val (listId, datastoreRef) = hasher.getObj(key)
+    val f = datastoreRef ? GetMessage(listId, key)
+    Await.result(f, DURATION).asInstanceOf[U]
+  }
+
   def remove(key: T, value: U) = {
     Await.result(asyncRemove(key, value), DURATION)
   }

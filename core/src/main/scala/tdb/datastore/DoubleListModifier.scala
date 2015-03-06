@@ -85,6 +85,8 @@ class DoubleListModifier(datastore: Datastore)
     }
   }
 
+  def get(key: Any): Any = ???
+
   def remove(key: Any, value: Any): Future[_] = {
     val mod = nodes(key)
 

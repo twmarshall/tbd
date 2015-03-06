@@ -15,11 +15,40 @@
  */
 package tdb.list
 
-case class ListConf
+object ListConf {
+  def create[T]
     (file: String = "",
      partitions: Int = 8,
      chunkSize: Int = 1,
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
      hash: Boolean = false,
-     aggregate: Boolean = false)
+     aggregate: Boolean = false,
+     aggregator: (T, T) => T = null,
+     deaggregator: (T, T) => T = null,
+     initialValue: T): ListConf = {
+    new ListConf(
+      file,
+      partitions,
+      chunkSize,
+      chunkSizer,
+      sorted,
+      hash,
+      aggregate,
+      aggregator.asInstanceOf[(Any, Any) => Any],
+      deaggregator.asInstanceOf[(Any, Any) => Any],
+      initialValue.asInstanceOf[Any])
+  }
+}
+
+case class ListConf
+    (val file: String = "",
+     val partitions: Int = 8,
+     chunkSize: Int = 1,
+     chunkSizer: Any => Int = _ => 1,
+     sorted: Boolean = false,
+     hash: Boolean = false,
+     aggregate: Boolean = false,
+     aggregator: (Any, Any) => Any = null,
+     deaggregator: (Any, Any) => Any = null,
+     initialValue: Any = null)

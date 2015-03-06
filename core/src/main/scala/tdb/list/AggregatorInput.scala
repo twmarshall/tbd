@@ -24,45 +24,49 @@ import tdb.Constants._
 import tdb.messages._
 import tdb.util.ObjHasher
 
-class AggregatorInput[T]
+class AggregatorInput[T, U]
     (val hasher: ObjHasher[(String, ActorRef)], conf: ListConf)
-  extends HashPartitionedListInput[T, Int] with java.io.Serializable {
+  extends HashPartitionedListInput[T, U] with java.io.Serializable {
 
-  def getAdjustableList(): AdjustableList[T, Int] = {
-    val adjustablePartitions = Buffer[AggregatorList[T, Int]]()
+  def getAdjustableList(): AdjustableList[T, U] = {
+    val adjustablePartitions = Buffer[AggregatorList[T, U]]()
 
     for ((listId, datastoreRef) <- hasher.objs.values.toSet) {
       val future = datastoreRef ? GetAdjustableListMessage(listId)
       adjustablePartitions +=
-        Await.result(future.mapTo[AggregatorList[T, Int]], DURATION)
+        Await.result(future.mapTo[AggregatorList[T, U]], DURATION)
     }
 
     new PartitionedAggregatorList(adjustablePartitions, conf)
   }
 
-  override def getBuffer() = new AggregatorBuffer(this)
+  override def getBuffer() = new AggregatorBuffer(this, conf)
 }
 
-class AggregatorBuffer[T](input: ListInput[T, Int]) extends InputBuffer[T, Int] {
+class AggregatorBuffer[T, U](input: ListInput[T, U], conf: ListConf)
+  extends InputBuffer[T, U] {
 
-  private val toPut = Map[T, Int]()
+  private val toPut = Map[T, U]()
 
-  def putAll(values: Iterable[(T, Int)]) {
+  def putAll(values: Iterable[(T, U)]) {
     for ((key, value) <- values) {
       if (toPut.contains(key)) {
-        toPut(key) += value.asInstanceOf[Int]
+        toPut(key) = conf.aggregator(toPut(key), value)
+          .asInstanceOf[U]
       } else {
-        toPut(key) = value.asInstanceOf[Int]
+        toPut(key) = value
       }
     }
   }
 
-  def removeAll(values: Iterable[(T, Int)]) {
+  def removeAll(values: Iterable[(T, U)]) {
     for ((key, value) <- values) {
       if (toPut.contains(key)) {
-        toPut(key) -= value.asInstanceOf[Int]
+        toPut(key) = conf.deaggregator(toPut(key), value)
+          .asInstanceOf[U]
       } else {
-        toPut(key) = -value.asInstanceOf[Int]
+        toPut(key) = conf.deaggregator(conf.initialValue, value)
+          .asInstanceOf[U]
       }
     }
   }

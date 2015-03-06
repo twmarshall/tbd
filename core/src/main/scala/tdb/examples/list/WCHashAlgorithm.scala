@@ -54,8 +54,11 @@ class WCChunkHashAdjust
   }
 
   def run(implicit c: Context) = {
-    val conf = ListConf(chunkSize = chunkSize, aggregate = true)
-    list.hashChunkMap(wordcount, conf)
+    val conf = ListConf.create(
+      aggregator = (_: Int) + (_: Int),
+      deaggregator = (_: Int) + (_: Int),
+      initialValue = 0)
+    list.hashChunkMap(wordcount, conf).getAdjustableList()
   }
 }
 

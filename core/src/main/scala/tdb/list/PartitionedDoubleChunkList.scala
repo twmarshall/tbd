@@ -101,12 +101,26 @@ class PartitionedDoubleChunkList[T, U]
     new PartitionedDoubleChunkList(innerMap(0), conf)
   }
 
+  override def foreachChunk(f: (Iterable[(T, U)], Context) => Unit)
+      (implicit c: Context): Unit = {
+    def innerForeach(i: Int)(implicit c: Context) {
+      if (i < partitions.size) {
+        val (mappedPartition, mappedRest) = parWithHint({
+          c => partitions(i).foreachChunk(f)(c)
+        }, partitions(i).workerId)({
+          c => innerForeach(i + 1)(c)
+        })
+      }
+    }
+
+    innerForeach(0)
+  }
+
   override def hashChunkMap[V, W]
       (f: Iterable[(T, U)] => Iterable[(V, W)], _conf: ListConf)
-      (implicit c: Context): AdjustableList[V, W] = {
+      (implicit c: Context): ListInput[V, W] = {
     c.log.debug("PartitionedDoubleChunkList.hashChunkMap")
-    val future = c.masterRef ? CreateListMessage(_conf)
-    val input = Await.result(future.mapTo[ListInput[V, W]], DURATION)
+    val input = createList[V, W](_conf)
 
     def innerChunkMap(i: Int)(implicit c: Context) {
       if (i < partitions.size) {
@@ -120,7 +134,7 @@ class PartitionedDoubleChunkList[T, U]
 
     innerChunkMap(0)
 
-    input.getAdjustableList()
+    input
   }
 
   override def hashPartitionedFlatMap[V, W]
@@ -129,8 +143,7 @@ class PartitionedDoubleChunkList[T, U]
       (implicit c: Context): AdjustableList[V, W] = {
     c.log.debug("PartitionedDoubleChunkList.hashPartitionedFlatMap")
     val conf = ListConf(partitions = partitions.size, hash = true)
-    val future = c.masterRef ? CreateListMessage(conf)
-    val input = Await.result(future.mapTo[ListInput[V, W]], DURATION)
+    val input = createList[V, W](conf)
 
     def innerMap(i: Int)(implicit c: Context) {
       if (i < partitions.size) {

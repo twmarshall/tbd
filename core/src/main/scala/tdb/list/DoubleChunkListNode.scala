@@ -75,6 +75,24 @@ class DoubleChunkListNode[T, U]
     write(new DoubleChunkListNode[V, W](newChunkMod, newNextMod))
   }
 
+
+  def foreachChunk[V, W]
+      (f: (Iterable[(T, U)], Context) => Unit,
+       memo: Memoizer[Unit])
+      (implicit c: Context): Unit = {
+    readAny(chunkMod) {
+      case chunk => f(chunk, c)
+    }
+
+    readAny(nextMod) {
+      case null =>
+      case node =>
+        memo(node) {
+          node.foreachChunk(f, memo)
+        }
+    }
+  }
+
   def hashChunkMap[V, W]
       (f: Iterable[(T, U)] => Iterable[(V, W)],
        input: ListInput[V, W],

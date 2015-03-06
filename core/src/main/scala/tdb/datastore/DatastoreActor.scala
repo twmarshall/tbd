@@ -171,6 +171,9 @@ class DatastoreActor(conf: WorkerConf)
       }
       Future.sequence(futures) pipeTo sender
 
+    case GetMessage(listId: String, key: Any) =>
+      sender ! lists(listId).get(key)
+
     case RemoveMessage(listId: String, key: Any, value: Any) =>
       lists(listId).remove(key, value) pipeTo sender
 
