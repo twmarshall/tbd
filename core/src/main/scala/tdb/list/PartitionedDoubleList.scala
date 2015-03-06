@@ -53,6 +53,21 @@ class PartitionedDoubleList[T, U]
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): PartitionedDoubleList[V, W] = ???
 
+  override def foreach(f: ((T, U), Context) => Unit)
+      (implicit c: Context): Unit = {
+    def innerForeach(i: Int)(implicit c: Context) {
+      if (i < partitions.size) {
+        val (mappedPartition, mappedRest) = parWithHint({
+          c => partitions(i).foreach(f)(c)
+        }, partitions(i).workerId)({
+          c => innerForeach(i + 1)(c)
+        })
+      }
+    }
+
+    innerForeach(0)
+  }
+
   override def hashPartitionedFlatMap[V, W]
       (f: ((T, U)) => Iterable[(V, W)],
        numPartitions: Int)

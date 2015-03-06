@@ -34,6 +34,19 @@ class DoubleList[T, U]
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): DoubleList[V, W] = ???
 
+  override def foreach(f: ((T, U), Context) => Unit)
+      (implicit c: Context): Unit = {
+    val memo = new Memoizer[Unit]()
+
+    readAny(head) {
+      case null =>
+      case node =>
+        memo(node) {
+          node.foreach(f, memo)
+        }
+    }
+  }
+
   def hashPartitionedFlatMap[V, W]
       (f: ((T, U)) => Iterable[(V, W)],
        input: ListInput[V, W])

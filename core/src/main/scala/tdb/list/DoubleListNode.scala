@@ -30,6 +30,23 @@ class DoubleListNode[T, U]
     (var valueMod: Mod[(T, U)],
      val nextMod: Mod[DoubleListNode[T, U]]) extends Serializable {
 
+  def foreach[V, W]
+      (f: ((T, U), Context) => Unit,
+       memo: Memoizer[Unit])
+      (implicit c: Context): Unit = {
+    readAny(valueMod) {
+      case value => f(value, c)
+    }
+
+    readAny(nextMod) {
+      case null =>
+      case node =>
+        memo(node) {
+          node.foreach(f, memo)
+        }
+    }
+  }
+
   def hashPartitionedFlatMap[V, W]
       (f: ((T, U)) => Iterable[(V, W)],
        input: ListInput[V, W],

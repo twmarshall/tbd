@@ -58,7 +58,7 @@ trait AdjustableList[T, U] {
   def flatMap[V, W](f: ((T, U)) => Iterable[(V, W)])
       (implicit c: Context): AdjustableList[V, W]
 
-  def foreach(f: (T, U) => Unit)
+  def foreach(f: ((T, U), Context) => Unit)
       (implicit c: Context): Unit = ???
 
   def foreachChunk(f: (Iterable[(T, U)], Context) => Unit)
