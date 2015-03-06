@@ -37,34 +37,54 @@ class PageRankAdjust(links: AdjustableList[Int, Array[Int]])
       deaggregator = (_: Double) - (_: Double),
       initialValue = 0.0)
 
-    var ranks = createList[Int, Double](conf)
-    val r = ranks
-    links.foreachChunk {
-      case (chunk, c) =>
-        putAll(r, chunk.map(pair => (pair._1, 1.0)))(c)
-    }
+    def innerPageRank(i: Int): ListInput[Int, Double] = {
+      if (i == 0) {
+        val ranks = createList[Int, Double](conf)
 
-    for (i <- 1 to PageRankAlgorithm.iters) {
-      val newRanks = createList[Int, Double](conf)
-      val r = ranks
-      def mapper(nodes: Iterable[(Int, Array[Int])], c: Context) {
-        for ((node, edges) <- nodes) {
-          get(r, node) {
+        /*links.foreachChunk {
+         case (chunk, c) =>
+         putAll(r, chunk.map(pair => (pair._1, 1.0)))(c)
+         }*/
+
+        links.foreach {
+          case (pair, c) => put(ranks, pair._1, 1.0)(c)
+        }
+        ranks
+      } else {
+        val ranks = innerPageRank(i - 1)
+        val newRanks = createList[Int, Double](conf)
+        /*def chunkMapper(nodes: Iterable[(Int, Array[Int])], c: Context) {
+         for ((node, edges) <- nodes) {
+         get(r, node) {
+         case rank =>
+         put(newRanks, node, 0.15)(c)
+         val v = (rank / edges.size) * .85
+         for (edge <- edges) {
+         put(newRanks, edge, v)(c)
+         }
+         }(c)
+         }
+         }
+         links.foreach(chunkMapper)*/
+
+        def mapper(pair: (Int, Array[Int]), c: Context) {
+          get(ranks, pair._1) {
             case rank =>
-              put(newRanks, node, 0.15)(c)
-              val v = (rank / edges.size) * .85
-              for (edge <- edges) {
+              put(newRanks, pair._1, 0.15)(c)
+              val v = (rank / pair._2.size) * .85
+              for (edge <- pair._2) {
                 put(newRanks, edge, v)(c)
               }
           }(c)
         }
-      }
 
-      links.foreachChunk(mapper)
-      ranks = newRanks
+        links.foreach(mapper)
+
+        newRanks
+      }
     }
 
-    ranks.getAdjustableList()
+    innerPageRank(PageRankAlgorithm.iters).getAdjustableList()
   }
 }
 
