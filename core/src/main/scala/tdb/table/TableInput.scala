@@ -15,6 +15,8 @@
  */
 package tdb.table
 
+import akka.actor.ActorRef
+
 import tdb.{Input, Mutator}
 
 object TableInput {
@@ -36,7 +38,7 @@ class TableInput[T, U](mutator: Mutator) extends Input[T, U] {
 
   def asyncPutAll(values: Iterable[(T, U)]) = ???
 
-  def get(key: T): U = ???
+  def get(key: T, taskRef: ActorRef): U = ???
 
   def remove(key: T, value: U) = ???
 

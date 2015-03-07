@@ -31,6 +31,7 @@ class DDG {
   debug.TDB.nodes(root) = (Node.getId(), Tag.Root(), null)
 
   val reads = Map[ModId, Buffer[Timestamp]]()
+  val keys = Map[String, Map[Any, Buffer[Timestamp]]]()
   val pars = Map[ActorRef, Timestamp]()
 
   var updated = TreeSet[Timestamp]()((new TimestampOrdering()).reverse)
@@ -61,9 +62,21 @@ class DDG {
   def addGet
       (input: ListInput[Any, Any],
        key: Any,
+       getter: Any => Unit,
        c: Context): Timestamp = {
-    val getNode = new GetNode(input, key)
+    val getNode = new GetNode(input, key, getter)
     val timestamp = nextTimestamp(getNode, c)
+
+    val listId = input.getListId(key)
+    if (!keys.contains(listId)) {
+      keys(listId) = Map[Any, Buffer[Timestamp]]()
+    }
+
+    if (keys(listId).contains(key)) {
+      keys(listId)(key) += timestamp
+    } else {
+      keys(listId)(key) = Buffer(timestamp)
+    }
 
     timestamp
   }
@@ -171,6 +184,16 @@ class DDG {
 
   def modUpdated(modId: ModId) {
     for (timestamp <- reads(modId)) {
+      if (!timestamp.node.updated) {
+        updated += timestamp
+
+        timestamp.node.updated = true
+      }
+    }
+  }
+
+  def keyUpdated(listId: String, key: Any) {
+    for (timestamp <- keys(listId)(key)) {
       if (!timestamp.node.updated) {
         updated += timestamp
 

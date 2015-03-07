@@ -62,13 +62,17 @@ object TDB {
   }
 
   def get[T, U](input: ListInput[T, U], key: T)
-      (reader: U => Unit)
+      (getter: U => Unit)
       (implicit c: Context): Unit = {
     val timestamp =
-      c.ddg.addGet(input.asInstanceOf[ListInput[Any, Any]], key, c)
+      c.ddg.addGet(
+        input.asInstanceOf[ListInput[Any, Any]],
+        key,
+        getter.asInstanceOf[Any => Unit],
+        c)
 
-    val value = input.get(key)
-    reader(value)
+    val value = input.get(key, c.task.self)
+    getter(value)
 
     timestamp.node.currentModId = c.currentModId
     timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)

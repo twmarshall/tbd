@@ -29,6 +29,8 @@ trait HashPartitionedListInput[T, U]
 
   def hasher: ObjHasher[(String, ActorRef)]
 
+  def getListId(key: T) = hasher.getObj(key)._1
+
   def put(key: T, value: U) = {
     Await.result(asyncPut(key, value), DURATION)
   }
@@ -53,9 +55,9 @@ trait HashPartitionedListInput[T, U]
     Future.sequence(futures)
   }
 
-  def get(key: T): U = {
+  def get(key: T, taskRef: ActorRef): U = {
     val (listId, datastoreRef) = hasher.getObj(key)
-    val f = datastoreRef ? GetMessage(listId, key)
+    val f = datastoreRef ? GetMessage(listId, key, taskRef)
     Await.result(f, DURATION).asInstanceOf[U]
   }
 

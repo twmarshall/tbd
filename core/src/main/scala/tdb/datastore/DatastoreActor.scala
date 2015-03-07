@@ -162,25 +162,34 @@ class DatastoreActor(conf: WorkerConf)
       key.toString
       value.toString
 
-      lists(listId).put(key, value) pipeTo sender
+      val futures = Buffer[Future[Any]]()
+      futures += lists(listId).put(key, value)
+      futures += datastore.informDependents(listId, key)
+      Future.sequence(futures) pipeTo sender
 
     case PutAllMessage(listId: String, values: Iterable[(Any, Any)]) =>
       val futures = Buffer[Future[Any]]()
       for ((key, value) <- values) {
         futures += lists(listId).put(key, value)
+        futures += datastore.informDependents(listId, key)
       }
       Future.sequence(futures) pipeTo sender
 
-    case GetMessage(listId: String, key: Any) =>
+    case GetMessage(listId: String, key: Any, taskRef: ActorRef) =>
       sender ! lists(listId).get(key)
+      datastore.addKeyDependency(listId, key, taskRef)
 
     case RemoveMessage(listId: String, key: Any, value: Any) =>
-      lists(listId).remove(key, value) pipeTo sender
+      val futures = Buffer[Future[Any]]()
+      futures += lists(listId).remove(key, value)
+      futures += datastore.informDependents(listId, key)
+      Future.sequence(futures) pipeTo sender
 
     case RemoveAllMessage(listId: String, values: Iterable[(Any, Any)]) =>
       val futures = Buffer[Future[Any]]()
       for ((key, value) <- values) {
         futures += lists(listId).remove(key, value)
+        futures += datastore.informDependents(listId, key)
       }
       Future.sequence(futures) pipeTo sender
 

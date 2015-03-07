@@ -71,7 +71,8 @@ class PutAllNode
 
 class GetNode
     (val input: ListInput[Any, Any],
-     val key: Any) extends Node
+     val key: Any,
+     val getter: Any => Unit) extends Node
 
 class ReadNode
     (val modId: ModId,

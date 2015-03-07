@@ -24,7 +24,7 @@ import tdb.TDB._
 import tdb.util._
 
 object PageRankAlgorithm {
-  val iters = 1
+  val iters = 2
 }
 
 class PageRankAdjust(links: AdjustableList[Int, Array[Int]])

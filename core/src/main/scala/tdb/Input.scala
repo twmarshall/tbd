@@ -15,6 +15,7 @@
  */
 package tdb
 
+import akka.actor.ActorRef
 import scala.concurrent.Future
 
 trait Input[T, U] {
@@ -24,7 +25,7 @@ trait Input[T, U] {
 
   def asyncPutAll(values: Iterable[(T, U)]): Future[_]
 
-  def get(key: T): U
+  def get(key: T, taskRef: ActorRef): U
 
   def remove(key: T, value: U)
 

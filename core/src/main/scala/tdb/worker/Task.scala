@@ -88,6 +88,35 @@ class Task
               c.currentModId2 = oldCurrentModId2
               c.currentTime = oldCurrentTime
             }
+          case getNode: GetNode =>
+            if (getNode.updated) {
+              val newValue = getNode.input.get(getNode.key, self)
+
+              val oldStart = c.reexecutionStart
+              c.reexecutionStart = timestamp.getNext()
+              val oldEnd = c.reexecutionEnd
+              c.reexecutionEnd = timestamp.end
+              val oldCurrentModId = c.currentModId
+              c.currentModId = getNode.currentModId
+              val oldCurrentModId2 = c.currentModId2
+              c.currentModId2 = getNode.currentModId2
+
+              val oldCurrentTime = c.currentTime
+              c.currentTime = timestamp
+
+              getNode.updated = false
+              getNode.getter(newValue)
+
+              if (c.reexecutionStart < c.reexecutionEnd) {
+                c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
+              }
+
+              c.reexecutionStart = oldStart
+              c.reexecutionEnd = oldEnd
+              c.currentModId = oldCurrentModId
+              c.currentModId2 = oldCurrentModId2
+              c.currentTime = oldCurrentTime
+            }
           case readNode: Read2Node =>
             if (readNode.updated) {
               val newValue1 = c.readId(readNode.modId1)
@@ -152,6 +181,11 @@ class Task
     case ModRemovedMessage(modId: ModId) =>
       c.ddg.modRemoved(modId)
       sender ! "done"
+
+    case KeyUpdatedMessage(listId: String, key: Any) =>
+      c.ddg.keyUpdated(listId, key)
+
+      (parent ? PebbleMessage(self, -1)) pipeTo sender
 
     case RunTaskMessage(adjust: Adjustable[_]) =>
       log.debug("Starting task.")
