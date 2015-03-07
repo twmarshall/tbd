@@ -85,6 +85,8 @@ class DoubleListModifier(datastore: Datastore)
     }
   }
 
+  def get(key: Any): Any = ???
+
   def remove(key: Any, value: Any): Future[_] = {
     val mod = nodes(key)
 
@@ -114,6 +116,8 @@ class DoubleListModifier(datastore: Datastore)
   def getAdjustableList(): DoubleList[Any, Any] = {
     modList
   }
+
+  def toBuffer(): Buffer[(Any, Any)] = ???
 
   override def toString(): String = {
     val buf = new StringBuffer()

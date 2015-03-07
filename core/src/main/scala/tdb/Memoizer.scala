@@ -23,7 +23,7 @@ import tdb.ddg.{MemoNode, Timestamp}
 import tdb.master.Master
 
 class Memoizer[T](implicit c: Context) {
-  val memoTable = Map[Seq[Any], ArrayBuffer[Timestamp]]()
+  private val memoTable = Map[Seq[Any], ArrayBuffer[Timestamp]]()
 
   import c.task.context.dispatcher
 

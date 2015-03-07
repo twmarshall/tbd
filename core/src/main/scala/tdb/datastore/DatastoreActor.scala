@@ -91,9 +91,8 @@ class DatastoreActor(conf: WorkerConf)
     case UpdateModMessage(modId: ModId, null, null) =>
       datastore.updateMod(modId, null, null) pipeTo sender
 
-    case RemoveModsMessage(modIds: Iterable[ModId]) =>
-      datastore.removeMods(modIds)
-      sender ! "done"
+    case RemoveModsMessage(modIds: Iterable[ModId], taskRef: ActorRef) =>
+      datastore.removeMods(modIds, taskRef) pipeTo sender
 
     case CreateListIdsMessage
         (conf: ListConf, workerIndex: Int, numWorkers: Int) =>
@@ -115,7 +114,7 @@ class DatastoreActor(conf: WorkerConf)
         nextListId += 1
         val list =
           if (conf.aggregate)
-            new AggregatorListModifier(datastore, conf)
+            new AggregatorListModifier(listId, datastore, self, conf)
           else if (conf.chunkSize == 1)
             new DoubleListModifier(datastore)
           else
@@ -154,6 +153,9 @@ class DatastoreActor(conf: WorkerConf)
     case GetAdjustableListMessage(listId: String) =>
       sender ! lists(listId).getAdjustableList()
 
+    case ToBufferMessage(listId: String) =>
+      sender ! lists(listId).toBuffer()
+
     case PutMessage(listId: String, key: Any, value: Any) =>
       // This solves a bug where sometimes deserialized Scala objects show up as
       // null in matches. We should figure out a better way of solving this.
@@ -168,6 +170,9 @@ class DatastoreActor(conf: WorkerConf)
         futures += lists(listId).put(key, value)
       }
       Future.sequence(futures) pipeTo sender
+
+    case GetMessage(listId: String, key: Any) =>
+      sender ! lists(listId).get(key)
 
     case RemoveMessage(listId: String, key: Any, value: Any) =>
       lists(listId).remove(key, value) pipeTo sender

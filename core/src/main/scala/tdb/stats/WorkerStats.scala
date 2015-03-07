@@ -22,6 +22,8 @@ import java.io._
 import scala.collection.mutable.{Buffer, Map}
 import sys.process._
 
+import tdb.messages._
+
 object WorkerStats {
 
   var datastoreMisses = 0
@@ -86,6 +88,62 @@ class WorkerStats extends Actor with ActorLogging {
     arr
   }
 
+  def writeDatastoreStats() {
+    val output = new BufferedWriter(new FileWriter(webuiRoot + "datastore.txt"))
+
+    val lastReads = Buffer[Int]()
+    val lastWrites = Buffer[Int]()
+    val lastCreates = Buffer[Int]()
+    for (tick <- stats) {
+      lastReads += tick.datastoreReads
+      lastWrites += tick.datastoreWrites
+      lastCreates += tick.modsCreated
+
+      if (lastReads.size > 10) {
+        lastReads -= lastReads.head
+        lastWrites -= lastWrites.head
+        lastCreates -= lastCreates.head
+      }
+
+      output.write(lastReads.reduce(_ + _) + " " + lastWrites.reduce(_ + _) +
+        " " + lastCreates.reduce(_ + _) + "\n")
+    }
+
+    output.close()
+  }
+
+  def writeBerkeleyDBStats() {
+    val output = new BufferedWriter(
+      new FileWriter(webuiRoot + "berkeleydb.txt"))
+
+    val lastReads = Buffer[Int]()
+    val lastWrites = Buffer[Int]()
+    for (tick <- stats) {
+      lastReads += tick.berkeleyReads
+      lastWrites += tick.berkeleyWrites
+
+      if (lastReads.size > 10) {
+        lastReads -= lastReads.head
+        lastWrites -= lastWrites.head
+      }
+
+      output.write(lastReads.reduce(_ + _) + " " + lastWrites.reduce(_ + _) +
+        "\n")
+    }
+    output.close()
+  }
+
+  def makeChartPage(page: String) = s"""
+    <table>
+      <tr><td colspan=2><img src='/$page.png'></td></tr>
+      <tr>
+        <td><a href='refresh_$page'>Refresh Chart</a></td>
+        <td><a href='write_$page'>Write Data</a></td>
+        <td><a href='/'>Back to Worker</a></td>
+      </tr>
+    </table>"""
+
+
   def receive = {
     case "tick" =>
       stats += WorkerStats.newTick()
@@ -94,59 +152,61 @@ class WorkerStats extends Actor with ActorLogging {
     case request: HttpRequestEvent =>
       request match {
         case GET(Path("/tasks.png")) =>
-          val command = "python webui/chart.py " + stats.map(_.numTasks).mkString(" ")
-
-          val output = command.!!
+          if (!(new File(webuiRoot + "tasks.png")).exists()) {
+            val command = "python webui/chart.py " + stats.map(_.numTasks).mkString(" ")
+            val output = command.!!
+          }
 
           request.response.write(getBytes("tasks.png"), "image/png")
 
+        case GET(Path("/tasks")) =>
+          val title = "Tasks"
+          val s = makeChartPage("tasks")
+
+          request.response.write(
+            Stats.createPage(title, s), "text/html; charset=UTF-8")
+
+        case GET(Path("/refresh_tasks")) =>
+          val command = "python webui/chart.py " + stats.map(_.numTasks).mkString(" ")
+          val output = command.!!
+
+          request.response.redirect("/tasks")
+
         case GET(Path("/datastore.png")) =>
-          val output = new BufferedWriter(new FileWriter(webuiRoot + "datastore.txt"))
-
-          val lastReads = Buffer[Int]()
-          val lastWrites = Buffer[Int]()
-          val lastCreates = Buffer[Int]()
-          for (tick <- stats) {
-            lastReads += tick.datastoreReads
-            lastWrites += tick.datastoreWrites
-            lastCreates += tick.modsCreated
-
-            if (lastReads.size > 10) {
-              lastReads -= lastReads.head
-              lastWrites -= lastWrites.head
-              lastCreates -= lastCreates.head
-            }
-
-            output.write(lastReads.reduce(_ + _) + " " + lastWrites.reduce(_ + _) + " " +
-                         lastCreates.reduce(_ + _) + "\n")
-          }
-          output.close()
-
-          "python webui/datastore.py".!
-
           request.response.write(getBytes("datastore.png"), "image/png")
 
+        case GET(Path("/datastore")) =>
+          val title = "Datastore"
+          val s = makeChartPage("datastore")
+
+          request.response.write(
+            Stats.createPage(title, s), "text/html; charset=UTF-8")
+
+        case GET(Path("/refresh_datastore")) =>
+          "python webui/datastore.py".!
+          request.response.redirect("/datastore")
+
+        case GET(Path("/write_datastore")) =>
+          writeDatastoreStats()
+          request.response.redirect("/datastore")
+
         case GET(Path("/berkeleydb.png")) =>
-          val output = new BufferedWriter(new FileWriter(webuiRoot + "berkeleydb.txt"))
-
-          val lastReads = Buffer[Int]()
-          val lastWrites = Buffer[Int]()
-          for (tick <- stats) {
-            lastReads += tick.berkeleyReads
-            lastWrites += tick.berkeleyWrites
-
-            if (lastReads.size > 10) {
-              lastReads -= lastReads.head
-              lastWrites -= lastWrites.head
-            }
-
-            output.write(lastReads.reduce(_ + _) + " " + lastWrites.reduce(_ + _) + "\n")
-          }
-          output.close()
-
-          "python webui/berkeleydb.py".!
-
           request.response.write(getBytes("berkeleydb.png"), "image/png")
+
+        case GET(Path("/berkeleydb")) =>
+          val title = "BerkeleyDB"
+          val s = makeChartPage("berkeleydb")
+
+          request.response.write(
+            Stats.createPage(title, s), "text/html; charset=UTF-8")
+
+        case GET(Path("/refresh_berkeleydb")) =>
+          "python webui/berkeleydb.py".!
+          request.response.redirect("/berkeleydb")
+
+        case GET(Path("/write_berkeleydb")) =>
+          writeBerkeleyDBStats()
+          request.response.redirect("/berkeleydb")
 
         case GET(Path("/")) =>
           var s = "Worker<br>"
@@ -154,7 +214,13 @@ class WorkerStats extends Actor with ActorLogging {
           s += """
             <table>
               <tr>
-                <td><a href='tasks.png'>tasks</></td>
+                <td><a href='/tasks'>Tasks</></td>
+              </tr>
+              <tr>
+                <td><a href='/datastore'>Datastore</td>
+              </tr>
+              <tr>
+                <td><a href='/berkeleydb'>BerkeleyDB</td>
               </tr>
             </table"""
 
@@ -164,6 +230,11 @@ class WorkerStats extends Actor with ActorLogging {
         case _ =>
           request.response.write("This page does not exist.")
       }
+
+    case ClearMessage =>
+      writeDatastoreStats()
+      writeBerkeleyDBStats()
+      sender ! "done"
 
     case x =>
       log.warning("Received unhandled message " +

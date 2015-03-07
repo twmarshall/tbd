@@ -20,31 +20,71 @@ import scala.collection.mutable.Map
 
 import tdb._
 import tdb.list._
+import tdb.TDB._
 import tdb.util._
 
 object PageRankAlgorithm {
-  val iters = 2
+  val iters = 1
 }
 
 class PageRankAdjust(links: AdjustableList[Int, Array[Int]])
   extends Adjustable[AdjustableList[Int, Double]] {
 
   def run(implicit c: Context) = {
-    var ranks = links.mapValues(value => 1.0)
+    val conf = ListConf.create(
+      aggregate = true,
+      aggregator = (_: Double) + (_: Double),
+      deaggregator = (_: Double) - (_: Double),
+      initialValue = 0.0)
 
-    for (i <- 1 to PageRankAlgorithm.iters) {
-      val contribs = links.sortJoin(ranks).flatMap { case (page, (links, rank)) =>
-        val size = links.size
-        links.map(url => (url, rank / size))
+    def innerPageRank(i: Int): ListInput[Int, Double] = {
+      if (i == 0) {
+        val ranks = createList[Int, Double](conf)
+
+        /*links.foreachChunk {
+         case (chunk, c) =>
+         putAll(r, chunk.map(pair => (pair._1, 1.0)))(c)
+         }*/
+
+        links.foreach {
+          case (pair, c) => put(ranks, pair._1, 1.0)(c)
+        }
+        ranks
+      } else {
+        val ranks = innerPageRank(i - 1)
+        val newRanks = createList[Int, Double](conf)
+        /*def chunkMapper(nodes: Iterable[(Int, Array[Int])], c: Context) {
+         for ((node, edges) <- nodes) {
+         get(r, node) {
+         case rank =>
+         put(newRanks, node, 0.15)(c)
+         val v = (rank / edges.size) * .85
+         for (edge <- edges) {
+         put(newRanks, edge, v)(c)
+         }
+         }(c)
+         }
+         }
+         links.foreach(chunkMapper)*/
+
+        def mapper(pair: (Int, Array[Int]), c: Context) {
+          get(ranks, pair._1) {
+            case rank =>
+              put(newRanks, pair._1, 0.15)(c)
+              val v = (rank / pair._2.size) * .85
+              for (edge <- pair._2) {
+                put(newRanks, edge, v)(c)
+              }
+          }(c)
+        }
+
+        links.foreach(mapper)
+
+        newRanks
       }
-
-      val reduced = contribs.reduceBy(_ + _,
-        (pair1: (Int, Double), pair2:(Int, Double)) => pair1._1 - pair2._1)
-
-      ranks = reduced.mapValues(.15 + .85 * _)
     }
 
-    ranks
+    innerPageRank(PageRankAlgorithm.iters).getAdjustableList()
   }
 }
 
@@ -54,6 +94,7 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
   val input = mutator.createList[Int, Array[Int]](conf.listConf)
 
   val data = new GraphData(input, conf.count, conf.mutations, conf.runs)
+  //val data = new GraphFileData(input, "data.txt")
 
   val adjust = new PageRankAdjust(input.getAdjustableList())
 
@@ -76,16 +117,16 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
         joined(url) = (links(url), rank)
       }
 
-      val contribs = joined.values.flatMap { case (links, rank) =>
-        val size = links.size
-        links.map(url => (url, rank / size))
+      val contribs = joined.toSeq.flatMap { case (page, (links, rank)) =>
+        val contrib = rank / links.size * .85
+        links.map(url => (url, contrib)) ++ Iterable((page, .15))
       }
 
       val reducedContribs = Map[Int, Double]()
       for ((url, contrib) <- contribs) {
         reducedContribs(url) = contrib + reducedContribs.getOrElse(url, 0.0)
       }
-      ranks = reducedContribs.map(pair => (pair._1, .15 + .85 * pair._2))
+      ranks = reducedContribs.map(pair => (pair._1, pair._2))
     }
 
     ranks
@@ -102,6 +143,9 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
         check = false
       }
     }
+
+    //println("output = " + out)
+    //println("answer = " + answer)
 
     check
   }

@@ -26,15 +26,23 @@ import tdb.messages._
 import tdb.TDB._
 
 object TDB {
+  def createList[T, U](conf: ListConf)
+      (implicit c: Context): ListInput[T, U] = {
+    val future = c.masterRef ? CreateListMessage(conf)
+    val input = Await.result(future.mapTo[ListInput[T, U]], DURATION)
+    input
+  }
+
   def put[T, U](input: ListInput[T, U], key: T, value: U)
       (implicit c: Context) {
     val timestamp =
       c.ddg.addPut(input.asInstanceOf[ListInput[Any, Any]], key, value, c)
 
-    val future = input.asyncPut(key, value)
-    if (!c.initialRun) {
-      c.pending += future
+    val anyInput = input.asInstanceOf[HashPartitionedListInput[Any, Any]]
+    if (!c.buffers.contains(anyInput)) {
+      c.buffers(anyInput) = anyInput.getBuffer()
     }
+    c.buffers(anyInput).putAll(Iterable((key, value)))
 
     timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
   }
@@ -50,6 +58,19 @@ object TDB {
     }
     c.buffers(anyInput).putAll(values)
 
+    timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
+  }
+
+  def get[T, U](input: ListInput[T, U], key: T)
+      (reader: U => Unit)
+      (implicit c: Context): Unit = {
+    val timestamp =
+      c.ddg.addGet(input.asInstanceOf[ListInput[Any, Any]], key, c)
+
+    val value = input.get(key)
+    reader(value)
+
+    timestamp.node.currentModId = c.currentModId
     timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
   }
 
@@ -73,9 +94,9 @@ object TDB {
     changeable
   }
 
-  def readAny[T, U](mod: Mod[T])
-      (reader: T => U)
-      (implicit c: Context): U = {
+  def readAny[T](mod: Mod[T])
+      (reader: T => Unit)
+      (implicit c: Context) {
     val value = c.read(mod, c.task.self)
 
     val timestamp = c.ddg.addRead(
@@ -89,8 +110,6 @@ object TDB {
 
     readNode.currentModId = c.currentModId
     timestamp.end = c.ddg.nextTimestamp(readNode, c)
-
-    ret
   }
 
   def read2[T, U, V](mod: Mod[T])

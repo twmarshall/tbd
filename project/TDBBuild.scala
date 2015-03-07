@@ -62,21 +62,23 @@ object TDBBuild extends Build {
       mkrun := {
         val classpath = (fullClasspath in Runtime).value.files.absString
         val template = """#!/bin/sh
-        java -Xmx2g -Xss4m -classpath "%s" %s $@
+        java %s -classpath "%s" %s $@
         """
 
-        val master = template.format(classpath, "tdb.master.Main")
+        val master = template.format(
+          "-Xmx2g -Xss4m", classpath, "tdb.master.Main")
         val masterOut = baseDirectory.value / "../bin/master.sh"
         IO.write(masterOut, master)
         masterOut.setExecutable(true)
 
-       val worker = template.format(classpath, "tdb.worker.Main")
+       val worker = template.format(
+         "-XX:+PrintGC -Xmx30g -Xss64m", classpath, "tdb.worker.Main")
        val workerOut = baseDirectory.value / "../bin/worker.sh"
        IO.write(workerOut, worker)
        workerOut.setExecutable(true)
 
-        val experiment =
-          template.format(classpath, "tdb.examples.list.Experiment")
+        val experiment = template.format(
+          "-Xmx10g", classpath, "tdb.examples.list.Experiment")
         val experimentOut = baseDirectory.value / "../bin/experiment.sh"
         IO.write(experimentOut, experiment)
         experimentOut.setExecutable(true)

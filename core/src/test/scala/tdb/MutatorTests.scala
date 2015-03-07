@@ -37,7 +37,7 @@ class FileLoadTest(input: ListInput[String, String])
 }
 
 class MutatorTests extends FlatSpec with Matchers {
-  val intensity = 100
+  val intensity = 10
   def runTest(mutator: Mutator,
     adjustable: Adjustable[AdjustableList[Int, Int]],
     input: ListInput[Int, Int],

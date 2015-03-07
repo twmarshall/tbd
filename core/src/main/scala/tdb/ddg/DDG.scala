@@ -58,6 +58,16 @@ class DDG {
     timestamp
   }
 
+  def addGet
+      (input: ListInput[Any, Any],
+       key: Any,
+       c: Context): Timestamp = {
+    val getNode = new GetNode(input, key)
+    val timestamp = nextTimestamp(getNode, c)
+
+    timestamp
+  }
+
   def addRead
       (mod: Mod[Any],
        value: Any,
@@ -165,6 +175,14 @@ class DDG {
         updated += timestamp
 
         timestamp.node.updated = true
+      }
+    }
+  }
+
+  def modRemoved(modId: ModId) {
+    if (reads.contains(modId)) {
+      for (timestamp <- reads(modId)) {
+        timestamp.node.updated = false
       }
     }
   }

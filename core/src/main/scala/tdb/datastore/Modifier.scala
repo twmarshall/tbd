@@ -15,7 +15,7 @@
  */
 package tdb.datastore
 
-import scala.collection.mutable.Map
+import scala.collection.mutable.Buffer
 import scala.concurrent.Future
 
 import tdb.Constants._
@@ -27,7 +27,11 @@ trait Modifier {
 
   def put(key: Any, value: Any): Future[_]
 
+  def get(key: Any): Any
+
   def remove(key: Any, value: Any): Future[_]
 
   def getAdjustableList(): AdjustableList[Any, Any]
+
+  def toBuffer(): Buffer[(Any, Any)]
 }

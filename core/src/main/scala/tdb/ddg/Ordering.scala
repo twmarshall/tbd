@@ -205,6 +205,7 @@ class Ordering {
             putNode.input.remove(putNode.key, putNode.value)
           case putNode: PutAllNode =>
             putNode.input.removeAll(putNode.values)
+          case getNode: GetNode =>
           case x => println("Tried to splice unknown node type " + x)
         }
 

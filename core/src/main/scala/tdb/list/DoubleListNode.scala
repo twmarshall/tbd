@@ -30,6 +30,23 @@ class DoubleListNode[T, U]
     (var valueMod: Mod[(T, U)],
      val nextMod: Mod[DoubleListNode[T, U]]) extends Serializable {
 
+  def foreach[V, W]
+      (f: ((T, U), Context) => Unit,
+       memo: Memoizer[Unit])
+      (implicit c: Context): Unit = {
+    readAny(valueMod) {
+      case value => f(value, c)
+    }
+
+    readAny(nextMod) {
+      case null =>
+      case node =>
+        memo(node) {
+          node.foreach(f, memo)
+        }
+    }
+  }
+
   def hashPartitionedFlatMap[V, W]
       (f: ((T, U)) => Iterable[(V, W)],
        input: ListInput[V, W],
@@ -77,7 +94,7 @@ class DoubleListNode[T, U]
     write(new DoubleListNode[V, W](newValue, newNextMod))
   }
 
-  def quicksort
+  /*def quicksort
       (toAppend: Mod[DoubleListNode[T, U]],
        comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): Changeable[DoubleListNode[T, U]] = {
@@ -118,7 +135,7 @@ class DoubleListNode[T, U]
       case smallerNode =>
         smallerNode.quicksort(mod { write(mid) }, comparator)
     }
-  }
+  }*/
 
   def split
       (pred: ((T, U)) => Boolean,

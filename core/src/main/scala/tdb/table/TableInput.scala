@@ -36,6 +36,8 @@ class TableInput[T, U](mutator: Mutator) extends Input[T, U] {
 
   def asyncPutAll(values: Iterable[(T, U)]) = ???
 
+  def get(key: T): U = ???
+
   def remove(key: T, value: U) = ???
 
   def removeAll(values: Iterable[(T, U)]) = ???

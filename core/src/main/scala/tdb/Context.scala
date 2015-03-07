@@ -30,7 +30,7 @@ import tdb.worker.Task
 class Context
     (taskId: TaskId,
      val task: Task,
-     private val datastore: ActorRef,
+     private val datastoreRef: ActorRef,
      val masterRef: ActorRef) {
   import task.context.dispatcher
 
@@ -85,7 +85,7 @@ class Context
   }
 
   def readId(modId: ModId, taskRef: ActorRef = null): Any = {
-    val future = datastore ? GetModMessage(modId, taskRef)
+    val future = datastoreRef ? GetModMessage(modId, taskRef)
     val ret = Await.result(future, DURATION)
 
     ret match {
@@ -96,7 +96,7 @@ class Context
 
   def update[T](modId: ModId, value: T) {
     val message = UpdateModMessage(modId, value, task.self)
-    val future = (datastore ? message)
+    val future = (datastoreRef ? message)
 
     if (!initialRun) {
       pending += future
@@ -109,7 +109,8 @@ class Context
   }
 
   def remove[T](modId: ModId) {
-    val future = (datastore ? RemoveModsMessage(Buffer(modId)))
+    ddg.modRemoved(modId)
+    val future = (datastoreRef ? RemoveModsMessage(Buffer(modId), task.self))
     Await.result(future, DURATION)
   }
 }
