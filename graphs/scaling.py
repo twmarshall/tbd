@@ -35,7 +35,7 @@ rects2 = ax.bar(ind+width, sparkMeans, width, color='y', yerr=sparkStd)
 
 # add some text for labels, title and axes ticks
 ax.set_xlabel('Machines')
-ax.set_ylabel('Time (seconds)')
+ax.set_ylabel('Updates/Second')
 ax.set_title('Scalability')
 ax.set_xticks(ind+width)
 ax.set_xticklabels( ('1', '2', '3', '4'))
