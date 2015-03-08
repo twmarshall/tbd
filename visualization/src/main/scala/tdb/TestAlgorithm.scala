@@ -35,7 +35,7 @@ trait TestAlgorithm[TDBOutputType, NativeOutputType]
   def getExpectedResult(input: Map[Int, Int]): NativeOutputType
   //Returns the list conf for the algorithm, so we can enforce a
   //certain type of list.
-  def getListConf() = { new ListConf(partitions = 1) }
+  def getListConf() = { ListConf(partitions = 1) }
 
   var input: ListInput[Int, Int] = null
 }

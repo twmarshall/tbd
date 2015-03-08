@@ -183,7 +183,7 @@ object Experiment {
            count <- conf.counts();
            file <- conf.files();
            partitions <- conf.partitions()) {
-        val listConf = new ListConf(
+        val listConf = ListConf(
           file = file,
           partitions = partitions.toInt,
           chunkSize = chunkSize.toInt)

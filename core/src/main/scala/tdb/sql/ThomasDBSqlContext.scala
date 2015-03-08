@@ -97,7 +97,7 @@ class TDBSqlContext(val mutator: Mutator)  {
       (tableName: String,
        path: String,
        f: Array[String] => T,
-       listConf: ListConf  = new ListConf(partitions = 1, chunkSize = 1)) = {
+       listConf: ListConf  = ListConf(partitions = 1, chunkSize = 1)) = {
     if (tablesMap.contains(tableName)) throw
       new TableNameTakenException(tableName)
     val fileContents = Source.fromFile(path).getLines.map(_.split(",")).map(f)

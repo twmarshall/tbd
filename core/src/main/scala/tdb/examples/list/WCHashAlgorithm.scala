@@ -54,7 +54,7 @@ class WCChunkHashAdjust
   }
 
   def run(implicit c: Context) = {
-    val conf = ListConf.create(
+    val conf = AggregatorListConf(
       aggregator = (_: Int) + (_: Int),
       deaggregator = (_: Int) + (_: Int),
       initialValue = 0)
@@ -86,7 +86,7 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
   override def loadInitial() {
     mutator.loadFile(conf.file)
     input = mutator.createList[String, String](
-      conf.listConf.copy(file = conf.file))
+      conf.listConf.clone(file = conf.file))
         .asInstanceOf[Dataset[String, String]]
 
     adjust = new WCChunkHashAdjust(

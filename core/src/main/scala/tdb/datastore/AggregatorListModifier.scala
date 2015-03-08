@@ -23,27 +23,29 @@ import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class AggregatorListModifier
+class AggregatorListModifier[U]
     (listId: String,
      datastore: Datastore,
      datastoreRef: ActorRef,
-     conf: ListConf)
+     conf: AggregatorListConf[U])
     (implicit ec: ExecutionContext)
   extends Modifier {
 
-  private val values = Map[Any, Mod[Vector[(Any, Any)]]]()
+  private val values = Map[Any, Mod[Vector[(Any, U)]]]()
 
   private val fullChunks = Set[ModId]()
   private val freeChunks = Set[ModId]()
 
   def loadInput(keys: Iterator[Any]) = ???
 
-  def put(key: Any, value: Any): Future[_] = {
+  def put(key: Any, anyValue: Any): Future[_] = {
+    val value = anyValue.asInstanceOf[U]
+
     if (values.contains(key)) {
       val chunk = datastore.read(values(key))
 
       val newChunk = chunk.map {
-        case (_key: Any, _value: Any) => {
+        case (_key, _value) => {
           if (key == _key) {
             (_key, conf.aggregator(_value, value))
           } else {
@@ -89,7 +91,9 @@ class AggregatorListModifier
     value
   }
 
-  def remove(key: Any, value: Any): Future[_] = {
+  def remove(key: Any, anyValue: Any): Future[_] = {
+    val value = anyValue.asInstanceOf[U]
+
     val mod = values(key)
     val chunk = datastore.read(mod)
 

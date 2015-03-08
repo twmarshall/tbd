@@ -46,7 +46,7 @@ object SQLTest {
     val connector = if (master == "")
                       MasterConnector()
                     else MasterConnector(master)
-    val listConf =  new ListConf(partitions = partitionSize, chunkSize = 1)
+    val listConf =  ListConf(partitions = partitionSize, chunkSize = 1)
     val mutator = new Mutator(connector)
     val sqlContext = new TDBSqlContext(mutator)
     var f = (row: Array[String])  => Rec(row(0), row(1).trim.toInt, row(2).trim.toDouble)

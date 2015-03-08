@@ -186,15 +186,15 @@ class Master extends Actor with ActorLogging {
       assert(hasher.isComplete())
 
       val input = conf match {
-        // file, partitions, chunkSize, chunkSizer, sorted, hash, aggregate
-        case ListConf(_, _, _, _, _, _, true, _, _, _) =>
-          new AggregatorInput(hasher, conf)
+        case aggregatorConf: AggregatorListConf[_] =>
+          new AggregatorInput(hasher, aggregatorConf)
 
-        case ListConf(_, _, 1, _, false, _, _, _, _, _) =>
+        case SimpleListConf(_, _, 1, _, false, _) =>
           new HashPartitionedDoubleListInput(hasher)
 
-        case ListConf(_, _, _, _, false, _, _, _, _, _) =>
+        case SimpleListConf(_, _, _, _, false, _) =>
           new HashPartitionedDoubleChunkListInput(hasher, conf)
+        case _ => ???
       }
 
       sender ! input

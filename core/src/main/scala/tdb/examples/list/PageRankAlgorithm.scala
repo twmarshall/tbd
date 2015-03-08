@@ -31,8 +31,7 @@ class PageRankAdjust(links: AdjustableList[Int, Array[Int]])
   extends Adjustable[AdjustableList[Int, Double]] {
 
   def run(implicit c: Context) = {
-    val conf = ListConf.create(
-      aggregate = true,
+    val conf = AggregatorListConf(
       aggregator = (_: Double) + (_: Double),
       deaggregator = (_: Double) - (_: Double),
       initialValue = 0.0)
@@ -80,9 +79,29 @@ class PageRankAdjust(links: AdjustableList[Int, Array[Int]])
 
         links.foreach(mapper)
 
+
+        newRanks.getAdjustableList().foreach {
+          case (pair, c) => println(pair)
+        }
+
         newRanks
       }
     }
+
+    /*def innerPageRank(i: Int): AdjustableList[Int, Double] = {
+      if (i == 0) {
+        links.mapValues(_ => 1.0)
+      } else {
+        val ranks = innerPageRank(i - 1)
+
+        def mapper(link: (Int, Array[Int]), rank: (Int, Double)): (Int, Double) = {
+          
+        }
+
+        links.keyJoin(ranks, mapper)
+        ???
+      }
+    }*/
 
     innerPageRank(PageRankAlgorithm.iters).getAdjustableList()
   }
@@ -95,6 +114,7 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
 
   val data = new GraphData(input, conf.count, conf.mutations, conf.runs)
   //val data = new GraphFileData(input, "data.txt")
+  //val data = new LiveJournalData(input)
 
   val adjust = new PageRankAdjust(input.getAdjustableList())
 

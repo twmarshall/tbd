@@ -76,7 +76,7 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
   override def loadInitial() {
     mutator.loadFile(conf.file)
     input = mutator.createList[String, String](
-        conf.listConf.copy(file = conf.file))
+        conf.listConf.clone(file = conf.file))
           .asInstanceOf[Dataset[String, String]]
 
     val mappedConf = ListConf(chunkSize = conf.listConf.chunkSize,

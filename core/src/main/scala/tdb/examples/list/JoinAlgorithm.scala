@@ -41,7 +41,7 @@ class JoinAlgorithm(_conf: AlgorithmConf)
     new IntData(input, conf.runs, conf.count, conf.mutations, "data.txt")
   //val data = new IntFileData(input, "data.txt")
 
-  val input2 = mutator.createList[Int, Int](conf.listConf.copy(partitions = 1))
+  val input2 = mutator.createList[Int, Int](conf.listConf.clone(partitions = 1))
   val data2 =
     new IntData(input2, conf.runs, conf.count, conf.mutations, "data2.txt")
   //val data2 = new IntFileData(input2, "data2.txt")

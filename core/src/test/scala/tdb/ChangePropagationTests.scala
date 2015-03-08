@@ -177,7 +177,7 @@ class ChangePropagationTests extends FlatSpec with Matchers {
 
   "PropagationOrderTest2" should "reexecute map in the correct order" in {
     val mutator = new Mutator()
-    val input = mutator.createList[Int, Int](new ListConf(partitions = 1))
+    val input = mutator.createList[Int, Int](ListConf(partitions = 1))
 
     for (i <- 0 to 100) {
       input.put(i, i)

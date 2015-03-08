@@ -25,7 +25,7 @@ import tdb.messages._
 import tdb.util.ObjHasher
 
 class AggregatorInput[T, U]
-    (val hasher: ObjHasher[(String, ActorRef)], conf: ListConf)
+    (val hasher: ObjHasher[(String, ActorRef)], conf: AggregatorListConf[U])
   extends HashPartitionedListInput[T, U] with java.io.Serializable {
 
   def getAdjustableList(): AdjustableList[T, U] = {
@@ -43,7 +43,7 @@ class AggregatorInput[T, U]
   override def getBuffer() = new AggregatorBuffer(this, conf)
 }
 
-class AggregatorBuffer[T, U](input: ListInput[T, U], conf: ListConf)
+class AggregatorBuffer[T, U](input: ListInput[T, U], conf: AggregatorListConf[U])
   extends InputBuffer[T, U] {
 
   private val toPut = Map[T, U]()

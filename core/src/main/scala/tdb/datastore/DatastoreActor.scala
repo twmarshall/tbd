@@ -113,12 +113,15 @@ class DatastoreActor(conf: WorkerConf)
         val listId = nextListId + ""
         nextListId += 1
         val list =
-          if (conf.aggregate)
-            new AggregatorListModifier(listId, datastore, self, conf)
-          else if (conf.chunkSize == 1)
-            new DoubleListModifier(datastore)
-          else
-            new DoubleChunkListModifier(datastore, conf)
+          conf match {
+            case conf: AggregatorListConf[_] =>
+              new AggregatorListModifier(listId, datastore, self, conf)
+            case conf: ListConf =>
+              if (conf.chunkSize == 1)
+                new DoubleListModifier(datastore)
+              else
+                new DoubleChunkListModifier(datastore, conf)
+          }
 
         lists(listId) = list
         newLists += list

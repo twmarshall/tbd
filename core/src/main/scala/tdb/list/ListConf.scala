@@ -16,39 +16,58 @@
 package tdb.list
 
 object ListConf {
-  def create[T]
+  def apply[T]
+    (file: String = "",
+     partitions: Int = 8,
+     chunkSize: Int = 1,
+     chunkSizer: Any => Int = _ => 1,
+     sorted: Boolean = false,
+     hash: Boolean = false): ListConf = {
+    new SimpleListConf(
+      file,
+      partitions,
+      chunkSize,
+      chunkSizer,
+      sorted,
+      hash)
+  }
+}
+
+sealed trait ListConf {
+  def file: String
+  def partitions: Int
+  def chunkSize: Int
+  def chunkSizer: Any => Int
+  def sorted: Boolean
+  def hash: Boolean
+
+  def clone
+    (file: String = file,
+     partitions: Int = partitions): ListConf
+}
+
+case class SimpleListConf
+    (file: String = "",
+     partitions: Int = 8,
+     chunkSize: Int = 1,
+     chunkSizer: Any => Int = _ => 1,
+     sorted: Boolean = false,
+     hash: Boolean = false) extends ListConf {
+
+  def clone(_file: String, _partitions: Int) =
+    copy(file = _file, partitions = _partitions)
+}
+
+case class AggregatorListConf[T]
     (file: String = "",
      partitions: Int = 8,
      chunkSize: Int = 1,
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
      hash: Boolean = false,
-     aggregate: Boolean = false,
      aggregator: (T, T) => T = null,
      deaggregator: (T, T) => T = null,
-     initialValue: T): ListConf = {
-    new ListConf(
-      file,
-      partitions,
-      chunkSize,
-      chunkSizer,
-      sorted,
-      hash,
-      aggregate,
-      aggregator.asInstanceOf[(Any, Any) => Any],
-      deaggregator.asInstanceOf[(Any, Any) => Any],
-      initialValue.asInstanceOf[Any])
-  }
+     initialValue: T = null) extends ListConf {
+  def clone(_file: String, _partitions: Int) =
+    copy(file = _file, partitions = _partitions)
 }
-
-case class ListConf
-    (val file: String = "",
-     val partitions: Int = 8,
-     chunkSize: Int = 1,
-     chunkSizer: Any => Int = _ => 1,
-     sorted: Boolean = false,
-     hash: Boolean = false,
-     aggregate: Boolean = false,
-     aggregator: (Any, Any) => Any = null,
-     deaggregator: (Any, Any) => Any = null,
-     initialValue: Any = null)
