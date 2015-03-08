@@ -182,6 +182,25 @@ class PartitionedDoubleChunkList[T, U]
     new PartitionedDoubleChunkList(innerMap(0), conf)
   }
 
+  override def mapValues[V](f: U => V)
+      (implicit c: Context): PartitionedDoubleChunkList[T, V] = {
+    def innerMap(i: Int)(implicit c: Context): Buffer[DoubleChunkList[T, V]] = {
+      if (i < partitions.size) {
+        val (mappedPartition, mappedRest) = parWithHint({
+          c => partitions(i).mapValues(f)(c)
+        }, partitions(i).workerId)({
+          c => innerMap(i + 1)(c)
+        })
+
+        mappedRest += mappedPartition
+      } else {
+        Buffer[DoubleChunkList[T, V]]()
+      }
+    }
+
+    new PartitionedDoubleChunkList(innerMap(0), conf)
+  }
+
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = {
 

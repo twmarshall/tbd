@@ -77,6 +77,21 @@ class DoubleList[T, U]
     )
   }
 
+
+  override def mapValues[V](f: U => V)
+      (implicit c: Context): DoubleList[T, V] = {
+    val memo = new Memoizer[Changeable[DoubleListNode[T, V]]]()
+
+    new DoubleList(
+      mod {
+        read(head) {
+          case null => write[DoubleListNode[T, V]](null)
+          case node => node.mapValues(f, memo)
+        }
+      }, sorted, workerId
+    )
+  }
+
   def merge(that: DoubleList[T, U])
       (implicit c: Context,
        ordering: Ordering[T]): DoubleList[T, U] = ???

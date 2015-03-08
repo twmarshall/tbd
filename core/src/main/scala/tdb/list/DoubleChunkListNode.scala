@@ -161,6 +161,31 @@ class DoubleChunkListNode[T, U]
     write(new DoubleChunkListNode[V, W](newChunkMod, newNextMod))
   }
 
+  def mapValues[V]
+      (f: U => V,
+       memo: Memoizer[Changeable[DoubleChunkListNode[T, V]]])
+      (implicit c: Context): Changeable[DoubleChunkListNode[T, V]] = {
+    val newChunkMod = mod {
+      read(chunkMod) {
+        case chunk =>
+          write(for ((k, v) <- chunk) yield (k, f(v)))
+      }
+    }
+
+    val newNextMod = mod {
+      read(nextMod) {
+        case null =>
+          write[DoubleChunkListNode[T, V]](null)
+        case next =>
+          memo(next) {
+            next.mapValues(f, memo)
+          }
+      }
+    }
+
+    write(new DoubleChunkListNode(newChunkMod, newNextMod))
+  }
+
   override def equals(obj: Any): Boolean = {
     if (!obj.isInstanceOf[DoubleChunkListNode[T, U]]) {
       false

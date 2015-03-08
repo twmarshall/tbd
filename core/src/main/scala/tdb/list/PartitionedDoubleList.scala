@@ -113,6 +113,25 @@ class PartitionedDoubleList[T, U]
     new PartitionedDoubleList(innerMap(0))
   }
 
+  override def mapValues[V](f: U => V)
+      (implicit c: Context): PartitionedDoubleList[T, V] = {
+    def innerMap(i: Int)(implicit c: Context): Buffer[DoubleList[T, V]] = {
+      if (i < partitions.size) {
+        val (mappedPartition, mappedRest) = parWithHint({
+          c => partitions(i).mapValues(f)(c)
+        }, partitions(i).workerId)({
+          c => innerMap(i + 1)(c)
+        })
+
+        mappedRest += mappedPartition
+      } else {
+        Buffer[DoubleList[T, V]]()
+      }
+    }
+
+    new PartitionedDoubleList(innerMap(0))
+  }
+
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = {
 

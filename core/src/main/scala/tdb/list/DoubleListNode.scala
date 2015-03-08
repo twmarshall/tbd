@@ -94,6 +94,32 @@ class DoubleListNode[T, U]
     write(new DoubleListNode[V, W](newValue, newNextMod))
   }
 
+
+  def mapValues[V]
+      (f: U => V,
+       memo: Memoizer[Changeable[DoubleListNode[T, V]]])
+      (implicit c: Context): Changeable[DoubleListNode[T, V]] = {
+    val newValueMod = mod {
+      read(valueMod) {
+        case (k, v) =>
+          write((k, f(v)))
+      }
+    }
+
+    val newNextMod = mod {
+      read(nextMod) {
+        case null =>
+          write[DoubleListNode[T, V]](null)
+        case next =>
+          memo(next) {
+            next.mapValues(f, memo)
+          }
+      }
+    }
+
+    write(new DoubleListNode(newValueMod, newNextMod))
+  }
+
   /*def quicksort
       (toAppend: Mod[DoubleListNode[T, U]],
        comparator: ((T, U), (T, U)) => Int)

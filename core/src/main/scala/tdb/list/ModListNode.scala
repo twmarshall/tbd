@@ -108,23 +108,6 @@ class ModListNode[T, U](var value: (T, U),
     }
   }
 
-  def mapValues[V](f: U => V,
-    memo: Memoizer[Changeable[ModListNode[T, V]]],
-    modizer: Modizer1[ModListNode[T, V]])(implicit c: Context): Changeable[ModListNode[T, V]] = {
-    val newNextMod = modizer(nextMod.id) {
-      read(nextMod) {
-        case null =>
-          write[ModListNode[T, V]](null)
-        case next =>
-          memo(next) {
-            next.mapValues(f, memo, modizer)
-          }
-      }
-    }
-
-    write(new ModListNode((value._1, f(value._2)), newNextMod))
-  }
-
   def merge(that: ModListNode[T, U],
     memo: Memoizer[Changeable[ModListNode[T, U]]],
     modizer: Modizer1[ModListNode[T, U]],

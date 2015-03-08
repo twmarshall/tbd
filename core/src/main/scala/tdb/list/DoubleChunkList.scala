@@ -116,6 +116,20 @@ class DoubleChunkList[T, U]
     )
   }
 
+  override def mapValues[V](f: U => V)
+      (implicit c: Context): DoubleChunkList[T, V] = {
+    val memo = new Memoizer[Changeable[DoubleChunkListNode[T, V]]]()
+
+    new DoubleChunkList(
+      mod {
+        read(head) {
+          case null => write[DoubleChunkListNode[T, V]](null)
+          case node => node.mapValues(f, memo)
+        }
+      }, conf, sorted, workerId
+    )
+  }
+
   def merge(that: DoubleChunkList[T, U])
       (implicit c: Context,
        ordering: Ordering[T]): DoubleChunkList[T, U] = ???

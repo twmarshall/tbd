@@ -65,21 +65,6 @@ class ModList[T, U]
   def map[V, W](f: ((T, U)) => (V, W))
       (implicit c: Context): ModList[V, W] = ???
 
-  override def mapValues[V](f: U => V)
-      (implicit c: Context): ModList[T, V] = {
-    val memo = new Memoizer[Changeable[ModListNode[T, V]]]()
-    val modizer = new Modizer1[ModListNode[T, V]]()
-
-    new ModList(
-      modizer(head.id) {
-        read(head) {
-          case null => write[ModListNode[T, V]](null)
-          case node => node.mapValues(f, memo, modizer)
-        }
-      }, sorted
-    )
-  }
-
   def merge(that: ModList[T, U], comparator: ((T, U), (T, U)) => Int)
       (implicit c: Context): ModList[T, U] = {
     merge(that, new Memoizer[Changeable[ModListNode[T, U]]](),
