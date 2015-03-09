@@ -68,7 +68,7 @@ class Context
 
   var epoch = 0
 
-  val buffers = Map[HashPartitionedListInput[Any, Any], InputBuffer[Any, Any]]()
+  val buffers = Map[ListInput[Any, Any], InputBuffer[Any, Any]]()
 
   def newModId(): ModId = {
     var newModId: Long = taskId

@@ -202,9 +202,10 @@ class Ordering {
           case parNode: ParNode =>
             parNode.updated = false
           case putNode: PutNode =>
-            putNode.input.remove(putNode.key, putNode.value)
+            c.buffers(putNode.input)
+              .removeAll(Iterable((putNode.key, putNode.value)))
           case putNode: PutAllNode =>
-            putNode.input.removeAll(putNode.values)
+            c.buffers(putNode.input).removeAll(putNode.values)
           case getNode: GetNode =>
             getNode.updated = false
             c.ddg.keys(getNode.input.getListId(getNode.key))(getNode.key) -= time
