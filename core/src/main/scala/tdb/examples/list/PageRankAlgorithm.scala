@@ -69,9 +69,7 @@ class PageRankAdjust
             case rank =>
               put(newRanks, pair._1, 0.15)(c)
               val v = (rank / pair._2.size) * .85
-              for (edge <- pair._2) {
-                put(newRanks, edge, v)(c)
-              }
+              putAll(newRanks, for (edge <- pair._2) yield (edge, v))(c)
           }(c)
         }
 
