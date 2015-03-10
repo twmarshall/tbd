@@ -57,7 +57,8 @@ class WCChunkHashAdjust
     val conf = AggregatorListConf(
       aggregator = (_: Int) + (_: Int),
       deaggregator = (_: Int) + (_: Int),
-      initialValue = 0)
+      initialValue = 0,
+      threshold = (_: Int) > 0)
     list.hashChunkMap(wordcount, conf).getAdjustableList()
   }
 }

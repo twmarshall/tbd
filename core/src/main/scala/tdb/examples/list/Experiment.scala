@@ -138,6 +138,8 @@ object Experiment {
     confs("output") = conf.output()
     confs("chunkSizes") = conf.chunkSizes()
     confs("cacheSizes") = conf.cacheSizes()
+    confs("epsilons") = conf.epsilons().map(_.toString)
+    confs("iters") = conf.iters().map(_.toString)
 
     if (conf.verbosity() > 0) {
       if (!conf.output().contains("runs")) {
@@ -182,7 +184,9 @@ object Experiment {
            chunkSize <- conf.chunkSizes();
            count <- conf.counts();
            file <- conf.files();
-           partitions <- conf.partitions()) {
+           partitions <- conf.partitions();
+           iters <- conf.iters();
+           epsilon <- conf.epsilons()) {
         val listConf = ListConf(
           file = file,
           partitions = partitions.toInt,
@@ -201,7 +205,9 @@ object Experiment {
           repeat = i,
           storeType = conf.store(),
           updateFile = conf.updateFile(),
-          listConf = listConf)
+          listConf = listConf,
+          iters = iters,
+          epsilon = epsilon)
 
         val alg = algorithm match {
           case "filter" => new FilterAlgorithm(algConf)

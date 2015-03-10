@@ -35,6 +35,7 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
   val counts = opt[List[String]]("counts",
     default = Some(List("1000")),
     descr = "Number of elements to load initially.")
+  val epsilons = opt[List[Double]]("epsilons", default = Some(List(0.01)))
   val envHomePath = opt[String]("envHomePath",
     default = Some("/tmp/tdb_berkeleydb"), descr = "If using berkeleydb," +
     "the path to where the database should be stored.")
@@ -44,6 +45,7 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     descr = "Should gc times be included in the output.")
   val displayLoad = opt[Boolean]("displayLoad", default = Some(false),
     descr = "If true, loading times will be included in output.")
+  val iters = opt[List[Int]]("iters", default = Some(List(1)))
   val master = opt[String]("master", default = Some(""),
     descr = "The master Akka url to connect to. If unspecified, we'll " +
     "launch a master.")

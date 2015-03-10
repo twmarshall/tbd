@@ -74,7 +74,9 @@ class AggregatorBuffer[T, U](input: ListInput[T, U], conf: AggregatorListConf[U]
   def flush() {
     val futures = Buffer[Future[Any]]()
 
-    futures += input.asyncPutAll(toPut)
+    futures += input.asyncPutAll(toPut.filter {
+      case (key, value) => conf.threshold(value)
+    })
 
     toPut.clear()
 

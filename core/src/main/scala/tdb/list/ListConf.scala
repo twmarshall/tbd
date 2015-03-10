@@ -65,9 +65,10 @@ case class AggregatorListConf[T]
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
      hash: Boolean = false,
-     aggregator: (T, T) => T = null,
-     deaggregator: (T, T) => T = null,
-     initialValue: T = null) extends ListConf {
+     aggregator: (T, T) => T,
+     deaggregator: (T, T) => T,
+     initialValue: T,
+     threshold: T => Boolean) extends ListConf {
   def clone(_file: String, _partitions: Int) =
     copy(file = _file, partitions = _partitions)
 }

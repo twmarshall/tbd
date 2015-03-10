@@ -23,22 +23,20 @@ import tdb.list._
 import tdb.TDB._
 import tdb.util._
 
-object PageRankAlgorithm {
-  val iters = 2
-}
-
-class PageRankAdjust(links: AdjustableList[Int, Array[Int]])
+class PageRankAdjust
+    (links: AdjustableList[Int, Array[Int]], epsilon: Double, iters: Int)
   extends Adjustable[AdjustableList[Int, Double]] {
 
   def run(implicit c: Context) = {
-    val conf = AggregatorListConf(
+    val aggregatorConf = AggregatorListConf(
       aggregator = (_: Double) + (_: Double),
       deaggregator = (_: Double) - (_: Double),
-      initialValue = 0.0)
+      initialValue = 0.0,
+      threshold = (_: Double).abs > epsilon)
 
     def innerPageRank(i: Int): ListInput[Int, Double] = {
       if (i == 0) {
-        val ranks = createList[Int, Double](conf)
+        val ranks = createList[Int, Double](aggregatorConf)
 
         /*links.foreachChunk {
          case (chunk, c) =>
@@ -51,7 +49,7 @@ class PageRankAdjust(links: AdjustableList[Int, Array[Int]])
         ranks
       } else {
         val ranks = innerPageRank(i - 1)
-        val newRanks = createList[Int, Double](conf)
+        val newRanks = createList[Int, Double](aggregatorConf)
         /*def chunkMapper(nodes: Iterable[(Int, Array[Int])], c: Context) {
          for ((node, edges) <- nodes) {
          get(r, node) {
@@ -80,9 +78,9 @@ class PageRankAdjust(links: AdjustableList[Int, Array[Int]])
         links.foreach(mapper)
 
 
-        newRanks.getAdjustableList().foreach {
+        /*newRanks.getAdjustableList().foreach {
           case (pair, c) => println(pair)
-        }
+        }*/
 
         newRanks
       }
@@ -103,7 +101,7 @@ class PageRankAdjust(links: AdjustableList[Int, Array[Int]])
       }
     }*/
 
-    innerPageRank(PageRankAlgorithm.iters).getAdjustableList()
+    innerPageRank(iters).getAdjustableList()
   }
 }
 
@@ -116,7 +114,8 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
   //val data = new GraphFileData(input, "data.txt")
   //val data = new LiveJournalData(input)
 
-  val adjust = new PageRankAdjust(input.getAdjustableList())
+  val adjust = new PageRankAdjust(
+    input.getAdjustableList(), conf.epsilon, conf.iters)
 
   var naiveTable: Map[Int, Array[Int]] = _
   def generateNaive() {
@@ -131,7 +130,7 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
   private def naiveHelper(links: Map[Int, Array[Int]]) = {
     var ranks = links.map(pair => (pair._1, 1.0))
 
-    for (i <- 1 to PageRankAlgorithm.iters) {
+    for (i <- 1 to conf.iters) {
       val joined = Map[Int, (Array[Int], Double)]()
       for ((url, rank) <- ranks) {
         joined(url) = (links(url), rank)
@@ -152,21 +151,25 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
     ranks
   }
 
-  val epsilon = 0.000001
+  val epsilon = 0.1
   def checkOutput(output: AdjustableList[Int, Double]) = {
     val out = output.toBuffer(mutator)
     val answer = naiveHelper(data.table)
 
     var check = out.size == answer.size
+    var error = 0.0
     for ((node, rank) <- out) {
-      if (!answer.contains(node) || (answer(node) - rank).abs > epsilon) {
+      error += (answer(node) - rank) / answer(node)
+      if (!answer.contains(node)) {
         check = false
       }
     }
 
+    val averageError = (error / answer.size).abs
+    println("average error = " + averageError)
     //println("output = " + out)
     //println("answer = " + answer)
 
-    check
+    check && averageError < epsilon
   }
 }

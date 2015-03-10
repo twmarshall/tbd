@@ -30,14 +30,18 @@ case class AlgorithmConf(
   repeat: Int,
   storeType: String,
   updateFile: String,
-  listConf: ListConf) {
+  listConf: ListConf,
+  iters: Int,
+  epsilon: Double) {
 
   def apply(param: String): String =
     param match {
       case "algorithms" => algorithm
       case "chunkSizes" => listConf.chunkSize.toString
       case "counts" => count.toString
+      case "epsilons" => epsilon.toString
       case "files" => file
+      case "iters" => iters.toString
       case "partitions" => listConf.partitions.toString
     }
 }
