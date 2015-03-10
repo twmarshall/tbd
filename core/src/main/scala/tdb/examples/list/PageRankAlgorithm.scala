@@ -35,34 +35,22 @@ class PageRankAdjust
       threshold = (_: Double).abs > epsilon)
 
     def innerPageRank(i: Int): ListInput[Int, Double] = {
-      if (i == 0) {
-        val ranks = createList[Int, Double](aggregatorConf)
+      if (i == 1) {
+        val newRanks = createList[Int, Double](aggregatorConf)
 
-        /*links.foreachChunk {
-         case (chunk, c) =>
-         putAll(r, chunk.map(pair => (pair._1, 1.0)))(c)
-         }*/
-
-        links.foreach {
-          case (pair, c) => put(ranks, pair._1, 1.0)(c)
+        def mapper(pair: (Int, Array[Int]), c: Context) {
+          val rank = 1.0
+          put(newRanks, pair._1, 0.15)(c)
+          val v = (rank / pair._2.size) * .85
+          putAll(newRanks, for (edge <- pair._2) yield (edge, v))(c)
         }
-        ranks
+
+        links.foreach(mapper)
+
+        newRanks
       } else {
         val ranks = innerPageRank(i - 1)
         val newRanks = createList[Int, Double](aggregatorConf)
-        /*def chunkMapper(nodes: Iterable[(Int, Array[Int])], c: Context) {
-         for ((node, edges) <- nodes) {
-         get(r, node) {
-         case rank =>
-         put(newRanks, node, 0.15)(c)
-         val v = (rank / edges.size) * .85
-         for (edge <- edges) {
-         put(newRanks, edge, v)(c)
-         }
-         }(c)
-         }
-         }
-         links.foreach(chunkMapper)*/
 
         def mapper(pair: (Int, Array[Int]), c: Context) {
           get(ranks, pair._1) {
@@ -74,11 +62,6 @@ class PageRankAdjust
         }
 
         links.foreach(mapper)
-
-
-        /*newRanks.getAdjustableList().foreach {
-          case (pair, c) => println(pair)
-        }*/
 
         newRanks
       }
