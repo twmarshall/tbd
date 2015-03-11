@@ -115,7 +115,10 @@ class DatastoreActor(conf: WorkerConf)
         val list =
           conf match {
             case conf: AggregatorListConf[_] =>
-              new AggregatorListModifier(listId, datastore, self, conf)
+              if (conf.chunkSize == 1)
+                new AggregatorListModifier(listId, datastore, self, conf)
+              else
+                new AggregatorChunkListModifier(listId, datastore, self, conf)
             case conf: ColumnListConf =>
               new ColumnListModifier(datastore, conf)
             case conf: ListConf =>
