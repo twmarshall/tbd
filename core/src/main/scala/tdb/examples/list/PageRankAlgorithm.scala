@@ -86,7 +86,6 @@ class PageRankAdjust
   }
 }
 
-
 class PageRankAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[Array[Int], AdjustableList[Int, Double]](_conf) {
   val input = mutator.createList[Int, Array[Int]](conf.listConf)

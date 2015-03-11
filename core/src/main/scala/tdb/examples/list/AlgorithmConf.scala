@@ -23,6 +23,7 @@ case class AlgorithmConf(
   count: Int,
   envHomePath: String,
   file: String,
+  logLevel: String,
   master: String,
   mutations: List[String],
   naive: Boolean,

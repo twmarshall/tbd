@@ -198,6 +198,7 @@ object Experiment {
           count = count.toInt,
           envHomePath = conf.envHomePath(),
           file = file,
+          logLevel = conf.log(),
           master = conf.master(),
           mutations = conf.mutations(),
           naive = conf.naive(),

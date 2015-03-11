@@ -27,9 +27,9 @@ import tdb.Constants._
 import tdb.datastore.Datastore
 import tdb.messages._
 import tdb.list._
-import tdb.stats.{Stats, WorkerInfo}
+import tdb.stats.Stats
 import tdb.util._
-import tdb.worker.{Task, Worker}
+import tdb.worker.{Task, Worker, WorkerInfo}
 
 object Master {
   def props(): Props = Props(classOf[Master])
@@ -57,19 +57,24 @@ class Master extends Actor with ActorLogging {
   // The next Worker to schedule a Task on.
   private var nextWorker: WorkerId = 0
 
+  private var totalCores = 0
+
   def cycleWorkers() {
     nextWorker = (incrementWorkerId(nextWorker) % workers.size).toShort
   }
 
   def receive = {
     // Worker
-    case RegisterWorkerMessage(
-        worker: String, datastore: String, webuiAddress: String) =>
+    case RegisterWorkerMessage(_workerInfo: WorkerInfo) =>
       val workerId = nextWorkerId
       sender ! workerId
+      val workerInfo = _workerInfo.copy(workerId = workerId)
+      totalCores += workerInfo.numCores
 
-      val workerRef = AkkaUtil.getActorFromURL(worker, context.system)
-      val datastoreRef = AkkaUtil.getActorFromURL(datastore, context.system)
+      val workerRef = AkkaUtil.getActorFromURL(
+        workerInfo.worker, context.system)
+      val datastoreRef = AkkaUtil.getActorFromURL(
+        workerInfo.datastore, context.system)
 
       log.info("Registering worker at " + workerRef)
 
@@ -78,7 +83,7 @@ class Master extends Actor with ActorLogging {
 
       nextWorkerId = incrementWorkerId(nextWorkerId)
 
-      Stats.registeredWorkers += WorkerInfo(workerId, webuiAddress)
+      Stats.registeredWorkers += workerInfo
 
       for ((thatWorkerId, thatDatastoreRef) <- datastoreRefs) {
         thatDatastoreRef ! RegisterDatastoreMessage(workerId, datastoreRef)
@@ -160,8 +165,16 @@ class Master extends Actor with ActorLogging {
       val workerId = getWorkerId(modId)
       (datastoreRefs(workerId) ? UpdateModMessage(modId, null, null)) pipeTo sender
 
-    case CreateListMessage(conf: ListConf) =>
+    case CreateListMessage(_conf: ListConf) =>
       val futures = Buffer[Future[ObjHasher[(String, ActorRef)]]]()
+
+      val conf =
+        if (_conf.partitions == 0) {
+          println(s"\n\n\n\n??????? $totalCores\n\n\n\n\n")
+          _conf.clone(partitions = totalCores)
+        } else {
+          _conf
+        }
 
       var index = 0
       for ((workerId, workerRef) <- workers) {

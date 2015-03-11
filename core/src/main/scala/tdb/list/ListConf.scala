@@ -18,7 +18,7 @@ package tdb.list
 object ListConf {
   def apply[T]
     (file: String = "",
-     partitions: Int = 8,
+     partitions: Int = 0,
      chunkSize: Int = 1,
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
@@ -48,7 +48,7 @@ sealed trait ListConf {
 
 case class SimpleListConf
     (file: String = "",
-     partitions: Int = 8,
+     partitions: Int = 0,
      chunkSize: Int = 1,
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
@@ -60,7 +60,7 @@ case class SimpleListConf
 
 case class AggregatorListConf[T]
     (file: String = "",
-     partitions: Int = 8,
+     partitions: Int = 0,
      chunkSize: Int = 1,
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
@@ -75,7 +75,7 @@ case class AggregatorListConf[T]
 
 case class ColumnListConf
     (file: String = "",
-     partitions: Int = 8,
+     partitions: Int = 0,
      chunkSize: Int = 1,
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,

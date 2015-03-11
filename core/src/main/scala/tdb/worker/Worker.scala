@@ -26,6 +26,7 @@ import tdb.Constants._
 import tdb.datastore.DatastoreActor
 import tdb.messages._
 import tdb.stats.Stats
+import tdb.util.OS
 
 object Worker {
   def props
@@ -50,10 +51,14 @@ class Worker
     DatastoreActor.props(conf), "datastore")
 
   private val workerId = {
-    val message = RegisterWorkerMessage(
+    val workerInfo = WorkerInfo(
+      -1,
       systemURL + "/user/worker",
       systemURL + "/user/worker/datastore",
-      webuiAddress)
+      webuiAddress,
+      OS.getNumCores())
+    val message = RegisterWorkerMessage(workerInfo)
+
     Await.result((masterRef ? message).mapTo[WorkerId], DURATION)
   }
 

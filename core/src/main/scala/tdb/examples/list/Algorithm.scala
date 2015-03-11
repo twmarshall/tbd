@@ -37,7 +37,8 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
 
       MasterConnector(
         port = Experiment.port,
-        workerArgs = args)
+        workerArgs = args,
+        logging = conf.logLevel)
     }
 
   val mutator = new Mutator(connector)

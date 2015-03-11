@@ -23,6 +23,7 @@ import tdb.{Adjustable, Changeable, TDB}
 import tdb.Constants._
 import tdb.ddg.Node
 import tdb.list.{Dataset, ListConf, Partition}
+import tdb.worker.WorkerInfo
 
 // Datastore
 case class CreateModMessage(value: Any)
@@ -61,8 +62,7 @@ case class RemoveMessage(listId: String, key: Any, value: Any)
 case class RemoveAllMessage(listId: String, values: Iterable[(Any, Any)])
 
 // Worker
-case class RegisterWorkerMessage(
-  worker: String, datastore: String, webuiAddress: String)
+case class RegisterWorkerMessage(workerInfo: WorkerInfo)
 case class CreateTaskMessage(parent: ActorRef)
 case class GetDatastoreMessage()
 

@@ -13,8 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.stats
+package tdb.worker
 
 import tdb.Constants.WorkerId
 
-case class WorkerInfo(workerId: WorkerId, webuiAddress: String)
+case class WorkerInfo
+  (workerId: WorkerId,
+   worker: String,
+   datastore: String,
+   webuiAddress: String,
+   numCores: Int)

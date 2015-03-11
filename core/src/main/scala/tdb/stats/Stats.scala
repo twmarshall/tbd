@@ -28,6 +28,7 @@ import scala.concurrent.duration._
 
 import tdb.Constants._
 import tdb.messages._
+import tdb.worker.WorkerInfo
 
 object Stats {
   var registeredWorkers = Buffer[WorkerInfo]()

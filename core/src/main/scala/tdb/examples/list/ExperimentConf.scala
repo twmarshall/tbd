@@ -46,6 +46,7 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
   val displayLoad = opt[Boolean]("displayLoad", default = Some(false),
     descr = "If true, loading times will be included in output.")
   val iters = opt[List[Int]]("iters", default = Some(List(1)))
+  val log = opt[String]("log", default = Some("WARNING"))
   val master = opt[String]("master", default = Some(""),
     descr = "The master Akka url to connect to. If unspecified, we'll " +
     "launch a master.")
@@ -62,7 +63,7 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     "'line', and 'x' must be one of 'algorithms', 'chunkSizes', " +
     "'counts', 'partitons', or 'runs', with one required to be 'runs'.")
   val partitions = opt[List[String]]("partitions", 'p',
-    default = Some(List("8")),
+    default = Some(List("0")),
     descr = "Number of partitions to divide the input into.")
   val repeat = opt[Int]("repeat", 'q', default = Some(3),
     descr = "The number of times to repeat the test.")
