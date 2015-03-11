@@ -64,7 +64,7 @@ class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
   val input = mutator.createList[Int, Array[Int]](columnConf)
     .asInstanceOf[ColumnListInput[Int]]
 
-  val data = new GraphData(input, conf.count, conf.mutations, conf.runs)
+  val data = new GraphColumnData(input, conf.count, conf.mutations, conf.runs)
   //val data = new GraphFileData(input, "data.txt")
   //val data = new LiveJournalData(input)
 
