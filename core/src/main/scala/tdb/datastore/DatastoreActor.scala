@@ -116,6 +116,8 @@ class DatastoreActor(conf: WorkerConf)
           conf match {
             case conf: AggregatorListConf[_] =>
               new AggregatorListModifier(listId, datastore, self, conf)
+            case conf: ColumnListConf =>
+              new ColumnListModifier(datastore, conf)
             case conf: ListConf =>
               if (conf.chunkSize == 1)
                 new DoubleListModifier(datastore)
@@ -177,6 +179,9 @@ class DatastoreActor(conf: WorkerConf)
         futures += datastore.informDependents(listId, key)
       }
       Future.sequence(futures) pipeTo sender
+
+    case PutInMessage(listId: String, key: Any, column: String, value: Any) =>
+      lists(listId).putIn(column, key, value) pipeTo sender
 
     case GetMessage(listId: String, key: Any, taskRef: ActorRef) =>
       sender ! lists(listId).get(key)

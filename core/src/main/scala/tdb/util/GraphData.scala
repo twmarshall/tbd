@@ -18,17 +18,17 @@ package tdb.util
 import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
-import tdb.list.ListInput
+import tdb.list.ColumnListInput
 
 class GraphData
-    (input: ListInput[Int, Array[Int]],
+    (input: ColumnListInput[Int],
      count: Int,
      mutations: List[String],
      runs: List[String]) extends Data[Array[Int]] {
 
   val maxKey = count * 100
 
-  val averageDegree = 5
+  val averageDegree = 2
 
   val rand = new scala.util.Random()
 
@@ -78,7 +78,7 @@ class GraphData
 
   def load() {
     for ((key, value) <- table) {
-      input.put(key, value)
+      input.putIn("edges", key, value)
     }
   }
 
@@ -99,7 +99,7 @@ class GraphData
       }
       table(key) = generateEdges()
       log(key + " -> " + table(key).mkString(","))
-      input.put(key, table(key))
+      input.putIn("edges", key, table(key))
     }
 
     updateCount

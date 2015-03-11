@@ -111,6 +111,8 @@ class HashBuffer[T, U](input: ListInput[T, U]) extends InputBuffer[T, U] {
     }
   }
 
+  def putAllIn(column: String, values: Iterable[(T, Any)]) = ???
+
   def removeAll(values: Iterable[(T, U)]) {
     for ((key, value) <- values) {
       if (toPut.contains(key)) {

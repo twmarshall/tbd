@@ -85,6 +85,8 @@ class DoubleListModifier(datastore: Datastore)
     }
   }
 
+  def putIn(column: String, key: Any, value: Any): Future[_] = ???
+
   def get(key: Any): Any = ???
 
   def remove(key: Any, value: Any): Future[_] = {

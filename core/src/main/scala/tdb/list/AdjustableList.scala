@@ -108,6 +108,10 @@ trait AdjustableList[T, U] {
   def partitionedReduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Iterable[Mod[(T, U)]] = ???
 
+  def projection2
+      (column1: String, column2: String, f: (T, Any, Any, Context) => Unit)
+      (implicit c: Context): Unit = ???
+
   /**
    * Sorts the list, using the quicksort algorithm.
    */

@@ -43,7 +43,8 @@ class AggregatorInput[T, U]
   override def getBuffer() = new AggregatorBuffer(this, conf)
 }
 
-class AggregatorBuffer[T, U](input: ListInput[T, U], conf: AggregatorListConf[U])
+class AggregatorBuffer[T, U]
+    (input: ListInput[T, U], conf: AggregatorListConf[U])
   extends InputBuffer[T, U] {
 
   private val toPut = Map[T, U]()
@@ -58,6 +59,8 @@ class AggregatorBuffer[T, U](input: ListInput[T, U], conf: AggregatorListConf[U]
       }
     }
   }
+
+  def putAllIn(column: String, values: Iterable[(T, Any)]) = ???
 
   def removeAll(values: Iterable[(T, U)]) {
     for ((key, value) <- values) {

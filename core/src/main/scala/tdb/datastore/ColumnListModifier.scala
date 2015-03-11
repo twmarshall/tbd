@@ -22,23 +22,21 @@ import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
+class ColumnListModifier(datastore: Datastore, conf: ColumnListConf)
     (implicit ec: ExecutionContext)
   extends Modifier {
 
   // Contains the last DoubleChunkListNode before the tail node. If the list is
   // empty, the contents of this mod will be null.
-  private var lastNodeMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
+  private var lastNodeMod = datastore.createMod[ColumnListNode[Any]](null)
 
-  val nodes = Map[Any, Mod[DoubleChunkListNode[Any, Any]]]()
-  val previous = Map[Any, Mod[DoubleChunkListNode[Any, Any]]]()
+  val nodes = Map[Any, Mod[ColumnListNode[Any]]]()
+  val previous = Map[Any, Mod[ColumnListNode[Any]]]()
 
   val list =
-    new DoubleChunkList[Any, Any](lastNodeMod, conf, false, datastore.workerId)
+    new ColumnList[Any](lastNodeMod, conf, false, datastore.workerId)
 
-  val duplicateKeys = Buffer[Any]()
-
-  def loadInput(keys: Iterator[Any]) = {
+  def loadInput(keys: Iterator[Any]) = ???/*{
     val futures = Buffer[Future[Any]]()
 
     var chunk = Vector[Any]()
@@ -126,92 +124,128 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
     }
 
     Future.sequence(futures)
-  }// ensuring(isValid())
+  }// ensuring(isValid())*/
 
-  private def append(key: Any, value: Any): Future[_] = {
+
+  private def makeNewColumns(column: String, key: Any, value: Any) = {
+    val newColumns = Map[String, Mod[Iterable[Any]]]()
+
+    for ((columnName, (columnType, defaultValue)) <- conf.columns) {
+      columnName match {
+        case "key" =>
+          newColumns("key") = datastore.createMod(Iterable(key))
+        case name if name == column =>
+          newColumns(columnName) = datastore.createMod(Iterable(value))
+        case _ =>
+          newColumns(columnName) = datastore.createMod(Iterable(defaultValue))
+      }
+    }
+
+    newColumns
+  }
+
+  private def appendIn(column: String, key: Any, value: Any): Future[_] = {
     val lastNode = datastore.read(lastNodeMod)
 
     if (lastNode == null) {
       // The list must be empty.
-      val chunk = Vector[(Any, Any)]((key -> value))
-      val size = conf.chunkSizer(value)
+      val newColumns = makeNewColumns(column, key, value)
+      val size = 1
 
       previous(key) = null
 
-      val chunkMod = datastore.createMod(chunk)
-      val tailMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
-      val newNode = new DoubleChunkListNode(chunkMod, tailMod, size)
+      val tailMod = datastore.createMod[ColumnListNode[Any]](null)
+      val newNode = new ColumnListNode(newColumns, tailMod, size)
 
       nodes(key) = lastNodeMod
 
       datastore.updateMod(lastNodeMod.id, newNode)
     } else if (lastNode.size >= conf.chunkSize) {
-      val chunk = Vector[(Any, Any)]((key -> value))
+      val newColumns = makeNewColumns(column, key, value)
       previous(key) = lastNodeMod
 
       lastNodeMod = lastNode.nextMod
 
-      val chunkMod = datastore.createMod(chunk)
-      val tailMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
-      val newNode = new DoubleChunkListNode(
-        chunkMod, tailMod, conf.chunkSizer(value))
+      val tailMod = datastore.createMod[ColumnListNode[Any]](null)
+      val newNode = new ColumnListNode(newColumns, tailMod, 1)
 
       nodes(key) = lastNode.nextMod
 
       datastore.updateMod(lastNode.nextMod.id, newNode)
     } else {
-      val oldChunk = datastore.read(lastNode.chunkMod)
-      val chunk = oldChunk :+ (key -> value)
+      val futures = Buffer[Future[Any]]()
+      val oldColumns = lastNode.columns
 
-      val size = lastNode.size + conf.chunkSizer(value)
+      for ((columnName, chunkMod) <- oldColumns) {
+        columnName match {
+          case "key" =>
+            val keys = datastore.read(chunkMod)
+            previous(key) = previous(keys.head)
+            futures += datastore.updateMod(chunkMod.id, keys ++ Iterable(key))
+          case name if name == column =>
+            val values = datastore.read(chunkMod)
+            futures += datastore.updateMod(
+              chunkMod.id, values ++ Iterable(value))
+          case _ =>
+            val values = datastore.read(chunkMod)
+            futures += datastore.updateMod(
+              chunkMod.id, values ++ Iterable(conf.columns(columnName)._2))
+        }
+      }
+      val size = lastNode.size + 1
 
-      previous(key) = previous(chunk.head._1)
-      val chunkMod = datastore.createMod(chunk)
-      val tailMod = datastore.createMod[DoubleChunkListNode[Any, Any]](null)
-      val newNode = new DoubleChunkListNode(chunkMod, tailMod, size)
+      val tailMod = datastore.createMod[ColumnListNode[Any]](null)
+      val newNode = new ColumnListNode(oldColumns, tailMod, size)
 
       nodes(key) = lastNodeMod
 
       datastore.updateMod(lastNodeMod.id, newNode)
     }
-
   } //ensuring(isValid())
 
-  private def calculateSize(chunk: Vector[(Any, Any)]) = {
-    chunk.aggregate(0)(
-      (sum: Int, pair: (Any, Any)) => sum + conf.chunkSizer(pair), _ + _)
-  }
+  def put(key: Any, value: Any): Future[_] = ???
 
-  def put(key: Any, value: Any): Future[_] = {
+  def putIn(column: String, key: Any, value: Any): Future[_] = {
     if (!nodes.contains(key)) {
-      append(key, value)
+      println("appendIn " + column + " key " + key + " value " + value + " " + this)
+      appendIn(column, key, value)
     } else {
+      println("updating " + column + " " + key + " " + value)
       val node = datastore.read(nodes(key))
 
-      var oldValue: Any = null.asInstanceOf[Any]
-      val chunk = datastore.read(node.chunkMod)
-      val newChunk = chunk.map{ case (_key, _value) => {
-        if (key == _key) {
-          oldValue = _value
-          (_key -> value)
-        } else {
-          (_key -> _value)
-        }
-      }}
+      val keyIter = datastore.read(node.columns("key")).iterator
 
-      val newSize = node.size + conf.chunkSizer(value) -
-      conf.chunkSizer(oldValue)
-      val chunkMod = datastore.createMod(newChunk)
-      val newNode = new DoubleChunkListNode(chunkMod, node.nextMod, newSize)
-      datastore.updateMod(nodes(key).id, newNode)
+      val columnMod = node.columns(column)
+      val columnType = conf.columns(column)._1
+      val chunk = datastore.read(columnMod)
+      var found = false
+      val newChunk = chunk.map {
+        case _value =>
+          val _key = keyIter.next
+          if (key == _key) {
+            assert(!found)
+            found = true
+
+            columnType match {
+              case aggregatedColumn: AggregatedColumn[Any] =>
+                aggregatedColumn.aggregator(_value, value)
+              case _ => ???//value
+            }
+          } else {
+            _value
+          }
+      }
+      assert(found)
+
+      //val newNode = new ColumnListNode(node.columns, node.nextMod, node.size)
+      //datastore.updateMod(nodes(key).id, newNode)
+      datastore.updateMod(columnMod.id, newChunk)
     }
-  } //ensuring(isValid())
-
-  def putIn(column: String, key: Any, value: Any): Future[_] = ???
+  }
 
   def get(key: Any): Any = ???
 
-  def remove(key: Any, value: Any): Future[_] = {
+  def remove(key: Any, value: Any): Future[_] = ???/*{
     val node = datastore.read(nodes(key))
 
     var oldValue: Any = null.asInstanceOf[Any]
@@ -270,13 +304,13 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
     nodes -= key
 
     future
-  } //ensuring(isValid())
+  } //ensuring(isValid())*/
 
   def contains(key: Any): Boolean = {
     nodes.contains(key)
   }
 
-  def listSize(): Int = {
+  /*def listSize(): Int = {
     var node = datastore.read(list.head)
 
     var size = 0
@@ -319,9 +353,9 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
     }
     //println("done")
     valid
-  }
+  }*/
 
-  def getAdjustableList() = list
+  def getAdjustableList() = list.asInstanceOf[AdjustableList[Any, Any]]
 
   def toBuffer(): Buffer[(Any, Any)] = ???
 }

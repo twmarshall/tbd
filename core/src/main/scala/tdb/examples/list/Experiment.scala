@@ -228,6 +228,8 @@ object Experiment {
 
           case "pgrank" => new PageRankAlgorithm(algConf)
 
+          case "cpgr" => new ColumnPageRankAlgorithm(algConf)
+
           case "qsort" =>
             new QuickSortAlgorithm(algConf)
 

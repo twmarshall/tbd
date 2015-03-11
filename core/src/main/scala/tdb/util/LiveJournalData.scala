@@ -15,6 +15,8 @@
  */
 package tdb.util
 
+import scala.collection.mutable.Buffer
+
 import tdb.list.ListInput
 
 class LiveJournalData(input: ListInput[Int, Array[Int]]) extends Data[Array[Int]] {
@@ -23,16 +25,20 @@ class LiveJournalData(input: ListInput[Int, Array[Int]]) extends Data[Array[Int]
 
   def generate() {
     var lines = scala.io.Source.fromFile("livejournal.txt").getLines().toBuffer
+
+    var links = Buffer[Int]()
+    var currentFrom = -1
     for (line <- lines) {
       if (!line.startsWith("#")) {
         val split = line.split("\t")
         val from = split(0).toInt
-        val to = split(0).toInt
 
-        if (table.contains(from)) {
-          table(from) :+= to
+        if (from == currentFrom) {
+          links += split(0).toInt
         } else {
-          table(from) = Array(to)
+          table(currentFrom) = links.toArray
+          links = Buffer(split(0).toInt)
+          currentFrom = from
         }
       }
     }

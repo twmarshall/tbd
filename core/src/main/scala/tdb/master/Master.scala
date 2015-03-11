@@ -194,6 +194,8 @@ class Master extends Actor with ActorLogging {
 
         case SimpleListConf(_, _, _, _, false, _) =>
           new HashPartitionedDoubleChunkListInput(hasher, conf)
+        case columnConf: ColumnListConf =>
+          new ColumnListInput(hasher, columnConf)
         case _ => ???
       }
 

@@ -147,6 +147,37 @@ class Task
               c.currentModId2 = oldCurrentModId2
               c.currentTime = oldCurrentTime
             }
+          case readNode: Read3Node =>
+            if (readNode.updated) {
+              val newValue1 = c.readId(readNode.modId1)
+              val newValue2 = c.readId(readNode.modId2)
+              val newValue3 = c.readId(readNode.modId3)
+
+              val oldStart = c.reexecutionStart
+              c.reexecutionStart = timestamp.getNext()
+              val oldEnd = c.reexecutionEnd
+              c.reexecutionEnd = timestamp.end
+              val oldCurrentModId = c.currentModId
+              c.currentModId = readNode.currentModId
+              val oldCurrentModId2 = c.currentModId2
+              c.currentModId2 = readNode.currentModId2
+
+              val oldCurrentTime = c.currentTime
+              c.currentTime = timestamp
+
+              readNode.updated = false
+              readNode.reader(newValue1, newValue2, newValue3)
+
+              if (c.reexecutionStart < c.reexecutionEnd) {
+                c.ddg.ordering.splice(c.reexecutionStart, c.reexecutionEnd, c)
+              }
+
+              c.reexecutionStart = oldStart
+              c.reexecutionEnd = oldEnd
+              c.currentModId = oldCurrentModId
+              c.currentModId2 = oldCurrentModId2
+              c.currentTime = oldCurrentTime
+            }
           case parNode: ParNode =>
             if (parNode.updated) {
               Await.result(Future.sequence(c.pending), DURATION)

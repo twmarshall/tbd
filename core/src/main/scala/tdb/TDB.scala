@@ -17,6 +17,7 @@ package tdb
 
 import akka.actor.ActorRef
 import akka.pattern.ask
+import scala.collection.immutable
 import scala.collection.mutable.Map
 import scala.concurrent.Await
 
@@ -35,10 +36,9 @@ object TDB {
 
   def put[T, U](input: ListInput[T, U], key: T, value: U)
       (implicit c: Context) {
-    val timestamp =
-      c.ddg.addPut(input.asInstanceOf[ListInput[Any, Any]], key, value, c)
+    val anyInput = input.asInstanceOf[ListInput[Any, Any]]
+    val timestamp = c.ddg.addPut(anyInput, key, value, c)
 
-    val anyInput = input.asInstanceOf[HashPartitionedListInput[Any, Any]]
     if (!c.buffers.contains(anyInput)) {
       c.buffers(anyInput) = anyInput.getBuffer()
     }
@@ -49,14 +49,28 @@ object TDB {
 
   def putAll[T, U](input: ListInput[T, U], values: Iterable[(T, U)])
       (implicit c: Context) {
-    val timestamp =
-      c.ddg.addPutAll(input.asInstanceOf[ListInput[Any, Any]], values, c)
+    val anyInput = input.asInstanceOf[ListInput[Any, Any]]
+    val timestamp = c.ddg.addPutAll(anyInput, values, c)
 
-    val anyInput = input.asInstanceOf[HashPartitionedListInput[Any, Any]]
     if (!c.buffers.contains(anyInput)) {
       c.buffers(anyInput) = anyInput.getBuffer()
     }
     c.buffers(anyInput).putAll(values)
+
+    timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
+  }
+
+
+  def putAllIn[T]
+      (input: ColumnListInput[T], column: String, values: Iterable[(T, Any)])
+      (implicit c: Context) {
+    val anyInput = input.asInstanceOf[ListInput[Any, Any]]
+    val timestamp = c.ddg.addPutAllIn(anyInput, column, values, c)
+
+    if (!c.buffers.contains(anyInput)) {
+      c.buffers(anyInput) = anyInput.getBuffer()
+    }
+    c.buffers(anyInput).putAllIn(column, values)
 
     timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
   }
@@ -137,9 +151,9 @@ object TDB {
     changeables
   }
 
-  def read_2[T, U, V](mod1: Mod[T], mod2: Mod[U])
-      (reader: (T, U) => Changeable[V])
-      (implicit c: Context): Changeable[V] = {
+  def read_2[T, U, V, W](mod1: Mod[T], mod2: Mod[U])
+      (reader: (T, U) => W)
+      (implicit c: Context): W = {
     val value1 = c.read(mod1, c.task.self)
     val value2 = c.read(mod2, c.task.self)
 
@@ -156,6 +170,32 @@ object TDB {
 
     read2Node.currentModId = c.currentModId
     timestamp.end = c.ddg.nextTimestamp(read2Node, c)
+
+    changeable
+  }
+
+  def read_3[T, U, V, W](mod1: Mod[T], mod2: Mod[U], mod3: Mod[V])
+      (reader: (T, U, V) => W)
+      (implicit c: Context): W = {
+    val value1 = c.read(mod1, c.task.self)
+    val value2 = c.read(mod2, c.task.self)
+    val value3 = c.read(mod3, c.task.self)
+
+    val timestamp = c.ddg.addRead3(
+      mod1.asInstanceOf[Mod[Any]],
+      mod2.asInstanceOf[Mod[Any]],
+      mod3.asInstanceOf[Mod[Any]],
+      value1,
+      value2,
+      value3,
+      reader.asInstanceOf[(Any, Any, Any) => Changeable[Any]],
+      c)
+    val read3Node = timestamp.node
+
+    val changeable = reader(value1, value2, value3)
+
+    read3Node.currentModId = c.currentModId
+    timestamp.end = c.ddg.nextTimestamp(read3Node, c)
 
     changeable
   }

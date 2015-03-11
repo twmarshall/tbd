@@ -82,6 +82,8 @@ class AggregatorListModifier[U]
     }
   }
 
+  def putIn(column: String, key: Any, value: Any): Future[_] = ???
+
   def get(key: Any): Any = {
     val mod = values(key)
     var value: Any = null

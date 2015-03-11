@@ -59,6 +59,17 @@ class DDG {
     timestamp
   }
 
+  def addPutAllIn
+      (input: ListInput[Any, Any],
+       column: String,
+       values: Iterable[(Any, Any)],
+       c: Context): Timestamp = {
+    val putNode = new PutAllInNode(input, column, values)
+    val timestamp = nextTimestamp(putNode, c)
+
+    timestamp
+  }
+
   def addGet
       (input: ListInput[Any, Any],
        key: Any,
@@ -118,6 +129,40 @@ class DDG {
       reads(mod2.id) :+= timestamp
     } else {
       reads(mod2.id) = Buffer(timestamp)
+    }
+
+    timestamp
+  }
+
+
+  def addRead3
+      (mod1: Mod[Any],
+       mod2: Mod[Any],
+       mod3: Mod[Any],
+       value1: Any,
+       value2: Any,
+       value3: Any,
+       reader: (Any, Any, Any) => Changeable[Any],
+       c: Context): Timestamp = {
+    val readNode = new Read3Node(mod1.id, mod2.id, mod3.id, reader)
+    val timestamp = nextTimestamp(readNode, c)
+
+    if (reads.contains(mod1.id)) {
+      reads(mod1.id) :+= timestamp
+    } else {
+      reads(mod1.id) = Buffer(timestamp)
+    }
+
+    if (reads.contains(mod2.id)) {
+      reads(mod2.id) :+= timestamp
+    } else {
+      reads(mod2.id) = Buffer(timestamp)
+    }
+
+    if (reads.contains(mod3.id)) {
+      reads(mod3.id) :+= timestamp
+    } else {
+      reads(mod3.id) = Buffer(timestamp)
     }
 
     timestamp

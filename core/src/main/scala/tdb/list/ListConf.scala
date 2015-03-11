@@ -72,3 +72,18 @@ case class AggregatorListConf[T]
   def clone(_file: String, _partitions: Int) =
     copy(file = _file, partitions = _partitions)
 }
+
+case class ColumnListConf
+    (file: String = "",
+     partitions: Int = 8,
+     chunkSize: Int = 1,
+     chunkSizer: Any => Int = _ => 1,
+     sorted: Boolean = false,
+     hash: Boolean = false,
+     columns: Map[String, (ColumnType, Any)]) extends ListConf {
+
+  assert(columns.contains("key"))
+
+  def clone(_file: String, _partitions: Int) =
+    copy(file = _file, partitions = _partitions)
+}

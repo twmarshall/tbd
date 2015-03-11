@@ -13,27 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.datastore
+package tdb.list
 
-import scala.collection.mutable.Buffer
-import scala.concurrent.Future
+sealed trait ColumnType
 
-import tdb.Constants._
-import tdb.list.AdjustableList
-import tdb.Mod
+case class AggregatedColumn[T]
+    (aggregator: (T, T) => T,
+     deaggregator: (T, T) => T,
+     initialValue: T,
+     threshold: T => Boolean) extends ColumnType
 
-trait Modifier {
-  def loadInput(keys: Iterator[Any]): Future[_]
-
-  def put(key: Any, value: Any): Future[_]
-
-  def putIn(column: String, key: Any, value: Any): Future[_]
-
-  def get(key: Any): Any
-
-  def remove(key: Any, value: Any): Future[_]
-
-  def getAdjustableList(): AdjustableList[Any, Any]
-
-  def toBuffer(): Buffer[(Any, Any)]
+object AggregatedDoubleColumn {
+  def apply(epsilon: Double = 0) =
+    AggregatedColumn(
+      aggregator = (_: Double) + (_: Double),
+      deaggregator = (_: Double) - (_: Double),
+      initialValue = 0.0,
+      threshold = (_: Double).abs > epsilon)
 }
+
+case class StringColumn() extends ColumnType

@@ -15,6 +15,7 @@
  */
 package tdb.test
 
+import scala.collection.mutable
 import scala.collection.mutable.Buffer
 import org.scalatest._
 
@@ -131,6 +132,57 @@ class MutatorTests extends FlatSpec with Matchers {
     val conf = new ListConf(partitions = 1, chunkSize = 1, sorted = true)
     val input = mutator.createList[Int, Int](conf)
     runTest(mutator, new ListTest(input), input, true)
+
+    mutator.shutdown()
+  }*/
+
+  /*"ColumnListTest" should "update the ColumnListInput correctly" in {
+    val mutator = new Mutator()
+
+    val conf = ColumnListConf(columns = Map(
+      "key" -> (new StringColumn(), 1),
+      "one" -> (new StringColumn(), 0),
+      "two" -> (new StringColumn(), 5),
+      "three" -> (new StringColumn(), -1)))
+
+    import ColumnList._
+    val input = mutator.createList[Int, Columns](conf)
+      .asInstanceOf[ColumnListInput[Int]]
+    val answer = mutable.Map[Int, mutable.Map[String, Any]]()
+
+    def putIn
+        (column: String,
+         key: Int,
+         value: Any) {
+      input.putIn(column, key, value)
+
+      if (!answer.contains(key)) {
+        answer(key) = mutable.Map[String, Any]()
+        for ((columnName, (columnType, defaultValue)) <- conf.columns) {
+          if (columnName != "key") {
+            answer(key)(columnName) = defaultValue
+          }
+        }
+      }
+
+      answer(key)(column) = value
+
+      var buf = input.getAdjustableList().toBuffer(mutator)
+      val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
+      val sortedOutput = buf.sortWith(_._1 < _._1)
+
+      println("output = " + sortedOutput)
+      println("answer = " + sortedAnswer)
+      assert(sortedOutput == sortedAnswer)
+    }
+
+    val rand = new scala.util.Random()
+
+    for (i <- 1 to 100) {
+      val rColumn = rand.nextInt(conf.columns.size - 1) + 1
+      val columnName = conf.columns.drop(rColumn).head._1
+      putIn(columnName, i, i)
+    }
 
     mutator.shutdown()
   }*/

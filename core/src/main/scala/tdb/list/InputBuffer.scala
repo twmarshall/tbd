@@ -18,6 +18,8 @@ package tdb.list
 trait InputBuffer[T, U] {
   def putAll(values: Iterable[(T, U)])
 
+  def putAllIn(column: String, values: Iterable[(T, Any)])
+
   def removeAll(values: Iterable[(T, U)])
 
   def flush()
