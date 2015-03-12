@@ -24,7 +24,7 @@ import scala.util.{Failure, Success, Try}
 
 import tdb.{Adjustable, TDB}
 import tdb.Constants._
-import tdb.datastore.Datastore
+import tdb.datastore.{Datastore, ModifierActor}
 import tdb.messages._
 import tdb.list._
 import tdb.stats.Stats
@@ -45,7 +45,7 @@ class Master extends Actor with ActorLogging {
   private val workers = Map[WorkerId, ActorRef]()
 
   // Maps workerIds to Datastores.
-  private val datastoreRefs = Map[WorkerId, ActorRef]()
+  private val datastoreRefs = Map[DatastoreId, ActorRef]()
 
   // Maps mutatorIds to the Task the mutator's computation was launched on.
   private val tasks = Map[Int, ActorRef]()
@@ -67,8 +67,9 @@ class Master extends Actor with ActorLogging {
     // Worker
     case RegisterWorkerMessage(_workerInfo: WorkerInfo) =>
       val workerId = nextWorkerId
-      sender ! workerId
       val workerInfo = _workerInfo.copy(workerId = workerId)
+      sender ! workerInfo
+
       totalCores += workerInfo.numCores
 
       val workerRef = AkkaUtil.getActorFromURL(
@@ -157,19 +158,19 @@ class Master extends Actor with ActorLogging {
       cycleWorkers()
 
     case GetModMessage(modId: ModId, null) =>
-      val workerId = getWorkerId(modId)
-      (datastoreRefs(workerId) ? GetModMessage(modId, null)) pipeTo sender
+      val datastoreId = getDatastoreId(modId)
+      (datastoreRefs(datastoreId) ? GetModMessage(modId, null)) pipeTo sender
 
     case UpdateModMessage(modId: ModId, value: Any, null) =>
-      val workerId = getWorkerId(modId)
-      (datastoreRefs(workerId) ? UpdateModMessage(modId, value, null)) pipeTo sender
+      val datastoreId = getDatastoreId(modId)
+      (datastoreRefs(datastoreId) ? UpdateModMessage(modId, value, null)) pipeTo sender
 
     case UpdateModMessage(modId: ModId, null, null) =>
-      val workerId = getWorkerId(modId)
-      (datastoreRefs(workerId) ? UpdateModMessage(modId, null, null)) pipeTo sender
+      val datastoreId = getDatastoreId(modId)
+      (datastoreRefs(datastoreId) ? UpdateModMessage(modId, null, null)) pipeTo sender
 
     case CreateListMessage(_conf: ListConf) =>
-      val futures = Buffer[Future[ObjHasher[(String, ActorRef)]]]()
+      val futures = Buffer[Future[(Map[DatastoreId, ActorRef], ObjHasher[(String, ActorRef)])]]()
 
       val conf =
         if (_conf.partitions == 0) {
@@ -182,21 +183,22 @@ class Master extends Actor with ActorLogging {
       for ((workerId, workerRef) <- workers) {
         val future = {
           val message = CreateListIdsMessage(conf, index, workers.size)
-          datastoreRefs(workerId) ? message
+          workerRef ? message
         }
 
-        futures += future.mapTo[ObjHasher[(String, ActorRef)]]
+        futures += future.mapTo[(Map[DatastoreId, ActorRef], ObjHasher[(String, ActorRef)])]
         index += 1
       }
 
       var hasher: ObjHasher[(String, ActorRef)] = null
       Await.result(Future.sequence(futures), DURATION).foreach {
-        case thisHasher =>
+        case (newDatastores, thisHasher) =>
           if (hasher == null) {
             hasher = thisHasher
           } else {
             hasher = ObjHasher.combineHashers(hasher, thisHasher)
           }
+          datastoreRefs ++= newDatastores
       }
       assert(hasher.isComplete())
 

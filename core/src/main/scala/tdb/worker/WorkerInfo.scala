@@ -22,4 +22,7 @@ case class WorkerInfo
    worker: String,
    datastore: String,
    webuiAddress: String,
-   numCores: Int)
+   numCores: Int,
+   storeType: String,
+   envHomePath: String,
+   cacheSize: Int)

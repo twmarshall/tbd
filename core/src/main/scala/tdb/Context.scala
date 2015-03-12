@@ -29,9 +29,10 @@ import tdb.worker.Task
 
 class Context
     (taskId: TaskId,
+     workerId: WorkerId,
      val task: Task,
-     private val datastoreRef: ActorRef,
-     val masterRef: ActorRef) {
+     val masterRef: ActorRef,
+     private val datastores: Map[DatastoreId, ActorRef]) {
   import task.context.dispatcher
 
   val log = Logging(task.context.system, "Context")
@@ -62,7 +63,7 @@ class Context
   // is one.
   var currentModId2: ModId = _
 
-  private var nextModId: ModId = 0
+  private var nextModId: Int = 0
 
   val pending = Buffer[Future[Any]]()
 
@@ -71,10 +72,7 @@ class Context
   val buffers = Map[ListInput[Any, Any], InputBuffer[Any, Any]]()
 
   def newModId(): ModId = {
-    var newModId: Long = taskId
-    newModId = newModId << 32
-    newModId += nextModId
-
+    val newModId = createModId(0, workerId, taskId, nextModId)
     nextModId += 1
 
     newModId
@@ -85,7 +83,8 @@ class Context
   }
 
   def readId(modId: ModId, taskRef: ActorRef = null): Any = {
-    val future = datastoreRef ? GetModMessage(modId, taskRef)
+    val datastoreId = getDatastoreId(modId)
+    val future = datastores(datastoreId) ? GetModMessage(modId, taskRef)
     val ret = Await.result(future, DURATION)
 
     ret match {
@@ -96,7 +95,8 @@ class Context
 
   def update[T](modId: ModId, value: T) {
     val message = UpdateModMessage(modId, value, task.self)
-    val future = (datastoreRef ? message)
+    val datastoreId = getDatastoreId(modId)
+    val future = datastores(datastoreId) ? message
 
     if (!initialRun) {
       pending += future
@@ -110,7 +110,9 @@ class Context
 
   def remove[T](modId: ModId) {
     ddg.modRemoved(modId)
-    val future = (datastoreRef ? RemoveModsMessage(Buffer(modId), task.self))
+    val datastoreId = getDatastoreId(modId)
+    val future = (datastores(datastoreId) ?
+      RemoveModsMessage(Buffer(modId), task.self))
     Await.result(future, DURATION)
   }
 }

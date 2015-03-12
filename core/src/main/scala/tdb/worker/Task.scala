@@ -30,23 +30,25 @@ import tdb.stats.WorkerStats
 object Task {
   def props
       (taskId: TaskId,
+       workerId: WorkerId,
        parent: ActorRef,
-       datastore: ActorRef,
-       masterRef: ActorRef): Props =
-    Props(classOf[Task], taskId, parent, datastore, masterRef)
+       masterRef: ActorRef,
+       datastores: Map[DatastoreId, ActorRef]): Props =
+    Props(classOf[Task], taskId, workerId, parent, masterRef, datastores)
 }
 
 class Task
     (taskId: TaskId,
+     workerId: WorkerId,
      parent: ActorRef,
-     datastore: ActorRef,
-     masterRef: ActorRef)
+     masterRef: ActorRef,
+     datastores: Map[DatastoreId, ActorRef])
   extends Actor with ActorLogging {
   import context.dispatcher
 
   WorkerStats.numTasks += 1
 
-  private val c = new Context(taskId, this, datastore, masterRef)
+  private val c = new Context(taskId, workerId, this, masterRef, datastores)
 
   def propagate(start: Timestamp = Timestamp.MIN_TIMESTAMP,
                 end: Timestamp = Timestamp.MAX_TIMESTAMP): Future[Boolean] = {
@@ -267,7 +269,7 @@ class Task
     case ClearModsMessage =>
       val futures = Set[Future[Any]]()
 
-      futures += datastore ? RemoveModsMessage(c.ddg.getMods(), self)
+      futures += datastores(0) ? RemoveModsMessage(c.ddg.getMods(), self)
 
       for ((actorRef, parNode) <- c.ddg.pars) {
         futures += actorRef ? ClearModsMessage

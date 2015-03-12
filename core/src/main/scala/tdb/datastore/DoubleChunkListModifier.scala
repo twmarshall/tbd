@@ -33,8 +33,8 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
   val nodes = Map[Any, Mod[DoubleChunkListNode[Any, Any]]]()
   val previous = Map[Any, Mod[DoubleChunkListNode[Any, Any]]]()
 
-  val list =
-    new DoubleChunkList[Any, Any](lastNodeMod, conf, false, datastore.workerId)
+  val list = new DoubleChunkList[Any, Any](
+      lastNodeMod, conf, false, datastore.workerInfo.workerId)
 
   val duplicateKeys = Buffer[Any]()
 

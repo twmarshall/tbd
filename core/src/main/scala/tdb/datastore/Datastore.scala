@@ -27,20 +27,18 @@ import tdb.datastore.berkeleydb.BerkeleyStore
 import tdb.messages._
 import tdb.Mod
 import tdb.stats.WorkerStats
-import tdb.worker.WorkerConf
+import tdb.worker.WorkerInfo
 import tdb.util._
 
-class Datastore(conf: WorkerConf, log: LoggingAdapter)
+class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: DatastoreId)
     (implicit ec: ExecutionContext) {
 
   private val store =
-    conf.storeType()  match {
-      case "berkeleydb" => new BerkeleyStore(conf)
+    workerInfo.storeType  match {
+      case "berkeleydb" => new BerkeleyStore(workerInfo)
       case "memory" => new MemoryStore()
     }
   store.createTable[ModId, Any]("Mods", null)
-
-  var workerId: WorkerId = _
 
   private var nextModId = 0
 
@@ -57,13 +55,9 @@ class Datastore(conf: WorkerConf, log: LoggingAdapter)
   val datastores = Map[WorkerId, ActorRef]()
 
   def getNewModId(): ModId = {
-    var newModId: Long = workerId
-    newModId = newModId << 48
-    newModId += nextModId
-
+    val modId = createModId(id, workerInfo.workerId, 0, nextModId)
     nextModId += 1
-
-    newModId
+    modId
   }
 
   def createMod[T](value: T): Mod[T] = {
@@ -103,8 +97,9 @@ class Datastore(conf: WorkerConf, log: LoggingAdapter)
     } else if (store.contains(0, modId)) {
       store.get(0, modId)
     } else {
-      val workerId = getWorkerId(modId)
-      val future = datastores(workerId) ? GetModMessage(modId, taskRef)
+      val datastoreId = getDatastoreId(modId)
+      assert(datastoreId != id)
+      val future = datastores(datastoreId) ? GetModMessage(modId, taskRef)
 
       WorkerStats.datastoreMisses += 1
 

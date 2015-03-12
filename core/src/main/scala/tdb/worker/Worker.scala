@@ -17,16 +17,18 @@ package tdb.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
+import scala.collection.mutable
 import scala.collection.mutable.Map
 import scala.concurrent.{Await, Promise}
 import scala.util.{Failure, Success}
 
 import tdb.Adjustable
 import tdb.Constants._
-import tdb.datastore.DatastoreActor
+import tdb.datastore._
+import tdb.list._
 import tdb.messages._
 import tdb.stats.Stats
-import tdb.util.OS
+import tdb.util._
 
 object Worker {
   def props
@@ -47,41 +49,85 @@ class Worker
 
   log.info("Worker launched.")
 
-  private val datastore = context.actorOf(
-    DatastoreActor.props(conf), "datastore")
-
-  private val workerId = {
+  private val workerInfo = {
     val workerInfo = WorkerInfo(
       -1,
       systemURL + "/user/worker",
       systemURL + "/user/worker/datastore",
       webuiAddress,
-      OS.getNumCores())
+      OS.getNumCores(),
+      conf.storeType(),
+      conf.envHomePath(),
+      conf.cacheSize())
     val message = RegisterWorkerMessage(workerInfo)
 
-    Await.result((masterRef ? message).mapTo[WorkerId], DURATION)
+    Await.result((masterRef ? message).mapTo[WorkerInfo], DURATION)
   }
 
-  datastore ! SetIdMessage(workerId)
+  private var nextDatastoreId: DatastoreId = 1
+
+  private val datastore = context.actorOf(
+    DatastoreActor.props(workerInfo), "datastore")
+
+  private val datastores = Map[DatastoreId, ActorRef]()
+  datastores(0) = datastore
 
   // A unique id to assign to tasks forked from this context. The datastore
   // has TaskId = 0 for the purpose of creating ModIds.
   private var nextTaskId: TaskId = 1
+
+  var nextListId = 0
 
   def receive = {
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       sender ! "done"
 
     case CreateTaskMessage(parent: ActorRef) =>
-      var taskId = workerId.toInt
-      taskId = (taskId << 16) + nextTaskId
-
-      val taskProps = Task.props(taskId, parent, datastore, masterRef)
-      val taskRef = context.actorOf(taskProps, taskId + "")
+      val taskProps = Task.props(nextTaskId, workerInfo.workerId, parent, masterRef, datastores)
+      val taskRef = context.actorOf(taskProps, nextTaskId + "")
 
       sender ! taskRef
 
       nextTaskId += 1
+
+
+    case CreateListIdsMessage
+        (listConf: ListConf, workerIndex: Int, numWorkers: Int) =>
+      log.debug("CreateListIdsMessage " + listConf)
+      val listIds = mutable.Map[String, ActorRef]()
+
+      val partitionsPerWorker = listConf.partitions / numWorkers
+      val partitions =
+        if (workerIndex == numWorkers - 1 &&
+            listConf.partitions % numWorkers != 0) {
+          numWorkers % partitionsPerWorker
+        } else {
+          partitionsPerWorker
+        }
+
+      for (i <- 1 to partitions) {
+        val listId = nextListId + ""
+        nextListId += 1
+
+        val modifierRef = context.actorOf(
+          ModifierActor.props(listConf, workerInfo, nextDatastoreId))
+        datastores(nextDatastoreId) = modifierRef
+        nextDatastoreId = (nextDatastoreId + 1).toShort
+
+        listIds(listId) = modifierRef
+      }
+
+      //if (conf.file != "") {
+      //  datastore.loadFileInfoLists(listIds, newLists, sender, self)
+      //} else {
+        val hasher: ObjHasher[(String, ActorRef)] = ObjHasher.makeHasher(
+          new HashRange(
+            workerIndex * partitionsPerWorker,
+            (workerIndex + 1) * partitionsPerWorker,
+            listConf.partitions),
+          listIds.toBuffer)
+        sender ! (datastores, hasher)
+      //}
 
     case CreateModMessage(value: Any) =>
       (datastore ? CreateModMessage(value)) pipeTo sender

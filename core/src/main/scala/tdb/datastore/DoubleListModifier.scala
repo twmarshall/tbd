@@ -30,7 +30,8 @@ class DoubleListModifier(datastore: Datastore)
 
   val nodes = Map[Any, Mod[DoubleListNode[Any, Any]]]()
 
-  val modList = new DoubleList[Any, Any](tailMod, false, datastore.workerId)
+  val modList = new DoubleList[Any, Any](
+    tailMod, false, datastore.workerInfo.workerId)
 
   def loadInput(keys: Iterator[Any]): Future[_] = {
     var headNode = datastore.read(modList.head)
