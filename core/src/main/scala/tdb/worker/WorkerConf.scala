@@ -42,4 +42,3 @@ class WorkerConf(args: Array[String]) extends ScallopConf(args) {
   val webui_port = opt[Int]("webui_port", 'w', default = Some(8889))
   val master = trailArg[String](required = true)
 }
-
