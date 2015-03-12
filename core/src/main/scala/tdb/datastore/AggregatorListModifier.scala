@@ -31,7 +31,7 @@ class AggregatorListModifier[U]
     (implicit ec: ExecutionContext)
   extends Modifier {
 
-  println("new AggregatorListModifier")
+  //println("new AggregatorListModifier")
 
   private val values = Map[Any, Mod[U]]()
 

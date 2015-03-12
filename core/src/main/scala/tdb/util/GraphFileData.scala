@@ -60,13 +60,18 @@ class GraphFileData
 
     for (i <- 0 until updateCount) {
       val split = lines.head.split(" -> ")
-      assert(split.size == 2)
+
       val key = split(0).toInt
-      val newValue = split(1).split(",").map(_.toInt)
+      val newValue =
+        if (split.size == 2)
+          split(1).split(",").map(_.toInt)
+        else
+          Array[Int]()
+
       table += ((key, newValue))
       lines = lines.tail
       input.put(key, newValue)
-      println("updating " + key + " " + newValue)
+      //println("updating " + key + " " + newValue)
     }
 
     updateCount
