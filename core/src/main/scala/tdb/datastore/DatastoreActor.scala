@@ -42,10 +42,6 @@ class DatastoreActor(workerInfo: WorkerInfo)
 
   private val datastore = new Datastore(workerInfo, log, workerInfo.workerId)
 
-  private val lists = Map[String, Modifier]()
-
-  private var nextListId = 0
-
   def receive = {
     case CreateModMessage(value: Any) =>
       sender ! datastore.createMod(value)
@@ -94,57 +90,6 @@ class DatastoreActor(workerInfo: WorkerInfo)
     case RemoveModsMessage(modIds: Iterable[ModId], taskRef: ActorRef) =>
       datastore.removeMods(modIds, taskRef) pipeTo sender
 
-    case CreateListIdsMessage
-        (conf: ListConf, workerIndex: Int, numWorkers: Int) =>
-      log.debug("CreateListIdsMessage " + conf)
-      val listIds = Buffer[String]()
-
-      val partitionsPerWorker = conf.partitions / numWorkers
-      val partitions =
-        if (workerIndex == numWorkers - 1 &&
-            conf.partitions % numWorkers != 0) {
-          numWorkers % partitionsPerWorker
-        } else {
-          partitionsPerWorker
-        }
-
-      val newLists = Buffer[Modifier]()
-      for (i <- 1 to partitions) {
-        val listId = nextListId + ""
-        nextListId += 1
-        val list =
-          conf match {
-            case conf: AggregatorListConf[_] =>
-              if (conf.chunkSize == 1)
-                new AggregatorListModifier(listId, datastore, self, conf)
-              else
-                new AggregatorChunkListModifier(listId, datastore, self, conf)
-            case conf: ColumnListConf =>
-              new ColumnListModifier(datastore, conf)
-            case conf: ListConf =>
-              if (conf.chunkSize == 1)
-                new DoubleListModifier(datastore)
-              else
-                new DoubleChunkListModifier(datastore, conf)
-          }
-
-        lists(listId) = list
-        newLists += list
-        listIds += listId
-      }
-
-      if (conf.file != "") {
-        datastore.loadFileInfoLists(listIds, newLists, sender, self)
-      } else {
-        val hasher = ObjHasher.makeHasher(
-          new HashRange(
-            workerIndex * partitionsPerWorker,
-            (workerIndex + 1) * partitionsPerWorker,
-            conf.partitions),
-          listIds.map((_, self)))
-        sender ! hasher
-      }
-
     case LoadPartitionsMessage
         (fileName: String,
          numWorkers: Int,
@@ -160,57 +105,10 @@ class DatastoreActor(workerInfo: WorkerInfo)
 
       sender ! "done"
 
-    case GetAdjustableListMessage(listId: String) =>
-      sender ! lists(listId).getAdjustableList()
-
-    case ToBufferMessage(listId: String) =>
-      sender ! lists(listId).toBuffer()
-
-    case PutMessage(listId: String, key: Any, value: Any) =>
-      // This solves a bug where sometimes deserialized Scala objects show up as
-      // null in matches. We should figure out a better way of solving this.
-      key.toString
-      value.toString
-
-      val futures = Buffer[Future[Any]]()
-      futures += lists(listId).put(key, value)
-      futures += datastore.informDependents(listId, key)
-      Future.sequence(futures) pipeTo sender
-
-    case PutAllMessage(listId: String, values: Iterable[(Any, Any)]) =>
-      val futures = Buffer[Future[Any]]()
-      for ((key, value) <- values) {
-        futures += lists(listId).put(key, value)
-        futures += datastore.informDependents(listId, key)
-      }
-      Future.sequence(futures) pipeTo sender
-
-    case PutInMessage(listId: String, key: Any, column: String, value: Any) =>
-      lists(listId).putIn(column, key, value) pipeTo sender
-
-    case GetMessage(listId: String, key: Any, taskRef: ActorRef) =>
-      sender ! lists(listId).get(key)
-      datastore.addKeyDependency(listId, key, taskRef)
-
-    case RemoveMessage(listId: String, key: Any, value: Any) =>
-      val futures = Buffer[Future[Any]]()
-      futures += lists(listId).remove(key, value)
-      futures += datastore.informDependents(listId, key)
-      Future.sequence(futures) pipeTo sender
-
-    case RemoveAllMessage(listId: String, values: Iterable[(Any, Any)]) =>
-      val futures = Buffer[Future[Any]]()
-      for ((key, value) <- values) {
-        futures += lists(listId).remove(key, value)
-        futures += datastore.informDependents(listId, key)
-      }
-      Future.sequence(futures) pipeTo sender
-
     case RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef) =>
       datastore.datastores(workerId) = datastoreRef
 
     case ClearMessage() =>
-      lists.clear()
       datastore.clear()
 
     case x =>

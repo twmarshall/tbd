@@ -32,7 +32,7 @@ class Context
      workerId: WorkerId,
      val task: Task,
      val masterRef: ActorRef,
-     private val datastores: Map[DatastoreId, ActorRef]) {
+     datastores: Map[DatastoreId, ActorRef]) {
   import task.context.dispatcher
 
   val log = Logging(task.context.system, "Context")
