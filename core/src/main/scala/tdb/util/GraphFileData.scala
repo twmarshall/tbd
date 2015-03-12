@@ -19,23 +19,27 @@ import tdb.list.ListInput
 
 class GraphFileData
     (input: ListInput[Int, Array[Int]],
-     fileName: String) extends Data[Array[Int]] {
+     fileName: String,
+     runs: List[String]) extends Data[Array[Int]] {
   var lines = scala.io.Source.fromFile(fileName).getLines().toBuffer
 
   val file = "data2.txt"
 
+  var remainingRuns = runs
+
   def generate() {
     while (lines.size > 0 && !(lines.head == "---")) {
       val split = lines.head.split(" -> ")
-      assert(split.size == 2)
-      table += ((split(0).toInt, split(1).split(",").map(_.toInt)))
+
+      if (split.size == 1) {
+        table += ((split(0).toInt, Array[Int]()))
+      } else {
+        table += ((split(0).toInt, split(1).split(",").map(_.toInt)))
+      }
       lines = lines.tail
     }
 
     lines = lines.tail
-    for (entry <- table) {
-      println(entry._1 + " => " + entry._2.mkString(","))
-    }
   }
 
   def load() = {
@@ -45,19 +49,28 @@ class GraphFileData
   }
 
   def update() = {
-    val split = lines.head.split(" -> ")
-    assert(split.size == 2)
-    val key = split(0).toInt
-    val newValue = split(1).split(",").map(_.toInt)
-    table += ((key, newValue))
-    lines = lines.tail
-    input.put(key, newValue)
-    println("updating " + key + " " + newValue)
+    val run = remainingRuns.head
+    val updateCount =
+      if (run.toDouble < 1)
+         (run.toDouble * table.size).toInt
+      else
+        run.toInt
 
-    1
+    remainingRuns = remainingRuns.tail
+
+    for (i <- 0 until updateCount) {
+      val split = lines.head.split(" -> ")
+      assert(split.size == 2)
+      val key = split(0).toInt
+      val newValue = split(1).split(",").map(_.toInt)
+      table += ((key, newValue))
+      lines = lines.tail
+      input.put(key, newValue)
+      println("updating " + key + " " + newValue)
+    }
+
+    updateCount
   }
 
-  def hasUpdates(): Boolean = {
-    lines.size > 0
-  }
+  def hasUpdates(): Boolean = remainingRuns.size > 0
 }

@@ -132,12 +132,15 @@ class Master extends Actor with ActorLogging {
       }
 
       Stats.clear()
-      Await.result(tasks(mutatorId) ? ClearModsMessage, DURATION)
+      if (tasks.contains(mutatorId)) {
+        Await.result(tasks(mutatorId) ? ClearModsMessage, DURATION)
 
-      val f = tasks(mutatorId) ? ShutdownTaskMessage
-      tasks -= mutatorId
+        val f = tasks(mutatorId) ? ShutdownTaskMessage
+        tasks -= mutatorId
 
-      Await.result(f, DURATION)
+        Await.result(f, DURATION)
+      }
+
       for ((workerId, datastoreRef) <- datastoreRefs) {
         datastoreRef ! ClearMessage()
       }
@@ -170,7 +173,6 @@ class Master extends Actor with ActorLogging {
 
       val conf =
         if (_conf.partitions == 0) {
-          println(s"\n\n\n\n??????? $totalCores\n\n\n\n\n")
           _conf.clone(partitions = totalCores)
         } else {
           _conf

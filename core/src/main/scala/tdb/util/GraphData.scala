@@ -24,7 +24,8 @@ class GraphData
     (input: ListInput[Int, Array[Int]],
      count: Int,
      mutations: List[String],
-     runs: List[String]) extends Data[Array[Int]] {
+     runs: List[String],
+     val file: String = "data.txt") extends Data[Array[Int]] {
 
   val maxKey = count * 100
 
@@ -32,31 +33,12 @@ class GraphData
 
   val rand = new scala.util.Random()
 
-  val file = "data.txt"
-
   var remainingRuns = runs
 
   def generate() {
-    /*val lines = io.Source.fromFile("graph.txt").getLines
-    for (line <- lines) {
-      val tokens = line.split("\\s+")
-
-      if (tokens.size != 2) {
-        println("WARNING: Graph input " + line + " not formatted correctly.")
-      }
-
-      val start = tokens(0).toInt
-      val end = tokens(1).toInt
-
-      if (table.contains(start)) {
-        table(start) :+= end
-      } else {
-        table(start) = Array(end)
-      }
-    }*/
-
     for (i <- 1 to count) {
       table(i) = generateEdges(1 to count)
+
       log(i + " -> " + table(i).mkString(","))
     }
 
@@ -97,7 +79,26 @@ class GraphData
       while (!table.contains(key)) {
         key = rand.nextInt(maxKey)
       }
-      table(key) = generateEdges()
+
+      val oldEdges = table(key)
+      val newEdges =
+        rand.nextInt(1) match {
+          case 0 =>
+            if (oldEdges.size > 0) {
+              val toRemove = rand.nextInt(oldEdges.size)
+              oldEdges.take(toRemove) ++ oldEdges.drop(toRemove + 1)
+            } else {
+              oldEdges :+ rand.nextInt(count)
+            }
+          case 1 =>
+            var newEdge = rand.nextInt(count)
+            while (oldEdges.contains(newEdge)) {
+              newEdge = rand.nextInt(count)
+            }
+            oldEdges :+ newEdge
+        }
+
+      table(key) = newEdges
       log(key + " -> " + table(key).mkString(","))
       input.put(key, table(key))
     }
