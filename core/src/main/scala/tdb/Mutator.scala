@@ -25,7 +25,7 @@ import tdb.Constants._
 import tdb.ddg.DDG
 import tdb.master.MasterConnector
 import tdb.messages._
-import tdb.list.{Dataset, ListConf, ListInput}
+import tdb.list.{ListConf, ListInput}
 import tdb.util.OS
 
 class Mutator(_connector: MasterConnector = null) {

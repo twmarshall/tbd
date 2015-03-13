@@ -44,7 +44,7 @@ class MapAdjust(list: AdjustableList[String, String])
 
 class MapAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[String, AdjustableList[String, Int]](_conf) {
-  var input: Dataset[String, String] = null
+  var input: ListInput[String, String] = null
 
   var adjust: MapAdjust = null
 
@@ -58,7 +58,6 @@ class MapAlgorithm(_conf: AlgorithmConf)
   override def loadInitial() {
     mutator.loadFile(conf.file, conf.listConf.partitions)
     input = mutator.createList[String, String](conf.listConf)
-      .asInstanceOf[Dataset[String, String]]
 
     adjust = new MapAdjust(input.getAdjustableList())
 

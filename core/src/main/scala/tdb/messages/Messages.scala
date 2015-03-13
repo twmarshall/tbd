@@ -22,7 +22,7 @@ import scala.language.existentials
 import tdb.{Adjustable, Changeable, TDB}
 import tdb.Constants._
 import tdb.ddg.Node
-import tdb.list.{Dataset, ListConf, Partition}
+import tdb.list.{ListConf, Partition}
 import tdb.worker.WorkerInfo
 
 // Datastore

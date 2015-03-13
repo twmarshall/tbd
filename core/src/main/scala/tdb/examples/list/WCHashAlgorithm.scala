@@ -76,7 +76,7 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
 
   var data: Data[String] = null
 
-  var input: Dataset[String, String] = null
+  var input: ListInput[String, String] = null
 
   var adjust: WCChunkHashAdjust = null
 
@@ -88,7 +88,6 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
     mutator.loadFile(conf.file)
     input = mutator.createList[String, String](
       conf.listConf.clone(file = conf.file))
-        .asInstanceOf[Dataset[String, String]]
 
     adjust = new WCChunkHashAdjust(
       input.getAdjustableList(), conf.listConf.chunkSize)
@@ -133,7 +132,7 @@ class RandomWCAlgorithm(_conf: AlgorithmConf)
 
   var data: Data[String] = null
 
-  var input: Dataset[String, String] = null
+  var input: ListInput[String, String] = null
 
   var adjust: WCChunkHashAdjust = null
 
@@ -143,7 +142,6 @@ class RandomWCAlgorithm(_conf: AlgorithmConf)
 
   override def loadInitial() {
     input = mutator.createList[String, String](conf.listConf)
-      .asInstanceOf[Dataset[String, String]]
 
     adjust = new WCChunkHashAdjust(
       input.getAdjustableList(), conf.listConf.chunkSize)

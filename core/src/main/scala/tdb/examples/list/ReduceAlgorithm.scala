@@ -45,7 +45,7 @@ class ReduceAlgorithm(_conf: AlgorithmConf)
 
   var data: Data[Int] = null
 
-  var input: Dataset[Int, Int] = null
+  var input: ListInput[Int, Int] = null
 
   var adjust: ReduceAdjust = null
 
@@ -55,7 +55,6 @@ class ReduceAlgorithm(_conf: AlgorithmConf)
 
   override def loadInitial() {
     input = mutator.createList[Int, Int](conf.listConf)
-      .asInstanceOf[Dataset[Int, Int]]
 
     val mappedConf = ListConf(chunkSize = conf.listConf.chunkSize,
       partitions = conf.listConf.partitions)

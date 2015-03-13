@@ -65,7 +65,7 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
 
   var data: FileData = null
 
-  var input: Dataset[String, String] = null
+  var input: ListInput[String, String] = null
 
   var adjust: CWChunkHashAdjust = null
 
@@ -77,7 +77,6 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
     mutator.loadFile(conf.file)
     input = mutator.createList[String, String](
         conf.listConf.clone(file = conf.file))
-          .asInstanceOf[Dataset[String, String]]
 
     val mappedConf = ListConf(chunkSize = conf.listConf.chunkSize,
       partitions = conf.listConf.partitions)
@@ -120,7 +119,7 @@ class RandomCWAlgorithm(_conf: AlgorithmConf)
 
   var data: Data[String] = null
 
-  var input: Dataset[String, String] = null
+  var input: ListInput[String, String] = null
 
   var adjust: CWChunkHashAdjust = null
 
@@ -130,7 +129,6 @@ class RandomCWAlgorithm(_conf: AlgorithmConf)
 
   override def loadInitial() {
     input = mutator.createList[String, String](conf.listConf)
-      .asInstanceOf[Dataset[String, String]]
 
     val mappedConf = ListConf(chunkSize = conf.listConf.chunkSize,
       partitions = conf.listConf.partitions)

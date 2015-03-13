@@ -19,11 +19,11 @@ import java.io.File
 import scala.collection.mutable.Buffer
 
 import tdb.Mutator
-import tdb.list.Dataset
+import tdb.list.ListInput
 
 class FileData
     (mutator: Mutator,
-     dataset: Dataset[String, String],
+     dataset: ListInput[String, String],
      inputFile: String,
      updateFile: String,
      runs: List[String]) extends Data[String] {

@@ -25,7 +25,7 @@ import tdb.messages._
 import tdb.util.ObjHasher
 
 trait HashPartitionedListInput[T, U]
-  extends Dataset[T, U] with java.io.Serializable {
+  extends ListInput[T, U] with java.io.Serializable {
 
   def hasher: ObjHasher[ActorRef]
 
@@ -87,8 +87,6 @@ trait HashPartitionedListInput[T, U]
       put(key, value)
     }
   }
-
-  def getPartitions = ???
 
   def getBuffer(): InputBuffer[T, U] = new HashBuffer(this)
 }
