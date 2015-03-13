@@ -36,6 +36,8 @@ object Constants {
   // that owns it.
   type ModId = Long
 
+  type InputId = Int
+
   def createModId
       (datastoreId: DatastoreId,
        workerId: WorkerId,
@@ -63,8 +65,6 @@ object Constants {
   def incrementWorkerId(workerId: WorkerId): WorkerId = {
     (workerId + 1).toShort
   }
-
-  type InputId = Int
 
   val localhost = InetAddress.getLocalHost.getHostAddress
 

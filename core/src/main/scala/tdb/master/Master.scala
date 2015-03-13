@@ -59,6 +59,8 @@ class Master extends Actor with ActorLogging {
 
   private var totalCores = 0
 
+  private var nextInputId: InputId = 0
+
   def cycleWorkers() {
     nextWorker = (incrementWorkerId(nextWorker) % workers.size).toShort
   }
@@ -170,13 +172,16 @@ class Master extends Actor with ActorLogging {
       (datastoreRefs(datastoreId) ? UpdateModMessage(modId, null, null)) pipeTo sender
 
     case CreateListMessage(_conf: ListConf) =>
-      val futures = Buffer[Future[(Map[DatastoreId, ActorRef], ObjHasher[(String, ActorRef)])]]()
+      val futures = Buffer[Future[(Map[DatastoreId, ActorRef], ObjHasher[ActorRef])]]()
+
+      val inputId = nextInputId
+      nextInputId += 1
 
       val conf =
         if (_conf.partitions == 0) {
-          _conf.clone(partitions = totalCores)
+          _conf.clone(partitions = totalCores, inputId = inputId)
         } else {
-          _conf
+          _conf.clone(inputId = inputId)
         }
 
       var index = 0
@@ -186,11 +191,11 @@ class Master extends Actor with ActorLogging {
           workerRef ? message
         }
 
-        futures += future.mapTo[(Map[DatastoreId, ActorRef], ObjHasher[(String, ActorRef)])]
+        futures += future.mapTo[(Map[DatastoreId, ActorRef], ObjHasher[ActorRef])]
         index += 1
       }
 
-      var hasher: ObjHasher[(String, ActorRef)] = null
+      var hasher: ObjHasher[ActorRef] = null
       Await.result(Future.sequence(futures), DURATION).foreach {
         case (newDatastores, thisHasher) =>
           if (hasher == null) {
@@ -204,15 +209,15 @@ class Master extends Actor with ActorLogging {
 
       val input = conf match {
         case aggregatorConf: AggregatorListConf[_] =>
-          new AggregatorInput(hasher, aggregatorConf)
+          new AggregatorInput(inputId, hasher, aggregatorConf)
 
-        case SimpleListConf(_, _, 1, _, false, _) =>
-          new HashPartitionedDoubleListInput(hasher)
+        case SimpleListConf(_, _, 1, _, false, _, _) =>
+          new HashPartitionedDoubleListInput(inputId, hasher)
 
-        case SimpleListConf(_, _, _, _, false, _) =>
-          new HashPartitionedDoubleChunkListInput(hasher, conf)
+        case SimpleListConf(_, _, _, _, false, _, _) =>
+          new HashPartitionedDoubleChunkListInput(inputId, hasher, conf)
         case columnConf: ColumnListConf =>
-          new ColumnListInput(hasher, columnConf)
+          new ColumnListInput(inputId, hasher, columnConf)
         case _ => ???
       }
 

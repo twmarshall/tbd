@@ -28,24 +28,28 @@ import tdb.worker.WorkerInfo
 import tdb.util.HashRange
 
 object ModifierActor {
-  def props(conf: ListConf, workerInfo: WorkerInfo, datastoreId: DatastoreId): Props =
+  def props
+      (conf: ListConf,
+       workerInfo: WorkerInfo,
+       datastoreId: DatastoreId): Props =
     Props(classOf[ModifierActor], conf, workerInfo, datastoreId)
 }
 
-class ModifierActor(conf: ListConf, workerInfo: WorkerInfo, datastoreId: DatastoreId)
+class ModifierActor
+    (conf: ListConf,
+     workerInfo: WorkerInfo,
+     datastoreId: DatastoreId)
   extends Actor with ActorLogging {
   import context.dispatcher
 
   private val datastore = new Datastore(workerInfo, log, datastoreId)
 
-  val listId = ""
-
   val modifier = conf match {
     case conf: AggregatorListConf[_] =>
       if (conf.chunkSize == 1)
-        new AggregatorListModifier(listId, datastore, self, conf)
+        new AggregatorListModifier(datastore, self, conf)
       else
-        new AggregatorChunkListModifier(listId, datastore, self, conf)
+        new AggregatorChunkListModifier(datastore, self, conf)
     case conf: ColumnListConf =>
       new ColumnListModifier(datastore, conf)
     case conf: ListConf =>
@@ -118,13 +122,13 @@ class ModifierActor(conf: ListConf, workerInfo: WorkerInfo, datastoreId: Datasto
 
       sender ! "done"
 
-    case GetAdjustableListMessage(listId: String) =>
+    case GetAdjustableListMessage() =>
       sender ! modifier.getAdjustableList()
 
-    case ToBufferMessage(listId: String) =>
+    case ToBufferMessage() =>
       sender ! modifier.toBuffer()
 
-    case PutMessage(listId: String, key: Any, value: Any) =>
+    case PutMessage(key: Any, value: Any) =>
       // This solves a bug where sometimes deserialized Scala objects show up as
       // null in matches. We should figure out a better way of solving this.
       key.toString
@@ -132,35 +136,35 @@ class ModifierActor(conf: ListConf, workerInfo: WorkerInfo, datastoreId: Datasto
 
       val futures = mutable.Buffer[Future[Any]]()
       futures += modifier.put(key, value)
-      futures += datastore.informDependents(listId, key)
+      futures += datastore.informDependents(conf.inputId, key)
       Future.sequence(futures) pipeTo sender
 
-    case PutAllMessage(listId: String, values: Iterable[(Any, Any)]) =>
+    case PutAllMessage(values: Iterable[(Any, Any)]) =>
       val futures = mutable.Buffer[Future[Any]]()
       for ((key, value) <- values) {
         futures += modifier.put(key, value)
-        futures += datastore.informDependents(listId, key)
+        futures += datastore.informDependents(conf.inputId, key)
       }
       Future.sequence(futures) pipeTo sender
 
-    case PutInMessage(listId: String, key: Any, column: String, value: Any) =>
+    case PutInMessage(key: Any, column: String, value: Any) =>
       modifier.putIn(column, key, value) pipeTo sender
 
-    case GetMessage(listId: String, key: Any, taskRef: ActorRef) =>
+    case GetMessage(key: Any, taskRef: ActorRef) =>
       sender ! modifier.get(key)
-      datastore.addKeyDependency(listId, key, taskRef)
+      datastore.addKeyDependency(conf.inputId, key, taskRef)
 
-    case RemoveMessage(listId: String, key: Any, value: Any) =>
+    case RemoveMessage(key: Any, value: Any) =>
       val futures = mutable.Buffer[Future[Any]]()
       futures += modifier.remove(key, value)
-      futures += datastore.informDependents(listId, key)
+      futures += datastore.informDependents(conf.inputId, key)
       Future.sequence(futures) pipeTo sender
 
-    case RemoveAllMessage(listId: String, values: Iterable[(Any, Any)]) =>
+    case RemoveAllMessage(values: Iterable[(Any, Any)]) =>
       val futures = mutable.Buffer[Future[Any]]()
       for ((key, value) <- values) {
         futures += modifier.remove(key, value)
-        futures += datastore.informDependents(listId, key)
+        futures += datastore.informDependents(conf.inputId, key)
       }
       Future.sequence(futures) pipeTo sender
 

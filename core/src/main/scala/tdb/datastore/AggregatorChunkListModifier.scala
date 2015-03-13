@@ -24,8 +24,7 @@ import tdb.Constants._
 import tdb.list._
 
 class AggregatorChunkListModifier[U]
-    (listId: String,
-     datastore: Datastore,
+    (datastore: Datastore,
      datastoreRef: ActorRef,
      conf: AggregatorListConf[U])
     (implicit ec: ExecutionContext)
@@ -138,7 +137,7 @@ class AggregatorChunkListModifier[U]
     values.contains(key)
   }
 
-  def getAdjustableList() = new AggregatorList(listId, datastoreRef)
+  def getAdjustableList() = new AggregatorList(datastoreRef)
 
   def toBuffer(): Buffer[(Any, Any)] = {
     val buf = Buffer[(Any, Any)]()

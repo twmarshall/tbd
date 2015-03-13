@@ -215,10 +215,14 @@ class Task
       c.ddg.modRemoved(modId)
       sender ! "done"
 
-    case KeyUpdatedMessage(listId: String, key: Any) =>
-      c.ddg.keyUpdated(listId, key)
+    case KeyUpdatedMessage(inputId: InputId, key: Any) =>
+      c.ddg.keyUpdated(inputId, key)
 
       (parent ? PebbleMessage(self, -1)) pipeTo sender
+
+    case KeyRemovedMessage(inputId: InputId, key: Any) =>
+      c.ddg.keyRemoved(inputId, key)
+      sender ! "done"
 
     case RunTaskMessage(adjust: Adjustable[_]) =>
       log.debug("Starting task.")

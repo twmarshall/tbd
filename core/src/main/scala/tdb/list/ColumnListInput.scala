@@ -26,7 +26,9 @@ import tdb.messages._
 import tdb.util.ObjHasher
 
 class ColumnListInput[T]
-    (val hasher: ObjHasher[(String, ActorRef)], conf: ColumnListConf)
+    (val inputId: InputId,
+     val hasher: ObjHasher[ActorRef],
+     conf: ColumnListConf)
   extends ListInput[T, Columns] {
 
   def put(key: T, value: Columns) = ???
@@ -51,8 +53,8 @@ class ColumnListInput[T]
   }
 
   def asyncPutIn(column: String, key: T, value: Any): Future[_] = {
-    val (listId, datastoreRef) = hasher.getObj(key)
-    datastoreRef ? PutInMessage(listId, key, column, value)
+    val datastoreRef = hasher.getObj(key)
+    datastoreRef ? PutInMessage(column, key, value)
   }
 
   def get(key: T, taskRef: ActorRef): Columns = ???
@@ -63,15 +65,13 @@ class ColumnListInput[T]
 
   def asyncRemove(key: T, value: Columns): Future[_] = ???
 
-  def getListId(key: T): String = ???
-
   def load(data: Map[T, Columns]): Unit = ???
 
   def getAdjustableList(): AdjustableList[T, Columns] = {
     val adjustablePartitions = Buffer[ColumnList[T]]()
 
-    for ((listId, datastoreRef) <- hasher.objs.values.toSet) {
-      val future = datastoreRef ? GetAdjustableListMessage(listId)
+    for (datastoreRef <- hasher.objs.values) {
+      val future = datastoreRef ? GetAdjustableListMessage()
       adjustablePartitions +=
         Await.result(future.mapTo[ColumnList[T]], DURATION)
     }

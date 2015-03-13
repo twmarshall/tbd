@@ -27,17 +27,15 @@ import tdb.util.ObjHasher
 trait HashPartitionedListInput[T, U]
   extends Dataset[T, U] with java.io.Serializable {
 
-  def hasher: ObjHasher[(String, ActorRef)]
-
-  def getListId(key: T) = hasher.getObj(key)._1
+  def hasher: ObjHasher[ActorRef]
 
   def put(key: T, value: U) = {
     Await.result(asyncPut(key, value), DURATION)
   }
 
   def asyncPut(key: T, value: U) = {
-    val (listId, datastoreRef) = hasher.getObj(key)
-    datastoreRef ? PutMessage(listId, key, value)
+    val datastoreRef = hasher.getObj(key)
+    datastoreRef ? PutMessage(key, value)
   }
 
   def asyncPutAll(values: Iterable[(T, U)]): Future[_] = {
@@ -46,8 +44,8 @@ trait HashPartitionedListInput[T, U]
     val futures = Buffer[Future[Any]]()
     for ((hash, buf) <- hashedPut) {
       if (buf.size > 0) {
-        val (listId, datastoreRef) = hasher.objs(hash)
-        futures += datastoreRef ? PutAllMessage(listId, buf)
+        val datastoreRef = hasher.objs(hash)
+        futures += datastoreRef ? PutAllMessage(buf)
       }
     }
 
@@ -56,8 +54,8 @@ trait HashPartitionedListInput[T, U]
   }
 
   def get(key: T, taskRef: ActorRef): U = {
-    val (listId, datastoreRef) = hasher.getObj(key)
-    val f = datastoreRef ? GetMessage(listId, key, taskRef)
+    val datastoreRef = hasher.getObj(key)
+    val f = datastoreRef ? GetMessage(key, taskRef)
     Await.result(f, DURATION).asInstanceOf[U]
   }
 
@@ -71,8 +69,8 @@ trait HashPartitionedListInput[T, U]
 
     for ((hash, buf) <- hashedRemove) {
       if (buf.size > 0) {
-        val (listId, datastoreRef) = hasher.objs(hash)
-        futures += datastoreRef ? RemoveAllMessage(listId, buf)
+        val datastoreRef = hasher.objs(hash)
+        futures += datastoreRef ? RemoveAllMessage(buf)
       }
     }
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -80,8 +78,8 @@ trait HashPartitionedListInput[T, U]
   }
 
   def asyncRemove(key: T, value: U): Future[_] = {
-    val (listId, datastoreRef) = hasher.getObj(key)
-    datastoreRef ? RemoveMessage(listId, key, value)
+    val datastoreRef = hasher.getObj(key)
+    datastoreRef ? RemoveMessage(key, value)
   }
 
   def load(data: Map[T, U]) = {

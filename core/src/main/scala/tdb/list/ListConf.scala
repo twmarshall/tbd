@@ -15,6 +15,8 @@
  */
 package tdb.list
 
+import tdb.Constants._
+
 object ListConf {
   def apply[T]
     (file: String = "",
@@ -22,14 +24,16 @@ object ListConf {
      chunkSize: Int = 1,
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
-     hash: Boolean = false): ListConf = {
+     hash: Boolean = false,
+     inputId: InputId = -1): ListConf = {
     new SimpleListConf(
       file,
       partitions,
       chunkSize,
       chunkSizer,
       sorted,
-      hash)
+      hash,
+      inputId)
   }
 }
 
@@ -40,10 +44,12 @@ sealed trait ListConf {
   def chunkSizer: Any => Int
   def sorted: Boolean
   def hash: Boolean
+  def inputId: InputId
 
   def clone
     (file: String = file,
-     partitions: Int = partitions): ListConf
+     partitions: Int = partitions,
+     inputId: InputId = inputId): ListConf
 }
 
 case class SimpleListConf
@@ -52,10 +58,11 @@ case class SimpleListConf
      chunkSize: Int = 1,
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
-     hash: Boolean = false) extends ListConf {
+     hash: Boolean = false,
+     inputId: InputId = -1) extends ListConf {
 
-  def clone(_file: String, _partitions: Int) =
-    copy(file = _file, partitions = _partitions)
+  def clone(_file: String, _partitions: Int, _inputId: InputId) =
+    copy(file = _file, partitions = _partitions, inputId = _inputId)
 }
 
 case class AggregatorListConf[T]
@@ -65,12 +72,13 @@ case class AggregatorListConf[T]
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
      hash: Boolean = false,
+     inputId: InputId = -1,
      aggregator: (T, T) => T,
      deaggregator: (T, T) => T,
      initialValue: T,
      threshold: T => Boolean) extends ListConf {
-  def clone(_file: String, _partitions: Int) =
-    copy(file = _file, partitions = _partitions)
+  def clone(_file: String, _partitions: Int, _inputId: InputId) =
+    copy(file = _file, partitions = _partitions, inputId = _inputId)
 }
 
 case class ColumnListConf
@@ -80,10 +88,11 @@ case class ColumnListConf
      chunkSizer: Any => Int = _ => 1,
      sorted: Boolean = false,
      hash: Boolean = false,
+     inputId: InputId = -1,
      columns: Map[String, (ColumnType, Any)]) extends ListConf {
 
   assert(columns.contains("key"))
 
-  def clone(_file: String, _partitions: Int) =
-    copy(file = _file, partitions = _partitions)
+  def clone(_file: String, _partitions: Int, _inputId: InputId) =
+    copy(file = _file, partitions = _partitions, inputId = _inputId)
 }

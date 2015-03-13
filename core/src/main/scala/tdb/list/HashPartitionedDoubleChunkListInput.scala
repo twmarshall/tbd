@@ -25,15 +25,16 @@ import tdb.messages._
 import tdb.util.ObjHasher
 
 class HashPartitionedDoubleChunkListInput[T, U]
-    (val hasher: ObjHasher[(String, ActorRef)],
+    (val inputId: InputId,
+     val hasher: ObjHasher[ActorRef],
      conf: ListConf)
   extends HashPartitionedListInput[T, U] with java.io.Serializable {
 
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[DoubleChunkList[T, U]]()
 
-    for ((listId, datastoreRef) <- hasher.objs.values.toSet) {
-      val future = datastoreRef ? GetAdjustableListMessage(listId)
+    for (datastoreRef <- hasher.objs.values) {
+      val future = datastoreRef ? GetAdjustableListMessage()
       adjustablePartitions +=
         Await.result(future.mapTo[DoubleChunkList[T, U]], DURATION)
     }

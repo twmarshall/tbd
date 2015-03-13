@@ -45,7 +45,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: DatastoreId
   // Maps ModIds to sets of ActorRefs representing tasks that read them.
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  private val keyDependencies = Map[String, Map[Any, Set[ActorRef]]]()
+  private val keyDependencies = Map[InputId, Map[Any, Set[ActorRef]]]()
 
   val inputs = Map[ModId, Any]()
 
@@ -155,24 +155,24 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: DatastoreId
     }
   }
 
-  def addKeyDependency(listId: String, key: Any, taskRef: ActorRef) {
-    if (!keyDependencies.contains(listId)) {
-      keyDependencies(listId) = Map[Any, Set[ActorRef]]()
+  def addKeyDependency(inputId: InputId, key: Any, taskRef: ActorRef) {
+    if (!keyDependencies.contains(inputId)) {
+      keyDependencies(inputId) = Map[Any, Set[ActorRef]]()
     }
 
-    if (!keyDependencies(listId).contains(key)) {
-      keyDependencies(listId)(key) = Set(taskRef)
+    if (!keyDependencies(inputId).contains(key)) {
+      keyDependencies(inputId)(key) = Set(taskRef)
     } else {
-      keyDependencies(listId)(key) += taskRef
+      keyDependencies(inputId)(key) += taskRef
     }
   }
 
-  def informDependents(listId: String, key: Any): Future[_] = {
-    if (keyDependencies.contains(listId) &&
-        keyDependencies(listId).contains(key)) {
+  def informDependents(inputId: InputId, key: Any): Future[_] = {
+    if (keyDependencies.contains(inputId) &&
+        keyDependencies(inputId).contains(key)) {
       val futures = Buffer[Future[Any]]()
-      for (taskRef <- keyDependencies(listId)(key)) {
-        futures += taskRef ? KeyUpdatedMessage(listId, key)
+      for (taskRef <- keyDependencies(inputId)(key)) {
+        futures += taskRef ? KeyUpdatedMessage(inputId, key)
       }
       Future.sequence(futures)
     } else {

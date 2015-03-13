@@ -25,7 +25,7 @@ import tdb.{Context, Mod, Mutator}
 import tdb.Constants._
 import tdb.messages._
 
-class AggregatorList[T, U](listId: String, datastoreRef: ActorRef)
+class AggregatorList[T, U](datastoreRef: ActorRef)
     extends AdjustableList[T, U] with Serializable {
 
   def filter(pred: ((T, U)) => Boolean)
@@ -51,7 +51,7 @@ class AggregatorList[T, U](listId: String, datastoreRef: ActorRef)
 
   /* Meta functions */
   def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
-    val future = datastoreRef ? ToBufferMessage(listId)
+    val future = datastoreRef ? ToBufferMessage()
     Await.result(future.mapTo[Buffer[(T, U)]], DURATION)
   }
 }

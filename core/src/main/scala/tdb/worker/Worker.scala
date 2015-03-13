@@ -94,7 +94,6 @@ class Worker
     case CreateListIdsMessage
         (listConf: ListConf, workerIndex: Int, numWorkers: Int) =>
       log.debug("CreateListIdsMessage " + listConf)
-      val listIds = mutable.Map[String, ActorRef]()
 
       val partitionsPerWorker = listConf.partitions / numWorkers
       val partitions =
@@ -105,28 +104,25 @@ class Worker
           partitionsPerWorker
         }
 
+      val newDatastores = Map[DatastoreId, ActorRef]()
       for (i <- 1 to partitions) {
-        val listId = nextListId + ""
-        nextListId += 1
-
         val modifierRef = context.actorOf(
           ModifierActor.props(listConf, workerInfo, nextDatastoreId))
-        datastores(nextDatastoreId) = modifierRef
+        newDatastores(nextDatastoreId) = modifierRef
         nextDatastoreId = (nextDatastoreId + 1).toShort
-
-        listIds(listId) = modifierRef
       }
+      datastores ++= newDatastores
 
       //if (conf.file != "") {
       //  datastore.loadFileInfoLists(listIds, newLists, sender, self)
       //} else {
-        val hasher: ObjHasher[(String, ActorRef)] = ObjHasher.makeHasher(
+        val hasher: ObjHasher[ActorRef] = ObjHasher.makeHasher(
           new HashRange(
             workerIndex * partitionsPerWorker,
             (workerIndex + 1) * partitionsPerWorker,
             listConf.partitions),
-          listIds.toBuffer)
-        sender ! (datastores, hasher)
+          newDatastores.values.toBuffer)
+        sender ! (newDatastores, hasher)
       //}
 
     case CreateModMessage(value: Any) =>

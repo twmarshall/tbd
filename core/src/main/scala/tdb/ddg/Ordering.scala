@@ -208,7 +208,7 @@ class Ordering {
             c.buffers(putNode.input).removeAll(putNode.values)
           case getNode: GetNode =>
             getNode.updated = false
-            c.ddg.keys(getNode.input.getListId(getNode.key))(getNode.key) -= time
+            c.ddg.keys(getNode.input.inputId)(getNode.key) -= time
           case x => println("Tried to splice unknown node type " + x)
         }
 

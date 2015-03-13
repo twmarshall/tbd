@@ -31,7 +31,7 @@ class DDG {
   debug.TDB.nodes(root) = (Node.getId(), Tag.Root(), null)
 
   val reads = Map[ModId, Buffer[Timestamp]]()
-  val keys = Map[String, Map[Any, Buffer[Timestamp]]]()
+  val keys = Map[InputId, Map[Any, Buffer[Timestamp]]]()
   val pars = Map[ActorRef, Timestamp]()
 
   var updated = TreeSet[Timestamp]()((new TimestampOrdering()).reverse)
@@ -78,15 +78,14 @@ class DDG {
     val getNode = new GetNode(input, key, getter)
     val timestamp = nextTimestamp(getNode, c)
 
-    val listId = input.getListId(key)
-    if (!keys.contains(listId)) {
-      keys(listId) = Map[Any, Buffer[Timestamp]]()
+    if (!keys.contains(input.inputId)) {
+      keys(input.inputId) = Map[Any, Buffer[Timestamp]]()
     }
 
-    if (keys(listId).contains(key)) {
-      keys(listId)(key) += timestamp
+    if (keys(input.inputId).contains(key)) {
+      keys(input.inputId)(key) += timestamp
     } else {
-      keys(listId)(key) = Buffer(timestamp)
+      keys(input.inputId)(key) = Buffer(timestamp)
     }
 
     timestamp
@@ -237,8 +236,8 @@ class DDG {
     }
   }
 
-  def keyUpdated(listId: String, key: Any) {
-    for (timestamp <- keys(listId)(key)) {
+  def keyUpdated(inputId: InputId, key: Any) {
+    for (timestamp <- keys(inputId)(key)) {
       if (!timestamp.node.updated) {
         updated += timestamp
 
@@ -250,6 +249,14 @@ class DDG {
   def modRemoved(modId: ModId) {
     if (reads.contains(modId)) {
       for (timestamp <- reads(modId)) {
+        timestamp.node.updated = false
+      }
+    }
+  }
+
+  def keyRemoved(inputId: InputId, key: Any) {
+    if (keys.contains(inputId) && keys(inputId).contains(key)) {
+      for (timestamp <- keys(inputId)(key)) {
         timestamp.node.updated = false
       }
     }

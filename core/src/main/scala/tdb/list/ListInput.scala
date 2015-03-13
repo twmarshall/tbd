@@ -26,7 +26,7 @@ import tdb.messages._
 
 trait ListInput[T, U] extends Input[T, U] {
 
-  def getListId(key: T): String
+  def inputId: InputId
 
   // Inserts all of the elements from data into this ListInput. Assumes that
   // the list is currently empty.
