@@ -39,7 +39,7 @@ object TDBBuild extends Build {
 
     "org.rogach"                  % "scallop_2.11"         % "0.9.5",
 
-    "org.scala-lang"             %% "scala-pickling"       % "0.8.0",
+    "org.scala-lang.modules"     %% "scala-pickling"       % "0.10.0",
     "org.scalatest"              %% "scalatest"            % "2.1.3" % "test",
     "org.scalaz"                 %% "scalaz-core"          % "7.0.6"
   )
