@@ -25,7 +25,7 @@ import tdb.master.Master
 class Memoizer[T](implicit c: Context) {
   private val memoTable = Map[Seq[Any], ArrayBuffer[Timestamp]]()
 
-  import c.task.context.dispatcher
+  import c.ec
 
   def apply(signature: Any*)(func: => T): T = {
     var found = false
@@ -54,7 +54,7 @@ class Memoizer[T](implicit c: Context) {
 
           ret = memoNode.value.asInstanceOf[T]
 
-          val future = c.task.propagate(timestamp, timestamp.end)
+          val future = c.propagate(timestamp, timestamp.end)
           Await.result(future, DURATION)
           future onComplete {
             case scala.util.Failure(e) => e.printStackTrace()

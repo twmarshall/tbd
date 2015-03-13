@@ -85,7 +85,7 @@ object TDB {
         getter.asInstanceOf[Any => Unit],
         c)
 
-    val value = input.get(key, c.task.self)
+    val value = input.get(key, c.taskRef)
     getter(value)
 
     timestamp.node.currentModId = c.currentModId
@@ -95,7 +95,7 @@ object TDB {
   def read[T, U](mod: Mod[T])
       (reader: T => Changeable[U])
       (implicit c: Context): Changeable[U] = {
-    val value = c.read(mod, c.task.self)
+    val value = c.read(mod, c.taskRef)
 
     val timestamp = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
@@ -115,7 +115,7 @@ object TDB {
   def readAny[T](mod: Mod[T])
       (reader: T => Unit)
       (implicit c: Context) {
-    val value = c.read(mod, c.task.self)
+    val value = c.read(mod, c.taskRef)
 
     val timestamp = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
@@ -133,7 +133,7 @@ object TDB {
   def read2[T, U, V](mod: Mod[T])
       (reader: T => (Changeable[U], Changeable[V]))
       (implicit c: Context): (Changeable[U], Changeable[V]) = {
-    val value = c.read(mod, c.task.self)
+    val value = c.read(mod, c.taskRef)
 
     val timestamp = c.ddg.addRead(
       mod.asInstanceOf[Mod[Any]],
@@ -154,8 +154,8 @@ object TDB {
   def read_2[T, U, V, W](mod1: Mod[T], mod2: Mod[U])
       (reader: (T, U) => W)
       (implicit c: Context): W = {
-    val value1 = c.read(mod1, c.task.self)
-    val value2 = c.read(mod2, c.task.self)
+    val value1 = c.read(mod1, c.taskRef)
+    val value2 = c.read(mod2, c.taskRef)
 
     val timestamp = c.ddg.addRead2(
       mod1.asInstanceOf[Mod[Any]],
@@ -177,9 +177,9 @@ object TDB {
   def read_3[T, U, V, W](mod1: Mod[T], mod2: Mod[U], mod3: Mod[V])
       (reader: (T, U, V) => W)
       (implicit c: Context): W = {
-    val value1 = c.read(mod1, c.task.self)
-    val value2 = c.read(mod2, c.task.self)
-    val value3 = c.read(mod3, c.task.self)
+    val value1 = c.read(mod1, c.taskRef)
+    val value2 = c.read(mod2, c.taskRef)
+    val value3 = c.read(mod3, c.taskRef)
 
     val timestamp = c.ddg.addRead3(
       mod1.asInstanceOf[Mod[Any]],
@@ -375,13 +375,13 @@ object TDB {
   def parWithHint[T, U](one: Context => T, workerId1: WorkerId = -1)
       (two: Context => U, workerId2: WorkerId = -1)
       (implicit c: Context): (T, U) = {
-    val future1 = c.masterRef ? ScheduleTaskMessage(c.task.self, workerId1)
+    val future1 = c.masterRef ? ScheduleTaskMessage(c.taskRef, workerId1)
     val taskRef1 = Await.result(future1.mapTo[ActorRef], DURATION)
 
     val adjust1 = new Adjustable[T] { def run(implicit c: Context) = one(c) }
     val oneFuture = taskRef1 ? RunTaskMessage(adjust1)
 
-    val future2 = c.masterRef ? ScheduleTaskMessage(c.task.self, workerId2)
+    val future2 = c.masterRef ? ScheduleTaskMessage(c.taskRef, workerId2)
     val taskRef2 = Await.result(future2.mapTo[ActorRef], DURATION)
 
     val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
