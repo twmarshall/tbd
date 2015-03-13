@@ -131,8 +131,8 @@ class ModifierActor
     case PutMessage(key: Any, value: Any) =>
       // This solves a bug where sometimes deserialized Scala objects show up as
       // null in matches. We should figure out a better way of solving this.
-      key.toString
-      value.toString
+      //key.toString
+      //value.toString
 
       val futures = mutable.Buffer[Future[Any]]()
       futures += modifier.put(key, value)

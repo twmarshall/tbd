@@ -17,7 +17,7 @@ package tdb.datastore
 
 import akka.actor.ActorRef
 import scala.collection.mutable.{Buffer, Map, Set}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 import tdb.{Mod, Mutator}
 import tdb.Constants._
@@ -32,7 +32,9 @@ class AggregatorListModifier[U]
 
   //println("new AggregatorListModifier")
 
-  private val values = Map[Any, Mod[U]]()
+  private val dummyFuture = Future { "done" }
+
+  private val values = Map[Any, Any]()
 
   def loadInput(keys: Iterator[Any]) = ???
 
@@ -40,41 +42,36 @@ class AggregatorListModifier[U]
     val value = anyValue.asInstanceOf[U]
 
     if (values.contains(key)) {
-      val oldValue = datastore.read(values(key))
-
+      val oldValue = values(key).asInstanceOf[U]
       val newValue = conf.aggregator(oldValue, value)
-
-      datastore.updateMod(values(key).id, newValue)
+      values(key) = newValue
     } else {
-      val mod = datastore.createMod(value)
-
-      values(key) = mod
-
-      Future { "done" }
+      values(key) = value
     }
+
+    dummyFuture
   }
 
   def putIn(column: String, key: Any, value: Any): Future[_] = ???
 
   def get(key: Any): Any = {
-    val mod = values(key)
-    datastore.read(mod)
+    values(key)
   }
 
   def remove(key: Any, anyValue: Any): Future[_] = {
     val value = anyValue.asInstanceOf[U]
 
-    val mod = values(key)
-    val oldValue = datastore.read(mod)
+    val oldValue = values(key).asInstanceOf[U]
 
     var newValue = conf.deaggregator(value, oldValue)
 
     if (newValue == 0) {
       values -= key
-      datastore.removeMods(Iterable(mod.id), null)
     } else {
-      datastore.updateMod(mod.id, newValue)
+      values(key) = newValue
     }
+
+    dummyFuture
   }
 
   def contains(key: Any): Boolean = {
@@ -86,8 +83,8 @@ class AggregatorListModifier[U]
   def toBuffer(): Buffer[(Any, Any)] = {
     val buf = Buffer[(Any, Any)]()
 
-    for ((key, mod) <- values) {
-      buf += ((key, datastore.read(mod)))
+    for ((key, value) <- values) {
+      buf += ((key, value))
     }
 
     buf

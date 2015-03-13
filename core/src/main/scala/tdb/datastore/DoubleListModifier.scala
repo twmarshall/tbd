@@ -78,11 +78,9 @@ class DoubleListModifier(datastore: Datastore)
     if (!nodes.contains(key)) {
       append(key, value)
     } else {
-      val nextMod = datastore.read(nodes(key)).nextMod
-      val valueMod = datastore.createMod((key, value))
-      val newNode = new DoubleListNode(valueMod, nextMod)
+      val node = datastore.read(nodes(key))
 
-      datastore.updateMod(nodes(key).id, newNode)
+      datastore.updateMod(node.valueMod.id, (key, value))
     }
   }
 

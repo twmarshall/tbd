@@ -53,9 +53,9 @@ class PageRankAdjust
         val newRanks = createList[Int, Double](aggregatorConf)
 
         def mapper(pair: (Int, Array[Int]), c: Context) {
+          put(newRanks, pair._1, 0.15)(c)
           get(ranks, pair._1) {
             case rank =>
-              put(newRanks, pair._1, 0.15)(c)
               val v = (rank / pair._2.size) * .85
               putAll(newRanks, for (edge <- pair._2) yield (edge, v))(c)
           }(c)
@@ -66,21 +66,6 @@ class PageRankAdjust
         newRanks
       }
     }
-
-    /*def innerPageRank(i: Int): AdjustableList[Int, Double] = {
-      if (i == 0) {
-        links.mapValues(_ => 1.0)
-      } else {
-        val ranks = innerPageRank(i - 1)
-
-        def mapper(link: (Int, Array[Int]), rank: (Int, Double)): (Int, Double) = {
-          
-        }
-
-        links.keyJoin(ranks, mapper)
-        ???
-      }
-    }*/
 
     innerPageRank(iters).getAdjustableList()
   }
