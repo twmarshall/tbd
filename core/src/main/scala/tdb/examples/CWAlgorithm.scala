@@ -25,35 +25,45 @@ import tdb.list._
 import tdb.TDB._
 import tdb.util._
 
-class CWChunkHashAdjust
+class CWAdjust
     (list: AdjustableList[String, String], conf: ListConf)
       extends Adjustable[Mod[(String, Int)]] {
 
-  def wordcount(chunk: Iterable[(String, String)]) = {
-    val counts = Map[String, Int]()
-
-    for (pair <- chunk) {
-      counts(pair._1) = pair._2.split("\\W+").size
+  def run(implicit c: Context) = {
+    val mapped = createList[String, Int](conf)
+    list.foreach {
+      case ((title, page), c) =>
+        put(mapped, title, page.split("\\W+").size)(c)
     }
 
-    counts
+    mapped.getAdjustableList().reduce {
+      case ((key1, value1), (key2, value2)) => (key1, value1 + value2)
+    }
   }
+}
 
-  def reducer
-      (pair1: (String, Int),
-       pair2: (String, Int)) = {
-    (pair1._1, pair1._2 + pair2._2)
-  }
+class CWChunkAdjust
+    (list: AdjustableList[String, String], conf: ListConf)
+      extends Adjustable[Mod[(String, Int)]] {
 
   def run(implicit c: Context) = {
-    val mapped = list.hashChunkMap(wordcount, conf).getAdjustableList()
-    mapped.reduce(reducer)
+    val mapped = createList[String, Int](conf)
+    list.foreachChunk {
+      case (values, c) =>
+        putAll(mapped, values.map {
+          case (title, page) => (title, page.split("\\W+").size)
+        })(c)
+    }
+
+    mapped.getAdjustableList().reduce {
+      case ((key1, value1), (key2, value2)) =>
+        (key1, value1 + value2)
+    }
   }
 }
 
 class CWChunkHashAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, Mod[(String, Int)]](_conf) {
-    //extends Algorithm[String, AdjustableList[String, Int]](_conf) {
+  extends Algorithm[String, Mod[(String, Int)]](_conf) {
 
   val outputFile = "output"
   if (Experiment.check) {
@@ -67,7 +77,7 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
 
   var input: ListInput[String, String] = null
 
-  var adjust: CWChunkHashAdjust = null
+  var adjust: Adjustable[Mod[(String, Int)]] = null
 
   def generateNaive() {}
 
@@ -80,7 +90,11 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
 
     val mappedConf = ListConf(chunkSize = conf.listConf.chunkSize,
       partitions = conf.listConf.partitions)
-    adjust = new CWChunkHashAdjust(input.getAdjustableList(), mappedConf)
+    adjust =
+      if (conf.listConf.chunkSize == 1)
+        new CWAdjust(input.getAdjustableList(), mappedConf)
+      else
+        new CWChunkAdjust(input.getAdjustableList(), mappedConf)
 
     data = new FileData(
       mutator, input, conf.file, conf.updateFile, conf.runs)
@@ -121,7 +135,7 @@ class RandomCWAlgorithm(_conf: AlgorithmConf)
 
   var input: ListInput[String, String] = null
 
-  var adjust: CWChunkHashAdjust = null
+  var adjust: Adjustable[Mod[(String, Int)]] = null
 
   def generateNaive() {}
 
@@ -132,7 +146,11 @@ class RandomCWAlgorithm(_conf: AlgorithmConf)
 
     val mappedConf = ListConf(chunkSize = conf.listConf.chunkSize,
       partitions = conf.listConf.partitions)
-    adjust = new CWChunkHashAdjust(input.getAdjustableList(), mappedConf)
+    adjust =
+      if (conf.listConf.chunkSize == 1)
+        new CWAdjust(input.getAdjustableList(), mappedConf)
+      else
+        new CWChunkAdjust(input.getAdjustableList(), mappedConf)
 
     data = new RandomStringData(
       input, conf.count, conf.mutations, Experiment.check, conf.runs)

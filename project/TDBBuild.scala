@@ -78,7 +78,7 @@ object TDBBuild extends Build {
        workerOut.setExecutable(true)
 
         val experiment = template.format(
-          "-Xmx10g", classpath, "tdb.examples.list.Experiment")
+          "-Xmx10g", classpath, "tdb.examples.Experiment")
         val experimentOut = baseDirectory.value / "../bin/experiment.sh"
         IO.write(experimentOut, experiment)
         experimentOut.setExecutable(true)
