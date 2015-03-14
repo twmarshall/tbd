@@ -111,6 +111,9 @@ class DatastoreActor(workerInfo: WorkerInfo)
     case ClearMessage() =>
       datastore.clear()
 
+    case FlushMessage() =>
+      sender ! "done"
+
     case x =>
       log.warning("Datastore actor received unhandled message " +
                   x + " from " + sender)

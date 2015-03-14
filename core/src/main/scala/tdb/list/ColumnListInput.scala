@@ -80,6 +80,8 @@ class ColumnListInput[T]
   }
 
   def getBuffer(): InputBuffer[T, Columns] = new ColumnBuffer(this, conf)
+
+  def flush(): Unit = ???
 }
 
 class ColumnBuffer[T]

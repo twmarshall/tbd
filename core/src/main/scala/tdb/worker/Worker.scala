@@ -106,8 +106,15 @@ class Worker
 
       val newDatastores = Map[DatastoreId, ActorRef]()
       for (i <- 1 to partitions) {
-        val modifierRef = context.actorOf(
-          ModifierActor.props(listConf, workerInfo, nextDatastoreId))
+        val modifierRef = listConf match {
+          case conf: AggregatorListConf[Any] =>
+            context.actorOf(AggregatorModifierActor.props(
+              conf, workerInfo, nextDatastoreId))
+          case _ =>
+            context.actorOf(ModifierActor.props(
+              listConf, workerInfo, nextDatastoreId))
+        }
+
         newDatastores(nextDatastoreId) = modifierRef
         nextDatastoreId = (nextDatastoreId + 1).toShort
       }

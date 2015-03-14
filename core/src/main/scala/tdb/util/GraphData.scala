@@ -29,7 +29,7 @@ class GraphData
 
   val maxKey = count * 100
 
-  val averageDegree = 5
+  val averageDegree = 14
 
   val rand = new scala.util.Random()
 

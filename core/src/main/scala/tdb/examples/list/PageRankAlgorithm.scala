@@ -46,6 +46,7 @@ class PageRankAdjust
         }
 
         links.foreach(mapper)
+        newRanks.flush()
 
         newRanks
       } else {
@@ -62,6 +63,7 @@ class PageRankAdjust
         }
 
         links.foreach(mapper)
+        newRanks.flush()
 
         newRanks
       }
@@ -106,11 +108,10 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
         links.map(url => (url, contrib)) ++ Iterable((page, .15))
       }
 
-      val reducedContribs = Map[Int, Double]()
+      ranks = Map[Int, Double]()
       for ((url, contrib) <- contribs) {
-        reducedContribs(url) = contrib + reducedContribs.getOrElse(url, 0.0)
+        ranks(url) = contrib + ranks.getOrElse(url, 0.0)
       }
-      ranks = reducedContribs.map(pair => (pair._1, pair._2))
     }
 
     ranks

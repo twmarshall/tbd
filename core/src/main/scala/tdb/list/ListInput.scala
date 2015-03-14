@@ -35,4 +35,6 @@ trait ListInput[T, U] extends Input[T, U] {
   def getAdjustableList(): AdjustableList[T, U]
 
   def getBuffer(): InputBuffer[T, U]
+
+  def flush(): Unit
 }

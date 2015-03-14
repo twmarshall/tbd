@@ -62,9 +62,15 @@ class Task
       sender ! "done"
 
     case KeyUpdatedMessage(inputId: InputId, key: Any) =>
+      val newPebble = c.ddg.updated.size == 0
+
       c.ddg.keyUpdated(inputId, key)
 
-      (parent ? PebbleMessage(self, -1)) pipeTo sender
+      if (newPebble) {
+        (parent ? PebbleMessage(self, -1)) pipeTo sender
+      } else {
+        sender ! "done"
+      }
 
     case KeyRemovedMessage(inputId: InputId, key: Any) =>
       c.ddg.keyRemoved(inputId, key)

@@ -43,6 +43,12 @@ class AggregatorInput[T, U]
   }
 
   override def getBuffer() = new AggregatorBuffer(this, conf)
+
+  override def flush(): Unit = {
+    val futures = hasher.objs.values.map(_ ? FlushMessage())
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Await.result(Future.sequence(futures), DURATION)
+  }
 }
 
 class AggregatorBuffer[T, U]
@@ -79,9 +85,7 @@ class AggregatorBuffer[T, U]
   def flush() {
     val futures = Buffer[Future[Any]]()
 
-    futures += input.asyncPutAll(toPut.filter {
-      case (key, value) => conf.threshold(value)
-    })
+    futures += input.asyncPutAll(toPut)
 
     toPut.clear()
 

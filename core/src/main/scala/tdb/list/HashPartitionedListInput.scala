@@ -89,6 +89,8 @@ trait HashPartitionedListInput[T, U]
   }
 
   def getBuffer(): InputBuffer[T, U] = new HashBuffer(this)
+
+  def flush(): Unit = ???
 }
 
 class HashBuffer[T, U](input: ListInput[T, U]) extends InputBuffer[T, U] {

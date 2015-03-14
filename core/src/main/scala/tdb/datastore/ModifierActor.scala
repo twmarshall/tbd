@@ -174,6 +174,9 @@ class ModifierActor
     case ClearMessage() =>
       datastore.clear()
 
+    case FlushMessage() =>
+      sender ! "done"
+
     case x => log.warning("Received unhandled message " + x + " from " + sender)
   }
 }

@@ -41,6 +41,7 @@ case class LoadPartitionsMessage(
   numWorkers: Int,
   workerIndex: Int,
   partitions: Int)
+case class FlushMessage()
 
 // Master
 case class RegisterMutatorMessage()

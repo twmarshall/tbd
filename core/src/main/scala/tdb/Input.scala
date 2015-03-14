@@ -32,6 +32,4 @@ trait Input[T, U] {
   def removeAll(values: Iterable[(T, U)])
 
   def asyncRemove(key: T, value: U): Future[_]
-
-  def flush(): Unit = ???
 }
