@@ -32,13 +32,15 @@ object Node {
   }
 }
 
-abstract class Node {
+sealed trait Node {
   var currentModId: ModId = -1
 
   var currentModId2: ModId = -1
 
   var updated = false
 }
+
+sealed trait ReexecutableNode extends Node
 
 class MemoNode
     (val signature: Seq[Any],
@@ -77,23 +79,23 @@ class PutAllInNode
 class GetNode
     (val input: ListInput[Any, Any],
      val key: Any,
-     val getter: Any => Unit) extends Node
+     val getter: Any => Unit) extends ReexecutableNode
 
 class ReadNode
     (val modId: ModId,
      val reader: Any => Changeable[Any])
-  extends Node
+  extends ReexecutableNode
 
 class Read2Node
     (val modId1: ModId,
      val modId2: ModId,
-     val reader: (Any, Any) => Changeable[Any]) extends Node
+     val reader: (Any, Any) => Changeable[Any]) extends ReexecutableNode
 
 class Read3Node
     (val modId1: ModId,
      val modId2: ModId,
      val modId3: ModId,
-     val reader: (Any, Any, Any) => Changeable[Any]) extends Node
+     val reader: (Any, Any, Any) => Changeable[Any]) extends ReexecutableNode
 
 class RootNode extends Node
 

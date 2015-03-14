@@ -126,114 +126,39 @@ class Context
         ddg.updated -= timestamp
 
         node match {
-          case readNode: ReadNode =>
-            if (readNode.updated) {
-              val newValue = readId(readNode.modId)
-
+          case node: ReexecutableNode =>
+            if (node.updated) {
               val oldStart = reexecutionStart
               reexecutionStart = timestamp.getNext()
               val oldEnd = reexecutionEnd
               reexecutionEnd = timestamp.end
               val oldCurrentModId = currentModId
-              currentModId = readNode.currentModId
+              currentModId = node.currentModId
               val oldCurrentModId2 = currentModId2
-              currentModId2 = readNode.currentModId2
+              currentModId2 = node.currentModId2
 
               val oldCurrentTime = currentTime
               currentTime = timestamp
 
-              readNode.updated = false
-              readNode.reader(newValue)
+              node.updated = false
 
-              if (reexecutionStart < reexecutionEnd) {
-                ddg.ordering.splice(reexecutionStart, reexecutionEnd, this)
+              node match {
+                case getNode: GetNode =>
+                  val newValue = getNode.input.get(getNode.key, taskRef)
+                  getNode.getter(newValue)
+                case readNode: ReadNode =>
+                  val newValue = readId(readNode.modId)
+                  readNode.reader(newValue)
+                case readNode: Read2Node =>
+                  val newValue1 = readId(readNode.modId1)
+                  val newValue2 = readId(readNode.modId2)
+                  readNode.reader(newValue1, newValue2)
+                case readNode: Read3Node =>
+                  val newValue1 = readId(readNode.modId1)
+                  val newValue2 = readId(readNode.modId2)
+                  val newValue3 = readId(readNode.modId3)
+                  readNode.reader(newValue1, newValue2, newValue3)
               }
-
-              reexecutionStart = oldStart
-              reexecutionEnd = oldEnd
-              currentModId = oldCurrentModId
-              currentModId2 = oldCurrentModId2
-              currentTime = oldCurrentTime
-            }
-          case getNode: GetNode =>
-            if (getNode.updated) {
-              val newValue = getNode.input.get(getNode.key, taskRef)
-
-              val oldStart = reexecutionStart
-              reexecutionStart = timestamp.getNext()
-              val oldEnd = reexecutionEnd
-              reexecutionEnd = timestamp.end
-              val oldCurrentModId = currentModId
-              currentModId = getNode.currentModId
-              val oldCurrentModId2 = currentModId2
-              currentModId2 = getNode.currentModId2
-
-              val oldCurrentTime = currentTime
-              currentTime = timestamp
-
-              getNode.updated = false
-              getNode.getter(newValue)
-
-              if (reexecutionStart < reexecutionEnd) {
-                ddg.ordering.splice(reexecutionStart, reexecutionEnd, this)
-              }
-
-              reexecutionStart = oldStart
-              reexecutionEnd = oldEnd
-              currentModId = oldCurrentModId
-              currentModId2 = oldCurrentModId2
-              currentTime = oldCurrentTime
-            }
-          case readNode: Read2Node =>
-            if (readNode.updated) {
-              val newValue1 = readId(readNode.modId1)
-              val newValue2 = readId(readNode.modId2)
-
-              val oldStart = reexecutionStart
-              reexecutionStart = timestamp.getNext()
-              val oldEnd = reexecutionEnd
-              reexecutionEnd = timestamp.end
-              val oldCurrentModId = currentModId
-              currentModId = readNode.currentModId
-              val oldCurrentModId2 = currentModId2
-              currentModId2 = readNode.currentModId2
-
-              val oldCurrentTime = currentTime
-              currentTime = timestamp
-
-              readNode.updated = false
-              readNode.reader(newValue1, newValue2)
-
-              if (reexecutionStart < reexecutionEnd) {
-                ddg.ordering.splice(reexecutionStart, reexecutionEnd, this)
-              }
-
-              reexecutionStart = oldStart
-              reexecutionEnd = oldEnd
-              currentModId = oldCurrentModId
-              currentModId2 = oldCurrentModId2
-              currentTime = oldCurrentTime
-            }
-          case readNode: Read3Node =>
-            if (readNode.updated) {
-              val newValue1 = readId(readNode.modId1)
-              val newValue2 = readId(readNode.modId2)
-              val newValue3 = readId(readNode.modId3)
-
-              val oldStart = reexecutionStart
-              reexecutionStart = timestamp.getNext()
-              val oldEnd = reexecutionEnd
-              reexecutionEnd = timestamp.end
-              val oldCurrentModId = currentModId
-              currentModId = readNode.currentModId
-              val oldCurrentModId2 = currentModId2
-              currentModId2 = readNode.currentModId2
-
-              val oldCurrentTime = currentTime
-              currentTime = timestamp
-
-              readNode.updated = false
-              readNode.reader(newValue1, newValue2, newValue3)
 
               if (reexecutionStart < reexecutionEnd) {
                 ddg.ordering.splice(reexecutionStart, reexecutionEnd, this)
@@ -259,6 +184,7 @@ class Context
               Await.result(future1, DURATION)
               Await.result(future2, DURATION)
             }
+          case node: Node => ???
         }
 
         option = ddg.updated.find((timestamp: Timestamp) =>
