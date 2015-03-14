@@ -234,8 +234,6 @@ object Experiment {
           case "qsort" =>
             new QuickSortAlgorithm(algConf)
 
-          case "rbk" => new ReduceByKeyAlgorithm(algConf)
-
           case "reduce" => new ReduceAlgorithm(algConf)
 
           case "sjoin" =>
