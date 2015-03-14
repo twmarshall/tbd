@@ -28,46 +28,6 @@ class AlgorithmTests extends FlatSpec with Matchers {
 
   val intensity = 10
 
-  /*"FilterTest" should "run filter successfully." in {
-    val conf = new ExperimentConf(
-      Array("--algorithms", "filter",
-            "--chunkSizes", "1",
-            "--counts", intensity.toString,
-            "--partitions", "1", "4",
-            "--repeat", "0") ++ defaults)
-
-    Experiment.run(conf)
-  }
-
-  "FlatMapTest" should "run flatMap successfully" in {
-    val conf = new ExperimentConf(
-      Array("--algorithms", "flatMap",
-            "--chunkSizes", "1",
-            "--counts", intensity.toString,
-            "--partitions", "1", "4") ++ defaults)
-
-    Experiment.run(conf)
-  }
-
-  "JoinTest" should "run join successfully." in {
-    val nestedLoopConf = new ExperimentConf(
-      Array("--algorithms", "join",
-            "--chunkSizes", "1",
-            "--counts", intensity.toString,
-            "--partitions", "1") ++ defaults)
-
-    Experiment.run(nestedLoopConf)
-
-
-    val sortConf = new ExperimentConf(
-      Array("--algorithms", "sjoin",
-            "--chunkSizes", "1",
-            "--counts", intensity.toString,
-            "--partitions", "1") ++ defaults)
-
-    Experiment.run(sortConf)
-  }*/
-
   "MapTest" should "run map successfully." in {
     val conf = new ExperimentConf(
       Array("--algorithms", "map",
@@ -97,44 +57,6 @@ class AlgorithmTests extends FlatSpec with Matchers {
       "partitions" -> Array("1"))
 
     Experiment.run(Experiment.confs ++ conf)
-  }*/
-
-  /*"ReduceByKeyTest" should "run reduceByKey successfully" in {
-    val conf = new ExperimentConf(
-      Array("--algorithms", "rbk",
-            "--chunkSizes","1",
-            "--counts", intensity.toString,
-            "--partitions", "1") ++ defaults)
-
-    Experiment.run(conf)
-  }
-
-  "SortTest" should "run sort successfully." in {
-    val quickConf = new ExperimentConf(
-      Array("--algorithms", "qsort",
-            "--chunkSizes", "1",
-            "--counts", intensity.toString,
-            "--partitions", "1", "4") ++ defaults)
-
-    Experiment.run(quickConf)
-
-    val mergeConf = new ExperimentConf(
-      Array("--algorithms", "msort",
-            "--chunkSizes", "1",
-            "--counts", intensity.toString,
-            "--partitions", "1", "4") ++ defaults)
-
-    Experiment.run(mergeConf)
-  }
-
-  "SplitTest" should "run split successfully." in {
-    val conf = new ExperimentConf(
-      Array("--algorithms", "split",
-            "--chunkSizes", "1",
-            "--counts", intensity.toString,
-            "--partitions", "1") ++ defaults)
-
-    Experiment.run(conf)
   }*/
 
   /*"WordcountTest" should "run wordcount successfully." in {

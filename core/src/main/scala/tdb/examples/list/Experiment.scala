@@ -211,37 +211,10 @@ object Experiment {
           epsilon = epsilon)
 
         val alg = algorithm match {
-          case "filter" => new FilterAlgorithm(algConf)
-
-          case "flatMap" => new FlatMapAlgorithm(algConf)
-
-          case "join" =>
-            if (listConf.chunkSize > 1)
-              new ChunkJoinAlgorithm(algConf)
-            else
-              new JoinAlgorithm(algConf)
-
           case "map" =>
             new MapAlgorithm(algConf)
-
-          case "msort" =>
-            new MergeSortAlgorithm(algConf)
-
           case "pgrank" => new PageRankAlgorithm(algConf)
-
           case "cpgr" => new ColumnPageRankAlgorithm(algConf)
-
-          case "qsort" =>
-            new QuickSortAlgorithm(algConf)
-
-          case "reduce" => new ReduceAlgorithm(algConf)
-
-          case "sjoin" =>
-            new SortJoinAlgorithm(algConf)
-
-          case "split" =>
-            new SplitAlgorithm(algConf)
-
           case "wc" =>
             if (listConf.chunkSize > 1)
               new ChunkWCAlgorithm(algConf)
