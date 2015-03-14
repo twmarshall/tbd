@@ -19,7 +19,7 @@ import org.scalatest._
 import scala.collection.immutable.HashMap
 
 import tdb._
-import tdb.examples.list.WCAlgorithm
+import tdb.examples.WCAlgorithm
 import tdb.list._
 import tdb.TDB._
 

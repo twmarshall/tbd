@@ -17,7 +17,7 @@ package tdb.examples.test
 
 import org.scalatest._
 
-import tdb.examples.list._
+import tdb.examples._
 
 class AlgorithmTests extends FlatSpec with Matchers {
   Experiment.verbosity = 0

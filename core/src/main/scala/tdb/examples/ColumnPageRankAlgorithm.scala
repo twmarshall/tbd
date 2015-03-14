@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.examples.list
+package tdb.examples
 
 import scala.collection.immutable
 import scala.collection.mutable.Map

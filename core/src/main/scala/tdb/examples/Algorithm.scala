@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.examples.list
+package tdb.examples
 
 import java.lang.management.ManagementFactory
 import scala.collection.mutable.{Buffer, Map}
