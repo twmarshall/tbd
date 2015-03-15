@@ -86,21 +86,6 @@ class AggregatorModifierActor
 
   def receive = {
 
-    case LoadPartitionsMessage
-        (fileName: String,
-         numWorkers: Int,
-         workerIndex: Int,
-         partitions: Int) =>
-      log.debug("LoadPartitionsMessage")
-      val range = new HashRange(
-        workerIndex * partitions,
-        (workerIndex + 1) * partitions,
-        numWorkers * partitions)
-
-      datastore.loadPartitions(fileName, range)
-
-      sender ! "done"
-
     case GetAdjustableListMessage() =>
       sender ! getAdjustableList()
 

@@ -71,11 +71,6 @@ class Mutator(_connector: MasterConnector = null) {
     Await.result(future.mapTo[ListInput[T, U]], DURATION)
   }
 
-  def loadFile(fileName: String, partitions: Int = OS.getNumCores()) {
-    val future = masterRef ? LoadFileMessage(fileName, partitions)
-    Await.result(future, DURATION)
-  }
-
   def run[T](adjust: Adjustable[T]): T = {
     Await.result(Future.sequence(futures), DURATION)
     futures.clear()

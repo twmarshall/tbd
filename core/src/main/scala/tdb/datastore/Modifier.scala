@@ -23,7 +23,7 @@ import tdb.list.AdjustableList
 import tdb.Mod
 
 trait Modifier {
-  def loadInput(keys: Iterator[Any]): Future[_]
+  def loadInput(keys: Iterable[Any]): Future[_]
 
   def put(key: Any, value: Any): Future[_]
 

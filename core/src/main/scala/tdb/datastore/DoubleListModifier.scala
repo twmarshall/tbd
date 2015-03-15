@@ -33,7 +33,7 @@ class DoubleListModifier(datastore: Datastore)
   val modList = new DoubleList[Any, Any](
     tailMod, false, datastore.workerInfo.workerId)
 
-  def loadInput(keys: Iterator[Any]): Future[_] = {
+  def loadInput(keys: Iterable[Any]): Future[_] = {
     var headNode = datastore.read(modList.head)
     var headKey =
       if (headNode == null)

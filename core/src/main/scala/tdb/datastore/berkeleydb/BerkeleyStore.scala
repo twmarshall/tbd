@@ -144,7 +144,7 @@ class BerkeleyStore(workerInfo: WorkerInfo)
   }
 
   def contains(id: Int, key: Any): Boolean = {
-    tables(id).contains(key)
+    values.contains(key) || tables(id).contains(key)
   }
 
   def count(id: Int): Int = {
@@ -169,8 +169,8 @@ class BerkeleyStore(workerInfo: WorkerInfo)
     database = new BerkeleyDatabase(workerInfo.envHomePath)
   }
 
-  def hashedForeach(id: Int)(process: (Int, Iterator[Any]) => Unit) {
-    tables(id).hashedForeach(process)
+  def processKeys(id: Int, process: Iterable[Any] => Unit) {
+    tables(id).processKeys(process)
   }
 
   def hashRange(id: Int) = {

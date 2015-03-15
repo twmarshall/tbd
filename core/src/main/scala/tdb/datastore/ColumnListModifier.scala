@@ -36,7 +36,7 @@ class ColumnListModifier(datastore: Datastore, conf: ColumnListConf)
   val list =
     new ColumnList[Any](lastNodeMod, conf, false, datastore.workerInfo.workerId)
 
-  def loadInput(keys: Iterator[Any]) = ???/*{
+  def loadInput(keys: Iterable[Any]) = ???/*{
     val futures = Buffer[Future[Any]]()
 
     var chunk = Vector[Any]()

@@ -83,12 +83,10 @@ class BerkeleyInputTable
 
   def count(): Int = indexes.values.map(_.count().toInt).reduce(_ + _)
 
-  def hashedForeach(process: (Int, Iterator[String]) => Unit) = {
-    for ((id, index) <- indexes) {
-      val cursor = index.keys()
-      process(id, cursor.iterator)
-      cursor.close()
-    }
+  def processKeys(process: Iterable[Any] => Unit) = {
+    val cursor = indexes.head._2.keys()
+    process(cursor)
+    cursor.close()
   }
 
   def foreachPartition(func: PrimaryIndex[String, InputEntity] => Unit) {

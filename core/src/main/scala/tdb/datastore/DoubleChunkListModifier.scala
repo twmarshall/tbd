@@ -38,7 +38,7 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
 
   val duplicateKeys = Buffer[Any]()
 
-  def loadInput(keys: Iterator[Any]) = {
+  def loadInput(keys: Iterable[Any]) = {
     val futures = Buffer[Future[Any]]()
 
     var chunk = Vector[Any]()

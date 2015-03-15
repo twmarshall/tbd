@@ -66,13 +66,11 @@ class BerkeleyModTable(environment: Environment) extends BerkeleyTable {
     primaryIndex.delete(key.asInstanceOf[ModId])
   }
 
-  def keys() = primaryIndex.keys()
-
   def contains(key: Any) = primaryIndex.contains(key.asInstanceOf[ModId])
 
   def count() = primaryIndex.count().toInt
 
-  def hashedForeach(process: (Int, Iterator[String]) => Unit) = ???
+  def processKeys(process: Iterable[Any] => Unit) = ???
 
   def hashRange = ???
 

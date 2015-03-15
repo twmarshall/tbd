@@ -85,7 +85,6 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
   def runNaive() {}
 
   override def loadInitial() {
-    mutator.loadFile(conf.file)
     input = mutator.createList[String, String](
       conf.listConf.clone(file = conf.file))
 

@@ -104,15 +104,42 @@ class Worker
           partitionsPerWorker
         }
 
+      val dir = listConf.file + "-split" + listConf.partitions
+      if (listConf.file != "") {
+        if (!OS.exists(dir)) {
+          OS.mkdir(dir)
+          tdb.scripts.Split.main(Array(
+            "-d", dir,
+            "-f", listConf.file,
+            "-p", listConf.partitions + ""))
+        }
+      }
+
       val newDatastores = Map[DatastoreId, ActorRef]()
-      for (i <- 1 to partitions) {
-        val modifierRef = listConf match {
-          case conf: AggregatorListConf[Any] =>
+      var hasher: ObjHasher[ActorRef] = null
+      for (i <- 0 until partitions) {
+        val start = workerIndex * partitionsPerWorker + i
+        val thisRange = new HashRange(start, start + 1, listConf.partitions)
+
+        val thisConf =
+          if (listConf.file == "")
+            listConf
+          else
+            listConf.clone(file = dir + "/" + start)
+        val modifierRef = thisConf match {
+          case aggregatorConf: AggregatorListConf[Any] =>
             context.actorOf(AggregatorModifierActor.props(
-              conf, workerInfo, nextDatastoreId))
+              aggregatorConf, workerInfo, nextDatastoreId))
           case _ =>
             context.actorOf(ModifierActor.props(
-              listConf, workerInfo, nextDatastoreId))
+              thisConf, workerInfo, nextDatastoreId, thisRange))
+        }
+
+        val thisHasher = ObjHasher.makeHasher(thisRange, modifierRef)
+        if (hasher == null) {
+          hasher = thisHasher
+        } else {
+          hasher = ObjHasher.combineHashers(thisHasher, hasher)
         }
 
         newDatastores(nextDatastoreId) = modifierRef
@@ -120,17 +147,7 @@ class Worker
       }
       datastores ++= newDatastores
 
-      //if (conf.file != "") {
-      //  datastore.loadFileInfoLists(listIds, newLists, sender, self)
-      //} else {
-        val hasher: ObjHasher[ActorRef] = ObjHasher.makeHasher(
-          new HashRange(
-            workerIndex * partitionsPerWorker,
-            (workerIndex + 1) * partitionsPerWorker,
-            listConf.partitions),
-          newDatastores.values.toBuffer)
-        sender ! (newDatastores, hasher)
-      //}
+      sender ! (newDatastores, hasher)
 
     case CreateModMessage(value: Any) =>
       (datastore ? CreateModMessage(value)) pipeTo sender

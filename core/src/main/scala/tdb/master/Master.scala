@@ -223,21 +223,6 @@ class Master extends Actor with ActorLogging {
 
       sender ! input
 
-    case LoadFileMessage(fileName: String, partitions: Int) =>
-      val futures = Buffer[Future[Any]]()
-
-      var index = 0
-      for ((workerId, datastoreRef) <- datastoreRefs) {
-        val message = LoadPartitionsMessage(
-          fileName, workers.size, index, partitions)
-        futures += (datastoreRef ? message)
-        index += 1
-      }
-
-      Await.result(Future.sequence(futures), DURATION)
-
-      sender ! "done"
-
     case x =>
       log.warning("Master actor received unhandled message " +
                   x + " from " + sender + " " + x.getClass)

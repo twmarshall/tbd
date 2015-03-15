@@ -37,7 +37,7 @@ class AggregatorChunkListModifier[U]
   private val fullChunks = Set[ModId]()
   private val freeChunks = Set[ModId]()
 
-  def loadInput(keys: Iterator[Any]) = ???
+  def loadInput(keys: Iterable[Any]) = ???
 
   def put(key: Any, anyValue: Any): Future[_] = {
     val value = anyValue.asInstanceOf[U]

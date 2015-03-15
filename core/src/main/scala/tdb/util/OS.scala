@@ -30,4 +30,12 @@ object OS {
 
     numCores
   }
+
+  def exists(dir: String): Boolean = {
+    s"[ -d $dir ]".! == 0
+  }
+
+  def mkdir(dir: String) {
+    s"mkdir -p $dir".!!
+  }
 }

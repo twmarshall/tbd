@@ -36,11 +36,6 @@ case class SetIdMessage(workerId: WorkerId)
 case class ClearMessage()
 case class CreateListIdsMessage(
   conf: ListConf, workerIndex: Int, numWorkers: Int)
-case class LoadPartitionsMessage(
-  fileName: String,
-  numWorkers: Int,
-  workerIndex: Int,
-  partitions: Int)
 case class FlushMessage()
 
 // Master
@@ -52,7 +47,6 @@ case class ScheduleTaskMessage(parent: ActorRef, workerId: WorkerId)
 case class ShutdownMutatorMessage(mutatorId: Int)
 
 case class CreateListMessage(conf: ListConf)
-case class LoadFileMessage(fileName: String, partitions: Int)
 case class GetAdjustableListMessage()
 case class ToBufferMessage()
 case class PutMessage(key: Any, value: Any)

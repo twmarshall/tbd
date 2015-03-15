@@ -197,27 +197,8 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: DatastoreId
     }
   }
 
-  def loadFileInfoLists
-      (listIds: Buffer[String],
-       newLists: Buffer[Modifier],
-       respondTo: ActorRef,
-       datastoreActor: ActorRef) {
-    val futures = Buffer[Future[Any]]()
-    var nextList = 0
-    val idMap = Map[Int, (String, ActorRef)]()
-    store.hashedForeach(1) {
-      case (id, keys) =>
-        idMap(id) = (listIds(nextList), datastoreActor)
-        futures += newLists(nextList).loadInput(keys)
-        nextList = (nextList + 1) % newLists.size
-    }
-
-    Future.sequence(futures).onComplete {
-      case Success(v) =>
-        respondTo ! new ObjHasher(idMap, store.hashRange(1).total)
-      case Failure(e) => e.printStackTrace()
-    }
-  }
+  def processKeys(process: Iterable[Any] => Unit) =
+    store.processKeys(1, process)
 
   def clear() {
     store.clear()

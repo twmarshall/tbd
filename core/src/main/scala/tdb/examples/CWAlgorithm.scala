@@ -37,7 +37,8 @@ class CWAdjust
     }
 
     mapped.getAdjustableList().reduce {
-      case ((key1, value1), (key2, value2)) => (key1, value1 + value2)
+      case ((key1, value1), (key2, value2)) =>
+        (key1, value1 + value2)
     }
   }
 }
@@ -84,7 +85,7 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
   def runNaive() {}
 
   override def loadInitial() {
-    mutator.loadFile(conf.file)
+    //mutator.loadFile(conf.file)
     input = mutator.createList[String, String](
         conf.listConf.clone(file = conf.file))
 
@@ -166,8 +167,8 @@ class RandomCWAlgorithm(_conf: AlgorithmConf)
 
     val out = mutator.read(output)._2
 
-    //println("answer = " + answer)
-    //println("output = " + out)
+    println("answer = " + answer)
+    println("output = " + out)
 
     answer == out
   }

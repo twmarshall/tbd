@@ -114,7 +114,11 @@ class HashBuffer[T, U](input: ListInput[T, U]) extends InputBuffer[T, U] {
   def removeAll(values: Iterable[(T, U)]) {
     for ((key, value) <- values) {
       if (toPut.contains(key)) {
-        toPut -= key
+        // This is only called by Ordering.splice, so if we're removing a value
+        // that was already put we can just cancel those out.
+        if (toPut(key) == value) {
+          toPut -= key
+        }
       } else {
         toRemove += ((key, value))
       }

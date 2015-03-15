@@ -90,21 +90,6 @@ class DatastoreActor(workerInfo: WorkerInfo)
     case RemoveModsMessage(modIds: Iterable[ModId], taskRef: ActorRef) =>
       datastore.removeMods(modIds, taskRef) pipeTo sender
 
-    case LoadPartitionsMessage
-        (fileName: String,
-         numWorkers: Int,
-         workerIndex: Int,
-         partitions: Int) =>
-      log.debug("LoadPartitionsMessage")
-      val range = new HashRange(
-        workerIndex * partitions,
-        (workerIndex + 1) * partitions,
-        numWorkers * partitions)
-
-      datastore.loadPartitions(fileName, range)
-
-      sender ! "done"
-
     case RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef) =>
       datastore.datastores(workerId) = datastoreRef
 

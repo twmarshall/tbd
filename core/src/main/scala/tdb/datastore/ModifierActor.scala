@@ -31,14 +31,16 @@ object ModifierActor {
   def props
       (conf: ListConf,
        workerInfo: WorkerInfo,
-       datastoreId: DatastoreId): Props =
-    Props(classOf[ModifierActor], conf, workerInfo, datastoreId)
+       datastoreId: DatastoreId,
+       range: HashRange): Props =
+    Props(classOf[ModifierActor], conf, workerInfo, datastoreId, range)
 }
 
 class ModifierActor
     (conf: ListConf,
      workerInfo: WorkerInfo,
-     datastoreId: DatastoreId)
+     datastoreId: DatastoreId,
+     range: HashRange)
   extends Actor with ActorLogging {
   import context.dispatcher
 
@@ -57,6 +59,13 @@ class ModifierActor
         new DoubleListModifier(datastore)
       else
         new DoubleChunkListModifier(datastore, conf)
+  }
+
+  if (conf.file != "") {
+    datastore.loadPartitions(conf.file, range)
+    datastore.processKeys {
+      case keys => modifier.loadInput(keys)
+    }
   }
 
   def receive = {
@@ -106,21 +115,6 @@ class ModifierActor
 
     case RemoveModsMessage(modIds: Iterable[ModId], taskRef: ActorRef) =>
       datastore.removeMods(modIds, taskRef) pipeTo sender
-
-    case LoadPartitionsMessage
-        (fileName: String,
-         numWorkers: Int,
-         workerIndex: Int,
-         partitions: Int) =>
-      log.debug("LoadPartitionsMessage")
-      val range = new HashRange(
-        workerIndex * partitions,
-        (workerIndex + 1) * partitions,
-        numWorkers * partitions)
-
-      datastore.loadPartitions(fileName, range)
-
-      sender ! "done"
 
     case GetAdjustableListMessage() =>
       sender ! modifier.getAdjustableList()

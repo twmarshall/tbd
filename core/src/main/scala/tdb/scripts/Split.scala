@@ -24,8 +24,11 @@ import tdb.util.FileUtil
 
 object Split {
   def main(args: Array[String]) {
+
     object Conf extends ScallopConf(args) {
       version("TDB 0.1 (c) 2014 Carnegie Mellon University")
+      val dir = opt[String]("dir", 'd', default = Some(""),
+        descr = "The directory to write the output to.")
       val file = opt[String]("file", 'f', default = Some("enwiki.xml"),
         descr = "The file to read.")
       val partitions = opt[Int]("partitions", 'p', default = Some(2),
@@ -35,7 +38,7 @@ object Split {
     val outputs = Buffer[BufferedWriter]()
     for (i <- 0 until Conf.partitions()) {
       outputs += new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream(Conf.file() + "-" + i), "utf-8"))
+      new FileOutputStream(Conf.dir() + "/" + i + ""), "utf-8"))
     }
 
     val file = new File(Conf.file())
