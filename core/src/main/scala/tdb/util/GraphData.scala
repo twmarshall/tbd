@@ -27,8 +27,6 @@ class GraphData
      runs: List[String],
      val file: String = "data.txt") extends Data[Array[Int]] {
 
-  val maxKey = count * 100
-
   val averageDegree = 14
 
   val rand = new scala.util.Random()
@@ -36,10 +34,11 @@ class GraphData
   var remainingRuns = runs
 
   def generate() {
-    for (i <- 1 to count) {
+    for (i <- 0 until count) {
       table(i) = generateEdges(1 to count)
-
-      log(i + " -> " + table(i).mkString(","))
+      for (edge <- table(i)) {
+        log(i + "\t" + edge)
+      }
     }
 
     log("---")
@@ -64,6 +63,9 @@ class GraphData
     }
   }
 
+  private def getRandomKey() =
+    table.keys.drop(rand.nextInt(table.size - 1)).head
+
   def update() = {
     val run = remainingRuns.head
     val updateCount =
@@ -75,31 +77,31 @@ class GraphData
     remainingRuns = remainingRuns.tail
 
     for (i <- 0 until updateCount) {
-      var key = rand.nextInt(maxKey)
-      while (!table.contains(key)) {
-        key = rand.nextInt(maxKey)
-      }
+      var key = getRandomKey()
 
       val oldEdges = table(key)
       val newEdges =
         rand.nextInt(1) match {
           case 0 =>
             if (oldEdges.size > 0) {
-              val toRemove = rand.nextInt(oldEdges.size)
-              oldEdges.take(toRemove) ++ oldEdges.drop(toRemove + 1)
+              val removedEdge = oldEdges(rand.nextInt(oldEdges.size))
+              log("remove\t" + key + "\t" + removedEdge)
+              oldEdges.filter(_ != removedEdge)
             } else {
-              oldEdges :+ rand.nextInt(count)
+              val newEdge = rand.nextInt(count)
+              log("add\t" + key + "\t" + newEdge)
+              oldEdges :+ newEdge
             }
           case 1 =>
             var newEdge = rand.nextInt(count)
             while (oldEdges.contains(newEdge)) {
               newEdge = rand.nextInt(count)
             }
+            log("add\t" + key + "\t" + newEdge)
             oldEdges :+ newEdge
         }
 
       table(key) = newEdges
-      log(key + " -> " + table(key).mkString(","))
       input.put(key, table(key))
     }
 
