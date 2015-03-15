@@ -77,6 +77,8 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
   val timeout = opt[Int]("timeout", 't', default = Some(1000))
   val updateFile = opt[String]("updateFile", 'u', default = Some("updates.txt"),
     descr = "The file to read the updates from, if needed.")
+  val updateRepeat = opt[Int]("updateRepeat", default = Some(1),
+    descr = "The number of times to repeat each update size within a run.")
   val verbosity = opt[Int]("verbosity", 'v', default = Some(1),
     descr = "Adjusts the amount of output, with 0 indicating no output.")
 }

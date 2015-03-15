@@ -50,11 +50,15 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
   var mapCount = 0
   var reduceCount = 0
 
-  var lastUpdateSize = 0
+  var updateSize = 0
 
   def data: Data[Input]
 
   var naiveLoadElapsed: Long = 0
+
+  val results = Map[String, Double]()
+
+  val actualRuns = Buffer[String]()
 
   protected def generateNaive()
 
@@ -67,13 +71,10 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
   protected def checkOutput(output: Output): Boolean
 
   def run(): Map[String, Double] = {
-    val results = Map[String, Double]()
 
     if (Experiment.verbosity > 1) {
       println("Generate")
     }
-
-    val actualRuns = Buffer[String]()
 
     val beforeLoad = System.currentTimeMillis()
     generateNaive()
@@ -114,12 +115,7 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
 
     var r = 1
     while (data.hasUpdates()) {
-      val (updateTime, updateLoad, updateNoGC) = update()
-      results(r + "") = updateTime
-      results(r + "-load") = updateLoad
-      results(r + "-nogc") = updateNoGC
-      actualRuns += r + ""
-      r += 1
+      update()
     }
 
     Experiment.confs("runs") = actualRuns.toList
@@ -169,7 +165,7 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
     }
 
     val beforeLoad = System.currentTimeMillis()
-    lastUpdateSize = data.update()
+    updateSize = data.update()
     val loadElapsed = System.currentTimeMillis() - beforeLoad
 
     if (Experiment.verbosity > 1) {
@@ -184,6 +180,27 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
 
     if (Experiment.check) {
       assert(checkOutput(output))
+    }
+
+    if (actualRuns.contains(updateSize + "")) {
+      val oldCount = results(updateSize + "-count")
+
+      def averageIn(oldAverage: Double, newValue: Double) =
+        (oldAverage * oldCount + newValue) / (oldCount + 1)
+
+      results(updateSize + "") =
+        averageIn(results(updateSize + ""), elapsed)
+      results(updateSize + "-load") =
+        averageIn(results(updateSize + "-load"), loadElapsed)
+      results(updateSize + "-nogc") =
+          averageIn(results(updateSize + "-nogc"), noGCElapsed)
+      results(updateSize + "-count") = oldCount + 1
+    } else {
+      results(updateSize + "") = elapsed
+      results(updateSize + "-load") = loadElapsed
+      results(updateSize + "-nogc") = noGCElapsed
+      results(updateSize + "-count") = 1
+      actualRuns += updateSize + ""
     }
 
     (elapsed, loadElapsed, noGCElapsed)

@@ -78,7 +78,7 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
   val input = mutator.createList[Int, Array[Int]](conf.listConf.clone(file = ""))
 
   //val data = new GraphData(input, conf.count, conf.mutations, conf.runs)
-  val data = new GraphFileData(input, conf.file, conf.runs)
+  val data = new GraphFileData(input, conf.file, conf.runs, conf.updateRepeat)
   //val data = new LiveJournalData(input)
 
   val adjust = new PageRankAdjust(

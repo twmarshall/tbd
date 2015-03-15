@@ -96,7 +96,7 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
   }
 
   def checkOutput(output: AdjustableList[String, Int]) = {
-    val thisFile = "wc-output" + lastUpdateSize + ".txt"
+    val thisFile = "wc-output" + updateSize + ".txt"
     val writer = new BufferedWriter(new OutputStreamWriter(
       new FileOutputStream(thisFile), "utf-8"))
 
@@ -108,8 +108,8 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
     writer.close()
 
     val thisOutputFile =
-      if (lastUpdateSize != 0)
-        outputFile + lastUpdateSize + ".txt"
+      if (updateSize != 0)
+        outputFile + updateSize + ".txt"
       else
         outputFile + ".txt"
 

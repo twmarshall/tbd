@@ -206,6 +206,7 @@ object Experiment {
           repeat = i,
           storeType = conf.store(),
           updateFile = conf.updateFile(),
+          updateRepeat = conf.updateRepeat(),
           listConf = listConf,
           iters = iters,
           epsilon = epsilon)

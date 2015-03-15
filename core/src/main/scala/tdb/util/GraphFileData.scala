@@ -20,12 +20,13 @@ import tdb.list.ListInput
 class GraphFileData
     (input: ListInput[Int, Array[Int]],
      fileName: String,
-     runs: List[String]) extends Data[Array[Int]] {
+     runs: List[String],
+     updateRepeat: Int) extends Data[Array[Int]] {
   var lines = scala.io.Source.fromFile(fileName).getLines().toBuffer
 
   val file = "data2.txt"
 
-  var remainingRuns = runs
+  var remainingRuns = for (run <- runs; i <- 0 until updateRepeat) yield run
 
   def generate() {
     while (lines.size > 0 && !(lines.head == "---")) {

@@ -31,6 +31,7 @@ case class AlgorithmConf(
   repeat: Int,
   storeType: String,
   updateFile: String,
+  updateRepeat: Int,
   listConf: ListConf,
   iters: Int,
   epsilon: Double) {
