@@ -35,7 +35,7 @@ class GraphData
 
   def generate() {
     for (i <- 0 until count) {
-      table(i) = generateEdges(1 to count)
+      table(i) = generateEdges(0 until count)
       for (edge <- table(i)) {
         log(i + "\t" + edge)
       }
