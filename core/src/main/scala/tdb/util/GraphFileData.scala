@@ -15,6 +15,8 @@
  */
 package tdb.util
 
+import java.io._
+
 import tdb.list.ListInput
 
 class GraphFileData
@@ -22,25 +24,29 @@ class GraphFileData
      fileName: String,
      runs: List[String],
      updateRepeat: Int) extends Data[Array[Int]] {
-  var lines = scala.io.Source.fromFile(fileName).getLines().toBuffer
+  val in = new BufferedReader(new FileReader(fileName))
 
   val file = "data2.txt"
 
   var remainingRuns = for (run <- runs; i <- 0 until updateRepeat) yield run
 
   def generate() {
-    while (lines.size > 0 && !(lines.head == "---")) {
-      val split = lines.head.split(" -> ")
+    var line = in.readLine()
+    while (line != "---") {
+      val split = line.split("\t")
+      assert(split.size == 2)
 
-      if (split.size == 1) {
-        table += ((split(0).toInt, Array[Int]()))
+      val key = split(0).toInt
+      val value = split(1).toInt
+
+      if (!table.contains(key)) {
+        table(key) = Array[Int](value)
       } else {
-        table += ((split(0).toInt, split(1).split(",").map(_.toInt)))
+        table(key) :+= value
       }
-      lines = lines.tail
-    }
 
-    lines = lines.tail
+      line = in.readLine()
+    }
   }
 
   def load() = {
@@ -60,19 +66,20 @@ class GraphFileData
     remainingRuns = remainingRuns.tail
 
     for (i <- 0 until updateCount) {
-      val split = lines.head.split(" -> ")
+      val line = in.readLine()
+      val split = line.split("\t")
+      assert(split.size == 3)
+      val key = split(1).toInt
+      val value = split(2).toInt
 
-      val key = split(0).toInt
-      val newValue =
-        if (split.size == 2)
-          split(1).split(",").map(_.toInt)
-        else
-          Array[Int]()
+      split(0) match {
+        case "add" =>
+          table(key) :+= value
+        case "remove" =>
+          table(key) = table(key).filter(_ != value)
+      }
 
-      table += ((key, newValue))
-      lines = lines.tail
-      input.put(key, newValue)
-      //println("updating " + key + " " + newValue)
+      input.put(key, table(key))
     }
 
     updateCount
