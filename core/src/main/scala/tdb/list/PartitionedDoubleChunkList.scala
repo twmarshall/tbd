@@ -116,6 +116,21 @@ class PartitionedDoubleChunkList[T, U]
     innerForeach(0)
   }
 
+  override def foreach(f: ((T, U), Context) => Unit)
+      (implicit c: Context): Unit = {
+    def innerForeach(i: Int)(implicit c: Context) {
+      if (i < partitions.size) {
+        val (mappedPartition, mappedRest) = parWithHint({
+          c => partitions(i).foreach(f)(c)
+        }, partitions(i).workerId)({
+          c => innerForeach(i + 1)(c)
+        })
+      }
+    }
+
+    innerForeach(0)
+  }
+
   override def hashChunkMap[V, W]
       (f: Iterable[(T, U)] => Iterable[(V, W)], _conf: ListConf)
       (implicit c: Context): ListInput[V, W] = {

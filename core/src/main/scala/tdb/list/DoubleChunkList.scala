@@ -60,6 +60,19 @@ class DoubleChunkList[T, U]
     )
   }
 
+  override def foreach(f: ((T, U), Context) => Unit)
+      (implicit c: Context): Unit = {
+    val memo = new Memoizer[Unit]()
+
+    readAny(head) {
+      case null =>
+      case node =>
+        memo(node) {
+          node.foreach(f, memo)
+        }
+    }
+  }
+
   override def foreachChunk(f: (Iterable[(T, U)], Context) => Unit)
       (implicit c: Context): Unit = {
     val memo = new Memoizer[Unit]()

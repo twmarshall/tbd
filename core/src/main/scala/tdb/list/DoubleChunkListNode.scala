@@ -75,6 +75,22 @@ class DoubleChunkListNode[T, U]
     write(new DoubleChunkListNode[V, W](newChunkMod, newNextMod))
   }
 
+  def foreach[V, W]
+      (f: ((T, U), Context) => Unit,
+       memo: Memoizer[Unit])
+      (implicit c: Context): Unit = {
+    readAny(chunkMod) {
+      case chunk => for (value <- chunk) f(value, c)
+    }
+
+    readAny(nextMod) {
+      case null =>
+      case node =>
+        memo(node) {
+          node.foreach(f, memo)
+        }
+    }
+  }
 
   def foreachChunk[V, W]
       (f: (Iterable[(T, U)], Context) => Unit,
