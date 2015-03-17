@@ -133,6 +133,8 @@ class AggregatorModifierActor
       }
       Future.sequence(futures) pipeTo sender
 
-    case x => log.warning("Received unhandled message " + x + " from " + sender)
+    case x =>
+      log.warning("AggregatorModifierActor Received unhandled message " + x +
+        " from " + sender)
   }
 }

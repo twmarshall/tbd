@@ -101,9 +101,6 @@ class ColumnBuffer[T]
       case c: AggregatedColumn[Any] =>
         for ((k, v) <- values) {
           if (toPut(column).contains(k)) {
-            println("column = '" + column + "'")
-            println("k = '" + k + "'")
-            println("v = '" + v + "'")
             toPut(column)(k) = c.aggregator(toPut(column)(k), v)
           } else {
             toPut(column)(k) = v

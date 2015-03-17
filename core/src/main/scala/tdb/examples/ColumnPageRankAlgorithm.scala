@@ -51,15 +51,21 @@ class ColumnPageRankAdjust
   }
 }
 
-
 class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[Array[Int], Unit](_conf) {
+
+  var columns = immutable.Map(
+    "key" -> (new StringColumn(), -1),
+    "edges" -> (new StringColumn(), ""),
+    "0" -> (AggregatedDoubleColumn(), 1.0),
+    "1" -> (AggregatedDoubleColumn(), 0.0))
+
+  for (i <- 2 to conf.iters) {
+    columns = columns + (i + "" -> (AggregatedDoubleColumn(), 0.0))
+  }
+
   val columnConf = ColumnListConf(
-    columns = immutable.Map(
-      "key" -> (new StringColumn(), -1),
-      "edges" -> (new StringColumn(), ""),
-      "0" -> (AggregatedDoubleColumn(), 1.0),
-      "1" -> (AggregatedDoubleColumn(), 0.0)))
+    columns = columns, chunkSize = conf.listConf.chunkSize)
 
   val input = mutator.createList[Int, Array[Int]](columnConf)
     .asInstanceOf[ColumnListInput[Int]]
@@ -85,9 +91,6 @@ class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
     var ranks = links.map(pair => (pair._1, 1.0))
 
     for (i <- 0 until conf.iters) {
-      println("links = " + links.map {
-        case (k, v) => (k, v.mkString(","))
-      })
       val joined = Map[Int, (Array[Int], Double)]()
       for ((url, rank) <- ranks) {
         joined(url) = (links(url), rank)
@@ -128,9 +131,9 @@ class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
     }
 
     val averageError = (error / answer.size).abs
-    println("average error = " + averageError)
-    println("output = " + out)
-    println("answer = " + answer)
+    //println("average error = " + averageError)
+    //println("output = " + out)
+    //println("answer = " + answer)
 
     check && averageError < epsilon
   }

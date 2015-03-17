@@ -141,7 +141,7 @@ class ModifierActor
       }
       Future.sequence(futures) pipeTo sender
 
-    case PutInMessage(key: Any, column: String, value: Any) =>
+    case PutInMessage(column: String, key: Any, value: Any) =>
       modifier.putIn(column, key, value) pipeTo sender
 
     case GetMessage(key: Any, taskRef: ActorRef) =>
@@ -171,6 +171,8 @@ class ModifierActor
     case FlushMessage() =>
       sender ! "done"
 
-    case x => log.warning("Received unhandled message " + x + " from " + sender)
+    case x =>
+      log.warning("ModifierActor received unhandled message " + x +
+        " from " + sender)
   }
 }
