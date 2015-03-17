@@ -63,9 +63,6 @@ class GraphData
     }
   }
 
-  private def getRandomKey() =
-    table.keys.drop(rand.nextInt(table.size - 1)).head
-
   def update() = {
     val run = remainingRuns.head
     val updateCount =
@@ -77,11 +74,11 @@ class GraphData
     remainingRuns = remainingRuns.tail
 
     for (i <- 0 until updateCount) {
-      var key = getRandomKey()
+      var key = rand.nextInt(count)
 
       val oldEdges = table(key)
       val newEdges =
-        rand.nextInt(1) match {
+        rand.nextInt(2) match {
           case 0 =>
             if (oldEdges.size > 0) {
               val removedEdge = oldEdges(rand.nextInt(oldEdges.size))

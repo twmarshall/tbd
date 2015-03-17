@@ -45,6 +45,11 @@ class GraphFileData
         table(key) :+= value
       }
 
+      // Ensures that nodes with no outgoing edges end up in the table.
+      if (!table.contains(value)) {
+        table(value) = Array[Int]()
+      }
+
       line = in.readLine()
     }
   }
