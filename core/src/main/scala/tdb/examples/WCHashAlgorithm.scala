@@ -64,7 +64,7 @@ class WCChunkHashAdjust
 }
 
 class WCChunkHashAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, AdjustableList[String, Int]](_conf) {
+    extends Algorithm[AdjustableList[String, Int]](_conf) {
 
   val outputFile = "output"
   if (Experiment.check) {
@@ -74,7 +74,7 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
 
   }
 
-  var data: Data[String] = null
+  var data: Data[String, String] = null
 
   var input: ListInput[String, String] = null
 
@@ -95,6 +95,10 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
       input, conf.file, conf.updateFile, conf.runs)
     data.load()
   }
+
+  def hasUpdates() = data.hasUpdates()
+
+  def loadUpdate() = data.update()
 
   def checkOutput(output: AdjustableList[String, Int]) = {
     val thisFile = "wc-output" + updateSize + ".txt"
@@ -131,9 +135,9 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
 
 
 class RandomWCAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, AdjustableList[String, Int]](_conf) {
+    extends Algorithm[AdjustableList[String, Int]](_conf) {
 
-  var data: Data[String] = null
+  var data: Data[Int, String] = null
 
   var input: ListInput[String, String] = null
 
@@ -153,6 +157,10 @@ class RandomWCAlgorithm(_conf: AlgorithmConf)
     data.generate()
     data.load()
   }
+
+  def hasUpdates() = data.hasUpdates()
+
+  def loadUpdate() = data.update()
 
   def checkOutput(output: AdjustableList[String, Int]) = {
     val answer = Map[String, Int]()

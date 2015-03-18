@@ -114,7 +114,7 @@ class ChunkWCAdjust(list: AdjustableList[String, String])
 }
 
 class WCAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, Mod[(String, HashMap[String, Int])]](_conf) {
+    extends Algorithm[Mod[(String, HashMap[String, Int])]](_conf) {
 
   val input = mutator.createList[String, String](conf.listConf)
 
@@ -155,9 +155,20 @@ class WCAlgorithm(_conf: AlgorithmConf)
       WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
   }
 
+  def loadInitial() {
+    data.load()
+  }
+
+  def hasUpdates() = data.hasUpdates()
+
+  def loadUpdate() = data.update()
+
   def checkOutput(output: Mod[(String, HashMap[String, Int])]) = {
     val answer = naiveHelper(data.table.values)
     val out = mutator.read(output)._2
+
+    //println("answer = " + answer)
+    //println("output = " + out)
 
     out == answer
   }

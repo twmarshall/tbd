@@ -23,7 +23,7 @@ class GraphFileData
     (input: ListInput[Int, Array[Int]],
      fileName: String,
      runs: List[String],
-     updateRepeat: Int) extends Data[Array[Int]] {
+     updateRepeat: Int) extends Data[Int, Array[Int]] {
   val in = new BufferedReader(new FileReader(fileName))
 
   val file = "data2.txt"

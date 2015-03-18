@@ -25,7 +25,7 @@ class GraphData
      count: Int,
      mutations: List[String],
      runs: List[String],
-     val file: String = "data.txt") extends Data[Array[Int]] {
+     val file: String = "data.txt") extends Data[Int, Array[Int]] {
 
   val averageDegree = 14
 

@@ -21,10 +21,9 @@ import scala.collection.mutable.{Buffer, Map}
 import tdb.{Adjustable, Mutator}
 import tdb.list.ListConf
 import tdb.master.MasterConnector
-import tdb.util.Data
 import tdb.worker.WorkerConf
 
-abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
+abstract class Algorithm[Output](val conf: AlgorithmConf) {
 
   var runs = conf.runs
 
@@ -52,8 +51,6 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
 
   var updateSize = 0
 
-  def data: Data[Input]
-
   var naiveLoadElapsed: Long = 0
 
   val results = Map[String, Double]()
@@ -64,9 +61,11 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
 
   protected def runNaive(): Any
 
-  protected def loadInitial() {
-    data.load()
-  }
+  protected def loadInitial()
+
+  protected def hasUpdates(): Boolean
+
+  protected def loadUpdate(): Int
 
   protected def checkOutput(output: Output): Boolean
 
@@ -114,7 +113,7 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
     }
 
     var r = 1
-    while (data.hasUpdates()) {
+    while (hasUpdates()) {
       update()
     }
 
@@ -165,7 +164,7 @@ abstract class Algorithm[Input, Output](val conf: AlgorithmConf) {
     }
 
     val beforeLoad = System.currentTimeMillis()
-    updateSize = data.update()
+    updateSize = loadUpdate()
     val loadElapsed = System.currentTimeMillis() - beforeLoad
 
     if (Experiment.verbosity > 1) {

@@ -56,7 +56,7 @@ class ColumnPageRankAdjust
 }
 
 class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[Array[Int], Unit](_conf) {
+    extends Algorithm[Unit](_conf) {
 
   var columns = immutable.Map(
     "key" -> (new StringColumn(), -1),
@@ -115,6 +115,14 @@ class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
 
     ranks
   }
+
+  def loadInitial() {
+    data.load()
+  }
+
+  def hasUpdates() = data.hasUpdates()
+
+  def loadUpdate() = data.update()
 
   val epsilon = 0.1
   def checkOutput(output: Unit) = {

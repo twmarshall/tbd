@@ -74,7 +74,7 @@ class PageRankAdjust
 }
 
 class PageRankAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[Array[Int], AdjustableList[Int, Double]](_conf) {
+    extends Algorithm[AdjustableList[Int, Double]](_conf) {
   val input = mutator.createList[Int, Array[Int]](conf.listConf.clone(file = ""))
 
   //val data = new GraphData(input, conf.count, conf.mutations, conf.runs)
@@ -116,6 +116,14 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
 
     ranks
   }
+
+  def loadInitial() {
+    data.load()
+  }
+
+  def hasUpdates() = data.hasUpdates()
+
+  def loadUpdate() = data.update()
 
   val epsilon = 0.1
   def checkOutput(output: AdjustableList[Int, Double]) = {

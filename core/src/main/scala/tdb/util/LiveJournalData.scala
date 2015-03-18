@@ -1,5 +1,6 @@
 /**
- * Copyright (C) 2013 Carnegie Mellon University
+
+* * Copyright (C) 2013 Carnegie Mellon University
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +20,8 @@ import scala.collection.mutable.Buffer
 
 import tdb.list.ListInput
 
-class LiveJournalData(input: ListInput[Int, Array[Int]]) extends Data[Array[Int]] {
+class LiveJournalData(input: ListInput[Int, Array[Int]])
+  extends Data[Int, Array[Int]] {
 
   val file = "data.txt"
 

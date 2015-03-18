@@ -19,8 +19,8 @@ import java.io._
 import scala.collection.GenIterable
 import scala.collection.mutable.Map
 
-trait Data[Input] {
-  val table = Map[Int, Input]()
+trait Data[T, U] {
+  val table = Map[T, U]()
 
   val file: String
 

@@ -24,7 +24,7 @@ class GraphColumnData
     (input: ColumnListInput[Int],
      count: Int,
      mutations: List[String],
-     runs: List[String]) extends Data[Array[Int]] {
+     runs: List[String]) extends Data[Int, Array[Int]] {
 
   val maxKey = count * 100
 

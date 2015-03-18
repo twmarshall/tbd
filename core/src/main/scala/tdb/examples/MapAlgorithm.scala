@@ -43,7 +43,7 @@ class MapAdjust(list: AdjustableList[String, String])
 }
 
 class MapAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, AdjustableList[String, Int]](_conf) {
+    extends Algorithm[AdjustableList[String, Int]](_conf) {
   var input: ListInput[String, String] = null
 
   var adjust: MapAdjust = null
@@ -63,6 +63,10 @@ class MapAlgorithm(_conf: AlgorithmConf)
     data = new FileData(
       input, conf.file, conf.updateFile, conf.runs)
   }
+
+  def hasUpdates() = data.hasUpdates()
+
+  def loadUpdate() = data.update()
 
   def checkOutput(output: AdjustableList[String, Int]) = {
     val writer = new BufferedWriter(new OutputStreamWriter(

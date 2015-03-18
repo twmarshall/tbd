@@ -24,7 +24,7 @@ class FileData
     (input: ListInput[String, String],
      inputFile: String,
      updateFile: String,
-     runs: List[String]) extends Data[String] {
+     runs: List[String]) extends Data[String, String] {
   val file = "data.txt"
 
   var remainingRuns = runs
@@ -32,18 +32,22 @@ class FileData
   val updates = Buffer[(String, String)]()
 
   private def getMoreUpdates() {
-    val file = new File(updateFile)
-    val fileSize = file.length()
-
     val process = (key: String, value: String) => {
       updates += ((key, value))
       ()
     }
 
-    FileUtil.readKeyValueFile(updateFile, fileSize, 0, fileSize, process)
+    FileUtil.readEntireKeyValueFile(updateFile, process)
   }
 
-  def generate() {}
+  def generate() {
+    val process = (key: String, value: String) => {
+      table(key) = value
+      ()
+    }
+
+    FileUtil.readEntireKeyValueFile(inputFile, process)
+  }
 
   def load() {
     input.loadFile(inputFile)
@@ -59,7 +63,10 @@ class FileData
         getMoreUpdates()
       }
 
-      input.put(updates.head._1, updates.head._2)
+      val key = updates.head._1
+      val value = updates.head._2
+      input.put(key, value)
+      table(key) = value
       updates -= updates.head
     }
 

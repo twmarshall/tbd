@@ -25,7 +25,7 @@ class RandomStringData
      count: Int,
      mutations: List[String],
      check: Boolean,
-     runs: List[String]) extends Data[String] {
+     runs: List[String]) extends Data[Int, String] {
 
   val maxKey = count * 100
 

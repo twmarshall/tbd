@@ -59,14 +59,14 @@ class AlgorithmTests extends FlatSpec with Matchers {
     Experiment.run(Experiment.confs ++ conf)
   }*/
 
-  /*"WordcountTest" should "run wordcount successfully." in {
-    val conf = Map(
-      "algorithms" -> Array("wc"),
-      "chunkSizes" -> Array("1", "4"),
-      "counts" -> Array(intensity.toString),
-      "partitions" -> Array("1", "4"))
+  "WordcountTest" should "run wordcount successfully." in {
+    val conf = new ExperimentConf(Array(
+      "--algorithms", "wc",
+      "--chunkSizes", "1", "4",
+      "--counts", intensity.toString,
+      "--partitions", "1", "4") ++ defaults)
 
-    Experiment.run(Experiment.confs ++ conf)
-  }*/
+    Experiment.run(conf)
+  }
 }
 

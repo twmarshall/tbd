@@ -22,7 +22,7 @@ import tdb.Input
 
 class IntFileData
     (input: Input[Int, Int],
-     fileName: String) extends Data[Int] {
+     fileName: String) extends Data[Int, Int] {
   var lines = scala.io.Source.fromFile(fileName).getLines().toBuffer
 
   val file = "data.txt"

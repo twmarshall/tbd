@@ -64,7 +64,7 @@ class CWChunkAdjust
 }
 
 class CWChunkHashAlgorithm(_conf: AlgorithmConf)
-  extends Algorithm[String, Mod[(String, Int)]](_conf) {
+  extends Algorithm[Mod[(String, Int)]](_conf) {
 
   val outputFile = "output"
   if (Experiment.check) {
@@ -101,6 +101,10 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
       input, conf.file, conf.updateFile, conf.runs)
   }
 
+  def hasUpdates() = data.hasUpdates()
+
+  def loadUpdate() = data.update()
+
   def checkOutput(output: Mod[(String, Int)]) = {
     val thisFile = "wc-output" + updateSize + ".txt"
     val writer = new BufferedWriter(new OutputStreamWriter(
@@ -130,9 +134,9 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
 }
 
 class RandomCWAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, Mod[(String, Int)]](_conf) {
+    extends Algorithm[Mod[(String, Int)]](_conf) {
 
-  var data: Data[String] = null
+  var data: Data[Int, String] = null
 
   var input: ListInput[String, String] = null
 
@@ -158,6 +162,10 @@ class RandomCWAlgorithm(_conf: AlgorithmConf)
     data.generate()
     data.load()
   }
+
+  def hasUpdates() = data.hasUpdates()
+
+  def loadUpdate() = data.update()
 
   def checkOutput(output: Mod[(String, Int)]) = {
     var answer = 0
