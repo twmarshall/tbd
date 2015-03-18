@@ -59,12 +59,11 @@ class DDG {
     timestamp
   }
 
-  def addPutAllIn
-      (input: ListInput[Any, Any],
-       column: String,
-       values: Iterable[(Any, Any)],
+  def addPutIn
+      (traceable: Traceable[Any, Any],
+       parameters: Any,
        c: Context): Timestamp = {
-    val putNode = new PutAllInNode(input, column, values)
+    val putNode = new PutInNode(traceable, parameters)
     val timestamp = nextTimestamp(putNode, c)
 
     timestamp

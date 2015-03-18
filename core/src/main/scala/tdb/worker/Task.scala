@@ -82,6 +82,9 @@ class Task
       for ((input, buf) <- c.buffers) {
         buf.flush()
       }
+      for ((input, buf) <- c.bufs) {
+        buf.flush()
+      }
 
       sender ! ret
       Await.result(Future.sequence(c.pending), DURATION)
@@ -111,6 +114,9 @@ class Task
           c.pending.clear()
 
           for ((input, buf) <- c.buffers) {
+            buf.flush()
+          }
+          for ((input, buf) <- c.bufs) {
             buf.flush()
           }
 

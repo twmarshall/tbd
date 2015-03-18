@@ -21,6 +21,7 @@ import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future}
 
 import ColumnList._
+import tdb.{Traceable, TraceableBuffer}
 import tdb.Constants._
 import tdb.messages._
 import tdb.util.ObjHasher
@@ -29,7 +30,7 @@ class ColumnListInput[T]
     (val inputId: InputId,
      val hasher: ObjHasher[ActorRef],
      conf: ColumnListConf)
-  extends ListInput[T, Columns] {
+  extends ListInput[T, Columns] with Traceable[(String, (T, Any)), Int] {
 
   def put(key: T, value: Columns) = ???
 
@@ -81,18 +82,22 @@ class ColumnListInput[T]
 
   def getBuffer(): InputBuffer[T, Columns] = new ColumnBuffer(this, conf)
 
+  def getTraceableBuffer(): TraceableBuffer[(String, (T, Any)), Int] =
+    new ColumnBuffer(this, conf)
+
   def flush(): Unit = ???
 }
 
 class ColumnBuffer[T]
     (input: ColumnListInput[T], conf: ColumnListConf)
-  extends InputBuffer[T, Columns] {
+  extends InputBuffer[T, Columns] with TraceableBuffer[(String, (T, Any)), Int] {
 
   val toPut = Map[String, Map[T, Any]]()
 
   def putAll(values: Iterable[(T, Columns)]) = ???
 
   def putAllIn(column: String, values: Iterable[(T, Any)]) = {
+    println("putAllIn " + values)
     if (!toPut.contains(column)) {
       toPut(column) =  Map[T, Any]()
     }
@@ -110,11 +115,29 @@ class ColumnBuffer[T]
     }
   }
 
+  def putIn(parameters: (String, (T, Any))) = {
+    val (column, (k, v)) = parameters
+
+    if (!toPut.contains(column)) {
+      toPut(column) =  Map[T, Any]()
+    }
+
+    conf.columns(column)._1 match {
+      case c: AggregatedColumn[Any] =>
+        if (toPut(column).contains(k)) {
+          toPut(column)(k) = c.aggregator(toPut(column)(k), v)
+        } else {
+          toPut(column)(k) = v
+        }
+      case _ => ???
+    }
+  }
+
   def removeAll(values: Iterable[(T, Columns)]) = ???
 
   def flush() {
     val futures = Buffer[Future[Any]]()
-
+    println("toPut = " + toPut)
     for ((column, values) <- toPut) {
       futures += input.asyncPutAllIn(column, values)
     }

@@ -70,6 +70,8 @@ class Context
 
   val buffers = Map[ListInput[Any, Any], InputBuffer[Any, Any]]()
 
+  val bufs = Map[InputId, TraceableBuffer[Any, Any]]()
+
   def newModId(): ModId = {
     val newModId = createModId(0, workerId, taskId, nextModId)
     nextModId += 1

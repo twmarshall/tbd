@@ -71,10 +71,9 @@ class PutAllNode
     (val input: ListInput[Any, Any],
      val values: Iterable[(Any, Any)]) extends Node
 
-class PutAllInNode
-    (val input: ListInput[Any, Any],
-     val column: String,
-     val values: Iterable[(Any, Any)]) extends Node
+class PutInNode
+    (val traceable: Traceable[Any, Any],
+     val parameters: Any) extends Node
 
 class GetNode
     (val input: ListInput[Any, Any],

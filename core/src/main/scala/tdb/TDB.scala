@@ -61,16 +61,17 @@ object TDB {
   }
 
 
-  def putAllIn[T]
-      (input: ColumnListInput[T], column: String, values: Iterable[(T, Any)])
+  def putIn[T]
+      (traceable: Traceable[T, _], parameters: T)
       (implicit c: Context) {
-    val anyInput = input.asInstanceOf[ListInput[Any, Any]]
-    val timestamp = c.ddg.addPutAllIn(anyInput, column, values, c)
+    val anyTraceable = traceable.asInstanceOf[Traceable[Any, Any]]
+    val timestamp = c.ddg.addPutIn(
+      anyTraceable, parameters.asInstanceOf[Any], c)
 
-    if (!c.buffers.contains(anyInput)) {
-      c.buffers(anyInput) = anyInput.getBuffer()
+    if (!c.bufs.contains(traceable.inputId)) {
+      c.bufs(traceable.inputId) = anyTraceable.getTraceableBuffer()
     }
-    c.buffers(anyInput).putAllIn(column, values)
+    c.bufs(traceable.inputId).putIn(parameters)
 
     timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
   }

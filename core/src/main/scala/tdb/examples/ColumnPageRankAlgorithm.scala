@@ -35,15 +35,19 @@ class ColumnPageRankAdjust
       threshold = (_: Double).abs > epsilon)
 
     for (i <- 0 until iters) {
-      def mapper(key: Int, column1: Any, column2: Any, _c: Context) {
+      def mapper(key: Int, column1: Any, column2: Any, c: Context) {
         val edges = column1.asInstanceOf[Array[Int]]
         val rank = column2.asInstanceOf[Double]
         val v = (rank / edges.size) * .85
 
-        putAllIn(
+        /*putIn(
           links,
           (i + 1) + "",
-          (for (edge <- edges) yield (edge, v)) ++ Iterable(key -> .15))(_c)
+          (for (edge <- edges) yield (edge, v)) ++ Iterable(key -> .15))(c)*/
+        putIn(links, (i + 1) + "" -> ((key -> .15)))(c)
+        for (edge <- edges) {
+          putIn(links, (i + 1) + "" -> (edge -> v))(c)
+        }
       }
 
       links.getAdjustableList().projection2("edges", i + "", mapper)
