@@ -110,7 +110,7 @@ class ModifierActor
       datastore.removeMods(modIds, taskRef) pipeTo sender
 
     case LoadFileMessage(fileName: String) =>
-      datastore.loadPartitions(conf.file, range)
+      datastore.loadPartitions(fileName, range)
       datastore.processKeys {
         case keys => modifier.loadInput(keys)
       }

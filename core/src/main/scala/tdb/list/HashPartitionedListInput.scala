@@ -43,10 +43,12 @@ trait HashPartitionedListInput[T, U]
     import scala.concurrent.ExecutionContext.Implicits.global
     Await.result(Future.sequence(workerFutures), DURATION)
 
-    for ((hash, datastoreRef) <- hasher.objs) {
+    val futures = hasher.objs.map {
+      case (hash, datastoreRef) =>
       val thisFile = dir + "/" + hash
       datastoreRef ? LoadFileMessage(thisFile)
     }
+    Await.result(Future.sequence(futures), DURATION)
   }
 
   def put(key: T, value: U) = {
