@@ -209,13 +209,15 @@ class Master extends Actor with ActorLogging {
 
       val input = conf match {
         case aggregatorConf: AggregatorListConf[_] =>
-          new AggregatorInput(inputId, hasher, aggregatorConf)
+          new AggregatorInput(inputId, hasher, aggregatorConf, workers.values)
 
         case SimpleListConf(_, _, 1, _, false, _, _) =>
-          new HashPartitionedDoubleListInput(inputId, hasher)
+          new HashPartitionedDoubleListInput(
+            inputId, hasher, conf, workers.values)
 
         case SimpleListConf(_, _, _, _, false, _, _) =>
-          new HashPartitionedDoubleChunkListInput(inputId, hasher, conf)
+          new HashPartitionedDoubleChunkListInput(
+            inputId, hasher, conf, workers.values)
         case columnConf: ColumnListConf =>
           new ColumnListInput(inputId, hasher, columnConf)
         case _ => ???

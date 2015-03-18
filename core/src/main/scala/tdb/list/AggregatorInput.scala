@@ -27,7 +27,8 @@ import tdb.util.ObjHasher
 class AggregatorInput[T, U]
     (val inputId: InputId,
      val hasher: ObjHasher[ActorRef],
-     conf: AggregatorListConf[U])
+     val conf: AggregatorListConf[U],
+     val workers: Iterable[ActorRef])
   extends HashPartitionedListInput[T, U] with java.io.Serializable {
 
   def getAdjustableList(): AdjustableList[T, U] = {

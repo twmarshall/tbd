@@ -61,13 +61,6 @@ class ModifierActor
         new DoubleChunkListModifier(datastore, conf)
   }
 
-  if (conf.file != "") {
-    datastore.loadPartitions(conf.file, range)
-    datastore.processKeys {
-      case keys => modifier.loadInput(keys)
-    }
-  }
-
   def receive = {
     case CreateModMessage(value: Any) =>
       sender ! datastore.createMod(value)
@@ -115,6 +108,13 @@ class ModifierActor
 
     case RemoveModsMessage(modIds: Iterable[ModId], taskRef: ActorRef) =>
       datastore.removeMods(modIds, taskRef) pipeTo sender
+
+    case LoadFileMessage(fileName: String) =>
+      datastore.loadPartitions(conf.file, range)
+      datastore.processKeys {
+        case keys => modifier.loadInput(keys)
+      }
+      sender ! "done"
 
     case GetAdjustableListMessage() =>
       sender ! modifier.getAdjustableList()

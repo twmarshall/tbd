@@ -36,6 +36,7 @@ case class SetIdMessage(workerId: WorkerId)
 case class ClearMessage()
 case class CreateListIdsMessage(
   conf: ListConf, workerIndex: Int, numWorkers: Int)
+case class LoadFileMessage(fileName: String)
 case class FlushMessage()
 
 // Master
@@ -60,6 +61,7 @@ case class RemoveAllMessage(values: Iterable[(Any, Any)])
 case class RegisterWorkerMessage(workerInfo: WorkerInfo)
 case class CreateTaskMessage(parent: ActorRef)
 case class GetDatastoreMessage()
+case class SplitFileMessage(dir: String, fileName: String, partitions: Int)
 
 // Task
 case class ModUpdatedMessage(modId: ModId)

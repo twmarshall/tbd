@@ -73,101 +73,77 @@ object WCAlgorithm {
     }
     counts
   }
+}
 
-  def mapper(pair: (Int, String)) = {
-    (pair._1, wordcount(pair._2))
-  }
+class WCAdjust(list: AdjustableList[String, String])
+  extends Adjustable[Mod[(String, HashMap[String, Int])]] {
 
-  def reducer
-      (pair1: (Int, HashMap[String, Int]),
-       pair2: (Int, HashMap[String, Int])) = {
-    val reduced = reduce(pair1._2, pair2._2)
-    (pair1._1, reduced)
+  def run(implicit c: Context) = {
+    val counts = list.map {
+      case (title, body) => (title, WCAlgorithm.wordcount(body))
+    }
+
+    counts.reduce {
+      case ((key1, value1), (key2, value2)) =>
+        (key1, WCAlgorithm.reduce(value1, value2))
+    }
   }
 }
 
-class WCAdjust(list: AdjustableList[Int, String])
-  extends Adjustable[Mod[(Int, HashMap[String, Int])]] {
 
-  def run(implicit c: Context): Mod[(Int, HashMap[String, Int])] = {
-    val counts = list.map(WCAlgorithm.mapper)
-    counts.reduce(WCAlgorithm.reducer)
-  }
-}
+class ChunkWCAdjust(list: AdjustableList[String, String])
+  extends Adjustable[Mod[(String, HashMap[String, Int])]] {
 
-class WCAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf) {
-  val input = mutator.createList[Int, String](conf.listConf)
-
-  val data = new StringData(input, conf.count, conf.mutations, Experiment.check, conf.runs)
-  //val data = new StringFileData(input, "data.txt")
-
-  val adjust = new WCAdjust(input.getAdjustableList())
-
-  var naiveTable: ParIterable[String] = _
-  def generateNaive() {
-    data.generate()
-    naiveTable = Vector(data.table.values.toSeq: _*).par
-    naiveTable.tasksupport =
-      new ForkJoinTaskSupport(new ForkJoinPool(conf.listConf.partitions * 2))
-  }
-
-  def runNaive() {
-    naiveHelper(naiveTable)
-  }
-
-  private def naiveHelper(input: GenIterable[String] = naiveTable) = {
-    input.aggregate(Map[String, Int]())((x, line) =>
-      WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
-  }
-
-  def checkOutput(output: Mod[(Int, HashMap[String, Int])]) = {
-    val answer = naiveHelper(data.table.values)
-    val out = mutator.read(output)._2
-
-    out == answer
-  }
-}
-
-class ChunkWCAdjust(list: AdjustableList[Int, String])
-  extends Adjustable[Mod[(Int, HashMap[String, Int])]] {
-
-  def chunkMapper(chunk: Iterable[(Int, String)]) = {
+  def chunkMapper(chunk: Iterable[(String, String)]) = {
     var counts = Map[String, Int]()
 
     for (page <- chunk) {
       counts = WCAlgorithm.mutableWordcount(page._2, counts)
     }
 
-    (0, HashMap(counts.toSeq: _*))
+    (chunk.head._1, HashMap(counts.toSeq: _*))
   }
 
-  def chunkReducer(
-      pair1: (Int, HashMap[String, Int]),
-      pair2: (Int, HashMap[String, Int])) = {
-    (pair1._1, WCAlgorithm.reduce(pair1._2, pair2._2))
-  }
-
-  def run(implicit c: Context): Mod[(Int, HashMap[String, Int])] = {
+  def run(implicit c: Context) = {
     val counts = list.chunkMap(chunkMapper)
-    counts.reduce(chunkReducer)
+    counts.reduce {
+      case ((key1, value1), (key2, value2)) =>
+        (key1, WCAlgorithm.reduce(value1, value2))
+    }
   }
 }
 
-class ChunkWCAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[String, Mod[(Int, HashMap[String, Int])]](_conf) {
-  val input = mutator.createList[Int, String](conf.listConf)
+class WCAlgorithm(_conf: AlgorithmConf)
+    extends Algorithm[String, Mod[(String, HashMap[String, Int])]](_conf) {
 
-  val data = new StringData(input, conf.count, conf.mutations, Experiment.check, conf.runs)
+  val input = mutator.createList[String, String](conf.listConf)
 
-  val adjust = new ChunkWCAdjust(input.getAdjustableList())
+  val data =
+    if (conf.file == "") {
+      if (Experiment.verbosity > 0) {
+        println("Generating random data.")
+      }
+      new RandomStringData(
+        input, conf.count, conf.mutations, Experiment.check, conf.runs)
+    } else {
+      if (Experiment.verbosity > 0) {
+        println("Reading data from " + conf.file)
+      }
+      new FileData(input, conf.file, conf.updateFile, conf.runs)
+    }
+
+  val adjust =
+    if (conf.listConf.chunkSize == 1)
+      new WCAdjust(input.getAdjustableList())
+    else
+      new ChunkWCAdjust(input.getAdjustableList())
 
   var naiveTable: ParIterable[String] = _
   def generateNaive() {
     data.generate()
     naiveTable = Vector(data.table.values.toSeq: _*).par
     naiveTable.tasksupport =
-      new ForkJoinTaskSupport(new ForkJoinPool(conf.listConf.partitions * 2))
+      new ForkJoinTaskSupport(new ForkJoinPool(OS.getNumCores() * 2))
   }
 
   def runNaive() {
@@ -179,8 +155,10 @@ class ChunkWCAlgorithm(_conf: AlgorithmConf)
       WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
   }
 
-  def checkOutput(output: Mod[(Int, HashMap[String, Int])]) = {
+  def checkOutput(output: Mod[(String, HashMap[String, Int])]) = {
     val answer = naiveHelper(data.table.values)
-    mutator.read(output)._2 == answer
+    val out = mutator.read(output)._2
+
+    out == answer
   }
 }

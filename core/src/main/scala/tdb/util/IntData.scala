@@ -45,7 +45,9 @@ class IntData
   }
 
   def load() {
-    input.load(table)
+    for ((key, value) <- table) {
+      input.put(key, value)
+    }
   }
 
   def update() = {

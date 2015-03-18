@@ -40,7 +40,9 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     default = Some("/tmp/tdb_berkeleydb"), descr = "If using berkeleydb," +
     "the path to where the database should be stored.")
   val files = opt[List[String]]("files", 'f', default = Some(List("")),
-    descr = "The files to load the input from.")
+    descr = "The files to load the input from. If specified, the entire file " +
+    "will be used, so --counts will be ignored, and you will probably also " +
+    "need to specify --updateFile.")
   val displayGC = opt[Boolean]("displayGC", default = Some(false),
     descr = "Should gc times be included in the output.")
   val displayLoad = opt[Boolean]("displayLoad", default = Some(false),
@@ -49,11 +51,14 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
   val log = opt[String]("log", default = Some("WARNING"))
   val master = opt[String]("master", default = Some(""),
     descr = "The master Akka url to connect to. If unspecified, we'll " +
-    "launch a master.")
+    "launch a master. If specified, other parameters relating to workers, " +
+    "such as cacheSize and storeType will be ignored, since these must be " +
+    "specified when the worker is launched.")
   val mutations = opt[List[String]]("mutations",
     default = Some(List("insert", "update", "remove")),
     descr = "Mutations to perform on the input data. Must be one of " +
-    "'update', 'insert', or 'remove'.")
+    "'update', 'insert', or 'remove'. Only used if the algorithm is " +
+    "generating random mutations and not reading a trace from a file.")
   val naive = opt[Boolean]("naive", 'n', default = Some(false),
     descr = "If true, run a non-incremental version of the algorithm for" +
     " comparison")
@@ -64,7 +69,8 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     "'counts', 'partitons', or 'runs', with one required to be 'runs'.")
   val partitions = opt[List[String]]("partitions", 'p',
     default = Some(List("0")),
-    descr = "Number of partitions to divide the input into.")
+    descr = "Number of partitions to divide the input into. If 0, this will " +
+    "be set to the number of available CPU cores.")
   val repeat = opt[Int]("repeat", 'q', default = Some(3),
     descr = "The number of times to repeat the test.")
   val runs = opt[List[String]]("runs", 'r',

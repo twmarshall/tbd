@@ -104,35 +104,19 @@ class Worker
           partitionsPerWorker
         }
 
-      val dir = listConf.file + "-split" + listConf.partitions
-      if (listConf.file != "") {
-        if (!OS.exists(dir)) {
-          OS.mkdir(dir)
-          tdb.scripts.Split.main(Array(
-            "-d", dir,
-            "-f", listConf.file,
-            "-p", listConf.partitions + ""))
-        }
-      }
-
       val newDatastores = Map[DatastoreId, ActorRef]()
       var hasher: ObjHasher[ActorRef] = null
       for (i <- 0 until partitions) {
         val start = workerIndex * partitionsPerWorker + i
         val thisRange = new HashRange(start, start + 1, listConf.partitions)
 
-        val thisConf =
-          if (listConf.file == "")
-            listConf
-          else
-            listConf.clone(file = dir + "/" + start)
-        val modifierRef = thisConf match {
+        val modifierRef = listConf match {
           case aggregatorConf: AggregatorListConf[Any] =>
             context.actorOf(AggregatorModifierActor.props(
               aggregatorConf, workerInfo, nextDatastoreId))
           case _ =>
             context.actorOf(ModifierActor.props(
-              thisConf, workerInfo, nextDatastoreId, thisRange))
+              listConf, workerInfo, nextDatastoreId, thisRange))
         }
 
         val thisHasher = ObjHasher.makeHasher(thisRange, modifierRef)
@@ -148,6 +132,16 @@ class Worker
       datastores ++= newDatastores
 
       sender ! (newDatastores, hasher)
+
+    case SplitFileMessage(dir: String, fileName: String, partitions: Int) =>
+      if (!OS.exists(dir)) {
+        OS.mkdir(dir)
+        tdb.scripts.Split.main(Array(
+          "-d", dir,
+          "-f", fileName,
+          "-p", partitions + ""))
+      }
+      sender ! "done"
 
     case CreateModMessage(value: Any) =>
       (datastore ? CreateModMessage(value)) pipeTo sender

@@ -27,7 +27,8 @@ import tdb.util.ObjHasher
 class HashPartitionedDoubleChunkListInput[T, U]
     (val inputId: InputId,
      val hasher: ObjHasher[ActorRef],
-     conf: ListConf)
+     val conf: ListConf,
+     val workers: Iterable[ActorRef])
   extends HashPartitionedListInput[T, U] with java.io.Serializable {
 
   def getAdjustableList(): AdjustableList[T, U] = {

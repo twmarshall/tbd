@@ -22,6 +22,7 @@ import tdb.{Input, Mutator}
 
 class StringData
     (input: Input[Int, String],
+     fileName: String,
      count: Int,
      mutations: List[String],
      check: Boolean,
@@ -36,31 +37,26 @@ class StringData
   var remainingRuns = runs
 
   private def loadChunks(chunks: ArrayBuffer[String]) {
-    val elems = scala.xml.XML.loadFile("wiki.xml")
+    def process(key: String, value: String) {
+      chunks += value
+    }
 
-    var i = 0
-    (elems \\ "elem").map(elem => {
-      (elem \\ "value").map(value => {
-        chunks += value.text
-      })
-    })
+    FileUtil.readEntireKeyValueFile(fileName, process)
   }
 
   def generate() {
     while (table.size < count) {
-      val elems = scala.xml.XML.loadFile("wiki.xml")
+      var i = 0
+      def process(key: String, value: String) {
+        if (table.size < count) {
+          table += (i -> value)
+          i += 1
+        } else {
+          chunks += value
+        }
+      }
 
-      var i = table.size
-      (elems \\ "elem").map(elem => {
-        (elem \\ "value").map(value => {
-          if (table.size < count) {
-            table += (i -> value.text)
-            i += 1
-          } else {
-            chunks += value.text
-          }
-        })
-      })
+      FileUtil.readEntireKeyValueFile(fileName, process)
     }
   }
 

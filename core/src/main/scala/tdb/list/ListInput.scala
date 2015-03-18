@@ -26,12 +26,6 @@ import tdb.messages._
 
 trait ListInput[T, U] extends Input[T, U] {
 
-  def inputId: InputId
-
-  // Inserts all of the elements from data into this ListInput. Assumes that
-  // the list is currently empty.
-  def load(data: Map[T, U])
-
   def getAdjustableList(): AdjustableList[T, U]
 
   def getBuffer(): InputBuffer[T, U]

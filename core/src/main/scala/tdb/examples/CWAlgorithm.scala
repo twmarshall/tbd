@@ -98,7 +98,7 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
         new CWChunkAdjust(input.getAdjustableList(), mappedConf)
 
     data = new FileData(
-      mutator, input, conf.file, conf.updateFile, conf.runs)
+      input, conf.file, conf.updateFile, conf.runs)
   }
 
   def checkOutput(output: Mod[(String, Int)]) = {

@@ -18,7 +18,13 @@ package tdb
 import akka.actor.ActorRef
 import scala.concurrent.Future
 
+import tdb.Constants._
+
 trait Input[T, U] {
+  def inputId: InputId
+
+  def loadFile(fileName: String)
+
   def put(key: T, value: U)
 
   def asyncPut(key: T, value: U): Future[_]

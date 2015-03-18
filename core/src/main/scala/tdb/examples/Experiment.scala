@@ -217,9 +217,6 @@ object Experiment {
           case "pgrank" => new PageRankAlgorithm(algConf)
           case "cpgr" => new ColumnPageRankAlgorithm(algConf)
           case "wc" =>
-            if (listConf.chunkSize > 1)
-              new ChunkWCAlgorithm(algConf)
-            else
               new WCAlgorithm(algConf)
           case "wch" =>
             new WCChunkHashAlgorithm(algConf)

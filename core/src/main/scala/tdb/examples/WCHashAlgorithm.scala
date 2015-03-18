@@ -92,7 +92,8 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
       input.getAdjustableList(), conf.listConf.chunkSize)
 
     data = new FileData(
-      mutator, input, conf.file, conf.updateFile, conf.runs)
+      input, conf.file, conf.updateFile, conf.runs)
+    data.load()
   }
 
   def checkOutput(output: AdjustableList[String, Int]) = {
@@ -103,6 +104,7 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
     val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
 
     for ((word, count) <- sortedOutput) {
+      println("??")
       writer.write(word + " -> " + count + "\n")
     }
     writer.close()
@@ -119,6 +121,8 @@ class WCChunkHashAlgorithm(_conf: AlgorithmConf)
     val one = f1.getLines.mkString("\n")
     val two = f2.getLines.mkString("\n")
 
+    //println(one)
+    //println(two)
     assert(one == two)
 
     true
@@ -165,8 +169,8 @@ class RandomWCAlgorithm(_conf: AlgorithmConf)
     val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
     val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
 
-    //println("output = " + sortedOutput)
-    //println("answer = " + sortedAnswer)
+    println("output = " + sortedOutput)
+    println("answer = " + sortedAnswer)
 
     sortedOutput == sortedAnswer
   }

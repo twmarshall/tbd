@@ -29,6 +29,26 @@ trait HashPartitionedListInput[T, U]
 
   def hasher: ObjHasher[ActorRef]
 
+  def workers: Iterable[ActorRef]
+
+  def conf: ListConf
+
+  def loadFile(fileName: String) = {
+    val dir = fileName + "-split" + conf.partitions
+    val workerFutures = workers.map {
+      case workerRef =>
+        workerRef ? SplitFileMessage(dir, fileName, conf.partitions)
+    }
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Await.result(Future.sequence(workerFutures), DURATION)
+
+    for ((hash, datastoreRef) <- hasher.objs) {
+      val thisFile = dir + "/" + hash
+      datastoreRef ? LoadFileMessage(thisFile)
+    }
+  }
+
   def put(key: T, value: U) = {
     Await.result(asyncPut(key, value), DURATION)
   }

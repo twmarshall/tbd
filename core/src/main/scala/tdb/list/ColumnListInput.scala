@@ -32,6 +32,8 @@ class ColumnListInput[T]
      conf: ColumnListConf)
   extends ListInput[T, Columns] with Traceable[(String, (T, Any)), Int] {
 
+  def loadFile(fileName: String) = ???
+
   def put(key: T, value: Columns) = ???
 
   def asyncPut(key: T, value: Columns): Future[_] = ???

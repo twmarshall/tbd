@@ -61,7 +61,7 @@ class MapAlgorithm(_conf: AlgorithmConf)
     adjust = new MapAdjust(input.getAdjustableList())
 
     data = new FileData(
-      mutator, input, conf.file, conf.updateFile, conf.runs)
+      input, conf.file, conf.updateFile, conf.runs)
   }
 
   def checkOutput(output: AdjustableList[String, Int]) = {

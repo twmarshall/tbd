@@ -18,12 +18,10 @@ package tdb.util
 import java.io.File
 import scala.collection.mutable.Buffer
 
-import tdb.Mutator
 import tdb.list.ListInput
 
 class FileData
-    (mutator: Mutator,
-     dataset: ListInput[String, String],
+    (input: ListInput[String, String],
      inputFile: String,
      updateFile: String,
      runs: List[String]) extends Data[String] {
@@ -48,7 +46,7 @@ class FileData
   def generate() {}
 
   def load() {
-
+    input.loadFile(inputFile)
   }
 
   def update(): Int = {
@@ -61,7 +59,7 @@ class FileData
         getMoreUpdates()
       }
 
-      dataset.put(updates.head._1, updates.head._2)
+      input.put(updates.head._1, updates.head._2)
       updates -= updates.head
     }
 
