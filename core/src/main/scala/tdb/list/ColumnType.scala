@@ -32,4 +32,13 @@ object AggregatedDoubleColumn {
       threshold = (_: Double).abs > epsilon)
 }
 
+object AggregatedIntColumn {
+  def apply(epsilon: Double = 0) =
+    AggregatedColumn(
+      aggregator = (_: Int) + (_: Int),
+      deaggregator = (_: Int) - (_: Int),
+      initialValue = 0,
+      threshold = (_: Int).abs > epsilon)
+}
+
 case class StringColumn() extends ColumnType

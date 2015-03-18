@@ -28,12 +28,6 @@ class ColumnPageRankAdjust
   extends Adjustable[Unit] {
 
   def run(implicit c: Context) = {
-    val aggregatorConf = AggregatorListConf(
-      aggregator = (_: Double) + (_: Double),
-      deaggregator = (_: Double) - (_: Double),
-      initialValue = 0.0,
-      threshold = (_: Double).abs > epsilon)
-
     for (i <- 0 until iters) {
       def mapper(key: Int, column1: Any, column2: Any, c: Context) {
         val edges = column1.asInstanceOf[Array[Int]]

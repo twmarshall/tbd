@@ -73,10 +73,7 @@ case class AggregatorListConf[T]
      sorted: Boolean = false,
      hash: Boolean = false,
      inputId: InputId = -1,
-     aggregator: (T, T) => T,
-     deaggregator: (T, T) => T,
-     initialValue: T,
-     threshold: T => Boolean) extends ListConf {
+     valueType: AggregatedColumn[T]) extends ListConf {
   def clone(_file: String, _partitions: Int, _inputId: InputId) =
     copy(file = _file, partitions = _partitions, inputId = _inputId)
 }

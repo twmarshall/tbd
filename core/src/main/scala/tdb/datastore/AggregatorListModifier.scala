@@ -43,7 +43,7 @@ class AggregatorListModifier[U]
 
     if (values.contains(key)) {
       val oldValue = values(key).asInstanceOf[U]
-      val newValue = conf.aggregator(oldValue, value)
+      val newValue = conf.valueType.aggregator(oldValue, value)
       values(key) = newValue
     } else {
       values(key) = value
@@ -63,7 +63,7 @@ class AggregatorListModifier[U]
 
     val oldValue = values(key).asInstanceOf[U]
 
-    var newValue = conf.deaggregator(value, oldValue)
+    var newValue = conf.valueType.deaggregator(value, oldValue)
 
     if (newValue == 0) {
       values -= key

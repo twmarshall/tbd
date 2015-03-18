@@ -48,7 +48,7 @@ class AggregatorChunkListModifier[U]
       val newChunk = chunk.map {
         case (_key, _value) => {
           if (key == _key) {
-            (_key, conf.aggregator(_value, value))
+            (_key, conf.valueType.aggregator(_value, value))
           } else {
             (_key, _value)
           }
@@ -104,7 +104,7 @@ class AggregatorChunkListModifier[U]
     var newChunk = chunk.map{ case (_key, _value) => {
       if (key == _key) {
         assert(newValue == null)
-        newValue = conf.deaggregator(_value, value)
+        newValue = conf.valueType.deaggregator(_value, value)
         (_key, newValue)
       } else {
         (_key, _value)

@@ -61,7 +61,7 @@ class AggregatorBuffer[T, U]
   def putAll(values: Iterable[(T, U)]) {
     for ((key, value) <- values) {
       if (toPut.contains(key)) {
-        toPut(key) = conf.aggregator(toPut(key), value)
+        toPut(key) = conf.valueType.aggregator(toPut(key), value)
           .asInstanceOf[U]
       } else {
         toPut(key) = value
@@ -74,11 +74,11 @@ class AggregatorBuffer[T, U]
   def removeAll(values: Iterable[(T, U)]) {
     for ((key, value) <- values) {
       if (toPut.contains(key)) {
-        toPut(key) = conf.deaggregator(toPut(key), value)
+        toPut(key) = conf.valueType.deaggregator(toPut(key), value)
           .asInstanceOf[U]
       } else {
-        toPut(key) = conf.deaggregator(conf.initialValue, value)
-          .asInstanceOf[U]
+        toPut(key) = conf.valueType.deaggregator(
+          conf.valueType.initialValue, value).asInstanceOf[U]
       }
     }
   }

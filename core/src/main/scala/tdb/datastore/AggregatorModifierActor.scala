@@ -53,7 +53,7 @@ class AggregatorModifierActor
   def put(key: Any, value: Any) {
     if (buffer.contains(key)) {
       val oldValue = buffer(key)
-      val newValue = conf.aggregator(oldValue, value)
+      val newValue = conf.valueType.aggregator(oldValue, value)
       buffer(key) = newValue
     } else {
       buffer(key) = value
@@ -67,7 +67,7 @@ class AggregatorModifierActor
   def remove(key: Any, value: Any) {
     val oldValue = buffer(key)
 
-    var newValue = conf.deaggregator(value, oldValue)
+    var newValue = conf.valueType.deaggregator(value, oldValue)
 
     buffer(key) = newValue
   }
@@ -122,9 +122,9 @@ class AggregatorModifierActor
     case FlushMessage() =>
       val futures = mutable.Buffer[Future[Any]]()
       for ((key, value) <- buffer) {
-        if (conf.threshold(value)) {
+        if (conf.valueType.threshold(value)) {
           if (values.contains(key)) {
-            values(key) = conf.aggregator(value, values(key))
+            values(key) = conf.valueType.aggregator(value, values(key))
           } else {
             values(key) = value
           }

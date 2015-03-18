@@ -49,10 +49,8 @@ class WCChunkHashAdjust
 
   def run(implicit c: Context) = {
     val conf = AggregatorListConf(
-      aggregator = (_: Int) + (_: Int),
-      deaggregator = (_: Int) + (_: Int),
-      initialValue = 0,
-      threshold = (_: Int) > 0)
+      valueType = AggregatedIntColumn())
+
     val output = createList[String, Int](conf)
     list.foreach {
       case (chunk, c) =>

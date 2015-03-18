@@ -29,10 +29,7 @@ class PageRankAdjust
 
   def run(implicit c: Context) = {
     val aggregatorConf = AggregatorListConf(
-      aggregator = (_: Double) + (_: Double),
-      deaggregator = (_: Double) - (_: Double),
-      initialValue = 0.0,
-      threshold = (_: Double).abs > epsilon)
+      valueType = AggregatedDoubleColumn())
 
     def innerPageRank(i: Int): ListInput[Int, Double] = {
       if (i == 1) {
