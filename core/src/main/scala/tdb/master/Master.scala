@@ -208,7 +208,7 @@ class Master extends Actor with ActorLogging {
       assert(hasher.isComplete())
 
       val input = conf match {
-        case aggregatorConf: AggregatorListConf[_] =>
+        case aggregatorConf: AggregatorListConf =>
           new AggregatorInput(inputId, hasher, aggregatorConf, workers.values)
 
         case SimpleListConf(_, _, 1, _, false, _, _) =>

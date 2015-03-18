@@ -47,7 +47,7 @@ class ModifierActor
   private val datastore = new Datastore(workerInfo, log, datastoreId)
 
   val modifier = conf match {
-    case conf: AggregatorListConf[_] =>
+    case conf: AggregatorListConf =>
       if (conf.chunkSize == 1)
         new AggregatorListModifier(datastore, self, conf)
       else

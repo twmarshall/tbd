@@ -65,7 +65,7 @@ case class SimpleListConf
     copy(file = _file, partitions = _partitions, inputId = _inputId)
 }
 
-case class AggregatorListConf[T]
+case class AggregatorListConf
     (file: String = "",
      partitions: Int = 0,
      chunkSize: Int = 1,
@@ -73,7 +73,7 @@ case class AggregatorListConf[T]
      sorted: Boolean = false,
      hash: Boolean = false,
      inputId: InputId = -1,
-     valueType: AggregatedColumn[T]) extends ListConf {
+     valueType: AggregatedColumn) extends ListConf {
   def clone(_file: String, _partitions: Int, _inputId: InputId) =
     copy(file = _file, partitions = _partitions, inputId = _inputId)
 }

@@ -29,14 +29,14 @@ import tdb.util.HashRange
 
 object AggregatorModifierActor {
   def props
-      (conf: AggregatorListConf[Any],
+      (conf: AggregatorListConf,
        workerInfo: WorkerInfo,
        datastoreId: DatastoreId): Props =
     Props(classOf[AggregatorModifierActor], conf, workerInfo, datastoreId)
 }
 
 class AggregatorModifierActor
-    (conf: AggregatorListConf[Any],
+    (conf: AggregatorListConf,
      workerInfo: WorkerInfo,
      datastoreId: DatastoreId)
   extends Actor with ActorLogging {

@@ -105,7 +105,7 @@ class ColumnBuffer[T]
     }
 
     conf.columns(column)._1 match {
-      case c: AggregatedColumn[Any] =>
+      case c: AggregatedColumn =>
         for ((k, v) <- values) {
           if (toPut(column).contains(k)) {
             toPut(column)(k) = c.aggregator(toPut(column)(k), v)
@@ -125,7 +125,7 @@ class ColumnBuffer[T]
     }
 
     conf.columns(column)._1 match {
-      case c: AggregatedColumn[Any] =>
+      case c: AggregatedColumn =>
         if (toPut(column).contains(k)) {
           toPut(column)(k) = c.aggregator(toPut(column)(k), v)
         } else {

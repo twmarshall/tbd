@@ -227,7 +227,7 @@ class ColumnListModifier(datastore: Datastore, conf: ColumnListConf)
             found = true
 
             columnType match {
-              case aggregatedColumn: AggregatedColumn[Any] =>
+              case aggregatedColumn: AggregatedColumn =>
                 aggregatedColumn.aggregator(_value, value)
               case _ => ???//value
             }

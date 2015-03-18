@@ -111,7 +111,7 @@ class Worker
         val thisRange = new HashRange(start, start + 1, listConf.partitions)
 
         val modifierRef = listConf match {
-          case aggregatorConf: AggregatorListConf[Any] =>
+          case aggregatorConf: AggregatorListConf =>
             context.actorOf(AggregatorModifierActor.props(
               aggregatorConf, workerInfo, nextDatastoreId))
           case _ =>

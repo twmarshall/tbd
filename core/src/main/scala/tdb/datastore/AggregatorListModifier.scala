@@ -26,7 +26,7 @@ import tdb.list._
 class AggregatorListModifier[U]
     (datastore: Datastore,
      datastoreRef: ActorRef,
-     conf: AggregatorListConf[U])
+     conf: AggregatorListConf)
     (implicit ec: ExecutionContext)
   extends Modifier {
 

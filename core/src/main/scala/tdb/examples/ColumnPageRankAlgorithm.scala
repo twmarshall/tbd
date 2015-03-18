@@ -53,8 +53,8 @@ class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[Unit](_conf) {
 
   var columns = immutable.Map(
-    "key" -> (new StringColumn(), -1),
-    "edges" -> (new StringColumn(), ""),
+    "key" -> (StringColumn(), -1),
+    "edges" -> (StringColumn(), ""),
     "0" -> (AggregatedDoubleColumn(), 1.0),
     "1" -> (AggregatedDoubleColumn(), 0.0))
 
