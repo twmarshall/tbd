@@ -131,6 +131,7 @@ class AggregatorModifierActor
           futures += datastore.informDependents(conf.inputId, key)
         }
       }
+      buffer.clear()
       Future.sequence(futures) pipeTo sender
 
     case x =>

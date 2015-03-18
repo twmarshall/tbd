@@ -219,13 +219,11 @@ object Experiment {
           case "wc" =>
               new WCAlgorithm(algConf)
           case "wch" =>
-            new WCChunkHashAlgorithm(algConf)
+            new WCHashAlgorithm(algConf)
           case "cw" =>
             new CWChunkHashAlgorithm(algConf)
           case "rcw" =>
             new RandomCWAlgorithm(algConf)
-          case "rwc" =>
-            new RandomWCAlgorithm(algConf)
         }
 
         val results = alg.run()

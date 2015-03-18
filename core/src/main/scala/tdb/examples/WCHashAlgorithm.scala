@@ -19,6 +19,8 @@ import java.io._
 import scala.collection.GenIterable
 import scala.collection.immutable.HashMap
 import scala.collection.mutable.Map
+import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
+import scala.concurrent.forkjoin.ForkJoinPool
 
 import tdb._
 import tdb.list._
@@ -45,116 +47,63 @@ class WCChunkHashAdjust
     HashMap(counts.toSeq: _*)
   }
 
-  def reducer
-      (pair1: (Int, HashMap[String, Int]),
-       pair2: (Int, HashMap[String, Int])) = {
-    val reduced =
-      pair1._2.merged(pair2._2)({ case ((k, v1),(_, v2)) => (k, v1 + v2)})
-    (pair1._1, reduced)
-  }
-
   def run(implicit c: Context) = {
     val conf = AggregatorListConf(
       aggregator = (_: Int) + (_: Int),
       deaggregator = (_: Int) + (_: Int),
       initialValue = 0,
       threshold = (_: Int) > 0)
-    list.hashChunkMap(wordcount, conf).getAdjustableList()
-  }
-}
-
-class WCChunkHashAlgorithm(_conf: AlgorithmConf)
-    extends Algorithm[AdjustableList[String, Int]](_conf) {
-
-  val outputFile = "output"
-  if (Experiment.check) {
-    val args = Array("-f", conf.file, "--updateFile", conf.updateFile,
-                     "-o", outputFile, "-u") ++ conf.runs
-    tdb.scripts.NaiveWC.main(args)
-
-  }
-
-  var data: Data[String, String] = null
-
-  var input: ListInput[String, String] = null
-
-  var adjust: WCChunkHashAdjust = null
-
-  def generateNaive() {}
-
-  def runNaive() {}
-
-  override def loadInitial() {
-    input = mutator.createList[String, String](
-      conf.listConf.clone(file = conf.file))
-
-    adjust = new WCChunkHashAdjust(
-      input.getAdjustableList(), conf.listConf.chunkSize)
-
-    data = new FileData(
-      input, conf.file, conf.updateFile, conf.runs)
-    data.load()
-  }
-
-  def hasUpdates() = data.hasUpdates()
-
-  def loadUpdate() = data.update()
-
-  def checkOutput(output: AdjustableList[String, Int]) = {
-    val thisFile = "wc-output" + updateSize + ".txt"
-    val writer = new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream(thisFile), "utf-8"))
-
-    val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
-
-    for ((word, count) <- sortedOutput) {
-      println("??")
-      writer.write(word + " -> " + count + "\n")
+    val output = createList[String, Int](conf)
+    list.foreach {
+      case (chunk, c) =>
+        putAll(output, wordcount(Iterable(chunk)))(c)
     }
-    writer.close()
-
-    val thisOutputFile =
-      if (updateSize != 0)
-        outputFile + updateSize + ".txt"
-      else
-        outputFile + ".txt"
-
-    val f1 = scala.io.Source.fromFile(thisOutputFile)
-    val f2 = scala.io.Source.fromFile(thisFile)
-
-    val one = f1.getLines.mkString("\n")
-    val two = f2.getLines.mkString("\n")
-
-    //println(one)
-    //println(two)
-    assert(one == two)
-
-    true
+    output.flush()
+    output.getAdjustableList()
   }
 }
 
-
-class RandomWCAlgorithm(_conf: AlgorithmConf)
+class WCHashAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[AdjustableList[String, Int]](_conf) {
 
-  var data: Data[Int, String] = null
+  val input = mutator.createList[String, String](conf.listConf)
 
-  var input: ListInput[String, String] = null
+  val adjust = new WCChunkHashAdjust(
+    input.getAdjustableList(), conf.listConf.chunkSize)
 
-  var adjust: WCChunkHashAdjust = null
+  val data =
+    if (conf.file == "") {
+      if (Experiment.verbosity > 0) {
+        println("Generating random data.")
+      }
+      new RandomStringData(
+        input, conf.count, conf.mutations, Experiment.check, conf.runs)
+    } else {
+      if (Experiment.verbosity > 0) {
+        println("Reading data from " + conf.file)
+      }
+      new FileData(
+        input, conf.file, conf.updateFile, conf.runs)
+    }
 
-  def generateNaive() {}
+  var naiveTable: ParIterable[String] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = Vector(data.table.values.toSeq: _*).par
+    naiveTable.tasksupport =
+      new ForkJoinTaskSupport(new ForkJoinPool(OS.getNumCores() * 2))
+  }
 
-  def runNaive() {}
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
+
+  private def naiveHelper(input: GenIterable[String] = naiveTable) = {
+    input.aggregate(Map[String, Int]())((x, line) =>
+      WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
+  }
 
   override def loadInitial() {
-    input = mutator.createList[String, String](conf.listConf)
-
-    adjust = new WCChunkHashAdjust(
-      input.getAdjustableList(), conf.listConf.chunkSize)
-    data = new RandomStringData(
-      input, conf.count, conf.mutations, Experiment.check, conf.runs)
-    data.generate()
     data.load()
   }
 
