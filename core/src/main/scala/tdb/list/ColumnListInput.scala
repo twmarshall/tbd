@@ -41,10 +41,14 @@ class ColumnListInput[T]
   def asyncPutAll(values: Iterable[(T, Columns)]): Future[_] = ???
 
   def asyncPutAllIn(column: String, values: Iterable[(T, Any)]): Future[_] = {
-    val futures = Buffer[Future[Any]]()
+    val hashedPut = hasher.hashAll(values)
 
-    for ((k, v) <- values) {
-      futures += asyncPutIn(column, k, v)
+    val futures = Buffer[Future[Any]]()
+    for ((hash, buf) <- hashedPut) {
+      if (buf.size > 0) {
+        val datastoreRef = hasher.objs(hash)
+        futures += datastoreRef ? PutAllInMessage(column, buf)
+      }
     }
 
     import scala.concurrent.ExecutionContext.Implicits.global
@@ -87,7 +91,11 @@ class ColumnListInput[T]
   def getTraceableBuffer() =
     new ColumnBuffer(this, conf)
 
-  def flush(): Unit = ???
+  override def flush(): Unit = {
+    val futures = hasher.objs.values.map(_ ? FlushMessage())
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Await.result(Future.sequence(futures), DURATION)
+  }
 }
 
 class ColumnBuffer[T]

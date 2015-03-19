@@ -31,13 +31,13 @@ class ColumnChunkListModifier(datastore: Datastore, conf: ColumnListConf)
 
   // Contains the last DoubleChunkListNode before the tail node. If the list is
   // empty, the contents of this mod will be null.
-  private var lastNodeMod = datastore.createMod[ColumnListNode[Any]](null)
+  private var lastNodeMod = datastore.createMod[ColumnChunkListNode[Any]](null)
 
-  val nodes = Map[Any, Mod[ColumnListNode[Any]]]()
-  val previous = Map[Any, Mod[ColumnListNode[Any]]]()
+  val nodes = Map[Any, Mod[ColumnChunkListNode[Any]]]()
+  val previous = Map[Any, Mod[ColumnChunkListNode[Any]]]()
 
   val list =
-    new ColumnList[Any](lastNodeMod, conf, false, datastore.workerInfo.workerId)
+    new ColumnChunkList[Any](lastNodeMod, conf, false, datastore.workerInfo.workerId)
 
   def loadInput(keys: Iterable[Any]) = ???
 
@@ -68,8 +68,8 @@ class ColumnChunkListModifier(datastore: Datastore, conf: ColumnListConf)
 
       previous(key) = null
 
-      val tailMod = datastore.createMod[ColumnListNode[Any]](null)
-      val newNode = new ColumnListNode(newColumns, tailMod, size)
+      val tailMod = datastore.createMod[ColumnChunkListNode[Any]](null)
+      val newNode = new ColumnChunkListNode(newColumns, tailMod, size)
 
       nodes(key) = lastNodeMod
 
@@ -80,8 +80,8 @@ class ColumnChunkListModifier(datastore: Datastore, conf: ColumnListConf)
 
       lastNodeMod = lastNode.nextMod
 
-      val tailMod = datastore.createMod[ColumnListNode[Any]](null)
-      val newNode = new ColumnListNode(newColumns, tailMod, 1)
+      val tailMod = datastore.createMod[ColumnChunkListNode[Any]](null)
+      val newNode = new ColumnChunkListNode(newColumns, tailMod, 1)
 
       nodes(key) = lastNode.nextMod
 
@@ -108,8 +108,8 @@ class ColumnChunkListModifier(datastore: Datastore, conf: ColumnListConf)
       }
       val size = lastNode.size + 1
 
-      val tailMod = datastore.createMod[ColumnListNode[Any]](null)
-      val newNode = new ColumnListNode(oldColumns, tailMod, size)
+      val tailMod = datastore.createMod[ColumnChunkListNode[Any]](null)
+      val newNode = new ColumnChunkListNode(oldColumns, tailMod, size)
 
       nodes(key) = lastNodeMod
 
@@ -152,7 +152,7 @@ class ColumnChunkListModifier(datastore: Datastore, conf: ColumnListConf)
       }
       assert(found)
 
-      //val newNode = new ColumnListNode(node.columns, node.nextMod, node.size)
+      //val newNode = new ColumnChunkListNode(node.columns, node.nextMod, node.size)
       //datastore.updateMod(nodes(key).id, newNode)
       datastore.updateMod(columnMod.id, newChunk)
     }

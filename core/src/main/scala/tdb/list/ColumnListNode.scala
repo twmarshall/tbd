@@ -23,7 +23,7 @@ import tdb._
 import tdb.TDB._
 
 class ColumnListNode[T]
-    (val columns: Map[String, Mod[Iterable[Any]]],
+    (val columns: Map[String, Mod[Any]],
      val nextMod: Mod[ColumnListNode[T]],
      val size: Int = 0) extends Serializable {
 
@@ -34,13 +34,8 @@ class ColumnListNode[T]
        memo: Memoizer[Unit])
       (implicit c: Context): Unit = {
     read_3(columns("key"), columns(column1), columns(column2)) {
-      case (keyValues, column1Values, column2Values) =>
-        val keyIter = keyValues.iterator
-        val column1Iter = column1Values.iterator
-        val column2Iter = column2Values.iterator
-        while (keyIter.hasNext) {
-          f(keyIter.next.asInstanceOf[T], column1Iter.next, column2Iter.next, c)
-        }
+      case (keyValue, column1Value, column2Value) =>
+        f(keyValue.asInstanceOf[T], column1Value, column2Value, c)
     }
 
     readAny(nextMod) {
@@ -52,51 +47,15 @@ class ColumnListNode[T]
     }
   }
 
-  def projection2Chunk
-      (column1: String,
-       column2: String,
-       f: (Iterable[T], Iterable[Any], Iterable[Any], Context) => Unit,
-       memo: Memoizer[Unit])
-      (implicit c: Context): Unit = {
-    read_3(columns("key"), columns(column1), columns(column2)) {
-      case (keyValues, column1Values, column2Values) =>
-        f(keyValues.asInstanceOf[Iterable[T]], column1Values, column2Values, c)
-    }
-
-    readAny(nextMod) {
-      case null =>
-      case node =>
-        memo(node) {
-          node.projection2Chunk(column1, column2, f, memo)
-        }
+  override def equals(obj: Any): Boolean = {
+    obj match {
+      case that: ColumnListNode[T] =>
+        that.columns == this.columns && that.nextMod == this.nextMod
+      case _ => false
     }
   }
 
-  def foreach[V, W]
-      (f: (Map[String, Mod[Iterable[Any]]], Context) => Unit,
-       memo: Memoizer[Unit])
-      (implicit c: Context): Unit = {
-    f(columns, c)
+  override def hashCode() = columns.hashCode() * nextMod.hashCode()
 
-    readAny(nextMod) {
-      case null =>
-      case node =>
-        memo(node) {
-          node.foreach(f, memo)
-        }
-    }
-  }
-
-  /*override def equals(obj: Any): Boolean = {
-    if (!obj.isInstanceOf[ColumnListNode[T, U]]) {
-      false
-    } else {
-      val that = obj.asInstanceOf[ColumnListNode[T, U]]
-      that.chunkMod == chunkMod && that.nextMod == nextMod
-    }
-  }
-
-  override def hashCode() = chunkMod.hashCode() * nextMod.hashCode()
-
-  override def toString = "Node(" + chunkMod + ", " + nextMod + ")"*/
+  //override def toString = "Node(" + chunkMod + ", " + nextMod + ")"
 }

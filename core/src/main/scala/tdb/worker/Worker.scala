@@ -114,6 +114,9 @@ class Worker
           case aggregatorConf: AggregatorListConf =>
             context.actorOf(AggregatorModifierActor.props(
               aggregatorConf, workerInfo, nextDatastoreId))
+          case columnConf: ColumnListConf =>
+            context.actorOf(ColumnModifierActor.props(
+                columnConf, workerInfo, nextDatastoreId, thisRange))
           case _ =>
             context.actorOf(ModifierActor.props(
               listConf, workerInfo, nextDatastoreId, thisRange))

@@ -47,6 +47,7 @@ class ColumnPageRankAdjust
       }
 
       links.getAdjustableList().projection2("edges", i + "", mapper)
+      links.flush()
     }
   }
 }
@@ -106,7 +107,7 @@ class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
   val data = new GraphColumnData(input, conf.file, conf.runs, conf.updateRepeat)
   //val data = new LiveJournalData(input)
 
-  val adjust = new ColumnChunkPageRankAdjust(
+  val adjust = new ColumnPageRankAdjust(
     input, conf.epsilon, conf.iters)
 
   var naiveTable: Map[Int, Array[Int]] = _

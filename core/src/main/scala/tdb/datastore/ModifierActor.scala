@@ -52,8 +52,6 @@ class ModifierActor
         new AggregatorListModifier(datastore, self, conf)
       else
         new AggregatorChunkListModifier(datastore, self, conf)
-    case conf: ColumnListConf =>
-      new ColumnListModifier(datastore, conf)
     case conf: ListConf =>
       if (conf.chunkSize == 1)
         new DoubleListModifier(datastore)

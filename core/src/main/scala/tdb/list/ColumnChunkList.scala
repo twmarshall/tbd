@@ -22,15 +22,15 @@ import tdb._
 import tdb.Constants._
 import tdb.TDB._
 
-object ColumnList {
+object ColumnChunkList {
   type Columns = Map[String, Any]
   type ModColumns = Map[String, Mod[Iterable[Any]]]
 }
 
-import ColumnList._
+import ColumnChunkList._
 
-class ColumnList[T]
-    (val head: Mod[ColumnListNode[T]],
+class ColumnChunkList[T]
+    (val head: Mod[ColumnChunkListNode[T]],
      conf: ListConf,
      val sorted: Boolean = false,
      val workerId: WorkerId = -1)
@@ -70,6 +70,19 @@ class ColumnList[T]
     }
   }
 
+  override def projection2Chunk
+      (column1: String,
+       column2: String,
+       f: (Iterable[T], Iterable[Any], Iterable[Any], Context) => Unit)
+      (implicit c: Context): Unit = {
+    val memo = new Memoizer[Unit]()
+
+    readAny(head) {
+      case null =>
+      case node => node.projection2Chunk(column1, column2, f, memo)
+    }
+  }
+
   def reduce(f: ((T, Columns), (T, Columns)) => (T, Columns))
       (implicit c: Context): Mod[(T, Columns)] = ???
 
@@ -85,17 +98,26 @@ class ColumnList[T]
     var node = mutator.read(head)
 
     while (node != null) {
-      val keyValue = mutator.read(node.columns("key"))
-      val m = Map[String, Any]()
+      val columns = Buffer[Map[String, Any]]()
+
+      val keyChunk = mutator.read(node.columns("key"))
+      val iter = columns.iterator
+      for (k <- keyChunk) {
+        val m = Map[String, Any]()
+        buf += ((k.asInstanceOf[T], m))
+        columns += m
+      }
 
       for ((columnName, chunkMod) <- node.columns) {
         if (columnName != "key") {
-          val value = mutator.read(chunkMod)
-          m(columnName) = value
+          val chunk = mutator.read(chunkMod)
+          val iter = columns.iterator
+          for (v <- chunk) {
+            val m = iter.next
+            m(columnName) = v
+          }
         }
       }
-
-      buf += ((keyValue.asInstanceOf[T], m))
 
       node = mutator.read(node.nextMod)
     }
