@@ -47,11 +47,6 @@ class ColumnList[T]
        input: ListInput[V, W])
       (implicit c: Context): Unit = ???
 
-  def hashPartitionedFlatMap[V, W]
-      (f: ((T, Columns)) => Iterable[(V, W)],
-       input: ListInput[V, W])
-      (implicit c: Context) = ???
-
   def join[V](_that: AdjustableList[T, V], condition: ((T, V), (T, Columns)) => Boolean)
       (implicit c: Context): DoubleChunkList[T, (Columns, V)] = ???
 

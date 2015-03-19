@@ -69,11 +69,6 @@ trait AdjustableList[T, U] {
        conf: ListConf = ListConf())
       (implicit c: Context): ListInput[V, W] = ???
 
-  def hashPartitionedFlatMap[V, W]
-      (f: ((T, U)) => Iterable[(V, W)],
-       numPartitions: Int)
-      (implicit c: Context): AdjustableList[V, W] = ???
-
   /**
    * Returns an AdjustableList mapping each key that is present in both lists
    * to a pair containing the corresponding values from each list.

@@ -47,17 +47,6 @@ class DoubleList[T, U]
     }
   }
 
-  def hashPartitionedFlatMap[V, W]
-      (f: ((T, U)) => Iterable[(V, W)],
-       input: ListInput[V, W])
-      (implicit c: Context) {
-    val memo = new Memoizer[Unit]()
-    readAny(head) {
-      case null =>
-      case node => node.hashPartitionedFlatMap(f, input, memo)
-    }
-  }
-
   def join[V](_that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): DoubleList[T, (U, V)] = ???
 

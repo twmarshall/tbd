@@ -47,28 +47,6 @@ class DoubleListNode[T, U]
     }
   }
 
-  def hashPartitionedFlatMap[V, W]
-      (f: ((T, U)) => Iterable[(V, W)],
-       input: ListInput[V, W],
-       memo: Memoizer[Unit])
-      (implicit c: Context): Unit = {
-    readAny(valueMod) {
-      case v =>
-        val out = f(v)
-        for (pair <- out) {
-          put(input, pair._1, pair._2)
-        }
-    }
-
-    readAny(nextMod) {
-      case null =>
-      case node =>
-        memo(node) {
-          node.hashPartitionedFlatMap(f, input, memo)
-        }
-    }
-  }
-
   def map[V, W]
       (f: ((T, U)) => (V, W),
        memo: Memoizer[Mod[DoubleListNode[V, W]]])
