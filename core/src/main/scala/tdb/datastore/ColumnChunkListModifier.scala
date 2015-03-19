@@ -22,9 +22,12 @@ import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class ColumnListModifier(datastore: Datastore, conf: ColumnListConf)
+class ColumnChunkListModifier(datastore: Datastore, conf: ColumnListConf)
     (implicit ec: ExecutionContext)
   extends Modifier {
+
+  val chunks = Map[ModId, Iterable[Any]]()
+  val values = Map[Any, Buffer[Any]]()
 
   // Contains the last DoubleChunkListNode before the tail node. If the list is
   // empty, the contents of this mod will be null.
@@ -118,8 +121,10 @@ class ColumnListModifier(datastore: Datastore, conf: ColumnListConf)
 
   def putIn(column: String, key: Any, value: Any): Future[_] = {
     if (!nodes.contains(key)) {
+      //println("appendIn " + column + " key " + key + " value " + value + " " + this)
       appendIn(column, key, value)
     } else {
+      //println("updating " + column + " " + key + " " + value)
       val node = datastore.read(nodes(key))
 
       val keyIter = datastore.read(node.columns("key")).iterator
@@ -138,7 +143,8 @@ class ColumnListModifier(datastore: Datastore, conf: ColumnListConf)
             columnType match {
               case aggregatedColumn: AggregatedColumn =>
                 aggregatedColumn.aggregator(_value, value)
-              case _ => value
+              case _ =>
+                value
             }
           } else {
             _value

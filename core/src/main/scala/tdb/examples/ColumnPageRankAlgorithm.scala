@@ -34,14 +34,16 @@ class ColumnPageRankAdjust
         val rank = column2.asInstanceOf[Double]
         val v = (rank / edges.size) * .85
 
-        /*putIn(
-          links,
-          (i + 1) + "",
-          (for (edge <- edges) yield (edge, v)) ++ Iterable(key -> .15))(c)*/
-        putIn(links, (i + 1) + "" -> ((key -> .15)))(c)
+        val values: (String, Iterable[(Int, Any)]) =
+          (i + 1) + "" ->
+          ((for (edge <- edges) yield (edge, v)) ++ Iterable(key -> .15))
+
+        putIn(links, values)(c)
+
+        /*putIn(links, (i + 1) + "" -> ((key -> .15)))(c)
         for (edge <- edges) {
           putIn(links, (i + 1) + "" -> (edge -> v))(c)
-        }
+        }*/
       }
 
       links.getAdjustableList().projection2("edges", i + "", mapper)
@@ -137,7 +139,7 @@ class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
     }
 
     val averageError = (error / answer.size).abs
-    //println("average error = " + averageError)
+    println("average error = " + averageError)
     //println("output = " + out)
     //println("answer = " + answer)
 

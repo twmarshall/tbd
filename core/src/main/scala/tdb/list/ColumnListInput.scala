@@ -30,7 +30,7 @@ class ColumnListInput[T]
     (val inputId: InputId,
      val hasher: ObjHasher[ActorRef],
      conf: ColumnListConf)
-  extends ListInput[T, Columns] with Traceable[(String, (T, Any)), Int] {
+  extends ListInput[T, Columns] with Traceable[(String, Iterable[(T, Any)]), Int] {
 
   def loadFile(fileName: String) = ???
 
@@ -84,7 +84,7 @@ class ColumnListInput[T]
 
   def getBuffer(): InputBuffer[T, Columns] = new ColumnBuffer(this, conf)
 
-  def getTraceableBuffer(): TraceableBuffer[(String, (T, Any)), Int] =
+  def getTraceableBuffer() =
     new ColumnBuffer(this, conf)
 
   def flush(): Unit = ???
@@ -92,14 +92,13 @@ class ColumnListInput[T]
 
 class ColumnBuffer[T]
     (input: ColumnListInput[T], conf: ColumnListConf)
-  extends InputBuffer[T, Columns] with TraceableBuffer[(String, (T, Any)), Int] {
+  extends InputBuffer[T, Columns] with TraceableBuffer[(String, Iterable[(T, Any)]), Int] {
 
   val toPut = Map[String, Map[T, Any]]()
 
   def putAll(values: Iterable[(T, Columns)]) = ???
 
   def putAllIn(column: String, values: Iterable[(T, Any)]) = {
-    println("putAllIn " + values)
     if (!toPut.contains(column)) {
       toPut(column) =  Map[T, Any]()
     }
@@ -117,8 +116,8 @@ class ColumnBuffer[T]
     }
   }
 
-  def putIn(parameters: (String, (T, Any))) = {
-    val (column, (k, v)) = parameters
+  def putIn(parameters: (String, Iterable[(T, Any)])) = {
+    val (column, values) = parameters
 
     if (!toPut.contains(column)) {
       toPut(column) =  Map[T, Any]()
@@ -126,12 +125,35 @@ class ColumnBuffer[T]
 
     conf.columns(column)._1 match {
       case c: AggregatedColumn =>
-        if (toPut(column).contains(k)) {
-          toPut(column)(k) = c.aggregator(toPut(column)(k), v)
-        } else {
-          toPut(column)(k) = v
+        for ((k, v) <-  values) {
+          if (toPut(column).contains(k)) {
+            toPut(column)(k) = c.aggregator(toPut(column)(k), v)
+          } else {
+            toPut(column)(k) = v
+          }
         }
       case _ => ???
+    }
+  }
+
+  def remove(parameters: Any) = {
+    parameters match {
+      case (column: String, values: Iterable[(T, Any)]) =>
+        if (!toPut.contains(column)) {
+          toPut(column) =  Map[T, Any]()
+        }
+
+        conf.columns(column)._1 match {
+          case c: AggregatedColumn =>
+            for ((k, v) <- values) {
+              if (toPut(column).contains(k)) {
+                toPut(column)(k) = c.deaggregator(toPut(column)(k), v)
+              } else {
+                toPut(column)(k) = c.deaggregator(c.initialValue, v)
+              }
+            }
+          case _ => ???
+        }
     }
   }
 
@@ -139,7 +161,6 @@ class ColumnBuffer[T]
 
   def flush() {
     val futures = Buffer[Future[Any]]()
-    println("toPut = " + toPut)
     for ((column, values) <- toPut) {
       futures += input.asyncPutAllIn(column, values)
     }

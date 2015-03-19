@@ -26,5 +26,7 @@ trait Traceable[PutType, GetType] {
 trait TraceableBuffer[PutType, GetType] {
   def putIn(parameters: PutType)
 
+  def remove(parameters: Any)
+
   def flush(): Unit
 }

@@ -206,6 +206,8 @@ class Ordering {
               .removeAll(Iterable((putNode.key, putNode.value)))
           case putNode: PutAllNode =>
             c.buffers(putNode.input).removeAll(putNode.values)
+          case putNode: PutInNode =>
+            c.bufs(putNode.traceable.inputId).remove(putNode.parameters)
           case getNode: GetNode =>
             getNode.updated = false
             c.ddg.keys(getNode.input.inputId)(getNode.key) -= time
