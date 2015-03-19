@@ -62,6 +62,25 @@ class PartitionedColumnList[T]
     innerProjection2(0)
   }
 
+  override def projection2Chunk
+      (column1: String,
+       column2: String,
+       f: (Iterable[T], Iterable[Any], Iterable[Any], Context) => Unit)
+      (implicit c: Context): Unit = {
+    def innerProjection2Chunk(i: Int)
+        (implicit c: Context): Unit = {
+      if (i < partitions.size) {
+        parWithHint({
+          c => partitions(i).projection2Chunk(column1, column2, f)(c)
+        }, partitions(i).workerId)({
+          c => innerProjection2Chunk(i + 1)(c)
+        })
+      }
+    }
+
+    innerProjection2Chunk(0)
+  }
+
   def reduce(f: ((T, Columns), (T, Columns)) => (T, Columns))
       (implicit c: Context): Mod[(T, Columns)] = ???
 

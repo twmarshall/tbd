@@ -51,6 +51,39 @@ class ColumnPageRankAdjust
   }
 }
 
+
+class ColumnChunkPageRankAdjust
+    (links: ColumnListInput[Int], epsilon: Double, iters: Int)
+  extends Adjustable[Unit] {
+
+  def run(implicit c: Context) = {
+    for (i <- 0 until iters) {
+      def mapper(keys: Iterable[Int], column1s: Iterable[Any], column2s: Iterable[Any], c: Context) {
+        val contribs = Map[Int, Double]()
+
+        val keyIter = keys.iterator
+        val column1Iter = column1s.iterator
+        val column2Iter = column2s.iterator
+        while (keyIter.hasNext) {
+          val key = keyIter.next
+          val edges = column1Iter.next.asInstanceOf[Array[Int]]
+          val rank = column2Iter.next.asInstanceOf[Double]
+          val v = (rank / edges.size) * .85
+
+          contribs(key) = .15 + contribs.getOrElse(key, 0.0)
+          for (edge <- edges) {
+            contribs(edge) = v + contribs.getOrElse(edge, 0.0)
+          }
+        }
+
+        putIn(links, (i + 1).toString -> contribs)(c)
+      }
+
+      links.getAdjustableList().projection2Chunk("edges", i.toString, mapper)
+    }
+  }
+}
+
 class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[Unit](_conf) {
 
@@ -74,7 +107,7 @@ class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
   //val data = new GraphFileData(input, "data.txt")
   //val data = new LiveJournalData(input)
 
-  val adjust = new ColumnPageRankAdjust(
+  val adjust = new ColumnChunkPageRankAdjust(
     input, conf.epsilon, conf.iters)
 
   var naiveTable: Map[Int, Array[Int]] = _

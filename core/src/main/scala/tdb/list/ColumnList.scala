@@ -70,6 +70,19 @@ class ColumnList[T]
     }
   }
 
+  override def projection2Chunk
+      (column1: String,
+       column2: String,
+       f: (Iterable[T], Iterable[Any], Iterable[Any], Context) => Unit)
+      (implicit c: Context): Unit = {
+    val memo = new Memoizer[Unit]()
+
+    readAny(head) {
+      case null =>
+      case node => node.projection2Chunk(column1, column2, f, memo)
+    }
+  }
+
   def reduce(f: ((T, Columns), (T, Columns)) => (T, Columns))
       (implicit c: Context): Mod[(T, Columns)] = ???
 

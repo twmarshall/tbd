@@ -51,6 +51,27 @@ class ColumnListNode[T]
         }
     }
   }
+
+  def projection2Chunk
+      (column1: String,
+       column2: String,
+       f: (Iterable[T], Iterable[Any], Iterable[Any], Context) => Unit,
+       memo: Memoizer[Unit])
+      (implicit c: Context): Unit = {
+    read_3(columns("key"), columns(column1), columns(column2)) {
+      case (keyValues, column1Values, column2Values) =>
+        f(keyValues.asInstanceOf[Iterable[T]], column1Values, column2Values, c)
+    }
+
+    readAny(nextMod) {
+      case null =>
+      case node =>
+        memo(node) {
+          node.projection2Chunk(column1, column2, f, memo)
+        }
+    }
+  }
+
   def foreach[V, W]
       (f: (Map[String, Mod[Iterable[Any]]], Context) => Unit,
        memo: Memoizer[Unit])

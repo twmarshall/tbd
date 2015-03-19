@@ -100,6 +100,12 @@ trait AdjustableList[T, U] {
       (column1: String, column2: String, f: (T, Any, Any, Context) => Unit)
       (implicit c: Context): Unit = ???
 
+  def projection2Chunk
+      (column1: String,
+       column2: String,
+       f: (Iterable[T], Iterable[Any], Iterable[Any], Context) => Unit)
+      (implicit c: Context): Unit = ???
+
   /**
    * Sorts the list, using the quicksort algorithm.
    */
