@@ -42,11 +42,6 @@ class ColumnList[T]
   def flatMap[V, W](f: ((T, Columns)) => Iterable[(V, W)])
       (implicit c: Context): DoubleChunkList[V, W] = ???
 
-  def hashChunkMap[V, W]
-      (f: Iterable[(T, Columns)] => Iterable[(V, W)],
-       input: ListInput[V, W])
-      (implicit c: Context): Unit = ???
-
   def join[V](_that: AdjustableList[T, V], condition: ((T, V), (T, Columns)) => Boolean)
       (implicit c: Context): DoubleChunkList[T, (Columns, V)] = ???
 

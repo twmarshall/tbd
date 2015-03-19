@@ -131,28 +131,6 @@ class PartitionedDoubleChunkList[T, U]
     innerForeach(0)
   }
 
-  override def hashChunkMap[V, W]
-      (f: Iterable[(T, U)] => Iterable[(V, W)], _conf: ListConf)
-      (implicit c: Context): ListInput[V, W] = {
-    c.log.debug("PartitionedDoubleChunkList.hashChunkMap")
-    val input = createList[V, W](_conf)
-
-    def innerChunkMap(i: Int)(implicit c: Context) {
-      if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = parWithHint({
-          c => partitions(i).hashChunkMap(f, input)(c)
-        }, partitions(i).workerId)({
-          c => innerChunkMap(i + 1)(c)
-        })
-      }
-    }
-
-    innerChunkMap(0)
-
-    input
-  }
-
-
   def join[V](that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): PartitionedDoubleChunkList[T, (U, V)] = ???
 

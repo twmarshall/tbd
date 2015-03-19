@@ -28,8 +28,6 @@ import tdb.{Context, Mod, Mutator}
  * self-adjustabling way, so they can be called by an Adjustable.
  */
 trait AdjustableList[T, U] {
-  def aggregateFlatMap[V](f: ((T, U)) => Iterable[(V, Int)])
-      (implicit c: Context): AdjustableList[V, Int] = ???
 
   def aggregate[V, W](initial: => (V, W))
       (seqop: ((V, W), ((T, U), (V, W))) => (V, W),
@@ -63,11 +61,6 @@ trait AdjustableList[T, U] {
 
   def foreachChunk(f: (Iterable[(T, U)], Context) => Unit)
       (implicit c: Context): Unit = ???
-
-  def hashChunkMap[V, W]
-      (f: Iterable[(T, U)] => Iterable[(V, W)],
-       conf: ListConf = ListConf())
-      (implicit c: Context): ListInput[V, W] = ???
 
   /**
    * Returns an AdjustableList mapping each key that is present in both lists

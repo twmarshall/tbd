@@ -109,26 +109,6 @@ class DoubleChunkListNode[T, U]
     }
   }
 
-  def hashChunkMap[V, W]
-      (f: Iterable[(T, U)] => Iterable[(V, W)],
-       input: ListInput[V, W],
-       memo: Memoizer[Unit])
-      (implicit c: Context): Unit = {
-    readAny(chunkMod) {
-      case chunk =>
-        val out = f(chunk)
-        putAll(input, out)
-    }
-
-    readAny(nextMod) {
-      case null =>
-      case node =>
-        memo(node) {
-          node.hashChunkMap(f, input, memo)
-        }
-    }
-  }
-
   def map[V, W]
       (f: ((T, U)) => (V, W),
        memo: Memoizer[Mod[DoubleChunkListNode[V, W]]])

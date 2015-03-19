@@ -86,21 +86,6 @@ class DoubleChunkList[T, U]
     }
   }
 
-  def hashChunkMap[V, W]
-      (f: Iterable[(T, U)] => Iterable[(V, W)],
-       input: ListInput[V, W])
-      (implicit c: Context): Unit = {
-    val memo = new Memoizer[Unit]()
-
-    readAny(head) {
-      case null =>
-      case node =>
-        memo(node) {
-          node.hashChunkMap(f, input, memo)
-        }
-    }
-  }
-
   def join[V](_that: AdjustableList[T, V], condition: ((T, V), (T, U)) => Boolean)
       (implicit c: Context): DoubleChunkList[T, (U, V)] = ???
 
