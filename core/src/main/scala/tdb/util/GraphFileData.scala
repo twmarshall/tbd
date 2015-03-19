@@ -54,9 +54,13 @@ class GraphFileData
     }
   }
 
+  protected def put(key: Int, value: Array[Int]) {
+    input.put(key, value)
+  }
+
   def load() = {
     for ((key, value) <- table) {
-      input.put(key, value)
+      put(key, value)
     }
   }
 
@@ -84,7 +88,7 @@ class GraphFileData
           table(key) = table(key).filter(_ != value)
       }
 
-      input.put(key, table(key))
+      put(key, table(key))
     }
 
     updateCount
