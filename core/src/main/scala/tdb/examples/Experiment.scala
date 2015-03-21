@@ -216,6 +216,7 @@ object Experiment {
             new MapAlgorithm(algConf)
           case "pgrank" => new PageRankAlgorithm(algConf)
           case "cpgr" => new ColumnPageRankAlgorithm(algConf)
+          case "rpgr" => new ReversePageRankAlgorithm(algConf)
           case "wc" =>
               new WCAlgorithm(algConf)
           case "wch" =>
