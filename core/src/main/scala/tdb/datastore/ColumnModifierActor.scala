@@ -49,7 +49,6 @@ class ColumnModifierActor
 
   private val datastore = new Datastore(workerInfo, log, datastoreId)
 
-
   private var tailMod = datastore.createMod[ColumnListNode[Any]](null)
 
   private val nodes = mutable.Map[Any, Mod[ColumnListNode[Any]]]()

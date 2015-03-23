@@ -219,7 +219,10 @@ class Master extends Actor with ActorLogging {
           new HashPartitionedDoubleChunkListInput(
             inputId, hasher, conf, workers.values)
         case columnConf: ColumnListConf =>
-          new ColumnListInput(inputId, hasher, columnConf)
+          if (columnConf.chunkSize > 1)
+            new ColumnChunkListInput(inputId, hasher, columnConf)
+          else
+            new ColumnListInput(inputId, hasher, columnConf)
         case _ => ???
       }
 
