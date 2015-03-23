@@ -97,7 +97,10 @@ trait AdjustableList[T, U] {
       (implicit c: Context): Iterable[Mod[(T, U)]] = ???
 
   def projection2
-      (column1: String, column2: String, f: (T, Any, Any, Context) => Unit)
+      (column1: String,
+       column2: String,
+       f: (T, Any, Any, Context) => Unit,
+       input: ColumnListInput[T])
       (implicit c: Context): Unit = ???
 
   def projection2Chunk

@@ -46,13 +46,16 @@ class PartitionedColumnList[T]
       (implicit c: Context): PartitionedDoubleChunkList[V, W] = ???
 
   override def projection2
-      (column1: String, column2: String, f: (T, Any, Any, Context) => Unit)
+      (column1: String,
+       column2: String,
+       f: (T, Any, Any, Context) => Unit,
+       input: ColumnListInput[T])
       (implicit c: Context): Unit = {
     def innerProjection2(i: Int)
         (implicit c: Context): Unit = {
       if (i < partitions.size) {
         parWithHint({
-          c => partitions(i).projection2(column1, column2, f)(c)
+          c => partitions(i).projection2(column1, column2, f, input)(c)
         }, partitions(i).workerId)({
           c => innerProjection2(i + 1)(c)
         })

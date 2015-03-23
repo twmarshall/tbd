@@ -58,6 +58,10 @@ class ColumnModifierActor
 
   private val buffer = mutable.Map[String, mutable.Map[Any, Any]]()
 
+  private val values = mutable.Map[ModId, Any]()
+
+  private val dependencies = mutable.Map[String, mutable.Map[Any, (NodeId, ActorRef)]]()
+
   private def makeNewColumns(column: String, key: Any, value: Any) = {
     val newColumns = mutable.Map[String, Mod[Any]]()
 
@@ -65,10 +69,13 @@ class ColumnModifierActor
       columnName match {
         case "key" =>
           newColumns("key") = datastore.createMod(key)
+          values(newColumns("key").id) = key
         case name if name == column =>
           newColumns(columnName) = datastore.createMod(value)
+          values(newColumns(columnName).id) = value
         case _ =>
           newColumns(columnName) = datastore.createMod(defaultValue)
+          values(newColumns(columnName).id) = defaultValue
       }
     }
 
@@ -78,7 +85,7 @@ class ColumnModifierActor
   private def appendIn(column: String, key: Any, value: Any): Future[_] = {
     val newColumns = makeNewColumns(column, key, value)
     val newTail = datastore.createMod[ColumnListNode[Any]](null)
-    val newNode = new ColumnListNode(newColumns, newTail)
+    val newNode = new ColumnListNode(key, newColumns, newTail)
 
     val future = datastore.updateMod(tailMod.id, newNode)
 
@@ -97,14 +104,16 @@ class ColumnModifierActor
 
       val columnMod = node.columns(column)
       val columnType = conf.columns(column)._1
-      val _value = datastore.read(columnMod)
-      val newValue = columnType match {
+      //val _value = datastore.read(columnMod)
+      //val newValue =
+      columnType match {
         case aggregatedColumn: AggregatedColumn =>
-          aggregatedColumn.aggregator(_value, value)
-        case _ => value
+          values(columnMod.id) = aggregatedColumn.aggregator(values(columnMod.id), value)
+        case _ => values(columnMod.id) = value
       }
 
-      datastore.updateMod(columnMod.id, newValue)
+      //datastore.updateMod(columnMod.id, newValue)
+      Future { "done" }
     }
   }
 
@@ -116,12 +125,19 @@ class ColumnModifierActor
     val futures = mutable.Buffer[Future[Any]]()
     for ((column, values) <- buffer) {
       for ((key, value) <- values) {
+        if (dependencies.contains(column) && dependencies(column).contains(key)) {
+          val (nodeId, taskRef) = dependencies(column)(key)
+          futures += (taskRef ? NodeUpdatedMessage(nodeId))
+        }
+
         ColumnModifierActor.count -= 1
-        futures += putIn(column, key, value)
+        putIn(column, key, value)
       }
     }
     buffer.clear()
+
     Future.sequence(futures)
+    //Future { "done" }
   }
 
   private val flushNodes = mutable.Map[String, (NodeId, ActorRef)]()
@@ -130,35 +146,53 @@ class ColumnModifierActor
 
   def receive = {
     case GetModMessage(modId: ModId, taskRef: ActorRef) =>
-      val respondTo = sender
-      datastore.getMod(modId, taskRef).onComplete {
-        case Success(v) =>
-          if (v == null) {
-            respondTo ! NullMessage
-          } else {
-            respondTo ! v
-          }
-        case Failure(e) => e.printStackTrace()
+      if (values.contains(modId)) {
+        values(modId) match {
+          case null => sender ! NullMessage
+          case v => sender ! v
+        }
+      } else {
+        val respondTo = sender
+        datastore.getMod(modId, taskRef).onComplete {
+          case Success(v) =>
+            if (v == null) {
+              respondTo ! NullMessage
+            } else {
+              respondTo ! v
+            }
+          case Failure(e) => e.printStackTrace()
+        }
+
+        datastore.addDependency(modId, taskRef)
       }
 
-      datastore.addDependency(modId, taskRef)
-
     case GetModMessage(modId: ModId, null) =>
-      val respondTo = sender
-      datastore.getMod(modId, null).onComplete {
-        case Success(v) =>
-          if (v == null) {
-            respondTo ! NullMessage
-          } else {
-            respondTo ! v
-          }
-        case Failure(e) => e.printStackTrace()
+      if (values.contains(modId)) {
+        values(modId) match {
+          case null => sender ! NullMessage
+          case v => sender ! v
+        }
+      } else {
+        val respondTo = sender
+        datastore.getMod(modId, null).onComplete {
+          case Success(v) =>
+            if (v == null) {
+              respondTo ! NullMessage
+            } else {
+              respondTo ! v
+            }
+          case Failure(e) => e.printStackTrace()
+        }
       }
 
     case GetAdjustableListMessage() =>
       sender ! modList
 
     case PutInMessage(column: String, key: Any, value: Any) =>
+      if (dependencies.contains(column) && dependencies(column).contains(key)) {
+        val (nodeId, taskRef) = dependencies(column)(key)
+        scala.concurrent.Await.result(taskRef ? NodeUpdatedMessage(nodeId), DURATION)
+      }
       putIn(column, key, value) pipeTo sender
 
     case PutAllInMessage(column: String, values: Iterable[(Any, Any)]) =>
@@ -186,6 +220,27 @@ class ColumnModifierActor
       } else {
         sender ! "done"
       }
+
+    case GetFromMessage(parameters: (Any, Iterable[String]), nodeId: NodeId, taskRef: ActorRef) =>
+      val (key, columns) = parameters
+      val output = mutable.Buffer[Any]()
+
+      val node = datastore.read(nodes(key))
+      output += values(node.columns("key").id)
+
+      for (column <- columns) {
+        if (nodeId != -1) {
+          if (!dependencies.contains(column)) {
+            dependencies(column) = mutable.Map[Any, (NodeId, ActorRef)]()
+          }
+
+          dependencies(column)(key) = (nodeId, taskRef)
+        }
+
+        output += values(node.columns(column).id)
+      }
+
+      sender ! output
 
     case ClearMessage() =>
       datastore.clear()

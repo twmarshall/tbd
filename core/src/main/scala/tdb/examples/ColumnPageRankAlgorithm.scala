@@ -41,7 +41,7 @@ class ColumnPageRankAdjust
         putIn(links, values)(c)
       }
 
-      links.getAdjustableList().projection2("edges", i + "", mapper)
+      links.getAdjustableList().projection2("edges", i + "", mapper, links)
       flush(links)
     }
   }

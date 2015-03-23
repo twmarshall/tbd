@@ -23,7 +23,8 @@ import tdb._
 import tdb.TDB._
 
 class ColumnListNode[T]
-    (val columns: Map[String, Mod[Any]],
+    (val key: T,
+     val columns: Map[String, Mod[Any]],
      val nextMod: Mod[ColumnListNode[T]],
      val size: Int = 0) extends Serializable {
 
@@ -31,18 +32,23 @@ class ColumnListNode[T]
       (column1: String,
        column2: String,
        f: (T, Any, Any, Context) => Unit,
-       memo: Memoizer[Unit])
+       memo: Memoizer[Unit],
+       input: ColumnListInput[T])
       (implicit c: Context): Unit = {
-    read_3(columns("key"), columns(column1), columns(column2)) {
-      case (keyValue, column1Value, column2Value) =>
-        f(keyValue.asInstanceOf[T], column1Value, column2Value, c)
+    getFrom(input, (key, Iterable(column1, column2))) {
+      case values =>
+        val iter = values.iterator
+        val keyValue = iter.next.asInstanceOf[T]
+        val column1Value = iter.next
+        val column2Value = iter.next
+        f(keyValue, column1Value, column2Value, c)
     }
 
     readAny(nextMod) {
       case null =>
       case node =>
         memo(node) {
-          node.projection2(column1, column2, f, memo)
+          node.projection2(column1, column2, f, memo, input)
         }
     }
   }
@@ -50,12 +56,12 @@ class ColumnListNode[T]
   override def equals(obj: Any): Boolean = {
     obj match {
       case that: ColumnListNode[T] =>
-        that.columns == this.columns && that.nextMod == this.nextMod
+      that.key == this.key && that.nextMod == this.nextMod
       case _ => false
     }
   }
 
-  override def hashCode() = columns.hashCode() * nextMod.hashCode()
+  override def hashCode() = key.hashCode() * nextMod.hashCode()
 
   //override def toString = "Node(" + chunkMod + ", " + nextMod + ")"
 }

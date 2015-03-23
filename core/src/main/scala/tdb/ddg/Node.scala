@@ -74,12 +74,17 @@ class PutAllNode
      val values: Iterable[(Any, Any)]) extends Node
 
 class PutInNode
-    (val traceable: Traceable[Any, Any],
+    (val traceable: Traceable[Any, Any, Any],
      val parameters: Any) extends Node
 
 class GetNode
     (val input: ListInput[Any, Any],
      val key: Any,
+     val getter: Any => Unit) extends ReexecutableNode
+
+class GetFromNode
+    (val traceable: Traceable[Any, Any, Any],
+     val parameters: Any,
      val getter: Any => Unit) extends ReexecutableNode
 
 class ReadNode

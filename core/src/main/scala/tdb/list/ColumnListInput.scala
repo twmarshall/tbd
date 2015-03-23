@@ -30,7 +30,15 @@ class ColumnListInput[T]
     (val inputId: InputId,
      val hasher: ObjHasher[ActorRef],
      conf: ColumnListConf)
-  extends ListInput[T, Columns] with Traceable[(String, Iterable[(T, Any)]), Int] {
+  extends ListInput[T, Columns]
+  with Traceable[(String, Iterable[(T, Any)]), (T, Iterable[String]), Iterable[Any]] {
+
+  def get(parameters: (T, Iterable[String]), nodeId: NodeId, taskRef: ActorRef): Iterable[Any] = {
+    val datastoreRef = hasher.getObj(parameters._1)
+    Await.result(
+      (datastoreRef ? GetFromMessage(parameters, nodeId, taskRef)).mapTo[Iterable[Any]],
+      DURATION)
+  }
 
   def loadFile(fileName: String) = ???
 
@@ -100,7 +108,8 @@ class ColumnListInput[T]
 
 class ColumnBuffer[T]
     (input: ColumnListInput[T], conf: ColumnListConf)
-  extends InputBuffer[T, Columns] with TraceableBuffer[(String, Iterable[(T, Any)]), Int] {
+  extends InputBuffer[T, Columns]
+  with TraceableBuffer[(String, Iterable[(T, Any)]), (T, Iterable[String]), Iterable[Any]] {
 
   val toPut = Map[String, Map[T, Any]]()
 

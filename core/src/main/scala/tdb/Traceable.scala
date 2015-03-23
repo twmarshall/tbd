@@ -15,15 +15,19 @@
  */
 package tdb
 
+import akka.actor.ActorRef
+
 import tdb.Constants._
 
-trait Traceable[PutType, GetType] {
+trait Traceable[PutType, GetType, ReturnType] {
   def inputId: InputId
 
-  def getTraceableBuffer(): TraceableBuffer[PutType, GetType]
+  def get(parameters: GetType, nodeId: NodeId, taskRef: ActorRef): ReturnType
+
+  def getTraceableBuffer(): TraceableBuffer[PutType, GetType, ReturnType]
 }
 
-trait TraceableBuffer[PutType, GetType] {
+trait TraceableBuffer[PutType, GetType, ReturnType] {
   def putIn(parameters: PutType)
 
   def remove(parameters: Any)

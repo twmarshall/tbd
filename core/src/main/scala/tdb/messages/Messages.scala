@@ -76,3 +76,5 @@ case class RunTaskMessage(adjust: Adjustable[_])
 case class GetTaskDDGMessage()
 case class ClearModsMessage()
 case class ShutdownTaskMessage()
+
+case class GetFromMessage(parameters: (Any, Iterable[String]), nodeId: NodeId, taskRef: ActorRef)

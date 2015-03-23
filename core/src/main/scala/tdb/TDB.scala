@@ -22,6 +22,7 @@ import scala.collection.mutable.Map
 import scala.concurrent.Await
 
 import tdb.Constants._
+import tdb.ddg._
 import tdb.list._
 import tdb.messages._
 import tdb.TDB._
@@ -34,15 +35,14 @@ object TDB {
     input
   }
 
-  var nextFlushId = 0
   def flush[T, U]
       (input: ListInput[T, U])
       (implicit c: Context) {
     val timestamp = c.ddg.addFlush(input.asInstanceOf[ListInput[Any, Any]], c)
-    input.flush(nextFlushId, c.taskRef)
-    c.ddg.nodes(nextFlushId) = timestamp
+    input.flush(c.nextNodeId, c.taskRef)
+    c.ddg.nodes(c.nextNodeId) = timestamp
 
-    nextFlushId += 1
+    c.nextNodeId += 1
     timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
   }
 
@@ -74,9 +74,9 @@ object TDB {
 
 
   def putIn[T]
-      (traceable: Traceable[T, _], parameters: T)
+      (traceable: Traceable[T, _, _], parameters: T)
       (implicit c: Context) {
-    val anyTraceable = traceable.asInstanceOf[Traceable[Any, Any]]
+    val anyTraceable = traceable.asInstanceOf[Traceable[Any, Any, Any]]
     val timestamp = c.ddg.addPutIn(
       anyTraceable, parameters.asInstanceOf[Any], c)
 
@@ -102,6 +102,24 @@ object TDB {
     getter(value)
 
     timestamp.node.currentModId = c.currentModId
+    timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
+  }
+
+  def getFrom[T, U]
+      (traceable: Traceable[_, T, U], parameters: T)
+      (getter: U => Unit)
+      (implicit c: Context) {
+    val getNode = new GetFromNode(
+      traceable.asInstanceOf[Traceable[Any, Any, Any]],
+      parameters.asInstanceOf[Any],
+      getter.asInstanceOf[Any => Unit])
+    val timestamp = c.ddg.nextTimestamp(getNode, c)
+    c.ddg.nodes(c.nextNodeId) = timestamp
+
+    val value = traceable.get(parameters, c.nextNodeId, c.taskRef)
+    getter(value)
+
+    c.nextNodeId += 1
     timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
   }
 

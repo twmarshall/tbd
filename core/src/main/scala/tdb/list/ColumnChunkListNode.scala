@@ -27,7 +27,7 @@ class ColumnChunkListNode[T]
      val nextMod: Mod[ColumnChunkListNode[T]],
      val size: Int = 0) extends Serializable {
 
-  def projection2
+  /*def projection2
       (column1: String,
        column2: String,
        f: (T, Any, Any, Context) => Unit,
@@ -50,7 +50,7 @@ class ColumnChunkListNode[T]
           node.projection2(column1, column2, f, memo)
         }
     }
-  }
+  }*/
 
   def projection2Chunk
       (column1: String,

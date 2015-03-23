@@ -45,7 +45,7 @@ class PartitionedColumnChunkList[T]
   def map[V, W](f: ((T, Columns)) => (V, W))
       (implicit c: Context): PartitionedDoubleChunkList[V, W] = ???
 
-  override def projection2
+  /*override def projection2
       (column1: String, column2: String, f: (T, Any, Any, Context) => Unit)
       (implicit c: Context): Unit = {
     def innerProjection2(i: Int)
@@ -60,7 +60,7 @@ class PartitionedColumnChunkList[T]
     }
 
     innerProjection2(0)
-  }
+  }*/
 
   override def projection2Chunk
       (column1: String,

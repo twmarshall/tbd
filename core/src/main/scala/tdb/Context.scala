@@ -70,7 +70,9 @@ class Context
 
   val buffers = Map[ListInput[Any, Any], InputBuffer[Any, Any]]()
 
-  val bufs = Map[InputId, TraceableBuffer[Any, Any]]()
+  val bufs = Map[InputId, TraceableBuffer[Any, Any, Any]]()
+
+  var nextNodeId = 0
 
   def newModId(): ModId = {
     val newModId = createModId(0, workerId, taskId, nextModId)
@@ -160,6 +162,9 @@ class Context
                   val newValue2 = readId(readNode.modId2)
                   val newValue3 = readId(readNode.modId3)
                   readNode.reader(newValue1, newValue2, newValue3)
+                case getNode: GetFromNode =>
+                  val newValue = getNode.traceable.get(getNode.parameters, -1, taskRef)
+                  getNode.getter(newValue)
               }
 
               if (reexecutionStart < reexecutionEnd) {

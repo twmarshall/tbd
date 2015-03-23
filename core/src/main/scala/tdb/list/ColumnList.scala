@@ -60,13 +60,16 @@ class ColumnList[T]
        ordering: Ordering[T]): DoubleChunkList[T, Columns] = ???
 
   override def projection2
-      (column1: String, column2: String, f: (T, Any, Any, Context) => Unit)
+      (column1: String,
+       column2: String,
+       f: (T, Any, Any, Context) => Unit,
+       input: ColumnListInput[T])
       (implicit c: Context): Unit = {
     val memo = new Memoizer[Unit]()
 
     readAny(head) {
       case null =>
-      case node => node.projection2(column1, column2, f, memo)
+      case node => node.projection2(column1, column2, f, memo, input)
     }
   }
 

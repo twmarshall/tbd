@@ -69,7 +69,7 @@ class DDG {
   }
 
   def addPutIn
-      (traceable: Traceable[Any, Any],
+      (traceable: Traceable[Any, Any, Any],
        parameters: Any,
        c: Context): Timestamp = {
     val putNode = new PutInNode(traceable, parameters)
