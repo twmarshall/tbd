@@ -56,7 +56,7 @@ class WCChunkHashAdjust
       case (chunk, c) =>
         putAll(output, wordcount(Iterable(chunk)))(c)
     }
-    output.flush()
+    flush(output)
     output.getAdjustableList()
   }
 }

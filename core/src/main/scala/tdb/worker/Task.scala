@@ -57,6 +57,11 @@ class Task
 
       (parent ? PebbleMessage(self, modId)) pipeTo sender
 
+    case NodeUpdatedMessage(nodeId: NodeId) =>
+      c.ddg.nodeUpdated(nodeId)
+
+      (parent ? PebbleMessage(self, -1)) pipeTo sender
+
     case ModRemovedMessage(modId: ModId) =>
       c.ddg.modRemoved(modId)
       sender ! "done"

@@ -96,7 +96,7 @@ class DatastoreActor(workerInfo: WorkerInfo)
     case ClearMessage() =>
       datastore.clear()
 
-    case FlushMessage() =>
+    case FlushMessage(nodeId: NodeId, taskRef: ActorRef) =>
       sender ! "done"
 
     case x =>

@@ -170,7 +170,7 @@ class ColumnModifierActor
     case ClearMessage() =>
       datastore.clear()
 
-    case FlushMessage() =>
+    case FlushMessage(nodeId: NodeId, taskRef: ActorRef) =>
       val futures = mutable.Buffer[Future[Any]]()
       for ((column, values) <- buffer) {
         for ((key, value) <- values) {

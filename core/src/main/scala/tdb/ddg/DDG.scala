@@ -33,10 +33,19 @@ class DDG {
   val reads = Map[ModId, Buffer[Timestamp]]()
   val keys = Map[InputId, Map[Any, Buffer[Timestamp]]]()
   val pars = Map[ActorRef, Timestamp]()
+  val nodes = Map[NodeId, Timestamp]()
 
   var updated = TreeSet[Timestamp]()((new TimestampOrdering()).reverse)
 
   val ordering = new Ordering()
+
+  def addFlush
+      (input: ListInput[Any, Any],
+       c: Context): Timestamp = {
+    val flushNode = new FlushNode(input)
+    val timestamp = nextTimestamp(flushNode, c)
+    timestamp
+  }
 
   def addPut
       (input: ListInput[Any, Any],
@@ -232,6 +241,15 @@ class DDG {
 
         timestamp.node.updated = true
       }
+    }
+  }
+
+  def nodeUpdated(nodeId: NodeId) {
+    val timestamp = nodes(nodeId)
+    if (!timestamp.node.updated) {
+      updated += timestamp
+
+      timestamp.node.updated = true
     }
   }
 

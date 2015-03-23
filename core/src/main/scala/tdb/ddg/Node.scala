@@ -62,6 +62,8 @@ class ParNode
   var pebble2 = false
 }
 
+class FlushNode(val input: ListInput[Any, Any]) extends Node
+
 class PutNode
     (val input: ListInput[Any, Any],
      val key: Any,

@@ -186,6 +186,9 @@ class Context
               Await.result(future1, DURATION)
               Await.result(future2, DURATION)
             }
+          case flushNode: FlushNode =>
+            flushNode.input.flush()
+            flushNode.updated = false
           case node: Node => ???
         }
 

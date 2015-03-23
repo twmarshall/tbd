@@ -36,7 +36,7 @@ class ReversePageRankAdjust
       case ((node, edges), c) =>
         put(startingContribs, node, 1.0 / edges(0) * 0.85)(c)
     }
-    startingContribs.flush()
+    flush(startingContribs)
 
     def innerPageRank(i: Int): ListInput[Int, Double] = {
       if (i == 0) {
@@ -61,7 +61,7 @@ class ReversePageRankAdjust
         }
 
         links.foreach(mapper)
-        newRanks.flush()
+        flush(newRanks)
 
         newRanks
       } else {
@@ -85,7 +85,7 @@ class ReversePageRankAdjust
         }
 
         links.foreach(mapper)
-        newRanks.flush()
+        flush(newRanks)
 
         newRanks
       }

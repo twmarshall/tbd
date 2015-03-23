@@ -79,8 +79,10 @@ class DoubleListModifier(datastore: Datastore)
       append(key, value)
     } else {
       val node = datastore.read(nodes(key))
+      val newValueMod = datastore.createMod((key, value))
+      val newNode = new DoubleListNode(newValueMod, node.nextMod)
 
-      datastore.updateMod(node.valueMod.id, (key, value))
+      datastore.updateMod(nodes(key).id, newNode)
     }
   }
 

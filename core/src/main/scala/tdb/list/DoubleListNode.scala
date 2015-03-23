@@ -34,9 +34,11 @@ class DoubleListNode[T, U]
       (f: ((T, U), Context) => Unit,
        memo: Memoizer[Unit])
       (implicit c: Context): Unit = {
-    readAny(valueMod) {
-      case value => f(value, c)
-    }
+    //readAny(valueMod) {
+      //case value => f(value, c)
+    //}
+    val value = c.read(valueMod)
+    f(value, c)
 
     readAny(nextMod) {
       case null =>

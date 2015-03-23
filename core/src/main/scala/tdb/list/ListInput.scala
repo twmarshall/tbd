@@ -30,5 +30,5 @@ trait ListInput[T, U] extends Input[T, U] {
 
   def getBuffer(): InputBuffer[T, U]
 
-  def flush(): Unit
+  def flush(nodeId: NodeId = -1, taskRef: ActorRef = null): Unit
 }

@@ -37,7 +37,7 @@ case class ClearMessage()
 case class CreateListIdsMessage(
   conf: ListConf, workerIndex: Int, numWorkers: Int)
 case class LoadFileMessage(fileName: String)
-case class FlushMessage()
+case class FlushMessage(nodeId: NodeId, taskRef: ActorRef)
 
 // Master
 case class RegisterMutatorMessage()
@@ -66,6 +66,7 @@ case class SplitFileMessage(dir: String, fileName: String, partitions: Int)
 
 // Task
 case class ModUpdatedMessage(modId: ModId)
+case class NodeUpdatedMessage(nodeId: NodeId)
 case class ModRemovedMessage(modId: ModId)
 case class KeyUpdatedMessage(inputId: InputId, key: Any)
 case class KeyRemovedMessage(inputId: InputId, key: Any)

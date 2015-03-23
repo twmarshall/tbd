@@ -38,6 +38,8 @@ object Constants {
 
   type InputId = Int
 
+  type NodeId = Int
+
   def createModId
       (datastoreId: DatastoreId,
        workerId: WorkerId,

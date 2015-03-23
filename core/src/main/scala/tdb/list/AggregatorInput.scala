@@ -45,8 +45,9 @@ class AggregatorInput[T, U]
 
   override def getBuffer() = new AggregatorBuffer(this, conf)
 
-  override def flush(): Unit = {
-    val futures = hasher.objs.values.map(_ ? FlushMessage())
+  override def flush(nodeId: NodeId, taskRef: ActorRef): Unit = {
+    val futures = hasher.objs.values.map(
+      _ ? FlushMessage(nodeId, taskRef: ActorRef))
     import scala.concurrent.ExecutionContext.Implicits.global
     Await.result(Future.sequence(futures), DURATION)
   }

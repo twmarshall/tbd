@@ -16,7 +16,7 @@
 package tdb.datastore
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.pattern.pipe
+import akka.pattern.{ask, pipe}
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -84,6 +84,28 @@ class AggregatorModifierActor
     buf
   }
 
+  private def flush(): Future[Any] = {
+    val futures = mutable.Buffer[Future[Any]]()
+    for ((key, value) <- buffer) {
+      if (conf.valueType.threshold(value)) {
+        if (values.contains(key)) {
+          values(key) = conf.valueType.aggregator(value, values(key))
+        } else {
+          values(key) = value
+        }
+        futures += datastore.informDependents(conf.inputId, key)
+      }
+    }
+    buffer.clear()
+
+    Future.sequence(futures)
+  }
+
+  var flushNode: NodeId = -1
+  var flushTask: ActorRef = null
+
+  var flushNotified = false
+
   def receive = {
 
     case GetAdjustableListMessage() =>
@@ -93,10 +115,20 @@ class AggregatorModifierActor
       sender ! toBuffer()
 
     case PutMessage(key: Any, value: Any) =>
+      if (!flushNotified && flushTask != null) {
+        flushNotified = true
+        scala.concurrent.Await.result(
+          flushTask ? NodeUpdatedMessage(flushNode), DURATION)
+      }
       put(key, value)
       sender ! "done"
 
     case PutAllMessage(values: Iterable[(Any, Any)]) =>
+      if (!flushNotified && flushTask != null) {
+        flushNotified = true
+        scala.concurrent.Await.result(
+          flushTask ? NodeUpdatedMessage(flushNode), DURATION)
+      }
       values.map {
         case (k, v) => put(k, v)
       }
@@ -119,20 +151,18 @@ class AggregatorModifierActor
     case ClearMessage() =>
       datastore.clear()
 
-    case FlushMessage() =>
-      val futures = mutable.Buffer[Future[Any]]()
-      for ((key, value) <- buffer) {
-        if (conf.valueType.threshold(value)) {
-          if (values.contains(key)) {
-            values(key) = conf.valueType.aggregator(value, values(key))
-          } else {
-            values(key) = value
-          }
-          futures += datastore.informDependents(conf.inputId, key)
-        }
+    case FlushMessage(nodeId: NodeId, taskRef: ActorRef) =>
+      if (nodeId != -1 && flushNode != -1 && nodeId != flushNode) {
+        println("nodeId = " + nodeId + " flushNode = " + flushNode)
       }
-      buffer.clear()
-      Future.sequence(futures) pipeTo sender
+      flushNode = nodeId
+      flushTask = taskRef
+      flushNotified = false
+      flush() pipeTo sender
+
+    case FlushMessage(nodeId: NodeId, null) =>
+      flushNotified = false
+      flush() pipeTo sender
 
     case x =>
       log.warning("AggregatorModifierActor Received unhandled message " + x +

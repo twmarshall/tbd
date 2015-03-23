@@ -43,7 +43,7 @@ class PageRankAdjust
         }
 
         links.foreach(mapper)
-        newRanks.flush()
+        flush(newRanks)
 
         newRanks
       } else {
@@ -60,7 +60,7 @@ class PageRankAdjust
         }
 
         links.foreach(mapper)
-        newRanks.flush()
+        flush(newRanks)
 
         newRanks
       }
@@ -136,10 +136,10 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
       }
     }
 
-    val averageError = (error / answer.size).abs
-    println("average error = " + averageError)
-    //println("output = " + out)
-    //println("answer = " + answer)
+    val averageError = (error / answer.size).abs * 100
+    println("average error = " + averageError + "%")
+    //println("output = " + out.sortWith(_._1 < _._1))
+    //println("answer = " + answer.toBuffer.sortWith(_._1 < _._1))
 
     check && averageError < epsilon
   }
