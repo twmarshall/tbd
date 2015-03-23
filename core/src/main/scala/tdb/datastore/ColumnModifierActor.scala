@@ -16,7 +16,7 @@
 package tdb.datastore
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.pattern.pipe
+import akka.pattern.{ask, pipe}
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -112,6 +112,22 @@ class ColumnModifierActor
     nodes.contains(key)
   }
 
+  private def flush(): Future[Any] = {
+    val futures = mutable.Buffer[Future[Any]]()
+    for ((column, values) <- buffer) {
+      for ((key, value) <- values) {
+        ColumnModifierActor.count -= 1
+        futures += putIn(column, key, value)
+      }
+    }
+    buffer.clear()
+    Future.sequence(futures)
+  }
+
+  private val flushNodes = mutable.Map[String, (NodeId, ActorRef)]()
+
+  private var flushNotified = false
+
   def receive = {
     case GetModMessage(modId: ModId, taskRef: ActorRef) =>
       val respondTo = sender
@@ -150,7 +166,6 @@ class ColumnModifierActor
         buffer(column) = mutable.Map[Any, Any]()
       }
 
-      val futures = mutable.Buffer[Future[Any]]()
       for ((key, value) <- values) {
 
         val columnType = conf.columns(column)._1
@@ -164,21 +179,29 @@ class ColumnModifierActor
         }
       }
 
-      sender ! "done"
+      if (!flushNotified && flushNodes.contains(column)) {
+        val (flushNode, flushTask) = flushNodes(column)
+        flushNotified = true
+        (flushTask ? NodeUpdatedMessage(flushNode)) pipeTo sender
+      } else {
+        sender ! "done"
+      }
 
     case ClearMessage() =>
       datastore.clear()
 
     case FlushMessage(nodeId: NodeId, taskRef: ActorRef) =>
-      val futures = mutable.Buffer[Future[Any]]()
-      for ((column, values) <- buffer) {
-        for ((key, value) <- values) {
-          ColumnModifierActor.count -= 1
-          futures += putIn(column, key, value)
-        }
+      for ((column, pair) <- buffer) {
+        assert(!flushNodes.contains(column))
+        flushNodes(column) = (nodeId, taskRef)
       }
-      buffer.clear()
-      Future.sequence(futures) pipeTo sender
+
+      flushNotified = false
+      flush() pipeTo sender
+
+    case FlushMessage(nodeId: NodeId, null) =>
+      flushNotified = false
+      flush() pipeTo sender
 
     case x =>
       log.warning("ModifierActor received unhandled message " + x +

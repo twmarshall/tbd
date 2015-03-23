@@ -39,11 +39,6 @@ class ColumnPageRankAdjust
           ((for (edge <- edges) yield (edge, v)) ++ Iterable(key -> .15))
 
         putIn(links, values)(c)
-
-        /*putIn(links, (i + 1) + "" -> ((key -> .15)))(c)
-        for (edge <- edges) {
-          putIn(links, (i + 1) + "" -> (edge -> v))(c)
-        }*/
       }
 
       links.getAdjustableList().projection2("edges", i + "", mapper)
