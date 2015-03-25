@@ -55,11 +55,15 @@ class FileData
 
   def update(): Int = {
     val updateCount = remainingRuns.head.toInt
-
+    var gotMore = false
     remainingRuns = remainingRuns.tail
 
     for (i <- 1 to updateCount) {
       if (updates.size == 0) {
+        if (gotMore) {
+          println("Warning: the update file is too small.")
+        }
+        gotMore = true
         getMoreUpdates()
       }
 
