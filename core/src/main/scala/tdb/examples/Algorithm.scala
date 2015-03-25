@@ -89,16 +89,14 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
       val gcBefore = getGCTime()
       val before = System.currentTimeMillis()
       runNaive()
-      results("naive") = System.currentTimeMillis() - before
       results("naive-gc") = getGCTime() - gcBefore
+      results("naive") = System.currentTimeMillis() - before -
+        results("naive-gc")
     }
 
     // Initial run.
     actualRuns += "initial"
-    val (initialTime, initialLoad, initialGC) = initial()
-    results("initial") = initialTime
-    results("initial-load") = initialLoad
-    results("initial-gc") = initialGC
+    initial()
 
     if (Experiment.verbosity > 1) {
       if (mapCount != 0) {
@@ -132,7 +130,7 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
     results
   }
 
-  def initial() = {
+  def initial() {
     if (Experiment.verbosity > 1) {
       println("Initial load.")
     }
@@ -155,7 +153,9 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
       assert(checkOutput(output))
     }
 
-    (elapsed, loadElapsed, gcElapsed)
+    results("initial") = elapsed - gcElapsed
+    results("initial-load") = loadElapsed
+    results("initial-gc") = gcElapsed
   }
 
   def update() {
@@ -188,14 +188,14 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
         (oldAverage * oldCount + newValue) / (oldCount + 1)
 
       results(updateSize + "") =
-        averageIn(results(updateSize + ""), elapsed)
+        averageIn(results(updateSize + ""), elapsed - gcElapsed)
       results(updateSize + "-load") =
         averageIn(results(updateSize + "-load"), loadElapsed)
       results(updateSize + "-gc") =
           averageIn(results(updateSize + "-gc"), gcElapsed)
       results(updateSize + "-count") = oldCount + 1
     } else {
-      results(updateSize + "") = elapsed
+      results(updateSize + "") = elapsed - gcElapsed
       results(updateSize + "-load") = loadElapsed
       results(updateSize + "-gc") = gcElapsed
       results(updateSize + "-count") = 1

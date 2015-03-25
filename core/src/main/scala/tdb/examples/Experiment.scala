@@ -16,7 +16,7 @@
 package tdb.examples
 
 import akka.util.Timeout
-import scala.collection.mutable.{ArrayBuffer, Map}
+import scala.collection.mutable
 import scala.concurrent.duration._
 
 import tdb.{Constants, Mutator}
@@ -36,9 +36,9 @@ object Experiment {
 
   var port = 2252
 
-  val allResults = Map[AlgorithmConf, Map[String, Double]]()
+  val allResults = mutable.Map[AlgorithmConf, mutable.Map[String, Double]]()
 
-  val confs = Map[String, List[String]]()
+  val confs = mutable.Map[String, List[String]]()
 
   def round(value: Double): Double = {
     BigDecimal(value).setScale(2, BigDecimal.RoundingMode.HALF_UP).toDouble
@@ -66,34 +66,41 @@ object Experiment {
         print(xValue)
 
         for (line <- confs(lines)) {
-          var total = 0.0
+          val totals = mutable.Buffer[Double]()
           var loadTotal = 0.0
           var gcTotal = 0.0
+          var restTotal = 0.0
           var repeat = 0
 
           for ((conf, results) <- allResults) {
             if (charts == "runs") {
               if (conf(lines) == line &&
                   conf(x) == xValue) {
-                total += results(chart)
+                restTotal += results(chart)
                 loadTotal += results(chart + "-load")
                 gcTotal += results(chart + "-gc")
+                totals += results(chart) + results(chart + "-load") +
+                  results(chart + "-gc")
                 repeat += 1
               }
             } else if (lines == "runs") {
               if ((x == "breakdown" || conf(x) == xValue) &&
                   conf(charts) == chart) {
-                total += results(line)
+                restTotal += results(line)
                 loadTotal += results(line + "-load")
                 gcTotal += results(line + "-gc")
+                totals += results(line) + results(line + "-load") +
+                  results(line + "-gc")
                 repeat += 1
               }
             } else if (x == "runs") {
               if (conf(charts) == chart &&
                   conf(lines) == line) {
-                total += results(xValue)
+                restTotal += results(xValue)
                 loadTotal += results(xValue + "-load")
                 gcTotal += results(xValue + "-gc")
+                totals += results(xValue) + results(xValue + "-load") +
+                  results(xValue + "-gc")
                 repeat += 1
               }
             } else {
@@ -101,10 +108,15 @@ object Experiment {
             }
           }
 
+          val total = round(totals.reduce(_ + _) / repeat)
           val load = round(loadTotal / repeat)
           val gc = round(gcTotal / repeat)
-          val rest = round(total / repeat) - gc
-          val totalAverage = round(load + gc + rest)
+          val rest = round(restTotal / repeat)
+          assert((total - (load + gc + rest)).abs < 0.1)
+          assert(repeat == totals.size)
+
+          val std = round(scala.math.sqrt(totals.map(_ - total)
+            .map(x => x * x).reduce(_ + _) / repeat))
 
           if (chart == "load" || xValue == "load" || line == "load") {
             print("\t" + load)
@@ -112,8 +124,10 @@ object Experiment {
             print("\t" + gc)
           } else if (chart == "rest" || xValue == "rest" || line == "rest") {
             print("\t" + rest)
+          } else if (chart == "std" || xValue == "std" || line == "std") {
+            print("\t" + std)
           } else {
-            print("\t" + totalAverage)
+            print("\t" + total)
           }
         }
         print("\n")
@@ -146,7 +160,7 @@ object Experiment {
     confs("cacheSizes") = conf.cacheSizes()
     confs("epsilons") = conf.epsilons().map(_.toString)
     confs("iters") = conf.iters().map(_.toString)
-    confs("breakdown") = List("load", "gc", "rest", "total")
+    confs("breakdown") = List("load", "gc", "rest", "total", "std")
 
     if (conf.verbosity() > 0) {
       if (!conf.output().contains("runs")) {
@@ -219,19 +233,14 @@ object Experiment {
           epsilon = epsilon)
 
         val alg = algorithm match {
-          case "map" =>
-            new MapAlgorithm(algConf)
+          case "map" => new MapAlgorithm(algConf)
           case "pgrank" => new PageRankAlgorithm(algConf)
           case "cpgr" => new ColumnPageRankAlgorithm(algConf)
           case "rpgr" => new ReversePageRankAlgorithm(algConf)
-          case "wc" =>
-              new WCAlgorithm(algConf)
-          case "wch" =>
-            new WCHashAlgorithm(algConf)
-          case "cw" =>
-            new CWChunkHashAlgorithm(algConf)
-          case "rcw" =>
-            new RandomCWAlgorithm(algConf)
+          case "wc" => new WCAlgorithm(algConf)
+          case "wch" => new WCHashAlgorithm(algConf)
+          case "cw" => new CWChunkHashAlgorithm(algConf)
+          case "rcw" => new RandomCWAlgorithm(algConf)
         }
 
         val results = alg.run()
