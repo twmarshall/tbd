@@ -28,7 +28,7 @@ import tdb.messages._
 
 class DDG {
   var root = new RootNode()
-  debug.TDB.nodes(root) = (Node.getId(), Tag.Root(), null)
+  //debug.TDB.nodes(root) = (Node.getId(), Tag.Root(), null)
 
   val reads = Map[ModId, Buffer[Timestamp]]()
   val keys = Map[InputId, Map[Any, Buffer[Timestamp]]]()
