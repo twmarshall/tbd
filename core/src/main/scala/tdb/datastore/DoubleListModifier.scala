@@ -43,6 +43,10 @@ class DoubleListModifier(datastore: Datastore)
 
     var tail = datastore.createMod(headNode)
 
+    if (headNode == null) {
+      tailMod = tail
+    }
+
     for (key <- keys) {
       headKey = key.asInstanceOf[Any]
 

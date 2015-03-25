@@ -90,6 +90,9 @@ class AggregatorModifierActor
       if (conf.valueType.threshold(value)) {
         if (values.contains(key)) {
           values(key) = conf.valueType.aggregator(value, values(key))
+          if (values(key) == conf.valueType.initialValue) {
+            values -= key
+          }
         } else {
           values(key) = value
         }
