@@ -94,7 +94,7 @@ class ColumnPageRankAlgorithm(_conf: AlgorithmConf)
   }
 
   val columnConf = ColumnListConf(
-    columns = columns, chunkSize = conf.listConf.chunkSize)
+    columns = columns, chunkSize = conf.listConf.chunkSize, partitions = conf.listConf.partitions)
 
   val input = mutator.createList[Int, Array[Int]](columnConf)
     .asInstanceOf[ColumnListInput[Int]]
