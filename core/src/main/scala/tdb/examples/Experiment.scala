@@ -55,12 +55,6 @@ object Experiment {
       print(chart + "\t")
       for (line <- confs(lines)) {
         print(line + "\t")
-        if (conf.displayGC()) {
-          print("no gc\t")
-        }
-        if (conf.displayLoad()) {
-          print("load\t")
-        }
       }
       print("\n")
 
@@ -70,7 +64,7 @@ object Experiment {
         for (line <- confs(lines)) {
           var total = 0.0
           var loadTotal = 0.0
-          var noGCTotal = 0.0
+          var gcTotal = 0.0
           var repeat = 0
 
           for ((conf, results) <- allResults) {
@@ -79,15 +73,15 @@ object Experiment {
                   conf(x) == xValue) {
                 total += results(chart)
                 loadTotal += results(chart + "-load")
-                noGCTotal += results(chart + "-nogc")
+                gcTotal += results(chart + "-gc")
                 repeat += 1
               }
             } else if (lines == "runs") {
-              if (conf(x) == xValue &&
+              if ((x == "breakdown" || conf(x) == xValue) &&
                   conf(charts) == chart) {
                 total += results(line)
                 loadTotal += results(line + "-load")
-                noGCTotal += results(line + "-nogc")
+                gcTotal += results(line + "-gc")
                 repeat += 1
               }
             } else if (x == "runs") {
@@ -95,7 +89,7 @@ object Experiment {
                   conf(lines) == line) {
                 total += results(xValue)
                 loadTotal += results(xValue + "-load")
-                noGCTotal += results(xValue + "-nogc")
+                gcTotal += results(xValue + "-gc")
                 repeat += 1
               }
             } else {
@@ -103,12 +97,19 @@ object Experiment {
             }
           }
 
-          print("\t" + round(total / repeat))
-          if (conf.displayGC()) {
-            print("\t" + round(noGCTotal / repeat))
-          }
-          if (conf.displayLoad()) {
-            print("\t" + round(loadTotal / repeat))
+          val load = round(loadTotal / repeat)
+          val gc = round(gcTotal / repeat)
+          val rest = round(total / repeat) - gc
+          val totalAverage = round(load + gc + rest)
+
+          if (chart == "load" || xValue == "load" || line == "load") {
+            print("\t" + load)
+          } else if (chart == "gc" || xValue == "gc" || line == "gc") {
+            print("\t" + gc)
+          } else if (chart == "rest" || xValue == "rest" || line == "rest") {
+            print("\t" + rest)
+          } else {
+            print("\t" + totalAverage)
           }
         }
         print("\n")
@@ -140,6 +141,7 @@ object Experiment {
     confs("cacheSizes") = conf.cacheSizes()
     confs("epsilons") = conf.epsilons().map(_.toString)
     confs("iters") = conf.iters().map(_.toString)
+    confs("breakdown") = List("load", "gc", "rest", "total")
 
     if (conf.verbosity() > 0) {
       if (!conf.output().contains("runs")) {

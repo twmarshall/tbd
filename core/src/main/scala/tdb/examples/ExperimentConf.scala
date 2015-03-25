@@ -43,10 +43,6 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     descr = "The files to load the input from. If specified, the entire file " +
     "will be used, so --counts will be ignored, and you will probably also " +
     "need to specify --updateFile.")
-  val displayGC = opt[Boolean]("displayGC", default = Some(false),
-    descr = "Should gc times be included in the output.")
-  val displayLoad = opt[Boolean]("displayLoad", default = Some(false),
-    descr = "If true, loading times will be included in output.")
   val iters = opt[List[Int]]("iters", default = Some(List(1)))
   val log = opt[String]("log", default = Some("WARNING"))
   val master = opt[String]("master", default = Some(""),
@@ -63,7 +59,7 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     descr = "If true, run a non-incremental version of the algorithm for" +
     " comparison")
   val output = opt[List[String]]("output", 'o',
-    default = Some(List("algorithms", "runs", "counts")),
+    default = Some(List("counts", "runs", "breakdown")),
     descr = "How to format the printed results - each of 'chart', " +
     "'line', and 'x' must be one of 'algorithms', 'chunkSizes', " +
     "'counts', 'partitons', or 'runs', with one required to be 'runs'.")

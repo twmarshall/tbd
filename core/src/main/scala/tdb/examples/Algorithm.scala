@@ -90,15 +90,15 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
       val before = System.currentTimeMillis()
       runNaive()
       results("naive") = System.currentTimeMillis() - before
-      results("naive-nogc") = results("naive") - (getGCTime() - gcBefore)
+      results("naive-gc") = getGCTime() - gcBefore
     }
 
     // Initial run.
     actualRuns += "initial"
-    val (initialTime, initialLoad, initialNoGC) = initial()
+    val (initialTime, initialLoad, initialGC) = initial()
     results("initial") = initialTime
     results("initial-load") = initialLoad
-    results("initial-nogc") = initialNoGC
+    results("initial-gc") = initialGC
 
     if (Experiment.verbosity > 1) {
       if (mapCount != 0) {
@@ -139,7 +139,7 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
 
     val beforeLoad = System.currentTimeMillis()
     loadInitial()
-    val loadElapsed = naiveLoadElapsed + System.currentTimeMillis() - beforeLoad
+    val loadElapsed = System.currentTimeMillis() - beforeLoad
 
     if (Experiment.verbosity > 1) {
       println("Initial run.")
@@ -149,16 +149,16 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
     val before = System.currentTimeMillis()
     output = mutator.run[Output](adjust)
     val elapsed = System.currentTimeMillis() - before
-    val noGCElapsed = elapsed - (getGCTime() - gcBefore)
+    val gcElapsed = getGCTime() - gcBefore
 
     if (Experiment.check) {
       assert(checkOutput(output))
     }
 
-    (elapsed, loadElapsed, noGCElapsed)
+    (elapsed, loadElapsed, gcElapsed)
   }
 
-  def update() = {
+  def update() {
     if (Experiment.verbosity > 1) {
       println("Updating")
     }
@@ -175,7 +175,7 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
     val before = System.currentTimeMillis()
     mutator.propagate()
     val elapsed = System.currentTimeMillis() - before
-    val noGCElapsed = elapsed - (getGCTime() - gcBefore)
+    val gcElapsed = getGCTime() - gcBefore
 
     if (Experiment.check) {
       assert(checkOutput(output))
@@ -191,18 +191,16 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
         averageIn(results(updateSize + ""), elapsed)
       results(updateSize + "-load") =
         averageIn(results(updateSize + "-load"), loadElapsed)
-      results(updateSize + "-nogc") =
-          averageIn(results(updateSize + "-nogc"), noGCElapsed)
+      results(updateSize + "-gc") =
+          averageIn(results(updateSize + "-gc"), gcElapsed)
       results(updateSize + "-count") = oldCount + 1
     } else {
       results(updateSize + "") = elapsed
       results(updateSize + "-load") = loadElapsed
-      results(updateSize + "-nogc") = noGCElapsed
+      results(updateSize + "-gc") = gcElapsed
       results(updateSize + "-count") = 1
       actualRuns += updateSize + ""
     }
-
-    (elapsed, loadElapsed, noGCElapsed)
   }
 
   private def getGCTime(): Long = {
