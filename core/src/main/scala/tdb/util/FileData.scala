@@ -61,7 +61,8 @@ class FileData
     for (i <- 1 to updateCount) {
       if (updates.size == 0) {
         if (gotMore) {
-          println("Warning: the update file is too small.")
+          println("Warning: the update file is too small, update size = " +
+            updateCount)
         }
         gotMore = true
         getMoreUpdates()
