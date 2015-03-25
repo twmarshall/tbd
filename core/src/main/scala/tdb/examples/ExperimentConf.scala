@@ -39,6 +39,7 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
   val envHomePath = opt[String]("envHomePath",
     default = Some("/tmp/tdb_berkeleydb"), descr = "If using berkeleydb," +
     "the path to where the database should be stored.")
+  val fast = toggle("fast", default = Some(false))
   val files = opt[List[String]]("files", 'f', default = Some(List("")),
     descr = "The files to load the input from. If specified, the entire file " +
     "will be used, so --counts will be ignored, and you will probably also " +

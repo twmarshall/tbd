@@ -24,6 +24,10 @@ import tdb.list.ListConf
 
 object Experiment {
 
+  // If true, the experiment will run faster but the timing may not be
+  // completely accurate.
+  var fast = false
+
   var conf: ExperimentConf = null
 
   var verbosity = 1
@@ -130,6 +134,7 @@ object Experiment {
   }
 
   def run(conf: ExperimentConf) {
+    fast = conf.fast()
     confs("algorithms") = conf.algorithms()
     confs("counts") = conf.counts()
     confs("files") = conf.files()

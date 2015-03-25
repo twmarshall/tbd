@@ -141,13 +141,28 @@ class Worker
       sender ! (newDatastores, hasher)
 
     case SplitFileMessage(dir: String, fileName: String, partitions: Int) =>
-      if (!OS.exists(dir)) {
+      if (tdb.examples.Experiment.fast) {
+        if (!OS.exists(dir)) {
+          OS.mkdir(dir)
+
+          tdb.scripts.Split.main(Array(
+            "-d", dir,
+            "-f", fileName,
+            "-p", partitions + ""))
+        }
+      } else {
+        if (OS.exists(dir)) {
+          OS.rmdir(dir)
+        }
+
         OS.mkdir(dir)
+
         tdb.scripts.Split.main(Array(
           "-d", dir,
           "-f", fileName,
           "-p", partitions + ""))
       }
+
       sender ! "done"
 
     case CreateModMessage(value: Any) =>

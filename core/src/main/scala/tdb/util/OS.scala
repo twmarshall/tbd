@@ -38,4 +38,8 @@ object OS {
   def mkdir(dir: String) {
     s"mkdir -p $dir".!!
   }
+
+  def rmdir(dir: String) {
+    s"rm -r $dir".!
+  }
 }
