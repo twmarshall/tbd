@@ -33,9 +33,20 @@ class GraphData
 
   var remainingRuns = runs
 
+  val n =
+    if (count > averageDegree) {
+      count / averageDegree
+    } else {
+      println("Warning: graph size of " + count + " to small to achieve " +
+        "average degree of " + averageDegree + " using average degree of 2 " +
+        "instead.")
+      count / 2
+    }
+
   def generate() {
-    for (i <- 0 until count) {
-      table(i) = generateEdges(0 until count)
+    val range = 0 until count
+    for (i <- range) {
+      table(i) = generateEdges(range)
       for (edge <- table(i)) {
         log(i + "\t" + edge)
       }
@@ -47,7 +58,6 @@ class GraphData
   private def generateEdges(keys: Iterable[Int] = table.keys) = {
     var edges = Array[Int]()
 
-    val n = keys.size / averageDegree
     for (key <- keys) {
       if (rand.nextInt(n) == 0) {
         edges :+= key
