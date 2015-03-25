@@ -26,14 +26,14 @@ class AlgorithmTests extends FlatSpec with Matchers {
 
   val defaults = Array("--verbosity", "0", "--envHomePath", "asdf")
 
-  val intensity = 10
+  val intensity = sys.env.getOrElse("TDB_INTENSITY", 10)
 
   "MapTest" should "run map successfully." in {
     val conf = new ExperimentConf(
       Array("--algorithms", "map",
             "--chunkSizes", "1",
             "--counts", intensity.toString,
-            "--files", "wiki2.xml",
+            "--files", "input.txt",
             "--partitions", "1", "4") ++ defaults)
 
     Experiment.run(conf)
@@ -43,7 +43,7 @@ class AlgorithmTests extends FlatSpec with Matchers {
             "--chunkSizes", "1", "2",
             "--counts", intensity.toString,
             "--store", "berkeleydb",
-            "--files", "wiki2.xml",
+            "--files", "input.txt",
             "--partitions", "1", "4") ++ defaults)
 
     Experiment.run(berkeleyConf)
