@@ -72,10 +72,6 @@ class Worker
   private val datastores = Map[DatastoreId, ActorRef]()
   datastores(0) = datastore
 
-  // A unique id to assign to tasks forked from this context. The datastore
-  // has TaskId = 0 for the purpose of creating ModIds.
-  private var nextTaskId: TaskId = 1
-
   var nextListId = 0
 
   def receive = {
@@ -83,13 +79,11 @@ class Worker
       sender ! "done"
 
     case CreateTaskMessage(taskId: TaskId, parent: ActorRef) =>
-      val taskProps = Task.props(taskId, workerInfo.workerId, parent, masterRef, datastores)
-      val taskRef = context.actorOf(taskProps, nextTaskId + "")
+      val taskProps = Task.props(
+        taskId, workerInfo.workerId, parent, masterRef, datastores)
+      val taskRef = context.actorOf(taskProps, taskId + "")
 
       sender ! taskRef
-
-      nextTaskId += 1
-
 
     case CreateListIdsMessage
         (listConf: ListConf, workerIndex: Int, numWorkers: Int) =>

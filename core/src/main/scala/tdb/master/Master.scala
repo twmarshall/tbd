@@ -18,6 +18,7 @@ package tdb.master
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.pattern.{ask, pipe}
 import java.io.File
+import scala.collection.mutable
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -42,9 +43,11 @@ class Master extends Actor with ActorLogging {
 
   log.info("Master launched.")
 
+  private val scheduler = new Scheduler()
+
   private val workers = Map[WorkerId, ActorRef]()
 
-  private val tasks = Map[TaskId, (ActorRef, Adjustable[_])]()
+  private val tasks = mutable.Set[TaskInfo]()
 
   private val datastoreRefs = Map[DatastoreId, ActorRef]()
 
@@ -65,10 +68,6 @@ class Master extends Actor with ActorLogging {
 
   private var nextInputId: InputId = 0
 
-  def cycleWorkers() {
-    nextWorker = (incrementWorkerId(nextWorker) % workers.size).toShort
-  }
-
   def receive = {
     // Worker
     case RegisterWorkerMessage(_workerInfo: WorkerInfo) =>
@@ -84,6 +83,7 @@ class Master extends Actor with ActorLogging {
         workerInfo.datastore, context.system)
 
       context.watch(workerRef)
+      scheduler.addWorker(workerRef)
 
       log.info("Registering worker at " + workerRef)
 
@@ -105,19 +105,20 @@ class Master extends Actor with ActorLogging {
       nextTaskId += 1
 
       val workerRef =
-      if (workerId == -1) {
-        workers(nextWorker)
-        cycleWorkers()
-      } else {
-        workers(workerId)
-      }
+        if (workerId == -1) {
+          scheduler.nextWorker()
+        } else {
+          workers(workerId)
+        }
 
-      val f = (workers(nextWorker) ? CreateTaskMessage(taskId, parent))
+      val f = (workerRef ? CreateTaskMessage(taskId, parent))
         .mapTo[ActorRef]
       val respondTo = sender
       f.onComplete {
         case Success(taskRef) =>
-          tasks(taskId) = (taskRef, adjust)
+          val taskInfo = new TaskInfo(
+            taskId, taskRef, adjust, parent, workerRef)
+          tasks += taskInfo
           val outputFuture = taskRef ? RunTaskMessage(adjust)
 
           outputFuture.onComplete {
@@ -142,9 +143,8 @@ class Master extends Actor with ActorLogging {
       val taskId = nextTaskId
       nextTaskId += 1
 
-      val taskRefFuture = workers(nextWorker) ?
-        CreateTaskMessage(taskId, workers(nextWorker))
-      cycleWorkers()
+      val workerRef = scheduler.nextWorker()
+      val taskRefFuture = workerRef ? CreateTaskMessage(taskId, workerRef)
       val taskRef = Await.result(taskRefFuture.mapTo[ActorRef], DURATION)
 
       (taskRef ? RunTaskMessage(adjust)) pipeTo sender
@@ -184,24 +184,22 @@ class Master extends Actor with ActorLogging {
 
     // Datastore
     case CreateModMessage(value: Any) =>
-      (workers(nextWorker) ? CreateModMessage(value)) pipeTo sender
-      cycleWorkers()
+      (scheduler.nextWorker() ? CreateModMessage(value)) pipeTo sender
 
     case CreateModMessage(null) =>
-      (workers(nextWorker) ? CreateModMessage(null)) pipeTo sender
-      cycleWorkers()
+      (scheduler.nextWorker() ? CreateModMessage(null)) pipeTo sender
 
     case GetModMessage(modId: ModId, null) =>
       val datastoreId = getDatastoreId(modId)
       (datastoreRefs(datastoreId) ? GetModMessage(modId, null)) pipeTo sender
 
     case UpdateModMessage(modId: ModId, value: Any, null) =>
-      val datastoreId = getDatastoreId(modId)
-      (datastoreRefs(datastoreId) ? UpdateModMessage(modId, value, null)) pipeTo sender
+      val datastoreRef = datastoreRefs(getDatastoreId(modId))
+      (datastoreRef ? UpdateModMessage(modId, value, null)) pipeTo sender
 
     case UpdateModMessage(modId: ModId, null, null) =>
-      val datastoreId = getDatastoreId(modId)
-      (datastoreRefs(datastoreId) ? UpdateModMessage(modId, null, null)) pipeTo sender
+      val datastoreRef = datastoreRefs(getDatastoreId(modId))
+      (datastoreRef ? UpdateModMessage(modId, null, null)) pipeTo sender
 
     case CreateListMessage(_conf: ListConf) =>
       val futures = Buffer[Future[(Map[DatastoreId, ActorRef], ObjHasher[ActorRef])]]()
@@ -260,8 +258,31 @@ class Master extends Actor with ActorLogging {
 
       sender ! input
 
-    case Terminated(name) =>
-      log.warning("Received Terminated for " + name)
+    case Terminated(deadWorker: ActorRef) =>
+      scheduler.removeWorker(deadWorker)
+
+      val newTasks = mutable.Set[TaskInfo]()
+      log.warning("Received Terminated for " + deadWorker)
+      tasks.map {
+        case info =>
+          if (info.workerRef == deadWorker) {
+            log.warning("Relaunching " + info)
+            val workerRef = scheduler.nextWorker()
+
+            val f = (workerRef ? CreateTaskMessage(info.id, info.parent))
+              .mapTo[ActorRef]
+
+            f.onComplete {
+              case Success(taskRef) =>
+                val taskInfo = new TaskInfo(
+                  info.id, taskRef, info.adjust, info.parent, workerRef)
+                newTasks += taskInfo
+                val outputFuture = taskRef ? RunTaskMessage(info.adjust)
+              case Failure(e) =>
+                e.printStackTrace()
+            }
+          }
+      }
 
     case x =>
       log.warning("Master actor received unhandled message " +
