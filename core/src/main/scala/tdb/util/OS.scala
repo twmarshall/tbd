@@ -42,6 +42,10 @@ object OS {
     numCores
   }
 
+  def isDir(path: String): Boolean = {
+    s"test -d $path".! == 0
+  }
+
   def mkdir(dir: String) {
     s"mkdir -p $dir".!!
   }

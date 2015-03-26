@@ -129,7 +129,11 @@ class WCAlgorithm(_conf: AlgorithmConf)
       if (Experiment.verbosity > 0) {
         println("Reading data from " + conf.file)
       }
-      new FileData(input, conf.file, conf.updateFile, conf.runs)
+      if (OS.isDir(conf.updateFile)) {
+        new DirectoryData(input, conf.file, conf.updateFile, conf.runs)
+      } else {
+        new FileData(input, conf.file, conf.updateFile, conf.runs)
+      }
     }
 
   val adjust =
