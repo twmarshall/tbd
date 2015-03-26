@@ -44,10 +44,12 @@ class Master extends Actor with ActorLogging {
 
   private val workers = Map[WorkerId, ActorRef]()
 
+  private val tasks = Map[TaskId, (ActorRef, Adjustable[_])]()
+
   private val datastoreRefs = Map[DatastoreId, ActorRef]()
 
   // Maps mutatorIds to the Task the mutator's computation was launched on.
-  private val tasks = Map[Int, ActorRef]()
+  private val rootTasks = Map[Int, ActorRef]()
 
   private var nextMutatorId = 0
 
@@ -97,14 +99,35 @@ class Master extends Actor with ActorLogging {
         datastoreRef ! RegisterDatastoreMessage(thatWorkerId, thatDatastoreRef)
       }
 
-    case ScheduleTaskMessage(parent: ActorRef, workerId: WorkerId) =>
+    case ScheduleTaskMessage
+        (parent: ActorRef, workerId: WorkerId, adjust: Adjustable[_]) =>
       val taskId = nextTaskId
       nextTaskId += 1
+
+      val workerRef =
       if (workerId == -1) {
-        (workers(nextWorker) ? CreateTaskMessage(taskId, parent)) pipeTo sender
+        workers(nextWorker)
         cycleWorkers()
       } else {
-        (workers(workerId) ? CreateTaskMessage(taskId, parent)) pipeTo sender
+        workers(workerId)
+      }
+
+      val f = (workers(nextWorker) ? CreateTaskMessage(taskId, parent))
+        .mapTo[ActorRef]
+      val respondTo = sender
+      f.onComplete {
+        case Success(taskRef) =>
+          tasks(taskId) = (taskRef, adjust)
+          val outputFuture = taskRef ? RunTaskMessage(adjust)
+
+          outputFuture.onComplete {
+            case Success(output) =>
+              respondTo ! (taskRef, output)
+            case Failure(e) =>
+              e.printStackTrace()
+          }
+        case Failure(e) =>
+          e.printStackTrace()
       }
 
     // Mutator
@@ -126,15 +149,15 @@ class Master extends Actor with ActorLogging {
 
       (taskRef ? RunTaskMessage(adjust)) pipeTo sender
 
-      tasks(mutatorId) = taskRef
+      rootTasks(mutatorId) = taskRef
 
     case PropagateMutatorMessage(mutatorId: Int) =>
       log.info("Initiating change propagation for mutator " + mutatorId)
 
-      (tasks(mutatorId) ? PropagateTaskMessage) pipeTo sender
+      (rootTasks(mutatorId) ? PropagateTaskMessage) pipeTo sender
 
     case GetMutatorDDGMessage(mutatorId: Int) =>
-      (tasks(mutatorId) ? GetTaskDDGMessage) pipeTo sender
+      (rootTasks(mutatorId) ? GetTaskDDGMessage) pipeTo sender
 
     case ShutdownMutatorMessage(mutatorId: Int) =>
       log.info("Shutting down mutator " + mutatorId)
@@ -144,11 +167,11 @@ class Master extends Actor with ActorLogging {
       }
 
       Stats.clear()
-      if (tasks.contains(mutatorId)) {
-        Await.result(tasks(mutatorId) ? ClearModsMessage, DURATION)
+      if (rootTasks.contains(mutatorId)) {
+        Await.result(rootTasks(mutatorId) ? ClearModsMessage, DURATION)
 
-        val f = tasks(mutatorId) ? ShutdownTaskMessage
-        tasks -= mutatorId
+        val f = rootTasks(mutatorId) ? ShutdownTaskMessage
+        rootTasks -= mutatorId
 
         Await.result(f, DURATION)
       }

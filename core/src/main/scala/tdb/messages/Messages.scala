@@ -44,7 +44,8 @@ case class RegisterMutatorMessage()
 case class RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int)
 case class PropagateMutatorMessage(mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
-case class ScheduleTaskMessage(parent: ActorRef, workerId: WorkerId)
+case class ScheduleTaskMessage(
+  parent: ActorRef, workerId: WorkerId, adjust: Adjustable[_])
 case class ShutdownMutatorMessage(mutatorId: Int)
 
 case class CreateListMessage(conf: ListConf)

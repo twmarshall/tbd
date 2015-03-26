@@ -406,22 +406,27 @@ object TDB {
   def parWithHint[T, U](one: Context => T, workerId1: WorkerId = -1)
       (two: Context => U, workerId2: WorkerId = -1)
       (implicit c: Context): (T, U) = {
-    val future1 = c.masterRef ? ScheduleTaskMessage(c.taskRef, workerId1)
-    val taskRef1 = Await.result(future1.mapTo[ActorRef], DURATION)
+    innerPar(one, workerId1)(two, workerId2)(c)
+  }
 
+  def innerPar[T, U](one: Context => T, workerId1: WorkerId = -1)
+      (two: Context => U, workerId2: WorkerId = -1)
+      (implicit c: Context): (T, U) = {
     val adjust1 = new Adjustable[T] { def run(implicit c: Context) = one(c) }
-    val oneFuture = taskRef1 ? RunTaskMessage(adjust1)
-
-    val future2 = c.masterRef ? ScheduleTaskMessage(c.taskRef, workerId2)
-    val taskRef2 = Await.result(future2.mapTo[ActorRef], DURATION)
+    val future1 = c.masterRef ? ScheduleTaskMessage(
+      c.taskRef, workerId1, adjust1)
 
     val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
-    val twoFuture = taskRef2 ? RunTaskMessage(adjust2)
+    val future2 = c.masterRef ? ScheduleTaskMessage(
+      c.taskRef, workerId2, adjust2)
+
+    val (taskRef1, oneRet) = Await.result(
+      future1.mapTo[(ActorRef, T)], DURATION)
+    val (taskRef2, twoRet) = Await.result(
+      future2.mapTo[(ActorRef, U)], DURATION)
 
     val parNode = c.ddg.addPar(taskRef1, taskRef2, c)
 
-    val oneRet = Await.result(oneFuture, DURATION).asInstanceOf[T]
-    val twoRet = Await.result(twoFuture, DURATION).asInstanceOf[U]
     (oneRet, twoRet)
   }
 
