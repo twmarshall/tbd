@@ -28,7 +28,7 @@ import tdb.TDB._
 import tdb.util._
 
 class WCChunkHashAdjust
-    (list: AdjustableList[String, String], chunkSize: Int)
+    (list: AdjustableList[String, String], words: Set[String])
       extends Adjustable[AdjustableList[String, Int]] {
 
   def wordcount(chunk: Iterable[(String, String)]) = {
@@ -36,10 +36,12 @@ class WCChunkHashAdjust
 
     for (pair <- chunk) {
       for (word <- pair._2.split("\\W+")) {
-        if (counts.contains(word)) {
-          counts(word) += 1
-        } else {
-          counts(word) = 1
+        if (words.contains(word)) {
+          if (counts.contains(word)) {
+            counts(word) += 1
+          } else {
+            counts(word) = 1
+          }
         }
       }
     }
@@ -64,10 +66,19 @@ class WCChunkHashAdjust
 class WCHashAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[AdjustableList[String, Int]](_conf) {
 
+  val wordFile = new BufferedReader(new FileReader("words.txt"))
+
+  var words = Set[String]()
+  var line = wordFile.readLine()
+  while (line != null) {
+    words += line
+    line = wordFile.readLine()
+  }
+
   val input = mutator.createList[String, String](conf.listConf)
 
   val adjust = new WCChunkHashAdjust(
-    input.getAdjustableList(), conf.listConf.chunkSize)
+    input.getAdjustableList(), words)
 
   val data =
     if (conf.file == "") {
@@ -100,9 +111,23 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
     naiveHelper(naiveTable)
   }
 
+  private def countReduce(s: String, counts: Map[String, Int]) = {
+    for (word <- s.split("\\W+")) {
+      if (words.contains(word)) {
+        if (counts.contains(word)) {
+          counts(word) += 1
+        } else {
+          counts(word) = 1
+        }
+      }
+    }
+
+    counts
+  }
+
   private def naiveHelper(input: GenIterable[String] = naiveTable) = {
     input.aggregate(Map[String, Int]())((x, line) =>
-      WCAlgorithm.countReduce(line, x), WCAlgorithm.mutableReduce)
+      countReduce(line, x), WCAlgorithm.mutableReduce)
   }
 
   override def loadInitial() {
@@ -114,16 +139,7 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
   def loadUpdate() = data.update()
 
   def checkOutput(output: AdjustableList[String, Int]) = {
-    val answer = Map[String, Int]()
-    for ((key, value) <- data.table) {
-      for (word <- value.split("\\W+")) {
-        if (answer.contains(word)) {
-          answer(word) += 1
-        } else {
-          answer(word) = 1
-        }
-      }
-    }
+    val answer = naiveHelper(data.table.values)
 
     val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
     val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
