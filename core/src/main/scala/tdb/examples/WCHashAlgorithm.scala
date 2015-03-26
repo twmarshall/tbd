@@ -80,7 +80,7 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
       if (Experiment.verbosity > 0) {
         println("Reading data from " + conf.file)
       }
-      new FileData(
+      new DirectoryData(
         input, conf.file, conf.updateFile, conf.runs)
     }
 
