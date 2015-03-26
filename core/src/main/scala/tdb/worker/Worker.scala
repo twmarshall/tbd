@@ -82,8 +82,8 @@ class Worker
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       sender ! "done"
 
-    case CreateTaskMessage(parent: ActorRef) =>
-      val taskProps = Task.props(nextTaskId, workerInfo.workerId, parent, masterRef, datastores)
+    case CreateTaskMessage(taskId: TaskId, parent: ActorRef) =>
+      val taskProps = Task.props(taskId, workerInfo.workerId, parent, masterRef, datastores)
       val taskRef = context.actorOf(taskProps, nextTaskId + "")
 
       sender ! taskRef

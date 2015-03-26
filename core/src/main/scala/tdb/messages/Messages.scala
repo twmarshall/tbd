@@ -60,7 +60,7 @@ case class RemoveAllMessage(values: Iterable[(Any, Any)])
 
 // Worker
 case class RegisterWorkerMessage(workerInfo: WorkerInfo)
-case class CreateTaskMessage(parent: ActorRef)
+case class CreateTaskMessage(taskId: TaskId, parent: ActorRef)
 case class GetDatastoreMessage()
 case class SplitFileMessage(dir: String, fileName: String, partitions: Int)
 

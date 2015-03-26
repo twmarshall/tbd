@@ -73,10 +73,10 @@ object Constants {
   val akkaConf = """
     akka.actor.provider = akka.remote.RemoteActorRefProvider
 
-    akka.log-dead-letters = off
+    akka.log-dead-letters = 1
 
     akka.remote.enabled-transports = [akka.remote.netty.tcp]
-
+    akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.tcp.maximum-frame-size = 80000000b
   """
 
