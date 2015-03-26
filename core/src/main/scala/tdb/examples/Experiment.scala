@@ -16,6 +16,7 @@
 package tdb.examples
 
 import akka.util.Timeout
+import java.io._
 import scala.collection.mutable
 import scala.concurrent.duration._
 
@@ -55,6 +56,14 @@ object Experiment {
    */
   def printCharts
       (charts: String, lines: String, x: String, conf: ExperimentConf) {
+
+    var writer = new BufferedWriter(new OutputStreamWriter(
+      new FileOutputStream("results.txt"), "utf-8"))
+    def printOut(output: String) {
+      writer.write(output)
+      print(output)
+    }
+
     for (chart <- confs(charts)) {
       print(chart + "\t")
       for (line <- confs(lines)) {
@@ -63,7 +72,7 @@ object Experiment {
       print("\n")
 
       for (xValue <- confs(x)) {
-        print(xValue)
+        printOut(xValue)
 
         for (line <- confs(lines)) {
           val totals = mutable.Buffer[Double]()
@@ -74,8 +83,8 @@ object Experiment {
 
           for ((conf, results) <- allResults) {
             if (charts == "runs") {
-              if (conf(lines) == line &&
-                  conf(x) == xValue) {
+              if ((lines == "breakdown" || conf(lines) == line) &&
+                  (x == "breakdown" || conf(x) == xValue)) {
                 restTotal += results(chart)
                 loadTotal += results(chart + "-load")
                 gcTotal += results(chart + "-gc")
@@ -85,7 +94,7 @@ object Experiment {
               }
             } else if (lines == "runs") {
               if ((x == "breakdown" || conf(x) == xValue) &&
-                  conf(charts) == chart) {
+                  (charts == "breakdown" || conf(charts) == chart)) {
                 restTotal += results(line)
                 loadTotal += results(line + "-load")
                 gcTotal += results(line + "-gc")
@@ -94,8 +103,8 @@ object Experiment {
                 repeat += 1
               }
             } else if (x == "runs") {
-              if (conf(charts) == chart &&
-                  conf(lines) == line) {
+              if ((charts == "breakdown" || conf(charts) == chart) &&
+                  (lines == "breakdown" || conf(lines) == line)) {
                 restTotal += results(xValue)
                 loadTotal += results(xValue + "-load")
                 gcTotal += results(xValue + "-gc")
@@ -119,20 +128,22 @@ object Experiment {
             .map(x => x * x).reduce(_ + _) / repeat))
 
           if (chart == "load" || xValue == "load" || line == "load") {
-            print("\t" + load)
+            printOut("\t" + load)
           } else if (chart == "gc" || xValue == "gc" || line == "gc") {
-            print("\t" + gc)
+            printOut("\t" + gc)
           } else if (chart == "rest" || xValue == "rest" || line == "rest") {
-            print("\t" + rest)
+            printOut("\t" + rest)
           } else if (chart == "std" || xValue == "std" || line == "std") {
-            print("\t" + std)
+            printOut("\t" + std)
           } else {
-            print("\t" + total)
+            printOut("\t" + total)
           }
         }
-        print("\n")
+        printOut("\n")
       }
     }
+
+    writer.close()
   }
 
   def main(args: Array[String]) {

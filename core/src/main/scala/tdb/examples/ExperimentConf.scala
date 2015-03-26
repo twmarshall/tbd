@@ -60,7 +60,7 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     descr = "If true, run a non-incremental version of the algorithm for" +
     " comparison")
   val output = opt[List[String]]("output", 'o',
-    default = Some(List("counts", "runs", "breakdown")),
+    default = Some(List("counts", "breakdown", "runs")),
     descr = "How to format the printed results - each of 'chart', " +
     "'line', and 'x' must be one of 'algorithms', 'chunkSizes', " +
     "'counts', 'partitons', or 'runs', with one required to be 'runs'.")

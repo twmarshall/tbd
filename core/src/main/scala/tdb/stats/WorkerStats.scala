@@ -23,6 +23,7 @@ import scala.collection.mutable.{Buffer, Map}
 import sys.process._
 
 import tdb.messages._
+import tdb.util.FileUtil
 
 object WorkerStats {
 
@@ -78,15 +79,6 @@ class WorkerStats extends Actor with ActorLogging {
   var nextTick = 0
 
   private val webuiRoot = "webui/"
-
-  private def getBytes(path: String): Array[Byte] = {
-    val f = new File("webui/" + path)
-    val buf = new BufferedInputStream(new FileInputStream("webui/" + path))
-    val arr = new Array[Byte](f.length().toInt)
-    buf.read(arr)
-
-    arr
-  }
 
   def writeDatastoreStats() {
     val output = new BufferedWriter(new FileWriter(webuiRoot + "datastore.txt"))
@@ -157,7 +149,8 @@ class WorkerStats extends Actor with ActorLogging {
             val output = command.!!
           }
 
-          request.response.write(getBytes("tasks.png"), "image/png")
+          request.response.write(
+            FileUtil.getBytes("webui/tasks.png"), "image/png")
 
         case GET(Path("/tasks")) =>
           val title = "Tasks"
@@ -173,7 +166,8 @@ class WorkerStats extends Actor with ActorLogging {
           request.response.redirect("/tasks")
 
         case GET(Path("/datastore.png")) =>
-          request.response.write(getBytes("datastore.png"), "image/png")
+          request.response.write(
+            FileUtil.getBytes("webui/datastore.png"), "image/png")
 
         case GET(Path("/datastore")) =>
           val title = "Datastore"
@@ -191,7 +185,8 @@ class WorkerStats extends Actor with ActorLogging {
           request.response.redirect("/datastore")
 
         case GET(Path("/berkeleydb.png")) =>
-          request.response.write(getBytes("berkeleydb.png"), "image/png")
+          request.response.write(
+            FileUtil.getBytes("webui/berkeleydb.png"), "image/png")
 
         case GET(Path("/berkeleydb")) =>
           val title = "BerkeleyDB"

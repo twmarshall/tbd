@@ -15,7 +15,7 @@
  */
 package tdb.util
 
-import java.io.{BufferedReader, File, FileReader}
+import java.io._
 import java.util.regex.Pattern
 
 import tdb.Constants._
@@ -61,5 +61,19 @@ object FileUtil {
       (fileName: String, process: (String, String) => Unit) {
     val f = new File(fileName)
     readKeyValueFile(fileName, f.length, 0, f.length, process)
+  }
+
+  def getBytes(path: String): Array[Byte] = {
+    val f = new File(path)
+
+    if (!f.exists) {
+      Array[Byte]()
+    } else {
+      val buf = new BufferedInputStream(new FileInputStream(path))
+      val arr = new Array[Byte](f.length().toInt)
+      buf.read(arr)
+
+      arr
+    }
   }
 }
