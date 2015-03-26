@@ -20,7 +20,6 @@ for line in file:
     split = string.split(line)
 
     label = split[0]
-    print 'x' + label + 'x'
     if label == "initial":
         labels.append("Initial Run")
     elif label == "naive":
@@ -46,11 +45,15 @@ loadBar = ax.bar(ind, load, width, color='#414FAF', hatch='/')
 gcBar = ax.bar(ind, gc, width, color='#FF6833', bottom=load, hatch='-')
 restBar = ax.bar(ind, rest, width, color='#8BC34A', bottom=gcLoad, hatch='X', yerr=std)
 
-# add some text for labels, title and axes ticks
-ax.set_ylabel('Time (seconds)')
+# Labeling
 ax.set_title('Time to Process Updates')
+
 ax.set_xticks(ind + width/2)
 ax.set_xticklabels(labels)
+
+ax.set_ylabel('Time (seconds)')
+ax.set_ylim(bottom = 0)
+#ax.set_yscale("log")
 
 ax.legend( (loadBar[0], gcBar[0], restBar[0]), ('Load', 'GC', 'Execution') )
 

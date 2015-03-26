@@ -31,6 +31,8 @@ object OS {
     numCores
   }
 
+  def exec(cmd: String): Int = cmd.!
+
   def exists(dir: String): Boolean = {
     s"[ -d $dir ]".! == 0
   }

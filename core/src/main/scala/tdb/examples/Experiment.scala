@@ -22,6 +22,7 @@ import scala.concurrent.duration._
 
 import tdb.{Constants, Mutator}
 import tdb.list.ListConf
+import tdb.util._
 
 object Experiment {
 
@@ -268,6 +269,9 @@ object Experiment {
 
     if (verbosity > 0) {
       printCharts(conf.output()(0), conf.output()(1), conf.output()(2), conf)
+    }
+    if (conf.graphScript() != "") {
+      OS.exec("python graphs/" + conf.graphScript())
     }
   }
 }
