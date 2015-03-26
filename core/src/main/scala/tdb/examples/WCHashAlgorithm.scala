@@ -27,6 +27,41 @@ import tdb.list._
 import tdb.TDB._
 import tdb.util._
 
+class WCHashAdjust
+    (list: AdjustableList[String, String], words: Set[String])
+      extends Adjustable[AdjustableList[String, Int]] {
+
+  def wordcount(pair: (String, String)) = {
+    val counts = Map[String, Int]()
+
+    for (word <- pair._2.split("\\W+")) {
+      if (words.contains(word)) {
+        if (counts.contains(word)) {
+          counts(word) += 1
+        } else {
+          counts(word) = 1
+        }
+      }
+    }
+
+    HashMap(counts.toSeq: _*)
+  }
+
+  def run(implicit c: Context) = {
+    val conf = AggregatorListConf(
+      valueType = AggregatedIntColumn())
+
+    val output = createList[String, Int](conf)
+    list.foreach {
+      case (chunk, c) =>
+        putAll(output, wordcount(chunk))(c)
+    }
+    flush(output)
+    output.getAdjustableList()
+  }
+}
+
+
 class WCChunkHashAdjust
     (list: AdjustableList[String, String], words: Set[String])
       extends Adjustable[AdjustableList[String, Int]] {
@@ -54,9 +89,9 @@ class WCChunkHashAdjust
       valueType = AggregatedIntColumn())
 
     val output = createList[String, Int](conf)
-    list.foreach {
+    list.foreachChunk {
       case (chunk, c) =>
-        putAll(output, wordcount(Iterable(chunk)))(c)
+        putAll(output, wordcount(chunk))(c)
     }
     flush(output)
     output.getAdjustableList()
@@ -77,8 +112,11 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
 
   val input = mutator.createList[String, String](conf.listConf)
 
-  val adjust = new WCChunkHashAdjust(
-    input.getAdjustableList(), words)
+  val adjust =
+    if (conf.listConf.chunkSize > 1)
+      new WCChunkHashAdjust(input.getAdjustableList(), words)
+    else
+      new WCHashAdjust(input.getAdjustableList(), words)
 
   val data =
     if (conf.file == "") {
