@@ -64,15 +64,15 @@ class Worker
     Await.result((masterRef ? message).mapTo[WorkerInfo], DURATION)
   }
 
-  private var nextDatastoreId: DatastoreId = 1
-
-  private val datastore = context.actorOf(
-    DatastoreActor.props(workerInfo), "datastore")
-
   private val datastores = Map[DatastoreId, ActorRef]()
-  datastores(0) = datastore
 
-  var nextListId = 0
+  private var nextDatastoreId: DatastoreId = 1
+  private val datastoreId =
+    createDatastoreId(workerInfo.workerId, nextDatastoreId)
+  nextDatastoreId = (nextDatastoreId + 1).toShort
+  private val datastore = context.actorOf(
+    DatastoreActor.props(workerInfo, datastoreId), "datastore")
+  datastores(datastoreId) = datastore
 
   def receive = {
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
@@ -103,21 +103,24 @@ class Worker
       for (i <- 0 until partitions) {
         val start = workerIndex * partitionsPerWorker + i
         val thisRange = new HashRange(start, start + 1, listConf.partitions)
+        val newDatastoreId = createDatastoreId(
+          workerInfo.workerId, nextDatastoreId)
+        nextDatastoreId = (nextDatastoreId + 1).toShort
 
         val modifierRef = listConf match {
           case aggregatorConf: AggregatorListConf =>
             context.actorOf(AggregatorModifierActor.props(
-              aggregatorConf, workerInfo, nextDatastoreId))
+              aggregatorConf, workerInfo, newDatastoreId))
           case columnConf: ColumnListConf =>
             if (columnConf.chunkSize > 1)
               context.actorOf(ColumnChunkModifierActor.props(
-                columnConf, workerInfo, nextDatastoreId, thisRange))
+                columnConf, workerInfo, newDatastoreId, thisRange))
             else
               context.actorOf(ColumnModifierActor.props(
-                columnConf, workerInfo, nextDatastoreId, thisRange))
+                columnConf, workerInfo, newDatastoreId, thisRange))
           case _ =>
             context.actorOf(ModifierActor.props(
-              listConf, workerInfo, nextDatastoreId, thisRange))
+              listConf, workerInfo, newDatastoreId, thisRange))
         }
 
         val thisHasher = ObjHasher.makeHasher(thisRange, modifierRef)
@@ -127,8 +130,7 @@ class Worker
           hasher = ObjHasher.combineHashers(thisHasher, hasher)
         }
 
-        newDatastores(nextDatastoreId) = modifierRef
-        nextDatastoreId = (nextDatastoreId + 1).toShort
+        newDatastores(newDatastoreId) = modifierRef
       }
       datastores ++= newDatastores
 

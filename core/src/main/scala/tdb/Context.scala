@@ -38,6 +38,9 @@ class Context
 
   val ddg = new DDG()
 
+  val mainDatastoreId = createDatastoreId(workerId, 1)
+  assert(datastores.contains(mainDatastoreId))
+
   var initialRun = true
 
   // Contains a list of mods that have been updated since the last run of change
@@ -75,7 +78,7 @@ class Context
   var nextNodeId = 0
 
   def newModId(): ModId = {
-    val newModId = createModId(0, workerId, taskId, nextModId)
+    val newModId = createModId(mainDatastoreId, taskId, nextModId)
     nextModId += 1
 
     newModId

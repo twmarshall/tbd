@@ -32,15 +32,15 @@ import tdb.util._
 import tdb.worker.WorkerInfo
 
 object DatastoreActor {
-  def props(workerInfo: WorkerInfo): Props =
-    Props(classOf[DatastoreActor], workerInfo)
+  def props(workerInfo: WorkerInfo, id: DatastoreId): Props =
+    Props(classOf[DatastoreActor], workerInfo, id)
 }
 
-class DatastoreActor(workerInfo: WorkerInfo)
+class DatastoreActor(workerInfo: WorkerInfo, id: DatastoreId)
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val datastore = new Datastore(workerInfo, log, workerInfo.workerId)
+  private val datastore = new Datastore(workerInfo, log, id)
 
   def receive = {
     case CreateModMessage(value: Any) =>
@@ -89,9 +89,6 @@ class DatastoreActor(workerInfo: WorkerInfo)
 
     case RemoveModsMessage(modIds: Iterable[ModId], taskRef: ActorRef) =>
       datastore.removeMods(modIds, taskRef) pipeTo sender
-
-    case RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef) =>
-      datastore.datastores(workerId) = datastoreRef
 
     case ClearMessage() =>
       datastore.clear()

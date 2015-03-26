@@ -31,7 +31,6 @@ case class GetModMessage(modId: ModId, task: ActorRef)
 case class UpdateModMessage(modId: ModId, value: Any, task: ActorRef)
 case class RemoveModsMessage(mods: Iterable[ModId], taskRef: ActorRef)
 case class NullMessage()
-case class RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef)
 case class SetIdMessage(workerId: WorkerId)
 case class ClearMessage()
 case class CreateListIdsMessage(

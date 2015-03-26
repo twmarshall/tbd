@@ -136,7 +136,7 @@ class Task
     case ClearModsMessage =>
       val futures = Set[Future[Any]]()
 
-      futures += datastores(0) ? RemoveModsMessage(c.ddg.getMods(), self)
+      futures += datastores(c.mainDatastoreId) ? RemoveModsMessage(c.ddg.getMods(), self)
 
       for ((actorRef, parNode) <- c.ddg.pars) {
         futures += actorRef ? ClearModsMessage

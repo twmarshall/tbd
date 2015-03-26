@@ -55,7 +55,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: DatastoreId
   val datastores = Map[WorkerId, ActorRef]()
 
   def getNewModId(): ModId = {
-    val modId = createModId(id, workerInfo.workerId, 0, nextModId)
+    val modId = createModId(id, 0, nextModId)
     nextModId += 1
     modId
   }
@@ -97,13 +97,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: DatastoreId
     } else if (store.contains(0, modId)) {
       store.get(0, modId)
     } else {
-      val datastoreId = getDatastoreId(modId)
-      assert(datastoreId != id)
-      val future = datastores(datastoreId) ? GetModMessage(modId, taskRef)
-
-      WorkerStats.datastoreMisses += 1
-
-      future
+      ???
     }
   }
 

@@ -295,9 +295,6 @@ class ColumnChunkModifierActor
       }
       Future.sequence(futures) pipeTo sender
 
-    case RegisterDatastoreMessage(workerId: WorkerId, datastoreRef: ActorRef) =>
-      datastore.datastores(workerId) = datastoreRef
-
     case ClearMessage() =>
       datastore.clear()
 

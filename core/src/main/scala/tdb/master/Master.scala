@@ -88,16 +88,11 @@ class Master extends Actor with ActorLogging {
       log.info("Registering worker at " + workerRef)
 
       workers(workerId) = workerRef
-      datastoreRefs(workerId) = datastoreRef
+      datastoreRefs(createDatastoreId(workerId, 1)) = datastoreRef
 
       nextWorkerId = incrementWorkerId(nextWorkerId)
 
       Stats.registeredWorkers += workerInfo
-
-      for ((thatWorkerId, thatDatastoreRef) <- datastoreRefs) {
-        thatDatastoreRef ! RegisterDatastoreMessage(workerId, datastoreRef)
-        datastoreRef ! RegisterDatastoreMessage(thatWorkerId, thatDatastoreRef)
-      }
 
     case ScheduleTaskMessage
         (parent: ActorRef, workerId: WorkerId, adjust: Adjustable[_]) =>
