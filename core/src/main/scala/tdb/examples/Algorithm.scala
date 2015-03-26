@@ -70,6 +70,7 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
   protected def checkOutput(output: Output): Boolean
 
   def run(): Map[String, Double] = {
+    System.gc()
 
     if (Experiment.verbosity > 1) {
       println("Generate")
@@ -96,6 +97,7 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
 
     // Initial run.
     actualRuns += "initial"
+    System.gc()
     initial()
 
     if (Experiment.verbosity > 1) {
@@ -112,6 +114,7 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
 
     var r = 1
     while (hasUpdates()) {
+      System.gc()
       update()
     }
 
