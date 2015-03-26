@@ -68,6 +68,18 @@ class GraphServer extends Actor {
   def receive = {
     case request: HttpRequestEvent =>
       request match {
+        case GET(Path("/")) =>
+          val images = OS.getFilesInDirectory("graphs/")
+            .filter(_.endsWith(".png")).map(_.substring(7))
+
+          var html = "<html><body>"
+
+          for (image <- images) {
+            html += s"<a href='$image'>$image</a><br><br>"
+          }
+
+          html += "</body></html>"
+          request.response.write(html, "text/html")
         case GET(Path(path)) =>
           request.response.write(FileUtil.getBytes("graphs/" + path), "image/png")
       }

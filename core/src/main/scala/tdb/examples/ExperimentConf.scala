@@ -44,6 +44,8 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     descr = "The files to load the input from. If specified, the entire file " +
     "will be used, so --counts will be ignored, and you will probably also " +
     "need to specify --updateFile.")
+  val graphFile = opt[String]("graphFile", default = Some(""),
+    descr = "The file to write the graph to, if graphScript is provided.")
   val graphScript = opt[String]("graphScript", 'g', default = Some(""),
     descr = "A script to run to generate graphs.")
   val iters = opt[List[Int]]("iters", default = Some(List(1)))

@@ -6,6 +6,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 import numpy as np
 import string
+import sys
 
 graph_dir = "graphs/"
 
@@ -66,5 +67,7 @@ def autolabel(rects):
 
 autolabel(restBar)
 
-#plt.show()
-plt.savefig(graph_dir + 'updates2.png')
+if len(sys.argv) > 1:
+    plt.savefig(graph_dir + sys.argv[1])
+else:
+    plt.savefig(graph_dir + "updates2.png")

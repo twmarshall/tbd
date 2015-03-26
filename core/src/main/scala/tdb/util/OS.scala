@@ -18,6 +18,17 @@ package tdb.util
 import sys.process._
 
 object OS {
+  def exec(cmd: String): Int = cmd.!
+
+  def exists(dir: String): Boolean = {
+    s"[ -d $dir ]".! == 0
+  }
+
+  def getFilesInDirectory(dir: String): Iterable[String] = {
+    val findOutput = s"find $dir -type f".!!
+    findOutput.split("\n")
+  }
+
   def getNumCores(): Int = {
     val osName = System.getProperty("os.name")
 
@@ -29,12 +40,6 @@ object OS {
       }
 
     numCores
-  }
-
-  def exec(cmd: String): Int = cmd.!
-
-  def exists(dir: String): Boolean = {
-    s"[ -d $dir ]".! == 0
   }
 
   def mkdir(dir: String) {

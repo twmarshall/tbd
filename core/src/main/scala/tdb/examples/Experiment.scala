@@ -271,7 +271,7 @@ object Experiment {
       printCharts(conf.output()(0), conf.output()(1), conf.output()(2), conf)
     }
     if (conf.graphScript() != "") {
-      OS.exec("python graphs/" + conf.graphScript())
+      OS.exec("python graphs/" + conf.graphScript() + " " + conf.graphFile())
     }
   }
 }
