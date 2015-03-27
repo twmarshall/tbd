@@ -25,4 +25,5 @@ case class WorkerInfo
    numCores: Int,
    storeType: String,
    envHomePath: String,
-   cacheSize: Int)
+   cacheSize: Int,
+   mainDatastoreId: Int)

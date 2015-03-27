@@ -23,6 +23,7 @@ import tdb.{Adjustable, Changeable, TDB}
 import tdb.Constants._
 import tdb.ddg.Node
 import tdb.list.ListConf
+import tdb.util.HashRange
 import tdb.worker.WorkerInfo
 
 // Datastore
@@ -33,8 +34,6 @@ case class RemoveModsMessage(mods: Iterable[ModId], taskRef: ActorRef)
 case class NullMessage()
 case class SetIdMessage(workerId: WorkerId)
 case class ClearMessage()
-case class CreateListIdsMessage(
-  conf: ListConf, workerIndex: Int, numWorkers: Int)
 case class LoadFileMessage(fileName: String)
 case class FlushMessage(nodeId: NodeId, taskRef: ActorRef)
 
@@ -63,6 +62,8 @@ case class RegisterWorkerMessage(workerInfo: WorkerInfo)
 case class CreateTaskMessage(taskId: TaskId, parent: ActorRef)
 case class GetDatastoreMessage()
 case class SplitFileMessage(dir: String, fileName: String, partitions: Int)
+case class CreateDatastoreMessage(
+  listConf: ListConf, datastoreId: TaskId, thisRange: HashRange)
 
 // Task
 case class ModUpdatedMessage(modId: ModId)

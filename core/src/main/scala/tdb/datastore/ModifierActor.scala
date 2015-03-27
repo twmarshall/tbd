@@ -31,7 +31,7 @@ object ModifierActor {
   def props
       (conf: ListConf,
        workerInfo: WorkerInfo,
-       datastoreId: DatastoreId,
+       datastoreId: TaskId,
        range: HashRange): Props =
     Props(classOf[ModifierActor], conf, workerInfo, datastoreId, range)
 }
@@ -39,7 +39,7 @@ object ModifierActor {
 class ModifierActor
     (conf: ListConf,
      workerInfo: WorkerInfo,
-     datastoreId: DatastoreId,
+     datastoreId: TaskId,
      range: HashRange)
   extends Actor with ActorLogging {
   import context.dispatcher

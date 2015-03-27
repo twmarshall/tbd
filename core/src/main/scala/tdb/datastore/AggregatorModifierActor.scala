@@ -31,14 +31,14 @@ object AggregatorModifierActor {
   def props
       (conf: AggregatorListConf,
        workerInfo: WorkerInfo,
-       datastoreId: DatastoreId): Props =
+       datastoreId: TaskId): Props =
     Props(classOf[AggregatorModifierActor], conf, workerInfo, datastoreId)
 }
 
 class AggregatorModifierActor
     (conf: AggregatorListConf,
      workerInfo: WorkerInfo,
-     datastoreId: DatastoreId)
+     datastoreId: TaskId)
   extends Actor with ActorLogging {
   import context.dispatcher
 

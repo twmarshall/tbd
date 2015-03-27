@@ -25,8 +25,6 @@ object Constants {
 
   type WorkerId = Short
 
-  type DatastoreId = Int
-
   // The first 16 bits of a TaskId represent the Worker the Task is running on.
   // This allows us to generate unique ids in parallel.
   type TaskId = Int
@@ -41,7 +39,7 @@ object Constants {
   type NodeId = Int
 
   def createModId
-      (datastoreId: DatastoreId,
+      (datastoreId: TaskId,
        taskId: TaskId,
        nextModId: Int): ModId = {
     var newModId: Long = datastoreId
@@ -50,22 +48,12 @@ object Constants {
     newModId = newModId << 16
     newModId += nextModId
 
-    //assert(getDatastoreId(newModId) == datastoreId)
+    assert(getDatastoreId(newModId) == datastoreId)
     newModId
   }
 
-  def getDatastoreId(modId: ModId): DatastoreId = {
+  def getDatastoreId(modId: ModId): TaskId = {
     (modId >> 32).toInt
-  }
-
-  def createDatastoreId
-      (workerId: WorkerId,
-       nextDatastoreId: Int): DatastoreId = {
-    var newDatastoreId: Int = workerId
-    newDatastoreId = newDatastoreId << 16
-    newDatastoreId += nextDatastoreId
-
-    newDatastoreId
   }
 
   def incrementWorkerId(workerId: WorkerId): WorkerId = {

@@ -32,7 +32,7 @@ object ColumnChunkModifierActor {
   def props
       (conf: ColumnListConf,
        workerInfo: WorkerInfo,
-       datastoreId: DatastoreId,
+       datastoreId: TaskId,
        range: HashRange): Props =
     Props(classOf[ColumnChunkModifierActor], conf, workerInfo, datastoreId, range)
 }
@@ -40,7 +40,7 @@ object ColumnChunkModifierActor {
 class ColumnChunkModifierActor
     (conf: ColumnListConf,
      workerInfo: WorkerInfo,
-     datastoreId: DatastoreId,
+     datastoreId: TaskId,
      range: HashRange)
   extends Actor with ActorLogging {
   import context.dispatcher

@@ -32,11 +32,11 @@ import tdb.util._
 import tdb.worker.WorkerInfo
 
 object DatastoreActor {
-  def props(workerInfo: WorkerInfo, id: DatastoreId): Props =
+  def props(workerInfo: WorkerInfo, id: TaskId): Props =
     Props(classOf[DatastoreActor], workerInfo, id)
 }
 
-class DatastoreActor(workerInfo: WorkerInfo, id: DatastoreId)
+class DatastoreActor(workerInfo: WorkerInfo, id: TaskId)
   extends Actor with ActorLogging {
   import context.dispatcher
 

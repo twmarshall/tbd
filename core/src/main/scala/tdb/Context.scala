@@ -29,17 +29,14 @@ import tdb.worker.Task
 
 class Context
     (taskId: TaskId,
-     workerId: WorkerId,
+     val mainDatastoreId: TaskId,
      val taskRef: ActorRef,
      val masterRef: ActorRef,
-     datastores: Map[DatastoreId, ActorRef],
+     datastores: Map[TaskId, ActorRef],
      val log: LoggingAdapter)
     (implicit val ec: ExecutionContext) {
 
   val ddg = new DDG()
-
-  val mainDatastoreId = createDatastoreId(workerId, 1)
-  assert(datastores.contains(mainDatastoreId))
 
   var initialRun = true
 

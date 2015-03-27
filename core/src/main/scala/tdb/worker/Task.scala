@@ -30,25 +30,26 @@ import tdb.stats.WorkerStats
 object Task {
   def props
       (taskId: TaskId,
-       workerId: WorkerId,
+       mainDatastoreId: TaskId,
        parent: ActorRef,
        masterRef: ActorRef,
-       datastores: Map[DatastoreId, ActorRef]): Props =
-    Props(classOf[Task], taskId, workerId, parent, masterRef, datastores)
+       datastores: Map[TaskId, ActorRef]): Props =
+    Props(classOf[Task], taskId, mainDatastoreId, parent, masterRef, datastores)
 }
 
 class Task
     (taskId: TaskId,
-     workerId: WorkerId,
+     mainDatastoreId: TaskId,
      parent: ActorRef,
      masterRef: ActorRef,
-     datastores: Map[DatastoreId, ActorRef])
+     datastores: Map[TaskId, ActorRef])
   extends Actor with ActorLogging {
   import context.dispatcher
 
   WorkerStats.numTasks += 1
 
-  private val c = new Context(taskId, workerId, self, masterRef, datastores, log)
+  private val c = new Context(
+    taskId, mainDatastoreId, self, masterRef, datastores, log)
 
   def receive = {
     case ModUpdatedMessage(modId: ModId) =>

@@ -49,7 +49,7 @@ class Master extends Actor with ActorLogging {
 
   private val tasks = mutable.Set[TaskInfo]()
 
-  private val datastoreRefs = Map[DatastoreId, ActorRef]()
+  private val datastoreRefs = Map[TaskId, ActorRef]()
 
   // Maps mutatorIds to the Task the mutator's computation was launched on.
   private val rootTasks = Map[Int, ActorRef]()
@@ -68,11 +68,56 @@ class Master extends Actor with ActorLogging {
 
   private var nextInputId: InputId = 0
 
+  private def createPartitions
+      (workerId: WorkerId,
+       workerRef: ActorRef,
+       listConf: ListConf,
+       workerIndex: Int) = {
+    val numWorkers = workers.size
+
+    val partitionsPerWorker = listConf.partitions / numWorkers
+    val partitions =
+      if (workerIndex == numWorkers - 1 &&
+          listConf.partitions % numWorkers != 0) {
+        numWorkers % partitionsPerWorker
+      } else {
+        partitionsPerWorker
+      }
+
+    val newDatastores = Map[TaskId, ActorRef]()
+    var hasher: ObjHasher[ActorRef] = null
+    for (i <- 0 until partitions) {
+      val start = workerIndex * partitionsPerWorker + i
+      val thisRange = new HashRange(start, start + 1, listConf.partitions)
+      val taskId = nextTaskId
+      nextTaskId += 1
+
+      val modifierRef = Await.result(
+        (workerRef ? CreateDatastoreMessage(
+          listConf, taskId, thisRange)).mapTo[ActorRef],
+        DURATION)
+
+      val thisHasher = ObjHasher.makeHasher(thisRange, modifierRef)
+      if (hasher == null) {
+        hasher = thisHasher
+      } else {
+        hasher = ObjHasher.combineHashers(thisHasher, hasher)
+      }
+
+      datastoreRefs(taskId) = modifierRef
+    }
+    hasher
+  }
+
   def receive = {
     // Worker
     case RegisterWorkerMessage(_workerInfo: WorkerInfo) =>
       val workerId = nextWorkerId
-      val workerInfo = _workerInfo.copy(workerId = workerId)
+      val taskId = nextTaskId
+      nextTaskId += 1
+
+      val workerInfo = _workerInfo.copy(
+        workerId = workerId, mainDatastoreId = taskId)
       sender ! workerInfo
 
       totalCores += workerInfo.numCores
@@ -88,7 +133,7 @@ class Master extends Actor with ActorLogging {
       log.info("Registering worker at " + workerRef)
 
       workers(workerId) = workerRef
-      datastoreRefs(createDatastoreId(workerId, 1)) = datastoreRef
+      datastoreRefs(taskId) = datastoreRef
 
       nextWorkerId = incrementWorkerId(nextWorkerId)
 
@@ -197,7 +242,7 @@ class Master extends Actor with ActorLogging {
       (datastoreRef ? UpdateModMessage(modId, null, null)) pipeTo sender
 
     case CreateListMessage(_conf: ListConf) =>
-      val futures = Buffer[Future[(Map[DatastoreId, ActorRef], ObjHasher[ActorRef])]]()
+      val futures = Buffer[Future[(Map[TaskId, ActorRef], ObjHasher[ActorRef])]]()
 
       val inputId = nextInputId
       nextInputId += 1
@@ -210,26 +255,19 @@ class Master extends Actor with ActorLogging {
         }
 
       var index = 0
+      var hasher: ObjHasher[ActorRef] = null
       for ((workerId, workerRef) <- workers) {
-        val future = {
-          val message = CreateListIdsMessage(conf, index, workers.size)
-          workerRef ? message
+        val thisHasher = createPartitions(workerId, workerRef, conf, index)
+
+        if (hasher == null) {
+          hasher = thisHasher
+        } else {
+          hasher = ObjHasher.combineHashers(hasher, thisHasher)
         }
 
-        futures += future.mapTo[(Map[DatastoreId, ActorRef], ObjHasher[ActorRef])]
         index += 1
       }
 
-      var hasher: ObjHasher[ActorRef] = null
-      Await.result(Future.sequence(futures), DURATION).foreach {
-        case (newDatastores, thisHasher) =>
-          if (hasher == null) {
-            hasher = thisHasher
-          } else {
-            hasher = ObjHasher.combineHashers(hasher, thisHasher)
-          }
-          datastoreRefs ++= newDatastores
-      }
       assert(hasher.isComplete())
 
       val input = conf match {

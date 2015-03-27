@@ -30,7 +30,7 @@ import tdb.stats.WorkerStats
 import tdb.worker.WorkerInfo
 import tdb.util._
 
-class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: DatastoreId)
+class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
     (implicit ec: ExecutionContext) {
 
   private val store =
@@ -57,6 +57,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: DatastoreId
   def getNewModId(): ModId = {
     val modId = createModId(id, 0, nextModId)
     nextModId += 1
+
     modId
   }
 
@@ -97,6 +98,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: DatastoreId
     } else if (store.contains(0, modId)) {
       store.get(0, modId)
     } else {
+      println("?? " + id + " " + getDatastoreId(modId) + " " + modId + " " + this)
       ???
     }
   }

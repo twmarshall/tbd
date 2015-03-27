@@ -49,8 +49,8 @@ class Worker
 
   log.info("Worker launched.")
 
-  private val workerInfo = {
-    val workerInfo = WorkerInfo(
+  private val info = {
+    val info = WorkerInfo(
       -1,
       systemURL + "/user/worker",
       systemURL + "/user/worker/datastore",
@@ -58,21 +58,18 @@ class Worker
       OS.getNumCores(),
       conf.storeType(),
       conf.envHomePath(),
-      conf.cacheSize())
-    val message = RegisterWorkerMessage(workerInfo)
+      conf.cacheSize(),
+      -1)
+    val message = RegisterWorkerMessage(info)
 
     Await.result((masterRef ? message).mapTo[WorkerInfo], DURATION)
   }
 
-  private val datastores = Map[DatastoreId, ActorRef]()
+  private val datastores = Map[TaskId, ActorRef]()
 
-  private var nextDatastoreId: DatastoreId = 1
-  private val datastoreId =
-    createDatastoreId(workerInfo.workerId, nextDatastoreId)
-  nextDatastoreId = (nextDatastoreId + 1).toShort
   private val datastore = context.actorOf(
-    DatastoreActor.props(workerInfo, datastoreId), "datastore")
-  datastores(datastoreId) = datastore
+    DatastoreActor.props(info, info.mainDatastoreId), "datastore")
+  datastores(info.mainDatastoreId) = datastore
 
   def receive = {
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
@@ -80,61 +77,33 @@ class Worker
 
     case CreateTaskMessage(taskId: TaskId, parent: ActorRef) =>
       val taskProps = Task.props(
-        taskId, workerInfo.workerId, parent, masterRef, datastores)
+        taskId, info.mainDatastoreId, parent, masterRef, datastores)
       val taskRef = context.actorOf(taskProps, taskId + "")
 
       sender ! taskRef
 
-    case CreateListIdsMessage
-        (listConf: ListConf, workerIndex: Int, numWorkers: Int) =>
-      log.debug("CreateListIdsMessage " + listConf)
-
-      val partitionsPerWorker = listConf.partitions / numWorkers
-      val partitions =
-        if (workerIndex == numWorkers - 1 &&
-            listConf.partitions % numWorkers != 0) {
-          numWorkers % partitionsPerWorker
-        } else {
-          partitionsPerWorker
-        }
-
-      val newDatastores = Map[DatastoreId, ActorRef]()
-      var hasher: ObjHasher[ActorRef] = null
-      for (i <- 0 until partitions) {
-        val start = workerIndex * partitionsPerWorker + i
-        val thisRange = new HashRange(start, start + 1, listConf.partitions)
-        val newDatastoreId = createDatastoreId(
-          workerInfo.workerId, nextDatastoreId)
-        nextDatastoreId = (nextDatastoreId + 1).toShort
-
-        val modifierRef = listConf match {
-          case aggregatorConf: AggregatorListConf =>
-            context.actorOf(AggregatorModifierActor.props(
-              aggregatorConf, workerInfo, newDatastoreId))
-          case columnConf: ColumnListConf =>
-            if (columnConf.chunkSize > 1)
-              context.actorOf(ColumnChunkModifierActor.props(
-                columnConf, workerInfo, newDatastoreId, thisRange))
-            else
-              context.actorOf(ColumnModifierActor.props(
-                columnConf, workerInfo, newDatastoreId, thisRange))
-          case _ =>
-            context.actorOf(ModifierActor.props(
-              listConf, workerInfo, newDatastoreId, thisRange))
-        }
-
-        val thisHasher = ObjHasher.makeHasher(thisRange, modifierRef)
-        if (hasher == null) {
-          hasher = thisHasher
-        } else {
-          hasher = ObjHasher.combineHashers(thisHasher, hasher)
-        }
-
-        newDatastores(newDatastoreId) = modifierRef
+    case CreateDatastoreMessage
+        (listConf: ListConf,
+         datastoreId: TaskId,
+         thisRange: HashRange) =>
+      val modifierRef = listConf match {
+        case aggregatorConf: AggregatorListConf =>
+          context.actorOf(AggregatorModifierActor.props(
+            aggregatorConf, info, datastoreId))
+        case columnConf: ColumnListConf =>
+          if (columnConf.chunkSize > 1)
+            context.actorOf(ColumnChunkModifierActor.props(
+              columnConf, info, datastoreId, thisRange))
+          else
+            context.actorOf(ColumnModifierActor.props(
+              columnConf, info, datastoreId, thisRange))
+        case _ =>
+          context.actorOf(ModifierActor.props(
+            listConf, info, datastoreId, thisRange))
       }
-      datastores ++= newDatastores
+      datastores(datastoreId) = modifierRef
+      sender ! modifierRef
 
-      sender ! (newDatastores, hasher)
 
     case SplitFileMessage(dir: String, fileName: String, partitions: Int) =>
       if (tdb.examples.Experiment.fast) {
