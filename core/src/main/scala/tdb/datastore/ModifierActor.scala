@@ -166,7 +166,7 @@ class ModifierActor
     case ClearMessage() =>
       datastore.clear()
 
-    case FlushMessage(nodeId: NodeId, taskRef: ActorRef) =>
+    case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
       sender ! "done"
 
     case x =>

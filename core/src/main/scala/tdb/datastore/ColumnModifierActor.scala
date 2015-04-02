@@ -245,7 +245,7 @@ class ColumnModifierActor
     case ClearMessage() =>
       datastore.clear()
 
-    case FlushMessage(nodeId: NodeId, taskRef: ActorRef) =>
+    case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
       for ((column, pair) <- buffer) {
         assert(!flushNodes.contains(column))
         flushNodes(column) = (nodeId, taskRef)
@@ -254,7 +254,7 @@ class ColumnModifierActor
       flushNotified = false
       flush() pipeTo sender
 
-    case FlushMessage(nodeId: NodeId, null) =>
+    case FlushMessage(nodeId: NodeId, null, initialRun: Boolean) =>
       flushNotified = false
       flush() pipeTo sender
 

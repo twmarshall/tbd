@@ -39,7 +39,7 @@ object TDB {
       (input: ListInput[T, U])
       (implicit c: Context) {
     val timestamp = c.ddg.addFlush(input.asInstanceOf[ListInput[Any, Any]], c)
-    input.flush(c.nextNodeId, c.taskRef)
+    input.flush(c.nextNodeId, c.taskRef, c.initialRun)
     c.ddg.nodes(c.nextNodeId) = timestamp
 
     c.nextNodeId += 1

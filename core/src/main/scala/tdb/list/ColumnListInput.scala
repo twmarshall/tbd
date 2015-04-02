@@ -99,8 +99,10 @@ class ColumnListInput[T]
   def getTraceableBuffer() =
     new ColumnBuffer(this, conf)
 
-  override def flush(nodeId: NodeId, taskRef: ActorRef): Unit = {
-    val futures = hasher.objs.values.map(_ ? FlushMessage(nodeId, taskRef))
+  override def flush
+      (nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean): Unit = {
+    val futures = hasher.objs.values.map(
+      _ ? FlushMessage(nodeId, taskRef, initialRun))
     import scala.concurrent.ExecutionContext.Implicits.global
     Await.result(Future.sequence(futures), DURATION)
   }

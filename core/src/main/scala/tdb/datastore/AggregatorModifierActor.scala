@@ -84,10 +84,10 @@ class AggregatorModifierActor
     buf
   }
 
-  private def flush(): Future[Any] = {
+  private def flush(initialRun: Boolean): Future[Any] = {
     val futures = mutable.Buffer[Future[Any]]()
     for ((key, value) <- buffer) {
-      if (conf.valueType.threshold(value)) {
+      if (initialRun || conf.valueType.threshold(value)) {
         if (values.contains(key)) {
           values(key) = conf.valueType.aggregator(value, values(key))
           if (values(key) == conf.valueType.initialValue) {
@@ -154,18 +154,18 @@ class AggregatorModifierActor
     case ClearMessage() =>
       datastore.clear()
 
-    case FlushMessage(nodeId: NodeId, taskRef: ActorRef) =>
+    case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
       if (nodeId != -1 && flushNode != -1 && nodeId != flushNode) {
         println("nodeId = " + nodeId + " flushNode = " + flushNode)
       }
       flushNode = nodeId
       flushTask = taskRef
       flushNotified = false
-      flush() pipeTo sender
+      flush(initialRun) pipeTo sender
 
-    case FlushMessage(nodeId: NodeId, null) =>
+    case FlushMessage(nodeId: NodeId, null, initialRun: Boolean) =>
       flushNotified = false
-      flush() pipeTo sender
+      flush(initialRun) pipeTo sender
 
     case x =>
       log.warning("AggregatorModifierActor Received unhandled message " + x +

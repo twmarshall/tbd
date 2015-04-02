@@ -29,7 +29,7 @@ class PageRankAdjust
 
   def run(implicit c: Context) = {
     val aggregatorConf = AggregatorListConf(
-      valueType = AggregatedDoubleColumn())
+      valueType = AggregatedDoubleColumn(epsilon))
 
     def innerPageRank(i: Int): ListInput[Int, Double] = {
       if (i == 1) {
@@ -128,16 +128,25 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
     val answer = naiveHelper(data.table)
 
     var check = out.size == answer.size
-    var error = 0.0
+    var totalError = 0.0
+    var maxError = 0.0
     for ((node, rank) <- out) {
-      error += (answer(node) - rank) / answer(node)
       if (!answer.contains(node)) {
         check = false
+      } else {
+        val thisError = (answer(node) - rank) / answer(node)
+
+        if (thisError > maxError) {
+          maxError = thisError
+        }
+
+        totalError += thisError
       }
     }
 
-    val averageError = (error / answer.size).abs * 100
+    val averageError = (totalError / answer.size).abs * 100
     println("average error = " + averageError + "%")
+    println("max error = " + (maxError * 100) + "%")
     //println("output = " + out.sortWith(_._1 < _._1))
     //println("answer = " + answer.toBuffer.sortWith(_._1 < _._1))
 
