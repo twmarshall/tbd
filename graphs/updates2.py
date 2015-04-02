@@ -16,6 +16,7 @@ labels = []
 load = []
 gc = []
 rest = []
+total = []
 std = []
 for line in file:
     split = string.split(line)
@@ -31,10 +32,14 @@ for line in file:
     load.append(float(split[1]))
     gc.append(float(split[2]))
     rest.append(float(split[3]))
-    std.append(float(split[4]))
+    total.append(float(split[4]))
+    std.append(float(split[5]))
 
-width = 0.35       # the width of the bars
-ind = np.arange(len(load))  # the x locations for the groups
+width = .5
+
+x = np.arange(len(load)) + .5  # the x locations for the groups
+#for i in 
+#    x.append(i + 1)
 
 fig, ax = plt.subplots()
 
@@ -42,18 +47,19 @@ gcLoad = []
 for i in range(0, len(load)):
     gcLoad.append(load[i] + gc[i])
 
-loadBar = ax.bar(ind, load, width, color='#414FAF', hatch='/')
-gcBar = ax.bar(ind, gc, width, color='#FF6833', bottom=load, hatch='-')
-restBar = ax.bar(ind, rest, width, color='#8BC34A', bottom=gcLoad, hatch='X', yerr=std)
+loadBar = ax.bar(x, load, width, color='#414FAF', hatch='/')
+gcBar = ax.bar(x, gc, width, color='#FF6833', bottom=load, hatch='-')
+restBar = ax.bar(x, rest, width, color='#8BC34A', bottom=gcLoad, hatch='X', yerr=std)
 
 # Labeling
-ax.set_title('Time to Process Updates')
+ax.set_title('Initial Setup')
 
-ax.set_xticks(ind + width/2)
+ax.set_xticks(x + width/2)
 ax.set_xticklabels(labels)
 
 ax.set_ylabel('Time (seconds)')
-ax.set_ylim(bottom = 0)
+ax.set_ylim(bottom = 0, top = 15000)
+ax.set_xlim(0, 2.5)
 #ax.set_yscale("log")
 
 ax.legend( (loadBar[0], gcBar[0], restBar[0]), ('Load', 'GC', 'Execution') )
