@@ -204,6 +204,9 @@ class Master extends Actor with ActorLogging {
     case GetMutatorDDGMessage(mutatorId: Int) =>
       (rootTasks(mutatorId) ? GetTaskDDGMessage) pipeTo sender
 
+    case PrintMutatorDDGDotsMessage(mutatorId, nextName, output) =>
+      (rootTasks(mutatorId) ? PrintDDGDotsMessage(nextName, output)) pipeTo sender
+
     case ShutdownMutatorMessage(mutatorId: Int) =>
       log.info("Shutting down mutator " + mutatorId)
 

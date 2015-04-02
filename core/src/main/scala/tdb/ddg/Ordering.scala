@@ -271,12 +271,10 @@ class Ordering {
   }
 
   def getChildren(start: Timestamp, end: Timestamp): Buffer[Timestamp] = {
-    println("getChildren " + start + " " + end)
     val children = Buffer[Timestamp]()
 
     var time = start.getNext()
     while (time != end) {
-      println(time + " " + end)
       children += time
       time = time.end.getNext()
     }

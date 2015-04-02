@@ -66,7 +66,7 @@ object DDG {
   //Recursivley creates a visualizer DDG from a TDB DDG.
   def create(ddg: tdb.ddg.DDG): DDG = {
 
-    val newNode = new Node(ddg.root)
+    val newNode = new Node(ddg.root.node)
     val result = new DDG(newNode)
 
     result.nodes += newNode

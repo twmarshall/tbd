@@ -16,6 +16,7 @@
 package tdb.messages
 
 import akka.actor.ActorRef
+import java.io.BufferedWriter
 import scala.collection.mutable.{Map, Set}
 import scala.language.existentials
 
@@ -42,6 +43,7 @@ case class RegisterMutatorMessage()
 case class RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int)
 case class PropagateMutatorMessage(mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
+case class PrintMutatorDDGDotsMessage(mutatorId: Int, nextName: Int, output: BufferedWriter)
 case class ScheduleTaskMessage(
   parent: ActorRef, workerId: WorkerId, adjust: Adjustable[_])
 case class ShutdownMutatorMessage(mutatorId: Int)
@@ -76,6 +78,7 @@ case class PebbleMessage(taskRef: ActorRef, modId: ModId)
 case class PropagateTaskMessage()
 case class RunTaskMessage(adjust: Adjustable[_])
 case class GetTaskDDGMessage()
+case class PrintDDGDotsMessage(nextName: Int, output: BufferedWriter)
 case class ClearModsMessage()
 case class ShutdownTaskMessage()
 

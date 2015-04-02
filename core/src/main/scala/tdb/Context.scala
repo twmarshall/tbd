@@ -36,7 +36,7 @@ class Context
      val log: LoggingAdapter)
     (implicit val ec: ExecutionContext) {
 
-  val ddg = new DDG()
+  val ddg = new DDG(this)
 
   var initialRun = true
 

@@ -18,6 +18,7 @@ package tdb
 import akka.actor.{ActorRef, ActorSystem}
 import akka.pattern.ask
 import com.typesafe.config.ConfigFactory
+import java.io._
 import scala.collection.mutable.Buffer
 import scala.concurrent.{Await, Future}
 
@@ -95,6 +96,17 @@ class Mutator(_connector: MasterConnector = null) {
   def getDDG(): DDG  = {
     val ddgFuture = masterRef ? GetMutatorDDGMessage(id)
     Await.result(ddgFuture, DURATION).asInstanceOf[DDG]
+  }
+
+  def printDDGDots(fileName: String) {
+    val output = new BufferedWriter(new OutputStreamWriter(
+      new FileOutputStream(fileName), "utf-8"))
+    output.write("digraph {\n")
+
+    Await.result(masterRef ? PrintMutatorDDGDotsMessage(id, 0, output), DURATION)
+
+    output.write("}")
+    output.close()
   }
 
   def shutdown() {

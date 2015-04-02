@@ -100,6 +100,8 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
     System.gc()
     initial()
 
+    mutator.printDDGDots("pagerank.dot")
+
     if (Experiment.verbosity > 1) {
       if (mapCount != 0) {
         println("map count = " + mapCount)

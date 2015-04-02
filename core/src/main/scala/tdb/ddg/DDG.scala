@@ -17,7 +17,7 @@ package tdb.ddg
 
 import akka.actor.ActorRef
 import akka.pattern.ask
-import scala.collection.mutable.{Buffer, Map, MutableList, Set, TreeSet}
+import scala.collection.mutable
 import scala.concurrent.Await
 
 import tdb._
@@ -26,18 +26,20 @@ import tdb.list.ListInput
 import tdb.master.Master
 import tdb.messages._
 
-class DDG {
-  var root = new RootNode()
+class DDG(_c: Context) {
   //debug.TDB.nodes(root) = (Node.getId(), Tag.Root(), null)
 
-  val reads = Map[ModId, Buffer[Timestamp]]()
-  val keys = Map[InputId, Map[Any, Buffer[Timestamp]]]()
-  val pars = Map[ActorRef, Timestamp]()
-  val nodes = Map[NodeId, Timestamp]()
+  val reads = mutable.Map[ModId, mutable.Buffer[Timestamp]]()
+  val keys = mutable.Map[InputId, mutable.Map[Any, mutable.Buffer[Timestamp]]]()
+  val pars = mutable.Map[ActorRef, Timestamp]()
+  val nodes = mutable.Map[NodeId, Timestamp]()
 
-  var updated = TreeSet[Timestamp]()((new TimestampOrdering()).reverse)
+  var updated = mutable.TreeSet[Timestamp]()((new TimestampOrdering()).reverse)
 
   val ordering = new Ordering()
+
+  var root = ordering.append(new RootNode())
+  _c.currentTime = root
 
   def addFlush
       (input: ListInput[Any, Any],
@@ -87,13 +89,13 @@ class DDG {
     val timestamp = nextTimestamp(getNode, c)
 
     if (!keys.contains(input.inputId)) {
-      keys(input.inputId) = Map[Any, Buffer[Timestamp]]()
+      keys(input.inputId) = mutable.Map[Any, mutable.Buffer[Timestamp]]()
     }
 
     if (keys(input.inputId).contains(key)) {
       keys(input.inputId)(key) += timestamp
     } else {
-      keys(input.inputId)(key) = Buffer(timestamp)
+      keys(input.inputId)(key) = mutable.Buffer(timestamp)
     }
 
     timestamp
@@ -110,7 +112,7 @@ class DDG {
     if (reads.contains(mod.id)) {
       reads(mod.id) :+= timestamp
     } else {
-      reads(mod.id) = Buffer(timestamp)
+      reads(mod.id) = mutable.Buffer(timestamp)
     }
 
     timestamp
@@ -129,13 +131,13 @@ class DDG {
     if (reads.contains(mod1.id)) {
       reads(mod1.id) :+= timestamp
     } else {
-      reads(mod1.id) = Buffer(timestamp)
+      reads(mod1.id) = mutable.Buffer(timestamp)
     }
 
     if (reads.contains(mod2.id)) {
       reads(mod2.id) :+= timestamp
     } else {
-      reads(mod2.id) = Buffer(timestamp)
+      reads(mod2.id) = mutable.Buffer(timestamp)
     }
 
     timestamp
@@ -157,19 +159,19 @@ class DDG {
     if (reads.contains(mod1.id)) {
       reads(mod1.id) :+= timestamp
     } else {
-      reads(mod1.id) = Buffer(timestamp)
+      reads(mod1.id) = mutable.Buffer(timestamp)
     }
 
     if (reads.contains(mod2.id)) {
       reads(mod2.id) :+= timestamp
     } else {
-      reads(mod2.id) = Buffer(timestamp)
+      reads(mod2.id) = mutable.Buffer(timestamp)
     }
 
     if (reads.contains(mod3.id)) {
       reads(mod3.id) :+= timestamp
     } else {
-      reads(mod3.id) = Buffer(timestamp)
+      reads(mod3.id) = mutable.Buffer(timestamp)
     }
 
     timestamp
@@ -309,8 +311,8 @@ class DDG {
       (_timestamp: Timestamp,
        _node: Node,
        toReplace: ModId,
-       newModId: ModId): Buffer[Node] = {
-    val buf = Buffer[Node]()
+       newModId: ModId): mutable.Buffer[Node] = {
+    val buf = mutable.Buffer[Node]()
 
     var time = _timestamp
     while (time < _timestamp.end) {
@@ -370,7 +372,7 @@ class DDG {
   def endTime = ordering.base.base
 
   def getMods(): Iterable[ModId] = {
-    val mods = Buffer[ModId]()
+    val mods = mutable.Buffer[ModId]()
 
     var time = startTime.getNext()
     while (time != endTime) {

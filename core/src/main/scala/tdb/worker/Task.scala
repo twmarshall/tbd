@@ -17,6 +17,7 @@ package tdb.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
+import java.io.BufferedWriter
 import scala.collection.mutable.{ArrayBuffer, Map, MutableList, Set}
 import scala.concurrent.{Await, Future, Promise}
 import scala.util.{Failure, Success, Try}
@@ -91,6 +92,7 @@ class Task
       for ((input, buf) <- c.bufs) {
         buf.flush()
       }
+      c.ddg.root.end = c.ddg.nextTimestamp(c.ddg.root.node, c)
 
       sender ! ret
       Await.result(Future.sequence(c.pending), DURATION)
@@ -133,6 +135,9 @@ class Task
 
     case GetTaskDDGMessage =>
       sender ! c.ddg
+
+    case PrintDDGDotsMessage(nextName: Int, output: BufferedWriter) =>
+      sender ! (new DDGPrinter(c.ddg, nextName, output)).print()
 
     case ClearModsMessage =>
       val futures = Set[Future[Any]]()
