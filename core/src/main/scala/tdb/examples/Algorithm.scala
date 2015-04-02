@@ -191,7 +191,7 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
     if (actualRuns.contains(updateSize + "")) {
       val oldCount = results(updateSize + "-count")
 
-      def averageIn(oldAverage: Double, newValue: Double) =
+      /*def averageIn(oldAverage: Double, newValue: Double) =
         (oldAverage * oldCount + newValue) / (oldCount + 1)
 
       results(updateSize + "") =
@@ -200,7 +200,13 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
         averageIn(results(updateSize + "-load"), loadElapsed)
       results(updateSize + "-gc") =
           averageIn(results(updateSize + "-gc"), gcElapsed)
+      results(updateSize + "-count") = oldCount + 1*/
+
+      results(updateSize + "-" + oldCount) = elapsed - gcElapsed
+      results(updateSize + "-" + oldCount + "-load") = loadElapsed
+      results(updateSize + "-" + oldCount + "-gc") = gcElapsed
       results(updateSize + "-count") = oldCount + 1
+      actualRuns += updateSize + "-" + oldCount
     } else {
       results(updateSize + "") = elapsed - gcElapsed
       results(updateSize + "-load") = loadElapsed
