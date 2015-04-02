@@ -36,6 +36,8 @@ object Experiment {
 
   var check = false
 
+  var dots = false
+
   var port = 2252
 
   val allResults = mutable.Map[AlgorithmConf, mutable.Map[String, Double]]()
@@ -152,6 +154,7 @@ object Experiment {
 
     verbosity = conf.verbosity()
     check = conf.check()
+    dots = conf.dots()
 
     Constants.DURATION = conf.timeout().seconds
     Constants.TIMEOUT = Timeout(Constants.DURATION)

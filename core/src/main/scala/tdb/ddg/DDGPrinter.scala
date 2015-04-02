@@ -43,22 +43,27 @@ class DDGPrinter
 
     time.node match {
       case readNode: ReadNode =>
-        writeShape(name, "box")
+        writeShape(name, "box", "read")
       case parNode: ParNode =>
-        writeShape(name, "triangle")
+        writeShape(name, "triangle", "par")
       case getNode: GetNode =>
-        writeShape(name, "square")
+        writeShape(name, "square", "get")
       case putNod: PutNode =>
-        writeShape(name, "circle")
+        writeShape(name, "circle", "put")
       case putAllNode: PutAllNode =>
-        writeShape(name, "circle")
+        writeShape(name, "circle", "putAll")
       case memoNode: MemoNode =>
-        writeShape(name, "diamond")
+        writeShape(name, "diamond", "memo")
+      case rootNode: RootNode =>
+        writeShape(name, "invtriangle", "root")
+      case flushNode: FlushNode =>
+        writeShape(name, "hexagon", "flush")
       case _ =>
         println("didn't match " + time.node.getClass)
     }
 
     time.node match {
+      case flushNode: FlushNode =>
       case parNode: ParNode =>
         output.write(name + " -> " + nextName + "\n")
         nextName = Await.result(
@@ -87,7 +92,7 @@ class DDGPrinter
       nextName - 1
     }
 
-  private def writeShape(name: Int, shape: String) {
-    output.write(name + " [shape=" + shape + "]\n")
+  private def writeShape(name: Int, shape: String, label: String) {
+    output.write(name + s" [shape=$shape label=$label]\n")
   }
 }
