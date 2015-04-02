@@ -49,7 +49,7 @@ class Master extends Actor with ActorLogging {
 
   private val tasks = mutable.Set[TaskInfo]()
 
-  private val datastoreRefs = Map[TaskId, ActorRef]()
+  private val datastores = Map[TaskId, DatastoreInfo]()
 
   // Maps mutatorIds to the Task the mutator's computation was launched on.
   private val rootTasks = Map[Int, ActorRef]()
@@ -89,12 +89,12 @@ class Master extends Actor with ActorLogging {
     for (i <- 0 until partitions) {
       val start = workerIndex * partitionsPerWorker + i
       val thisRange = new HashRange(start, start + 1, listConf.partitions)
-      val taskId = nextTaskId
+      val datastoreId = nextTaskId
       nextTaskId += 1
 
       val modifierRef = Await.result(
         (workerRef ? CreateDatastoreMessage(
-          listConf, taskId, thisRange)).mapTo[ActorRef],
+          listConf, datastoreId, thisRange)).mapTo[ActorRef],
         DURATION)
 
       val thisHasher = ObjHasher.makeHasher(thisRange, modifierRef)
@@ -104,7 +104,9 @@ class Master extends Actor with ActorLogging {
         hasher = ObjHasher.combineHashers(thisHasher, hasher)
       }
 
-      datastoreRefs(taskId) = modifierRef
+      val datastoreInfo = new DatastoreInfo(
+        datastoreId, modifierRef, listConf, workerRef, thisRange)
+      datastores(datastoreId) = datastoreInfo
     }
     hasher
   }
@@ -113,11 +115,11 @@ class Master extends Actor with ActorLogging {
     // Worker
     case RegisterWorkerMessage(_workerInfo: WorkerInfo) =>
       val workerId = nextWorkerId
-      val taskId = nextTaskId
+      val datastoreId = nextTaskId
       nextTaskId += 1
 
       val workerInfo = _workerInfo.copy(
-        workerId = workerId, mainDatastoreId = taskId)
+        workerId = workerId, mainDatastoreId = datastoreId)
       sender ! workerInfo
 
       totalCores += workerInfo.numCores
@@ -133,7 +135,10 @@ class Master extends Actor with ActorLogging {
       log.info("Registering worker at " + workerRef)
 
       workers(workerId) = workerRef
-      datastoreRefs(taskId) = datastoreRef
+
+      val datastoreInfo = new DatastoreInfo(
+        datastoreId, datastoreRef, null, workerRef, null)
+      datastores(datastoreId) = datastoreInfo
 
       nextWorkerId = incrementWorkerId(nextWorkerId)
 
@@ -216,8 +221,8 @@ class Master extends Actor with ActorLogging {
         Await.result(f, DURATION)
       }
 
-      for ((workerId, datastoreRef) <- datastoreRefs) {
-        datastoreRef ! ClearMessage()
+      for ((datastoreId, datastoreInfo) <- datastores) {
+        datastoreInfo.datastoreRef ! ClearMessage()
       }
 
       sender ! "done"
@@ -230,15 +235,15 @@ class Master extends Actor with ActorLogging {
       (scheduler.nextWorker() ? CreateModMessage(null)) pipeTo sender
 
     case GetModMessage(modId: ModId, null) =>
-      val datastoreId = getDatastoreId(modId)
-      (datastoreRefs(datastoreId) ? GetModMessage(modId, null)) pipeTo sender
+      val datastoreRef = datastores(getDatastoreId(modId)).datastoreRef
+      (datastoreRef ? GetModMessage(modId, null)) pipeTo sender
 
     case UpdateModMessage(modId: ModId, value: Any, null) =>
-      val datastoreRef = datastoreRefs(getDatastoreId(modId))
+      val datastoreRef = datastores(getDatastoreId(modId)).datastoreRef
       (datastoreRef ? UpdateModMessage(modId, value, null)) pipeTo sender
 
     case UpdateModMessage(modId: ModId, null, null) =>
-      val datastoreRef = datastoreRefs(getDatastoreId(modId))
+      val datastoreRef = datastores(getDatastoreId(modId)).datastoreRef
       (datastoreRef ? UpdateModMessage(modId, null, null)) pipeTo sender
 
     case CreateListMessage(_conf: ListConf) =>
@@ -291,11 +296,38 @@ class Master extends Actor with ActorLogging {
 
       sender ! input
 
+    case FileLoadedMessage(datastoreId: TaskId, fileName: String) =>
+      println("fileLoadedmessage")
+      datastores(datastoreId).fileName = fileName
+
     case Terminated(deadWorker: ActorRef) =>
       scheduler.removeWorker(deadWorker)
 
       val newTasks = mutable.Set[TaskInfo]()
       log.warning("Received Terminated for " + deadWorker)
+
+      val futures = mutable.Buffer[Future[Any]]()
+      datastores.map {
+        case (id, info) =>
+          if (info.workerRef == deadWorker) {
+            log.warning("Relaunching " + info)
+            val workerRef = scheduler.nextWorker()
+
+            val modifierRef = Await.result(
+              (workerRef ? CreateDatastoreMessage(
+                info.listConf, info.id, info.range)).mapTo[ActorRef],
+              DURATION)
+            info.datastoreRef = modifierRef
+
+            println("fileName = " + info.fileName)
+            if (info.fileName != "") {
+              futures += modifierRef ? LoadFileMessage(info.fileName)
+            }
+          }
+      }
+
+      Await.result(Future.sequence(futures), DURATION)
+
       tasks.map {
         case info =>
           if (info.workerRef == deadWorker) {

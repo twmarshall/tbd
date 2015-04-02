@@ -28,12 +28,12 @@ import tdb.TDB._
 import tdb.util._
 
 class WCHashAdjust
-    (list: AdjustableList[String, String], words: Set[String])
+    (list: AdjustableList[String, String], words: Set[String], conf: ListConf)
       extends Adjustable[AdjustableList[String, Int]] {
 
   def wordcount(pair: (String, String)) = {
     val counts = Map[String, Int]()
-
+    println("mapping " + pair + "\n")
     for (word <- pair._2.split("\\W+")) {
       if (words.contains(word)) {
         if (counts.contains(word)) {
@@ -48,10 +48,11 @@ class WCHashAdjust
   }
 
   def run(implicit c: Context) = {
-    val conf = AggregatorListConf(
+    val aggConf = AggregatorListConf(
+      partitions = conf.partitions,
       valueType = AggregatedIntColumn())
 
-    val output = createList[String, Int](conf)
+    val output = createList[String, Int](aggConf)
     list.foreach {
       case (chunk, c) =>
         putAll(output, wordcount(chunk))(c)
@@ -63,7 +64,7 @@ class WCHashAdjust
 
 
 class WCChunkHashAdjust
-    (list: AdjustableList[String, String], words: Set[String])
+    (list: AdjustableList[String, String], words: Set[String], conf: ListConf)
       extends Adjustable[AdjustableList[String, Int]] {
 
   def wordcount(chunk: Iterable[(String, String)]) = {
@@ -85,10 +86,11 @@ class WCChunkHashAdjust
   }
 
   def run(implicit c: Context) = {
-    val conf = AggregatorListConf(
+    val aggConf = AggregatorListConf(
+      partitions = conf.partitions,
       valueType = AggregatedIntColumn())
 
-    val output = createList[String, Int](conf)
+    val output = createList[String, Int](aggConf)
     list.foreachChunk {
       case (chunk, c) =>
         putAll(output, wordcount(chunk))(c)
@@ -114,9 +116,9 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
 
   val adjust =
     if (conf.listConf.chunkSize > 1)
-      new WCChunkHashAdjust(input.getAdjustableList(), words)
+      new WCChunkHashAdjust(input.getAdjustableList(), words, conf.listConf)
     else
-      new WCHashAdjust(input.getAdjustableList(), words)
+      new WCHashAdjust(input.getAdjustableList(), words, conf.listConf)
 
   val data =
     if (conf.file == "") {

@@ -99,11 +99,15 @@ class Worker
               columnConf, info, datastoreId, thisRange))
         case _ =>
           context.actorOf(ModifierActor.props(
-            listConf, info, datastoreId, thisRange))
+            listConf, info, datastoreId, thisRange, masterRef))
       }
       datastores(datastoreId) = modifierRef
       sender ! modifierRef
 
+    case CreateDatastoreMessage(null, datastoreId: TaskId, null) =>
+      val datastore = context.actorOf(
+        DatastoreActor.props(info, datastoreId), datastoreId.toString)
+      sender ! datastore
 
     case SplitFileMessage(dir: String, fileName: String, partitions: Int) =>
       if (tdb.examples.Experiment.fast) {

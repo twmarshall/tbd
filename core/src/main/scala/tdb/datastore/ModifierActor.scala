@@ -16,7 +16,7 @@
 package tdb.datastore
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
-import akka.pattern.pipe
+import akka.pattern.{ask, pipe}
 import scala.collection.mutable
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
@@ -32,15 +32,18 @@ object ModifierActor {
       (conf: ListConf,
        workerInfo: WorkerInfo,
        datastoreId: TaskId,
-       range: HashRange): Props =
-    Props(classOf[ModifierActor], conf, workerInfo, datastoreId, range)
+       range: HashRange,
+       masterRef: ActorRef): Props =
+    Props(
+      classOf[ModifierActor], conf, workerInfo, datastoreId, range, masterRef)
 }
 
 class ModifierActor
     (conf: ListConf,
      workerInfo: WorkerInfo,
      datastoreId: TaskId,
-     range: HashRange)
+     range: HashRange,
+     masterRef: ActorRef)
   extends Actor with ActorLogging {
   import context.dispatcher
 
@@ -112,7 +115,7 @@ class ModifierActor
       datastore.processKeys {
         case keys => modifier.loadInput(keys)
       }
-      sender ! "done"
+      (masterRef ? FileLoadedMessage(datastoreId, fileName)) pipeTo sender
 
     case GetAdjustableListMessage() =>
       sender ! modifier.getAdjustableList()
