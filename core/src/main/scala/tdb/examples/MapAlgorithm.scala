@@ -28,9 +28,11 @@ import tdb.util._
 object MapAlgorithm {
   def mapper(pair: (String, String)): (String, Int) = {
     var count = 0
+
     for (word <- pair._2.split("\\W+")) {
       count += 1
     }
+
     (pair._1, count)
   }
 }
@@ -44,24 +46,31 @@ class MapAdjust(list: AdjustableList[String, String])
 
 class MapAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[AdjustableList[String, Int]](_conf) {
-  var input: ListInput[String, String] = null
+  val input = mutator.createList[String, String](conf.listConf)
 
-  var adjust: MapAdjust = null
+  val adjust = new MapAdjust(input.getAdjustableList())
 
-  var data: FileData = null
+  val data = new FileData(
+    input, conf.file, conf.updateFile, conf.runs)
 
-  var naiveTable: ParIterable[String] = _
-  def generateNaive() {}
+  var naiveTable: ParIterable[(String, String)] = _
+  def generateNaive() {
+    data.generate()
+    naiveTable = Vector(data.table.toSeq: _*).par
+    naiveTable.tasksupport =
+      new ForkJoinTaskSupport(new ForkJoinPool(OS.getNumCores() * 2))
+  }
 
-  def runNaive() {}
+  def runNaive() {
+    naiveHelper(naiveTable)
+  }
 
-  override def loadInitial() {
-    input = mutator.createList[String, String](conf.listConf)
+  private def naiveHelper(input: GenIterable[(String, String)]) = {
+    input.map(MapAlgorithm.mapper)
+  }
 
-    adjust = new MapAdjust(input.getAdjustableList())
-
-    data = new FileData(
-      input, conf.file, conf.updateFile, conf.runs)
+  def loadInitial() {
+    data.load()
   }
 
   def hasUpdates() = data.hasUpdates()
@@ -69,14 +78,11 @@ class MapAlgorithm(_conf: AlgorithmConf)
   def loadUpdate() = data.update()
 
   def checkOutput(output: AdjustableList[String, Int]) = {
-    val writer = new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream("map-output.txt"), "utf-8"))
+    val answer = naiveHelper(data.table)
 
-    for ((key, value) <- output.toBuffer(mutator).sortWith(_._1 < _._1)) {
-      writer.write(key + " -> " + value + "\n")
-    }
-    writer.close()
+    val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
+    val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
 
-    true
+    sortedAnswer == sortedOutput
   }
 }
