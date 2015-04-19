@@ -45,8 +45,6 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
   // Maps ModIds to sets of ActorRefs representing tasks that read them.
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  private val keyDependencies = Map[InputId, Map[Any, Set[ActorRef]]]()
-
   val inputs = Map[ModId, Any]()
 
   val chunks = Map[ModId, Iterable[Any]]()
@@ -148,31 +146,6 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
       dependencies(modId) += taskRef
     } else {
       dependencies(modId) = Set(taskRef)
-    }
-  }
-
-  def addKeyDependency(inputId: InputId, key: Any, taskRef: ActorRef) {
-    if (!keyDependencies.contains(inputId)) {
-      keyDependencies(inputId) = Map[Any, Set[ActorRef]]()
-    }
-
-    if (!keyDependencies(inputId).contains(key)) {
-      keyDependencies(inputId)(key) = Set(taskRef)
-    } else {
-      keyDependencies(inputId)(key) += taskRef
-    }
-  }
-
-  def informDependents(inputId: InputId, key: Any): Future[_] = {
-    if (keyDependencies.contains(inputId) &&
-        keyDependencies(inputId).contains(key)) {
-      val futures = Buffer[Future[Any]]()
-      for (taskRef <- keyDependencies(inputId)(key)) {
-        futures += taskRef ? KeyUpdatedMessage(inputId, key)
-      }
-      Future.sequence(futures)
-    } else {
-      Future { "done" }
     }
   }
 

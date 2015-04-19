@@ -49,6 +49,8 @@ class ModifierActor
 
   private val datastore = new Datastore(workerInfo, log, datastoreId)
 
+  private val dependencies = new DependencyManager()
+
   val modifier = conf match {
     case conf: AggregatorListConf =>
       if (conf.chunkSize == 1)
@@ -131,14 +133,14 @@ class ModifierActor
 
       val futures = mutable.Buffer[Future[Any]]()
       futures += modifier.put(key, value)
-      futures += datastore.informDependents(conf.inputId, key)
+      futures += dependencies.informDependents(conf.inputId, key)
       Future.sequence(futures) pipeTo sender
 
     case PutAllMessage(values: Iterable[(Any, Any)]) =>
       val futures = mutable.Buffer[Future[Any]]()
       for ((key, value) <- values) {
         futures += modifier.put(key, value)
-        futures += datastore.informDependents(conf.inputId, key)
+        futures += dependencies.informDependents(conf.inputId, key)
       }
       Future.sequence(futures) pipeTo sender
 
@@ -147,19 +149,19 @@ class ModifierActor
 
     case GetMessage(key: Any, taskRef: ActorRef) =>
       sender ! modifier.get(key)
-      datastore.addKeyDependency(conf.inputId, key, taskRef)
+      dependencies.addKeyDependency(conf.inputId, key, taskRef)
 
     case RemoveMessage(key: Any, value: Any) =>
       val futures = mutable.Buffer[Future[Any]]()
       futures += modifier.remove(key, value)
-      futures += datastore.informDependents(conf.inputId, key)
+      futures += dependencies.informDependents(conf.inputId, key)
       Future.sequence(futures) pipeTo sender
 
     case RemoveAllMessage(values: Iterable[(Any, Any)]) =>
       val futures = mutable.Buffer[Future[Any]]()
       for ((key, value) <- values) {
         futures += modifier.remove(key, value)
-        futures += datastore.informDependents(conf.inputId, key)
+        futures += dependencies.informDependents(conf.inputId, key)
       }
       Future.sequence(futures) pipeTo sender
 

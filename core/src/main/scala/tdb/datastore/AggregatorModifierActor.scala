@@ -42,7 +42,7 @@ class AggregatorModifierActor
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val datastore = new Datastore(workerInfo, log, datastoreId)
+  private val dependencies = new DependencyManager()
 
   private val dummyFuture = Future { "done" }
 
@@ -96,7 +96,7 @@ class AggregatorModifierActor
         } else {
           values(key) = value
         }
-        futures += datastore.informDependents(conf.inputId, key)
+        futures += dependencies.informDependents(conf.inputId, key)
       }
     }
     buffer.clear()
@@ -139,7 +139,7 @@ class AggregatorModifierActor
 
     case GetMessage(key: Any, taskRef: ActorRef) =>
       sender ! get(key)
-      datastore.addKeyDependency(conf.inputId, key, taskRef)
+      dependencies.addKeyDependency(conf.inputId, key, taskRef)
 
     case RemoveMessage(key: Any, value: Any) =>
       remove(key, value)
@@ -152,7 +152,7 @@ class AggregatorModifierActor
       sender ! "done"
 
     case ClearMessage() =>
-      datastore.clear()
+      dependencies.clear()
 
     case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
       if (nodeId != -1 && flushNode != -1 && nodeId != flushNode) {

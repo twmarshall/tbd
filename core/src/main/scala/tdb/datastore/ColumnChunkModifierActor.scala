@@ -47,6 +47,8 @@ class ColumnChunkModifierActor
 
   private val datastore = new Datastore(workerInfo, log, datastoreId)
 
+  private val dependencies = new DependencyManager()
+
   // Contains the last DoubleChunkListNode before the tail node. If the list is
   // empty, the contents of this mod will be null.
   private var lastNodeMod = datastore.createMod[ColumnChunkListNode[Any]](null)
@@ -257,14 +259,14 @@ class ColumnChunkModifierActor
 
       val futures = mutable.Buffer[Future[Any]]()
       futures += put(key, value)
-      futures += datastore.informDependents(conf.inputId, key)
+      futures += dependencies.informDependents(conf.inputId, key)
       Future.sequence(futures) pipeTo sender
 
     case PutAllMessage(values: Iterable[(Any, Any)]) =>
       val futures = mutable.Buffer[Future[Any]]()
       for ((key, value) <- values) {
         futures += put(key, value)
-        futures += datastore.informDependents(conf.inputId, key)
+        futures += dependencies.informDependents(conf.inputId, key)
       }
       Future.sequence(futures) pipeTo sender
 
@@ -279,24 +281,25 @@ class ColumnChunkModifierActor
 
     case GetMessage(key: Any, taskRef: ActorRef) =>
       sender ! get(key)
-      datastore.addKeyDependency(conf.inputId, key, taskRef)
+      dependencies.addKeyDependency(conf.inputId, key, taskRef)
 
     case RemoveMessage(key: Any, value: Any) =>
       val futures = mutable.Buffer[Future[Any]]()
       futures += remove(key, value)
-      futures += datastore.informDependents(conf.inputId, key)
+      futures += dependencies.informDependents(conf.inputId, key)
       Future.sequence(futures) pipeTo sender
 
     case RemoveAllMessage(values: Iterable[(Any, Any)]) =>
       val futures = mutable.Buffer[Future[Any]]()
       for ((key, value) <- values) {
         futures += remove(key, value)
-        futures += datastore.informDependents(conf.inputId, key)
+        futures += dependencies.informDependents(conf.inputId, key)
       }
       Future.sequence(futures) pipeTo sender
 
     case ClearMessage() =>
       datastore.clear()
+      dependencies.clear()
 
     case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
       sender ! "done"
