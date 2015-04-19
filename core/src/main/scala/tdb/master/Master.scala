@@ -300,8 +300,8 @@ class Master extends Actor with ActorLogging {
       sender ! input
 
     case FileLoadedMessage(datastoreId: TaskId, fileName: String) =>
-      println("fileLoadedmessage")
       datastores(datastoreId).fileName = fileName
+      sender ! "done"
 
     case Terminated(deadWorker: ActorRef) =>
       scheduler.removeWorker(deadWorker)

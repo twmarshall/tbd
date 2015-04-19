@@ -105,15 +105,16 @@ class MutatorTests extends FlatSpec with Matchers {
     }
   }
 
-  /*"FileLoadTest" should "load the file data correctly" in {
+  "FileLoadTest" should "load the file data correctly" in {
     for (partitions <- List(1, 2, 4);
          chunkSize <- List(1, 2)) {
       val mutator = new Mutator()
 
       val conf = ListConf(
         file = "wiki2.xml", partitions = partitions, chunkSize = chunkSize)
-      mutator.loadFile("wiki2.xml")
+
       val input = mutator.createList[String, String](conf)
+      input.loadFile("input.txt")
 
       val output = mutator.run(new FileLoadTest(input))
       val answer =
@@ -125,7 +126,7 @@ class MutatorTests extends FlatSpec with Matchers {
 
       mutator.shutdown()
     }
-  }*/
+  }
 
   /*"SortedListTests" should "update the sorted AdjustableList correctly" in {
     val mutator = new Mutator()
