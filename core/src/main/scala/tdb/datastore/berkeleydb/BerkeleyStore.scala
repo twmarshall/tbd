@@ -27,7 +27,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
 import scala.util.{Failure, Success}
 
-import tdb.datastore.{KVStore, MemoryUsage}
+import tdb.datastore._
 import tdb.messages._
 import tdb.Mod
 import tdb.Constants.ModId
@@ -46,7 +46,7 @@ class BerkeleyStore(workerInfo: WorkerInfo)
     (implicit ec: ExecutionContext) extends KVStore {
   private var database = new BerkeleyDatabase(workerInfo.envHomePath)
 
-  private val tables = Map[Int, BerkeleyTable]()
+  private val tables = Map[Int, Table]()
 
   // LRU cache
   private val values = Map[Any, LRUNode]()
@@ -81,7 +81,18 @@ class BerkeleyStore(workerInfo: WorkerInfo)
   }
 
   def load(id: Int, fileName: String) {
-    tables(id).load(fileName)
+    val table = tables(id)
+    val file = new File(fileName)
+    val fileSize = file.length()
+
+    val process = (key: String, value: String) => {
+      if (table.hashRange.fallsInside(key)) {
+        table.put(key, value)
+      }
+    }
+
+    FileUtil.readKeyValueFile(
+      fileName, fileSize, 0, fileSize, process)
   }
 
   def put(id: Int, key: Any, value: Any): Future[Any] = {

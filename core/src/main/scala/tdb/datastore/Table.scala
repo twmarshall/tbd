@@ -13,13 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.datastore.berkeleydb
+package tdb.datastore
 
 import tdb.util.HashRange
 
-trait BerkeleyTable {
-  def load(fileName: String)
-
+trait Table {
   def put(key: Any, value: Any)
 
   def get(key: Any): Any

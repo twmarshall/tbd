@@ -22,12 +22,13 @@ import java.io.File
 import scala.collection.JavaConversions._
 import scala.collection.mutable.{Buffer, Map}
 
-import tdb.util._
+import tdb.datastore._
 import tdb.stats.WorkerStats
+import tdb.util._
 
 class BerkeleyInputTable
     (environment: Environment, name: String, val hashRange: HashRange)
-  extends BerkeleyTable {
+  extends Table {
 
   private val storeConfig = new StoreConfig()
   storeConfig.setAllowCreate(true)
@@ -44,20 +45,6 @@ class BerkeleyInputTable
   }
 
   private val hasher = new ObjHasher(indexes, hashRange.total)
-
-  def load(fileName: String) {
-    val file = new File(fileName)
-    val fileSize = file.length()
-
-    val process = (key: String, value: String) => {
-      if (hashRange.fallsInside(key)) {
-        put(key, value)
-      }
-    }
-
-    FileUtil.readKeyValueFile(
-      fileName, fileSize, 0, fileSize, process)
-  }
 
   def put(key: Any, value: Any) {
     val entity = new InputEntity()

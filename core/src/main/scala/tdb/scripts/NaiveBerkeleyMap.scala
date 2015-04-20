@@ -72,7 +72,15 @@ object NaiveBerkeleyMap {
     println("count = "  + inputStore.count())
     if (inputStore.count() == 0) {
       println("load")
-      inputStore.load(Conf.file())
+      val file = new File(Conf.file())
+      val fileSize = file.length()
+
+      val process = (key: String, value: String) => {
+        inputStore.put(key, value)
+      }
+
+      FileUtil.readKeyValueFile(
+        Conf.file(), fileSize, 0, fileSize, process)
     }
 
     val outputs = Buffer[Map[String, Int]]()

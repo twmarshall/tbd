@@ -21,16 +21,15 @@ import com.sleepycat.persist.model.{Entity, PrimaryKey}
 import java.io._
 
 import tdb.Constants.ModId
+import tdb.datastore._
 import tdb.stats.WorkerStats
 
-class BerkeleyModTable(environment: Environment) extends BerkeleyTable {
+class BerkeleyModTable(environment: Environment) extends Table {
   private val storeConfig = new StoreConfig()
   storeConfig.setAllowCreate(true)
 
   private val store = new EntityStore(environment, "ModStore", storeConfig)
   private val primaryIndex = store.getPrimaryIndex(classOf[java.lang.Long], classOf[ModEntity])
-
-  def load(fileName: String) = ???
 
   def put(key: Any, value: Any) {
     val entity = new ModEntity()
