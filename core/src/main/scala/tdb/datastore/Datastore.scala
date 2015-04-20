@@ -33,7 +33,7 @@ import tdb.util._
 class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
     (implicit ec: ExecutionContext) {
 
-  private val store =
+  private var store =
     workerInfo.storeType  match {
       case "berkeleydb" => new BerkeleyStore(workerInfo)
       case "memory" => new MemoryStore()
@@ -171,6 +171,12 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
 
   def clear() {
     store.clear()
+
+    store = workerInfo.storeType  match {
+      case "berkeleydb" => new BerkeleyStore(workerInfo)
+      case "memory" => new MemoryStore()
+    }
+
     store.createTable[ModId, Any]("Mods", null)
 
     dependencies.clear()

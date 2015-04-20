@@ -15,54 +15,36 @@
  */
 package tdb.datastore.berkeleydb
 
-import akka.actor.{ActorRef, ActorContext, Props}
-import akka.pattern.{ask, pipe}
 import com.sleepycat.je.{Environment, EnvironmentConfig}
-import com.sleepycat.persist.{EntityStore, PrimaryIndex, StoreConfig}
-import com.sleepycat.persist.model.{Entity, PrimaryKey, SecondaryKey}
-import com.sleepycat.persist.model.Relationship
-import java.io._
-import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.{ExecutionContext, Future}
+import com.sleepycat.persist._
+import com.sleepycat.persist.model.{Entity, PrimaryKey}
+import java.io.File
+import scala.concurrent.ExecutionContext
 import scala.reflect.runtime.universe._
-import scala.util.{Failure, Success}
 
+import tdb.Constants._
 import tdb.datastore._
-import tdb.messages._
-import tdb.Mod
-import tdb.Constants.ModId
 import tdb.util._
 import tdb.worker.WorkerInfo
 
-class LRUNode(
-  val key: Any,
-  var value: Any,
-  val storeId: Int,
-  var previous: LRUNode,
-  var next: LRUNode
-)
-
-class BerkeleyStore(workerInfo: WorkerInfo)
-    (implicit ec: ExecutionContext) extends KVStore {
-  private var database = new BerkeleyDatabase(workerInfo.envHomePath)
-
-  private val tables = Map[Int, Table]()
-
-  // LRU cache
-  private val values = Map[Any, LRUNode]()
-  private val tail = new LRUNode(null, null, -1, null, null)
-  private var head = tail
-
-  // Statistics
-  private var readCount = 0
-  private var writeCount = 0
-  private var deleteCount = 0
-
-  var cacheSize = 0L
-
-  var n = 0
-
+class BerkeleyStore(val workerInfo: WorkerInfo)
+    (implicit val ec: ExecutionContext) extends CachedStore {
   private var nextStoreId = 0
+
+  private val envConfig = new EnvironmentConfig()
+  envConfig.setCacheSize(96 * 1024 * 1024)
+  envConfig.setAllowCreate(true)
+
+  private val envHome = new File(workerInfo.envHomePath)
+  envHome.mkdir()
+
+  private val environment = new Environment(envHome, envConfig)
+
+  private val storeConfig = new StoreConfig()
+  storeConfig.setAllowCreate(true)
+  private val metaStore = new EntityStore(environment, "MetaStore", storeConfig)
+  private val index =
+    metaStore.getPrimaryIndex(classOf[String], classOf[MetaEntity])
 
   def createTable[T: TypeTag, U: TypeTag]
       (name: String, range: HashRange): Int = {
@@ -71,127 +53,53 @@ class BerkeleyStore(workerInfo: WorkerInfo)
 
     typeOf[T] match {
       case s if typeOf[T] =:= typeOf[String] && typeOf[U] =:= typeOf[String] =>
-        tables(id) = database.createInputStore(name, range)
+        tables(id) = createInputStore(name, range)
       case m if typeOf[T] =:= typeOf[ModId] =>
-        tables(id) = database.createModStore()
+        tables(id) = createModStore()
       case _ => ???
     }
 
     id
   }
 
-  def load(id: Int, fileName: String) {
-    val table = tables(id)
-    val file = new File(fileName)
-    val fileSize = file.length()
+  private def createModStore() = new BerkeleyModTable(environment)
 
-    val process = (key: String, value: String) => {
-      if (table.hashRange.fallsInside(key)) {
-        table.put(key, value)
-      }
-    }
+  private def createInputStore(name: String, hash: HashRange) = {
+    if (index.contains(name)) {
+      val metaEntity = index.get(name)
+      val hashRange = new HashRange(
+        metaEntity.hashMin, metaEntity.hashMax, metaEntity.hashTotal)
 
-    FileUtil.readKeyValueFile(
-      fileName, fileSize, 0, fileSize, process)
-  }
-
-  def put(id: Int, key: Any, value: Any): Future[Any] = {
-    val future = Future {
-      tables(id).put(key, value)
-    }
-
-    cacheSize += MemoryUsage.getSize(value)
-    if (values.contains(key)) {
-      cacheSize -= MemoryUsage.getSize(values(key).value)
-      values(key).value = value
+      new BerkeleyInputTable(environment, name, hashRange)
     } else {
-      val newNode = new LRUNode(key, value, id, null, head)
-      values(key) = newNode
+      val metaEntity = new MetaEntity()
+      metaEntity.storeName = name
+      metaEntity.hashMin = hash.min
+      metaEntity.hashMax = hash.max
+      metaEntity.hashTotal = hash.total
 
-      head.previous = newNode
-      head = newNode
-    }
+      index.put(metaEntity)
 
-    val futures = Buffer[Future[Any]]()
-    while ((cacheSize / 1024 / 1024) > workerInfo.cacheSize) {
-      val toEvict = tail.previous
-
-      val key = toEvict.key
-      val value = toEvict.value
-
-      values -= toEvict.key
-      cacheSize -= MemoryUsage.getSize(value)
-
-      tail.previous = toEvict.previous
-      toEvict.previous.next = tail
-    }
-
-    /*if (n % 100000 == 0) {
-      println("Current cache size: " + (cacheSize / 1024 / 1024))
-    }
-    n += 1*/
-
-    future
-  }
-
-  def get(id: Int, key: Any) = {
-    if (values.contains(key)) {
-      val value = values(key).value
-      Future { value }
-    } else {
-      val store = tables(id)
-      Future {
-        store.get(key)
-      }
+      new BerkeleyInputTable(environment, name, hash)
     }
   }
 
-  def delete(id: Int, key: Any) {
-    if (values.contains(key)) {
-      values -= key
-    }
+  override def clear() {
+    super.clear()
 
-    tables(id).delete(key)
-  }
-
-  def contains(id: Int, key: Any): Boolean = {
-    values.contains(key) || tables(id).contains(key)
-  }
-
-  def count(id: Int): Int = {
-    tables(id).count()
-  }
-
-  def clear() = {
-    for ((id, table) <- tables) {
-      table.close()
-    }
-    tables.clear()
     nextStoreId = 0
 
-    values.clear()
-
-    cacheSize = 0
-    head = tail
-    tail.previous = null
-    tail.next = null
-
-    database.close()
-    database = new BerkeleyDatabase(workerInfo.envHomePath)
+    metaStore.close()
+    environment.close()
   }
+}
 
-  def processKeys(id: Int, process: Iterable[Any] => Unit) {
-    tables(id).processKeys(process)
-  }
+@Entity
+class MetaEntity {
+  @PrimaryKey
+  var storeName = ""
 
-  def hashRange(id: Int) = {
-    tables(id).hashRange
-  }
-
-  /*def shutdown() {
-    println("Shutting down. writes = " + writeCount + ", reads = " +
-            readCount + ", deletes = " + deleteCount)
-    modStore.close()
-    database.close()
-  }*/
+  var hashMin = -1
+  var hashMax = -1
+  var hashTotal = -1
 }
