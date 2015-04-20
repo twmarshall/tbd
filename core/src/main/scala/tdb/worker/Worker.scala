@@ -91,10 +91,10 @@ class Worker
           context.actorOf(AggregatorModifierActor.props(
             aggregatorConf, info, datastoreId))
         case columnConf: ColumnListConf =>
-          if (columnConf.chunkSize > 1)
+          /*if (columnConf.chunkSize > 1)
             context.actorOf(ColumnChunkModifierActor.props(
               columnConf, info, datastoreId, thisRange))
-          else
+          else*/
             context.actorOf(ColumnModifierActor.props(
               columnConf, info, datastoreId, thisRange))
         case _ =>

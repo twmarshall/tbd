@@ -243,11 +243,11 @@ class Master extends Actor with ActorLogging {
 
     case UpdateModMessage(modId: ModId, value: Any, null) =>
       val datastoreRef = datastores(getDatastoreId(modId)).datastoreRef
-      (datastoreRef ? UpdateModMessage(modId, value, null)) pipeTo sender
+      (datastoreRef ? PutMessage("mods", modId, value, null)) pipeTo sender
 
     case UpdateModMessage(modId: ModId, null, null) =>
       val datastoreRef = datastores(getDatastoreId(modId)).datastoreRef
-      (datastoreRef ? UpdateModMessage(modId, null, null)) pipeTo sender
+      (datastoreRef ? PutMessage("mods", modId, null, null)) pipeTo sender
 
     case CreateListMessage(_conf: ListConf) =>
       val futures = Buffer[Future[(Map[TaskId, ActorRef], ObjHasher[ActorRef])]]()

@@ -57,7 +57,7 @@ trait HashPartitionedListInput[T, U]
 
   def asyncPut(key: T, value: U) = {
     val datastoreRef = hasher.getObj(key)
-    datastoreRef ? PutMessage(key, value)
+    datastoreRef ? PutMessage("keys", key, value, null)
   }
 
   def asyncPutAll(values: Iterable[(T, U)]): Future[_] = {

@@ -97,7 +97,7 @@ class Context
   }
 
   def update[T](modId: ModId, value: T) {
-    val message = UpdateModMessage(modId, value, taskRef)
+    val message = PutMessage("mods", modId, value, taskRef)
     val datastoreId = getDatastoreId(modId)
     val future = datastores(datastoreId) ? message
 

@@ -117,7 +117,7 @@ class AggregatorModifierActor
     case ToBufferMessage() =>
       sender ! toBuffer()
 
-    case PutMessage(key: Any, value: Any) =>
+    case PutMessage(table: String, key: Any, value: Any, taskRef) =>
       if (!flushNotified && flushTask != null) {
         flushNotified = true
         scala.concurrent.Await.result(

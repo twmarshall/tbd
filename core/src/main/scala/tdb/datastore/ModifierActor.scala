@@ -65,13 +65,10 @@ class ModifierActor
   }
 
   def receive = {
-    case CreateModMessage(value: Any) =>
+    case CreateModMessage(value) =>
       sender ! datastore.createMod(value)
 
-    case CreateModMessage(null) =>
-      sender ! datastore.createMod(null)
-
-    case GetModMessage(modId: ModId, taskRef: ActorRef) =>
+    case GetModMessage(modId: ModId, taskRef) =>
       val respondTo = sender
       datastore.getMod(modId, taskRef).onComplete {
         case Success(v) =>
@@ -84,30 +81,6 @@ class ModifierActor
       }
 
       datastore.addDependency(modId, taskRef)
-
-    case GetModMessage(modId: ModId, null) =>
-      val respondTo = sender
-      datastore.getMod(modId, null).onComplete {
-        case Success(v) =>
-          if (v == null) {
-            respondTo ! NullMessage
-          } else {
-            respondTo ! v
-          }
-        case Failure(e) => e.printStackTrace()
-      }
-
-    case UpdateModMessage(modId: ModId, value: Any, task: ActorRef) =>
-      datastore.updateMod(modId, value, task) pipeTo sender
-
-    case UpdateModMessage(modId: ModId, value: Any, null) =>
-      datastore.updateMod(modId, value, null) pipeTo sender
-
-    case UpdateModMessage(modId: ModId, null, task: ActorRef) =>
-      datastore.updateMod(modId, null, task) pipeTo sender
-
-    case UpdateModMessage(modId: ModId, null, null) =>
-      datastore.updateMod(modId, null, null) pipeTo sender
 
     case RemoveModsMessage(modIds: Iterable[ModId], taskRef: ActorRef) =>
       datastore.removeMods(modIds, taskRef) pipeTo sender
@@ -125,12 +98,7 @@ class ModifierActor
     case ToBufferMessage() =>
       sender ! modifier.toBuffer()
 
-    case PutMessage(key: Any, value: Any) =>
-      // This solves a bug where sometimes deserialized Scala objects show up as
-      // null in matches. We should figure out a better way of solving this.
-      //key.toString
-      //value.toString
-
+    case PutMessage(table: String, key: Any, value: Any, taskRef) =>
       val futures = mutable.Buffer[Future[Any]]()
       futures += modifier.put(key, value)
       futures += dependencies.informDependents(conf.inputId, key)
