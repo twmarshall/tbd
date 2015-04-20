@@ -29,19 +29,24 @@ object TDBBuild extends Build {
   )
 
   val commonDeps = Seq (
-    "com.sleepycat"               % "je"                   % "5.0.73",
+    // Cassandra
+    "com.datastax.cassandra"      % "cassandra-driver-core" % "2.1.5",
 
-    "com.typesafe.akka"          %% "akka-actor"           % "2.3.2",
-    "com.typesafe.akka"          %% "akka-remote"          % "2.3.2",
-    "com.typesafe.scala-logging" %% "scala-logging-slf4j"  % "2.0.4",
+    // BerkeleyDB
+    "com.sleepycat"               % "je"                    % "5.0.73",
 
-    "org.mashupbots.socko"        % "socko-webserver_2.11" % "0.5.0",
+    // Akka
+    "com.typesafe.akka"          %% "akka-actor"            % "2.3.2",
+    "com.typesafe.akka"          %% "akka-remote"           % "2.3.2",
+    "com.typesafe.scala-logging" %% "scala-logging-slf4j"   % "2.0.4",
 
-    "org.rogach"                  % "scallop_2.11"         % "0.9.5",
+    "org.mashupbots.socko"        % "socko-webserver_2.11"  % "0.5.0",
 
-    "org.scala-lang.modules"     %% "scala-pickling"       % "0.10.0",
-    "org.scalatest"              %% "scalatest"            % "2.1.3" % "test",
-    "org.scalaz"                 %% "scalaz-core"          % "7.0.6"
+    "org.rogach"                  % "scallop_2.11"          % "0.9.5",
+
+    "org.scala-lang.modules"     %% "scala-pickling"        % "0.10.0",
+    "org.scalatest"              %% "scalatest"             % "2.1.3" % "test",
+    "org.scalaz"                 %% "scalaz-core"           % "7.0.6"
   )
 
   val mkrun = TaskKey[File]("mkrun")
