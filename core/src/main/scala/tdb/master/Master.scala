@@ -231,11 +231,8 @@ class Master extends Actor with ActorLogging {
       sender ! "done"
 
     // Datastore
-    case CreateModMessage(value: Any) =>
+    case CreateModMessage(value) =>
       (scheduler.nextWorker() ? CreateModMessage(value)) pipeTo sender
-
-    case CreateModMessage(null) =>
-      (scheduler.nextWorker() ? CreateModMessage(null)) pipeTo sender
 
     case GetModMessage(modId: ModId, null) =>
       val datastoreRef = datastores(getDatastoreId(modId)).datastoreRef

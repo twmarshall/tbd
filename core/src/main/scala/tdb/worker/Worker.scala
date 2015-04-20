@@ -134,11 +134,8 @@ class Worker
 
       sender ! "done"
 
-    case CreateModMessage(value: Any) =>
+    case CreateModMessage(value) =>
       (datastore ? CreateModMessage(value)) pipeTo sender
-
-    case CreateModMessage(null) =>
-      (datastore ? CreateModMessage(null)) pipeTo sender
 
     case ClearMessage =>
       Stats.clear()
