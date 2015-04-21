@@ -36,7 +36,7 @@ trait KVStore {
 
   def count(tableId: Int): Int
 
-  def clear()
+  def close()
 
   def processKeys(id: Int, process: Iterable[Any] => Unit)
 

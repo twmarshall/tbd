@@ -151,9 +151,6 @@ class AggregatorModifierActor
       }
       sender ! "done"
 
-    case ClearMessage() =>
-      dependencies.clear()
-
     case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
       if (nodeId != -1 && flushNode != -1 && nodeId != flushNode) {
         println("nodeId = " + nodeId + " flushNode = " + flushNode)

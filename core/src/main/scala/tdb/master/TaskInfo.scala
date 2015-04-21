@@ -25,7 +25,7 @@ class TaskInfo
      val taskRef: ActorRef,
      val adjust: Adjustable[_],
      val parent: ActorRef,
-     val workerRef: ActorRef) {
+     val workerId: WorkerId) {
 
   override def toString = "TaskInfo(id=" + id + ")"
 }

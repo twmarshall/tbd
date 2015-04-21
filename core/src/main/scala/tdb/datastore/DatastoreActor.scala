@@ -85,15 +85,16 @@ class DatastoreActor(workerInfo: WorkerInfo, id: TaskId)
     case RemoveModsMessage(modIds: Iterable[ModId], taskRef: ActorRef) =>
       datastore.removeMods(modIds, taskRef) pipeTo sender
 
-    case ClearMessage() =>
-      datastore.clear()
-
     case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
       sender ! "done"
 
     case x =>
       log.warning("Datastore actor received unhandled message " +
                   x + " from " + sender)
+  }
+
+  override def postStop() {
+    datastore.close()
   }
 }
 

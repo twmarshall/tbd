@@ -34,7 +34,7 @@ import tdb.util._
 class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
     (implicit ec: ExecutionContext) {
 
-  private var store =
+  private val store =
     workerInfo.storeType  match {
       case "berkeleydb" => new BerkeleyStore(workerInfo)
       case "cassandra" => new CassandraStore(workerInfo)
@@ -171,19 +171,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
   def processKeys(process: Iterable[Any] => Unit) =
     store.processKeys(1, process)
 
-  def clear() {
-    store.clear()
-
-    store = workerInfo.storeType  match {
-      case "berkeleydb" => new BerkeleyStore(workerInfo)
-      case "memory" => new MemoryStore()
-    }
-
-    store.createTable[ModId, Any]("Mods", null)
-
-    dependencies.clear()
-
-    inputs.clear()
-    chunks.clear()
+  def close() {
+    store.close()
   }
 }

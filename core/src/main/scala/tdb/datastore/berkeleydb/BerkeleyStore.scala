@@ -84,10 +84,8 @@ class BerkeleyStore(val workerInfo: WorkerInfo)
     }
   }
 
-  override def clear() {
-    super.clear()
-
-    nextStoreId = 0
+  override def close() {
+    super.close()
 
     metaStore.close()
     environment.close()

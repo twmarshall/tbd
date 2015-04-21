@@ -51,8 +51,4 @@ class DependencyManager(implicit ec: ExecutionContext) {
       Future { "done" }
     }
   }
-
-  def clear() {
-    keyDependencies.clear()
-  }
 }

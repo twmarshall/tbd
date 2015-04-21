@@ -144,18 +144,10 @@ trait CachedStore extends KVStore {
     tables(id).count()
   }
 
-  def clear() = {
+  def close() = {
     for ((id, table) <- tables) {
       table.close()
     }
-    tables.clear()
-
-    values.clear()
-
-    cacheSize = 0
-    head = tail
-    tail.previous = null
-    tail.next = null
   }
 
   def processKeys(id: Int, process: Iterable[Any] => Unit) {

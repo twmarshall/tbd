@@ -53,7 +53,6 @@ class Worker
     val info = WorkerInfo(
       -1,
       systemURL + "/user/worker",
-      systemURL + "/user/worker/datastore",
       webuiAddress,
       OS.getNumCores(),
       conf.storeType(),
@@ -64,12 +63,7 @@ class Worker
 
     Await.result((masterRef ? message).mapTo[WorkerInfo], DURATION)
   }
-
   private val datastores = Map[TaskId, ActorRef]()
-
-  private val datastore = context.actorOf(
-    DatastoreActor.props(info, info.mainDatastoreId), "datastore")
-  datastores(info.mainDatastoreId) = datastore
 
   def receive = {
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
@@ -82,11 +76,10 @@ class Worker
 
       sender ! taskRef
 
-    case CreateDatastoreMessage
-        (listConf: ListConf,
-         datastoreId: TaskId,
-         thisRange: HashRange) =>
+    case CreateDatastoreMessage(listConf, datastoreId: TaskId, thisRange) =>
       val modifierRef = listConf match {
+        case null =>
+          context.actorOf(DatastoreActor.props(info, datastoreId))
         case aggregatorConf: AggregatorListConf =>
           context.actorOf(AggregatorModifierActor.props(
             aggregatorConf, info, datastoreId))
@@ -103,11 +96,6 @@ class Worker
       }
       datastores(datastoreId) = modifierRef
       sender ! modifierRef
-
-    case CreateDatastoreMessage(null, datastoreId: TaskId, null) =>
-      val datastore = context.actorOf(
-        DatastoreActor.props(info, datastoreId), datastoreId.toString)
-      sender ! datastore
 
     case SplitFileMessage(dir: String, fileName: String, partitions: Int) =>
       if (tdb.examples.Experiment.fast) {
@@ -135,10 +123,17 @@ class Worker
       sender ! "done"
 
     case CreateModMessage(value) =>
-      (datastore ? CreateModMessage(value)) pipeTo sender
+      (datastores(info.mainDatastoreId) ? CreateModMessage(value)) pipeTo sender
 
     case ClearMessage =>
+      for ((taskId, datastoreRef) <- datastores) {
+        context.stop(datastoreRef)
+      }
+      datastores.clear()
+
       Stats.clear()
+
+      sender ! "done"
 
     case "started" => sender ! "done"
 

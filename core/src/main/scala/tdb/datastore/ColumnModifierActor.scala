@@ -242,9 +242,6 @@ class ColumnModifierActor
 
       sender ! output
 
-    case ClearMessage() =>
-      datastore.clear()
-
     case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
       for ((column, pair) <- buffer) {
         assert(!flushNodes.contains(column))
@@ -261,5 +258,9 @@ class ColumnModifierActor
     case x =>
       log.warning("ModifierActor received unhandled message " + x +
         " from " + sender)
+  }
+
+  override def postStop() {
+    datastore.close()
   }
 }

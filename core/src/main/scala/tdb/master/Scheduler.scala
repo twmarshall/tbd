@@ -15,22 +15,23 @@
  */
 package tdb.master
 
-import akka.actor.ActorRef
 import scala.collection.mutable
+
+import tdb.Constants.WorkerId
 
 class Scheduler {
 
-  private val workers = mutable.Buffer[ActorRef]()
+  private val workers = mutable.Buffer[WorkerId]()
 
-  def addWorker(workerRef: ActorRef) {
-    workers += workerRef
+  def addWorker(workerId: WorkerId) {
+    workers += workerId
   }
 
-  def removeWorker(workerRef: ActorRef) {
-    workers -= workerRef
+  def removeWorker(workerId: WorkerId) {
+    workers -= workerId
   }
 
-  def nextWorker(): ActorRef = {
+  def nextWorker(): WorkerId = {
     val w = workers.head
     workers -= w
     workers += w

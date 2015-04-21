@@ -133,14 +133,15 @@ class ModifierActor
       }
       Future.sequence(futures) pipeTo sender
 
-    case ClearMessage() =>
-      datastore.clear()
-
     case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
       sender ! "done"
 
     case x =>
       log.warning("ModifierActor received unhandled message " + x +
         " from " + sender)
+  }
+
+  override def postStop() {
+    datastore.close()
   }
 }

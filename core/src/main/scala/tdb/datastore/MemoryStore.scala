@@ -86,10 +86,7 @@ class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
     tables(id).size
   }
 
-  def clear() {
-    tables.clear()
-    nextTableId = 0
-  }
+  def close() {}
 
   def processKeys(id: Int, process: Iterable[Any] => Unit) {
     process(tables(id).keys)

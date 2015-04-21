@@ -15,15 +15,14 @@
  */
 package tdb.worker
 
-import tdb.Constants.WorkerId
+import tdb.Constants._
 
 case class WorkerInfo
   (workerId: WorkerId,
    worker: String,
-   datastore: String,
    webuiAddress: String,
    numCores: Int,
    storeType: String,
    envHomePath: String,
    cacheSize: Int,
-   mainDatastoreId: Int)
+   mainDatastoreId: TaskId)
