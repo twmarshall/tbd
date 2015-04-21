@@ -31,35 +31,18 @@ import tdb.stats.Stats
 import tdb.util._
 
 object Worker {
-  def props
-      (masterRef: ActorRef,
-       conf: WorkerConf,
-       systemURL: String,
-       webuiAddress: String) =
-    Props(classOf[Worker], masterRef, conf,
-          systemURL, webuiAddress)
+  def props(info: WorkerInfo, masterRef: ActorRef) =
+    Props(classOf[Worker], info, masterRef)
 }
 
-class Worker
-    (masterRef: ActorRef,
-     conf: WorkerConf,
-     systemURL: String,
-     webuiAddress: String) extends Actor with ActorLogging {
+class Worker(_info: WorkerInfo, masterRef: ActorRef)
+    extends Actor with ActorLogging {
   import context.dispatcher
 
   log.info("Worker launched.")
 
   private val info = {
-    val info = WorkerInfo(
-      -1,
-      systemURL + "/user/worker",
-      webuiAddress,
-      OS.getNumCores(),
-      conf.storeType(),
-      conf.envHomePath(),
-      conf.cacheSize(),
-      -1)
-    val message = RegisterWorkerMessage(info)
+    val message = RegisterWorkerMessage(_info)
 
     Await.result((masterRef ? message).mapTo[WorkerInfo], DURATION)
   }

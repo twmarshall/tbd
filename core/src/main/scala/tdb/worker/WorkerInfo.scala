@@ -16,13 +16,21 @@
 package tdb.worker
 
 import tdb.Constants._
+import tdb.util.OS
 
 case class WorkerInfo
   (workerId: WorkerId,
-   worker: String,
-   webuiAddress: String,
-   numCores: Int,
+   systemName: String,
+   ip: String,
+   port: Int,
+   webuiPort: Int,
    storeType: String,
    envHomePath: String,
    cacheSize: Int,
-   mainDatastoreId: TaskId)
+   mainDatastoreId: TaskId = -1,
+   numCores: Int = OS.getNumCores()) {
+  val workerAddress = "akka.tcp://" + systemName + "@" + ip + ":" +
+    port + "/user/worker"
+
+  val webuiAddress = port + ":" + webuiPort
+}

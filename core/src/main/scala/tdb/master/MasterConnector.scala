@@ -23,8 +23,7 @@ import scala.concurrent.Await
 
 import tdb.Constants._
 import tdb.Log
-import tdb.stats.Stats
-import tdb.worker.Worker
+import tdb.worker.{Worker, WorkerInfo}
 import tdb.util.Util
 import tdb.worker.WorkerConf
 
@@ -79,8 +78,17 @@ object MasterConnector {
       val args = workerArgs ++ Array(systemURL + "/master")
       val workerConf = new WorkerConf(args)
 
+      val workerInfo = WorkerInfo(
+        -1,
+        system.name,
+        ip,
+        port,
+        workerConf.webui_port(),
+        workerConf.storeType(),
+        workerConf.envHomePath(),
+        workerConf.cacheSize())
       val workerRef = system.actorOf(
-        Worker.props(masterRef, workerConf, systemURL, ""), "worker")
+        Worker.props(workerInfo, masterRef), "worker")
 
       Await.result(workerRef ? "started", DURATION)
     }

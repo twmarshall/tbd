@@ -26,6 +26,7 @@ import tdb.{Constants, Log}
 import tdb.Constants._
 import tdb.messages._
 import tdb.stats.Stats
+import tdb.util._
 
 object Main {
   def main(args: Array[String]) {
@@ -58,14 +59,17 @@ object Main {
     val future = selection.resolveOne()
     val masterRef = Await.result(future.mapTo[ActorRef], DURATION)
 
-    val systemURL = "akka.tcp://" + system.name + "@" + ip + ":" + port
-    system.actorOf(
-      Worker.props(
-        masterRef,
-        conf,
-        systemURL,
-        ip + ":" + webui_port),
-      "worker")
+    val info = WorkerInfo(
+      -1,
+      system.name,
+      ip,
+      port,
+      webui_port,
+      conf.storeType(),
+      conf.envHomePath(),
+      conf.cacheSize())
+
+    system.actorOf(Worker.props(info, masterRef), "worker")
 
     Log.log = Logging(system, "worker")
 

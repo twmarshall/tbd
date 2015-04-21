@@ -141,7 +141,7 @@ class Master extends Actor with ActorLogging {
       totalCores += workerInfo.numCores
 
       val workerRef = AkkaUtil.getActorFromURL(
-        workerInfo.worker, context.system)
+        workerInfo.workerAddress, context.system)
       log.info("Registering Worker at " + workerRef)
 
       context.watch(workerRef)
