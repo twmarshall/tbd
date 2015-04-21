@@ -18,11 +18,11 @@ package tdb.datastore.berkeleydb
 import com.sleepycat.je.Environment
 import com.sleepycat.persist.{EntityStore, StoreConfig}
 import com.sleepycat.persist.model.{Entity, PrimaryKey}
-import java.io._
 
 import tdb.Constants.ModId
 import tdb.datastore._
 import tdb.stats.WorkerStats
+import tdb.util.Util
 
 class BerkeleyModTable(environment: Environment) extends Table {
   private val storeConfig = new StoreConfig()
@@ -34,11 +34,7 @@ class BerkeleyModTable(environment: Environment) extends Table {
   def put(key: Any, value: Any) {
     val entity = new ModEntity()
     entity.key = key.asInstanceOf[ModId]
-
-    val byteOutput = new ByteArrayOutputStream()
-    val objectOutput = new ObjectOutputStream(byteOutput)
-    objectOutput.writeObject(value)
-    entity.value = byteOutput.toByteArray
+    entity.value = Util.serialize(value)
 
     WorkerStats.berkeleyWrites += 1
     primaryIndex.put(entity)
@@ -47,11 +43,7 @@ class BerkeleyModTable(environment: Environment) extends Table {
   def get(_key: Any): Any = {
     val key = _key.asInstanceOf[ModId]
     WorkerStats.berkeleyReads += 1
-    val byteArray = primaryIndex.get(key).value
-
-    val byteInput = new ByteArrayInputStream(byteArray)
-    val objectInput = new ObjectInputStream(byteInput)
-    val obj = objectInput.readObject()
+    val obj = Util.deserialize(primaryIndex.get(key).value)
 
     // No idea why this is necessary.
     if (obj != null && obj.isInstanceOf[Tuple2[_, _]]) {

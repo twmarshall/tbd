@@ -15,8 +15,8 @@
  */
 package tdb.util
 
-import java.net.InetAddress;
-import java.net.NetworkInterface;
+import java.net.{InetAddress, NetworkInterface}
+import java.io._
 import scala.io.StdIn
 
 object Util {
@@ -62,5 +62,18 @@ object Util {
     }
 
     ip
+  }
+
+  def serialize(value: Any): Array[Byte] = {
+    val byteOutput = new ByteArrayOutputStream()
+    val objectOutput = new ObjectOutputStream(byteOutput)
+    objectOutput.writeObject(value)
+    byteOutput.toByteArray
+  }
+
+  def deserialize(bytes: Array[Byte]): Any = {
+    val byteInput = new ByteArrayInputStream(bytes)
+    val objectInput = new ObjectInputStream(byteInput)
+    objectInput.readObject()
   }
 }

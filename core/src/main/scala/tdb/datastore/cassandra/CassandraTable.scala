@@ -15,25 +15,18 @@
  */
 package tdb.datastore.cassandra
 
-import com.datastax.driver.core.Cluster
+import com.datastax.driver.core.{BoundStatement, Session}
 
-import tdb.datastore._
+import tdb.datastore.Table
 
-/*class CassandraTable extends Table {
-  def put(key: Any, value: Any)
+trait CassandraTable extends Table {
+  def session: Session
 
-  def get(key: Any): Any
+  def tableName: String
 
-  def delete(key: Any)
-
-  def contains(key: Any): Boolean
-
-  def count(): Int
-
-  def processKeys(process: Iterable[Any] => Unit)
-
-  def hashRange: HashRange
-
-  def close()
+  def count(): Int = {
+    val stmt = s"""SELECT COUNT(*) FROM $tableName"""
+    val results = session.execute(stmt)
+    results.one().getLong("count").toInt
+  }
 }
-*/

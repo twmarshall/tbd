@@ -15,7 +15,7 @@
  */
 package tdb.datastore.cassandra
 
-import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Cluster
 import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 import scala.reflect.runtime.universe._
@@ -53,9 +53,12 @@ class CassandraStore(val workerInfo: WorkerInfo)
 
     typeOf[T] match {
       case s if typeOf[T] =:= typeOf[String] && typeOf[U] =:= typeOf[String] =>
-        //tables(id) = createInputStore(name, range)
+        val tableName = "tdb." + name.replace("/", "_").replace(".", "_")
+          .replace("-", "_")
+
+        tables(id) = new CassandraInputTable(session, tableName, range)
       case m if typeOf[T] =:= typeOf[ModId] =>
-        //tables(id) = createModStore()
+        tables(id) = new CassandraModTable(session, "tdb.mods", range)
       case _ => ???
     }
 
