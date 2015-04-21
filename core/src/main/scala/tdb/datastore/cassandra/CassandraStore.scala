@@ -30,7 +30,7 @@ class CassandraStore(val workerInfo: WorkerInfo)
   private var nextStoreId = 0
 
   private val cluster = Cluster.builder()
-    .addContactPoint("172.19.146.4")
+    .addContactPoint(workerInfo.ip)
     .build()
 
   private val metadata = cluster.getMetadata()
