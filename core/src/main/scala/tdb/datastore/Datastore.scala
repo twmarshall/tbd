@@ -24,6 +24,7 @@ import scala.util.{Failure, Success}
 
 import tdb.Constants._
 import tdb.datastore.berkeleydb.BerkeleyStore
+import tdb.datastore.cassandra.CassandraStore
 import tdb.messages._
 import tdb.Mod
 import tdb.stats.WorkerStats
@@ -36,6 +37,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
   private var store =
     workerInfo.storeType  match {
       case "berkeleydb" => new BerkeleyStore(workerInfo)
+      case "cassandra" => new CassandraStore(workerInfo)
       case "memory" => new MemoryStore()
     }
   store.createTable[ModId, Any]("Mods", null)
