@@ -19,6 +19,7 @@ import java.lang.management.ManagementFactory
 import scala.collection.mutable.{Buffer, Map}
 
 import tdb.{Adjustable, Mutator}
+import tdb.Debug._
 import tdb.list.ListConf
 import tdb.master.MasterConnector
 import tdb.worker.WorkerConf

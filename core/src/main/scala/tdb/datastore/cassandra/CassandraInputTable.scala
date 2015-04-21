@@ -26,9 +26,8 @@ class CassandraInputTable
      val tableName: String,
      val hashRange: HashRange) extends CassandraTable {
 
-  session.execute(s"""DROP TABLE IF EXISTS $tableName""")
-  val query = s"""CREATE TABLE $tableName
-  (key text, value text, PRIMARY KEY(key));"""
+  val query = s"""CREATE TABLE IF NOT EXISTS $tableName
+    (key text, value text, PRIMARY KEY(key));"""
   session.execute(query)
 
   private val putStmt = session.prepare(

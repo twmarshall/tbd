@@ -340,7 +340,7 @@ class Master extends Actor with ActorLogging {
 
             println("fileName = " + info.fileName)
             if (info.fileName != "") {
-              futures += modifierRef ? LoadFileMessage(info.fileName)
+              futures += modifierRef ? LoadFileMessage(info.fileName, true)
             }
           }
       }

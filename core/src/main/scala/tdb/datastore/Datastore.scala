@@ -51,9 +51,6 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
 
   val chunks = Map[ModId, Iterable[Any]]()
 
-  // Maps logical names of datastores to their references.
-  val datastores = Map[WorkerId, ActorRef]()
-
   def getNewModId(): ModId = {
     val modId = createModId(id, 0, nextModId)
     nextModId += 1

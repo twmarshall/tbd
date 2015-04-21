@@ -35,7 +35,7 @@ case class RemoveModsMessage(mods: Iterable[ModId], taskRef: ActorRef)
 case class NullMessage()
 case class SetIdMessage(workerId: WorkerId)
 case class ClearMessage()
-case class LoadFileMessage(fileName: String)
+case class LoadFileMessage(fileName: String, recovery: Boolean = false)
 case class FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean)
 
 // Master
