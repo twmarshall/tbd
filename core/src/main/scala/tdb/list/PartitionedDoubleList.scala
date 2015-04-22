@@ -59,9 +59,9 @@ class PartitionedDoubleList[T, U]
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).foreach(f)(c)
-        }, partitions(i).datastoreId)({
+        }, partitions(i).datastoreId, "left" + i)({
           c => innerForeach(i + 1)(c)
-        })
+        }, name2 = "right" + i)
       }
     }
 

@@ -48,7 +48,7 @@ class Master extends Actor with ActorLogging {
   private val workers = Map[WorkerId, ActorRef]()
   private val workerInfos = Map[WorkerId, WorkerInfo]()
 
-  private val tasks = mutable.Set[TaskInfo]()
+  private val tasks = mutable.Map[String, TaskInfo]()
 
   private val datastores = Map[TaskId, DatastoreInfo]()
 
@@ -154,7 +154,11 @@ class Master extends Actor with ActorLogging {
 
       Stats.registeredWorkers += workerInfo
 
-    case ScheduleTaskMessage(parent, datastoreId, adjust) =>
+    case ScheduleTaskMessage(name, parent, datastoreId, adjust) =>
+      if (name != "" && tasks.contains(name)) {
+        val taskRef = tasks(name).taskRef
+        sender ! (taskRef, tasks(name).output)
+      } else {
       val taskId = nextTaskId
       nextTaskId += 1
 
@@ -174,17 +178,19 @@ class Master extends Actor with ActorLogging {
         case Success(taskRef) =>
           val taskInfo = new TaskInfo(
             taskId, taskRef, adjust, parent, workerId)
-          tasks += taskInfo
+          tasks(name) = taskInfo
           val outputFuture = taskRef ? RunTaskMessage(adjust)
 
           outputFuture.onComplete {
             case Success(output) =>
+              taskInfo.output = output
               respondTo ! (taskRef, output)
             case Failure(e) =>
               e.printStackTrace()
           }
         case Failure(e) =>
           e.printStackTrace()
+      }
       }
 
     // Mutator
@@ -206,9 +212,15 @@ class Master extends Actor with ActorLogging {
 
       val taskInfo = new TaskInfo(
         taskId, taskRef, adjust, workerRef, workerId)
-      tasks += taskInfo
+      tasks("mutator-rootTask" + mutatorId) = taskInfo
 
-      (taskRef ? RunTaskMessage(adjust)) pipeTo sender
+      val respondTo = sender
+      (taskRef ? RunTaskMessage(adjust)).onComplete {
+        case Success(output) =>
+          taskInfo.output = output
+          respondTo ! output
+        case Failure(e) => e.printStackTrace()
+      }
 
       rootTasks(mutatorId) = taskRef
 
@@ -357,7 +369,7 @@ class Master extends Actor with ActorLogging {
 
       Future {
       tasks.map {
-        case info =>
+        case (name, info) =>
           if (info.workerId == deadWorkerId) {
             log.warning("Relaunching " + info)
             val workerId = scheduler.nextWorker()
