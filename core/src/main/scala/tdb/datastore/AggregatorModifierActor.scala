@@ -21,6 +21,7 @@ import scala.collection.mutable
 import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
+import tdb.Resolver
 import tdb.Constants._
 import tdb.list._
 import tdb.messages._
@@ -51,6 +52,8 @@ class AggregatorModifierActor
   private val values = mutable.Map[Any, Any]()
 
   private val buffer = mutable.Map[Any, Any]()
+
+  private val resolver = new Resolver(masterRef)
 
   def put(key: Any, value: Any) {
     if (buffer.contains(key)) {
@@ -138,7 +141,7 @@ class AggregatorModifierActor
         flushNotified = true
 
         val respondTo = sender
-        tdb.util.AkkaUtil.sendToTask(flushTaskId, flushTask, NodeUpdatedMessage(flushNode), masterRef) {
+        resolver.sendToTask(flushTaskId, NodeUpdatedMessage(flushNode)) {
           respondTo ! "done"
         }
       } else {

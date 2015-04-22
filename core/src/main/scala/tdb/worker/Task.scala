@@ -57,17 +57,26 @@ class Task
       c.ddg.modUpdated(modId)
       c.updatedMods += modId
 
-      (c.resolver(parentId) ? PebbleMessage(self, modId)) pipeTo sender
+      if (parentId == -1) {
+        sender ! "done"
+      } else {
+        val respondTo = sender
+        c.resolver.sendToTask(parentId, PebbleMessage(self, modId)) {
+          respondTo ! "done"
+        }
+      }
 
     case NodeUpdatedMessage(nodeId: NodeId) =>
       c.ddg.nodeUpdated(nodeId)
 
-      val respondTo = sender
-      tdb.util.AkkaUtil.sendToTask(parentId, c.resolver(parentId), PebbleMessage(self, -1), masterRef) {
-        respondTo ! "done"
+      if (parentId == -1) {
+        sender ! "done"
+      } else {
+        val respondTo = sender
+        c.resolver.sendToTask(parentId, PebbleMessage(self, -1)) {
+          respondTo ! "done"
+        }
       }
-
-      //(c.resolver(parentId) ? PebbleMessage(self, -1)) pipeTo sender
 
     case ModRemovedMessage(modId: ModId) =>
       c.ddg.modRemoved(modId)
@@ -78,8 +87,11 @@ class Task
 
       c.ddg.keyUpdated(inputId, key)
 
-      if (newPebble) {
-        (c.resolver(parentId) ? PebbleMessage(self, -1)) pipeTo sender
+      if (newPebble && parentId != -1) {
+        val respondTo = sender
+        c.resolver.sendToTask(parentId, PebbleMessage(self, -1)) {
+          respondTo ! "done"
+        }
       } else {
         sender ! "done"
       }
@@ -106,8 +118,11 @@ class Task
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       val newPebble = c.ddg.parUpdated(taskRef)
 
-      if (newPebble) {
-        (c.resolver(parentId) ? PebbleMessage(self, modId)) pipeTo sender
+      if (newPebble && parentId != -1) {
+        val respondTo = sender
+        c.resolver.sendToTask(parentId, PebbleMessage(self, modId)) {
+          respondTo ! "done"
+        }
       } else {
         sender ! "done"
       }

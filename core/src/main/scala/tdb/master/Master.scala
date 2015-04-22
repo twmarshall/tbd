@@ -210,7 +210,7 @@ class Master extends Actor with ActorLogging {
       val taskRef = Await.result(taskRefFuture.mapTo[ActorRef], DURATION)
 
       val taskInfo = new TaskInfo(
-        taskId, "rootTask-" + mutatorId, taskRef, adjust, workerId, workerId)
+        taskId, "rootTask-" + mutatorId, taskRef, adjust, -1, workerId)
       tasks(taskId) = taskInfo
 
       val respondTo = sender
@@ -263,18 +263,18 @@ class Master extends Actor with ActorLogging {
 
       sender ! "done"
 
-    case ResolveMessage(datastoreId) =>
-      if (datastores.contains(datastoreId)) {
-        sender ! datastores(datastoreId).datastoreRef
-      } else if (workers.contains(datastoreId)) {
-        sender ! workers(datastoreId)
+    case ResolveMessage(taskId) =>
+      if (datastores.contains(taskId)) {
+        sender ! datastores(taskId).datastoreRef
+      } else if (workers.contains(taskId)) {
+        sender ! workers(taskId)
       } else {
-        tasks.map {
+        val option = tasks.find {
           case (id, taskInfo) =>
-            if (taskInfo.id == datastoreId) {
-              sender ! taskInfo.taskRef
-            }
+            taskInfo.id == taskId
         }
+        assert(!option.isEmpty)
+        sender ! option.get._2.taskRef
       }
 
     // Datastore

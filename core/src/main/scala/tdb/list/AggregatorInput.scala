@@ -51,8 +51,10 @@ class AggregatorInput[T, U]
        taskId: TaskId,
        taskRef: ActorRef,
        initialRun: Boolean): Unit = {
-    val futures = hasher.objs.values.map(
-      _._2 ? FlushMessage(nodeId, taskId, taskRef, initialRun))
+    val futures = hasher.objs.values.map {
+      case (datastoreId, datastoreRef) =>
+        datastoreRef ? FlushMessage(nodeId, taskId, taskRef, initialRun)
+    }
     import scala.concurrent.ExecutionContext.Implicits.global
     Await.result(Future.sequence(futures), DURATION)
   }
@@ -97,8 +99,8 @@ class AggregatorBuffer[T, U]
     for ((hash, buf) <- hashedPut) {
       if (buf.size > 0) {
         val datastoreId = input.hasher.objs(hash)._1
-        val datastoreRef = resolver(datastoreId)
-        println("PutAll " + datastoreRef)
+        val datastoreRef = resolver.resolve(datastoreId)
+
         futures += datastoreRef ? PutAllMessage(buf)
       }
     }

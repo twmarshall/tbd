@@ -17,22 +17,45 @@ package tdb
 
 import akka.actor.ActorRef
 import akka.pattern.ask
+import akka.util.Timeout
 import scala.collection.mutable
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
+import scala.util.{Failure, Success}
+
 
 import tdb.Constants._
 import tdb.messages._
 
 class Resolver(masterRef: ActorRef) {
-  val datastores = mutable.Map[TaskId, ActorRef]()
+  val tasks = mutable.Map[TaskId, ActorRef]()
 
-  def apply(datastoreId: TaskId): ActorRef = {
-    if (!datastores.contains(datastoreId)) {
-      val datastoreRef = Await.result(
-        (masterRef ? ResolveMessage(datastoreId)).mapTo[ActorRef], DURATION)
-      datastores(datastoreId) = datastoreRef
+  def resolve(taskId: TaskId): ActorRef = {
+    if (!tasks.contains(taskId)) {
+      val taskRef = Await.result(
+        (masterRef ? ResolveMessage(taskId)).mapTo[ActorRef], DURATION)
+      tasks(taskId) = taskRef
     }
 
-    datastores(datastoreId)
+    tasks(taskId)
+  }
+
+  def sendToTask(taskId: TaskId, message: Any, round: Int = 1)
+      (onComplete: => Unit)
+      (implicit ec: ExecutionContext) {
+    val taskRef = resolve(taskId)
+    val f = ask(taskRef, message)(Timeout(1000 * round, java.util.concurrent.TimeUnit.MILLISECONDS))
+
+    f.onComplete {
+      case Success(f) =>
+        onComplete
+      case Failure(e) =>
+        println("Sending failed to " + taskRef)
+        val newTaskRef = Await.result(
+          (masterRef ? ResolveMessage(taskId)).mapTo[ActorRef], DURATION)
+        println("Retrieved new taskRef = " + newTaskRef)
+        tasks(taskId) = newTaskRef
+
+        sendToTask(taskId, message, round + 1)(onComplete)
+    }
   }
 }
