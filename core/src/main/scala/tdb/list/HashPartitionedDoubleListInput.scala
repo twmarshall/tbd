@@ -26,7 +26,7 @@ import tdb.util.ObjHasher
 
 class HashPartitionedDoubleListInput[T, U]
     (val inputId: InputId,
-     val hasher: ObjHasher[ActorRef],
+     val hasher: ObjHasher[(TaskId, ActorRef)],
      val conf: ListConf,
      val workers: Iterable[ActorRef])
   extends HashPartitionedListInput[T, U] with java.io.Serializable {
@@ -34,7 +34,7 @@ class HashPartitionedDoubleListInput[T, U]
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[DoubleList[T, U]]()
 
-    for (datastoreRef <- hasher.objs.values) {
+    for ((datastoreId, datastoreRef) <- hasher.objs.values) {
       val future = datastoreRef ? GetAdjustableListMessage()
       adjustablePartitions +=
         Await.result(future.mapTo[DoubleList[T, U]], DURATION)

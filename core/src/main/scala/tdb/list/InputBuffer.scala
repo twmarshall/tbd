@@ -15,6 +15,8 @@
  */
 package tdb.list
 
+import tdb.Resolver
+
 trait InputBuffer[T, U] {
   def putAll(values: Iterable[(T, U)])
 
@@ -22,5 +24,5 @@ trait InputBuffer[T, U] {
 
   def removeAll(values: Iterable[(T, U)])
 
-  def flush()
+  def flush(resolver: Resolver)
 }

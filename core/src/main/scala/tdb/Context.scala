@@ -36,6 +36,8 @@ class Context
      val log: LoggingAdapter)
     (implicit val ec: ExecutionContext) {
 
+  val resolver = new Resolver(datastores, masterRef)
+
   val ddg = new DDG(this)
 
   var initialRun = true

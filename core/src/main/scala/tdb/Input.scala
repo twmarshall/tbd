@@ -29,8 +29,6 @@ trait Input[T, U] {
 
   def asyncPut(key: T, value: U): Future[_]
 
-  def asyncPutAll(values: Iterable[(T, U)]): Future[_]
-
   def get(key: T, taskRef: ActorRef): U
 
   def remove(key: T, value: U)

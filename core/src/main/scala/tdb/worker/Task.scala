@@ -87,7 +87,7 @@ class Task
       log.debug("Starting task.")
       val ret = adjust.run(c)
       for ((input, buf) <- c.buffers) {
-        buf.flush()
+        buf.flush(c.resolver)
       }
       for ((input, buf) <- c.bufs) {
         buf.flush()
@@ -122,7 +122,7 @@ class Task
           c.pending.clear()
 
           for ((input, buf) <- c.buffers) {
-            buf.flush()
+            buf.flush(c.resolver)
           }
           for ((input, buf) <- c.bufs) {
             buf.flush()

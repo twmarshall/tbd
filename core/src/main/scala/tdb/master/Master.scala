@@ -86,7 +86,7 @@ class Master extends Actor with ActorLogging {
       }
 
     val newDatastores = Map[TaskId, ActorRef]()
-    var hasher: ObjHasher[ActorRef] = null
+    var hasher: ObjHasher[(TaskId, ActorRef)] = null
     for (i <- 0 until partitions) {
       val start = workerIndex * partitionsPerWorker + i
       val thisRange = new HashRange(start, start + 1, listConf.partitions)
@@ -98,7 +98,8 @@ class Master extends Actor with ActorLogging {
           listConf, datastoreId, thisRange)).mapTo[ActorRef],
         DURATION)
 
-      val thisHasher = ObjHasher.makeHasher(thisRange, modifierRef)
+      val thisHasher = ObjHasher.makeHasher(
+        thisRange, (datastoreId, modifierRef))
       if (hasher == null) {
         hasher = thisHasher
       } else {
@@ -263,6 +264,9 @@ class Master extends Actor with ActorLogging {
 
       sender ! "done"
 
+    case ResolveMessage(datastoreId) =>
+      sender ! datastores(datastoreId).datastoreRef
+
     // Datastore
     case CreateModMessage(value) =>
       (workers(scheduler.nextWorker()) ? CreateModMessage(value)) pipeTo sender
@@ -293,7 +297,7 @@ class Master extends Actor with ActorLogging {
         }
 
       var index = 0
-      var hasher: ObjHasher[ActorRef] = null
+      var hasher: ObjHasher[(TaskId, ActorRef)] = null
       for ((workerId, workerRef) <- workers) {
         val thisHasher = createPartitions(workerId, workerRef, conf, index)
 

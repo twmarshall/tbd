@@ -21,22 +21,25 @@ import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future}
 
 import ColumnList._
-import tdb.{Traceable, TraceableBuffer}
+import tdb.{Resolver, Traceable, TraceableBuffer}
 import tdb.Constants._
 import tdb.messages._
 import tdb.util.ObjHasher
 
 class ColumnListInput[T]
     (val inputId: InputId,
-     val hasher: ObjHasher[ActorRef],
+     val hasher: ObjHasher[(TaskId, ActorRef)],
      conf: ColumnListConf)
   extends ListInput[T, Columns]
   with Traceable[(String, Iterable[(T, Any)]), (T, Iterable[String]), Iterable[Any]] {
 
-  def get(parameters: (T, Iterable[String]), nodeId: NodeId, taskRef: ActorRef): Iterable[Any] = {
-    val datastoreRef = hasher.getObj(parameters._1)
-    Await.result(
-      (datastoreRef ? GetFromMessage(parameters, nodeId, taskRef)).mapTo[Iterable[Any]],
+  def get
+      (parameters: (T, Iterable[String]),
+       nodeId: NodeId,
+       taskRef: ActorRef): Iterable[Any] = {
+    val datastoreRef = hasher.getObj(parameters._1)._2
+    Await.result((datastoreRef ? GetFromMessage(
+      parameters, nodeId, taskRef)).mapTo[Iterable[Any]],
       DURATION)
   }
 
@@ -46,15 +49,13 @@ class ColumnListInput[T]
 
   def asyncPut(key: T, value: Columns): Future[_] = ???
 
-  def asyncPutAll(values: Iterable[(T, Columns)]): Future[_] = ???
-
   def asyncPutAllIn(column: String, values: Iterable[(T, Any)]): Future[_] = {
     val hashedPut = hasher.hashAll(values)
 
     val futures = Buffer[Future[Any]]()
     for ((hash, buf) <- hashedPut) {
       if (buf.size > 0) {
-        val datastoreRef = hasher.objs(hash)
+        val datastoreRef = hasher.objs(hash)._2
         futures += datastoreRef ? PutAllInMessage(column, buf)
       }
     }
@@ -68,7 +69,7 @@ class ColumnListInput[T]
   }
 
   def asyncPutIn(column: String, key: T, value: Any): Future[_] = {
-    val datastoreRef = hasher.getObj(key)
+    val datastoreRef = hasher.getObj(key)._2
     datastoreRef ? PutInMessage(column, key, value)
   }
 
@@ -85,7 +86,7 @@ class ColumnListInput[T]
   def getAdjustableList(): AdjustableList[T, Columns] = {
     val adjustablePartitions = Buffer[ColumnList[T]]()
 
-    for (datastoreRef <- hasher.objs.values) {
+    for ((datastoreId, datastoreRef) <- hasher.objs.values) {
       val future = datastoreRef ? GetAdjustableListMessage()
       adjustablePartitions +=
         Await.result(future.mapTo[ColumnList[T]], DURATION)
@@ -102,7 +103,7 @@ class ColumnListInput[T]
   override def flush
       (nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean): Unit = {
     val futures = hasher.objs.values.map(
-      _ ? FlushMessage(nodeId, taskRef, initialRun))
+      _._2 ? FlushMessage(nodeId, taskRef, initialRun))
     import scala.concurrent.ExecutionContext.Implicits.global
     Await.result(Future.sequence(futures), DURATION)
   }
@@ -179,6 +180,10 @@ class ColumnBuffer[T]
   def removeAll(values: Iterable[(T, Columns)]) = ???
 
   def flush() {
+    flush(null)
+  }
+
+  def flush(resolver: Resolver) {
     val futures = Buffer[Future[Any]]()
     for ((column, values) <- toPut) {
       futures += input.asyncPutAllIn(column, values)

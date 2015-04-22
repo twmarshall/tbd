@@ -48,6 +48,7 @@ case class MutatorToBufferMessage(datastoreId: TaskId)
 case class ScheduleTaskMessage(
   name: String, parent: ActorRef, datastoreId: TaskId, adjust: Adjustable[_])
 case class ShutdownMutatorMessage(mutatorId: Int)
+case class ResolveMessage(datastoreId: TaskId)
 
 case class CreateListMessage(conf: ListConf)
 case class FileLoadedMessage(datastoreId: TaskId, fileName: String)

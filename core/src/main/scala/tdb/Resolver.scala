@@ -13,34 +13,24 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.list
+package tdb
 
 import akka.actor.ActorRef
 import akka.pattern.ask
 import scala.collection.mutable
 import scala.concurrent.Await
 
-import ColumnList._
 import tdb.Constants._
 import tdb.messages._
-import tdb.util.ObjHasher
 
-class ColumnChunkListInput[T]
-    (_inputId: InputId,
-     _hasher: ObjHasher[(TaskId, ActorRef)],
-     conf: ColumnListConf)
-  extends ColumnListInput[T](_inputId, _hasher, conf) {
-
-  override def getAdjustableList(): AdjustableList[T, Columns] = {
-    val adjustablePartitions = mutable.Buffer[ColumnChunkList[T]]()
-
-    for ((datastoreId, datastoreRef) <- hasher.objs.values) {
-      val future = datastoreRef ? GetAdjustableListMessage()
-      adjustablePartitions +=
-        Await.result(future.mapTo[ColumnChunkList[T]], DURATION)
+class Resolver(datastores: mutable.Map[TaskId, ActorRef], masterRef: ActorRef) {
+  def resolve(datastoreId: TaskId): ActorRef = {
+    if (!datastores.contains(datastoreId)) {
+      val datastoreRef = Await.result(
+        (masterRef ? ResolveMessage(datastoreId)).mapTo[ActorRef], DURATION)
+      datastores(datastoreId) = datastoreRef
     }
 
-    new PartitionedColumnChunkList(adjustablePartitions, conf)
+    datastores(datastoreId)
   }
-
 }

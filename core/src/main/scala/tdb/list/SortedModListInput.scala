@@ -52,8 +52,6 @@ abstract class SortedModListInput[T, U](mutator: Mutator)(implicit ordering: Ord
 
   def asyncPut(key: T, value: U) = ???
 
-  def asyncPutAll(values: Iterable[(T, U)]) = ???
-
   def put(key: T, value: U) {
     val nextOption =
       nodes.find { case (_key, _value) => ordering.lt(key, _key) }

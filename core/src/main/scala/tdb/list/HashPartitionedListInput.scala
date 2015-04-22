@@ -20,6 +20,7 @@ import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future}
 
+import tdb.Resolver
 import tdb.Constants._
 import tdb.messages._
 import tdb.util.ObjHasher
@@ -27,7 +28,7 @@ import tdb.util.ObjHasher
 trait HashPartitionedListInput[T, U]
   extends ListInput[T, U] with java.io.Serializable {
 
-  def hasher: ObjHasher[ActorRef]
+  def hasher: ObjHasher[(TaskId, ActorRef)]
 
   def workers: Iterable[ActorRef]
 
@@ -44,7 +45,7 @@ trait HashPartitionedListInput[T, U]
     Await.result(Future.sequence(workerFutures), DURATION)
 
     val futures = hasher.objs.map {
-      case (hash, datastoreRef) =>
+      case (hash, (datastoreId, datastoreRef)) =>
       val thisFile = dir + "/" + hash
       datastoreRef ? LoadFileMessage(thisFile)
     }
@@ -56,27 +57,12 @@ trait HashPartitionedListInput[T, U]
   }
 
   def asyncPut(key: T, value: U) = {
-    val datastoreRef = hasher.getObj(key)
+    val datastoreRef = hasher.getObj(key)._2
     datastoreRef ? PutMessage("keys", key, value, null)
   }
 
-  def asyncPutAll(values: Iterable[(T, U)]): Future[_] = {
-    val hashedPut = hasher.hashAll(values)
-
-    val futures = Buffer[Future[Any]]()
-    for ((hash, buf) <- hashedPut) {
-      if (buf.size > 0) {
-        val datastoreRef = hasher.objs(hash)
-        futures += datastoreRef ? PutAllMessage(buf)
-      }
-    }
-
-    import scala.concurrent.ExecutionContext.Implicits.global
-    Future.sequence(futures)
-  }
-
   def get(key: T, taskRef: ActorRef): U = {
-    val datastoreRef = hasher.getObj(key)
+    val datastoreRef = hasher.getObj(key)._2
     val f = datastoreRef ? GetMessage(key, taskRef)
     Await.result(f, DURATION).asInstanceOf[U]
   }
@@ -91,7 +77,7 @@ trait HashPartitionedListInput[T, U]
 
     for ((hash, buf) <- hashedRemove) {
       if (buf.size > 0) {
-        val datastoreRef = hasher.objs(hash)
+        val datastoreRef = hasher.objs(hash)._2
         futures += datastoreRef ? RemoveAllMessage(buf)
       }
     }
@@ -100,7 +86,7 @@ trait HashPartitionedListInput[T, U]
   }
 
   def asyncRemove(key: T, value: U): Future[_] = {
-    val datastoreRef = hasher.getObj(key)
+    val datastoreRef = hasher.getObj(key)._2
     datastoreRef ? RemoveMessage(key, value)
   }
 
@@ -115,7 +101,7 @@ trait HashPartitionedListInput[T, U]
   def flush(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean): Unit = ???
 }
 
-class HashBuffer[T, U](input: ListInput[T, U]) extends InputBuffer[T, U] {
+class HashBuffer[T, U](input: HashPartitionedListInput[T, U]) extends InputBuffer[T, U] {
 
   private val toPut = Map[T, U]()
 
@@ -147,10 +133,25 @@ class HashBuffer[T, U](input: ListInput[T, U]) extends InputBuffer[T, U] {
     }
   }
 
-  def flush() {
+  private def asyncPutAll(values: Iterable[(T, U)]): Future[_] = {
+    val hashedPut = input.hasher.hashAll(values)
+
+    val futures = Buffer[Future[Any]]()
+    for ((hash, buf) <- hashedPut) {
+      if (buf.size > 0) {
+        val datastoreRef = input.hasher.objs(hash)._2
+        futures += datastoreRef ? PutAllMessage(buf)
+      }
+    }
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Future.sequence(futures)
+  }
+
+  def flush(resolver: Resolver) {
     val futures = Buffer[Future[Any]]()
 
-    futures += input.asyncPutAll(toPut)
+    futures += asyncPutAll(toPut)
     input.removeAll(toRemove)
 
     toRemove.clear()

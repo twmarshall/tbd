@@ -20,13 +20,14 @@ import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.{Await, Future}
 
+import tdb.Resolver
 import tdb.Constants._
 import tdb.messages._
 import tdb.util.ObjHasher
 
 class AggregatorInput[T, U]
     (val inputId: InputId,
-     val hasher: ObjHasher[ActorRef],
+     val hasher: ObjHasher[(TaskId, ActorRef)],
      val conf: AggregatorListConf,
      val workers: Iterable[ActorRef])
   extends HashPartitionedListInput[T, U] with java.io.Serializable {
@@ -34,7 +35,7 @@ class AggregatorInput[T, U]
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[AggregatorList[T, U]]()
 
-    for (datastoreRef <- hasher.objs.values) {
+    for ((datastoreId, datastoreRef) <- hasher.objs.values) {
       val future = datastoreRef ? GetAdjustableListMessage()
       adjustablePartitions +=
         Await.result(future.mapTo[AggregatorList[T, U]], DURATION)
@@ -48,14 +49,14 @@ class AggregatorInput[T, U]
   override def flush
       (nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean): Unit = {
     val futures = hasher.objs.values.map(
-      _ ? FlushMessage(nodeId, taskRef, initialRun))
+      _._2 ? FlushMessage(nodeId, taskRef, initialRun))
     import scala.concurrent.ExecutionContext.Implicits.global
     Await.result(Future.sequence(futures), DURATION)
   }
 }
 
 class AggregatorBuffer[T, U]
-    (input: ListInput[T, U], conf: AggregatorListConf)
+    (input: AggregatorInput[T, U], conf: AggregatorListConf)
   extends InputBuffer[T, U] {
 
   private val toPut = Map[T, U]()
@@ -85,10 +86,28 @@ class AggregatorBuffer[T, U]
     }
   }
 
-  def flush() {
+  private def asyncPutAll
+      (values: Iterable[(T, U)], resolver: Resolver): Future[_] = {
+    val hashedPut = input.hasher.hashAll(values)
+
+    val futures = Buffer[Future[Any]]()
+    for ((hash, buf) <- hashedPut) {
+      if (buf.size > 0) {
+        val datastoreId = input.hasher.objs(hash)._1
+        val datastoreRef = resolver.resolve(datastoreId)
+        println("PutAll " + datastoreRef)
+        futures += datastoreRef ? PutAllMessage(buf)
+      }
+    }
+
+    import scala.concurrent.ExecutionContext.Implicits.global
+    Future.sequence(futures)
+  }
+
+  def flush(resolver: Resolver) {
     val futures = Buffer[Future[Any]]()
 
-    futures += input.asyncPutAll(toPut)
+    futures += asyncPutAll(toPut, resolver)
 
     toPut.clear()
 
