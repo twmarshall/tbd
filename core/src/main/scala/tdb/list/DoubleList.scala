@@ -25,7 +25,7 @@ import tdb.TDB._
 class DoubleList[T, U]
     (val head: Mod[DoubleListNode[T, U]],
      val sorted: Boolean = false,
-     val workerId: WorkerId = -1)
+     val datastoreId: TaskId = -1)
   extends AdjustableList[T, U] with Serializable {
 
   def filter(pred: ((T, U)) => Boolean)
@@ -62,7 +62,7 @@ class DoubleList[T, U]
             case node => node.map(f, memo)
           }
         }
-      }, false, workerId
+      }, false, datastoreId
     )
   }
 
@@ -77,7 +77,7 @@ class DoubleList[T, U]
           case null => write[DoubleListNode[T, V]](null)
           case node => node.mapValues(f, memo)
         }
-      }, sorted, workerId
+      }, sorted, datastoreId
     )
   }
 

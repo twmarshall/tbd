@@ -35,7 +35,7 @@ class HashPartitionedDoubleList[T, U]
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).reduce(f)(c)
-        }, partitions(i).workerId)({
+        }, partitions(i).datastoreId)({
           c => innerReduce(i + 1)(c)
         })
 
@@ -55,7 +55,7 @@ class HashPartitionedDoubleList[T, U]
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).reduceByKey(f)(c, o)
-        }, partitions(i).workerId)({
+        }, partitions(i).datastoreId)({
           c => innerReduce(i + 1)(c)
         })
 

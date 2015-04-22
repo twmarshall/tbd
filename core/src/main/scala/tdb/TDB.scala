@@ -403,22 +403,32 @@ object TDB {
      new Changeable[U](c.currentModId2))
   }
 
-  def parWithHint[T, U](one: Context => T, workerId1: WorkerId = -1)
-      (two: Context => U, workerId2: WorkerId = -1)
+  def parWithHint[T, U](one: Context => T, datastoreId1: TaskId = -1)
+      (two: Context => U, datastoreId2: TaskId = -1)
       (implicit c: Context): (T, U) = {
-    innerPar(one, workerId1)(two, workerId2)(c)
+    innerPar(one, datastoreId1)(two, datastoreId2)(c)
   }
 
-  def innerPar[T, U](one: Context => T, workerId1: WorkerId = -1)
-      (two: Context => U, workerId2: WorkerId = -1)
+  def innerPar[T, U](one: Context => T, datastoreId1: TaskId = -1)
+      (two: Context => U, datastoreId2: TaskId = -1)
       (implicit c: Context): (T, U) = {
-    val adjust1 = new Adjustable[T] { def run(implicit c: Context) = one(c) }
-    val future1 = c.masterRef ? ScheduleTaskMessage(
-      c.taskRef, workerId1, adjust1)
+    val adjust1 = new Adjustable[T] {
+      def run(implicit c: Context) = {
+        one(c)
+      }
+    }
 
-    val adjust2 = new Adjustable[U] { def run(implicit c: Context) = two(c) }
+    val future1 = c.masterRef ? ScheduleTaskMessage(
+      c.taskRef, datastoreId1, adjust1)
+
+    val adjust2 = new Adjustable[U] {
+      def run(implicit c: Context) = {
+        two(c)
+      }
+    }
+
     val future2 = c.masterRef ? ScheduleTaskMessage(
-      c.taskRef, workerId2, adjust2)
+      c.taskRef, datastoreId2, adjust2)
 
     val (taskRef1, oneRet) = Await.result(
       future1.mapTo[(ActorRef, T)], DURATION)

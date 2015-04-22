@@ -22,7 +22,8 @@ import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
+class DoubleChunkListModifier
+    (datastore: Datastore, datastoreId: TaskId, conf: ListConf)
     (implicit ec: ExecutionContext)
   extends Modifier {
 
@@ -34,7 +35,7 @@ class DoubleChunkListModifier(datastore: Datastore, conf: ListConf)
   val previous = Map[Any, Mod[DoubleChunkListNode[Any, Any]]]()
 
   val list = new DoubleChunkList[Any, Any](
-      lastNodeMod, conf, false, datastore.workerInfo.workerId)
+      lastNodeMod, conf, false, datastoreId)
 
   val duplicateKeys = Buffer[Any]()
 

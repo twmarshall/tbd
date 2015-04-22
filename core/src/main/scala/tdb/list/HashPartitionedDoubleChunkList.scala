@@ -36,7 +36,7 @@ class HashPartitionedDoubleChunkList[T, U]
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).reduce(f)(c)
-        }, partitions(i).workerId)({
+        }, partitions(i).datastoreId)({
           c => innerReduce(i + 1)(c)
         })
 

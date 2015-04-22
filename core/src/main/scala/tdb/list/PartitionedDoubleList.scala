@@ -37,7 +37,7 @@ class PartitionedDoubleList[T, U]
       if (i < partitions.size) {
         val (filteredPartition, filteredRest) = parWithHint({
           c => partitions(i).filter(pred)(c)
-        }, partitions(i).workerId)({
+        }, partitions(i).datastoreId)({
           c => parFilter(i + 1)(c)
         })
 
@@ -59,7 +59,7 @@ class PartitionedDoubleList[T, U]
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).foreach(f)(c)
-        }, partitions(i).workerId)({
+        }, partitions(i).datastoreId)({
           c => innerForeach(i + 1)(c)
         })
       }
@@ -77,7 +77,7 @@ class PartitionedDoubleList[T, U]
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).map(f)(c)
-        }, partitions(i).workerId)({
+        }, partitions(i).datastoreId)({
           c => innerMap(i + 1)(c)
         })
 
@@ -96,7 +96,7 @@ class PartitionedDoubleList[T, U]
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).mapValues(f)(c)
-        }, partitions(i).workerId)({
+        }, partitions(i).datastoreId)({
           c => innerMap(i + 1)(c)
         })
 
@@ -116,29 +116,29 @@ class PartitionedDoubleList[T, U]
         (next: DoubleList[T, U],
          remaining: Buffer[DoubleList[T, U]])
         (implicit c: Context): Mod[(T, U)] = {
-      val newNextOption = remaining.find(_.workerId == next.workerId)
+      val newNextOption = remaining.find(_.datastoreId == next.datastoreId)
 
       val (reducedPartition, reducedRest) =
         newNextOption match {
           case Some(newNext) =>
             parWithHint({
               c => next.reduce(f)(c)
-            }, next.workerId)({
+            }, next.datastoreId)({
               c => innerReduce(newNext, remaining - newNext)(c)
-            }, newNext.workerId)
+            }, newNext.datastoreId)
         case None =>
           if (remaining.size > 0) {
             parWithHint({
               c => next.reduce(f)(c)
-            }, next.workerId)({
+            }, next.datastoreId)({
               c => innerReduce(remaining(0), remaining.tail)(c)
-            }, remaining(0).workerId)
+            }, remaining(0).datastoreId)
           } else {
             parWithHint({
               c => next.reduce(f)(c)
-            }, next.workerId)({
+            }, next.datastoreId)({
               c => mod { write[(T, U)](null)(c) }(c)
-            }, next.workerId)
+            }, next.datastoreId)
           }
         }
 
@@ -160,7 +160,7 @@ class PartitionedDoubleList[T, U]
 
     parWithHint({
       c => innerReduce(partitions(0), partitions.tail)(c)
-    }, partitions(0).workerId)({
+    }, partitions(0).datastoreId)({
       c =>
     })._1
   }

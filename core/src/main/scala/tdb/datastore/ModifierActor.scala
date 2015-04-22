@@ -51,9 +51,9 @@ class ModifierActor
 
   val modifier =
     if (conf.chunkSize == 1)
-      new DoubleListModifier(datastore)
+      new DoubleListModifier(datastore, datastoreId)
     else
-      new DoubleChunkListModifier(datastore, conf)
+      new DoubleChunkListModifier(datastore, datastoreId, conf)
 
   def receive = {
     case CreateModMessage(value) =>

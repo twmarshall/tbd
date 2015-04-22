@@ -154,16 +154,15 @@ class Master extends Actor with ActorLogging {
 
       Stats.registeredWorkers += workerInfo
 
-    case ScheduleTaskMessage
-        (parent: ActorRef, _workerId: WorkerId, adjust: Adjustable[_]) =>
+    case ScheduleTaskMessage(parent, datastoreId, adjust) =>
       val taskId = nextTaskId
       nextTaskId += 1
 
       val workerId =
-        if (_workerId == -1) {
+        if (datastoreId == -1) {
           scheduler.nextWorker()
         } else {
-          _workerId
+          datastores(datastoreId).workerId
         }
 
       val workerRef = workers(workerId)

@@ -22,7 +22,7 @@ import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class DoubleListModifier(datastore: Datastore)
+class DoubleListModifier(datastore: Datastore, datastoreId: TaskId)
     (implicit ec: ExecutionContext)
   extends Modifier {
 
@@ -31,7 +31,7 @@ class DoubleListModifier(datastore: Datastore)
   val nodes = Map[Any, Mod[DoubleListNode[Any, Any]]]()
 
   val modList = new DoubleList[Any, Any](
-    tailMod, false, datastore.workerInfo.workerId)
+    tailMod, false, datastoreId)
 
   def loadInput(keys: Iterable[Any]): Future[_] = {
     var headNode = datastore.read(modList.head)
