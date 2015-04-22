@@ -337,13 +337,15 @@ class Master extends Actor with ActorLogging {
         case (id, info) =>
           if (info.workerId == deadWorkerId) {
             log.warning("Relaunching " + info)
-            val workerRef = workers(scheduler.nextWorker())
+            val workerId = scheduler.nextWorker()
+            val workerRef = workers(workerId)
 
             val modifierRef = Await.result(
               (workerRef ? CreateDatastoreMessage(
                 info.listConf, info.id, info.range)).mapTo[ActorRef],
               DURATION)
             info.datastoreRef = modifierRef
+            info.workerId = workerId
 
             if (info.fileName != "") {
               futures += modifierRef ? LoadFileMessage(info.fileName, true)
