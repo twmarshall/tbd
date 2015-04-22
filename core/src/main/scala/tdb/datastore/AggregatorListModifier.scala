@@ -25,7 +25,7 @@ import tdb.list._
 
 class AggregatorListModifier[U]
     (datastore: Datastore,
-     datastoreRef: ActorRef,
+     datastoreId: TaskId,
      conf: AggregatorListConf)
     (implicit ec: ExecutionContext)
   extends Modifier {
@@ -78,7 +78,7 @@ class AggregatorListModifier[U]
     values.contains(key)
   }
 
-  def getAdjustableList() = new AggregatorList(datastoreRef)
+  def getAdjustableList() = new AggregatorList(datastoreId)
 
   def toBuffer(): Buffer[(Any, Any)] = {
     val buf = Buffer[(Any, Any)]()

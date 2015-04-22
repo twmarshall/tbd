@@ -41,7 +41,7 @@ class Mutator(_connector: MasterConnector = null) {
       _connector
     }
 
-  private val masterRef = connector.masterRef
+  val masterRef = connector.masterRef
 
   private val id = Await.result(
     (masterRef ? RegisterMutatorMessage), DURATION).asInstanceOf[Int]

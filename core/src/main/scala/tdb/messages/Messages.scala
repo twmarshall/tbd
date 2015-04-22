@@ -44,6 +44,7 @@ case class RunMutatorMessage(adjust: Adjustable[_], mutatorId: Int)
 case class PropagateMutatorMessage(mutatorId: Int)
 case class GetMutatorDDGMessage(mutatorId: Int)
 case class PrintMutatorDDGDotsMessage(mutatorId: Int, nextName: Int, output: BufferedWriter)
+case class MutatorToBufferMessage(datastoreId: TaskId)
 case class ScheduleTaskMessage(
   name: String, parent: ActorRef, datastoreId: TaskId, adjust: Adjustable[_])
 case class ShutdownMutatorMessage(mutatorId: Int)

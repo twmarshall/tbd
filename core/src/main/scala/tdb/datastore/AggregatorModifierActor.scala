@@ -72,7 +72,7 @@ class AggregatorModifierActor
     buffer(key) = newValue
   }
 
-  def getAdjustableList() = new AggregatorList(self)
+  def getAdjustableList() = new AggregatorList(datastoreId)
 
   def toBuffer(): mutable.Buffer[(Any, Any)] = {
     val buf = mutable.Buffer[(Any, Any)]()

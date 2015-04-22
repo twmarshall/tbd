@@ -212,7 +212,7 @@ class Master extends Actor with ActorLogging {
 
       val taskInfo = new TaskInfo(
         taskId, taskRef, adjust, workerRef, workerId)
-      tasks("mutator-rootTask" + mutatorId) = taskInfo
+      tasks("rootTask-" + mutatorId) = taskInfo
 
       val respondTo = sender
       (taskRef ? RunTaskMessage(adjust)).onComplete {
@@ -234,6 +234,9 @@ class Master extends Actor with ActorLogging {
 
     case PrintMutatorDDGDotsMessage(mutatorId, nextName, output) =>
       (rootTasks(mutatorId) ? PrintDDGDotsMessage(nextName, output)) pipeTo sender
+
+    case MutatorToBufferMessage(datastoreId) =>
+      (datastores(datastoreId).datastoreRef ? ToBufferMessage()) pipeTo sender
 
     case ShutdownMutatorMessage(mutatorId: Int) =>
       log.info("Shutting down mutator " + mutatorId)
@@ -383,6 +386,12 @@ class Master extends Actor with ActorLogging {
                 val taskInfo = new TaskInfo(
                   info.id, taskRef, info.adjust, info.parent, workerId)
                 newTasks += taskInfo
+
+                if (name.startsWith("rootTask")) {
+                  val mutatorId = name.substring(name.indexOf("-")).toInt
+                  rootTasks(mutatorId) = taskRef
+                }
+
                 val outputFuture = taskRef ? RunTaskMessage(info.adjust)
               case Failure(e) =>
                 e.printStackTrace()
