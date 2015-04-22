@@ -32,16 +32,16 @@ object Task {
   def props
       (taskId: TaskId,
        mainDatastoreId: TaskId,
-       parent: ActorRef,
+       parentId: TaskId,
        masterRef: ActorRef,
        datastores: Map[TaskId, ActorRef]): Props =
-    Props(classOf[Task], taskId, mainDatastoreId, parent, masterRef, datastores)
+    Props(classOf[Task], taskId, mainDatastoreId, parentId, masterRef, datastores)
 }
 
 class Task
     (taskId: TaskId,
      mainDatastoreId: TaskId,
-     parent: ActorRef,
+     parentId: TaskId,
      masterRef: ActorRef,
      datastores: Map[TaskId, ActorRef])
   extends Actor with ActorLogging {
@@ -57,12 +57,17 @@ class Task
       c.ddg.modUpdated(modId)
       c.updatedMods += modId
 
-      (parent ? PebbleMessage(self, modId)) pipeTo sender
+      (c.resolver(parentId) ? PebbleMessage(self, modId)) pipeTo sender
 
     case NodeUpdatedMessage(nodeId: NodeId) =>
       c.ddg.nodeUpdated(nodeId)
 
-      (parent ? PebbleMessage(self, -1)) pipeTo sender
+      val respondTo = sender
+      tdb.util.AkkaUtil.sendToTask(parentId, c.resolver(parentId), PebbleMessage(self, -1), masterRef) {
+        respondTo ! "done"
+      }
+
+      //(c.resolver(parentId) ? PebbleMessage(self, -1)) pipeTo sender
 
     case ModRemovedMessage(modId: ModId) =>
       c.ddg.modRemoved(modId)
@@ -74,7 +79,7 @@ class Task
       c.ddg.keyUpdated(inputId, key)
 
       if (newPebble) {
-        (parent ? PebbleMessage(self, -1)) pipeTo sender
+        (c.resolver(parentId) ? PebbleMessage(self, -1)) pipeTo sender
       } else {
         sender ! "done"
       }
@@ -102,7 +107,7 @@ class Task
       val newPebble = c.ddg.parUpdated(taskRef)
 
       if (newPebble) {
-        (parent ? PebbleMessage(self, modId)) pipeTo sender
+        (c.resolver(parentId) ? PebbleMessage(self, modId)) pipeTo sender
       } else {
         sender ! "done"
       }

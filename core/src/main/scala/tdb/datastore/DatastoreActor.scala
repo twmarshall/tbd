@@ -85,7 +85,7 @@ class DatastoreActor(workerInfo: WorkerInfo, id: TaskId)
     case RemoveModsMessage(modIds: Iterable[ModId], taskRef: ActorRef) =>
       datastore.removeMods(modIds, taskRef) pipeTo sender
 
-    case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
+    case FlushMessage(nodeId: NodeId, taskId, taskRef, initialRun: Boolean) =>
       sender ! "done"
 
     case x =>

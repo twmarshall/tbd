@@ -22,10 +22,11 @@ import tdb.Constants._
 
 class TaskInfo
     (val id: TaskId,
-     val taskRef: ActorRef,
+     val name: String,
+     var taskRef: ActorRef,
      val adjust: Adjustable[_],
-     val parent: ActorRef,
-     val workerId: WorkerId,
+     val parentId: TaskId,
+     var workerId: TaskId,
      var output: Any = null) {
 
   override def toString = "TaskInfo(id=" + id + ")"

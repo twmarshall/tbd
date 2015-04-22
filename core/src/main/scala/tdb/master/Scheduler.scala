@@ -17,21 +17,21 @@ package tdb.master
 
 import scala.collection.mutable
 
-import tdb.Constants.WorkerId
+import tdb.Constants.TaskId
 
 class Scheduler {
 
-  private val workers = mutable.Buffer[WorkerId]()
+  private val workers = mutable.Buffer[TaskId]()
 
-  def addWorker(workerId: WorkerId) {
+  def addWorker(workerId: TaskId) {
     workers += workerId
   }
 
-  def removeWorker(workerId: WorkerId) {
+  def removeWorker(workerId: TaskId) {
     workers -= workerId
   }
 
-  def nextWorker(): WorkerId = {
+  def nextWorker(): TaskId = {
     val w = workers.head
     workers -= w
     workers += w

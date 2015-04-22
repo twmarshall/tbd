@@ -45,10 +45,10 @@ class Master extends Actor with ActorLogging {
 
   private val scheduler = new Scheduler()
 
-  private val workers = Map[WorkerId, ActorRef]()
-  private val workerInfos = Map[WorkerId, WorkerInfo]()
+  private val workers = Map[TaskId, ActorRef]()
+  private val workerInfos = Map[TaskId, WorkerInfo]()
 
-  private val tasks = mutable.Map[String, TaskInfo]()
+  private val tasks = mutable.Map[TaskId, TaskInfo]()
 
   private val datastores = Map[TaskId, DatastoreInfo]()
 
@@ -57,12 +57,7 @@ class Master extends Actor with ActorLogging {
 
   private var nextMutatorId = 0
 
-  private var nextWorkerId: WorkerId = 0
-
   private var nextTaskId: TaskId = 1
-
-  // The next Worker to schedule a Task on.
-  private var nextWorker: WorkerId = 0
 
   // The total number of cores reported by all registered Workers.
   private var totalCores = 0
@@ -70,7 +65,7 @@ class Master extends Actor with ActorLogging {
   private var nextInputId: InputId = 0
 
   private def createPartitions
-      (workerId: WorkerId,
+      (workerId: TaskId,
        workerRef: ActorRef,
        listConf: ListConf,
        workerIndex: Int) = {
@@ -113,11 +108,12 @@ class Master extends Actor with ActorLogging {
     hasher
   }
 
-  private def launchMainDatastore(workerId: WorkerId) {
+  private def launchMainDatastore(workerId: TaskId) {
     val datastoreId = workerInfos(workerId).mainDatastoreId
     val workerRef = workers(workerId)
 
     val message = CreateDatastoreMessage(null, datastoreId, null)
+
     val datastoreRef =
       Await.result((workerRef ? message).mapTo[ActorRef], DURATION)
 
@@ -130,8 +126,8 @@ class Master extends Actor with ActorLogging {
   def receive = {
     // Worker
     case RegisterWorkerMessage(_workerInfo: WorkerInfo) =>
-      val workerId = nextWorkerId
-      nextWorkerId = incrementWorkerId(nextWorkerId)
+      val workerId = nextTaskId
+      nextTaskId += 1
       val datastoreId = nextTaskId
       nextTaskId += 1
 
@@ -155,10 +151,12 @@ class Master extends Actor with ActorLogging {
 
       Stats.registeredWorkers += workerInfo
 
-    case ScheduleTaskMessage(name, parent, datastoreId, adjust) =>
-      if (name != "" && tasks.contains(name)) {
-        val taskRef = tasks(name).taskRef
-        sender ! (taskRef, tasks(name).output)
+    case ScheduleTaskMessage
+        (name: String, parentId: TaskId, datastoreId, adjust) =>
+      val thisTask = tasks.find(_._2.name == name)
+      if (name != "" && !thisTask.isEmpty) {
+        val taskInfo = thisTask.get._2
+        sender ! ((taskInfo.taskRef, taskInfo.output))
       } else {
       val taskId = nextTaskId
       nextTaskId += 1
@@ -172,14 +170,14 @@ class Master extends Actor with ActorLogging {
 
       val workerRef = workers(workerId)
 
-      val f = (workerRef ? CreateTaskMessage(taskId, parent))
+      val f = (workerRef ? CreateTaskMessage(taskId, parentId))
         .mapTo[ActorRef]
       val respondTo = sender
       f.onComplete {
         case Success(taskRef) =>
           val taskInfo = new TaskInfo(
-            taskId, taskRef, adjust, parent, workerId)
-          tasks(name) = taskInfo
+            taskId, name, taskRef, adjust, parentId, workerId)
+          tasks(taskId) = taskInfo
           val outputFuture = taskRef ? RunTaskMessage(adjust)
 
           outputFuture.onComplete {
@@ -208,12 +206,12 @@ class Master extends Actor with ActorLogging {
 
       val workerId = scheduler.nextWorker()
       val workerRef = workers(workerId)
-      val taskRefFuture = workerRef ? CreateTaskMessage(taskId, workerRef)
+      val taskRefFuture = workerRef ? CreateTaskMessage(taskId, workerId)
       val taskRef = Await.result(taskRefFuture.mapTo[ActorRef], DURATION)
 
       val taskInfo = new TaskInfo(
-        taskId, taskRef, adjust, workerRef, workerId)
-      tasks("rootTask-" + mutatorId) = taskInfo
+        taskId, "rootTask-" + mutatorId, taskRef, adjust, workerId, workerId)
+      tasks(taskId) = taskInfo
 
       val respondTo = sender
       (taskRef ? RunTaskMessage(adjust)).onComplete {
@@ -245,7 +243,8 @@ class Master extends Actor with ActorLogging {
       datastores.clear()
 
       Await.result(Future.sequence(workers.map {
-        case (workerId, workerRef) => workerRef ? ClearMessage
+        case (workerId, workerRef) =>
+          workerRef ? ClearMessage
       }), DURATION)
 
       workers.map {
@@ -256,7 +255,7 @@ class Master extends Actor with ActorLogging {
       Stats.clear()
 
       tasks.map {
-        case (taskName, taskInfo) =>
+        case (taskId, taskInfo) =>
           context.stop(taskInfo.taskRef)
       }
       tasks.clear()
@@ -265,7 +264,18 @@ class Master extends Actor with ActorLogging {
       sender ! "done"
 
     case ResolveMessage(datastoreId) =>
-      sender ! datastores(datastoreId).datastoreRef
+      if (datastores.contains(datastoreId)) {
+        sender ! datastores(datastoreId).datastoreRef
+      } else if (workers.contains(datastoreId)) {
+        sender ! workers(datastoreId)
+      } else {
+        tasks.map {
+          case (id, taskInfo) =>
+            if (taskInfo.id == datastoreId) {
+              sender ! taskInfo.taskRef
+            }
+        }
+      }
 
     // Datastore
     case CreateModMessage(value) =>
@@ -357,7 +367,7 @@ class Master extends Actor with ActorLogging {
             log.warning("Relaunching " + info)
             val workerId = scheduler.nextWorker()
             val workerRef = workers(workerId)
-
+            context.stop(info.datastoreRef)
             val modifierRef = Await.result(
               (workerRef ? CreateDatastoreMessage(
                 info.listConf, info.id, info.range)).mapTo[ActorRef],
@@ -375,23 +385,23 @@ class Master extends Actor with ActorLogging {
 
       Future {
       tasks.map {
-        case (name, info) =>
+        case (id, info) =>
           if (info.workerId == deadWorkerId) {
             log.warning("Relaunching " + info)
             val workerId = scheduler.nextWorker()
             val workerRef = workers(workerId)
-
-            val f = (workerRef ? CreateTaskMessage(info.id, info.parent))
+            context.stop(info.taskRef)
+            val f = (workerRef ? CreateTaskMessage(info.id, info.parentId))
               .mapTo[ActorRef]
 
             f.onComplete {
               case Success(taskRef) =>
-                val taskInfo = new TaskInfo(
-                  info.id, taskRef, info.adjust, info.parent, workerId)
-                newTasks += taskInfo
+                info.taskRef = taskRef
+                info.workerId = workerId
 
-                if (name.startsWith("rootTask")) {
-                  val mutatorId = name.substring(name.indexOf("-")).toInt
+                if (info.name.startsWith("rootTask")) {
+                  val mutatorId = info.name.substring(
+                    info.name.indexOf("-")).toInt
                   rootTasks(mutatorId) = taskRef
                 }
 

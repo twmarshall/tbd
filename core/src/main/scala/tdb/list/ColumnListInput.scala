@@ -101,9 +101,12 @@ class ColumnListInput[T]
     new ColumnBuffer(this, conf)
 
   override def flush
-      (nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean): Unit = {
+      (nodeId: NodeId,
+       taskId: TaskId,
+       taskRef: ActorRef,
+       initialRun: Boolean): Unit = {
     val futures = hasher.objs.values.map(
-      _._2 ? FlushMessage(nodeId, taskRef, initialRun))
+      _._2 ? FlushMessage(nodeId, taskId, taskRef, initialRun))
     import scala.concurrent.ExecutionContext.Implicits.global
     Await.result(Future.sequence(futures), DURATION)
   }

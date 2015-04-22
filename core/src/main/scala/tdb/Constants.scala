@@ -23,8 +23,6 @@ object Constants {
   var DURATION = 10.seconds
   implicit var TIMEOUT = Timeout(DURATION)
 
-  type WorkerId = Short
-
   // The first 16 bits of a TaskId represent the Worker the Task is running on.
   // This allows us to generate unique ids in parallel.
   type TaskId = Int
@@ -54,10 +52,6 @@ object Constants {
 
   def getDatastoreId(modId: ModId): TaskId = {
     (modId >> 32).toInt
-  }
-
-  def incrementWorkerId(workerId: WorkerId): WorkerId = {
-    (workerId + 1).toShort
   }
 
   val localhost = InetAddress.getLocalHost.getHostAddress

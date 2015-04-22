@@ -28,7 +28,7 @@ import tdb.messages._
 import tdb.worker.Task
 
 class Context
-    (taskId: TaskId,
+    (val taskId: TaskId,
      val mainDatastoreId: TaskId,
      val taskRef: ActorRef,
      val masterRef: ActorRef,
@@ -36,7 +36,7 @@ class Context
      val log: LoggingAdapter)
     (implicit val ec: ExecutionContext) {
 
-  val resolver = new Resolver(datastores, masterRef)
+  val resolver = new Resolver(masterRef)
 
   val ddg = new DDG(this)
 

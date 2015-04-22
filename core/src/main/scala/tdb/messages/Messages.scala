@@ -33,10 +33,9 @@ case class GetModMessage(modId: ModId, task: ActorRef)
 case class UpdateModMessage(modId: ModId, value: Any, task: ActorRef)
 case class RemoveModsMessage(mods: Iterable[ModId], taskRef: ActorRef)
 case class NullMessage()
-case class SetIdMessage(workerId: WorkerId)
 case class ClearMessage()
 case class LoadFileMessage(fileName: String, recovery: Boolean = false)
-case class FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean)
+case class FlushMessage(nodeId: NodeId, taskId: TaskId, taskRef: ActorRef, initialRun: Boolean)
 
 // Master
 case class RegisterMutatorMessage()
@@ -46,7 +45,7 @@ case class GetMutatorDDGMessage(mutatorId: Int)
 case class PrintMutatorDDGDotsMessage(mutatorId: Int, nextName: Int, output: BufferedWriter)
 case class MutatorToBufferMessage(datastoreId: TaskId)
 case class ScheduleTaskMessage(
-  name: String, parent: ActorRef, datastoreId: TaskId, adjust: Adjustable[_])
+  name: String, parentId: TaskId, datastoreId: TaskId, adjust: Adjustable[_])
 case class ShutdownMutatorMessage(mutatorId: Int)
 case class ResolveMessage(datastoreId: TaskId)
 
@@ -64,7 +63,7 @@ case class RemoveAllMessage(values: Iterable[(Any, Any)])
 
 // Worker
 case class RegisterWorkerMessage(workerInfo: WorkerInfo)
-case class CreateTaskMessage(taskId: TaskId, parent: ActorRef)
+case class CreateTaskMessage(taskId: TaskId, parentId: TaskId)
 case class GetDatastoreMessage()
 case class SplitFileMessage(dir: String, fileName: String, partitions: Int)
 case class CreateDatastoreMessage(

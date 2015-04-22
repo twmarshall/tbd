@@ -23,8 +23,10 @@ import scala.concurrent.Await
 import tdb.Constants._
 import tdb.messages._
 
-class Resolver(datastores: mutable.Map[TaskId, ActorRef], masterRef: ActorRef) {
-  def resolve(datastoreId: TaskId): ActorRef = {
+class Resolver(masterRef: ActorRef) {
+  val datastores = mutable.Map[TaskId, ActorRef]()
+
+  def apply(datastoreId: TaskId): ActorRef = {
     if (!datastores.contains(datastoreId)) {
       val datastoreRef = Await.result(
         (masterRef ? ResolveMessage(datastoreId)).mapTo[ActorRef], DURATION)

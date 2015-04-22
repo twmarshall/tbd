@@ -52,9 +52,9 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       sender ! "done"
 
-    case CreateTaskMessage(taskId: TaskId, parent: ActorRef) =>
+    case CreateTaskMessage(taskId: TaskId, parentId: TaskId) =>
       val taskProps = Task.props(
-        taskId, info.mainDatastoreId, parent, masterRef, datastores)
+        taskId, info.mainDatastoreId, parentId, masterRef, datastores)
       val taskRef = context.actorOf(taskProps, taskId + "")
 
       sender ! taskRef
@@ -65,7 +65,7 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
           context.actorOf(DatastoreActor.props(info, datastoreId))
         case aggregatorConf: AggregatorListConf =>
           context.actorOf(AggregatorModifierActor.props(
-            aggregatorConf, info, datastoreId))
+            aggregatorConf, info, datastoreId, masterRef))
         case columnConf: ColumnListConf =>
           /*if (columnConf.chunkSize > 1)
             context.actorOf(ColumnChunkModifierActor.props(

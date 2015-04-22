@@ -25,7 +25,7 @@ class DatastoreInfo
   (val id: TaskId,
    var datastoreRef: ActorRef,
    val listConf: ListConf,
-   var workerId: WorkerId,
+   var workerId: TaskId,
    val range: HashRange,
    var fileName: String = "") {
 

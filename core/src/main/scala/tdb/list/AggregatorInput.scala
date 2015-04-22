@@ -47,9 +47,12 @@ class AggregatorInput[T, U]
   override def getBuffer() = new AggregatorBuffer(this, conf)
 
   override def flush
-      (nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean): Unit = {
+      (nodeId: NodeId,
+       taskId: TaskId,
+       taskRef: ActorRef,
+       initialRun: Boolean): Unit = {
     val futures = hasher.objs.values.map(
-      _._2 ? FlushMessage(nodeId, taskRef, initialRun))
+      _._2 ? FlushMessage(nodeId, taskId, taskRef, initialRun))
     import scala.concurrent.ExecutionContext.Implicits.global
     Await.result(Future.sequence(futures), DURATION)
   }
@@ -94,7 +97,7 @@ class AggregatorBuffer[T, U]
     for ((hash, buf) <- hashedPut) {
       if (buf.size > 0) {
         val datastoreId = input.hasher.objs(hash)._1
-        val datastoreRef = resolver.resolve(datastoreId)
+        val datastoreRef = resolver(datastoreId)
         println("PutAll " + datastoreRef)
         futures += datastoreRef ? PutAllMessage(buf)
       }

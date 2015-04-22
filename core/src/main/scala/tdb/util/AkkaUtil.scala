@@ -16,14 +16,34 @@
 package tdb.util
 
 import akka.actor.{ActorRef, ActorSystem}
-import scala.concurrent.Await
+import akka.pattern.ask
+import scala.concurrent.{Await, ExecutionContext}
+import scala.util.{Failure, Success}
 
 import tdb.Constants._
+import tdb.messages._
 
 object AkkaUtil {
   def getActorFromURL(url: String, system: ActorSystem): ActorRef = {
     val selection = system.actorSelection(url)
     val future = selection.resolveOne()
     Await.result(future.mapTo[ActorRef], DURATION)
+  }
+
+  def sendToTask(taskId: TaskId, taskRef: ActorRef, message: Any, masterRef: ActorRef)
+      (onComplete: => Unit)
+      (implicit ec: ExecutionContext) {
+    val f = ask(taskRef, message)(akka.util.Timeout(1000))
+
+    f.onComplete {
+      case Success(f) =>
+        onComplete
+      case Failure(e) =>
+        println("Sending failed to " + taskRef)
+        val newTaskRef = Await.result(
+          (masterRef ? ResolveMessage(taskId)).mapTo[ActorRef], DURATION)
+        println("Retrieved new taskRef = " + newTaskRef)
+        sendToTask(taskId, newTaskRef, message, masterRef)(onComplete)
+    }
   }
 }

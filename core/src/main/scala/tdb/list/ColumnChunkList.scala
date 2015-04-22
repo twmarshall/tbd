@@ -33,7 +33,7 @@ class ColumnChunkList[T]
     (val head: Mod[ColumnChunkListNode[T]],
      conf: ListConf,
      val sorted: Boolean = false,
-     val workerId: WorkerId = -1)
+     val workerId: TaskId = -1)
   extends AdjustableList[T, Columns] with Serializable {
 
   def filter(pred: ((T, Columns)) => Boolean)

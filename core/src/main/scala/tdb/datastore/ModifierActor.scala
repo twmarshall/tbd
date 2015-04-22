@@ -118,7 +118,7 @@ class ModifierActor
       }
       Future.sequence(futures) pipeTo sender
 
-    case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
+    case FlushMessage(nodeId: NodeId, taskId, taskRef, initialRun: Boolean) =>
       sender ! "done"
 
     case x =>

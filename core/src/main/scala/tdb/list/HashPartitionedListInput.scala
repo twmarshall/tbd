@@ -98,7 +98,7 @@ trait HashPartitionedListInput[T, U]
 
   def getBuffer(): InputBuffer[T, U] = new HashBuffer(this)
 
-  def flush(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean): Unit = ???
+  def flush(nodeId: NodeId, taskId: TaskId, taskRef: ActorRef, initialRun: Boolean): Unit = ???
 }
 
 class HashBuffer[T, U](input: HashPartitionedListInput[T, U]) extends InputBuffer[T, U] {

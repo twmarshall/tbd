@@ -25,7 +25,7 @@ import tdb.TDB._
 class ModList[T, U]
     (val head: Mod[ModListNode[T, U]],
      val sorted: Boolean = false,
-     val workerId: WorkerId = -1)
+     val workerId: TaskId = -1)
   extends AdjustableList[T, U] with Serializable {
 
   def filter(pred: ((T, U)) => Boolean)

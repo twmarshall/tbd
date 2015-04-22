@@ -242,16 +242,14 @@ class ColumnModifierActor
 
       sender ! output
 
-    case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
-      for ((column, pair) <- buffer) {
-        assert(!flushNodes.contains(column))
-        flushNodes(column) = (nodeId, taskRef)
+    case FlushMessage(nodeId: NodeId, taskId: TaskId, taskRef, initialRun: Boolean) =>
+      if (taskRef != null) {
+        for ((column, pair) <- buffer) {
+          assert(!flushNodes.contains(column))
+          flushNodes(column) = (nodeId, taskRef)
+        }
       }
 
-      flushNotified = false
-      flush() pipeTo sender
-
-    case FlushMessage(nodeId: NodeId, null, initialRun: Boolean) =>
       flushNotified = false
       flush() pipeTo sender
 

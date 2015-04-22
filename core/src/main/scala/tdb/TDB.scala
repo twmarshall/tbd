@@ -39,7 +39,7 @@ object TDB {
       (input: ListInput[T, U])
       (implicit c: Context) {
     val timestamp = c.ddg.addFlush(input.asInstanceOf[ListInput[Any, Any]], c)
-    input.flush(c.nextNodeId, c.taskRef, c.initialRun)
+    input.flush(c.nextNodeId, c.taskId, c.taskRef, c.initialRun)
     c.ddg.nodes(c.nextNodeId) = timestamp
 
     c.nextNodeId += 1
@@ -421,7 +421,7 @@ object TDB {
     }
 
     val future1 = c.masterRef ? ScheduleTaskMessage(
-      name1, c.taskRef, datastoreId1, adjust1)
+      name1, c.taskId, datastoreId1, adjust1)
 
     val adjust2 = new Adjustable[U] {
       def run(implicit c: Context) = {
@@ -430,7 +430,7 @@ object TDB {
     }
 
     val future2 = c.masterRef ? ScheduleTaskMessage(
-      name2, c.taskRef, datastoreId2, adjust2)
+      name2, c.taskId, datastoreId2, adjust2)
 
     val (taskRef1, oneRet) = Await.result(
       future1.mapTo[(ActorRef, T)], DURATION)

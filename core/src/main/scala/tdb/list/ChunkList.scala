@@ -25,7 +25,7 @@ import tdb.TDB._
 class ChunkList[T, U]
     (val head: Mod[ChunkListNode[T, U]],
      conf: ListConf,
-     val workerId: WorkerId = -1)
+     val workerId: TaskId = -1)
   extends AdjustableList[T, U] with Serializable {
 
   def filter(pred: ((T, U)) => Boolean)

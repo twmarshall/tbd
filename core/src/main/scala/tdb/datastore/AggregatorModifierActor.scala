@@ -15,7 +15,7 @@
  */
 package tdb.datastore
 
-import akka.actor.{Actor, ActorLogging, ActorRef, Props}
+import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.pattern.{ask, pipe}
 import scala.collection.mutable
 import scala.concurrent.Future
@@ -31,14 +31,16 @@ object AggregatorModifierActor {
   def props
       (conf: AggregatorListConf,
        workerInfo: WorkerInfo,
-       datastoreId: TaskId): Props =
-    Props(classOf[AggregatorModifierActor], conf, workerInfo, datastoreId)
+       datastoreId: TaskId,
+       masterRef: ActorRef): Props =
+    Props(classOf[AggregatorModifierActor], conf, workerInfo, datastoreId, masterRef: ActorRef)
 }
 
 class AggregatorModifierActor
     (conf: AggregatorListConf,
      workerInfo: WorkerInfo,
-     datastoreId: TaskId)
+     datastoreId: TaskId,
+     masterRef: ActorRef)
   extends Actor with ActorLogging {
   import context.dispatcher
 
@@ -105,6 +107,7 @@ class AggregatorModifierActor
   }
 
   var flushNode: NodeId = -1
+  var flushTaskId: TaskId = -1
   var flushTask: ActorRef = null
 
   var flushNotified = false
@@ -127,15 +130,20 @@ class AggregatorModifierActor
       sender ! "done"
 
     case PutAllMessage(values: Iterable[(Any, Any)]) =>
-      if (!flushNotified && flushTask != null) {
-        flushNotified = true
-        scala.concurrent.Await.result(
-          flushTask ? NodeUpdatedMessage(flushNode), DURATION)
-      }
       values.map {
         case (k, v) => put(k, v)
       }
-      sender ! "done"
+
+      if (!flushNotified && flushTask != null) {
+        flushNotified = true
+
+        val respondTo = sender
+        tdb.util.AkkaUtil.sendToTask(flushTaskId, flushTask, NodeUpdatedMessage(flushNode), masterRef) {
+          respondTo ! "done"
+        }
+      } else {
+        sender ! "done"
+      }
 
     case GetMessage(key: Any, taskRef: ActorRef) =>
       sender ! get(key)
@@ -151,16 +159,13 @@ class AggregatorModifierActor
       }
       sender ! "done"
 
-    case FlushMessage(nodeId: NodeId, taskRef: ActorRef, initialRun: Boolean) =>
-      if (nodeId != -1 && flushNode != -1 && nodeId != flushNode) {
-        println("nodeId = " + nodeId + " flushNode = " + flushNode)
+    case FlushMessage(nodeId: NodeId, taskId, taskRef, initialRun: Boolean) =>
+      if (taskRef != null) {
+        flushNode = nodeId
+        flushTaskId = taskId
+        flushTask = taskRef
       }
-      flushNode = nodeId
-      flushTask = taskRef
-      flushNotified = false
-      flush(initialRun) pipeTo sender
 
-    case FlushMessage(nodeId: NodeId, null, initialRun: Boolean) =>
       flushNotified = false
       flush(initialRun) pipeTo sender
 

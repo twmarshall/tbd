@@ -19,7 +19,6 @@ import java.io.Serializable
 import scala.collection.mutable.{Buffer, Map}
 
 import tdb._
-import tdb.Constants.WorkerId
 import tdb.TDB._
 
 class HashPartitionedDoubleChunkList[T, U]

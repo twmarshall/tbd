@@ -19,7 +19,7 @@ import tdb.Constants._
 import tdb.util.OS
 
 case class WorkerInfo
-  (workerId: WorkerId,
+  (workerId: TaskId,
    systemName: String,
    ip: String,
    port: Int,
