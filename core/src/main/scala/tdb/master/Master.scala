@@ -200,9 +200,14 @@ class Master extends Actor with ActorLogging {
       val taskId = nextTaskId
       nextTaskId += 1
 
-      val workerRef = workers(scheduler.nextWorker())
+      val workerId = scheduler.nextWorker()
+      val workerRef = workers(workerId)
       val taskRefFuture = workerRef ? CreateTaskMessage(taskId, workerRef)
       val taskRef = Await.result(taskRefFuture.mapTo[ActorRef], DURATION)
+
+      val taskInfo = new TaskInfo(
+        taskId, taskRef, adjust, workerRef, workerId)
+      tasks += taskInfo
 
       (taskRef ? RunTaskMessage(adjust)) pipeTo sender
 
@@ -323,6 +328,9 @@ class Master extends Actor with ActorLogging {
         case (workerId, workerRef) => workerRef == deadWorker
       }.get._1
 
+      workers -= deadWorkerId
+      workerInfos -= deadWorkerId
+
       scheduler.removeWorker(deadWorkerId)
 
       val futures = mutable.Buffer[Future[Any]]()
@@ -338,7 +346,6 @@ class Master extends Actor with ActorLogging {
               DURATION)
             info.datastoreRef = modifierRef
 
-            println("fileName = " + info.fileName)
             if (info.fileName != "") {
               futures += modifierRef ? LoadFileMessage(info.fileName, true)
             }
@@ -347,6 +354,7 @@ class Master extends Actor with ActorLogging {
 
       Await.result(Future.sequence(futures), DURATION)
 
+      Future {
       tasks.map {
         case info =>
           if (info.workerId == deadWorkerId) {
@@ -367,6 +375,7 @@ class Master extends Actor with ActorLogging {
                 e.printStackTrace()
             }
           }
+      }
       }
 
     case x =>
