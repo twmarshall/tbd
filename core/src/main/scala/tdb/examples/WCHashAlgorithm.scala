@@ -27,14 +27,18 @@ import tdb.list._
 import tdb.TDB._
 import tdb.util._
 
-class WCHashAdjust
-    (list: AdjustableList[String, String], words: Set[String], conf: ListConf)
-      extends Adjustable[AdjustableList[String, Int]] {
+object WCHash {
+  val wordFile = new BufferedReader(new FileReader("words.txt"))
 
-  def wordcount(pair: (String, String)) = {
-    val counts = Map[String, Int]()
-    println("mapping " + pair + "\n")
-    for (word <- pair._2.split("\\W+")) {
+  var words = Set[String]()
+  var line = wordFile.readLine()
+  while (line != null) {
+    words += line
+    line = wordFile.readLine()
+  }
+
+  def countReduce(s: String, counts: Map[String, Int]) = {
+    for (word <- s.split("\\W+")) {
       if (words.contains(word)) {
         if (counts.contains(word)) {
           counts(word) += 1
@@ -43,6 +47,19 @@ class WCHashAdjust
         }
       }
     }
+
+    counts
+  }
+}
+
+class WCHashAdjust
+    (list: AdjustableList[String, String], conf: ListConf)
+      extends Adjustable[AdjustableList[String, Int]] {
+
+  def wordcount(pair: (String, String)) = {
+    val counts = Map[String, Int]()
+    println("mapping " + pair + "\n")
+    WCHash.countReduce(pair._2, counts)
 
     HashMap(counts.toSeq: _*)
   }
@@ -64,22 +81,14 @@ class WCHashAdjust
 
 
 class WCChunkHashAdjust
-    (list: AdjustableList[String, String], words: Set[String], conf: ListConf)
+    (list: AdjustableList[String, String], conf: ListConf)
       extends Adjustable[AdjustableList[String, Int]] {
 
   def wordcount(chunk: Iterable[(String, String)]) = {
     val counts = Map[String, Int]()
 
     for (pair <- chunk) {
-      for (word <- pair._2.split("\\W+")) {
-        if (words.contains(word)) {
-          if (counts.contains(word)) {
-            counts(word) += 1
-          } else {
-            counts(word) = 1
-          }
-        }
-      }
+      WCHash.countReduce(pair._2, counts)
     }
 
     HashMap(counts.toSeq: _*)
@@ -103,22 +112,13 @@ class WCChunkHashAdjust
 class WCHashAlgorithm(_conf: AlgorithmConf)
     extends Algorithm[AdjustableList[String, Int]](_conf) {
 
-  val wordFile = new BufferedReader(new FileReader("words.txt"))
-
-  var words = Set[String]()
-  var line = wordFile.readLine()
-  while (line != null) {
-    words += line
-    line = wordFile.readLine()
-  }
-
   val input = mutator.createList[String, String](conf.listConf)
 
   val adjust =
     if (conf.listConf.chunkSize > 1)
-      new WCChunkHashAdjust(input.getAdjustableList(), words, conf.listConf)
+      new WCChunkHashAdjust(input.getAdjustableList(), conf.listConf)
     else
-      new WCHashAdjust(input.getAdjustableList(), words, conf.listConf)
+      new WCHashAdjust(input.getAdjustableList(), conf.listConf)
 
   val data =
     if (conf.file == "") {
@@ -151,23 +151,9 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
     naiveHelper(naiveTable)
   }
 
-  private def countReduce(s: String, counts: Map[String, Int]) = {
-    for (word <- s.split("\\W+")) {
-      if (words.contains(word)) {
-        if (counts.contains(word)) {
-          counts(word) += 1
-        } else {
-          counts(word) = 1
-        }
-      }
-    }
-
-    counts
-  }
-
   private def naiveHelper(input: GenIterable[String] = naiveTable) = {
     input.aggregate(Map[String, Int]())((x, line) =>
-      countReduce(line, x), WCAlgorithm.mutableReduce)
+      WCHash.countReduce(line, x), WCAlgorithm.mutableReduce)
   }
 
   override def loadInitial() {
