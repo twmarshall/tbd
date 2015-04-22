@@ -139,29 +139,6 @@ class Task
     case PrintDDGDotsMessage(nextName: Int, output: BufferedWriter) =>
       sender ! (new DDGPrinter(c.ddg, nextName, output)).print()
 
-    case ClearModsMessage =>
-      val futures = Set[Future[Any]]()
-
-      futures += datastores(c.mainDatastoreId) ? RemoveModsMessage(c.ddg.getMods(), self)
-
-      for ((actorRef, parNode) <- c.ddg.pars) {
-        futures += actorRef ? ClearModsMessage
-      }
-
-      Future.sequence(futures) pipeTo sender
-
-    case ShutdownTaskMessage =>
-      self ! akka.actor.PoisonPill
-
-      WorkerStats.numTasks -= 1
-
-      val futures = Set[Future[Any]]()
-      for ((actorRef, parNode) <- c.ddg.pars) {
-        futures += actorRef ? ShutdownTaskMessage
-      }
-
-      Future.sequence(futures) pipeTo sender
-
     case x =>
       log.warning("Received unhandled message " + x + " from " + sender)
   }
