@@ -34,7 +34,7 @@ object Main {
         descr = "The ip address to bind to.")
       val port = opt[Int]("port", 'p', default = Some(2552),
         descr = "The port to bind to.")
-      val logging = opt[String]("log", 'l', default = Some("DEBUG"),
+      val logging = opt[String]("log", 'l', default = Some("WARNING"),
         descr = "The logging level. Options, by increasing verbosity, are " +
         "OFF, WARNING, INFO, or DEBUG")
       val timeout = opt[Int]("timeout", 't', default = Some(100),
