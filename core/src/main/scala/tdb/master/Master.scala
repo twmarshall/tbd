@@ -253,14 +253,13 @@ class Master extends Actor with ActorLogging {
       }
 
       Stats.clear()
-      if (rootTasks.contains(mutatorId)) {
-        Await.result(rootTasks(mutatorId) ? ClearModsMessage, DURATION)
 
-        val f = rootTasks(mutatorId) ? ShutdownTaskMessage
-        rootTasks -= mutatorId
-
-        Await.result(f, DURATION)
+      tasks.map {
+        case (taskName, taskInfo) =>
+          context.stop(taskInfo.taskRef)
       }
+      tasks.clear()
+      rootTasks.clear()
 
       sender ! "done"
 

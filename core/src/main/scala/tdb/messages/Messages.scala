@@ -80,7 +80,5 @@ case class PropagateTaskMessage()
 case class RunTaskMessage(adjust: Adjustable[_])
 case class GetTaskDDGMessage()
 case class PrintDDGDotsMessage(nextName: Int, output: BufferedWriter)
-case class ClearModsMessage()
-case class ShutdownTaskMessage()
 
 case class GetFromMessage(parameters: (Any, Iterable[String]), nodeId: NodeId, taskRef: ActorRef)
