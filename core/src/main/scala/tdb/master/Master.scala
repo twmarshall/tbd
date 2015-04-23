@@ -158,38 +158,38 @@ class Master extends Actor with ActorLogging {
         val taskInfo = thisTask.get._2
         sender ! ((taskInfo.taskRef, taskInfo.output))
       } else {
-      val taskId = nextTaskId
-      nextTaskId += 1
+        val taskId = nextTaskId
+        nextTaskId += 1
 
-      val workerId =
-        if (datastoreId == -1) {
-          scheduler.nextWorker()
-        } else {
-          datastores(datastoreId).workerId
-        }
-
-      val workerRef = workers(workerId)
-
-      val f = (workerRef ? CreateTaskMessage(taskId, parentId))
-        .mapTo[ActorRef]
-      val respondTo = sender
-      f.onComplete {
-        case Success(taskRef) =>
-          val taskInfo = new TaskInfo(
-            taskId, name, taskRef, adjust, parentId, workerId)
-          tasks(taskId) = taskInfo
-          val outputFuture = taskRef ? RunTaskMessage(adjust)
-
-          outputFuture.onComplete {
-            case Success(output) =>
-              taskInfo.output = output
-              respondTo ! (taskRef, output)
-            case Failure(e) =>
-              e.printStackTrace()
+        val workerId =
+          if (datastoreId == -1) {
+            scheduler.nextWorker()
+          } else {
+            datastores(datastoreId).workerId
           }
-        case Failure(e) =>
-          e.printStackTrace()
-      }
+
+        val workerRef = workers(workerId)
+
+        val f = (workerRef ? CreateTaskMessage(taskId, parentId))
+          .mapTo[ActorRef]
+        val respondTo = sender
+        f.onComplete {
+          case Success(taskRef) =>
+            val taskInfo = new TaskInfo(
+              taskId, name, taskRef, adjust, parentId, workerId)
+            tasks(taskId) = taskInfo
+            val outputFuture = taskRef ? RunTaskMessage(adjust)
+
+            outputFuture.onComplete {
+              case Success(output) =>
+                taskInfo.output = output
+                respondTo ! (taskRef, output)
+              case Failure(e) =>
+                e.printStackTrace()
+            }
+          case Failure(e) =>
+            e.printStackTrace()
+        }
       }
 
     // Mutator
@@ -384,33 +384,33 @@ class Master extends Actor with ActorLogging {
       Await.result(Future.sequence(futures), DURATION)
 
       Future {
-      tasks.map {
-        case (id, info) =>
-          if (info.workerId == deadWorkerId) {
-            log.warning("Relaunching " + info)
-            val workerId = scheduler.nextWorker()
-            val workerRef = workers(workerId)
-            context.stop(info.taskRef)
-            val f = (workerRef ? CreateTaskMessage(info.id, info.parentId))
-              .mapTo[ActorRef]
+        tasks.map {
+          case (id, info) =>
+            if (info.workerId == deadWorkerId) {
+              log.warning("Relaunching " + info)
+              val workerId = scheduler.nextWorker()
+              val workerRef = workers(workerId)
+              context.stop(info.taskRef)
+              val f = (workerRef ? CreateTaskMessage(info.id, info.parentId))
+                .mapTo[ActorRef]
 
-            f.onComplete {
-              case Success(taskRef) =>
-                info.taskRef = taskRef
-                info.workerId = workerId
+              f.onComplete {
+                case Success(taskRef) =>
+                  info.taskRef = taskRef
+                  info.workerId = workerId
 
-                if (info.name.startsWith("rootTask")) {
-                  val mutatorId = info.name.substring(
-                    info.name.indexOf("-")).toInt
-                  rootTasks(mutatorId) = taskRef
-                }
+                  if (info.name.startsWith("rootTask")) {
+                    val mutatorId = info.name.substring(
+                      info.name.indexOf("-")).toInt
+                    rootTasks(mutatorId) = taskRef
+                  }
 
-                val outputFuture = taskRef ? RunTaskMessage(info.adjust)
-              case Failure(e) =>
-                e.printStackTrace()
+                  val outputFuture = taskRef ? RunTaskMessage(info.adjust)
+                case Failure(e) =>
+                  e.printStackTrace()
+              }
             }
-          }
-      }
+        }
       }
 
     case x =>
