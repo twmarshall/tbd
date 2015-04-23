@@ -46,15 +46,18 @@ class BerkeleyStore(val workerInfo: WorkerInfo)
   private val index =
     metaStore.getPrimaryIndex(classOf[String], classOf[MetaEntity])
 
-  def createTable[T: TypeTag, U: TypeTag]
-      (name: String, range: HashRange): Int = {
+  def createTable
+      (name: String,
+       keyType: String,
+       valueType: String,
+       range: HashRange): Int = {
     val id = nextStoreId
     nextStoreId += 1
 
-    typeOf[T] match {
-      case s if typeOf[T] =:= typeOf[String] && typeOf[U] =:= typeOf[String] =>
+    keyType match {
+      case "String" =>
         tables(id) = createInputStore(name, range)
-      case m if typeOf[T] =:= typeOf[ModId] =>
+      case "ModId" =>
         tables(id) = createModStore()
       case _ => ???
     }

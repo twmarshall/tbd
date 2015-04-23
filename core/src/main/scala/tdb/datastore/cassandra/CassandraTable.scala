@@ -110,7 +110,8 @@ class CassandraStringDoubleTable
      val tableName: String,
      val hashRange: HashRange) extends CassandraTable {
   def initialize() {
-    val query = s"""CREATE TABLE IF NOT EXISTS $tableName
+    session.execute(s"""DROP TABLE IF EXISTS $tableName""")
+    val query = s"""CREATE TABLE $tableName
       (key text, value text, PRIMARY KEY(key));"""
     session.execute(query)
   }
@@ -122,12 +123,31 @@ class CassandraStringDoubleTable
   def convertValue(value: Any) = value.toString
 }
 
+class CassandraStringIntTable
+    (val session: Session,
+     val tableName: String,
+     val hashRange: HashRange) extends CassandraTable {
+  def initialize() {
+    session.execute(s"""DROP TABLE IF EXISTS $tableName""")
+    val query = s"""CREATE TABLE $tableName
+      (key text, value text, PRIMARY KEY(key));"""
+    session.execute(query)
+  }
+
+  def getKey(row: Row) = row.getString("key")
+
+  def getValue(row: Row) = row.getString("value").toInt
+
+  def convertValue(value: Any) = value.toString
+}
+
 class CassandraStringStringTable
     (val session: Session,
      val tableName: String,
      val hashRange: HashRange) extends CassandraTable {
   def initialize() {
-    val query = s"""CREATE TABLE IF NOT EXISTS $tableName
+    session.execute(s"""DROP TABLE IF EXISTS $tableName""")
+    val query = s"""CREATE TABLE $tableName
       (key text, value text, PRIMARY KEY(key));"""
     session.execute(query)
   }

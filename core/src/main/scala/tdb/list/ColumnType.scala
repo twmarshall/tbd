@@ -18,18 +18,21 @@ package tdb.list
 sealed trait ColumnType
 
 case class AggregatedColumn
-    (aggregator: (Any, Any) => Any,
+    (columnType: String,
+     aggregator: (Any, Any) => Any,
      deaggregator: (Any, Any) => Any,
      initialValue: Any,
      threshold: Any => Boolean) extends ColumnType
 
 object AggregatedColumn {
   def create[T]
-      (aggregator: (T, T) => T,
+      (columnType: String,
+       aggregator: (T, T) => T,
        deaggregator: (T, T) => T,
        initialValue: T,
        threshold: T => Boolean) = {
     AggregatedColumn(
+      columnType,
       aggregator.asInstanceOf[(Any, Any) => Any],
       deaggregator.asInstanceOf[(Any, Any) => Any],
       initialValue.asInstanceOf[Any],
@@ -40,6 +43,7 @@ object AggregatedColumn {
 object AggregatedDoubleColumn {
   def apply(epsilon: Double = 0) =
     AggregatedColumn.create(
+      "Double",
       aggregator = ((_: Double) + (_: Double)),
       deaggregator = ((_: Double) - (_: Double)),
       initialValue = 0.0,
@@ -49,6 +53,7 @@ object AggregatedDoubleColumn {
 object AggregatedIntColumn {
   def apply(epsilon: Double = 0) =
     AggregatedColumn.create(
+      "Int",
       aggregator = (_: Int) + (_: Int),
       deaggregator = (_: Int) - (_: Int),
       initialValue = 0,

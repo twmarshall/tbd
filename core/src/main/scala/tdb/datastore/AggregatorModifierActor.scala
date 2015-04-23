@@ -46,7 +46,8 @@ class AggregatorModifierActor
   import context.dispatcher
 
   private val store = KVStore(workerInfo)
-  val tableId = store.createTable[String, Double]("datastore-" + datastoreId, null)
+  val tableId = store.createTable(
+    "datastore-" + datastoreId, "String", conf.valueType.columnType, null)
 
   private val dependencies = new DependencyManager()
 

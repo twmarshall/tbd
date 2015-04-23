@@ -46,21 +46,29 @@ class CassandraStore(val workerInfo: WorkerInfo)
     """CREATE KEYSPACE IF NOT EXISTS tdb WITH replication =
     {'class':'SimpleStrategy', 'replication_factor':3};""")
 
-  def createTable[T: TypeTag, U: TypeTag]
-      (name: String, range: HashRange): Int = {
+  def createTable
+      (name: String,
+       keyType: String,
+       valueType: String,
+       range: HashRange): Int = {
     val id = nextStoreId
     nextStoreId += 1
 
-    typeOf[T] match {
-      case _ if typeOf[T] =:= typeOf[String] && typeOf[U] =:= typeOf[String] =>
-        tables(id) = new CassandraStringStringTable(
-          session, convertName(name), range)
-      case _ if typeOf[T] =:= typeOf[ModId] =>
+    keyType match {
+      case "String" =>
+        valueType match {
+          case "String" =>
+            tables(id) = new CassandraStringStringTable(
+              session, convertName(name), range)
+          case "Double" =>
+            tables(id) = new CassandraStringDoubleTable(
+              session, convertName(name), range)
+          case "Int" =>
+            tables(id) = new CassandraStringIntTable(
+              session, convertName(name), range)
+        }
+      case "ModId" =>
         tables(id) = new CassandraModTable(session, "tdb.mods", range)
-      case _ if typeOf[T] =:= typeOf[String] && typeOf[U] =:= typeOf[Double] =>
-        tables(id) = new CassandraStringDoubleTable(
-          session, convertName(name), range)
-      case _ => ???
     }
 
     id

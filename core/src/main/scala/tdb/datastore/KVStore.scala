@@ -34,7 +34,8 @@ object KVStore {
 }
 
 trait KVStore {
-  def createTable[T: TypeTag, U: TypeTag](name: String, range: HashRange): Int
+  def createTable
+    (name: String, keyType: String, valueType: String, range: HashRange): Int
 
   def load(id: Int, fileName: String)
 

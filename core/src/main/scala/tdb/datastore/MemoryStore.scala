@@ -31,8 +31,11 @@ class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
 
   private var nextTableId = 0
 
-  def createTable[T: TypeTag, U: TypeTag]
-      (name: String, range: HashRange): Int = {
+  def createTable
+      (name: String,
+       keyType: String,
+       valueType: String,
+       range: HashRange): Int = {
     val id = nextTableId
     nextTableId += 1
 
