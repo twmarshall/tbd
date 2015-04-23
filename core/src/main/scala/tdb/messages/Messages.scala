@@ -49,7 +49,7 @@ case class ScheduleTaskMessage(
 case class ShutdownMutatorMessage(mutatorId: Int)
 case class ResolveMessage(datastoreId: TaskId)
 
-case class CreateListMessage(conf: ListConf)
+case class CreateListMessage(conf: ListConf, taskId: TaskId)
 case class FileLoadedMessage(datastoreId: TaskId, fileName: String)
 case class GetAdjustableListMessage()
 case class ToBufferMessage()

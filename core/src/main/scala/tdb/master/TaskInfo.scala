@@ -27,7 +27,8 @@ class TaskInfo
      val adjust: Adjustable[_],
      val parentId: TaskId,
      var workerId: TaskId,
-     var output: Any = null) {
+     var output: Any = null,
+     var recovering: Boolean = false) {
 
   override def toString = "TaskInfo(id=" + id + ")"
 }

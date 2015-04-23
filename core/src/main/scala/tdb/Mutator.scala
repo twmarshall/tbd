@@ -68,7 +68,7 @@ class Mutator(_connector: MasterConnector = null) {
   }
 
   def createList[T, U](conf: ListConf = ListConf()): ListInput[T, U] = {
-    val future = masterRef ? CreateListMessage(conf)
+    val future = masterRef ? CreateListMessage(conf, -1)
     Await.result(future.mapTo[ListInput[T, U]], DURATION)
   }
 

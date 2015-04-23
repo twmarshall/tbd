@@ -30,7 +30,7 @@ import tdb.TDB._
 object TDB {
   def createList[T, U](conf: ListConf)
       (implicit c: Context): ListInput[T, U] = {
-    val future = c.masterRef ? CreateListMessage(conf)
+    val future = c.masterRef ? CreateListMessage(conf, c.taskId)
     val input = Await.result(future.mapTo[ListInput[T, U]], DURATION)
     input
   }

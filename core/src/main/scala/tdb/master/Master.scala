@@ -55,6 +55,8 @@ class Master extends Actor with ActorLogging {
   // Maps mutatorIds to the Task the mutator's computation was launched on.
   private val rootTasks = Map[Int, ActorRef]()
 
+  private val lists = Map[TaskId, ListInput[Any, Any]]()
+
   private var nextMutatorId = 0
 
   private var nextTaskId: TaskId = 1
@@ -293,55 +295,58 @@ class Master extends Actor with ActorLogging {
       val datastoreRef = datastores(getDatastoreId(modId)).datastoreRef
       (datastoreRef ? PutMessage("mods", modId, null, null)) pipeTo sender
 
-    case CreateListMessage(_conf: ListConf) =>
-      val futures = Buffer[Future[(Map[TaskId, ActorRef], ObjHasher[ActorRef])]]()
+    case CreateListMessage(_conf: ListConf, taskId: TaskId) =>
+      if (taskId != -1 && tasks(taskId).recovering) {
+        sender ! lists(taskId)
+      } else {
+        val inputId = nextInputId
+        nextInputId += 1
 
-      val inputId = nextInputId
-      nextInputId += 1
+        val conf =
+          if (_conf.partitions == 0) {
+            _conf.clone(partitions = totalCores, inputId = inputId)
+          } else {
+            _conf.clone(inputId = inputId)
+          }
 
-      val conf =
-        if (_conf.partitions == 0) {
-          _conf.clone(partitions = totalCores, inputId = inputId)
-        } else {
-          _conf.clone(inputId = inputId)
+        var index = 0
+        var hasher: ObjHasher[(TaskId, ActorRef)] = null
+        for ((workerId, workerRef) <- workers) {
+          val thisHasher = createPartitions(workerId, workerRef, conf, index)
+
+          if (hasher == null) {
+            hasher = thisHasher
+          } else {
+            hasher = ObjHasher.combineHashers(hasher, thisHasher)
+          }
+
+          index += 1
         }
 
-      var index = 0
-      var hasher: ObjHasher[(TaskId, ActorRef)] = null
-      for ((workerId, workerRef) <- workers) {
-        val thisHasher = createPartitions(workerId, workerRef, conf, index)
+        assert(hasher.isComplete())
 
-        if (hasher == null) {
-          hasher = thisHasher
-        } else {
-          hasher = ObjHasher.combineHashers(hasher, thisHasher)
+        val input = conf match {
+          case aggregatorConf: AggregatorListConf =>
+            new AggregatorInput(inputId, hasher, aggregatorConf, workers.values)
+
+          case SimpleListConf(_, _, 1, _, false, _, _) =>
+            new HashPartitionedDoubleListInput(
+              inputId, hasher, conf, workers.values)
+
+          case SimpleListConf(_, _, _, _, false, _, _) =>
+            new HashPartitionedDoubleChunkListInput(
+              inputId, hasher, conf, workers.values)
+          case columnConf: ColumnListConf =>
+            if (columnConf.chunkSize > 1)
+              new ColumnChunkListInput(inputId, hasher, columnConf)
+            else
+              new ColumnListInput(inputId, hasher, columnConf)
+          case _ => ???
         }
 
-        index += 1
+        lists(taskId) = input.asInstanceOf[ListInput[Any, Any]]
+        sender ! input
       }
-
-      assert(hasher.isComplete())
-
-      val input = conf match {
-        case aggregatorConf: AggregatorListConf =>
-          new AggregatorInput(inputId, hasher, aggregatorConf, workers.values)
-
-        case SimpleListConf(_, _, 1, _, false, _, _) =>
-          new HashPartitionedDoubleListInput(
-            inputId, hasher, conf, workers.values)
-
-        case SimpleListConf(_, _, _, _, false, _, _) =>
-          new HashPartitionedDoubleChunkListInput(
-            inputId, hasher, conf, workers.values)
-        case columnConf: ColumnListConf =>
-          if (columnConf.chunkSize > 1)
-            new ColumnChunkListInput(inputId, hasher, columnConf)
-          else
-            new ColumnListInput(inputId, hasher, columnConf)
-        case _ => ???
-      }
-
-      sender ! input
 
     case FileLoadedMessage(datastoreId: TaskId, fileName: String) =>
       datastores(datastoreId).fileName = fileName
@@ -360,6 +365,14 @@ class Master extends Actor with ActorLogging {
 
       scheduler.removeWorker(deadWorkerId)
 
+      tasks.map {
+        case (id, info) =>
+          if (info.workerId == deadWorkerId) {
+            info.recovering = true
+          }
+      }
+
+      // Relaunch datastores.
       val futures = mutable.Buffer[Future[Any]]()
       datastores.map {
         case (id, info) =>
@@ -383,33 +396,40 @@ class Master extends Actor with ActorLogging {
 
       Await.result(Future.sequence(futures), DURATION)
 
+      // Relaunch tasks.
       Future {
-        tasks.map {
+        val futures = tasks.flatMap {
           case (id, info) =>
             if (info.workerId == deadWorkerId) {
               log.warning("Relaunching " + info)
               val workerId = scheduler.nextWorker()
               val workerRef = workers(workerId)
               context.stop(info.taskRef)
-              val f = (workerRef ? CreateTaskMessage(info.id, info.parentId))
-                .mapTo[ActorRef]
-
-              f.onComplete {
-                case Success(taskRef) =>
-                  info.taskRef = taskRef
-                  info.workerId = workerId
-
-                  if (info.name.startsWith("rootTask")) {
-                    val mutatorId = info.name.substring(
-                      info.name.indexOf("-")).toInt
-                    rootTasks(mutatorId) = taskRef
-                  }
-
-                  val outputFuture = taskRef ? RunTaskMessage(info.adjust)
-                case Failure(e) =>
-                  e.printStackTrace()
-              }
+              Iterable((info, (workerRef ? CreateTaskMessage(info.id, info.parentId))
+                .mapTo[ActorRef]))
+            } else {
+              Iterable()
             }
+        }
+
+        val runFutures = futures.map {
+          case (info, future) =>
+            val taskRef = Await.result(future, DURATION)
+            info.taskRef = taskRef
+            info.workerId = info.workerId
+
+            if (info.name.startsWith("rootTask")) {
+              val mutatorId = info.name.substring(
+                info.name.indexOf("-")).toInt
+              rootTasks(mutatorId) = taskRef
+            }
+
+            taskRef ? RunTaskMessage(info.adjust)
+        }
+
+        Await.result(Future.sequence(runFutures), DURATION)
+        tasks.map {
+          case (id, info) => info.recovering = false
         }
       }
 
