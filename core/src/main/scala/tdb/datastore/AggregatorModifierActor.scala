@@ -18,7 +18,7 @@ package tdb.datastore
 import akka.actor.{Actor, ActorLogging, ActorRef, Props, Terminated}
 import akka.pattern.{ask, pipe}
 import scala.collection.mutable
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.util.{Failure, Success}
 
 import tdb.Resolver
@@ -45,22 +45,28 @@ class AggregatorModifierActor
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val dependencies = new DependencyManager()
+  private val store = KVStore(workerInfo)
+  val tableId = store.createTable[String, Double]("datastore-" + datastoreId, null)
 
-  private val values = mutable.Map[Any, Any]()
+  private val dependencies = new DependencyManager()
 
   private val resolver = new Resolver(masterRef)
 
   def put(key: Any, value: Any): Future[Any] = {
     val futures = mutable.Buffer[Future[Any]]()
+
     if (conf.valueType.threshold(value)) {
-      if (values.contains(key)) {
-        values(key) = conf.valueType.aggregator(value, values(key))
-        if (values(key) == conf.valueType.initialValue) {
-          values -= key
+      if (store.contains(tableId, key)) {
+        val oldValue = Await.result(store.get(tableId, key), DURATION)
+        val newValue = conf.valueType.aggregator(value, oldValue)
+
+        if (newValue == conf.valueType.initialValue) {
+          store.delete(tableId, key)
+        } else {
+          futures += store.put(tableId, key, newValue)
         }
       } else {
-        values(key) = value
+        futures += store.put(tableId, key, value)
       }
 
       futures += dependencies.informDependents(conf.inputId, key)
@@ -69,17 +75,13 @@ class AggregatorModifierActor
     Future.sequence(futures)
   }
 
-  def get(key: Any): Any = {
-    values(key)
-  }
-
   def getAdjustableList() = new AggregatorList(datastoreId)
 
   def toBuffer(): mutable.Buffer[(Any, Any)] = {
     val buf = mutable.Buffer[(Any, Any)]()
 
-    for ((key, value) <- values) {
-      buf += ((key, value))
+    store.foreach(tableId) {
+      case (key, value) => buf += ((key, value))
     }
 
     buf
@@ -95,17 +97,16 @@ class AggregatorModifierActor
 
     case PutMessage(table: String, key: Any, value: Any, taskRef) =>
       put(key, value) pipeTo sender
-      sender ! "done"
 
     case PutAllMessage(values: Iterable[(Any, Any)]) =>
       val futures = values.map {
-        case (k, v) => put(k, v)
+        case (key, value) => put(key, value)
       }
 
       Future.sequence(futures) pipeTo sender
 
     case GetMessage(key: Any, taskRef: ActorRef) =>
-      sender ! get(key)
+      store.get(tableId, key) pipeTo sender
       dependencies.addKeyDependency(conf.inputId, key, taskRef)
 
     case x =>

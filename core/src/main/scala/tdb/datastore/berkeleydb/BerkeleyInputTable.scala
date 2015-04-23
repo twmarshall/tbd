@@ -60,7 +60,7 @@ class BerkeleyInputTable
 
     WorkerStats.berkeleyReads += 1
     val entity = hasher.getObj(key).get(key)
-    (key, entity.value)
+    entity.value
   }
 
   def delete(key: Any) = ???
@@ -75,6 +75,8 @@ class BerkeleyInputTable
     process(cursor)
     cursor.close()
   }
+
+  def foreach(process: (Any, Any) => Unit) = ???
 
   def foreachPartition(func: PrimaryIndex[String, InputEntity] => Unit) {
     for (index <- indexes.values) {

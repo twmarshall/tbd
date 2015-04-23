@@ -30,6 +30,8 @@ trait Table {
 
   def processKeys(process: Iterable[Any] => Unit)
 
+  def foreach(process: (Any, Any) => Unit)
+
   def hashRange: HashRange
 
   def close()

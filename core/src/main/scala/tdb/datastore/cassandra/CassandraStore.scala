@@ -52,18 +52,22 @@ class CassandraStore(val workerInfo: WorkerInfo)
     nextStoreId += 1
 
     typeOf[T] match {
-      case s if typeOf[T] =:= typeOf[String] && typeOf[U] =:= typeOf[String] =>
-        val tableName = "tdb." + name.replace("/", "_").replace(".", "_")
-          .replace("-", "_")
-
-        tables(id) = new CassandraInputTable(session, tableName, range)
-      case m if typeOf[T] =:= typeOf[ModId] =>
+      case _ if typeOf[T] =:= typeOf[String] && typeOf[U] =:= typeOf[String] =>
+        tables(id) = new CassandraStringStringTable(
+          session, convertName(name), range)
+      case _ if typeOf[T] =:= typeOf[ModId] =>
         tables(id) = new CassandraModTable(session, "tdb.mods", range)
+      case _ if typeOf[T] =:= typeOf[String] && typeOf[U] =:= typeOf[Double] =>
+        tables(id) = new CassandraStringDoubleTable(
+          session, convertName(name), range)
       case _ => ???
     }
 
     id
   }
+
+  private def convertName(name: String) =
+    "tdb." + name.replace("/", "_").replace(".", "_").replace("-", "_")
 
   override def close() {
     super.close()

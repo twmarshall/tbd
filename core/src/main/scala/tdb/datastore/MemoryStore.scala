@@ -63,11 +63,7 @@ class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
   }
 
   def get(id: Int, key: Any) = {
-    val value =
-      if (key.isInstanceOf[ModId])
-        tables(id)(key)
-      else
-        (key, tables(id)(key))
+    val value = tables(id)(key)
 
     Future {
       value
@@ -90,6 +86,13 @@ class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
 
   def processKeys(id: Int, process: Iterable[Any] => Unit) {
     process(tables(id).keys)
+  }
+
+  def foreach(id: Int)(process: (Any, Any) => Unit) {
+    tables(id).foreach {
+      case (key, value) =>
+        process(key, value)
+    }
   }
 
   def hashRange(id: Int) = ranges(id)

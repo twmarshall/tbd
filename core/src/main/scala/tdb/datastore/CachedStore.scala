@@ -154,6 +154,10 @@ trait CachedStore extends KVStore {
     tables(id).processKeys(process)
   }
 
+  def foreach(id: Int)(process: (Any, Any) => Unit) {
+    tables(id).foreach(process)
+  }
+
   def hashRange(id: Int) = {
     tables(id).hashRange
   }

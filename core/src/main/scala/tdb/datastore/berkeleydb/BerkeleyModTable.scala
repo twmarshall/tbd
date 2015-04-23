@@ -63,6 +63,8 @@ class BerkeleyModTable(environment: Environment) extends Table {
 
   def processKeys(process: Iterable[Any] => Unit) = ???
 
+  def foreach(process: (Any, Any) => Unit) = ???
+
   def hashRange = ???
 
   def close() {

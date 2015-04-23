@@ -15,11 +15,23 @@
  */
 package tdb.datastore
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.runtime.universe._
 
 import tdb.Constants.ModId
+import tdb.datastore.berkeleydb.BerkeleyStore
+import tdb.datastore.cassandra.CassandraStore
+import tdb.worker.WorkerInfo
 import tdb.util.HashRange
+
+object KVStore {
+  def apply(workerInfo: WorkerInfo)(implicit ec: ExecutionContext) =
+    workerInfo.storeType  match {
+      case "berkeleydb" => new BerkeleyStore(workerInfo)
+      case "cassandra" => new CassandraStore(workerInfo)
+      case "memory" => new MemoryStore()
+    }
+}
 
 trait KVStore {
   def createTable[T: TypeTag, U: TypeTag](name: String, range: HashRange): Int
@@ -39,6 +51,8 @@ trait KVStore {
   def close()
 
   def processKeys(id: Int, process: Iterable[Any] => Unit)
+
+  def foreach(id: Int)(process: (Any, Any) => Unit)
 
   def hashRange(id: Int): HashRange
 }

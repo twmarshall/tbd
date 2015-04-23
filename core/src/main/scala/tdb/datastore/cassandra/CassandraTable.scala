@@ -15,18 +15,143 @@
  */
 package tdb.datastore.cassandra
 
-import com.datastax.driver.core.{BoundStatement, Session}
+import com.datastax.driver.core.{BoundStatement, Row, Session}
+import java.nio.ByteBuffer
+import java.util.concurrent.locks.ReentrantLock
+import scala.collection.JavaConversions._
 
 import tdb.datastore.Table
+import tdb.util._
+
+object Cassandra {
+  val lock = new ReentrantLock()
+}
 
 trait CassandraTable extends Table {
+  Cassandra.lock.lock()
+
+  initialize()
+
+  private val getStmt = session.prepare(
+    s"""SELECT * FROM $tableName WHERE key = ?""")
+
+  private val putStmt = session.prepare(
+    s"""INSERT INTO $tableName (key, value) VALUES (?, ?);""")
+
+  private val deleteStmt = session.prepare(
+    s"""DELETE FROM $tableName WHERE key = ?""")
+
+  private val containsStmt = session.prepare(
+    s"""SELECT COUNT(*) FROM $tableName WHERE key = ?""")
+
+  Cassandra.lock.unlock()
+
   def session: Session
 
   def tableName: String
+
+  def initialize(): Unit
+
+  def getKey(row: Row): Any
+
+  def getValue(row: Row): Any
+
+  def convertValue(value: Any): Object
+
+  def get(key: Any): Any = {
+    val stmt = new BoundStatement(getStmt)
+    val results = session.execute(stmt.bind(key.asInstanceOf[Object]))
+    getValue(results.one())
+  }
+
+  def put(key: Any, value: Any) {
+    val stmt = new BoundStatement(putStmt)
+
+    session.execute(stmt.bind(
+      key.asInstanceOf[Object], convertValue(value)))
+  }
+
+  def delete(key: Any) = {
+    val stmt = new BoundStatement(deleteStmt)
+    session.execute(stmt.bind(key.asInstanceOf[Object]))
+  }
+
+  def contains(key: Any): Boolean = {
+    val stmt = new BoundStatement(containsStmt)
+    val results = session.execute(stmt.bind(key.asInstanceOf[Object]))
+    results.one().getLong("count") > 0
+  }
 
   def count(): Int = {
     val stmt = s"""SELECT COUNT(*) FROM $tableName"""
     val results = session.execute(stmt)
     results.one().getLong("count").toInt
   }
+
+  def foreach(process: (Any, Any) => Unit) {
+    val stmt = s"""SELECT * FROM $tableName"""
+    val results = session.execute(stmt)
+    for (row <- results.iterator()) {
+      process(getKey(row), getValue(row))
+    }
+  }
+
+  def processKeys(process: Iterable[Any] => Unit) = {
+    val stmt = s"""SELECT * FROM $tableName"""
+    val results = session.execute(stmt)
+    process(results.all().map(getKey(_)))
+  }
+
+  def close() {}
+}
+
+class CassandraStringDoubleTable
+    (val session: Session,
+     val tableName: String,
+     val hashRange: HashRange) extends CassandraTable {
+  def initialize() {
+    val query = s"""CREATE TABLE IF NOT EXISTS $tableName
+      (key text, value text, PRIMARY KEY(key));"""
+    session.execute(query)
+  }
+
+  def getKey(row: Row) = row.getString("key")
+
+  def getValue(row: Row) = row.getString("value").toDouble
+
+  def convertValue(value: Any) = value.toString
+}
+
+class CassandraStringStringTable
+    (val session: Session,
+     val tableName: String,
+     val hashRange: HashRange) extends CassandraTable {
+  def initialize() {
+    val query = s"""CREATE TABLE IF NOT EXISTS $tableName
+      (key text, value text, PRIMARY KEY(key));"""
+    session.execute(query)
+  }
+
+  def getKey(row: Row) = row.getString("key")
+
+  def getValue(row: Row) = row.getString("value")
+
+  def convertValue(value: Any) = value.asInstanceOf[Object]
+}
+
+class CassandraModTable
+    (val session: Session,
+     val tableName: String,
+     val hashRange: HashRange) extends CassandraTable {
+  def initialize() {
+    val query = s"""CREATE TABLE IF NOT EXISTS $tableName
+      (key bigint, value blob, PRIMARY KEY(key));"""
+    session.execute(query)
+  }
+
+  def getKey(row: Row) = row.getLong("key")
+
+  def getValue(row: Row) = Util.deserialize(row.getBytes("value").array())
+
+  def convertValue(value: Any) = ByteBuffer.wrap(Util.serialize(value))
 }

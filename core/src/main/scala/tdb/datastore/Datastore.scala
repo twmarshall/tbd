@@ -23,8 +23,6 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 import tdb.Constants._
-import tdb.datastore.berkeleydb.BerkeleyStore
-import tdb.datastore.cassandra.CassandraStore
 import tdb.messages._
 import tdb.Mod
 import tdb.stats.WorkerStats
@@ -34,12 +32,7 @@ import tdb.util._
 class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
     (implicit ec: ExecutionContext) {
 
-  private val store =
-    workerInfo.storeType  match {
-      case "berkeleydb" => new BerkeleyStore(workerInfo)
-      case "cassandra" => new CassandraStore(workerInfo)
-      case "memory" => new MemoryStore()
-    }
+  private val store = KVStore(workerInfo)
   store.createTable[ModId, Any]("Mods", null)
 
   private var nextModId = 0
@@ -80,11 +73,19 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
   def getMod(modId: ModId, taskRef: ActorRef): Future[_] = {
     WorkerStats.datastoreReads += 1
     if (inputs.contains(modId)) {
-      store.get(1, inputs(modId))
+      val promise = scala.concurrent.Promise[Any]
+      store.get(1, inputs(modId)).onComplete {
+        case Success(v) => promise.success((inputs(modId), v))
+        case Failure(e) => e.printStackTrace()
+      }
+      promise.future
     } else if (chunks.contains(modId)) {
       val futures = Buffer[Future[Any]]()
+      val keys = Map[Any, Future[Any]]()
       for (id <- chunks(modId)) {
-        futures += store.get(1, id)
+        futures += Future {
+          (id, scala.concurrent.Await.result(store.get(1, id), DURATION))
+        }
       }
 
       Future {
