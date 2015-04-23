@@ -35,6 +35,11 @@ object TDB {
     input
   }
 
+  def getAdjustableList[T, U](input: ListInput[T, U])
+      (implicit c: Context): AdjustableList[T, U] = {
+    input.getList(c.resolver)
+  }
+
   def put[T, U](input: ListInput[T, U], key: T, value: U)
       (implicit c: Context) {
     val anyInput = input.asInstanceOf[ListInput[Any, Any]]

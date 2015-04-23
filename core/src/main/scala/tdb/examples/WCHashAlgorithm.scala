@@ -70,12 +70,12 @@ class WCHashAdjust
       valueType = AggregatedIntColumn())
 
     val output = createList[String, Int](aggConf)
+
     list.foreach {
       case (chunk, c) =>
         putAll(output, wordcount(chunk))(c)
     }
-
-    output.getAdjustableList()
+    getAdjustableList(output)
   }
 }
 

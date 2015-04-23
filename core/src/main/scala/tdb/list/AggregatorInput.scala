@@ -32,6 +32,19 @@ class AggregatorInput[T, U]
      val workers: Iterable[ActorRef])
   extends HashPartitionedListInput[T, U] with java.io.Serializable {
 
+  override def getList(resolver: Resolver): AdjustableList[T, U] = {
+    val adjustablePartitions = Buffer[AggregatorList[T, U]]()
+
+    for ((datastoreId, datastoreRef) <- hasher.objs.values) {
+      import scala.concurrent.ExecutionContext.Implicits.global
+      val future = resolver.send(datastoreId, GetAdjustableListMessage())
+      adjustablePartitions +=
+        Await.result(future.mapTo[AggregatorList[T, U]], DURATION)
+    }
+
+    new PartitionedAggregatorList(adjustablePartitions, conf)
+  }
+
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[AggregatorList[T, U]]()
 

@@ -114,6 +114,7 @@ class Task
       sender ! ret
       Await.result(Future.sequence(c.pending), DURATION)
       c.pending.clear()
+      log.debug("Done running task.")
 
     case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
       val newPebble = c.ddg.parUpdated(taskRef)

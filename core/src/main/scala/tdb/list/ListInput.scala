@@ -20,11 +20,13 @@ import akka.pattern.ask
 import scala.collection.mutable.{Buffer, Map}
 import scala.concurrent.Await
 
-import tdb.{Input, Mutator}
+import tdb.{Input, Mutator, Resolver}
 import tdb.Constants._
 import tdb.messages._
 
 trait ListInput[T, U] extends Input[T, U] {
+
+  def getList(resolver: Resolver): AdjustableList[T, U] = ???
 
   def getAdjustableList(): AdjustableList[T, U]
 

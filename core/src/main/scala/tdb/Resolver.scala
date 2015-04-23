@@ -18,10 +18,10 @@ package tdb
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import java.util.concurrent.TimeUnit.MILLISECONDS
 import scala.collection.mutable
-import scala.concurrent.{Await, ExecutionContext}
+import scala.concurrent.{Await, ExecutionContext, Future, Promise}
 import scala.util.{Failure, Success}
-
 
 import tdb.Constants._
 import tdb.messages._
@@ -43,7 +43,7 @@ class Resolver(masterRef: ActorRef) {
       (onComplete: => Unit)
       (implicit ec: ExecutionContext) {
     val taskRef = resolve(taskId)
-    val f = ask(taskRef, message)(Timeout(1000 * round, java.util.concurrent.TimeUnit.MILLISECONDS))
+    val f = ask(taskRef, message)(Timeout(1000 * round, MILLISECONDS))
 
     f.onComplete {
       case Success(f) =>
@@ -56,6 +56,33 @@ class Resolver(masterRef: ActorRef) {
         tasks(taskId) = newTaskRef
 
         sendToTask(taskId, message, round + 1)(onComplete)
+    }
+  }
+
+  def send(taskId: TaskId, message: Any)
+      (implicit ec: ExecutionContext): Future[Any] = {
+    val promise = Promise[Any]
+    sendHelper(taskId, message, 1, promise)
+    promise.future
+  }
+
+  private def sendHelper
+      (taskId: TaskId, message: Any, round: Int, promise: Promise[Any])
+      (implicit ec: ExecutionContext) {
+    val taskRef = resolve(taskId)
+    val f = ask(taskRef, message)(Timeout(1000 * round, MILLISECONDS))
+
+    f.onComplete {
+      case Success(v) =>
+        promise.success(v)
+      case Failure(e) =>
+        println("Sending failed to " + taskRef)
+        val newTaskRef = Await.result(
+          (masterRef ? ResolveMessage(taskId)).mapTo[ActorRef], DURATION)
+        println("Retrieved new taskRef = " + newTaskRef)
+        tasks(taskId) = newTaskRef
+
+        sendHelper(taskId, message, round, promise)
     }
   }
 }
