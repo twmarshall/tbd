@@ -58,7 +58,7 @@ class WCHashAdjust
 
   def wordcount(pair: (String, String)) = {
     val counts = Map[String, Int]()
-    println("mapping " + pair + "\n")
+    //println("mapping " + pair + "\n")
     WCHash.countReduce(pair._2, counts)
 
     HashMap(counts.toSeq: _*)
@@ -74,7 +74,7 @@ class WCHashAdjust
       case (chunk, c) =>
         putAll(output, wordcount(chunk))(c)
     }
-    flush(output)
+
     output.getAdjustableList()
   }
 }
@@ -104,7 +104,7 @@ class WCChunkHashAdjust
       case (chunk, c) =>
         putAll(output, wordcount(chunk))(c)
     }
-    flush(output)
+
     output.getAdjustableList()
   }
 }

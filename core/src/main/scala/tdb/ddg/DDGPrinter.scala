@@ -56,14 +56,11 @@ class DDGPrinter
         writeShape(name, "diamond", "memo")
       case rootNode: RootNode =>
         writeShape(name, "invtriangle", "root")
-      case flushNode: FlushNode =>
-        writeShape(name, "hexagon", "flush")
       case _ =>
         println("didn't match " + time.node.getClass)
     }
 
     time.node match {
-      case flushNode: FlushNode =>
       case parNode: ParNode =>
         output.write(name + " -> " + nextName + "\n")
         nextName = Await.result(

@@ -242,7 +242,7 @@ class ColumnModifierActor
 
       sender ! output
 
-    case FlushMessage(nodeId: NodeId, taskId: TaskId, taskRef, initialRun: Boolean) =>
+    /*case FlushMessage(nodeId: NodeId, taskId: TaskId, taskRef, initialRun: Boolean) =>
       if (taskRef != null) {
         for ((column, pair) <- buffer) {
           assert(!flushNodes.contains(column))
@@ -251,7 +251,7 @@ class ColumnModifierActor
       }
 
       flushNotified = false
-      flush() pipeTo sender
+      flush() pipeTo sender*/
 
     case x =>
       log.warning("ModifierActor received unhandled message " + x +

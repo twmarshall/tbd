@@ -42,7 +42,6 @@ class ColumnPageRankAdjust
       }
 
       links.getAdjustableList().projection2("edges", i + "", mapper, links)
-      flush(links)
     }
   }
 }

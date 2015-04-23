@@ -47,34 +47,30 @@ class AggregatorModifierActor
 
   private val dependencies = new DependencyManager()
 
-  private val dummyFuture = Future { "done" }
-
   private val values = mutable.Map[Any, Any]()
-
-  private val buffer = mutable.Map[Any, Any]()
 
   private val resolver = new Resolver(masterRef)
 
-  def put(key: Any, value: Any) {
-    if (buffer.contains(key)) {
-      val oldValue = buffer(key)
-      val newValue = conf.valueType.aggregator(oldValue, value)
-      buffer(key) = newValue
-    } else {
-      buffer(key) = value
+  def put(key: Any, value: Any): Future[Any] = {
+    val futures = mutable.Buffer[Future[Any]]()
+    if (conf.valueType.threshold(value)) {
+      if (values.contains(key)) {
+        values(key) = conf.valueType.aggregator(value, values(key))
+        if (values(key) == conf.valueType.initialValue) {
+          values -= key
+        }
+      } else {
+        values(key) = value
+      }
+
+      futures += dependencies.informDependents(conf.inputId, key)
     }
+
+    Future.sequence(futures)
   }
 
   def get(key: Any): Any = {
     values(key)
-  }
-
-  def remove(key: Any, value: Any) {
-    val oldValue = buffer(key)
-
-    var newValue = conf.valueType.deaggregator(value, oldValue)
-
-    buffer(key) = newValue
   }
 
   def getAdjustableList() = new AggregatorList(datastoreId)
@@ -89,32 +85,6 @@ class AggregatorModifierActor
     buf
   }
 
-  private def flush(initialRun: Boolean): Future[Any] = {
-    val futures = mutable.Buffer[Future[Any]]()
-    for ((key, value) <- buffer) {
-      if (initialRun || conf.valueType.threshold(value)) {
-        if (values.contains(key)) {
-          values(key) = conf.valueType.aggregator(value, values(key))
-          if (values(key) == conf.valueType.initialValue) {
-            values -= key
-          }
-        } else {
-          values(key) = value
-        }
-        futures += dependencies.informDependents(conf.inputId, key)
-      }
-    }
-    buffer.clear()
-
-    Future.sequence(futures)
-  }
-
-  var flushNode: NodeId = -1
-  var flushTaskId: TaskId = -1
-  var flushTask: ActorRef = null
-
-  var flushNotified = false
-
   def receive = {
 
     case GetAdjustableListMessage() =>
@@ -124,53 +94,19 @@ class AggregatorModifierActor
       sender ! toBuffer()
 
     case PutMessage(table: String, key: Any, value: Any, taskRef) =>
-      if (!flushNotified && flushTask != null) {
-        flushNotified = true
-        scala.concurrent.Await.result(
-          flushTask ? NodeUpdatedMessage(flushNode), DURATION)
-      }
-      put(key, value)
+      put(key, value) pipeTo sender
       sender ! "done"
 
     case PutAllMessage(values: Iterable[(Any, Any)]) =>
-      values.map {
+      val futures = values.map {
         case (k, v) => put(k, v)
       }
 
-      if (!flushNotified && flushTask != null) {
-        flushNotified = true
-
-        val respondTo = sender
-        resolver.sendToTask(flushTaskId, NodeUpdatedMessage(flushNode)) {
-          respondTo ! "done"
-        }
-      } else {
-        sender ! "done"
-      }
+      Future.sequence(futures) pipeTo sender
 
     case GetMessage(key: Any, taskRef: ActorRef) =>
       sender ! get(key)
       dependencies.addKeyDependency(conf.inputId, key, taskRef)
-
-    case RemoveMessage(key: Any, value: Any) =>
-      remove(key, value)
-      sender ! "done"
-
-    case RemoveAllMessage(values: Iterable[(Any, Any)]) =>
-      values.map {
-        case (k, v) => remove(k, v)
-      }
-      sender ! "done"
-
-    case FlushMessage(nodeId: NodeId, taskId, taskRef, initialRun: Boolean) =>
-      if (taskRef != null) {
-        flushNode = nodeId
-        flushTaskId = taskId
-        flushTask = taskRef
-      }
-
-      flushNotified = false
-      flush(initialRun) pipeTo sender
 
     case x =>
       log.warning("AggregatorModifierActor Received unhandled message " + x +

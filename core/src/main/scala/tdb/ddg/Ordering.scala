@@ -201,8 +201,6 @@ class Ordering {
 
           case parNode: ParNode =>
             parNode.updated = false
-          case flushNode: FlushNode =>
-            //flushNode.input.flush()
           case putNode: PutNode =>
             c.buffers(putNode.input)
               .removeAll(Iterable((putNode.key, putNode.value)))

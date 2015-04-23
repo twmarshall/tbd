@@ -43,7 +43,6 @@ class PageRankAdjust
         }
 
         links.foreach(mapper)
-        flush(newRanks)
 
         newRanks
       } else {
@@ -60,7 +59,6 @@ class PageRankAdjust
         }
 
         links.foreach(mapper)
-        flush(newRanks)
 
         newRanks
       }

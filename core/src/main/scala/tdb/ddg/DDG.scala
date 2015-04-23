@@ -41,14 +41,6 @@ class DDG(_c: Context) {
   var root = ordering.append(new RootNode())
   _c.currentTime = root
 
-  def addFlush
-      (input: ListInput[Any, Any],
-       c: Context): Timestamp = {
-    val flushNode = new FlushNode(input)
-    val timestamp = nextTimestamp(flushNode, c)
-    timestamp
-  }
-
   def addPut
       (input: ListInput[Any, Any],
        key: Any,

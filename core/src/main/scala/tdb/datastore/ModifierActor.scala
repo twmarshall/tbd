@@ -118,9 +118,6 @@ class ModifierActor
       }
       Future.sequence(futures) pipeTo sender
 
-    case FlushMessage(nodeId: NodeId, taskId, taskRef, initialRun: Boolean) =>
-      sender ! "done"
-
     case x =>
       log.warning("ModifierActor received unhandled message " + x +
         " from " + sender)

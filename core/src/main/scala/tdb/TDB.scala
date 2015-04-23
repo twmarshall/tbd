@@ -35,17 +35,6 @@ object TDB {
     input
   }
 
-  def flush[T, U]
-      (input: ListInput[T, U])
-      (implicit c: Context) {
-    val timestamp = c.ddg.addFlush(input.asInstanceOf[ListInput[Any, Any]], c)
-    input.flush(c.nextNodeId, c.taskId, c.taskRef, c.initialRun)
-    c.ddg.nodes(c.nextNodeId) = timestamp
-
-    c.nextNodeId += 1
-    timestamp.end = c.ddg.nextTimestamp(timestamp.node, c)
-  }
-
   def put[T, U](input: ListInput[T, U], key: T, value: U)
       (implicit c: Context) {
     val anyInput = input.asInstanceOf[ListInput[Any, Any]]
