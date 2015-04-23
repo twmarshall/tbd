@@ -76,7 +76,7 @@ case class KeyUpdatedMessage(inputId: InputId, key: Any)
 case class KeyRemovedMessage(inputId: InputId, key: Any)
 case class PebbleMessage(taskRef: ActorRef, modId: ModId)
 case class PropagateTaskMessage()
-case class RunTaskMessage(adjust: Adjustable[_])
+case class RunTaskMessage(adjust: Adjustable[_], recovery: Boolean)
 case class GetTaskDDGMessage()
 case class PrintDDGDotsMessage(nextName: Int, output: BufferedWriter)
 

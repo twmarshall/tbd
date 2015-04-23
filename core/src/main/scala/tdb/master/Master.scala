@@ -180,7 +180,7 @@ class Master extends Actor with ActorLogging {
             val taskInfo = new TaskInfo(
               taskId, name, taskRef, adjust, parentId, workerId)
             tasks(taskId) = taskInfo
-            val outputFuture = taskRef ? RunTaskMessage(adjust)
+            val outputFuture = taskRef ? RunTaskMessage(adjust, false)
 
             outputFuture.onComplete {
               case Success(output) =>
@@ -216,7 +216,7 @@ class Master extends Actor with ActorLogging {
       tasks(taskId) = taskInfo
 
       val respondTo = sender
-      (taskRef ? RunTaskMessage(adjust)).onComplete {
+      (taskRef ? RunTaskMessage(adjust, false)).onComplete {
         case Success(output) =>
           taskInfo.output = output
           respondTo ! output
@@ -424,7 +424,7 @@ class Master extends Actor with ActorLogging {
               rootTasks(mutatorId) = taskRef
             }
 
-            taskRef ? RunTaskMessage(info.adjust)
+            taskRef ? RunTaskMessage(info.adjust, true)
         }
 
         Await.result(Future.sequence(runFutures), DURATION)

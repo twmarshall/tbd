@@ -109,14 +109,18 @@ class AggregatorBuffer[T, U]
     Future.sequence(futures)
   }
 
-  def flush(resolver: Resolver) {
-    val futures = Buffer[Future[Any]]()
+  def flush(resolver: Resolver, recovery: Boolean) {
+    if (recovery) {
+      toPut.clear()
+    } else {
+      val futures = Buffer[Future[Any]]()
 
-    futures += asyncPutAll(toPut, resolver)
+      futures += asyncPutAll(toPut, resolver)
 
-    toPut.clear()
+      toPut.clear()
 
-    import scala.concurrent.ExecutionContext.Implicits.global
-    Await.result(Future.sequence(futures), DURATION)
+      import scala.concurrent.ExecutionContext.Implicits.global
+      Await.result(Future.sequence(futures), DURATION)
+    }
   }
 }

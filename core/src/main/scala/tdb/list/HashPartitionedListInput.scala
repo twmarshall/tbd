@@ -97,8 +97,6 @@ trait HashPartitionedListInput[T, U]
   }
 
   def getBuffer(): InputBuffer[T, U] = new HashBuffer(this)
-
-  def flush(nodeId: NodeId, taskId: TaskId, taskRef: ActorRef, initialRun: Boolean): Unit = ???
 }
 
 class HashBuffer[T, U](input: HashPartitionedListInput[T, U]) extends InputBuffer[T, U] {
@@ -148,7 +146,7 @@ class HashBuffer[T, U](input: HashPartitionedListInput[T, U]) extends InputBuffe
     Future.sequence(futures)
   }
 
-  def flush(resolver: Resolver) {
+  def flush(resolver: Resolver, recovery: Boolean) {
     val futures = Buffer[Future[Any]]()
 
     futures += asyncPutAll(toPut)

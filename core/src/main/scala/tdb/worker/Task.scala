@@ -100,11 +100,11 @@ class Task
       c.ddg.keyRemoved(inputId, key)
       sender ! "done"
 
-    case RunTaskMessage(adjust: Adjustable[_]) =>
+    case RunTaskMessage(adjust: Adjustable[_], recovery: Boolean) =>
       log.debug("Starting task.")
       val ret = adjust.run(c)
       for ((input, buf) <- c.buffers) {
-        buf.flush(c.resolver)
+        buf.flush(c.resolver, recovery)
       }
       for ((input, buf) <- c.bufs) {
         buf.flush()
@@ -143,7 +143,7 @@ class Task
           c.pending.clear()
 
           for ((input, buf) <- c.buffers) {
-            buf.flush(c.resolver)
+            buf.flush(c.resolver, false)
           }
           for ((input, buf) <- c.bufs) {
             buf.flush()

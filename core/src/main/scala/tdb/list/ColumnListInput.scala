@@ -172,10 +172,10 @@ class ColumnBuffer[T]
   def removeAll(values: Iterable[(T, Columns)]) = ???
 
   def flush() {
-    flush(null)
+    flush(null, false)
   }
 
-  def flush(resolver: Resolver) {
+  def flush(resolver: Resolver, recovery: Boolean) {
     val futures = Buffer[Future[Any]]()
     for ((column, values) <- toPut) {
       futures += input.asyncPutAllIn(column, values)

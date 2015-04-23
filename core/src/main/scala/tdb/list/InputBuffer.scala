@@ -24,5 +24,5 @@ trait InputBuffer[T, U] {
 
   def removeAll(values: Iterable[(T, U)])
 
-  def flush(resolver: Resolver)
+  def flush(resolver: Resolver, recovery: Boolean)
 }
