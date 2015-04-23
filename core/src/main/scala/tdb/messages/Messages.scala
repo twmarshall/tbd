@@ -66,7 +66,7 @@ case class CreateTaskMessage(taskId: TaskId, parentId: TaskId)
 case class GetDatastoreMessage()
 case class SplitFileMessage(dir: String, fileName: String, partitions: Int)
 case class CreateDatastoreMessage(
-  listConf: ListConf, datastoreId: TaskId, thisRange: HashRange)
+  listConf: ListConf, datastoreId: TaskId, thisRange: HashRange, recovery: Boolean)
 
 // Task
 case class ModUpdatedMessage(modId: ModId)

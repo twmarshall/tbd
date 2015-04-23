@@ -33,7 +33,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
     (implicit ec: ExecutionContext) {
 
   private val store = KVStore(workerInfo)
-  store.createTable("Mods", "ModId", "Any", null)
+  store.createTable("Mods", "ModId", "Any", null, false)
 
   private var nextModId = 0
 
@@ -150,7 +150,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
   }
 
   def loadPartitions(fileName: String, range: HashRange) {
-    val tableId = store.createTable(fileName, "String", "String", range)
+    val tableId = store.createTable(fileName, "String", "String", range, false)
 
     if (store.hashRange(1) != range) {
       log.warning("Loaded dataset has different hash range " +

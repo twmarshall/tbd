@@ -35,7 +35,7 @@ object KVStore {
 
 trait KVStore {
   def createTable
-    (name: String, keyType: String, valueType: String, range: HashRange): Int
+    (name: String, keyType: String, valueType: String, range: HashRange, recovery: Boolean): Int
 
   def load(id: Int, fileName: String)
 

@@ -108,12 +108,15 @@ trait CassandraTable extends Table {
 class CassandraStringDoubleTable
     (val session: Session,
      val tableName: String,
-     val hashRange: HashRange) extends CassandraTable {
+     val hashRange: HashRange,
+     recovery: Boolean) extends CassandraTable {
   def initialize() {
-    session.execute(s"""DROP TABLE IF EXISTS $tableName""")
-    val query = s"""CREATE TABLE $tableName
-      (key text, value text, PRIMARY KEY(key));"""
-    session.execute(query)
+    if (!recovery) {
+      session.execute(s"""DROP TABLE IF EXISTS $tableName""")
+      val query = s"""CREATE TABLE $tableName
+        (key text, value text, PRIMARY KEY(key));"""
+      session.execute(query)
+    }
   }
 
   def getKey(row: Row) = row.getString("key")
@@ -126,12 +129,15 @@ class CassandraStringDoubleTable
 class CassandraStringIntTable
     (val session: Session,
      val tableName: String,
-     val hashRange: HashRange) extends CassandraTable {
+     val hashRange: HashRange,
+     recovery: Boolean) extends CassandraTable {
   def initialize() {
-    session.execute(s"""DROP TABLE IF EXISTS $tableName""")
-    val query = s"""CREATE TABLE $tableName
-      (key text, value text, PRIMARY KEY(key));"""
-    session.execute(query)
+    if (!recovery) {
+      session.execute(s"""DROP TABLE IF EXISTS $tableName""")
+      val query = s"""CREATE TABLE $tableName
+        (key text, value text, PRIMARY KEY(key));"""
+      session.execute(query)
+    }
   }
 
   def getKey(row: Row) = row.getString("key")
@@ -144,12 +150,15 @@ class CassandraStringIntTable
 class CassandraStringStringTable
     (val session: Session,
      val tableName: String,
-     val hashRange: HashRange) extends CassandraTable {
+     val hashRange: HashRange,
+     recovery: Boolean) extends CassandraTable {
   def initialize() {
-    session.execute(s"""DROP TABLE IF EXISTS $tableName""")
-    val query = s"""CREATE TABLE $tableName
-      (key text, value text, PRIMARY KEY(key));"""
-    session.execute(query)
+    if (!recovery) {
+      session.execute(s"""DROP TABLE IF EXISTS $tableName""")
+      val query = s"""CREATE TABLE $tableName
+        (key text, value text, PRIMARY KEY(key));"""
+      session.execute(query)
+    }
   }
 
   def getKey(row: Row) = row.getString("key")

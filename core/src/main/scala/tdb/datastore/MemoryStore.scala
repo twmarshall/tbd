@@ -35,7 +35,8 @@ class MemoryStore(implicit ec: ExecutionContext) extends KVStore {
       (name: String,
        keyType: String,
        valueType: String,
-       range: HashRange): Int = {
+       range: HashRange,
+       recovery: Boolean): Int = {
     val id = nextTableId
     nextTableId += 1
 

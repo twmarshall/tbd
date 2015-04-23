@@ -92,7 +92,7 @@ class Master extends Actor with ActorLogging {
 
       val modifierRef = Await.result(
         (workerRef ? CreateDatastoreMessage(
-          listConf, datastoreId, thisRange)).mapTo[ActorRef],
+          listConf, datastoreId, thisRange, false)).mapTo[ActorRef],
         DURATION)
 
       val thisHasher = ObjHasher.makeHasher(
@@ -114,7 +114,7 @@ class Master extends Actor with ActorLogging {
     val datastoreId = workerInfos(workerId).mainDatastoreId
     val workerRef = workers(workerId)
 
-    val message = CreateDatastoreMessage(null, datastoreId, null)
+    val message = CreateDatastoreMessage(null, datastoreId, null, false)
 
     val datastoreRef =
       Await.result((workerRef ? message).mapTo[ActorRef], DURATION)
@@ -383,7 +383,7 @@ class Master extends Actor with ActorLogging {
             context.stop(info.datastoreRef)
             val modifierRef = Await.result(
               (workerRef ? CreateDatastoreMessage(
-                info.listConf, info.id, info.range)).mapTo[ActorRef],
+                info.listConf, info.id, info.range, true)).mapTo[ActorRef],
               DURATION)
             info.datastoreRef = modifierRef
             info.workerId = workerId

@@ -50,7 +50,8 @@ class CassandraStore(val workerInfo: WorkerInfo)
       (name: String,
        keyType: String,
        valueType: String,
-       range: HashRange): Int = {
+       range: HashRange,
+       recovery: Boolean): Int = {
     val id = nextStoreId
     nextStoreId += 1
 
@@ -59,13 +60,13 @@ class CassandraStore(val workerInfo: WorkerInfo)
         valueType match {
           case "String" =>
             tables(id) = new CassandraStringStringTable(
-              session, convertName(name), range)
+              session, convertName(name), range, recovery)
           case "Double" =>
             tables(id) = new CassandraStringDoubleTable(
-              session, convertName(name), range)
+              session, convertName(name), range, recovery)
           case "Int" =>
             tables(id) = new CassandraStringIntTable(
-              session, convertName(name), range)
+              session, convertName(name), range, recovery)
         }
       case "ModId" =>
         tables(id) = new CassandraModTable(session, "tdb.mods", range)

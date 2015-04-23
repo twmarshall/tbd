@@ -33,21 +33,29 @@ object AggregatorModifierActor {
       (conf: AggregatorListConf,
        workerInfo: WorkerInfo,
        datastoreId: TaskId,
-       masterRef: ActorRef): Props =
-    Props(classOf[AggregatorModifierActor], conf, workerInfo, datastoreId, masterRef: ActorRef)
+       masterRef: ActorRef,
+       recovery: Boolean): Props =
+    Props(
+      classOf[AggregatorModifierActor],
+      conf, workerInfo, datastoreId, masterRef, recovery)
 }
 
 class AggregatorModifierActor
     (conf: AggregatorListConf,
      workerInfo: WorkerInfo,
      datastoreId: TaskId,
-     masterRef: ActorRef)
+     masterRef: ActorRef,
+     recovery: Boolean)
   extends Actor with ActorLogging {
   import context.dispatcher
 
   private val store = KVStore(workerInfo)
-  val tableId = store.createTable(
-    "datastore-" + datastoreId, "String", conf.valueType.columnType, null)
+
+  private val tableId = {
+    val tableName =  "datastore-" + datastoreId
+    val valueType = conf.valueType.columnType
+    store.createTable(tableName, "String", valueType, null, recovery)
+  }
 
   private val dependencies = new DependencyManager()
 

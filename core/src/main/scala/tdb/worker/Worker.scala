@@ -59,13 +59,13 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
 
       sender ! taskRef
 
-    case CreateDatastoreMessage(listConf, datastoreId: TaskId, thisRange) =>
+    case CreateDatastoreMessage(listConf, datastoreId: TaskId, thisRange, recovery) =>
       val modifierRef = listConf match {
         case null =>
           context.actorOf(DatastoreActor.props(info, datastoreId))
         case aggregatorConf: AggregatorListConf =>
           context.actorOf(AggregatorModifierActor.props(
-            aggregatorConf, info, datastoreId, masterRef))
+            aggregatorConf, info, datastoreId, masterRef, recovery))
         case columnConf: ColumnListConf =>
           /*if (columnConf.chunkSize > 1)
             context.actorOf(ColumnChunkModifierActor.props(
