@@ -29,6 +29,8 @@ import tdb.messages._
 class Resolver(masterRef: ActorRef) {
   val tasks = mutable.Map[TaskId, ActorRef]()
 
+  private final val TIME = 5000
+
   def resolve(taskId: TaskId): ActorRef = {
     if (!tasks.contains(taskId)) {
       val taskRef = Await.result(
@@ -43,7 +45,7 @@ class Resolver(masterRef: ActorRef) {
       (onComplete: => Unit)
       (implicit ec: ExecutionContext) {
     val taskRef = resolve(taskId)
-    val f = ask(taskRef, message)(Timeout(1000 * round, MILLISECONDS))
+    val f = ask(taskRef, message)(Timeout(TIME * round, MILLISECONDS))
 
     f.onComplete {
       case Success(f) =>
@@ -70,7 +72,7 @@ class Resolver(masterRef: ActorRef) {
       (taskId: TaskId, message: Any, round: Int, promise: Promise[Any])
       (implicit ec: ExecutionContext) {
     val taskRef = resolve(taskId)
-    val f = ask(taskRef, message)(Timeout(1000 * round, MILLISECONDS))
+    val f = ask(taskRef, message)(Timeout(TIME * round, MILLISECONDS))
 
     f.onComplete {
       case Success(v) =>
