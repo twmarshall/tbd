@@ -93,19 +93,17 @@ class AggregatorBuffer[T, U]
 
   private def asyncPutAll
       (values: Iterable[(T, U)], resolver: Resolver): Future[_] = {
+    import scala.concurrent.ExecutionContext.Implicits.global
     val hashedPut = input.hasher.hashAll(values)
 
     val futures = Buffer[Future[Any]]()
     for ((hash, buf) <- hashedPut) {
       if (buf.size > 0) {
         val datastoreId = input.hasher.objs(hash)._1
-        val datastoreRef = resolver.resolve(datastoreId)
-
-        futures += datastoreRef ? PutAllMessage(buf)
+        futures += resolver.send(datastoreId, PutAllMessage(buf))
       }
     }
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     Future.sequence(futures)
   }
 
