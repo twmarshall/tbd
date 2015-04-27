@@ -58,14 +58,17 @@ class CassandraStore(val workerInfo: WorkerInfo)
     keyType match {
       case "String" =>
         valueType match {
-          case "String" =>
-            tables(id) = new CassandraStringStringTable(
-              session, convertName(name), range, recovery)
           case "Double" =>
             tables(id) = new CassandraStringDoubleTable(
               session, convertName(name), range, recovery)
           case "Int" =>
             tables(id) = new CassandraStringIntTable(
+              session, convertName(name), range, recovery)
+          case "Long" =>
+            tables(id) = new CassandraStringLongTable(
+              session, convertName(name), range, recovery)
+          case "String" =>
+            tables(id) = new CassandraStringStringTable(
               session, convertName(name), range, recovery)
         }
       case "ModId" =>

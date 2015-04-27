@@ -75,7 +75,7 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
               columnConf, info, datastoreId, thisRange))
         case _ =>
           context.actorOf(ModifierActor.props(
-            listConf, info, datastoreId, thisRange, masterRef))
+            listConf, info, datastoreId, thisRange, masterRef, recovery))
       }
       datastores(datastoreId) = modifierRef
       sender ! modifierRef

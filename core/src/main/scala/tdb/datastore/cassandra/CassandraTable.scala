@@ -16,6 +16,7 @@
 package tdb.datastore.cassandra
 
 import com.datastax.driver.core.{BoundStatement, Row, Session}
+import com.datastax.driver.core.utils.Bytes
 import java.nio.ByteBuffer
 import java.util.concurrent.locks.ReentrantLock
 import scala.collection.JavaConversions._
@@ -168,6 +169,27 @@ class CassandraStringStringTable
   def convertValue(value: Any) = value.asInstanceOf[Object]
 }
 
+class CassandraStringLongTable
+    (val session: Session,
+     val tableName: String,
+     val hashRange: HashRange,
+     recovery: Boolean) extends CassandraTable {
+  def initialize() {
+    if (!recovery) {
+      //session.execute(s"""DROP TABLE IF EXISTS $tableName""")
+      /*val query = s"""CREATE TABLE IF NOT EXISTS $tableName
+        (key text, value text, PRIMARY KEY(key));"""
+      session.execute(query)*/
+    }
+  }
+
+  def getKey(row: Row) = row.getString("key")
+
+  def getValue(row: Row) = row.getString("value").toLong
+
+  def convertValue(value: Any) = value.toString
+}
+
 class CassandraModTable
     (val session: Session,
      val tableName: String,
@@ -180,7 +202,16 @@ class CassandraModTable
 
   def getKey(row: Row) = row.getLong("key")
 
-  def getValue(row: Row) = Util.deserialize(row.getBytes("value").array())
+  def getValue(row: Row) = {
+    val bytes = row.getBytes("value")
+    val hexString = Bytes.toHexString(bytes)
+    val byteBuffer = Bytes.fromHexString(hexString)
+    Util.deserialize(byteBuffer.array())
+  }
 
-  def convertValue(value: Any) = ByteBuffer.wrap(Util.serialize(value))
+  def convertValue(value: Any) = {
+    val bytes = Util.serialize(value)
+    val hexString = Bytes.toHexString(bytes)
+    Bytes.fromHexString(hexString)
+  }
 }

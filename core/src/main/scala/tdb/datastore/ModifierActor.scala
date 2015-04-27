@@ -33,9 +33,11 @@ object ModifierActor {
        workerInfo: WorkerInfo,
        datastoreId: TaskId,
        range: HashRange,
-       masterRef: ActorRef): Props =
+       masterRef: ActorRef,
+       recovery: Boolean): Props =
     Props(
-      classOf[ModifierActor], conf, workerInfo, datastoreId, range, masterRef)
+      classOf[ModifierActor],
+      conf, workerInfo, datastoreId, range, masterRef, recovery)
 }
 
 class ModifierActor
@@ -43,15 +45,18 @@ class ModifierActor
      workerInfo: WorkerInfo,
      datastoreId: TaskId,
      range: HashRange,
-     masterRef: ActorRef)
+     masterRef: ActorRef,
+     recovery: Boolean)
   extends Actor with ActorLogging {
   import context.dispatcher
 
   private val datastore = new Datastore(workerInfo, log, datastoreId)
 
+  val store = KVStore(workerInfo)
+
   val modifier =
     if (conf.chunkSize == 1)
-      new DoubleListModifier(datastore, datastoreId)
+      new DoubleListModifier(datastore, datastoreId, store, recovery)
     else
       new DoubleChunkListModifier(datastore, datastoreId, conf)
 

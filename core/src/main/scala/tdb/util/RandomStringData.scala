@@ -86,7 +86,6 @@ class RandomStringData
     table.keys.drop(rand.nextInt(table.size - 1)).head
 
   def addValue() {
-    println("add")
     var key = rand.nextInt(maxKey)
     val value = makeString()
     while (table.contains(key)) {
@@ -100,11 +99,9 @@ class RandomStringData
     } else {
       table += (key -> "")
     }
-    println("done add")
   }
 
   def removeValue() {
-    println("remove")
     if (table.size > 1) {
       var key = getRandomKey()
       input.remove(key.toString, table(key))
@@ -113,11 +110,9 @@ class RandomStringData
     } else {
       addValue()
     }
-    println("done remove")
   }
 
   def updateValue() {
-    println("update")
     if (table.size > 1) {
       val key = getRandomKey()
       val value = makeString()
@@ -129,7 +124,6 @@ class RandomStringData
     } else {
       addValue()
     }
-    println("done update")
   }
 
   def hasUpdates() = remainingRuns.size > 0
