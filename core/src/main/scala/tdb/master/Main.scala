@@ -17,45 +17,23 @@ package tdb.master
 
 import akka.util.Timeout
 import java.net.InetAddress
-import org.rogach.scallop._
 import scala.concurrent.duration._
 
 import tdb.Constants
 import tdb.stats.Stats
-import tdb.util.Util
 
 object Main {
   def main(args: Array[String]) {
+    val conf = new MasterConf(args)
 
-    object Conf extends ScallopConf(args) {
-      version("TDB 0.1 (c) 2014 Carnegie Mellon University")
-      banner("Usage: master.sh [options]")
-      val ip = opt[String]("ip", 'i', default = Some(Util.getIP()),
-        descr = "The ip address to bind to.")
-      val port = opt[Int]("port", 'p', default = Some(2552),
-        descr = "The port to bind to.")
-      val logging = opt[String]("log", 'l', default = Some("INFO"),
-        descr = "The logging level. Options, by increasing verbosity, are " +
-        "OFF, WARNING, INFO, or DEBUG")
-      val timeout = opt[Int]("timeout", 't', default = Some(100),
-        descr = "How long Akka waits on message responses before timing out")
-      val webui_port = opt[Int]("webui_port", 'w', default = Some(8888))
-    }
-
-    Constants.DURATION = Conf.timeout.get.get.seconds
+    Constants.DURATION = conf.timeout().seconds
     Constants.TIMEOUT = Timeout(Constants.DURATION)
 
-    val ip = Conf.ip.get.get
-    val port = Conf.port.get.get
-    val logging = Conf.logging.get.get
-    val webui_port = Conf.webui_port.get.get
-
-    val connector = MasterConnector(ip = ip, port = port, logging = logging,
-      singleNode = false)
+    val connector = MasterConnector(masterConf = conf, singleNode = false)
     println("New master started at: akka.tcp://" + connector.system.name +
-            "@" + ip + ":" + port + "/user/master")
+            "@" + conf.ip() + ":" + conf.port() + "/user/master")
 
-    Stats.launch(connector.system, "master", ip, webui_port)
+    Stats.launch(connector.system, "master", conf.ip(), conf.webui_port())
   }
 }
 

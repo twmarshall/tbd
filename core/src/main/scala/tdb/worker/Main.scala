@@ -65,7 +65,7 @@ object Main {
       ip,
       port,
       webui_port,
-      conf.storeType(),
+      "",
       conf.envHomePath(),
       conf.cacheSize())
 

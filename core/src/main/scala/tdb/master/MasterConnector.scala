@@ -54,9 +54,12 @@ object MasterConnector {
   def apply
       (singleNode: Boolean = true,
        workerArgs: Array[String] = Array[String](),
-       ip: String = "127.0.0.1",
-       port: Int = 2552,
-       logging: String = "WARNING") = {
+       masterConf: MasterConf = new MasterConf(Array[String]()))
+      : MasterConnector = {
+    val logging = masterConf.logLevel()
+    val ip = masterConf.ip()
+    val port = masterConf.port()
+
     val conf = akkaConf + s"""
       akka.loglevel = $logging
 
@@ -71,7 +74,8 @@ object MasterConnector {
     Log.log = Logging(system, "main")
 
     id += 1
-    val masterRef = system.actorOf(Master.props(), "master")
+    val masterRef = system.actorOf(
+      Master.props(masterConf), "master")
 
     if (singleNode) {
       val systemURL = "akka.tcp://" + system.name + "@" + ip + ":" + port
@@ -84,7 +88,7 @@ object MasterConnector {
         ip,
         port,
         workerConf.webui_port(),
-        workerConf.storeType(),
+        masterConf.storeType(),
         workerConf.envHomePath(),
         workerConf.cacheSize())
       val workerRef = system.actorOf(

@@ -33,10 +33,10 @@ import tdb.util._
 import tdb.worker.{Task, Worker, WorkerInfo}
 
 object Master {
-  def props(): Props = Props(classOf[Master])
+  def props(conf: MasterConf): Props = Props(classOf[Master], conf)
 }
 
-class Master extends Actor with ActorLogging {
+class Master(conf: MasterConf) extends Actor with ActorLogging {
   import context.dispatcher
 
   Stats.registeredWorkers.clear()
@@ -133,7 +133,9 @@ class Master extends Actor with ActorLogging {
       nextTaskId += 1
 
       val workerInfo = _workerInfo.copy(
-        workerId = workerId, mainDatastoreId = datastoreId)
+        workerId = workerId,
+        mainDatastoreId = datastoreId,
+        storeType = conf.storeType())
       sender ! workerInfo
 
       totalCores += workerInfo.numCores

@@ -54,6 +54,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
   def createMod[T](value: T): Mod[T] = {
     WorkerStats.modsCreated += 1
     val newModId = getNewModId()
+    assert(!store.contains(0, newModId))
     val future = store.put(0, newModId, value)
     scala.concurrent.Await.result(future, DURATION)
 

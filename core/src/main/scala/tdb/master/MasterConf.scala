@@ -13,30 +13,37 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package tdb.worker
+package tdb.master
 
 import org.rogach.scallop._
 
 import tdb.util.Util
 
-class WorkerConf(args: Array[String]) extends ScallopConf(args) {
+class MasterConf(args: Array[String]) extends ScallopConf(args) {
   version("TDB 0.1 (c) 2014 Carnegie Mellon University")
-  banner("Usage: worker.sh [options] master")
-  val cacheSize = opt[Int]("cacheSize", 'c', default = Some(10000),
-    descr = "The number of elements to keep in the cache, if the " +
-    "berkeleydb store is being used")
-  val envHomePath = opt[String]("envHomePath",
-    default = Some("/tmp/tdb_berkeleydb"), descr = "If using berkeleydb," +
-    "the path to where the database should be stored.")
-  val ip = opt[String]("ip", 'i', default = Some(Util.getIP()),
+  banner("Usage: master.sh [options]")
+
+  val ip = opt[String](
+    "ip", 'i', default = Some(Util.getIP()),
     descr = "The ip address to bind to.")
-  val port = opt[Int]("port", 'p', default = Some(2553),
+
+  val port = opt[Int](
+    "port", 'p', default = Some(2552),
     descr = "The port to bind to.")
-  val logging = opt[String]("log", 'l', default = Some("DEBUG"),
+
+  val logLevel = opt[String](
+    "log", 'l', default = Some("WARNING"),
     descr = "The logging level. Options, by increasing verbosity, are " +
     "OFF, WARNING, INFO, or DEBUG")
-  val timeout = opt[Int]("timeout", 't', default = Some(100),
+
+  val storeType = opt[String](
+    "store", 's', default = Some("memory"),
+    descr = "The type of datastore to use, may be either 'memory' or " +
+    "'cassandra'")
+
+  val timeout = opt[Int](
+    "timeout", 't', default = Some(100),
     descr = "How long Akka waits on message responses before timing out")
-  val webui_port = opt[Int]("webui_port", 'w', default = Some(8889))
-  val master = trailArg[String](required = true)
+
+  val webui_port = opt[Int]("webui_port", 'w', default = Some(8888))
 }
