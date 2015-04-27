@@ -83,7 +83,7 @@ class Master extends Actor with ActorLogging {
       }
 
     val newDatastores = Map[TaskId, ActorRef]()
-    var hasher: ObjHasher[(TaskId, ActorRef)] = null
+    var hasher: ObjHasher[TaskId] = null
     for (i <- 0 until partitions) {
       val start = workerIndex * partitionsPerWorker + i
       val thisRange = new HashRange(start, start + 1, listConf.partitions)
@@ -95,8 +95,7 @@ class Master extends Actor with ActorLogging {
           listConf, datastoreId, thisRange, false)).mapTo[ActorRef],
         DURATION)
 
-      val thisHasher = ObjHasher.makeHasher(
-        thisRange, (datastoreId, modifierRef))
+      val thisHasher = ObjHasher.makeHasher(thisRange, datastoreId)
       if (hasher == null) {
         hasher = thisHasher
       } else {
@@ -310,7 +309,7 @@ class Master extends Actor with ActorLogging {
           }
 
         var index = 0
-        var hasher: ObjHasher[(TaskId, ActorRef)] = null
+        var hasher: ObjHasher[TaskId] = null
         for ((workerId, workerRef) <- workers) {
           val thisHasher = createPartitions(workerId, workerRef, conf, index)
 
@@ -338,9 +337,9 @@ class Master extends Actor with ActorLogging {
               inputId, hasher, conf, workers.values, self)
           case columnConf: ColumnListConf =>
             if (columnConf.chunkSize > 1)
-              new ColumnChunkListInput(inputId, hasher, columnConf)
+              new ColumnChunkListInput(inputId, hasher, columnConf, self)
             else
-              new ColumnListInput(inputId, hasher, columnConf)
+              new ColumnListInput(inputId, hasher, columnConf, self)
           case _ => ???
         }
 

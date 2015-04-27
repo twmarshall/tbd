@@ -28,19 +28,23 @@ import tdb.util.ObjHasher
 
 class ColumnListInput[T]
     (val inputId: InputId,
-     val hasher: ObjHasher[(TaskId, ActorRef)],
-     conf: ColumnListConf)
+     val hasher: ObjHasher[TaskId],
+     conf: ColumnListConf,
+     masterRef: ActorRef)
   extends ListInput[T, Columns]
   with Traceable[(String, Iterable[(T, Any)]), (T, Iterable[String]), Iterable[Any]] {
+  import scala.concurrent.ExecutionContext.Implicits.global
+
+  protected val resolver = new Resolver(masterRef)
 
   def get
       (parameters: (T, Iterable[String]),
        nodeId: NodeId,
        taskRef: ActorRef): Iterable[Any] = {
-    val datastoreRef = hasher.getObj(parameters._1)._2
-    Await.result((datastoreRef ? GetFromMessage(
-      parameters, nodeId, taskRef)).mapTo[Iterable[Any]],
-      DURATION)
+    val datastoreId = hasher.getObj(parameters._1)
+    val future = resolver.send(
+      datastoreId, GetFromMessage(parameters, nodeId, taskRef))
+    Await.result(future.mapTo[Iterable[Any]], DURATION)
   }
 
   def loadFile(fileName: String) = ???
@@ -55,12 +59,11 @@ class ColumnListInput[T]
     val futures = Buffer[Future[Any]]()
     for ((hash, buf) <- hashedPut) {
       if (buf.size > 0) {
-        val datastoreRef = hasher.objs(hash)._2
-        futures += datastoreRef ? PutAllInMessage(column, buf)
+        val datastoreId = hasher.objs(hash)
+        futures += resolver.send(datastoreId, PutAllInMessage(column, buf))
       }
     }
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     Future.sequence(futures)
   }
 
@@ -69,8 +72,8 @@ class ColumnListInput[T]
   }
 
   def asyncPutIn(column: String, key: T, value: Any): Future[_] = {
-    val datastoreRef = hasher.getObj(key)._2
-    datastoreRef ? PutInMessage(column, key, value)
+    val datastoreId = hasher.getObj(key)
+    resolver.send(datastoreId, PutInMessage(column, key, value))
   }
 
   def get(key: T, taskRef: ActorRef): Columns = ???
@@ -86,8 +89,8 @@ class ColumnListInput[T]
   def getAdjustableList(): AdjustableList[T, Columns] = {
     val adjustablePartitions = Buffer[ColumnList[T]]()
 
-    for ((datastoreId, datastoreRef) <- hasher.objs.values) {
-      val future = datastoreRef ? GetAdjustableListMessage()
+    for (datastoreId <- hasher.objs.values) {
+      val future = resolver.send(datastoreId, GetAdjustableListMessage())
       adjustablePartitions +=
         Await.result(future.mapTo[ColumnList[T]], DURATION)
     }
