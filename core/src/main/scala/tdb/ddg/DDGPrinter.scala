@@ -18,22 +18,24 @@ package tdb.ddg
 import akka.pattern.ask
 import java.io._
 import scala.collection.mutable
-import scala.concurrent.Await
+import scala.concurrent.{Await, ExecutionContext}
 
+import tdb.Context
 import tdb.Constants._
 import tdb.messages._
 
 class DDGPrinter
-    (ddg: DDG,
+    (c: Context,
      _nextName: Int,
-     output: BufferedWriter) {
+     output: BufferedWriter)
+    (implicit ec: ExecutionContext) {
 
   var nextName = _nextName
 
   val names = mutable.Map[Node, Int]()
 
   def print(): Int = {
-    dotsHelper(ddg.root, output)
+    dotsHelper(c.ddg.root, output)
 
     nextName
   }
@@ -63,15 +65,16 @@ class DDGPrinter
     time.node match {
       case parNode: ParNode =>
         output.write(name + " -> " + nextName + "\n")
-        nextName = Await.result(
-          (parNode.taskRef1 ? PrintDDGDotsMessage(nextName, output)).mapTo[Int],
-          DURATION)
+        val f1 = c.resolver.send(
+          parNode.taskId1, PrintDDGDotsMessage(nextName, output))
+        nextName = Await.result(f1.mapTo[Int], DURATION)
+
         output.write(name + " -> " + nextName + "\n")
-        nextName = Await.result(
-          (parNode.taskRef2 ? PrintDDGDotsMessage(nextName, output)).mapTo[Int],
-          DURATION)
+        val f2 = c.resolver.send(
+          parNode.taskId2, PrintDDGDotsMessage(nextName, output))
+        nextName = Await.result(f2.mapTo[Int], DURATION)
       case _ =>
-        for (child <- ddg.ordering.getChildren(time, time.end)) {
+        for (child <- c.ddg.ordering.getChildren(time, time.end)) {
           val childName = getName(child.node)
 
           output.write(name + " -> " + childName + "\n")

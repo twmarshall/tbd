@@ -64,16 +64,18 @@ class DDG(val root: Node) extends Graph {
 //for ourselfs, without creating memory leaks or accessing disposed mods.
 object DDG {
   //Recursivley creates a visualizer DDG from a TDB DDG.
-  def create(ddg: tdb.ddg.DDG): DDG = {
+  def create(mutator: tdb.Mutator): DDG = {
 
+    val ddg = mutator.getDDG()
+    val resolver = new tdb.Resolver(mutator.masterRef)
     val newNode = new Node(ddg.root.node)
     val result = new DDG(newNode)
 
     result.nodes += newNode
     result.adj += (newNode -> new ArrayBuffer[Edge]())
 
-    getChildren(ddg, ddg.startTime, ddg.endTime).foreach(time => {
-      append(ddg, newNode, time, result)
+    getChildren(ddg, ddg.startTime, ddg.endTime, resolver).foreach(time => {
+      append(ddg, newNode, time, result, resolver)
     })
 
     result
@@ -83,13 +85,15 @@ object DDG {
   private def getChildren
       (ddg: tdb.ddg.DDG,
        start: tdb.ddg.Timestamp,
-       end: tdb.ddg.Timestamp): Seq[tdb.ddg.Timestamp] = {
+       end: tdb.ddg.Timestamp,
+       resolver: tdb.Resolver): Seq[tdb.ddg.Timestamp] = {
     start.node match {
       case parNode: tdb.ddg.ParNode =>
-	val f1 = parNode.taskRef1 ? tdb.messages.GetTaskDDGMessage
-	val ddg1 = Await.result(f1.mapTo[tdb.ddg.DDG], DURATION)
-	val f2 = parNode.taskRef2 ? tdb.messages.GetTaskDDGMessage
-	val ddg2 = Await.result(f2.mapTo[tdb.ddg.DDG], DURATION)
+        import scala.concurrent.ExecutionContext.Implicits.global
+        val f1 = resolver.send(parNode.taskId1, tdb.messages.GetTaskDDGMessage)
+        val ddg1 = Await.result(f1.mapTo[tdb.ddg.DDG], DURATION)
+        val f2 = resolver.send(parNode.taskId2, tdb.messages.GetTaskDDGMessage)
+        val ddg2 = Await.result(f2.mapTo[tdb.ddg.DDG], DURATION)
 
         ddg1.ordering.getChildren(ddg1.startTime, ddg1.endTime) ++
         ddg2.ordering.getChildren(ddg2.startTime, ddg2.endTime)
@@ -102,7 +106,8 @@ object DDG {
       (ddg: tdb.ddg.DDG,
        node: Node,
        time: tdb.ddg.Timestamp,
-       result: DDG): Unit = {
+       result: DDG,
+       resolver: tdb.Resolver): Unit = {
     val ddgNode = time.node
     val newNode = new Node(ddgNode)
 
@@ -111,8 +116,8 @@ object DDG {
     result.adj(node) += new Edge.Control(node, newNode)
     result.adj(newNode) += new Edge.InverseControl(newNode, node)
 
-    getChildren(ddg, time, time.end).foreach(x => {
-      append(ddg, newNode, x, result)
+    getChildren(ddg, time, time.end, resolver).foreach(x => {
+      append(ddg, newNode, x, result, resolver)
     })
   }
 }

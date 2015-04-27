@@ -184,8 +184,8 @@ class Context
               Await.result(Future.sequence(pending), DURATION)
               pending.clear()
 
-              val future1 = parNode.taskRef1 ? PropagateTaskMessage
-              val future2 = parNode.taskRef2 ? PropagateTaskMessage
+              val future1 = resolver.send(parNode.taskId1, PropagateTaskMessage)
+              val future2 = resolver.send(parNode.taskId2, PropagateTaskMessage)
 
               parNode.pebble1 = false
               parNode.pebble2 = false

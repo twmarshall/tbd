@@ -158,7 +158,7 @@ class Master extends Actor with ActorLogging {
       val thisTask = tasks.find(_._2.name == name)
       if (name != "" && !thisTask.isEmpty) {
         val taskInfo = thisTask.get._2
-        sender ! ((taskInfo.taskRef, taskInfo.output))
+        sender ! ((taskInfo.id, taskInfo.output))
       } else {
         val taskId = nextTaskId
         nextTaskId += 1
@@ -185,7 +185,7 @@ class Master extends Actor with ActorLogging {
             outputFuture.onComplete {
               case Success(output) =>
                 taskInfo.output = output
-                respondTo ! (taskRef, output)
+                respondTo ! (taskId, output)
               case Failure(e) =>
                 e.printStackTrace()
             }
@@ -327,15 +327,15 @@ class Master extends Actor with ActorLogging {
 
         val input = conf match {
           case aggregatorConf: AggregatorListConf =>
-            new AggregatorInput(inputId, hasher, aggregatorConf, workers.values)
+            new AggregatorInput(inputId, hasher, aggregatorConf, workers.values, self)
 
           case SimpleListConf(_, _, 1, _, false, _, _) =>
             new HashPartitionedDoubleListInput(
-              inputId, hasher, conf, workers.values)
+              inputId, hasher, conf, workers.values, self)
 
           case SimpleListConf(_, _, _, _, false, _, _) =>
             new HashPartitionedDoubleChunkListInput(
-              inputId, hasher, conf, workers.values)
+              inputId, hasher, conf, workers.values, self)
           case columnConf: ColumnListConf =>
             if (columnConf.chunkSize > 1)
               new ColumnChunkListInput(inputId, hasher, columnConf)

@@ -15,7 +15,6 @@
  */
 package tdb.ddg
 
-import akka.actor.ActorRef
 import akka.pattern.ask
 import scala.collection.mutable
 import scala.concurrent.Await
@@ -31,7 +30,7 @@ class DDG(_c: Context) {
 
   val reads = mutable.Map[ModId, mutable.Buffer[Timestamp]]()
   val keys = mutable.Map[InputId, mutable.Map[Any, mutable.Buffer[Timestamp]]]()
-  val pars = mutable.Map[ActorRef, Timestamp]()
+  val pars = mutable.Map[TaskId, Timestamp]()
   val nodes = mutable.Map[NodeId, Timestamp]()
 
   var updated = mutable.TreeSet[Timestamp]()((new TimestampOrdering()).reverse)
@@ -192,14 +191,14 @@ class DDG(_c: Context) {
   }
 
   def addPar
-      (taskRef1: ActorRef,
-       taskRef2: ActorRef,
+      (taskId1: TaskId,
+       taskId2: TaskId,
        c: Context): ParNode = {
-    val parNode = new ParNode(taskRef1, taskRef2)
+    val parNode = new ParNode(taskId1, taskId2)
     val timestamp = nextTimestamp(parNode, c)
 
-    pars(taskRef1) = timestamp
-    pars(taskRef2) = timestamp
+    pars(taskId1) = timestamp
+    pars(taskId2) = timestamp
 
     timestamp.end = c.ddg.nextTimestamp(parNode, c)
 
@@ -274,8 +273,8 @@ class DDG(_c: Context) {
   }
 
   // Pebbles a par node. Returns true iff the pebble did not already exist.
-  def parUpdated(taskRef: ActorRef): Boolean = {
-    val timestamp = pars(taskRef)
+  def parUpdated(taskId: TaskId): Boolean = {
+    val timestamp = pars(taskId)
     val parNode = timestamp.node.asInstanceOf[ParNode]
 
     if (!parNode.pebble1 && !parNode.pebble2) {
@@ -283,7 +282,7 @@ class DDG(_c: Context) {
       parNode.updated = true
     }
 
-    if (parNode.taskRef1 == taskRef) {
+    if (parNode.taskId1 == taskId) {
       val ret = !parNode.pebble1
       parNode.pebble1 = true
       ret
@@ -398,8 +397,9 @@ class DDG(_c: Context) {
         case mod: ModNode =>
           prefix + mod + " time = " + time + " to " + time.end + "\n"
         case par: ParNode =>
-          val future1 = par.taskRef1 ? GetTaskDDGMessage
-          val future2 = par.taskRef2 ? GetTaskDDGMessage
+          import scala.concurrent.ExecutionContext.Implicits.global
+          val future1 = _c.resolver.send(par.taskId1, GetTaskDDGMessage)
+          val future2 = _c.resolver.send(par.taskId2, GetTaskDDGMessage)
 
           val ddg1 = Await.result(future1.mapTo[DDG], DURATION)
           val ddg2 = Await.result(future2.mapTo[DDG], DURATION)

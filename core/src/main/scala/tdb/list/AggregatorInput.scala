@@ -29,8 +29,9 @@ class AggregatorInput[T, U]
     (val inputId: InputId,
      val hasher: ObjHasher[(TaskId, ActorRef)],
      val conf: AggregatorListConf,
-     val workers: Iterable[ActorRef])
-  extends HashPartitionedListInput[T, U] with java.io.Serializable {
+     val workers: Iterable[ActorRef],
+     masterRef: ActorRef)
+  extends HashPartitionedListInput[T, U](masterRef) with java.io.Serializable {
 
   override def getList(resolver: Resolver): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[AggregatorList[T, U]]()

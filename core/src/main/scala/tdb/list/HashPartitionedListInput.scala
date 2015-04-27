@@ -25,8 +25,10 @@ import tdb.Constants._
 import tdb.messages._
 import tdb.util.ObjHasher
 
-trait HashPartitionedListInput[T, U]
+abstract class HashPartitionedListInput[T, U](masterRef: ActorRef)
   extends ListInput[T, U] with java.io.Serializable {
+
+  private val resolver = new Resolver(masterRef)
 
   def hasher: ObjHasher[(TaskId, ActorRef)]
 
@@ -57,8 +59,9 @@ trait HashPartitionedListInput[T, U]
   }
 
   def asyncPut(key: T, value: U) = {
-    val datastoreRef = hasher.getObj(key)._2
-    datastoreRef ? PutMessage("keys", key, value, null)
+    val datastoreId = hasher.getObj(key)._1
+    import scala.concurrent.ExecutionContext.Implicits.global
+    resolver.send(datastoreId, PutMessage("keys", key, value, null))
   }
 
   def get(key: T, taskRef: ActorRef): U = {

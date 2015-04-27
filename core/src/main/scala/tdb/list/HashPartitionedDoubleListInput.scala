@@ -28,8 +28,9 @@ class HashPartitionedDoubleListInput[T, U]
     (val inputId: InputId,
      val hasher: ObjHasher[(TaskId, ActorRef)],
      val conf: ListConf,
-     val workers: Iterable[ActorRef])
-  extends HashPartitionedListInput[T, U] with java.io.Serializable {
+     val workers: Iterable[ActorRef],
+     masterRef: ActorRef)
+  extends HashPartitionedListInput[T, U](masterRef) with java.io.Serializable {
 
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[DoubleList[T, U]]()

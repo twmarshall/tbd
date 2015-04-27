@@ -18,6 +18,7 @@ package tdb
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import java.io.Serializable
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
@@ -26,7 +27,7 @@ import scala.util.{Failure, Success}
 import tdb.Constants._
 import tdb.messages._
 
-class Resolver(masterRef: ActorRef) {
+class Resolver(masterRef: ActorRef) extends Serializable {
   val tasks = mutable.Map[TaskId, ActorRef]()
 
   private final val TIME = 5000

@@ -49,7 +49,7 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
   private val datastores = Map[TaskId, ActorRef]()
 
   def receive = {
-    case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
+    case PebbleMessage(taskId: TaskId, modId: ModId) =>
       sender ! "done"
 
     case CreateTaskMessage(taskId: TaskId, parentId: TaskId) =>
