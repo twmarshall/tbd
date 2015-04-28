@@ -160,7 +160,10 @@ class Task
     case PrintDDGDotsMessage(nextName: Int, output: BufferedWriter) =>
       sender ! (new DDGPrinter(c, nextName, output)).print()
 
+    case "ping" =>
+      sender ! "done"
+
     case x =>
-      log.warning("Received unhandled message " + x + " from " + sender)
+      log.warning("Task received unhandled message " + x + " from " + sender)
   }
 }

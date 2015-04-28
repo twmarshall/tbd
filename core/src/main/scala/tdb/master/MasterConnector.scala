@@ -94,7 +94,7 @@ object MasterConnector {
       val workerRef = system.actorOf(
         Worker.props(workerInfo, masterRef), "worker")
 
-      Await.result(workerRef ? "started", DURATION)
+      Await.result(workerRef ? "ping", DURATION)
     }
 
     new MasterConnector(masterRef, system)

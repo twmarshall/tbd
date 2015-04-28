@@ -118,7 +118,7 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
 
       sender ! "done"
 
-    case "started" => sender ! "done"
+    case "ping" => sender ! "done"
 
     case x => println("Worker received unhandled message " + x)
   }

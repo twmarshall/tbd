@@ -83,9 +83,23 @@ class Resolver(masterRef: ActorRef) extends Serializable {
         val newTaskRef = Await.result(
           (masterRef ? ResolveMessage(taskId)).mapTo[ActorRef], DURATION)
         println("Retrieved new taskRef = " + newTaskRef)
+
+        val newMessage =
+          if (newTaskRef == taskRef) {
+            // This prevents us from resending messages that were actually
+            // received but that we timed out on because the sender took too
+            // long to respond (which happens a lot during recovery since if
+            // the receiver has a bad ref it will have to wait for it to time
+            // out). This could cause problems if the failure was actually the
+            // result of a transient network error, but Akka should handle this
+            // for us (hopefully).
+            "ping"
+          } else {
+            message
+          }
         tasks(taskId) = newTaskRef
 
-        sendHelper(taskId, message, round, promise)
+        sendHelper(taskId, newMessage, round, promise)
     }
   }
 }
