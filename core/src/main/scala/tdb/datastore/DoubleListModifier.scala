@@ -22,8 +22,10 @@ import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
+class ModifierInfo(val headId: ModId, val maxModId: Int) extends java.io.Serializable
+
 class DoubleListModifier
-    (datastore: Datastore, datastoreId: TaskId, store: KVStore, recovery: Boolean)
+    (datastore: Datastore, datastoreId: TaskId, recovery: Boolean)
     (implicit ec: ExecutionContext)
   extends Modifier {
 
@@ -35,14 +37,15 @@ class DoubleListModifier
     if (!recovery) {
       tailMod = datastore.createMod[DoubleListNode[Any, Any]](null)
 
-      val metaId = store.createTable("meta", "String", "Long", null, false)
-      store.put(metaId, datastoreId + "-head", tailMod.id)
+      val info  = new ModifierInfo(tailMod.id, datastore.maxModIdStep)
+      Await.result(datastore.store.put(datastore.metaTableId, datastoreId, info), DURATION)
 
       new DoubleList[Any, Any](tailMod, false, datastoreId)
     } else {
-      val metaId = store.createTable("meta", "String", "Long", null, false)
-      val headId = Await.result(
-        store.get(metaId, datastoreId + "-head").mapTo[Long], DURATION)
+      val info = Await.result(
+        datastore.store.get(datastore.metaTableId, datastoreId).mapTo[ModifierInfo], DURATION)
+      val headId = info.headId
+      datastore.nextModId = info.maxModId
 
       val headMod = new Mod[DoubleListNode[Any, Any]](headId)
       var nodeMod = headMod

@@ -35,10 +35,17 @@ object CassandraStore {
     session.execute(
       """CREATE KEYSPACE IF NOT EXISTS tdb WITH replication =
       {'class':'SimpleStrategy', 'replication_factor':2};""")
+
     session.execute(
       """DROP TABLE IF EXISTS tdb.mods;""")
     session.execute(
-      """CREATE TABLE tdb.mods (key bigint, value blob, PRIMARY KEY(key);""")
+      """CREATE TABLE tdb.mods (key bigint, value blob, PRIMARY KEY(key));""")
+
+    session.execute(
+      """DROP TABLE IF EXISTS tdb.meta;""")
+    session.execute(
+      """CREATE TABLE tdb.meta (key int, value blob, PRIMARY KEY(key))""")
+
     session.close()
     cluster.close()
   }
@@ -88,7 +95,9 @@ class CassandraStore(val workerInfo: WorkerInfo)
               session, convertName(name), range, recovery)
         }
       case "ModId" =>
-        tables(id) = new CassandraModTable(session, "tdb.mods", range)
+        tables(id) = new CassandraModTable(session, convertName(name), range)
+      case "Int" =>
+        tables(id) = new CassandraIntAnyTable(session, convertName(name), range)
     }
 
     id

@@ -211,3 +211,25 @@ class CassandraModTable
     Bytes.fromHexString(hexString)
   }
 }
+
+class CassandraIntAnyTable
+    (val session: Session,
+     val tableName: String,
+     val hashRange: HashRange) extends CassandraTable {
+  def initialize() {}
+
+  def getKey(row: Row) = row.getLong("key")
+
+  def getValue(row: Row) = {
+    val bytes = row.getBytes("value")
+    val hexString = Bytes.toHexString(bytes)
+    val byteBuffer = Bytes.fromHexString(hexString)
+    Util.deserialize(byteBuffer.array())
+  }
+
+  def convertValue(value: Any) = {
+    val bytes = Util.serialize(value)
+    val hexString = Bytes.toHexString(bytes)
+    Bytes.fromHexString(hexString)
+  }
+}

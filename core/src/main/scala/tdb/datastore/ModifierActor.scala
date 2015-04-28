@@ -52,11 +52,9 @@ class ModifierActor
 
   private val datastore = new Datastore(workerInfo, log, datastoreId)
 
-  val store = KVStore(workerInfo)
-
   val modifier =
     if (conf.chunkSize == 1)
-      new DoubleListModifier(datastore, datastoreId, store, recovery)
+      new DoubleListModifier(datastore, datastoreId, recovery)
     else
       new DoubleChunkListModifier(datastore, datastoreId, conf)
 
