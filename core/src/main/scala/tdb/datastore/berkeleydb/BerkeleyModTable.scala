@@ -15,7 +15,7 @@
  */
 package tdb.datastore.berkeleydb
 
-import com.sleepycat.je.Environment
+/*import com.sleepycat.je.Environment
 import com.sleepycat.persist.{EntityStore, StoreConfig}
 import com.sleepycat.persist.model.{Entity, PrimaryKey}
 
@@ -79,3 +79,4 @@ class ModEntity {
 
   var value: Array[Byte] = null
 }
+*/

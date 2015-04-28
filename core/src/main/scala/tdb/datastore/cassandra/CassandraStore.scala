@@ -25,6 +25,25 @@ import tdb.datastore._
 import tdb.util._
 import tdb.worker.WorkerInfo
 
+object CassandraStore {
+  def setup(ip: String) {
+    val cluster = Cluster.builder()
+      .addContactPoint(ip)
+      .build()
+
+    val session = cluster.connect()
+    session.execute(
+      """CREATE KEYSPACE IF NOT EXISTS tdb WITH replication =
+      {'class':'SimpleStrategy', 'replication_factor':2};""")
+    session.execute(
+      """DROP TABLE IF EXISTS tdb.mods;""")
+    session.execute(
+      """CREATE TABLE tdb.mods (key bigint, value blob, PRIMARY KEY(key);""")
+    session.close()
+    cluster.close()
+  }
+}
+
 class CassandraStore(val workerInfo: WorkerInfo)
     (implicit val ec: ExecutionContext) extends CachedStore {
   private var nextStoreId = 0
@@ -42,9 +61,6 @@ class CassandraStore(val workerInfo: WorkerInfo)
   }
 
   private val session = cluster.connect()
-  session.execute(
-    """CREATE KEYSPACE IF NOT EXISTS tdb WITH replication =
-    {'class':'SimpleStrategy', 'replication_factor':3};""")
 
   def createTable
       (name: String,

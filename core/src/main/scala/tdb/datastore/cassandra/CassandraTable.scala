@@ -194,11 +194,7 @@ class CassandraModTable
     (val session: Session,
      val tableName: String,
      val hashRange: HashRange) extends CassandraTable {
-  def initialize() {
-    val query = s"""CREATE TABLE IF NOT EXISTS $tableName
-      (key bigint, value blob, PRIMARY KEY(key));"""
-    session.execute(query)
-  }
+  def initialize() {}
 
   def getKey(row: Row) = row.getLong("key")
 

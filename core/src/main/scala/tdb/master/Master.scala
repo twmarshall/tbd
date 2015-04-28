@@ -66,6 +66,10 @@ class Master(conf: MasterConf) extends Actor with ActorLogging {
 
   private var nextInputId: InputId = 0
 
+  if (conf.storeType() == "cassandra") {
+    tdb.datastore.cassandra.CassandraStore.setup(conf.ip())
+  }
+
   private def createPartitions
       (workerId: TaskId,
        workerRef: ActorRef,
