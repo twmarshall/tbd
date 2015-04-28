@@ -126,7 +126,7 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
         println("Generating random data.")
       }
       new RandomStringData(
-        input, conf.count, conf.mutations, Experiment.check, conf.runs)
+        input, conf.count, conf.mutations, Experiment.check, repeatedRuns)
     } else {
       if (Experiment.verbosity > 0) {
         println("Reading data from " + conf.file)
