@@ -170,8 +170,10 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
     val sortedOutput = output.toBuffer(mutator).sortWith(_._1 < _._1)
     val sortedAnswer = answer.toBuffer.sortWith(_._1 < _._1)
 
-    //println("output = " + sortedOutput)
-    //println("answer = " + sortedAnswer)
+    if (Experiment.verbosity > 1) {
+      println("output = " + sortedOutput)
+      println("answer = " + sortedAnswer)
+    }
 
     sortedOutput == sortedAnswer
   }

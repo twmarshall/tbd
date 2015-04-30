@@ -104,6 +104,10 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
     System.gc()
     initial()
 
+    if (Experiment.conf.prompts()) {
+      prompt
+    }
+
     if (Experiment.dots) {
       mutator.printDDGDots("pagerank.dot")
     }
@@ -124,6 +128,10 @@ abstract class Algorithm[Output](val conf: AlgorithmConf) {
     while (hasUpdates()) {
       System.gc()
       update()
+
+      if (Experiment.conf.prompts()) {
+        prompt
+      }
     }
 
     Experiment.confs("runs") = actualRuns.toList

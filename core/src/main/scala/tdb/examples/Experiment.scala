@@ -162,7 +162,8 @@ object Experiment {
     run(conf)
   }
 
-  def run(conf: ExperimentConf) {
+  def run(_conf: ExperimentConf) {
+    conf = _conf
     fast = conf.fast()
     confs("algorithms") = conf.algorithms()
     confs("counts") = conf.counts()

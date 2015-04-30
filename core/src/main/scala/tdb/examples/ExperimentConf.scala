@@ -73,6 +73,7 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     default = Some(List("0")),
     descr = "Number of partitions to divide the input into. If 0, this will " +
     "be set to the number of available CPU cores.")
+  val prompts = toggle("prompts", default = Some(false))
   val repeat = opt[Int]("repeat", 'q', default = Some(3),
     descr = "The number of times to repeat the test.")
   val runs = opt[List[String]]("runs", 'r',
