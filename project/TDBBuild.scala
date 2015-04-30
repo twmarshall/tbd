@@ -157,4 +157,11 @@ object TDBBuild extends Build {
                                  "org.scala-lang" % "scala-reflect" % "2.11.1"))
     )
   )
+
+  lazy val pagerank = Project(
+    "pagerank",
+    file("pagerank"),
+    settings = buildSettings ++ Seq(
+      libraryDependencies ++= commonDeps ++ Seq("org.apache.spark" % "spark-streaming_2.10" % "1.3.1"))
+  )
 }
