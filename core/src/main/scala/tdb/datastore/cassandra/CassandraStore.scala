@@ -25,6 +25,32 @@ import tdb.datastore._
 import tdb.util._
 import tdb.worker.WorkerInfo
 
+object CassandraStore {
+  def setup(ip: String) {
+    val cluster = Cluster.builder()
+      .addContactPoint(ip)
+      .build()
+
+    val session = cluster.connect()
+    session.execute(
+      """CREATE KEYSPACE IF NOT EXISTS tdb WITH replication =
+      {'class':'SimpleStrategy', 'replication_factor':2};""")
+
+    session.execute(
+      """DROP TABLE IF EXISTS tdb.mods;""")
+    session.execute(
+      """CREATE TABLE tdb.mods (key bigint, value blob, PRIMARY KEY(key));""")
+
+    session.execute(
+      """DROP TABLE IF EXISTS tdb.meta;""")
+    session.execute(
+      """CREATE TABLE tdb.meta (key int, value blob, PRIMARY KEY(key))""")
+
+    session.close()
+    cluster.close()
+  }
+}
+
 class CassandraStore(val workerInfo: WorkerInfo)
     (implicit val ec: ExecutionContext) extends CachedStore {
   private var nextStoreId = 0
@@ -42,9 +68,6 @@ class CassandraStore(val workerInfo: WorkerInfo)
   }
 
   private val session = cluster.connect()
-  session.execute(
-    """CREATE KEYSPACE IF NOT EXISTS tdb WITH replication =
-    {'class':'SimpleStrategy', 'replication_factor':3};""")
 
   def createTable
       (name: String,
@@ -58,18 +81,23 @@ class CassandraStore(val workerInfo: WorkerInfo)
     keyType match {
       case "String" =>
         valueType match {
-          case "String" =>
-            tables(id) = new CassandraStringStringTable(
-              session, convertName(name), range, recovery)
           case "Double" =>
             tables(id) = new CassandraStringDoubleTable(
               session, convertName(name), range, recovery)
           case "Int" =>
             tables(id) = new CassandraStringIntTable(
               session, convertName(name), range, recovery)
+          case "Long" =>
+            tables(id) = new CassandraStringLongTable(
+              session, convertName(name), range, recovery)
+          case "String" =>
+            tables(id) = new CassandraStringStringTable(
+              session, convertName(name), range, recovery)
         }
       case "ModId" =>
-        tables(id) = new CassandraModTable(session, "tdb.mods", range)
+        tables(id) = new CassandraModTable(session, convertName(name), range)
+      case "Int" =>
+        tables(id) = new CassandraIntAnyTable(session, convertName(name), range)
     }
 
     id

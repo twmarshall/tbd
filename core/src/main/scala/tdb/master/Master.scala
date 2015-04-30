@@ -33,10 +33,10 @@ import tdb.util._
 import tdb.worker.{Task, Worker, WorkerInfo}
 
 object Master {
-  def props(): Props = Props(classOf[Master])
+  def props(conf: MasterConf): Props = Props(classOf[Master], conf)
 }
 
-class Master extends Actor with ActorLogging {
+class Master(conf: MasterConf) extends Actor with ActorLogging {
   import context.dispatcher
 
   Stats.registeredWorkers.clear()
@@ -66,6 +66,10 @@ class Master extends Actor with ActorLogging {
 
   private var nextInputId: InputId = 0
 
+  if (conf.storeType() == "cassandra") {
+    tdb.datastore.cassandra.CassandraStore.setup(conf.ip())
+  }
+
   private def createPartitions
       (workerId: TaskId,
        workerRef: ActorRef,
@@ -83,7 +87,7 @@ class Master extends Actor with ActorLogging {
       }
 
     val newDatastores = Map[TaskId, ActorRef]()
-    var hasher: ObjHasher[(TaskId, ActorRef)] = null
+    var hasher: ObjHasher[TaskId] = null
     for (i <- 0 until partitions) {
       val start = workerIndex * partitionsPerWorker + i
       val thisRange = new HashRange(start, start + 1, listConf.partitions)
@@ -95,8 +99,7 @@ class Master extends Actor with ActorLogging {
           listConf, datastoreId, thisRange, false)).mapTo[ActorRef],
         DURATION)
 
-      val thisHasher = ObjHasher.makeHasher(
-        thisRange, (datastoreId, modifierRef))
+      val thisHasher = ObjHasher.makeHasher(thisRange, datastoreId)
       if (hasher == null) {
         hasher = thisHasher
       } else {
@@ -134,7 +137,9 @@ class Master extends Actor with ActorLogging {
       nextTaskId += 1
 
       val workerInfo = _workerInfo.copy(
-        workerId = workerId, mainDatastoreId = datastoreId)
+        workerId = workerId,
+        mainDatastoreId = datastoreId,
+        storeType = conf.storeType())
       sender ! workerInfo
 
       totalCores += workerInfo.numCores
@@ -158,7 +163,7 @@ class Master extends Actor with ActorLogging {
       val thisTask = tasks.find(_._2.name == name)
       if (name != "" && !thisTask.isEmpty) {
         val taskInfo = thisTask.get._2
-        sender ! ((taskInfo.taskRef, taskInfo.output))
+        sender ! ((taskInfo.id, taskInfo.output))
       } else {
         val taskId = nextTaskId
         nextTaskId += 1
@@ -185,7 +190,7 @@ class Master extends Actor with ActorLogging {
             outputFuture.onComplete {
               case Success(output) =>
                 taskInfo.output = output
-                respondTo ! (taskRef, output)
+                respondTo ! (taskId, output)
               case Failure(e) =>
                 e.printStackTrace()
             }
@@ -310,7 +315,7 @@ class Master extends Actor with ActorLogging {
           }
 
         var index = 0
-        var hasher: ObjHasher[(TaskId, ActorRef)] = null
+        var hasher: ObjHasher[TaskId] = null
         for ((workerId, workerRef) <- workers) {
           val thisHasher = createPartitions(workerId, workerRef, conf, index)
 
@@ -327,20 +332,20 @@ class Master extends Actor with ActorLogging {
 
         val input = conf match {
           case aggregatorConf: AggregatorListConf =>
-            new AggregatorInput(inputId, hasher, aggregatorConf, workers.values)
+            new AggregatorInput(inputId, hasher, aggregatorConf, workers.values, self)
 
           case SimpleListConf(_, _, 1, _, false, _, _) =>
             new HashPartitionedDoubleListInput(
-              inputId, hasher, conf, workers.values)
+              inputId, hasher, conf, workers.values, self)
 
           case SimpleListConf(_, _, _, _, false, _, _) =>
             new HashPartitionedDoubleChunkListInput(
-              inputId, hasher, conf, workers.values)
+              inputId, hasher, conf, workers.values, self)
           case columnConf: ColumnListConf =>
             if (columnConf.chunkSize > 1)
-              new ColumnChunkListInput(inputId, hasher, columnConf)
+              new ColumnChunkListInput(inputId, hasher, columnConf, self)
             else
-              new ColumnListInput(inputId, hasher, columnConf)
+              new ColumnListInput(inputId, hasher, columnConf, self)
           case _ => ???
         }
 

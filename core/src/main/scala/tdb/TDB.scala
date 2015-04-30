@@ -426,12 +426,12 @@ object TDB {
     val future2 = c.masterRef ? ScheduleTaskMessage(
       name2, c.taskId, datastoreId2, adjust2)
 
-    val (taskRef1, oneRet) = Await.result(
-      future1.mapTo[(ActorRef, T)], DURATION)
-    val (taskRef2, twoRet) = Await.result(
-      future2.mapTo[(ActorRef, U)], DURATION)
+    val (taskId1, oneRet) = Await.result(
+      future1.mapTo[(TaskId, T)], DURATION)
+    val (taskId2, twoRet) = Await.result(
+      future2.mapTo[(TaskId, U)], DURATION)
 
-    val parNode = c.ddg.addPar(taskRef1, taskRef2, c)
+    val parNode = c.ddg.addPar(taskId1, taskId2, c)
 
     (oneRet, twoRet)
   }

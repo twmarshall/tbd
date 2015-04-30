@@ -21,24 +21,27 @@ import scala.collection.mutable.{Buffer, Map}
 import tdb.{Adjustable, Mutator}
 import tdb.Debug._
 import tdb.list.ListConf
-import tdb.master.MasterConnector
+import tdb.master.{MasterConf, MasterConnector}
 import tdb.worker.WorkerConf
 
 abstract class Algorithm[Output](val conf: AlgorithmConf) {
 
-  var runs = conf.runs
+  val repeatedRuns =
+    for (run <- conf.runs; i <- 0 until conf.updateRepeat)
+      yield run
 
   val connector =
     if (conf.master != "") {
       MasterConnector(conf.master)
     } else {
-      val args = Array("--cacheSize", conf.cacheSize.toString, "--store",
-        conf.storeType, "--envHomePath", conf.envHomePath)
+      val args = Array("--cacheSize", conf.cacheSize.toString,
+        "--envHomePath", conf.envHomePath)
+      val masterConf = new MasterConf(
+        Array("--port", Experiment.port.toString, "--log", conf.logLevel))
 
       MasterConnector(
-        port = Experiment.port,
         workerArgs = args,
-        logging = conf.logLevel)
+        masterConf = masterConf)
     }
 
   val mutator = new Mutator(connector)

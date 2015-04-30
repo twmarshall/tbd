@@ -18,6 +18,7 @@ package tdb
 import akka.actor.ActorRef
 import akka.pattern.ask
 import akka.util.Timeout
+import java.io.Serializable
 import java.util.concurrent.TimeUnit.MILLISECONDS
 import scala.collection.mutable
 import scala.concurrent.{Await, ExecutionContext, Future, Promise}
@@ -26,8 +27,10 @@ import scala.util.{Failure, Success}
 import tdb.Constants._
 import tdb.messages._
 
-class Resolver(masterRef: ActorRef) {
+class Resolver(masterRef: ActorRef) extends Serializable {
   val tasks = mutable.Map[TaskId, ActorRef]()
+
+  private final val TIME = 5000
 
   def resolve(taskId: TaskId): ActorRef = {
     if (!tasks.contains(taskId)) {
@@ -43,7 +46,7 @@ class Resolver(masterRef: ActorRef) {
       (onComplete: => Unit)
       (implicit ec: ExecutionContext) {
     val taskRef = resolve(taskId)
-    val f = ask(taskRef, message)(Timeout(1000 * round, MILLISECONDS))
+    val f = ask(taskRef, message)(Timeout(TIME * round, MILLISECONDS))
 
     f.onComplete {
       case Success(f) =>
@@ -70,7 +73,7 @@ class Resolver(masterRef: ActorRef) {
       (taskId: TaskId, message: Any, round: Int, promise: Promise[Any])
       (implicit ec: ExecutionContext) {
     val taskRef = resolve(taskId)
-    val f = ask(taskRef, message)(Timeout(1000 * round, MILLISECONDS))
+    val f = ask(taskRef, message)(Timeout(TIME * round, MILLISECONDS))
 
     f.onComplete {
       case Success(v) =>
@@ -80,9 +83,23 @@ class Resolver(masterRef: ActorRef) {
         val newTaskRef = Await.result(
           (masterRef ? ResolveMessage(taskId)).mapTo[ActorRef], DURATION)
         println("Retrieved new taskRef = " + newTaskRef)
+
+        val newMessage =
+          if (newTaskRef == taskRef) {
+            // This prevents us from resending messages that were actually
+            // received but that we timed out on because the sender took too
+            // long to respond (which happens a lot during recovery since if
+            // the receiver has a bad ref it will have to wait for it to time
+            // out). This could cause problems if the failure was actually the
+            // result of a transient network error, but Akka should handle this
+            // for us (hopefully).
+            "ping"
+          } else {
+            message
+          }
         tasks(taskId) = newTaskRef
 
-        sendHelper(taskId, message, round, promise)
+        sendHelper(taskId, newMessage, round, promise)
     }
   }
 }

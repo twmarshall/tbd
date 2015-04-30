@@ -61,7 +61,7 @@ class Task
         sender ! "done"
       } else {
         val respondTo = sender
-        c.resolver.sendToTask(parentId, PebbleMessage(self, modId)) {
+        c.resolver.sendToTask(parentId, PebbleMessage(taskId, modId)) {
           respondTo ! "done"
         }
       }
@@ -73,7 +73,7 @@ class Task
         sender ! "done"
       } else {
         val respondTo = sender
-        c.resolver.sendToTask(parentId, PebbleMessage(self, -1)) {
+        c.resolver.sendToTask(parentId, PebbleMessage(taskId, -1)) {
           respondTo ! "done"
         }
       }
@@ -89,7 +89,7 @@ class Task
 
       if (newPebble && parentId != -1) {
         val respondTo = sender
-        c.resolver.sendToTask(parentId, PebbleMessage(self, -1)) {
+        c.resolver.sendToTask(parentId, PebbleMessage(taskId, -1)) {
           respondTo ! "done"
         }
       } else {
@@ -116,12 +116,12 @@ class Task
       c.pending.clear()
       log.debug("Done running task.")
 
-    case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
-      val newPebble = c.ddg.parUpdated(taskRef)
+    case PebbleMessage(pebbledTaskId: TaskId, modId: ModId) =>
+      val newPebble = c.ddg.parUpdated(pebbledTaskId)
 
       if (newPebble && parentId != -1) {
         val respondTo = sender
-        c.resolver.sendToTask(parentId, PebbleMessage(self, modId)) {
+        c.resolver.sendToTask(parentId, PebbleMessage(taskId, modId)) {
           respondTo ! "done"
         }
       } else {
@@ -158,9 +158,12 @@ class Task
       sender ! c.ddg
 
     case PrintDDGDotsMessage(nextName: Int, output: BufferedWriter) =>
-      sender ! (new DDGPrinter(c.ddg, nextName, output)).print()
+      sender ! (new DDGPrinter(c, nextName, output)).print()
+
+    case "ping" =>
+      sender ! "done"
 
     case x =>
-      log.warning("Received unhandled message " + x + " from " + sender)
+      log.warning("Task received unhandled message " + x + " from " + sender)
   }
 }

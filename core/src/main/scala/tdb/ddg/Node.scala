@@ -15,12 +15,8 @@
  */
 package tdb.ddg
 
-import akka.actor.ActorRef
-import akka.pattern.ask
-import scala.concurrent.Await
-
 import tdb._
-import tdb.Constants.ModId
+import tdb.Constants.{ModId, TaskId}
 import tdb.list.ListInput
 
 object Node {
@@ -56,8 +52,8 @@ class ModNode
      val key: Any) extends Node
 
 class ParNode
-    (val taskRef1: ActorRef,
-     val taskRef2: ActorRef) extends Node {
+    (val taskId1: TaskId,
+     val taskId2: TaskId) extends Node {
   var pebble1 = false
   var pebble2 = false
 }

@@ -27,16 +27,17 @@ import tdb.util.ObjHasher
 
 class AggregatorInput[T, U]
     (val inputId: InputId,
-     val hasher: ObjHasher[(TaskId, ActorRef)],
+     val hasher: ObjHasher[TaskId],
      val conf: AggregatorListConf,
-     val workers: Iterable[ActorRef])
-  extends HashPartitionedListInput[T, U] with java.io.Serializable {
+     val workers: Iterable[ActorRef],
+     masterRef: ActorRef)
+  extends HashPartitionedListInput[T, U](masterRef) with java.io.Serializable {
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   override def getList(resolver: Resolver): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[AggregatorList[T, U]]()
 
-    for ((datastoreId, datastoreRef) <- hasher.objs.values) {
-      import scala.concurrent.ExecutionContext.Implicits.global
+    for (datastoreId <- hasher.objs.values) {
       val future = resolver.send(datastoreId, GetAdjustableListMessage())
       adjustablePartitions +=
         Await.result(future.mapTo[AggregatorList[T, U]], DURATION)
@@ -48,8 +49,8 @@ class AggregatorInput[T, U]
   def getAdjustableList(): AdjustableList[T, U] = {
     val adjustablePartitions = Buffer[AggregatorList[T, U]]()
 
-    for ((datastoreId, datastoreRef) <- hasher.objs.values) {
-      val future = datastoreRef ? GetAdjustableListMessage()
+    for (datastoreId <- hasher.objs.values) {
+      val future = resolver.send(datastoreId, GetAdjustableListMessage())
       adjustablePartitions +=
         Await.result(future.mapTo[AggregatorList[T, U]], DURATION)
     }
@@ -63,6 +64,7 @@ class AggregatorInput[T, U]
 class AggregatorBuffer[T, U]
     (input: AggregatorInput[T, U], conf: AggregatorListConf)
   extends InputBuffer[T, U] {
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   private val toPut = Map[T, U]()
 
@@ -98,14 +100,11 @@ class AggregatorBuffer[T, U]
     val futures = Buffer[Future[Any]]()
     for ((hash, buf) <- hashedPut) {
       if (buf.size > 0) {
-        val datastoreId = input.hasher.objs(hash)._1
-        val datastoreRef = resolver.resolve(datastoreId)
-
-        futures += datastoreRef ? PutAllMessage(buf)
+        val datastoreId = input.hasher.objs(hash)
+        futures += resolver.send(datastoreId, PutAllMessage(buf))
       }
     }
 
-    import scala.concurrent.ExecutionContext.Implicits.global
     Future.sequence(futures)
   }
 
@@ -119,7 +118,6 @@ class AggregatorBuffer[T, U]
 
       toPut.clear()
 
-      import scala.concurrent.ExecutionContext.Implicits.global
       Await.result(Future.sequence(futures), DURATION)
     }
   }

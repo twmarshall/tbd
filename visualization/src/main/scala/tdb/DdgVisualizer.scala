@@ -32,10 +32,10 @@ object QuickVisualizer {
     val view = new SingleView()
     view.visualizer
   }
-  def show(ddg: tdb.ddg.DDG) {
+  def show(mutator: tdb.Mutator) {
     val view = new SingleView()
     view.addResult(ExperimentResult(0, Map(),
-        List(), List(), List(), graph.DDG.create(ddg)))
+        List(), List(), List(), graph.DDG.create(mutator)))
   }
   def show(ddg: DDG) {
     val view = new SingleView()

@@ -162,7 +162,7 @@ abstract class TestBase[T, V](algorithm: TestAlgorithm[T, V])
       val result = algorithm.getResult(output, mutator)
       val expectedResult = algorithm.getExpectedResult(table)
 
-      val ddg = graph.DDG.create(mutator.getDDG())
+      val ddg = graph.DDG.create(mutator)
       pushResult(new ExperimentResult(mutationCounter, input, mutations.toList,
                                       result, expectedResult, ddg))
 

@@ -16,22 +16,56 @@
 package tdb.datastore
 
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 import tdb.{Mod, Mutator}
 import tdb.Constants._
 import tdb.list._
 
-class DoubleListModifier(datastore: Datastore, datastoreId: TaskId)
+class ModifierInfo(val headId: ModId, val maxModId: Int) extends java.io.Serializable
+
+class DoubleListModifier
+    (datastore: Datastore, datastoreId: TaskId, recovery: Boolean)
     (implicit ec: ExecutionContext)
   extends Modifier {
 
-  private var tailMod = datastore.createMod[DoubleListNode[Any, Any]](null)
+  private var tailMod: Mod[DoubleListNode[Any, Any]] = null
 
   val nodes = Map[Any, Mod[DoubleListNode[Any, Any]]]()
 
-  val modList = new DoubleList[Any, Any](
-    tailMod, false, datastoreId)
+  val modList =
+    if (!recovery) {
+      tailMod = datastore.createMod[DoubleListNode[Any, Any]](null)
+
+      val info  = new ModifierInfo(tailMod.id, datastore.maxModIdStep)
+      Await.result(datastore.store.put(datastore.metaTableId, datastoreId, info), DURATION)
+
+      new DoubleList[Any, Any](tailMod, false, datastoreId)
+    } else {
+      val info = Await.result(
+        datastore.store.get(datastore.metaTableId, datastoreId).mapTo[ModifierInfo], DURATION)
+      val headId = info.headId
+      datastore.nextModId = info.maxModId
+
+      val headMod = new Mod[DoubleListNode[Any, Any]](headId)
+      var nodeMod = headMod
+
+      while (nodeMod != null) {
+        val node = datastore.read(nodeMod)
+
+        if (node == null) {
+          nodeMod = null
+        } else {
+          val value = datastore.read(node.valueMod)
+          nodes(value._1) = nodeMod
+
+          nodeMod = node.nextMod
+          tailMod = node.nextMod
+        }
+      }
+
+      new DoubleList[Any, Any](new Mod(headId), false, datastoreId)
+    }
 
   def loadInput(keys: Iterable[Any]): Future[_] = {
     var headNode = datastore.read(modList.head)

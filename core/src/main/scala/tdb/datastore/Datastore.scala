@@ -19,7 +19,7 @@ import akka.actor.ActorRef
 import akka.event.LoggingAdapter
 import akka.pattern.{ask, pipe}
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 import tdb.Constants._
@@ -32,10 +32,12 @@ import tdb.util._
 class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
     (implicit ec: ExecutionContext) {
 
-  private val store = KVStore(workerInfo)
-  store.createTable("Mods", "ModId", "Any", null, false)
+  val store = KVStore(workerInfo)
+  val modTableId = store.createTable("mods", "ModId", "Any", null, false)
 
-  private var nextModId = 0
+  val metaTableId = store.createTable("meta", "Int", "Any", null, false)
+
+  var nextModId = 0
 
   // Maps ModIds to sets of ActorRefs representing tasks that read them.
   private val dependencies = Map[ModId, Set[ActorRef]]()
@@ -44,9 +46,20 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
 
   val chunks = Map[ModId, Iterable[Any]]()
 
+  var inputTableId = -1
+
+  val maxModIdStep = 1000
+
   def getNewModId(): ModId = {
     val modId = createModId(id, 0, nextModId)
     nextModId += 1
+
+    if (nextModId % maxModIdStep == 0) {
+      val info = Await.result(
+        store.get(metaTableId, id).mapTo[ModifierInfo], DURATION)
+      val newInfo = new ModifierInfo(info.headId, nextModId + maxModIdStep)
+      Await.result(store.put(metaTableId, id, newInfo), DURATION)
+    }
 
     modId
   }
@@ -54,7 +67,8 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
   def createMod[T](value: T): Mod[T] = {
     WorkerStats.modsCreated += 1
     val newModId = getNewModId()
-    val future = store.put(0, newModId, value)
+    assert(!store.contains(modTableId, newModId))
+    val future = store.put(modTableId, newModId, value)
     scala.concurrent.Await.result(future, DURATION)
 
     new Mod(newModId)
@@ -74,7 +88,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
     WorkerStats.datastoreReads += 1
     if (inputs.contains(modId)) {
       val promise = scala.concurrent.Promise[Any]
-      store.get(1, inputs(modId)).onComplete {
+      store.get(inputTableId, inputs(modId)).onComplete {
         case Success(v) => promise.success((inputs(modId), v))
         case Failure(e) => e.printStackTrace()
       }
@@ -84,7 +98,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
       val keys = Map[Any, Future[Any]]()
       for (id <- chunks(modId)) {
         futures += Future {
-          (id, scala.concurrent.Await.result(store.get(1, id), DURATION))
+          (id, scala.concurrent.Await.result(store.get(inputTableId, id), DURATION))
         }
       }
 
@@ -93,8 +107,8 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
           scala.concurrent.Await.result(Future.sequence(futures), DURATION)
         pair.toVector
       }
-    } else if (store.contains(0, modId)) {
-      store.get(0, modId)
+    } else if (store.contains(modTableId, modId)) {
+      store.get(modTableId, modId)
     } else {
       println("?? " + id + " " + getDatastoreId(modId) + " " + modId + " " + this)
       ???
@@ -106,8 +120,9 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
     WorkerStats.datastoreWrites += 1
     val futures = Buffer[Future[Any]]()
 
-    if (!store.contains(0, modId) || store.get(0, modId) != value) {
-      futures += store.put(0, modId, value)
+    if (!store.contains(modTableId, modId) ||
+        store.get(modTableId, modId) != value) {
+      futures += store.put(modTableId, modId, value)
 
       if (dependencies.contains(modId)) {
         for (taskRef <- dependencies(modId)) {
@@ -125,7 +140,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
     val futures = Buffer[Future[Any]]()
 
     for (modId <- modIds) {
-      store.delete(0, modId)
+      store.delete(modTableId, modId)
 
       if (dependencies.contains(modId)) {
         for (taskRef <- dependencies(modId)) {
@@ -150,16 +165,16 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
   }
 
   def loadPartitions(fileName: String, range: HashRange) {
-    val tableId = store.createTable(fileName, "String", "String", range, false)
+    inputTableId = store.createTable(fileName, "String", "String", range, false)
 
-    if (store.hashRange(1) != range) {
+    if (store.hashRange(inputTableId) != range) {
       log.warning("Loaded dataset has different hash range " +
-                  store.hashRange(1) + " than provided " + range)
+                  store.hashRange(inputTableId) + " than provided " + range)
     }
 
-    if (store.count(tableId) == 0) {
+    if (store.count(inputTableId) == 0) {
       log.debug("Reading " + fileName)
-      store.load(1, fileName)
+      store.load(inputTableId, fileName)
       log.debug("Done reading")
     } else {
       log.debug(fileName + " was already loaded.")
@@ -167,7 +182,7 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
   }
 
   def processKeys(process: Iterable[Any] => Unit) =
-    store.processKeys(1, process)
+    store.processKeys(inputTableId, process)
 
   def close() {
     store.close()

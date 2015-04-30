@@ -49,7 +49,7 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
   private val datastores = Map[TaskId, ActorRef]()
 
   def receive = {
-    case PebbleMessage(taskRef: ActorRef, modId: ModId) =>
+    case PebbleMessage(taskId: TaskId, modId: ModId) =>
       sender ! "done"
 
     case CreateTaskMessage(taskId: TaskId, parentId: TaskId) =>
@@ -75,7 +75,7 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
               columnConf, info, datastoreId, thisRange))
         case _ =>
           context.actorOf(ModifierActor.props(
-            listConf, info, datastoreId, thisRange, masterRef))
+            listConf, info, datastoreId, thisRange, masterRef, recovery))
       }
       datastores(datastoreId) = modifierRef
       sender ! modifierRef
@@ -118,7 +118,7 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
 
       sender ! "done"
 
-    case "started" => sender ! "done"
+    case "ping" => sender ! "done"
 
     case x => println("Worker received unhandled message " + x)
   }

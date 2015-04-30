@@ -27,15 +27,17 @@ import tdb.util.ObjHasher
 
 class ColumnChunkListInput[T]
     (_inputId: InputId,
-     _hasher: ObjHasher[(TaskId, ActorRef)],
-     conf: ColumnListConf)
-  extends ColumnListInput[T](_inputId, _hasher, conf) {
+     _hasher: ObjHasher[TaskId],
+     conf: ColumnListConf,
+     masterRef: ActorRef)
+  extends ColumnListInput[T](_inputId, _hasher, conf, masterRef) {
+  import scala.concurrent.ExecutionContext.Implicits.global
 
   override def getAdjustableList(): AdjustableList[T, Columns] = {
     val adjustablePartitions = mutable.Buffer[ColumnChunkList[T]]()
 
-    for ((datastoreId, datastoreRef) <- hasher.objs.values) {
-      val future = datastoreRef ? GetAdjustableListMessage()
+    for (datastoreId <- hasher.objs.values) {
+      val future = resolver.send(datastoreId, GetAdjustableListMessage())
       adjustablePartitions +=
         Await.result(future.mapTo[ColumnChunkList[T]], DURATION)
     }

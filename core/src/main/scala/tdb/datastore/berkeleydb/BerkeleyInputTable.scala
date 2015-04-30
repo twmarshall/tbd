@@ -15,7 +15,7 @@
  */
 package tdb.datastore.berkeleydb
 
-import com.sleepycat.je.Environment
+/*import com.sleepycat.je.Environment
 import com.sleepycat.persist._
 import com.sleepycat.persist.model.{Entity, PrimaryKey}
 import java.io.File
@@ -98,3 +98,4 @@ class InputEntity {
 
   var value: String = ""
 }
+*/

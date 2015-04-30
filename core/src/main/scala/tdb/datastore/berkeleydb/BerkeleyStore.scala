@@ -15,7 +15,7 @@
  */
 package tdb.datastore.berkeleydb
 
-import com.sleepycat.je.{Environment, EnvironmentConfig}
+/*import com.sleepycat.je.{Environment, EnvironmentConfig}
 import com.sleepycat.persist._
 import com.sleepycat.persist.model.{Entity, PrimaryKey}
 import java.io.File
@@ -105,3 +105,4 @@ class MetaEntity {
   var hashMax = -1
   var hashTotal = -1
 }
+*/

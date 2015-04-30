@@ -33,9 +33,11 @@ object ModifierActor {
        workerInfo: WorkerInfo,
        datastoreId: TaskId,
        range: HashRange,
-       masterRef: ActorRef): Props =
+       masterRef: ActorRef,
+       recovery: Boolean): Props =
     Props(
-      classOf[ModifierActor], conf, workerInfo, datastoreId, range, masterRef)
+      classOf[ModifierActor],
+      conf, workerInfo, datastoreId, range, masterRef, recovery)
 }
 
 class ModifierActor
@@ -43,7 +45,8 @@ class ModifierActor
      workerInfo: WorkerInfo,
      datastoreId: TaskId,
      range: HashRange,
-     masterRef: ActorRef)
+     masterRef: ActorRef,
+     recovery: Boolean)
   extends Actor with ActorLogging {
   import context.dispatcher
 
@@ -51,7 +54,7 @@ class ModifierActor
 
   val modifier =
     if (conf.chunkSize == 1)
-      new DoubleListModifier(datastore, datastoreId)
+      new DoubleListModifier(datastore, datastoreId, recovery)
     else
       new DoubleChunkListModifier(datastore, datastoreId, conf)
 
@@ -117,6 +120,9 @@ class ModifierActor
         futures += modifier.remove(key, value)
       }
       Future.sequence(futures) pipeTo sender
+
+    case "ping" =>
+      sender ! "done"
 
     case x =>
       log.warning("ModifierActor received unhandled message " + x +
