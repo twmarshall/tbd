@@ -64,6 +64,7 @@ object Constants {
     akka.remote.enabled-transports = [akka.remote.netty.tcp]
     akka.remote.log-remote-lifecycle-events = off
     akka.remote.netty.tcp.maximum-frame-size = 80000000b
+    akka.remote.watch-failure-detector.heartbeat-interval = 5 s
   """
 
   val recordSeparator = 30.toChar
