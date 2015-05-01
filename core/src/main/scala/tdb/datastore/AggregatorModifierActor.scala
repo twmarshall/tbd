@@ -118,6 +118,8 @@ class AggregatorModifierActor
       store.get(tableId, key) pipeTo sender
       dependencies.addKeyDependency(conf.inputId, key, taskRef)
 
+    case "ping" => sender ! "done"
+
     case x =>
       log.warning("AggregatorModifierActor Received unhandled message " + x +
         " from " + sender)

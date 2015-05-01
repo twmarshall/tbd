@@ -77,7 +77,7 @@ object MemoryUsage {
         objectOverhead
 
       case x =>
-        println(value.getClass)
+        println("MemoryUsage doesn't know the size of " + value.getClass)
         objectOverhead
     }
   }
