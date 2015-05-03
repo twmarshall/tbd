@@ -378,7 +378,6 @@ class Master(conf: MasterConf) extends Actor with ActorLogging {
       }
 
       // Relaunch datastores.
-      val futures = mutable.Buffer[Future[Any]]()
       datastores.map {
         case (id, info) =>
           if (info.workerId == deadWorkerId) {
@@ -386,20 +385,24 @@ class Master(conf: MasterConf) extends Actor with ActorLogging {
             val workerId = scheduler.nextWorker()
             val workerRef = workers(workerId)
             context.stop(info.datastoreRef)
-            val modifierRef = Await.result(
-              (workerRef ? CreateDatastoreMessage(
-                info.listConf, info.id, info.range, true)).mapTo[ActorRef],
-              DURATION)
+
+
+            val conf =
+              if (info.listConf != null && info.fileName != "") {
+                info.listConf.clone(file = info.fileName)
+              } else {
+                info.listConf
+              }
+            val modifierRef =
+                Await.result(
+                  (workerRef ? CreateDatastoreMessage(
+                    conf, info.id, info.range, true)).mapTo[ActorRef],
+                  DURATION)
+
             info.datastoreRef = modifierRef
             info.workerId = workerId
-
-            if (info.fileName != "") {
-              futures += modifierRef ? LoadFileMessage(info.fileName, true)
-            }
           }
       }
-
-      Await.result(Future.sequence(futures), DURATION)
 
       // Relaunch tasks.
       Future {

@@ -52,6 +52,11 @@ class ModifierActor
 
   private val datastore = new Datastore(workerInfo, log, datastoreId, recovery)
 
+  if (recovery && conf.file != "") {
+    datastore.inputTableId = datastore.store.createTable(
+      conf.file, "String", "String", range, false)
+  }
+
   val modifier =
     if (conf.chunkSize == 1)
       new DoubleListModifier(datastore, datastoreId, recovery)
