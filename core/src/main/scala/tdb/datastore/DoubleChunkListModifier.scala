@@ -16,7 +16,7 @@
 package tdb.datastore
 
 import scala.collection.mutable.{Buffer, Map}
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{Await, ExecutionContext, Future}
 
 import tdb.{Mod, Mutator}
 import tdb.Constants._
@@ -36,6 +36,9 @@ class DoubleChunkListModifier
 
   val list = new DoubleChunkList[Any, Any](
       lastNodeMod, conf, false, datastoreId)
+
+  val info  = new ModifierInfo(list.head.id, datastore.maxModIdStep)
+  Await.result(datastore.store.put(datastore.metaTableId, datastoreId, info), DURATION)
 
   val duplicateKeys = Buffer[Any]()
 
