@@ -15,6 +15,8 @@
  */
 package tdb.worker
 
+import com.datastax.driver.core.Cluster
+
 import tdb.Constants._
 import tdb.util.OS
 
@@ -28,7 +30,8 @@ case class WorkerInfo
    envHomePath: String,
    cacheSize: Int,
    mainDatastoreId: TaskId = -1,
-   numCores: Int = OS.getNumCores()) {
+   numCores: Int = OS.getNumCores(),
+   cluster: Cluster = null) {
   val workerAddress = "akka.tcp://" + systemName + "@" + ip + ":" +
     port + "/user/worker"
 

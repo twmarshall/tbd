@@ -16,7 +16,6 @@
 package tdb.datastore.cassandra
 
 import com.datastax.driver.core.Cluster
-import scala.collection.JavaConversions._
 import scala.concurrent.ExecutionContext
 import scala.reflect.runtime.universe._
 
@@ -55,19 +54,7 @@ class CassandraStore(val workerInfo: WorkerInfo)
     (implicit val ec: ExecutionContext) extends CachedStore {
   private var nextStoreId = 0
 
-  private val cluster = Cluster.builder()
-    .addContactPoint(workerInfo.ip)
-    .build()
-
-  private val metadata = cluster.getMetadata()
-  printf("Connected to cluster: %s\n",
-                    metadata.getClusterName())
-  for (host <- metadata.getAllHosts()) {
-    printf("Datatacenter: %s; Host: %s; Rack: %s\n",
-           host.getDatacenter(), host.getAddress(), host.getRack())
-  }
-
-  private val session = cluster.connect()
+  private val session = workerInfo.cluster.connect()
 
   def createTable
       (name: String,
@@ -111,6 +98,6 @@ class CassandraStore(val workerInfo: WorkerInfo)
   override def close() {
     super.close()
 
-    cluster.close()
+    session.close()
   }
 }

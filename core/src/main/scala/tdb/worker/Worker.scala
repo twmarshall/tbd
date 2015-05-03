@@ -17,6 +17,8 @@ package tdb.worker
 
 import akka.actor.{Actor, ActorLogging, ActorRef, Props}
 import akka.pattern.{ask, pipe}
+import com.datastax.driver.core.Cluster
+import scala.collection.JavaConversions._
 import scala.collection.mutable
 import scala.collection.mutable.Map
 import scala.concurrent.{Await, Promise}
@@ -44,7 +46,25 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
   private val info = {
     val message = RegisterWorkerMessage(_info)
 
-    Await.result((masterRef ? message).mapTo[WorkerInfo], DURATION)
+    val returnedInfo =
+      Await.result((masterRef ? message).mapTo[WorkerInfo], DURATION)
+    returnedInfo.storeType match {
+        case "cassandra" =>
+          val cluster = Cluster.builder()
+            .addContactPoint(returnedInfo.ip)
+            .build()
+
+          val metadata = cluster.getMetadata()
+          printf("Connected to cluster: %s\n",
+                 metadata.getClusterName())
+          for (host <- metadata.getAllHosts()) {
+            printf("Datatacenter: %s; Host: %s; Rack: %s\n",
+                   host.getDatacenter(), host.getAddress(), host.getRack())
+          }
+
+          returnedInfo.copy(cluster = cluster)
+        case _ => returnedInfo
+      }
   }
   private val datastores = Map[TaskId, ActorRef]()
 
@@ -121,5 +141,11 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
     case "ping" => sender ! "done"
 
     case x => println("Worker received unhandled message " + x)
+  }
+
+  override def postStop() {
+    if (info.cluster != null) {
+      info.cluster.close()
+    }
   }
 }
