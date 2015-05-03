@@ -33,24 +33,22 @@ object Task {
       (taskId: TaskId,
        mainDatastoreId: TaskId,
        parentId: TaskId,
-       masterRef: ActorRef,
-       datastores: Map[TaskId, ActorRef]): Props =
-    Props(classOf[Task], taskId, mainDatastoreId, parentId, masterRef, datastores)
+       masterRef: ActorRef): Props =
+    Props(classOf[Task], taskId, mainDatastoreId, parentId, masterRef)
 }
 
 class Task
     (taskId: TaskId,
      mainDatastoreId: TaskId,
      parentId: TaskId,
-     masterRef: ActorRef,
-     datastores: Map[TaskId, ActorRef])
+     masterRef: ActorRef)
   extends Actor with ActorLogging {
   import context.dispatcher
 
   WorkerStats.numTasks += 1
 
   private val c = new Context(
-    taskId, mainDatastoreId, self, masterRef, datastores, log)
+    taskId, mainDatastoreId, self, masterRef, log)
 
   def receive = {
     case ModUpdatedMessage(modId: ModId) =>

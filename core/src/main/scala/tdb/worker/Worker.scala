@@ -74,7 +74,7 @@ class Worker(_info: WorkerInfo, masterRef: ActorRef)
 
     case CreateTaskMessage(taskId: TaskId, parentId: TaskId) =>
       val taskProps = Task.props(
-        taskId, info.mainDatastoreId, parentId, masterRef, datastores)
+        taskId, info.mainDatastoreId, parentId, masterRef)
       val taskRef = context.actorOf(taskProps, taskId + "")
 
       sender ! taskRef

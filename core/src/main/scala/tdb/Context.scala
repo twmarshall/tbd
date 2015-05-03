@@ -32,7 +32,6 @@ class Context
      val mainDatastoreId: TaskId,
      val taskRef: ActorRef,
      val masterRef: ActorRef,
-     datastores: Map[TaskId, ActorRef],
      val log: LoggingAdapter)
     (implicit val ec: ExecutionContext) {
 
@@ -89,7 +88,7 @@ class Context
 
   def readId(modId: ModId, taskRef: ActorRef = null): Any = {
     val datastoreId = getDatastoreId(modId)
-    val future = datastores(datastoreId) ? GetModMessage(modId, taskRef)
+    val future = resolver.resolve(datastoreId) ? GetModMessage(modId, taskRef)
     val ret = Await.result(future, DURATION)
 
     ret match {
@@ -101,7 +100,7 @@ class Context
   def update[T](modId: ModId, value: T) {
     val message = PutMessage("mods", modId, value, taskRef)
     val datastoreId = getDatastoreId(modId)
-    val future = datastores(datastoreId) ? message
+    val future = resolver.resolve(datastoreId) ? message
 
     if (!initialRun) {
       pending += future
@@ -116,7 +115,7 @@ class Context
   def remove[T](modId: ModId) {
     ddg.modRemoved(modId)
     val datastoreId = getDatastoreId(modId)
-    val future = (datastores(datastoreId) ?
+    val future = (resolver.resolve(datastoreId) ?
       RemoveModsMessage(Buffer(modId), taskRef))
     Await.result(future, DURATION)
   }
