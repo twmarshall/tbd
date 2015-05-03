@@ -28,10 +28,18 @@ object Cassandra {
   val lock = new ReentrantLock()
 }
 
-trait CassandraTable extends Table {
+abstract class CassandraTable
+    (session: Session,
+     tableName: String,
+     dropIfExists: Boolean,
+     schema: String) extends Table {
+
   Cassandra.lock.lock()
 
-  initialize()
+  if (dropIfExists) {
+    session.execute(s"""DROP TABLE IF EXISTS $tableName""")
+  }
+  session.execute(s"""CREATE TABLE IF NOT EXISTS $tableName $schema;""")
 
   private val getStmt = session.prepare(
     s"""SELECT * FROM $tableName WHERE key = ?""")
@@ -47,12 +55,6 @@ trait CassandraTable extends Table {
 
   Cassandra.lock.unlock()
 
-  def session: Session
-
-  def tableName: String
-
-  def initialize(): Unit
-
   def getKey(row: Row): Any
 
   def getValue(row: Row): Any
@@ -67,7 +69,6 @@ trait CassandraTable extends Table {
 
   def put(key: Any, value: Any) {
     val stmt = new BoundStatement(putStmt)
-
     session.execute(stmt.bind(
       key.asInstanceOf[Object], convertValue(value)))
   }
@@ -80,7 +81,8 @@ trait CassandraTable extends Table {
   def contains(key: Any): Boolean = {
     val stmt = new BoundStatement(containsStmt)
     val results = session.execute(stmt.bind(key.asInstanceOf[Object]))
-    results.one().getLong("count") > 0
+    val count = results.one().getLong("count")
+    count > 0
   }
 
   def count(): Int = {
@@ -107,18 +109,15 @@ trait CassandraTable extends Table {
 }
 
 class CassandraStringDoubleTable
-    (val session: Session,
-     val tableName: String,
+    (_session: Session,
+     _tableName: String,
      val hashRange: HashRange,
-     recovery: Boolean) extends CassandraTable {
-  def initialize() {
-    if (!recovery) {
-      session.execute(s"""DROP TABLE IF EXISTS $tableName""")
-      val query = s"""CREATE TABLE $tableName
-        (key text, value text, PRIMARY KEY(key));"""
-      session.execute(query)
-    }
-  }
+     _dropIfExists: Boolean)
+  extends CassandraTable(
+      _session,
+      _tableName,
+      _dropIfExists,
+      "(key text, value text, PRIMARY KEY(key))") {
 
   def getKey(row: Row) = row.getString("key")
 
@@ -128,18 +127,15 @@ class CassandraStringDoubleTable
 }
 
 class CassandraStringIntTable
-    (val session: Session,
-     val tableName: String,
+    (_session: Session,
+     _tableName: String,
      val hashRange: HashRange,
-     recovery: Boolean) extends CassandraTable {
-  def initialize() {
-    if (!recovery) {
-      session.execute(s"""DROP TABLE IF EXISTS $tableName""")
-      val query = s"""CREATE TABLE $tableName
-        (key text, value text, PRIMARY KEY(key));"""
-      session.execute(query)
-    }
-  }
+     _dropIfExists: Boolean)
+  extends CassandraTable(
+      _session,
+      _tableName,
+      _dropIfExists,
+      "(key text, value text, PRIMARY KEY(key))") {
 
   def getKey(row: Row) = row.getString("key")
 
@@ -149,18 +145,15 @@ class CassandraStringIntTable
 }
 
 class CassandraStringStringTable
-    (val session: Session,
-     val tableName: String,
+    (_session: Session,
+     _tableName: String,
      val hashRange: HashRange,
-     recovery: Boolean) extends CassandraTable {
-  def initialize() {
-    if (!recovery) {
-      session.execute(s"""DROP TABLE IF EXISTS $tableName""")
-      val query = s"""CREATE TABLE $tableName
-        (key text, value text, PRIMARY KEY(key));"""
-      session.execute(query)
-    }
-  }
+     _dropIfExists: Boolean)
+  extends CassandraTable(
+      _session,
+      _tableName,
+      _dropIfExists,
+      "(key text, value text, PRIMARY KEY(key))") {
 
   def getKey(row: Row) = row.getString("key")
 
@@ -170,18 +163,15 @@ class CassandraStringStringTable
 }
 
 class CassandraStringLongTable
-    (val session: Session,
-     val tableName: String,
+    (_session: Session,
+     _tableName: String,
      val hashRange: HashRange,
-     recovery: Boolean) extends CassandraTable {
-  def initialize() {
-    if (!recovery) {
-      //session.execute(s"""DROP TABLE IF EXISTS $tableName""")
-      /*val query = s"""CREATE TABLE IF NOT EXISTS $tableName
-        (key text, value text, PRIMARY KEY(key));"""
-      session.execute(query)*/
-    }
-  }
+     _dropIfExists: Boolean)
+  extends CassandraTable(
+      _session,
+      _tableName,
+      _dropIfExists,
+      "(key text, value text, PRIMARY KEY(key))") {
 
   def getKey(row: Row) = row.getString("key")
 
@@ -190,11 +180,16 @@ class CassandraStringLongTable
   def convertValue(value: Any) = value.toString
 }
 
-class CassandraModTable
-    (val session: Session,
-     val tableName: String,
-     val hashRange: HashRange) extends CassandraTable {
-  def initialize() {}
+class CassandraModIdAnyTable
+    (_session: Session,
+     _tableName: String,
+     val hashRange: HashRange,
+     _dropIfExists: Boolean)
+  extends CassandraTable(
+      _session,
+      _tableName,
+      _dropIfExists,
+      "(key bigint, value blob, PRIMARY KEY(key))") {
 
   def getKey(row: Row) = row.getLong("key")
 
@@ -213,10 +208,15 @@ class CassandraModTable
 }
 
 class CassandraIntAnyTable
-    (val session: Session,
-     val tableName: String,
-     val hashRange: HashRange) extends CassandraTable {
-  def initialize() {}
+    (_session: Session,
+     _tableName: String,
+     val hashRange: HashRange,
+     _dropIfExists: Boolean)
+  extends CassandraTable(
+      _session,
+      _tableName,
+      _dropIfExists,
+      "(key int, value blob, PRIMARY KEY(key))") {
 
   def getKey(row: Row) = row.getLong("key")
 

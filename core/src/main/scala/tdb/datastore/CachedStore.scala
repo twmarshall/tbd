@@ -137,7 +137,7 @@ trait CachedStore extends KVStore {
   }
 
   def contains(id: Int, key: Any): Boolean = {
-    values.contains(key) || tables(id).contains(key)
+    tables(id).contains(key)
   }
 
   def count(id: Int): Int = {

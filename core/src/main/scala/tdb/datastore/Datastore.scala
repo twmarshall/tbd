@@ -29,7 +29,11 @@ import tdb.stats.WorkerStats
 import tdb.worker.WorkerInfo
 import tdb.util._
 
-class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
+class Datastore
+    (val workerInfo: WorkerInfo,
+     log: LoggingAdapter,
+     id: TaskId,
+     recovery: Boolean)
     (implicit ec: ExecutionContext) {
 
   val store = KVStore(workerInfo)
@@ -42,7 +46,8 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
   // Maps ModIds to sets of ActorRefs representing tasks that read them.
   private val dependencies = Map[ModId, Set[ActorRef]]()
 
-  val inputs = Map[ModId, Any]()
+  val inputsId =
+    store.createTable("inputs" + id, "ModId", "Any", null, !recovery)
 
   val chunks = Map[ModId, Iterable[Any]]()
 
@@ -86,11 +91,16 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
 
   def getMod(modId: ModId, taskRef: ActorRef): Future[_] = {
     WorkerStats.datastoreReads += 1
-    if (inputs.contains(modId)) {
+    if (store.contains(inputsId, modId)) {
       val promise = scala.concurrent.Promise[Any]
-      store.get(inputTableId, inputs(modId)).onComplete {
-        case Success(v) => promise.success((inputs(modId), v))
-        case Failure(e) => e.printStackTrace()
+
+      val key = Await.result(store.get(inputsId, modId), DURATION)
+
+      store.get(inputTableId, key).onComplete {
+        case Success(v) =>
+          promise.success(key, v)
+        case Failure(e) =>
+          e.printStackTrace()
       }
       promise.future
     } else if (chunks.contains(modId)) {
@@ -98,14 +108,13 @@ class Datastore(val workerInfo: WorkerInfo, log: LoggingAdapter, id: TaskId)
       val keys = Map[Any, Future[Any]]()
       for (id <- chunks(modId)) {
         futures += Future {
-          (id, scala.concurrent.Await.result(store.get(inputTableId, id), DURATION))
+          (id, Await.result(store.get(inputTableId, id), DURATION))
         }
       }
 
       Future {
-        val pair =
-          scala.concurrent.Await.result(Future.sequence(futures), DURATION)
-        pair.toVector
+        val value = Await.result(Future.sequence(futures), DURATION)
+        value.toVector
       }
     } else if (store.contains(modTableId, modId)) {
       store.get(modTableId, modId)

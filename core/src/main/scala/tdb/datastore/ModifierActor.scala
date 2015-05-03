@@ -50,7 +50,7 @@ class ModifierActor
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val datastore = new Datastore(workerInfo, log, datastoreId)
+  private val datastore = new Datastore(workerInfo, log, datastoreId, recovery)
 
   val modifier =
     if (conf.chunkSize == 1)

@@ -30,7 +30,7 @@ import tdb.messages._
 class Resolver(masterRef: ActorRef) extends Serializable {
   val tasks = mutable.Map[TaskId, ActorRef]()
 
-  private final val TIME = 5000
+  private final val TIME = 500000
 
   def resolve(taskId: TaskId): ActorRef = {
     if (!tasks.contains(taskId)) {

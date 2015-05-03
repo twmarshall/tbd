@@ -74,7 +74,6 @@ class DoubleListModifier
         null
       else
         datastore.read(headNode.valueMod)._1
-
     var tail = datastore.createMod(headNode)
 
     if (headNode == null) {
@@ -85,7 +84,7 @@ class DoubleListModifier
       headKey = key.asInstanceOf[Any]
 
       val valueMod = new Mod[(Any, Any)](datastore.getNewModId())
-      datastore.inputs(valueMod.id) = key
+      datastore.store.put(datastore.inputsId, valueMod.id, key)
       headNode = new DoubleListNode(valueMod, tail)
       tail = datastore.createMod(headNode)
 

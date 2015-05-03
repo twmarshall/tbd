@@ -39,7 +39,7 @@ class DatastoreActor(workerInfo: WorkerInfo, id: TaskId)
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val datastore = new Datastore(workerInfo, log, id)
+  private val datastore = new Datastore(workerInfo, log, id, false)
 
   def receive = {
     case CreateModMessage(value: Any) =>

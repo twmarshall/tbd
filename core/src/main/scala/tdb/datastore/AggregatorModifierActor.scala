@@ -54,7 +54,7 @@ class AggregatorModifierActor
   private val tableId = {
     val tableName =  "datastore-" + datastoreId
     val valueType = conf.valueType.columnType
-    store.createTable(tableName, "String", valueType, null, recovery)
+    store.createTable(tableName, "String", valueType, null, !recovery)
   }
 
   private val dependencies = new DependencyManager()

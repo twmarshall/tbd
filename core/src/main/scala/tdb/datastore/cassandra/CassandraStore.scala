@@ -74,7 +74,7 @@ class CassandraStore(val workerInfo: WorkerInfo)
        keyType: String,
        valueType: String,
        range: HashRange,
-       recovery: Boolean): Int = {
+       dropIfExists: Boolean): Int = {
     val id = nextStoreId
     nextStoreId += 1
 
@@ -83,21 +83,23 @@ class CassandraStore(val workerInfo: WorkerInfo)
         valueType match {
           case "Double" =>
             tables(id) = new CassandraStringDoubleTable(
-              session, convertName(name), range, recovery)
+              session, convertName(name), range, dropIfExists)
           case "Int" =>
             tables(id) = new CassandraStringIntTable(
-              session, convertName(name), range, recovery)
+              session, convertName(name), range, dropIfExists)
           case "Long" =>
             tables(id) = new CassandraStringLongTable(
-              session, convertName(name), range, recovery)
+              session, convertName(name), range, dropIfExists)
           case "String" =>
             tables(id) = new CassandraStringStringTable(
-              session, convertName(name), range, recovery)
+              session, convertName(name), range, dropIfExists)
         }
       case "ModId" =>
-        tables(id) = new CassandraModTable(session, convertName(name), range)
+        tables(id) = new CassandraModIdAnyTable(
+          session, convertName(name), range, dropIfExists)
       case "Int" =>
-        tables(id) = new CassandraIntAnyTable(session, convertName(name), range)
+        tables(id) = new CassandraIntAnyTable(
+          session, convertName(name), range, dropIfExists)
     }
 
     id

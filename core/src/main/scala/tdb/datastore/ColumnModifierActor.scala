@@ -47,7 +47,7 @@ class ColumnModifierActor
   extends Actor with ActorLogging {
   import context.dispatcher
 
-  private val datastore = new Datastore(workerInfo, log, datastoreId)
+  private val datastore = new Datastore(workerInfo, log, datastoreId, false)
 
   private var tailMod = datastore.createMod[ColumnListNode[Any]](null)
 
