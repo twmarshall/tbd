@@ -55,13 +55,14 @@ class PartitionedDoubleList[T, U]
 
   override def foreach(f: ((T, U), Context) => Unit)
       (implicit c: Context): Unit = {
+
     def innerForeach(i: Int)(implicit c: Context) {
       if (i < partitions.size) {
         val (mappedPartition, mappedRest) = parWithHint({
           c => partitions(i).foreach(f)(c)
-        }, partitions(i).datastoreId, "left" + i)({
+        }, partitions(i).datastoreId, "left" + i + "-" + c.uniqueName())({
           c => innerForeach(i + 1)(c)
-        }, name2 = "right" + i)
+        }, name2 = "right" + i + "-" + c.uniqueName())
       }
     }
 

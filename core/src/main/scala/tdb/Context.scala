@@ -75,6 +75,13 @@ class Context
 
   var nextNodeId = 0
 
+  private var nextTaskName = 0
+
+  def uniqueName() = {
+    nextTaskName += 1
+    taskId + "-" + nextTaskName
+  }
+
   def newModId(): ModId = {
     val newModId = createModId(mainDatastoreId, taskId, nextModId)
     nextModId += 1
