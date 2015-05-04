@@ -53,7 +53,7 @@ class Datastore
 
   var inputTableId = -1
 
-  val maxModIdStep = 1000
+  val maxModIdStep = 10000
 
   def getNewModId(): ModId = {
     val modId = createModId(id, 0, nextModId)
