@@ -15,10 +15,11 @@
  */
 package tdb.scripts
 
-import java.io._
 import org.rogach.scallop._
 import scala.collection.mutable.Map
 import scala.io.Source
+
+import tdb.util.Util
 
 object NaiveWC {
   def mapper
@@ -31,15 +32,6 @@ object NaiveWC {
         output(word) = 1
       }
     }
-  }
-
-  def writeOutput(fileName: String, output: Map[String, Int]) {
-    val writer = new BufferedWriter(new OutputStreamWriter(
-      new FileOutputStream(fileName + ".txt"), "utf-8"))
-    for ((key, value) <- output.toBuffer.sortWith(_._1 < _._1)) {
-      writer.write(key + " -> " + value + "\n")
-    }
-    writer.close()
   }
 
  def main(args: Array[String]) {
@@ -68,7 +60,7 @@ object NaiveWC {
       mapper(output, (split(0), split(1)))
     }
 
-    writeOutput(Conf.output(), output)
+    Util.writeMapToFile(Conf.output(), output)
 
     if (Conf.updates().size > 0) {
       val updateFile = Source.fromFile(Conf.updateFile())
@@ -80,7 +72,7 @@ object NaiveWC {
           mapper(output, (split(0), split(1)))
         }
 
-        writeOutput(Conf.output() + update, output)
+        Util.writeMapToFile(Conf.output() + update, output)
       }
     }
   }

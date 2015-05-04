@@ -76,4 +76,13 @@ object Util {
     val objectInput = new ObjectInputStream(byteInput)
     objectInput.readObject()
   }
+
+  def writeMapToFile(fileName: String, output: Iterable[(String, Int)]) {
+    val writer = new BufferedWriter(new OutputStreamWriter(
+      new FileOutputStream(fileName + ".txt"), "utf-8"))
+    for ((key, value) <- output.toBuffer.sortWith(_._1 < _._1)) {
+      writer.write(key + " -> " + value + "\n")
+    }
+    writer.close()
+  }
 }

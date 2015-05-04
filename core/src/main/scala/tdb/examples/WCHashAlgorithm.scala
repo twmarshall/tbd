@@ -173,6 +173,8 @@ class WCHashAlgorithm(_conf: AlgorithmConf)
     if (Experiment.verbosity > 1) {
       println("output = " + sortedOutput)
       println("answer = " + sortedAnswer)
+      //Util.writeMapToFile("wordcount_output.txt", sortedOutput)
+      //Util.writeMapToFile("wordcount_answer.txt", sortedAnswer)
     }
 
     sortedOutput == sortedAnswer
