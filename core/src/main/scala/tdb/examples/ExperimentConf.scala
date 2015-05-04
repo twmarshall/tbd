@@ -36,7 +36,7 @@ class ExperimentConf(_args: Array[String]) extends ScallopConf(_args) {
     default = Some(List("1000")),
     descr = "Number of elements to load initially.")
   val dots = toggle("dots", default = Some(false))
-  val epsilons = opt[List[Double]]("epsilons", default = Some(List(0.01)))
+  val epsilons = opt[List[Double]]("epsilons", default = Some(List(0.001)))
   val envHomePath = opt[String]("envHomePath",
     default = Some("/tmp/tdb_berkeleydb"), descr = "If using berkeleydb," +
     "the path to where the database should be stored.")
