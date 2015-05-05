@@ -143,8 +143,10 @@ class PageRankAlgorithm(_conf: AlgorithmConf)
     }
 
     val averageError = (totalError / answer.size).abs * 100
-    println("average error = " + averageError + "%")
-    println("max error = " + (maxError * 100) + "%")
+    if (Experiment.verbosity > 0) {
+      println("average error = " + averageError + "%")
+      println("max error = " + (maxError * 100) + "%")
+    }
     //println("output = " + out.sortWith(_._1 < _._1))
     //println("answer = " + answer.toBuffer.sortWith(_._1 < _._1))
 
