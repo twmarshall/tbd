@@ -39,15 +39,15 @@ class AlgorithmTests extends FlatSpec with Matchers {
     Experiment.run(conf)
   }
 
-  /*"PageRankTest" should "run page rank successfully." in {
-    val conf = Map(
-      "algorithms" -> Array("pgrank"),
-      "chunkSizes" -> Array("1"),
-      "counts" -> Array(intensity.toString),
-      "partitions" -> Array("1"))
+  "PageRankTest" should "run page rank successfully." in {
+    val conf = new ExperimentConf(Array(
+      "--algorithms", "pgrank",
+      "--chunkSizes", "1",
+      "--files", "graph100.txt",
+      "--partitions", "1") ++ defaults)
 
-    Experiment.run(Experiment.confs ++ conf)
-  }*/
+    Experiment.run(conf)
+  }
 
   "WordcountTest" should "run wordcount successfully." in {
     val conf = new ExperimentConf(Array(
