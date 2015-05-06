@@ -130,7 +130,7 @@ class WCAlgorithm(_conf: AlgorithmConf)
         println("Reading data from " + conf.file)
       }
       if (OS.isDir(conf.updateFile)) {
-        new DirectoryData(input, conf.file, conf.updateFile, conf.runs)
+        new DirectoryData(input, conf.file, conf.updateFile, conf.runs, Experiment.check)
       } else {
         new FileData(input, conf.file, conf.updateFile, conf.runs)
       }
