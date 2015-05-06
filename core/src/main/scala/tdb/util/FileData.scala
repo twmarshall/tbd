@@ -15,9 +15,10 @@
  */
 package tdb.util
 
-import java.io.File
+import java.io._
 import scala.collection.mutable.Buffer
 
+import tdb.Constants._
 import tdb.list.ListInput
 
 class FileData
@@ -29,16 +30,7 @@ class FileData
 
   var remainingRuns = runs
 
-  val updates = Buffer[(String, String)]()
-
-  private def getMoreUpdates() {
-    val process = (key: String, value: String) => {
-      updates += ((key, value))
-      ()
-    }
-
-    FileUtil.readEntireKeyValueFile(updateFile, process)
-  }
+  private var updates = new BufferedReader(new FileReader(updateFile))
 
   def generate() {
     val process = (key: String, value: String) => {
@@ -59,20 +51,21 @@ class FileData
     remainingRuns = remainingRuns.tail
 
     for (i <- 1 to updateCount) {
-      if (updates.size == 0) {
-        if (gotMore) {
-          println("Warning: the update file is too small, update size = " +
-            updateCount)
-        }
-        gotMore = true
-        getMoreUpdates()
-      }
+      var line = updates.readLine()
 
-      val key = updates.head._1
-      val value = updates.head._2
+      if (line == null) {
+        println("Warning: the update file is too small, update size = " +
+                updateCount)
+        updates = new BufferedReader(new FileReader(updateFile))
+        line = updates.readLine()
+      }
+      val split = line.split(unitSeparator)
+
+      val key = split(0)
+      val value = split(1)
+
       input.put(key, value)
       table(key) = value
-      updates -= updates.head
     }
 
     updateCount
