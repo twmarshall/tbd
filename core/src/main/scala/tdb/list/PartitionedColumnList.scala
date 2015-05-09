@@ -87,10 +87,6 @@ class PartitionedColumnList[T]
   def reduce(f: ((T, Columns), (T, Columns)) => (T, Columns))
       (implicit c: Context): Mod[(T, Columns)] = ???
 
-  def split(pred: ((T, Columns)) => Boolean)
-      (implicit c: Context):
-    (PartitionedDoubleChunkList[T, Columns], PartitionedDoubleChunkList[T, Columns]) = ???
-
   /* Meta Operations */
   def toBuffer(mutator: Mutator): Buffer[(T, Columns)] = {
     val buf = Buffer[(T, Columns)]()

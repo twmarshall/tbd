@@ -166,10 +166,6 @@ class PartitionedDoubleList[T, U]
     })._1
   }
 
-  def split(pred: ((T, U)) => Boolean)
-      (implicit c: Context):
-    (PartitionedDoubleList[T, U], PartitionedDoubleList[T, U]) = ???
-
   /* Meta Operations */
   def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
     val buf = Buffer[(T, U)]()

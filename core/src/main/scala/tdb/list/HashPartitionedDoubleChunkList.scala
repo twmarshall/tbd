@@ -28,24 +28,4 @@ class HashPartitionedDoubleChunkList[T, U]
 
   //println("new HashPartitionedDoubleChunkList")
 
-  override def partitionedReduce(f: ((T, U), (T, U)) => (T, U))
-      (implicit c: Context): Iterable[Mod[(T, U)]] = {
-    println("HashPartitionedDoubleChunkList.partitionedReduce")
-    def innerReduce(i: Int)(implicit c: Context): Buffer[Mod[(T, U)]] = {
-      if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = parWithHint({
-          c => partitions(i).reduce(f)(c)
-        }, partitions(i).datastoreId)({
-          c => innerReduce(i + 1)(c)
-        })
-
-        mappedRest += mappedPartition
-      } else {
-        Buffer[Mod[(T, U)]]()
-      }
-    }
-
-    innerReduce(0)
-  }
-
 }

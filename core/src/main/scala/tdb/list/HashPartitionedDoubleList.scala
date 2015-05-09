@@ -27,26 +27,6 @@ class HashPartitionedDoubleList[T, U]
 
   //println("new HashPartitionedDoubleList")
 
-  override def partitionedReduce(f: ((T, U), (T, U)) => (T, U))
-      (implicit c: Context): Iterable[Mod[(T, U)]] = {
-    c.log.debug("HashPartitionedDoubleList.partitionedReduce")
-    def innerReduce(i: Int)(implicit c: Context): Buffer[Mod[(T, U)]] = {
-      if (i < partitions.size) {
-        val (mappedPartition, mappedRest) = parWithHint({
-          c => partitions(i).reduce(f)(c)
-        }, partitions(i).datastoreId)({
-          c => innerReduce(i + 1)(c)
-        })
-
-        mappedRest += mappedPartition
-      } else {
-        Buffer[Mod[(T, U)]]()
-      }
-    }
-
-    innerReduce(0)
-  }
-
   override def reduceByKey(f: (U, U) => U)
       (implicit c: Context, o: Ordering[T]): AdjustableList[T, U] = {
     c.log.debug("HashPartitionedDoubleList.reduceByKey")

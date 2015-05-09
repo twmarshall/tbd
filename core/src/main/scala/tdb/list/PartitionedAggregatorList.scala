@@ -41,10 +41,6 @@ class PartitionedAggregatorList[T, U]
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = ???
 
-  def split(pred: ((T, U)) => Boolean)
-      (implicit c: Context):
-  (AdjustableList[T, U], AdjustableList[T, U]) = ???
-
   /* Meta functions */
   def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
     val buf = Buffer[(T, U)]()

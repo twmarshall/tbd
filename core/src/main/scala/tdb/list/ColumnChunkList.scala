@@ -68,9 +68,6 @@ class ColumnChunkList[T]
   def reduce(f: ((T, Columns), (T, Columns)) => (T, Columns))
       (implicit c: Context): Mod[(T, Columns)] = ???
 
-  def split(pred: ((T, Columns)) => Boolean)
-      (implicit c: Context): (AdjustableList[T, Columns], AdjustableList[T, Columns]) = ???
-
   def toBuffer(mutator: Mutator): Buffer[(T, Map[String, Any])] = {
     val buf = Buffer[(T, Map[String, Any])]()
     var node = mutator.read(head)

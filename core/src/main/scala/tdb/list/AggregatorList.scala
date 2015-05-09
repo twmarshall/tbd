@@ -43,9 +43,6 @@ class AggregatorList[T, U](datastoreId: TaskId)
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = ???
 
-  def split(pred: ((T, U)) => Boolean)
-      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
-
   /* Meta functions */
   def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
     val future = mutator.masterRef ? MutatorToBufferMessage(datastoreId)

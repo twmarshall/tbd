@@ -126,9 +126,6 @@ class DoubleChunkList[T, U]
     chunkMap(_.reduce(f)).reduce(f)
   }
 
-  def split(pred: ((T, U)) => Boolean)
-      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
-
   def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
     val buf = Buffer[(T, U)]()
     var node = mutator.read(head)
