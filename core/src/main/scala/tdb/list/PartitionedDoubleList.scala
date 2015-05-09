@@ -166,10 +166,6 @@ class PartitionedDoubleList[T, U]
     })._1
   }
 
-  def sortJoin[V](that: AdjustableList[T, V])
-      (implicit c: Context,
-       ordering: Ordering[T]): AdjustableList[T, (U, V)] = ???
-
   def split(pred: ((T, U)) => Boolean)
       (implicit c: Context):
     (PartitionedDoubleList[T, U], PartitionedDoubleList[T, U]) = ???

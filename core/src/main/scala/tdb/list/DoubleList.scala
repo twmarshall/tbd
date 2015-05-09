@@ -190,10 +190,6 @@ class DoubleList[T, U]
     ???
   }
 
-  def sortJoin[V](_that: AdjustableList[T, V])
-      (implicit c: Context,
-       ordering: Ordering[T]): AdjustableList[T, (U, V)] = ???
-
   def toBuffer(mutator: Mutator): Buffer[(T, U)] = {
     val buf = Buffer[(T, U)]()
     var node = mutator.read(head)

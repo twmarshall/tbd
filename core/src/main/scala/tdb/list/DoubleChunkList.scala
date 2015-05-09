@@ -126,10 +126,6 @@ class DoubleChunkList[T, U]
     chunkMap(_.reduce(f)).reduce(f)
   }
 
-  def sortJoin[V](_that: AdjustableList[T, V])
-      (implicit c: Context,
-       ordering: Ordering[T]): AdjustableList[T, (U, V)] = ???
-
   def split(pred: ((T, U)) => Boolean)
       (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U]) = ???
 

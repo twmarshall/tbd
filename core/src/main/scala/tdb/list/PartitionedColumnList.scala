@@ -87,10 +87,6 @@ class PartitionedColumnList[T]
   def reduce(f: ((T, Columns), (T, Columns)) => (T, Columns))
       (implicit c: Context): Mod[(T, Columns)] = ???
 
-  def sortJoin[V](that: AdjustableList[T, V])
-      (implicit c: Context,
-       ordering: Ordering[T]): AdjustableList[T, (Columns, V)] = ???
-
   def split(pred: ((T, Columns)) => Boolean)
       (implicit c: Context):
     (PartitionedDoubleChunkList[T, Columns], PartitionedDoubleChunkList[T, Columns]) = ???

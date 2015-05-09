@@ -122,12 +122,6 @@ trait AdjustableList[T, U] {
   def reduceByKey(f: (U, U) => U)
       (implicit c: Context, o: Ordering[T]): AdjustableList[T, U] = ???
 
-  /**
-   * Performs a join by sorting the input lists and then merging them.
-   */
-  def sortJoin[V](that: AdjustableList[T, V])
-      (implicit c: Context, ordering: Ordering[T]): AdjustableList[T, (U, V)]
-
   /* Meta functions */
   def toBuffer(mutator: Mutator): Buffer[(T, U)]
 }
