@@ -169,10 +169,8 @@ class DDG(_c: Context) {
   def addMod
       (modId1: ModId,
        modId2: ModId,
-       modizer: Modizer[Any],
-       key: Any,
        c: Context): Timestamp = {
-    val modNode = new ModNode(modId1, modId2, modizer, key)
+    val modNode = new ModNode(modId1, modId2)
     val timestamp = nextTimestamp(modNode, c)
 
     timestamp

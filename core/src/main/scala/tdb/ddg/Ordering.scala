@@ -179,24 +179,12 @@ class Ordering {
           case memoNode: MemoNode =>
             memoNode.memoizer.removeEntry(time, memoNode.signature)
           case modNode: ModNode =>
-            if (modNode.modizer != null) {
-              if (modNode.modizer.remove(modNode.key, c)) {
-                if (modNode.modId1 != -1) {
-                  c.remove(modNode.modId1)
-                }
+            if (modNode.modId1 != -1) {
+              c.remove(modNode.modId1)
+            }
 
-                if (modNode.modId2 != -1) {
-                  c.remove(modNode.modId2)
-                }
-              }
-            } else {
-              if (modNode.modId1 != -1) {
-                c.remove(modNode.modId1)
-              }
-
-              if (modNode.modId2 != -1) {
-                c.remove(modNode.modId2)
-              }
+            if (modNode.modId2 != -1) {
+              c.remove(modNode.modId2)
             }
 
           case parNode: ParNode =>

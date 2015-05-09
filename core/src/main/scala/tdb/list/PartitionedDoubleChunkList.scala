@@ -31,34 +31,6 @@ class PartitionedDoubleChunkList[T, U]
   extends AdjustableList[T, U] with Serializable {
 
   Log.debug("new PartitionedDoubleChunkList")
-  override def aggregate[V, W](initial: => (V, W))
-      (seqop: ((V, W), ((T, U), (V, W))) => (V, W),
-       combop: ((V, W), (V, W)) => (V, W))
-      (implicit c: Context): Mod[(V, W)] = {
-    c.log.debug("PartitionedDoubleChunkList.aggregate")
-    def innerAggregate(i: Int)
-        (implicit c: Context): Buffer[Mod[(V, W)]] = {
-      if (i < partitions.size) {
-        val (partition, rest) = parWithHint({
-          c => partitions(i).aggregate(initial)(seqop, combop)(c)
-        }, partitions(i).datastoreId)({
-          c => innerAggregate(i + 1)(c)
-        })
-
-        rest += partition
-      } else {
-        Buffer[Mod[(V, W)]]()
-      }
-    }
-
-    innerAggregate(0).reduce((mod1: Mod[(V, W)], mod2: Mod[(V, W)]) => {
-      mod {
-        read_2(mod1, mod2) {
-          case (value1, value2) => write(combop(value1, value2))
-        }
-      }
-    })
-  }
 
   override def chunkMap[V, W](f: Iterable[(T, U)] => (V, W))
       (implicit c: Context): AdjustableList[V, W] = {

@@ -29,11 +29,6 @@ import tdb.{Context, Mod, Mutator}
  */
 trait AdjustableList[T, U] {
 
-  def aggregate[V, W](initial: => (V, W))
-      (seqop: ((V, W), ((T, U), (V, W))) => (V, W),
-       combop: ((V, W), (V, W)) => (V, W))
-      (implicit c: Context): Mod[(V, W)] = ???
-
   /**
    * Returns an AdjustableList containing the results of applying the given
    * function to each chunk of this AdjustableList. Only defined for chunked
@@ -110,12 +105,6 @@ trait AdjustableList[T, U] {
       (implicit c: Context): Unit = ???
 
   /**
-   * Sorts the list, using the quicksort algorithm.
-   */
-  def quicksort(comparator: ((T, U), (T, U)) => Int)
-      (implicit c: Context): AdjustableList[T, U] = ???
-
-  /**
    * Reduces all elements in the list using f, in an unspecified order.
    */
   def reduce(f: ((T, U), (T, U)) => (T, U))
@@ -138,14 +127,6 @@ trait AdjustableList[T, U] {
    */
   def sortJoin[V](that: AdjustableList[T, V])
       (implicit c: Context, ordering: Ordering[T]): AdjustableList[T, (U, V)]
-
-  /**
-   * Returns a tuple of two AdjustableList, whereas the first AdjustableList
-   * containins all of the elements from this AdjustableList that satisfy the
-   * given predicate, and the second AdjustableList contains all other elements.
-   */
-  def split(pred: ((T, U)) => Boolean)
-      (implicit c: Context): (AdjustableList[T, U], AdjustableList[T, U])
 
   /* Meta functions */
   def toBuffer(mutator: Mutator): Buffer[(T, U)]

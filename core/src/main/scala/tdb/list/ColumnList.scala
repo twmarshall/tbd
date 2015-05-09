@@ -52,13 +52,6 @@ class ColumnList[T]
       (implicit c: Context,
        ordering: Ordering[T]): DoubleChunkList[T, Columns] = ???
 
-  def merge
-      (that: DoubleChunkList[T, Columns],
-       memo: Memoizer[Changeable[DoubleChunkListNode[T, Columns]]],
-       modizer: Modizer1[DoubleChunkListNode[T, Columns]])
-      (implicit c: Context,
-       ordering: Ordering[T]): DoubleChunkList[T, Columns] = ???
-
   override def projection2
       (column1: String,
        column2: String,

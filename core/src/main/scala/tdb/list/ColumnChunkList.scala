@@ -52,24 +52,6 @@ class ColumnChunkList[T]
       (implicit c: Context,
        ordering: Ordering[T]): DoubleChunkList[T, Columns] = ???
 
-  def merge
-      (that: DoubleChunkList[T, Columns],
-       memo: Memoizer[Changeable[DoubleChunkListNode[T, Columns]]],
-       modizer: Modizer1[DoubleChunkListNode[T, Columns]])
-      (implicit c: Context,
-       ordering: Ordering[T]): DoubleChunkList[T, Columns] = ???
-
-  /*override def projection2
-      (column1: String, column2: String, f: (T, Any, Any, Context) => Unit)
-      (implicit c: Context): Unit = {
-    val memo = new Memoizer[Unit]()
-
-    readAny(head) {
-      case null =>
-      case node => node.projection2(column1, column2, f, memo)
-    }
-  }*/
-
   override def projection2Chunk
       (column1: String,
        column2: String,

@@ -47,9 +47,7 @@ class MemoNode
 
 class ModNode
     (val modId1: ModId,
-     val modId2: ModId,
-     val modizer: Modizer[Any],
-     val key: Any) extends Node
+     val modId2: ModId) extends Node
 
 class ParNode
     (val taskId1: TaskId,

@@ -121,13 +121,6 @@ class DoubleChunkList[T, U]
       (implicit c: Context,
        ordering: Ordering[T]): DoubleChunkList[T, U] = ???
 
-  def merge
-      (that: DoubleChunkList[T, U],
-       memo: Memoizer[Changeable[DoubleChunkListNode[T, U]]],
-       modizer: Modizer1[DoubleChunkListNode[T, U]])
-      (implicit c: Context,
-       ordering: Ordering[T]): DoubleChunkList[T, U] = ???
-
   def reduce(f: ((T, U), (T, U)) => (T, U))
       (implicit c: Context): Mod[(T, U)] = {
     chunkMap(_.reduce(f)).reduce(f)
