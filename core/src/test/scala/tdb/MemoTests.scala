@@ -104,14 +104,14 @@ class MemoTests extends FlatSpec with Matchers {
      * isn't always the same.
      */
     def run(implicit c: Context) = {
-      val memo = new Memoizer[Changeable[Int]]()
+      val memo = new Memoizer[Mod[Int]]()
 
       mod {
         read(one) {
           case oneValue =>
             if (oneValue == 3) {
-              mod {
-                memo(two) {
+              memo(two) {
+                mod {
                   count1 += 1
                   read(two) {
                     case twoValue => write(twoValue + 2)
@@ -120,11 +120,18 @@ class MemoTests extends FlatSpec with Matchers {
               }
             }
 
-            memo(two) {
-              count2 += 1
-              read(two) {
-                case twoValue => write(twoValue + 1)
+            val mod1 =
+              memo(two) {
+                mod {
+                  count2 += 1
+                  read(two) {
+                    case twoValue => write(twoValue + 1)
+                  }
+                }
               }
+
+            read(mod1) {
+              case value => write(value)
             }
         }
       }
@@ -157,21 +164,27 @@ class MemoTests extends FlatSpec with Matchers {
     var num = 0
 
     def run(implicit c: Context) = {
-      val memo = new Memoizer[Changeable[Int]]()
+      val memo = new Memoizer[Mod[Int]]()
 
       mod {
         read(one) {
           case 1 => write(1)
           case _ =>
-            memo(two) {
-              num += 1
-              write(0)
+            val mod1 = memo(two) {
+              mod {
+                num += 1
+                write(0)
+              }
+            }
+
+            read(mod1) {
+              case value => write(value)
             }
         }
       }
 
-      mod {
-        memo(two) {
+      memo(two) {
+        mod {
           write(2)
         }
       }
@@ -203,15 +216,19 @@ class MemoTests extends FlatSpec with Matchers {
     var count2 = 0
 
     def run(implicit c: Context) = {
-      val memo = new Memoizer[Changeable[Int]]()
+      val memo = new Memoizer[Mod[Int]]()
 
       mod {
         read(one) {
           case oneValue =>
             memo(two) {
-              count1 += 1
-              write(0)
+              mod {
+                count1 += 1
+                write(0)
+              }
             }
+
+            write(0)
         }
       }
 
@@ -219,9 +236,13 @@ class MemoTests extends FlatSpec with Matchers {
         read(one) {
           case oneValue =>
             memo(two) {
-              count2 += 1
-              write(0)
+              mod {
+                count2 += 1
+                write(0)
+              }
             }
+
+            write(0)
         }
       }
     }
@@ -361,15 +382,19 @@ class MemoTests extends FlatSpec with Matchers {
     var count = 0
 
     def run(implicit c: Context): Mod[Int] = {
-      val memo = new Memoizer[Changeable[Int]]()
+      val memo = new Memoizer[Mod[Int]]()
 
       mod {
         read(one) {
           case oneValue =>
             memo(two) {
-              count += 1
-              write(0)
+              mod {
+                count += 1
+                write(0)
+              }
             }
+
+            write(0)
         }
       }
     }
@@ -452,115 +477,6 @@ class MemoTests extends FlatSpec with Matchers {
 
     test.count2 should be (2)
     test.count3 should be (1)
-    mutator.shutdown()
-  }
-
-  class NoDestTest
-      (one: Mod[Int], two: Mod[Int], three: Mod[Int], four: Mod[Int])
-    extends Adjustable[Mod[Int]] {
-    def run(implicit c: Context) = {
-      val memo = new Memoizer[Changeable[Int]]()
-
-      def memoTwo = {
-        memo(two) {
-          read(four) {
-            case value => write(value)
-          }
-        }
-      }
-
-      mod {
-        read(one) {
-          case 1 =>
-            mod {
-              memoTwo
-            }
-            memo(three) {
-              write(3)
-            }
-          case _ =>
-            memoTwo
-        }
-      }
-    }
-  }
-
-  "NoDestTest" should "update the mod when making the memo match" in {
-    val mutator = new Mutator()
-    val one = mutator.createMod(1)
-    val two = mutator.createMod(2)
-    val three = mutator.createMod(3)
-    val four = mutator.createMod(4)
-    val test = new NoDestTest(one, two, three, four)
-    val output = mutator.run(test)
-    mutator.read(output) should be (3)
-
-    mutator.updateMod(one, 2)
-    mutator.updateMod(four, 5)
-    mutator.propagate()
-    mutator.read(output) should be (5)
-
-    mutator.shutdown()
-  }
-
-  class NoDestTest2
-      (one: Mod[Int], two: Mod[Int], three: Mod[Int], five: Mod[Int])
-    extends Adjustable[Mod[Int]] {
-    def run(implicit c: Context) = {
-      val memo = new Memoizer[Changeable[Int]]()
-
-      def memoTwo = {
-        memo(two) {
-          read(five) {
-            case five => write(five)
-          }
-        }
-      }
-
-      val six = mod {
-        read(one)(one => {
-          val four = mod {
-            if (one == 1) {
-              mod {
-                memoTwo
-              }
-              memo(three) {
-                write(3)
-              }
-            } else {
-              memoTwo
-            }
-          }
-
-          read(four) {
-            case four => write(four)
-          }
-        })
-      }
-
-      mod {
-        read(six) {
-          case six => write(six)
-        }
-      }
-    }
-  }
-
-  "NoDestTest2" should "write the matched value into the mod" in {
-    val mutator = new Mutator()
-    val one = mutator.createMod(1)
-    val two = mutator.createMod(2)
-    val three = mutator.createMod(3)
-    val five = mutator.createMod(5)
-    val test = new NoDestTest2(one, two, three, five)
-    val output = mutator.run(test)
-    mutator.read(output) should be (3)
-
-    mutator.updateMod(one, 2)
-    mutator.updateMod(five, 10)
-    mutator.propagate()
-    mutator.read(output) should be (10)
-
     mutator.shutdown()
   }
 }

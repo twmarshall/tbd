@@ -38,7 +38,6 @@ class Memoizer[T](implicit c: Context) {
 
         if (!found && timestamp >= c.reexecutionStart &&
             timestamp < c.reexecutionEnd) {
-          updateChangeables(timestamp)
 
           found = true
 
@@ -56,10 +55,6 @@ class Memoizer[T](implicit c: Context) {
 
           val future = c.propagate(timestamp, timestamp.end)
           Await.result(future, DURATION)
-          future onComplete {
-            case scala.util.Failure(e) => e.printStackTrace()
-            case _ =>
-          }
         }
       }
     }
@@ -99,37 +94,6 @@ class Memoizer[T](implicit c: Context) {
     }
 
     updated
-  }
-
-  private def updateChangeables(timestamp: Timestamp) {
-    val memoNode = timestamp.node.asInstanceOf[MemoNode]
-
-    memoNode.value match {
-      case changeable: Changeable[_] =>
-        if (memoNode.currentModId != c.currentModId) {
-          c.update(c.currentModId, c.readId(changeable.modId))
-
-          c.ddg.replaceMods(
-            timestamp, memoNode, memoNode.currentModId, c.currentModId)
-        }
-
-      case (c1: Changeable[_], c2: Changeable[_]) =>
-        if (memoNode.currentModId != c.currentModId) {
-          c.update(c.currentModId, c.readId(c1.modId))
-
-          c.ddg.replaceMods(
-            timestamp, memoNode, memoNode.currentModId, c.currentModId)
-        }
-
-        if (memoNode.currentModId2 != c.currentModId2) {
-          c.update(c.currentModId2, c.readId(c2.modId))
-
-          c.ddg.replaceMods(
-            timestamp, memoNode, memoNode.currentModId2, c.currentModId2)
-        }
-
-      case _ =>
-    }
   }
 
   def removeEntry(timestamp: Timestamp, signature: Seq[_]) {
