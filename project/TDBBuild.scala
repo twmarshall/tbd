@@ -54,7 +54,7 @@ object TDBBuild extends Build {
   lazy val root = Project (
     "root",
     file(".")
-  ) aggregate(macros, core)
+  ) aggregate(core)
 
   lazy val core = Project (
     "core",
@@ -98,7 +98,7 @@ object TDBBuild extends Build {
         masterOut
       }
     )
-  ) dependsOn(macros)
+  )
 
   lazy val reef = Project (
     "reef",
@@ -123,16 +123,6 @@ object TDBBuild extends Build {
       }
     )
   ) dependsOn(core)
-
-  lazy val macros = Project(
-    "macros",
-    file("macros"),
-    settings = buildSettings ++ Seq (
-      libraryDependencies ++= (commonDeps
-                          ++ Seq("org.scala-lang" % "scala-compiler" % "2.11.1",
-                                 "org.scala-lang" % "scala-reflect" % "2.11.1"))
-    )
-  )
 
   lazy val pagerank = Project(
     "pagerank",

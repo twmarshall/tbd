@@ -15,19 +15,9 @@
  */
 package tdb
 
-import scala.language.experimental.{macros => m}
-
-import tdb.macros.Debug._
-
 object Debug {
   def prompt: String = {
     print(">")
     scala.io.StdIn.readLine()
   }
-
-  def LINE: Int = macro lineImpl
-
-  def FILE: String = macro fileImpl
-
-  def MARK: String = macro markImpl
 }
