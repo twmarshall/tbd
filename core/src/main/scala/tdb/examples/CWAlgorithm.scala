@@ -98,7 +98,7 @@ class CWChunkHashAlgorithm(_conf: AlgorithmConf)
         new CWChunkAdjust(input.getAdjustableList(), mappedConf)
 
     data = new FileData(
-      input, conf.file, conf.updateFile, conf.runs)
+      input, conf.file, conf.updateFile, conf.runs, Experiment.check)
   }
 
   def hasUpdates() = data.hasUpdates()

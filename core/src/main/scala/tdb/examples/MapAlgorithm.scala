@@ -51,7 +51,7 @@ class MapAlgorithm(_conf: AlgorithmConf)
   val adjust = new MapAdjust(input.getAdjustableList())
 
   val data = new FileData(
-    input, conf.file, conf.updateFile, conf.runs)
+    input, conf.file, conf.updateFile, conf.runs, Experiment.check)
 
   var naiveTable: ParIterable[(String, String)] = _
   def generateNaive() {

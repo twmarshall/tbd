@@ -25,7 +25,8 @@ class FileData
     (input: ListInput[String, String],
      inputFile: String,
      updateFile: String,
-     runs: List[String]) extends Data[String, String] {
+     runs: List[String],
+     check: Boolean) extends Data[String, String] {
   val file = "data.txt"
 
   var remainingRuns = runs
@@ -38,7 +39,9 @@ class FileData
       ()
     }
 
-    FileUtil.readEntireKeyValueFile(inputFile, process)
+    if (check) {
+      FileUtil.readEntireKeyValueFile(inputFile, process)
+    }
   }
 
   def load() {

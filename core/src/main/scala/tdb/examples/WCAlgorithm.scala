@@ -132,7 +132,7 @@ class WCAlgorithm(_conf: AlgorithmConf)
       if (OS.isDir(conf.updateFile)) {
         new DirectoryData(input, conf.file, conf.updateFile, conf.runs, Experiment.check)
       } else {
-        new FileData(input, conf.file, conf.updateFile, conf.runs)
+        new FileData(input, conf.file, conf.updateFile, conf.runs, Experiment.check)
       }
     }
 
