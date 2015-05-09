@@ -26,8 +26,6 @@ import tdb.master.Master
 import tdb.messages._
 
 class DDG(_c: Context) {
-  //debug.TDB.nodes(root) = (Node.getId(), Tag.Root(), null)
-
   val reads = mutable.Map[ModId, mutable.Buffer[Timestamp]]()
   val keys = mutable.Map[InputId, mutable.Map[Any, mutable.Buffer[Timestamp]]]()
   val pars = mutable.Map[TaskId, Timestamp]()

@@ -20,7 +20,6 @@ import scala.collection.mutable.Map
 import scala.concurrent.Await
 
 import tdb.Constants._
-import tdb.ddg.{FunctionTag, ModNode, Tag}
 import tdb.messages._
 
 trait Modizer[T] {
