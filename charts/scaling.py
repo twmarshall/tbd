@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import string
 
-graph_dir = "graphs/"
+graph_dir = "charts/"
 N = 4
 width = 0.35       # the width of the bars
 ind = np.arange(N)  # the x locations for the groups

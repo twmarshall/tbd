@@ -8,7 +8,7 @@ import numpy as np
 import string
 import sys
 
-graph_dir = "graphs/"
+graph_dir = "charts/"
 
 # Load results
 file = open("results.txt", 'r')

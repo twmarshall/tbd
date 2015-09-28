@@ -8,7 +8,7 @@ import sys
 
 fig, ax = plt.subplots()
 
-graph_dir = 'graphs/'
+graph_dir = 'charts/'
 
 def plotLine(line, title):
     file = open(graph_dir + 'input_size_' + line + '.txt', 'r')
