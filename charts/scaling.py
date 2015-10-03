@@ -6,11 +6,10 @@ import string
 
 graph_dir = "charts/"
 N = 4
-width = 0.35       # the width of the bars
+width = 0.20       # the width of the bars
 ind = np.arange(N)  # the x locations for the groups
 fig, ax = plt.subplots()
 
-# TDB
 def readFile(file):
     file = open(graph_dir + file, 'r')
     means = []
@@ -21,26 +20,28 @@ def readFile(file):
         std.append(float(split[1]))
     return (means, std)
 
+# initial run
 (tdbMeans, tdbStd) = readFile("scaling_tdb.txt")
-rects1 = ax.bar(ind, tdbMeans, width, color='r', yerr=tdbStd)
+rects1 = ax.bar(ind, tdbMeans, width, color='#6aa84f', yerr=tdbStd)
 
-#Spark
+# update 10
+(oneMeans, oneStd) = readFile("scaling_10.txt")
+rects2 = ax.bar(ind+width, oneMeans, width, color='#3c78d8', yerr=oneStd)
 
-sparkMeans = []
-sparkStd = []
-
-(sparkMeans, sparkStd) = readFile("scaling_spark.txt")
-
-rects2 = ax.bar(ind+width, sparkMeans, width, color='y', yerr=sparkStd)
+# update 100
+(twoMeans, twoStd) = readFile("scaling_100.txt")
+rects3 = ax.bar(ind+width*2, twoMeans, width, color='#e69138', yerr=twoStd)
 
 # add some text for labels, title and axes ticks
 ax.set_xlabel('Machines')
-ax.set_ylabel('Updates/Second')
+ax.set_xlim([-width, (N - 1) + 4 * width])
+ax.set_ylabel('Seconds')
+#ax.set_ylim([0, 5])
 ax.set_title('Scalability')
-ax.set_xticks(ind+width)
+ax.set_xticks(ind+width * 1.5)
 ax.set_xticklabels( ('1', '2', '3', '4'))
 
-ax.legend( (rects1[0], rects2[0]), ('TDB', 'Spark') )
+ax.legend( (rects1[0], rects2[0], rects3[0]), ('Initial Run', 'Update 10', 'Update 100') )
 
 def autolabel(rects):
     # attach some text labels
@@ -49,8 +50,8 @@ def autolabel(rects):
         ax.text(rect.get_x()+rect.get_width()/2., 1.05*height, '%d'%int(height),
                 ha='center', va='bottom')
 
-autolabel(rects1)
-autolabel(rects2)
+#autolabel(rects1)
+#autolabel(rects2)
 
 #plt.show()
 plt.savefig(graph_dir + 'scaling.png')
