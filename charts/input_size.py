@@ -22,13 +22,13 @@ def plotLine(line, title):
     plt.plot(x, y, label=title)
 
 plotLine("initial_run", "Initial Run")
-plotLine("update_1", "Update 1")
+plotLine("update_1", "Update 100")
 plotLine("spark", "Spark")
 
 plt.xlabel("Input Size (GB)")
 plt.ylabel('Time (seconds)')
 
-ax.set_title("Effect of Input Size on Update Time")
+#ax.set_title("Effect of Input Size on Update Time")
 
 plt.legend()
 plt.savefig(graph_dir + 'input_size.png')
