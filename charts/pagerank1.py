@@ -26,21 +26,18 @@ oneStd = [11.9]
 rects3 = ax.bar(ind + width * 2, oneMeans, width/2, color='#6aa84f', yerr=oneStd, log=True)
 
 # update 100
-twoMeans = [459.0]
-twoStd = [72.01]
-rects4 = ax.bar(ind + width * 3, twoMeans, width/2, color='#e69138', yerr=twoStd, log=True)
+#twoMeans = [459.0]
+#twoStd = [72.01]
+#rects4 = ax.bar(ind + width * 3, twoMeans, width/2, color='#e69138', yerr=twoStd, log=True)
 
 # add some text for labels, title and axes ticks
-#ax.set_xlabel('Chunk Size')
-ax.set_ylabel('Time (seconds)')
-ax.set_title('100k node graph, 5 iterations')
+ax.set_ylabel('Time (ms)')
+#ax.set_title('100k node graph, 5 iterations')
 ax.set_xticks(ind+width * 10)
-#ax.set_xticklabels( ('1', '10', '100') )
-ax.set_xlim([-width/2, (N - 1) + 4 * width])
-#ax.set_ylim(ymin=0)
+ax.set_xlim([-width/2, (N - 1) + 3 * width])
 ax.set_yscale("symlog")
 
-ax.legend( (rects1[0], rects2[0], rects3[0], rects4[0]), ('Non-incremental', 'Initial Run', 'Update 10', 'Update 100') )
+ax.legend( (rects1[0], rects2[0], rects3[0]), ('Non-incremental', 'Initial Run', 'Update 10') )
 
 def autolabel(rects):
     # attach some text labels
@@ -52,9 +49,9 @@ def autolabel(rects):
 autolabel(rects1)
 autolabel(rects2)
 autolabel(rects3)
-autolabel(rects4)
+#autolabel(rects4)
 
 #plt.show()
 plt.ylim(ymin=0)
 
-plt.savefig(graph_dir + 'updates.png')
+plt.savefig(graph_dir + 'pagerank1.png')
