@@ -50,8 +50,14 @@ class MapAlgorithm(_conf: AlgorithmConf)
 
   val adjust = new MapAdjust(input.getAdjustableList())
 
-  val data = new FileData(
-    input, conf.file, conf.updateFile, conf.runs, Experiment.check)
+  val data =
+    if (OS.isDir(conf.updateFile)) {
+      new DirectoryData(input, conf.file, conf.updateFile, conf.runs,
+                        Experiment.check)
+    } else {
+      new FileData(
+        input, conf.file, conf.updateFile, conf.runs, Experiment.check)
+    }
 
   var naiveTable: ParIterable[(String, String)] = _
   def generateNaive() {
