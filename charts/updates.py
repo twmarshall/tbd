@@ -21,16 +21,24 @@ def readFile(file):
     return (means, std)
 
 #Spark
-(sparkMeans, sparkStd) = readFile("updates_spark.txt")
-rects1 = ax.bar(ind, sparkMeans, width, color='#3c78d8', yerr=sparkStd)
+sparkMeans = [4.829, 4.829, 4.829]
+rects1 = ax.bar(ind, sparkMeans, width, color='#cc0000')
+
+sparkGcMeans = [.12, .15, .09]
+rects1gc = ax.bar(ind, sparkGcMeans, width, color='#cc0000',
+                  bottom=sparkMeans, hatch='/')
 
 # TDB
-(tdbMeans, tdbStd) = readFile("updates_tdb.txt")
-rects2 = ax.bar(ind + width, tdbMeans, width, color='#6aa84f', yerr=tdbStd)
+tdbMeans = [5.482, 5.19467, 4.967]
+rects2 = ax.bar(ind + width, tdbMeans, width, color='#3c78d8')
+
+tdbGcMeans = [2.64367, 1.47367, 0.52433]
+rects4 = ax.bar(ind + width, tdbGcMeans, width, color='#3c78d8',
+                bottom=tdbMeans, hatch='/')
 
 # update 10
-(oneMeans, oneStd) = readFile("updates_10.txt")
-rects3 = ax.bar(ind + width * 2, oneMeans, width, color='#e69138', yerr=oneStd)
+oneMeans = [0.26033, 0.25633, 0.28533]
+rects3 = ax.bar(ind + width * 2, oneMeans, width, color='#e69138')
 
 # add some text for labels, title and axes ticks
 ax.set_xlabel('Chunk Size')
@@ -40,7 +48,7 @@ ax.set_xticks(ind+width * 1.5)
 ax.set_xticklabels( ('1', '10', '100') )
 ax.set_xlim([-width, (N - 1) + 4 * width])
 
-ax.legend( (rects1[0], rects2[0], rects3[0]), ('TDB', 'Non-incremental', 'Update 10') )
+ax.legend( (rects1[0], rects2[0], rects3[0]), ('Non-Incremental', 'Initial Run', 'Update 100') )
 
 def autolabel(rects):
     # attach some text labels
