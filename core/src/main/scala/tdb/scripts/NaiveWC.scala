@@ -16,10 +16,13 @@
 package tdb.scripts
 
 import org.rogach.scallop._
-import scala.collection.mutable.Map
+import scala.collection.mutable._
 import scala.io.Source
+import scala.collection.parallel.{ForkJoinTaskSupport, ParIterable}
+import scala.concurrent.forkjoin.ForkJoinPool
 
-import tdb.util.Util
+import tdb.examples._
+import tdb.util._
 
 object NaiveWC {
   def mapper
@@ -54,13 +57,24 @@ object NaiveWC {
 
     val unitSeparator = 31.toChar
 
-    val output = Map[String, Int]()
-    for (line <- file.getLines) {
-      val split = line.split(unitSeparator)
-      mapper(output, (split(0), split(1)))
-    }
+   val lines = Buffer[String]()
+   for (line <- file.getLines) {
+     val split = line.split(unitSeparator)
+     lines += split(1)
+   }
 
-    Util.writeMapToFile(Conf.output(), output)
+   val output = Map[String, Int]()
+   val input = lines.toVector.par
+   input.tasksupport =
+     new ForkJoinTaskSupport(new ForkJoinPool(OS.getNumCores()))
+
+   val before = System.currentTimeMillis()
+   input.aggregate(Map[String, Int]())((x, line) =>
+     WCHash.countReduce(line, x), WCAlgorithm.mutableReduce)
+   val after = System.currentTimeMillis()
+
+   println("time: " + (after - before))
+    //Util.writeMapToFile(Conf.output(), output)
 
     if (Conf.updates().size > 0) {
       val updateFile = Source.fromFile(Conf.updateFile())
