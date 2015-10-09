@@ -5,8 +5,8 @@ import numpy as np
 import string
 
 graph_dir = "charts/"
-N = 4
-width = 0.20       # the width of the bars
+N = 5
+width = 0.2       # the width of the bars
 ind = np.arange(N)  # the x locations for the groups
 fig, ax = plt.subplots()
 
@@ -17,41 +17,47 @@ def readFile(file):
     for line in file:
         split = string.split(line)
         means.append(float(split[0]))
-        std.append(float(split[1]))
+        #std.append(float(split[1]))
     return (means, std)
 
 # initial run
 (tdbMeans, tdbStd) = readFile("scaling_tdb.txt")
-rects1 = ax.bar(ind, tdbMeans, width, color='#6aa84f', yerr=tdbStd)
+tdbMeans = [1, 1.769826753, 2.81357155, 3.532328733, 5.035140782]
+rects1 = ax.bar(ind, tdbMeans, width, color='#6aa84f')
 
 # update 10
-(oneMeans, oneStd) = readFile("scaling_10.txt")
-rects2 = ax.bar(ind+width, oneMeans, width, color='#3c78d8', yerr=oneStd)
+oneMeans= [1, 1.233837573, 1.190185049, 1.505154639, 1.724341561]
+#oneMeans = [0, 0, 0, 0, 0]
+rects2 = ax.bar(ind+width, oneMeans, width, color='#3c78d8')
 
 # update 100
-(twoMeans, twoStd) = readFile("scaling_100.txt")
-rects3 = ax.bar(ind+width*2, twoMeans, width, color='#e69138', yerr=twoStd)
+#twoMeans = [1, 1.306933448, 1.643718385, 1.761395016, 2.220612885]
+twoMeans = [0, 0, 0, 0, 0]
+rects3 = ax.bar(ind+width*2, twoMeans, width, color='#e69138')
 
 # add some text for labels, title and axes ticks
-ax.set_xlabel('Machines')
+ax.set_xlabel('Cores')
 ax.set_xlim([-width, (N - 1) + 4 * width])
-ax.set_ylabel('Seconds')
+ax.set_ylabel('Speedup')
 #ax.set_ylim([0, 5])
-ax.set_title('Scalability')
+ax.set_title('Multi-core')
 ax.set_xticks(ind+width * 1.5)
-ax.set_xticklabels( ('1', '2', '3', '4'))
+ax.set_xticklabels( ('1', '2', '4', '8', '12'))
 
-ax.legend( (rects1[0], rects2[0], rects3[0]), ('Initial Run', 'Update 10', 'Update 100') )
+#ax.legend( (rects1[0],), ('Initial Run',), loc='upper left' )
+ax.legend( (rects1[0], rects2[0]), ('Initial Run', 'Update 10'), loc='upper left' )
+#ax.legend( (rects1[0], rects2[0], rects3[0]), ('Initial Run', 'Update 10', 'Update 100'), loc='upper left' )
 
 def autolabel(rects):
     # attach some text labels
     for rect in rects:
         height = rect.get_height()
-        ax.text(rect.get_x()+rect.get_width()/2., 1.05*height, '%d'%int(height),
-                ha='center', va='bottom')
+        ax.text(rect.get_x()+rect.get_width()/2, height + .1, '%.2f'%float(height),
+                ha='center', va='bottom', fontsize='12')
 
 #autolabel(rects1)
 #autolabel(rects2)
+#autolabel(rects3)
 
 #plt.show()
 plt.savefig(graph_dir + 'scaling.png')
