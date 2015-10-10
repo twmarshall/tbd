@@ -26,34 +26,35 @@ tdbMeans = [1.557289895]
 rects1 = ax.bar(ind, tdbMeans, width, color='#3c78d8')
 
 # update 10
-oneMeans= [0.3277027027]
+#oneMeans= [0.3277027027]
 #oneMeans = [0]
-rects2 = ax.bar(ind+width, oneMeans, width, color='#6aa84f')
+#rects2 = ax.bar(ind+width, oneMeans, width, color='#6aa84f')
 
 # update 100
 twoMeans = [0.9172152797]
 #twoMeans = [0]
-rects3 = ax.bar(ind+width*2, twoMeans, width, color='#e69138')
+rects3 = ax.bar(ind+width, twoMeans, width, color='#e69138')
 
 # update 1000
 threeMeans = [1.136780069]
 #threeMeans = [0]
-rects4 = ax.bar(ind+width*3, threeMeans, width, color='#f1c232')
+rects4 = ax.bar(ind+width*2, threeMeans, width, color='#6aa84f')
+#f1c232')
 
 fontsize = '20'
 # add some text for labels, title and axes ticks
 ax.set_xlabel('Machines', fontsize=fontsize)
-ax.set_xlim([-width, (N - 1) + 5 * width])
+ax.set_xlim([-width, (N - 1) + 4 * width])
 ax.set_ylabel('Speedup', fontsize=fontsize)
 ax.set_title('Distributed', fontsize=fontsize)
-ax.set_xticks(ind+width * 2)
+ax.set_xticks(ind+width * 1.5)
 ax.set_xticklabels( ('2'))
 
 plt.tick_params(axis='both', which='major', labelsize=fontsize)
 plt.tick_params(axis='both', which='minor', labelsize=fontsize)
 
-ax.legend( (rects1[0], rects2[0], rects3[0], rects4[0]), ('Initial Run', 'Update 10', 'Update 100', 'Update 1000'), loc='best' )
-#ax.legend( (rects1[0], rects2[0], rects3[0]), ('Initial Run', 'Update 10', 'Update 100'), loc='best' )
+#ax.legend( (rects1[0], rects2[0], rects3[0], rects4[0]), ('Initial Run', 'Update 10', 'Update 100', 'Update 1000'), loc='best' )
+ax.legend( (rects1[0], rects3[0], rects4[0]), ('Initial Run', 'Update 100', 'Update 1000'), loc='best' )
 #ax.legend( (rects1[0], rects2[0]), ('Initial Run', 'Update 10'), loc='best' )
 #ax.legend( (rects1[0],), ('Initial Run',), loc='best' )
 

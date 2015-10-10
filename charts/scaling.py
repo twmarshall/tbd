@@ -26,14 +26,18 @@ tdbMeans = [1, 1.769826753, 2.81357155, 3.532328733, 5.035140782]
 rects1 = ax.bar(ind, tdbMeans, width, color='#3c78d8')
 
 # update 10
-oneMeans= [1, 1.233837573, 1.190185049, 1.505154639, 1.724341561]
+#oneMeans= [1, 1.233837573, 1.190185049, 1.505154639, 1.724341561]
 #oneMeans = [0, 0, 0, 0, 0]
-rects2 = ax.bar(ind+width, oneMeans, width, color='#6aa84f')
+#rects2 = ax.bar(ind+width, oneMeans, width, color='#6aa84f')
 
 # update 100
 twoMeans = [1, 1.306933448, 1.643718385, 1.761395016, 2.220612885]
 #twoMeans = [0, 0, 0, 0, 0]
-rects3 = ax.bar(ind+width*2, twoMeans, width, color='#e69138')
+rects2 = ax.bar(ind+width, twoMeans, width, color='#e69138')
+
+#update 1000
+threeMeans = [1, 1.452923459, 1.940724395, 2.192305413, 2.471632075]
+rects3 = ax.bar(ind+width*2, threeMeans, width, color='#6aa84f')
 
 # add some text for labels, title and axes ticks
 ax.set_xlabel('Cores')
@@ -46,7 +50,7 @@ ax.set_xticklabels( ('1', '2', '4', '8', '12'))
 
 #ax.legend( (rects1[0],), ('Initial Run',), loc='upper left' )
 #ax.legend( (rects1[0], rects2[0]), ('Initial Run', 'Update 10'), loc='upper left' )
-ax.legend( (rects1[0], rects2[0], rects3[0]), ('Initial Run', 'Update 10', 'Update 100'), loc='upper left' )
+ax.legend( (rects1[0], rects2[0], rects3[0]), ('Initial Run', 'Update 100', 'Update 1000'), loc='upper left' )
 
 def autolabel(rects):
     # attach some text labels
